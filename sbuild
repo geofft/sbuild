@@ -195,6 +195,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::auto_giveback = 1;
 		if ($2) {
 			my @parts = split( '@', $2 );
+			$main::auto_giveback_socket  = $parts[$#parts-3] if @parts > 3;
 			$main::auto_giveback_wb_user = $parts[$#parts-2] if @parts > 2;
 			$main::auto_giveback_user    = $parts[$#parts-1] if @parts > 1;
 			$main::auto_giveback_host    = $parts[$#parts];
@@ -930,9 +931,12 @@ sub analyze_fail_stage {
 		$main::pkg_status = "given-back";
 		print PLOG "Giving back package $pkgv after failure in ".
 			       "$main::pkg_fail_stage stage.\n";
+		chdir( $main::cwd );
 		my $cmd = "";
 		$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
 			if $main::auto_giveback_host;
+		$cmd .= "-S $main::auto_giveback_socket "
+			if $main::auto_giveback_socket;
 		$cmd .= "wanna-build --give-back --no-down-propagation ".
 			    "--dist=$main::distribution";
 		$cmd .= " --database=$main::database" if $main::database;

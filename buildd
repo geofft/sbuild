@@ -420,6 +420,7 @@ sub do_build {
 	my $sbuild_args = "--batch --auto-give-back";
 	if ($conf::sshcmd) {
 		$sbuild_args .= "=";
+		$sbuild_args .= "$conf::sshsocket\@" if $conf::sshsocket;
 		$sbuild_args .= "$conf::wanna_build_user\@" if $conf::wanna_build_user;
 		$sbuild_args .= "$main::sshuser\@" if $main::sshuser;
 		$sbuild_args .= "$main::sshhost";
