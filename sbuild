@@ -829,7 +829,7 @@ EOF
 					}
 					else {
 						print F2 $_;
-						while (length $_ > 1000)
+						while (length $_ > 990)
 						{
 							my $index = rindex($_,' ',1000);
 							print PLOG substr ($_,0,$index) . "\n";
