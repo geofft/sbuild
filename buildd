@@ -326,12 +326,12 @@ sub do_wanna_build {
 				++$n;
 				if ($conf::should_build_msgs) {
 					handle_prevfailed( $dist, grep( /^\Q$pkg\E_/, @_ ) );
-					# skip until ok line
-					while( <PIPE> ) {
-						last if /^\Q$pkg\E:\s*ok/;
-					}
 				} else {
 					push( @output, grep( /^\Q$pkg\E_/, @_ ) );
+				}
+				# skip until ok line
+				while( <PIPE> ) {
+					last if /^\Q$pkg\E:\s*ok/;
 				}
 			}
 		}
