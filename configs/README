@@ -3,6 +3,7 @@ The ref-* files are used by checkchroot to find unwanted packages in the chroots
 # cp ref-* /usr/local/chroot/
 
  - stable-old is potato
+ - stable is woody
  - different for diff arches
  - you can basically get the list using something like:
 
