@@ -3,7 +3,7 @@ set -e
 
 tmpfile=/tmp/abort-current-build.$$
 set +e
-ps xjww | egrep ' (/bin/sh /usr/bin/dpkg-buildpackage -us -uc -B|\(dpkg-buildpacka\))' >$tmpfile
+ps xjww | egrep ' (/bin/sh /usr/bin/dpkg-buildpackage -us -uc |\(dpkg-buildpacka\))' >$tmpfile
 set -e
 n="`wc -l $tmpfile | awk '{print $1}'`" 
 if [ "$n" -eq 0 ]; then
