@@ -32,6 +32,16 @@ use Buildd;
 use Cwd;
 sub ST_MTIME() { 9 }
 
+# unset any set locale variables
+delete $ENV{'LANG'};
+delete $ENV{'LC_ALL'};
+delete $ENV{'LC_COLLATE'};
+delete $ENV{'LC_CTYPE'};
+delete $ENV{'LC_MONETARY'};
+delete $ENV{'LC_MESSAGES'};
+delete $ENV{'LC_NUMERIC'};
+delete $ENV{'LC_TIME'};
+
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin:/usr/bin/X11:/usr/games";
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
@@ -161,7 +171,11 @@ MAINLOOP: while( 1 ) {
 		}
 		my(@todo, $total, $nonex, @lowprio_todo);
 		while( <PIPE> ) {
-			if (/^Total (\d+) package/) {
+			if ($conf::sshsocket and /^Couldn't connect to $conf::sshsocket: Connection refused[\r]?$/) {
+				unlink( $conf::sshsocket );
+				check_ssh_master();
+			}
+			elsif (/^Total (\d+) package/) {
 				$total = $1;
 				next;
 			}
@@ -681,7 +695,7 @@ sub shutdown {
 	
 	logger( "buildd ($$) received SIG$signame -- shutting down\n" );
 	if (defined $main::ssh_pid) {
-		kill ( 1, $main::ssh_pid );
+		kill ( 15, $main::ssh_pid );
 	}
 	if (defined $main::sbuild_pid) {
 		logger( "Killing sbuild (pid=$main::sbuild_pid)\n" );
@@ -711,7 +725,7 @@ sub check_restart {
 	if (@stats && $my_bin_time != $stats[ST_MTIME]) {
 		logger( "My binary has been updated -- restarting myself (pid=$$)\n" );
 		unlink( "buildd.pid" );
-		kill ( 1, $main::ssh_pid ) if $main::ssh_pid;
+		kill ( 15, $main::ssh_pid ) if $main::ssh_pid;
 		exec $my_binary;
 	}
 }
