@@ -1,21 +1,21 @@
-sbuild (0.35) unreleased; urgency=low
+sbuild (0.35) unstable; urgency=low
 
   Michael Banck:
 
-  * bin/abort-current-build: Remove the `-B' from the grep line as 
+  * bin/abort-current-build: Remove the `-B' from the grep line as
     `sbuild -s' does not pass that option to dpkg-configure and abort-
     current-build fails in that case.
   * sbuild: Set the locale to `POSIX' to make debconf and debhelper calls in
     the chroot not spew out locale warnings all the time.
     (closes: #287672)
-  * sbuild: Removed check for specific distributions. Instead, fail if 
+  * sbuild: Removed check for specific distributions. Instead, fail if
     build/chroot-$dist is not there.
-  * sbuild: Only override Distribution in .changes if specified as option on 
-    the command-line. 
+  * sbuild: Only override Distribution in .changes if specified as option on
+    the command-line.
     (closes: #300145)
   * sbuild: Specify full path for Dir::Etc::main and Dir::Etc::parts.
   * example.sbuildrc: Clarify that $maintainer_name is not mandatory and
-    overrides Maintainer: field, whereas $uploader_name overrides 
+    overrides Maintainer: field, whereas $uploader_name overrides
     the Changed-By: field in changes.
   * Applied patch by Santiago Vila:
     - Moves scripts from /usr/lib/sbuild to /usr/share/sbuild and modifies
@@ -26,7 +26,7 @@ sbuild (0.35) unreleased; urgency=low
   * sbuild: Tolerate '0' as version number, thanks Santiago Vila.
     (closes: #300205)
 
- -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
+ -- Michael Banck <mbanck@debian.org>  Fri,  1 Apr 2005 21:23:30 +0200
 
 sbuild (0.34) unstable; urgency=high
 
