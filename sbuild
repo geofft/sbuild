@@ -263,8 +263,8 @@ if (-d "chroot-$main::distribution") {
 		"-o Dir::State::status=$absroot/var/lib/dpkg/status ".
 		"-o Dir::Cache=$absroot/var/cache/apt ".
 		"-o Dir::Etc=$absroot/etc/apt ".
-		"-o Dir::Etc::main=$absroot/apt.conf ".
-		"-o Dir::Etc::parts=$absroot/apt.conf.d ".
+		"-o Dir::Etc::main=$absroot/etc/apt/apt.conf ".
+		"-o Dir::Etc::parts=$absroot/etc/apt/apt.conf.d ".
 		"-o DPkg::Options::=--root=$absroot ".
 		"-o DPkg::Run-Directory=$absroot";
 	$main::chroot_apt_op = '$CHROOT_OPTIONS';
