@@ -70,6 +70,8 @@ use POSIX;
 use FileHandle;
 use Cwd;
 
+$ENV{'LC_ALL'} = "POSIX";
+
 # avoid intermixing of stdout and stderr
 $| = 1;
 # in case the terminal disappears, the build should continue

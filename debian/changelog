@@ -5,6 +5,8 @@ sbuild (0.35) unreleased; urgency=low
   * bin/abort-current-build: Remove the `-B' from the grep line as 
     `sbuild -s' does not pass that option to dpkg-configure and abort-
     current-build fails in that case.
+  * sbuild: Set the locale to `POSIX' to make debconf and debhelper calls in
+    the chroot not spew out locale warnings all the time.
 
  -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
 
@@ -37,6 +39,10 @@ sbuild (0.32) unstable; urgency=low
     Man page changed to reflect new features.
     (closes: #260870)
   * Removed the CVS $Log$
+  * Removed the CVS Revision 1.5  2005/01/08 23:08:34  mbanck
+  * Removed the CVS   * sbuild: Set the locale to `POSIX' to make debconf and debhelper calls in
+  * Removed the CVS     the chroot not spew out locale warnings all the time.
+  * Removed the CVS
   * Removed the CVS Revision 1.4  2005/01/08 22:39:12  mbanck
   * Removed the CVS   * bin/abort-current-build: Remove the `-B' from the grep line as
   * Removed the CVS    `sbuild -s' does not pass that option to dpkg-configure and abort-
