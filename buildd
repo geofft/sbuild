@@ -149,7 +149,6 @@ MAINLOOP: while( 1 ) {
 	} while( $thisdone );
 
 	check_ssh_master();
-	my @lowprio_todo;
 	foreach $dist (@conf::take_from_dists) {
 		check_restart();
 		check_reread_config();
@@ -160,7 +159,7 @@ MAINLOOP: while( 1 ) {
 			logger( "Can't spawn wanna-build --list=needs-build: $!\n" );
 			next MAINLOOP;
 		}
-		my(@todo, $total, $nonex);
+		my(@todo, $total, $nonex, @lowprio_todo);
 		while( <PIPE> ) {
 			if (/^Total (\d+) package/) {
 				$total = $1;
@@ -180,7 +179,7 @@ MAINLOOP: while( 1 ) {
 			next if isin( $p, @conf::no_auto_build );
 			next if $givenback{$pv};
 			if (isin( $p, @conf::weak_no_auto_build )) {
-				push( @lowprio_todo, [ $pv, $dist ] );
+				push( @lowprio_todo, $pv );
 				next;
 			}
 			push( @todo, $pv );
