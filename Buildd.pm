@@ -45,6 +45,22 @@ $Buildd::hostname = `/bin/hostname -f`;
 $ENV{'PATH'} = $oldPATH;
 $Buildd::hostname =~ /^(\S+)$/; $Buildd::hostname = $1; # untaint
 
+sub unset_env {
+	# unset any locale variables
+	delete $ENV{'LANG'};
+	delete $ENV{'LC_ALL'};
+	delete $ENV{'LC_COLLATE'};
+	delete $ENV{'LC_CTYPE'};
+	delete $ENV{'LC_MONETARY'};
+	delete $ENV{'LC_MESSAGES'};
+	delete $ENV{'LC_NUMERIC'};
+	delete $ENV{'LC_TIME'};
+	delete $ENV{'LANGUAGE'};
+	# other unneeded variables that might be set
+	delete $ENV{'DISPLAY'};
+	delete $ENV{'TERM'};
+}
+
 sub read_config {
 	if (-f "$main::HOME/buildd.conf") {
 		package conf;

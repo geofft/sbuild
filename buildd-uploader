@@ -28,6 +28,7 @@ BEGIN {
 
 use strict;
 use Buildd;
+unset_env();
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 
 read_config();
