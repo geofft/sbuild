@@ -10,6 +10,8 @@ sbuild (0.35) unreleased; urgency=low
     (closes: #287672)
   * sbuild: Removed check for specific distributions. Instead, fail if 
     build/chroot-$dist is not there.
+  * sbuild: Only override Distribution in .changes if specified as option on 
+    the command-line. (closes: #300145)
 
  -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
 

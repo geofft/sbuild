@@ -99,6 +99,7 @@ $main::srcdep_lock_cnt = 0;
 $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
+$main::override_distribution = 0;
 
 $main::new_dpkg = 0;
 check_dpkg_version();
@@ -137,6 +138,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::distribution = "stable"   if $main::distribution eq "s";
 		$main::distribution = "testing"  if $main::distribution eq "t";
 		$main::distribution = "unstable" if $main::distribution eq "u";
+		$main::override_distribution = 1;
 	}
 	elsif (/^-p/ || /^--purge/) {
 		if (/^-p(.)/ || /^--purge=(.)/) {
@@ -861,7 +863,7 @@ EOF
 			open( F, "<$main::chroot_build_dir$changes" );
 			if (open( F2, ">$changes.new" )) {
 				while( <F> ) {
-					if (/^Distribution:\s*(.*)\s*$/) {
+					if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
 						print PLOG "Distribution: $main::distribution\n";
 						print F2 "Distribution: $main::distribution\n";
 					}
