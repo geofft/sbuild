@@ -41,37 +41,7 @@ sbuild (0.32) unstable; urgency=low
   * Added -k and -e options as overriding for -m default in package signing.
     Man page changed to reflect new features.
     (closes: #260870)
-  * Removed the CVS $Log$
-  * Removed the CVS Revision 1.7  2005/01/25 11:14:38  mbanck
-  * Removed the CVS Add closes #287672 to changelog
-  * Removed the CVS
-  * Removed the CVS Revision 1.6  2005/01/25 10:40:52  mbanck
-  * Removed the CVS   * sbuild: Removed check for specific distributions. Instead, fail if
-  * Removed the CVS     build/chroot-$dist is not there.
-  * Removed the CVS
-  * Removed the CVS Revision 1.5  2005/01/08 23:08:34  mbanck
-  * Removed the CVS   * sbuild: Set the locale to `POSIX' to make debconf and debhelper calls in
-  * Removed the CVS     the chroot not spew out locale warnings all the time.
-  * Removed the CVS
-  * Removed the CVS Revision 1.4  2005/01/08 22:39:12  mbanck
-  * Removed the CVS   * bin/abort-current-build: Remove the `-B' from the grep line as
-  * Removed the CVS    `sbuild -s' does not pass that option to dpkg-configure and abort-
-  * Removed the CVS     current-build fails in that case.
-  * Removed the CVS
-  * Removed the CVS Revision 1.3  2004/09/30 11:19:17  frankie
-  * Removed the CVS
-  * Removed the CVS
-  * Removed the CVS Little modification to last note.
-  * Removed the CVS
-  * Removed the CVS Revision 1.2  2004/09/29 12:58:10  frankie
-  * Removed the CVS
-  * Removed the CVS
-  * Removed the CVS New ref-* uptodate for sarge/sid.
-  * Removed the CVS Changed depends and checkchroot to solve critical bug.
-  * Removed the CVS
-  * Removed the CVS Revision 1.1.1.1  2004/09/17 13:17:41  frankie
-  * Removed the CVS Imported sources
-  * Removed the CVS variable in sbuild in order to import a new sane
+  * Removed the CVS log variable in sbuild in order to import a new sane
     tree onto Alioth repo. Old logs are now stored in a new cvslogs.old file.
   * Minor revisions to ducumentation files.
   * Added Michael Banck as Uploader.
