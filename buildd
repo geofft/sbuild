@@ -32,8 +32,6 @@ use Buildd;
 use Cwd;
 sub ST_MTIME() { 9 }
 
-unset_env();
-
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin:/usr/bin/X11:/usr/games";
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
@@ -51,6 +49,7 @@ die "Cannot stat $my_config_global: $!\n" if !@config_g_stats;
 my $my_config_g_time = $config_g_stats[ST_MTIME];
 
 read_config();
+
 $conf::delay_after_give_back ||= 8*60;
 $conf::idle_sleep_time ||= 5*60;
 @conf::take_from_dists = @distlist if !@conf::take_from_dists;

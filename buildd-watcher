@@ -31,10 +31,8 @@ use Buildd;
 use POSIX qw(ESRCH LONG_MAX);
 use Cwd;
 sub ST_MTIME() { 9 }
-unset_env();
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 my $fudge = 1/24/6; # 10 minutes in units of a day
-chomp( $main::arch = `dpkg --print-installation-architecture` );
 
 read_config();
 chdir( "$main::HOME" );

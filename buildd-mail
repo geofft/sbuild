@@ -33,7 +33,6 @@ use Buildd;
 use POSIX;
 use File::Basename;
 
-unset_env();
 $main::keep_running = 1;
 $ENV{'PATH'} = "$main::HOME/bin:/bin:/usr/bin:/usr/local/bin";
 read_config();

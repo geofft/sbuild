@@ -62,6 +62,7 @@ sub unset_env {
 }
 
 sub read_config {
+	unset_env();
 	if (-f "$main::HOME/buildd.conf") {
 		package conf;
 		require "$main::HOME/buildd.conf";
