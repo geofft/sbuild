@@ -21,6 +21,7 @@ sbuild (0.35) unreleased; urgency=low
       all callers accordingly.
     - Add -n option to tail to comply with POSIX.
     - Call /usr/sbin/sendmail instead of /usr/lib/sendmail.
+    (closes: #292717)
   * sbuild: Tolerate '0' as version number, thanks Santiago Vila.
     (closes: #300205)
 
