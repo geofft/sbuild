@@ -194,11 +194,13 @@ if (!-f "old-logs/daemon-stamp" ||
 	reopen_log();
 	unlock_file( "daemon.log" );
 	
-	my $text;
-	open( F, "<daemon.log.old" );
-	{ local($/); undef $/; $text = <F>; }
-	close( F );
-	send_mail( $conf::admin_mail, "Build Daemon Log $d", $text );
+	if ($conf::daemon_log_send) {
+		my $text;
+		open( F, "<daemon.log.old" );
+		{ local($/); undef $/; $text = <F>; }
+		close( F );
+		send_mail( $conf::admin_mail, "Build Daemon Log $d", $text );
+	}
 }
 archive_logs( "old-logs", "daemon-*.log.gz", "old-logs/dlog", $conf::daemon_log_keep );
 

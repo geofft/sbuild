@@ -43,6 +43,9 @@ $build_log_keep = 2;
 # others are moved to old-logs and gzipped)
 $daemon_log_rotate = 1;
 
+# Whether or not to email rotated daemon logs via mail to the admin
+$daemon_log_send = 1;
+
 # how many days until to archive old daemon logs in a .tar.gz
 $daemon_log_keep = 7;
 
