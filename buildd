@@ -743,6 +743,9 @@ sub check_reread_config {
 		delete $INC{$my_config};
 		delete $INC{$my_config_global};
 		read_config();
+		if ($conf::sshsocket) {
+			$conf::sshcmd .= " -S $conf::sshsocket";
+		}
 		$main::reread_config = 0;
 	}
 }
