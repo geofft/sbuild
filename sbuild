@@ -1230,7 +1230,7 @@ sub uninstall_deps {
 
 sub uninstall_debs {
 	my $mode = shift;
-	my $output;
+	local (*PIPE);
 	
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
@@ -1238,10 +1238,20 @@ sub uninstall_debs {
 		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
 	print PLOG "  $conf::sudo dpkg $chroot_opt --$mode @_\n";
   repeat:
-	$output = `cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null`;
-	print PLOG $output;
+	my $output;
+	if (!open( PIPE, "cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null |")) {
+		print PLOG "Can't open pipe to dpkg: $!\n";
+		return 0;
+	}
+	while ( <PIPE> ) {
+		$output .= $_;
+		print PLOG $_;
+	}
+	close( PIPE );
+
 	if ($output =~ /status database area is locked/mi) {
 		print PLOG "Another dpkg is running -- retrying later\n";
+		$output = "";
 		sleep( 2*60 );
 		goto repeat;
 	}
