@@ -827,8 +827,14 @@ EOF
 						print F2 "Distribution: $main::distribution\n";
 					}
 					else {
-						print PLOG $_;
 						print F2 $_;
+						while (length $_ > 1000)
+						{
+							my $index = rindex($_,' ',1000);
+							print substr ($_,0,$index) . "\n";
+							$_ = '        ' . substr ($_,$index+1);
+						}
+						print PLOG $_;
 					}
 				}
 				close( F2 );
