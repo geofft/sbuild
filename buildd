@@ -681,7 +681,7 @@ sub shutdown {
 	
 	logger( "buildd ($$) received SIG$signame -- shutting down\n" );
 	if (defined $main::ssh_pid) {
-		kill ( HUP, $main::ssh_pid );
+		kill ( 1, $main::ssh_pid );
 	}
 	if (defined $main::sbuild_pid) {
 		logger( "Killing sbuild (pid=$main::sbuild_pid)\n" );
@@ -711,7 +711,7 @@ sub check_restart {
 	if (@stats && $my_bin_time != $stats[ST_MTIME]) {
 		logger( "My binary has been updated -- restarting myself (pid=$$)\n" );
 		unlink( "buildd.pid" );
-		kill ( HUP, $main::ssh_pid ) if $main::ssh_pid;
+		kill ( 1, $main::ssh_pid ) if $main::ssh_pid;
 		exec $my_binary;
 	}
 }
@@ -743,6 +743,7 @@ sub unblock_signals() {
 
 sub check_ssh_master {
 	return 1 if (!$conf::sshsocket);
+	return 1 if ( -S $conf::sshsocket );
 
 	if ($main::ssh_pid)
 	{
