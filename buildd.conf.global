@@ -62,6 +62,7 @@ $statistics_period = 7;
 # to execute the cmd on the machine where wanna-build is installed,
 # e.g. "ssh -l roman kullervo.infodrom.north.de"
 $sshcmd = "";
+$sshsocket = "";
 
 # Username to use for wanna-build. Default if empty is the username of the user
 # running the daemon.

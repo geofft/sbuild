@@ -67,6 +67,9 @@ if ($conf::sshcmd) {
 		$conf::sshcmd =~ /(\S+)\s*$/;
 		($main::sshuser, $main::sshhost) = ("", $1);
 	}
+	if ($conf::sshsocket) {
+		$conf::sshcmd .= " -S $conf::sshsocket";
+	}
 }
 
 chdir( "$main::HOME/build" )
@@ -145,6 +148,7 @@ MAINLOOP: while( 1 ) {
 		}
 	} while( $thisdone );
 
+	check_ssh_master();
 	my @lowprio_todo;
 	foreach $dist (@conf::take_from_dists) {
 		check_restart();
@@ -429,7 +433,11 @@ sub do_build {
 		logger( "Cannot fork for sbuild: $!\n" );
 		goto failed;
 	}
-	do {} until wait == $main::sbuild_pid;
+	do {
+		my $wpid = wait;
+		last if $wpid == $main::sbuild_pid;
+		check_ssh_master() if (defined $main::ssh_pid and $wpid == $main::ssh_pid);
+	} while 1;
 	undef $main::sbuild_pid;
 	my $build_end_time = time;
 
@@ -731,4 +739,30 @@ sub block_signals() {
 
 sub unblock_signals() {
 	POSIX::sigprocmask( SIG_UNBLOCK, $main::block_sigset );
+}
+
+sub check_ssh_master {
+	return 1 if (!$conf::sshsocket);
+
+	if ($main::ssh_pid)
+	{
+		my $wpid = waitpid ( $main::ssh_pid, WNOHANG );
+		return 1 if ($wpid != -1 and $wpid != $main::ssh_pid);
+	}
+
+	($main::ssh_pid = fork)
+		or exec "$conf::sshcmd -MN";
+
+	if (!defined $main::ssh_pid) {
+		logger( "Cannot fork for ssh master: $!\n" );
+		return 0;
+	}
+
+	while ( ! -S $conf::sshsocket )
+	{
+		sleep 1;
+		my $wpid = waitpid ( $main::ssh_pid, WNOHANG );
+		return 0 if ($wpid == -1 or $wpid == $main::ssh_pid);
+	}
+	return 1;
 }
