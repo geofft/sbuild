@@ -31,8 +31,13 @@ use Buildd;
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 
 read_config();
-$conf::dupload_to ||= "erlangen";
-$conf::dupload_to_non_us ||= "non-us";
+
+if ($sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
+	$sshcmd .= " -S $main::HOME/build/$conf::sshsocket";
+}
+
+$conf::dupload_to ||= "anonymous-ftp-master";
+$conf::dupload_to_non_us ||= "anonymous-non-us";
 $conf::dupload_to_security ||= "security";
 
 lock_file( "$main::HOME/daemon.log" );

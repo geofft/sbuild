@@ -433,11 +433,7 @@ sub do_build {
 		logger( "Cannot fork for sbuild: $!\n" );
 		goto failed;
 	}
-	do {
-		my $wpid = wait;
-		last if $wpid == $main::sbuild_pid;
-		check_ssh_master() if (defined $main::ssh_pid and $wpid == $main::ssh_pid);
-	} while 1;
+	do {} until wait == $main::sbuild_pid;
 	undef $main::sbuild_pid;
 	my $build_end_time = time;
 
