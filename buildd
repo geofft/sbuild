@@ -198,6 +198,11 @@ MAINLOOP: while( 1 ) {
 			next;
 		}
 
+		# Build weak_no_auto packages before the next dist
+		if (!@todo && @lowprio_todo) {
+			push ( @todo, @lowprio_todo[0] );
+		}
+
 		next if !@todo;
 		@todo = do_wanna_build( $dist, @todo );
 		next if !@todo;
@@ -208,18 +213,6 @@ MAINLOOP: while( 1 ) {
 
 	# sleep a little bit if there was nothing to do this time
 	if (!$done) {
-		if (@lowprio_todo) {
-			# if really nothing is to do, then --instead of being idle-- also
-			# take the most important package that is in @lowprio_todo
-			my $pv = $lowprio_todo[0]->[0];
-			$dist = $lowprio_todo[0]->[1];
-			my @todo = do_wanna_build( $dist, $pv );
-			if (@todo) {
-				do_build( $dist, @todo );
-				next;
-			}
-		}
-		
 		logger( "Nothing to do -- sleeping $conf::idle_sleep_time seconds\n" );
 		my $idle_start_time = time;
 		sleep( $conf::idle_sleep_time );
