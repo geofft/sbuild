@@ -1,3 +1,13 @@
+sbuild (0.35) unreleased; urgency=low
+
+  Michael Banck:
+
+  * bin/abort-current-build: Remove the `-B' from the grep line as 
+    `sbuild -s' does not pass that option to dpkg-configure and abort-
+    current-build fails in that case.
+
+ -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
+
 sbuild (0.34) unstable; urgency=high
 
   Francesco Paolo Lovergine:
@@ -27,7 +37,14 @@ sbuild (0.32) unstable; urgency=low
     Man page changed to reflect new features.
     (closes: #260870)
   * Removed the CVS $Log$
+  * Removed the CVS Revision 1.4  2005/01/08 22:39:12  mbanck
+  * Removed the CVS   * bin/abort-current-build: Remove the `-B' from the grep line as
+  * Removed the CVS    `sbuild -s' does not pass that option to dpkg-configure and abort-
+  * Removed the CVS     current-build fails in that case.
+  * Removed the CVS
   * Removed the CVS Revision 1.3  2004/09/30 11:19:17  frankie
+  * Removed the CVS
+  * Removed the CVS
   * Removed the CVS Little modification to last note.
   * Removed the CVS
   * Removed the CVS Revision 1.2  2004/09/29 12:58:10  frankie
