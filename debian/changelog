@@ -7,6 +7,8 @@ sbuild (0.35) unreleased; urgency=low
     current-build fails in that case.
   * sbuild: Set the locale to `POSIX' to make debconf and debhelper calls in
     the chroot not spew out locale warnings all the time.
+  * sbuild: Removed check for specific distributions. Instead, fail if 
+    build/chroot-$dist is not there.
 
  -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
 
@@ -39,6 +41,10 @@ sbuild (0.32) unstable; urgency=low
     Man page changed to reflect new features.
     (closes: #260870)
   * Removed the CVS $Log$
+  * Removed the CVS Revision 1.6  2005/01/25 10:40:52  mbanck
+  * Removed the CVS   * sbuild: Removed check for specific distributions. Instead, fail if
+  * Removed the CVS     build/chroot-$dist is not there.
+  * Removed the CVS
   * Removed the CVS Revision 1.5  2005/01/08 23:08:34  mbanck
   * Removed the CVS   * sbuild: Set the locale to `POSIX' to make debconf and debhelper calls in
   * Removed the CVS     the chroot not spew out locale warnings all the time.

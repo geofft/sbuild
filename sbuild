@@ -137,8 +137,6 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::distribution = "stable"   if $main::distribution eq "s";
 		$main::distribution = "testing"  if $main::distribution eq "t";
 		$main::distribution = "unstable" if $main::distribution eq "u";
-		die "Bad distribution\n"
-			if !isin($main::distribution, keys(%main::dist_order));
 	}
 	elsif (/^-p/ || /^--purge/) {
 		if (/^-p(.)/ || /^--purge=(.)/) {
@@ -268,6 +266,8 @@ if (-d "chroot-$main::distribution") {
 		"-o DPkg::Options::=--root=$absroot ".
 		"-o DPkg::Run-Directory=$absroot";
 	$main::chroot_apt_op = '$CHROOT_OPTIONS';
+} else {                                                                                                
+	die "chroot-$main::distribution does not exist\n";
 }
 write_jobs_file();
 
