@@ -45,7 +45,8 @@ install: build
 	$(INSTALL) -m 644 sbuild.conf sbuild.conf.local $(DESTDIR)/etc/
 
 	cp -a configs example.sbuildrc $(DESTDIR)/usr/share/doc/sbuild/examples/.
-	cp bin/* chroot/* $(DESTDIR)/usr/lib/sbuild/
+	find bin -type f -maxdepth 1 -exec cp {} $(DESTDIR)/usr/lib/sbuild/ \;
+	find chroot -type f -maxdepth 1 -exec cp {} $(DESTDIR)/usr/lib/sbuild/ \;
 	mv $(DESTDIR)/usr/lib/sbuild/README-buildd.chroot \
 		$(DESTDIR)/usr/share/doc/sbuild/
 
