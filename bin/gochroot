@@ -1,0 +1,11 @@
+#!/bin/bash
+
+USAGE_STRING="${0##*/} <chroot>"
+. /usr/lib/sbuild/common_functions
+parse_arg $1
+
+# chroot procs should be mounted with an /etc/fstab entry instead
+#sudo mount proc -t proc $CHROOT/proc
+sudo chroot $CHROOT bin/sh
+#sudo umount $CHROOT/proc
+

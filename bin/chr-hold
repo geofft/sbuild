@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# changes the dpkg status of a package in a chroot to "hold"
+
+USAGE_STRING="${0##*/} <chroot> pkg1 [pkg2..]"
+. /usr/lib/sbuild/common_functions
+parse_arg $1
+shift
+
+for i in "$@" ; do
+	echo "$i        hold"
+done | sudo dpkg --root=$CHROOT --set-selections
+
+dpkg --root=$CHROOT --list "$@"
+

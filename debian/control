@@ -1,0 +1,27 @@
+Source: sbuild
+Section: devel
+Priority: extra
+Maintainer: Francesco Paolo Lovergine <frankie@debian.org>
+Uploaders: Roger Leigh <rleigh@debian.org>, Michael Banck <mbanck@debian.org>
+Build-Depends-Indep: debhelper (>> 2.0.0)
+Standards-Version: 3.6.1
+
+Package: sbuild
+Architecture: all
+Depends: ${perl:Depends}, adduser, apt, exim4 | mail-transport-agent, sudo, dpkg-dev
+Recommends: fakeroot, debootstrap, searchscripts
+Suggests: wget, deborphan
+Description: Tool for building Debian binary packages from Debian sources
+ sbuild is part of a suite of programs -- consisting of
+ wanna-build, buildd and sbuild -- written by Roman Hodek and
+ used by most architectures to build binary packages from source
+ packages.  buildd schedules work from information it gets from
+ wanna-build; sbuild does the grunt-work.
+ .
+ sbuild can do its work in chroots so both stable and unstable
+ environments can be used on the same machine.  Useful for, say,
+ building the latest unstable packages against stable library
+ versions.  And by keeping only essential and build-essential
+ in the chroots, you can find the correct build dependencies for
+ a package.
+ 

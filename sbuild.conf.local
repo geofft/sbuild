@@ -1,0 +1,21 @@
+#
+# /etc/sbuild.conf.local: global sbuild settings that will survive
+# an upgrade.  This makes it easier to drop this sbuild version into
+# a buildd setting.  (Also see example.sbuildrc)
+# Note: these are common buildd settings, not defaults for this package
+
+# File with the source dependencies (also used by update-sourcedeps)
+#$source_dependencies = "/etc/source-dependencies";
+
+# Name of a database for logging package build times (optional, no database
+# is written if empty)
+#$avg_time_db = "/var/debbuild/avg-build-times";
+
+# Name of a database for logging package space requirement (optional)
+#$avg_space_db = "/var/debbuild/avg-build-space";
+
+# Name for dir for source dependency lock files
+#$srcdep_lock_dir = "/var/debbuild/srcdep-lock";
+
+# don't remove this, Perl needs it:
+1;

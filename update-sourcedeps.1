@@ -1,0 +1,56 @@
+.\"
+.\" This file is part of Debian GNU/Linux's prepackaged version of wanna-build.
+.\" Copyright (C) 1998 James Troup <james@nocrew.org>.
+.\"
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; see the file COPYING.  If not, write to
+.\" the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+.\"
+.TH UPDATE-SOURCEDEPS 1 "NOVEMBER 2001" Linux "User Manuals"
+.SH NAME
+update-sourcedeps \- update the source-dependency-* files
+.SH SYNOPSIS
+.B update-sourcedeps
+.SH DESCRIPTION
+\fBupdate-sourcedeps\fR updates the source-dependencies-*
+files from buildd.debian.org/andrea/.  These dependencies are used
+by sbuild to calculate the Build-Depends for those packages that
+don't include them -- mainly potato, and increasingly fewer woody,
+packages.  \fBupdate-sourcedeps\fR also contains arch-specific
+and package-specific patches that are applied by sbuild after
+the source is unpacked.  These patches work around
+temporary compiler bugs and other transient problems so a package
+can still be autobuilt and the change can be easily reverted without
+bothering the package maintainer.
+.PP
+\fBupdate-sourcedeps\fR is normally called by buildd.  Since
+sbuild is used by itself here, \fBupdate-sourcedeps\fR must to be
+called manually (or not).  The source-dependencies-* files aren't
+required by sbuild but are very helpful if you're autobuilding a
+lot of packages.
+.PP
+NOTE: before you file bugs for build failures be sure you understand
+the difference between src-deps and build-deps and also how the src-dep
+patches work.
+.PP
+WARNING: inappropriate settings in your ~/.wgetrc file can cause problems.
+The WGETRC environment variable can be used to redirect .wgetrc.
+.PP
+.SH AUTHORS
+.nf
+James Troup
+Roman Hodek
+.fi
+.SH "SEE ALSO"
+.SP
+.BR sbuild ( 1 )

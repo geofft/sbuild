@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+tmpfile=/tmp/abort-current-build.$$
+set +e
+ps xjww | egrep ' (/bin/sh /usr/bin/dpkg-buildpackage -us -uc -B|\(dpkg-buildpacka\))' >$tmpfile
+set -e
+n="`wc -l $tmpfile | awk '{print $1}'`" 
+if [ "$n" -eq 0 ]; then
+	echo "No dpkg-buildpackage process found" 1>&2
+	rm -f $tmpfile
+	exit 1
+fi
+if [ "$n" -ge 2 ]; then
+	echo "More than one dpkg-buildpackage processes found:"
+	echo ' PPID   PID  PGID   SID TTY TPGID  STAT  UID   TIME COMMAND'
+	cat $tmpfile
+        rm -f $tmpfile
+	exit 1
+fi
+pgid=`awk '{print $3}' <$tmpfile`
+echo "Killing pgid $pgid"
+kill -15 -$pgid
+rm -f $tmpfile
+exit 0
+

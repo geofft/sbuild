@@ -1,0 +1,91 @@
+
+buildd.chroot (Sarge Edition)
+=============================
+
+This script crates the chroot environment for sbuild. It's written
+on the basis of current debootstrap --variant=buildd option by
+adding the few other files needed for a working environment.
+The pre-sarge script is broken in sarge, please ignore it.
+
+Usage:
+
+  sudo buildd.chroot <dist> <chroot> <mirror>
+  eg,
+  sudo /usr/lib/sbuild/buildd.chroot sid /usr/local/chroot/unstable \
+      http://http.us.debian.org/debian 
+
+where <dist> is one of the *.buildd name you can find in 
+/usr/lib/debootstrap/scripts. Currently only woody, sarge and sid are 
+supported.
+
+Ignore errors about pseudo-fs not mounted, if any.
+
+        ---------------------------------------
+add_sbuild_user (buildd.chroot prompts you when finished)
+==============================================================
+Usage:
+
+  add_sbuild_user </path/to/chroot> <dist> <user>
+  eg,
+  sudo /usr/lib/sbuild/add_sbuild_user /usr/local/chroot/unstable unstable rick
+
+ 1. adds <user> to the sbuild group that was created during the install
+ 2. prompts you to add <user> to sudoers, using visudo
+      <user> ALL=NOPASSWD:  ALL
+ 3. copies the base sudoers file to the chroot and adds entries
+    to the passwd and group files in $CHROOT/etc for <user> if they
+    don't exist
+ 4. makes the work directory $CHROOT/build/<user>
+
+You may want to take care of 2. before running this script.
+
+        ---------------------------------------
+Build-essential and friends
+===========================
+
+ buildd.chroot installs build-essentials so your working
+ environment should already be ok. You will need only to add
+ a few more packages in the chroot, using e.g.
+
+ chrapt -t apt-get install sudo fakeroot ssmtp
+ 
+ /usr/lib/sbuild/checkchroot -u
+     - shows what needs to be added to or deleted from the unstable
+       chroot.  You can use "chrapt (-u|-s|-t|-o) apt-get install" to add
+       packages (--purge remove to delete them) or "gochroot -u"
+       to enter the chroot and work inside it.
+ 
+ With the new flavor of buildd.chroot is basically obsolete.
+
+        ---------------------------------------
+possible problems
+=================
+
+ssmtp won't install and debootstrap will fail if it can't
+find the hostname.  /etc/hosts not copied over?  FIXME.
+
+You may need to use the latest debootstrap.
+
+You'll have to log in again for you to be in group sbuild.
+
+debconf needs to be set noninteractive:
+$ /usr/lib/sbuild/gochroot -u ( or "sudo chroot /your/chroot bin/sh" )
+$ dpkg-reconfigure -plow debconf
+    1. Dialog  2. Readline  3. Gnome  4. Editor  5. Noninteractive
+  What interface should be used for configuring packages? [1] 5
+    1. critical  2. high  3. medium  4. low
+  Ignore questions with a priority less than.. [3] 1
+  Show all old questions again and again? [no] 
+
+md5sum mismatch when building a source package (sbuild --source):
+  - the original tarball has to be in the work directory,
+    $CHROOT/build/<user>, for a sourceful build or a new
+    orig.tar.gz will be created with an incorrect md5sum.
+
+
+
+
+
+
+
+# vim:et

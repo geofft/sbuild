@@ -1,0 +1,28 @@
+#!/bin/bash
+
+USAGE_STRING="${0##*/} <chroot> apt-get|apt-cache args"
+. /usr/lib/sbuild/common_functions
+parse_arg $1
+shift
+
+if [ $# -lt 2 ]; then usage; fi
+
+# FHS change, potato -> woody
+if [ -d $CHROOT/var/lib/apt/lists ]; then
+	APTDIR=lib
+else
+	APTDIR=state
+fi
+
+cmd=$1
+shift
+exec sudo $cmd \
+	-o Dir::State=$CHROOT/var/$APTDIR/apt \
+	-o Dir::State::status=$CHROOT/var/lib/dpkg/status \
+	-o Dir::Cache=$CHROOT/var/cache/apt \
+	-o Dir::Etc=$CHROOT/etc/apt \
+	-o Dir::Etc::main=$CHROOT/apt.conf \
+	-o Dir::Etc::parts=$CHROOT/apt.conf.d \
+	-o DPkg::Options::=--root=$CHROOT \
+	-o DPkg::Run-Directory=$CHROOT \
+	"$@"

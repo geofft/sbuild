@@ -1,0 +1,14 @@
+The ref-* files are used by checkchroot to find unwanted packages in
+the chroots.
+
+# cp ref-* /usr/local/chroot/
+
+ - stable-old is potato
+ - different for diff arches
+ - "deborphan -f <chroot>" or "ppack -r <chroot> -Oq"  to calculate them
+ - the only extras should be:
+	apt
+	build-essential
+	fakeroot (some arches only use sudo and change $fakeroot config item)
+	ssmtp
+	sudo

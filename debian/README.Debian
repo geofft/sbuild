@@ -1,0 +1,51 @@
+
+chroots
+=======
+
+  If you don't have an existing chroot, README-buildd.chroot
+  describes how to set one up and season it for a user.
+
+
+helper scripts
+==============
+
+  /usr/lib/sbuild/README.bins describes the helper shell scripts
+  that are in /usr/lib/sbuild.
+
+
+extras
+======
+
+  avg-build-times avg-build-space
+  -------------------------------
+  sbuild will keep databases of the time and space that builds
+  require if a couple files exist:
+
+    touch /var/lib/sbuild/avg-build-{times,space}
+    chmod 664 /var/lib/sbuild/avg-build-{times,space}
+    chgrp sbuild /var/lib/sbuild/avg-build-{times,space}
+
+  These have limited usefulness outside buildd context....  See
+  the avg-pkg-build-time man page for more info.
+
+  src-deps
+  --------
+  src-deps are useful for building packages that don't have a
+  Build-Depends line.  See http://buildd.debian.org/andrea and the
+  update-sourcedeps man page for more information.
+
+  The update-sourcedeps script will fetch the source-dependencies-*
+  files and put them in place.
+
+  If you decide to use src-deps you are responsible for keeping them
+  up to date, maybe with a cron job.
+
+NOTE: sbuild must be run in the directory that has the
+chroot-{stable,testing,unstable} symlink or it won't find
+the chroot and will build in base.
+
+
+
+
+
+# vim:et

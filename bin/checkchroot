@@ -1,0 +1,26 @@
+#!/bin/bash -e
+
+# check the package list in a chroot against a reference.
+
+USAGE_STRING="${0##*/} <chroot>"
+. /usr/lib/sbuild/common_functions
+parse_arg $1
+
+tfile=$(tempfile)
+
+ppack -Iq '*' -r $CHROOT >$tfile
+# NOTE: v. 1.10.x "dpkg --root" is broken, so use ppack
+#COLUMNS=200 dpkg 2>/dev/null --root=$CHROOT --list '*' |
+# 	grep ^ii |
+# 	awk '{print $2}' >$tfile
+
+echo "DELETE             ADD"
+echo "============================"
+diff -u $tfile $CHROOT/../ref-$DIST |
+	tail +3 |
+	grep ^[+-] |
+	sed -e 's/^-//' -e "s/^+/                   /" |
+	sort
+
+rm $tfile
+

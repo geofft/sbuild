@@ -1,0 +1,106 @@
+#!/bin/bash 
+#
+# add (already existing) user to sudoers and create passwd/group
+# entries and a work directory for the user in the chroot
+
+usage () {
+	echo >&2 "Usage: add_sbuild_user </path/to/chroot> <dist> <user>"
+	echo >&2 "  <dist> is one of stable, testing, unstable"
+	exit 1
+}
+
+if [ $# -ne 3 ]; then usage; fi
+CHROOT=$1
+DIST=$2
+USR=$3
+
+if [ ! -d $CHROOT/etc ]; then
+	echo >&2 "..$CHROOT doesn't appear to be a chroot"
+	exit 1
+fi
+
+if [ $DIST != stable -a $DIST != testing -a $DIST != unstable ]; then
+	echo >&2 "..\"$DIST\" not an allowed distribution"
+	usage
+fi
+
+if ! getent passwd $USR >/dev/null; then
+	echo >&2 "..no such user: $USR"
+	exit 1
+fi
+
+cat << EOF
+
+You must manually add $USR to /etc/sudoers:
+
+# visudo  -- run this command as root and add the following line:
+
+$USR ALL=NOPASSWD:  ALL
+
+You can do this in another shell or by suspending this script with
+^Z (fg to return when done).
+
+EOF
+echo -n "Continue? (Y/n) "
+
+read ANS
+if [ x$ANS != xY -a x$ANS != xy -a x$ANS != x ]; then
+	exit
+fi
+
+echo ..adding $USR to sbuild group
+adduser $USR sbuild
+
+echo ..copy sudoers to chroot
+cp /etc/sudoers $CHROOT/etc/sudoers
+
+echo ..add $USR to chroot /etc/passwd file
+grep -v ^$USR: $CHROOT/etc/passwd >$CHROOT/etc/passwd.NEW
+getent passwd $USR >> $CHROOT/etc/passwd.NEW
+mv $CHROOT/etc/passwd.NEW $CHROOT/etc/passwd
+
+echo ..add $USR to chroot /etc/group
+grep -v ^sbuild: $CHROOT/etc/group >$CHROOT/etc/group.NEW
+getent group sbuild >> $CHROOT/etc/group.NEW
+mv $CHROOT/etc/group.NEW $CHROOT/etc/group
+
+echo ..create chroot work directory for $USR
+mkdir -p $CHROOT/build/$USR
+chown $USR:sbuild $CHROOT/build/$USR
+
+echo ..create chroot home directory for $USR
+HOMEDIR="$CHROOT$(getent passwd $USR | awk -v FS=":" '{ print $6 }')"
+mkdir -p $HOMEDIR
+chown $USR:sbuild $HOMEDIR
+
+cat << EOF
+Successfully set up $CHROOT for ${USR}.
+------------------------------------------------------------------------
+You must create a symlink in base so that sbuild can find the
+chroot, else sbuild will build in the base install.  Remember to
+always run sbuild from that directory.
+
+  mkdir ~$USR/build
+  ln -s $CHROOT ~$USR/build/chroot-$DIST
+
+You may also want to add this symlink to more easily find your
+chroot work directory:
+
+  ln -s $HOMEDIR ~$USR/build/chbuild
+
+Copy the example sbuildrc file to your home directory and set
+the variables for your system.
+
+  cp /usr/share/doc/sbuild/examples/example.sbuildrc ~/.sbuildrc
+
+Now try a build:
+
+  /usr/lib/sbuild/chrapt $CHROOT apt-get update
+  /usr/lib/sbuild/chrapt $CHROOT apt-get upgrade
+     - or "/usr/lib/sbuild/chrapt $CHROOT apt-get -f install"
+       first if the chroot is broken
+  cd ~/build && sbuild -v -d $DIST -p successful ed_0.2-19
+
+------------------------------------------------------------------------
+EOF
+

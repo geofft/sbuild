@@ -1,0 +1,118 @@
+
+These are some useful utilities for accessing/maintaining the
+chroots.
+
+The <chroot> arg used by most scripts has two forms:
+
+  . s,stable,-t,testing,-u,unstable
+
+    - a symlink ~/build/chroot-{stable,testing,unstable} pointing
+      to the chroot must exist
+
+  . an absolute path
+
+    - in this case the argument is parsed to try and determine
+      the distribution, for those scripts that need it:
+
+      checkchroot /usr/local/chroot/unstable-security
+        - CHROOT=/usr/local/chroot/unstable
+        - DIST=unstable so it can find the ref-unstable reference file
+
+The scripts:
+
+ ------------------------------------------
+    abort-current-build
+
+Aborts the current dpkg-buildpackage process.
+Author: Roman Hodek
+
+ ------------------------------------------
+    checkchroot <chroot>
+
+Shows how the contents of the chroot differs from a reference.
+This requires the ref-{stable,testing,unstable} files to be in the
+chroot root:
+
+    # cp /usr/share/doc/sbuild/configs/ref-{stable,testing,unstable} \
+        /usr/local/chroot
+
+The chroots should only include essential & build-essential
+packages and the extra packages that sbuild needs: apt, fakeroot,
+ssmtp, sudo.  Please check that the references are accurate for
+your arch.
+
+ ------------------------------------------
+    chr-hold <chroot> pkg [pkg..]
+    chr-unhold <chroot> pkg [pkg..]
+
+For changing the hold/install status of packages in the chroots.
+
+ ------------------------------------------
+    chrapt <chroot> apt-get|apt-cache arguments
+
+Runs apt-get or apt-cache in the chroot from base.
+
+ ------------------------------------------
+    gochroot <chroot>
+
+Enter the chroot.
+
+ ------------------------------------------
+    updatechroot
+    upgradechroot
+
+Scripts to keep the chroots up to date.  Can be run as cron jobs
+from base.
+
+ ------------------------------------------
+    add_sbuild_user /path/to/chroot <dist> <user>
+
+A script to add a new user to a chroot.  See
+/usr/share/doc/sbuild/README-buildd.chroot.
+
+ ------------------------------------------
+    dobuildlog
+
+A shell script for mutt & vi to handle the build logs that
+sbuild mails to you.  The "bug" option is generally useful as it
+massages the build log a little so you can easily file a bug.
+The other options are for communicating with a build daemon.
+
+From the script:
+# craft a bug report or fail/success reply to a buildd log mail
+# using vim, mutt and optionally quintuple-agent:
+#   mutt
+#       'f'orward the message
+#       (may require autoedit & edit_headers .muttrc settings)
+#   vim
+#       map <F3> :%!~buildd/bin/dobuildlog agpg<CR>
+#       map <S-F3> :%!~buildd/bin/dobuildlog gpg<CR>
+#       map <F4> :%!~buildd/bin/dobuildlog bug<CR>
+
+You'll have to change these to your own settings:
+SIGNOPTS='--clearsign --default-key younie@debian.org'
+FROM="$EMAIL"   # "Your Name <your@addr.ess>"
+ARCH=m68k       # for the bug report log link
+
+Please see the comments in the script.
+
+ ------------------------------------------
+<PLUG>
+ppack in the searchscripts package can be useful,
+
+ppack -r unstable -O[q]     # shows orphans in the unstable chroot
+ppack -r un -I[q] '*'       # shows installed packages in unstable
+ppack -r un -a              # shows anomalies (holds, misconfigured pkgs)
+
+ppack -r st -Lb pkg         # urlified a package listing -> browser
+  - this is useful for browsing an installed packages contents.  Try
+    "ppack -Lb sbuild" although it may be a little late for that now. :-)
+
+ ------------------------------------------
+You may find other useful utilities in the wanna-build CVS,
+cvs.linux-m68k.org
+
+
+
+
+ vim:et

@@ -1,0 +1,39 @@
+usage () {
+	echo >&2 "Usage: $USAGE_STRING"
+	echo >&2 "   chroot=-u|unstable|-t|testing|-s|stable|-o|oldstable or absolute path"
+	exit 1
+}
+
+parse_arg () {
+	case "$1" in
+		""|-h|--help )
+			usage
+			;;
+		-u|unstable )
+			DIST=unstable
+			CHROOT=~/build/chroot-$DIST
+			;;
+		-t|testing )
+			DIST=testing
+			CHROOT=~/build/chroot-$DIST
+			;;
+		-s|stable )
+			DIST=stable
+			CHROOT=~/build/chroot-$DIST
+			;;
+		-o|oldstable )
+			DIST=oldstable
+			CHROOT=~/build/chroot-$DIST
+			;;
+		 * )
+			DIST=unstable
+			CHROOT=$1
+			;;
+	esac
+
+	if [ ! -d $CHROOT/etc ]; then
+		echo >&2 "..doesn't appear to be a chroot: $CHROOT"
+		exit 1
+	fi
+}
+

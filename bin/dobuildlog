@@ -1,0 +1,116 @@
+#!/bin/bash -e
+#
+# vim:ts=4:noet:wrap:sts=4:sw=4:
+# $Id$
+# Rick Younie <rick@def.debian.net>
+#
+# craft a bug report or fail/success reply to a buildd log mail
+# using vim, mutt and optionally quintuple-agent:
+#   mutt
+#		'f'orward the message
+#       (may require autoedit & edit_headers .muttrc settings)
+#   vim
+#		map <F3> :%!~buildd/bin/dobuildlog agpg<CR>
+#		map <S-F3> :%!~buildd/bin/dobuildlog gpg<CR>
+#		map <F4> :%!~buildd/bin/dobuildlog bug<CR>
+
+# these require setting by the user
+SIGNOPTS='--clearsign --default-key younie@debian.org'
+FROM="$EMAIL"	# "Your Name <your@addr.ess>"
+ARCH=m68k		# for the bug report log link
+
+print_header () {
+	echo "From: $FROM"
+	sed -n '
+		/^-----/,/^Automatic/ {
+			s/From: /To: /p
+			s/^Subject: Log/Subject: Re: Log/p
+		}'
+	echo
+}
+
+fail_options () {
+	cat << EOF
+failed
+ this one takes a comment,
+ multi-line, indenting optional
+dep-wait
+  - usage: dep-wait some-package (>= version), another-package (>> version)
+giveback
+manual
+newvers
+not-for-us
+purge
+  - purges the source tree from the chroot
+retry
+upload-rem
+
+
+EOF
+}
+
+success_fail () {
+	STATUS=$(sed -n '/^-----/,/^Automatic/ s/^Subject: Log for \([^ ]*\) build .*/\1/p')
+
+	case "$STATUS" in
+		successful )
+			print_header
+			sed -n '/\.changes:$/,$ {
+				/^Format: /,/^$/p
+			}' |$SIGNPRG 2>/dev/null
+			;;
+		failed )
+			print_header
+			fail_options
+			sed -n '/^Automatic build of/,$p'
+			;;
+		* )
+			echo "..this doesn't appear to be a buildd success/fail message"
+			exit 1
+			;;
+	esac
+}
+
+bug_report () {
+	PKG=$1
+	VERS=$2
+	
+cat << EOF
+From: $FROM
+To: submit@bugs.debian.org
+Subject: $PKG_VERS: fails to build
+
+Package: $PKG
+Version: $VERS
+Severity: serious
+
+Hi,
+
+
+EOF
+sed -n '/^Automatic build of/,/^Build needed/ s/^/| /p'
+cat <<EOF
+
+
+The $ARCH build logs for $PKG can be found at
+ http://buildd.debian.org/build.php?arch=$ARCH&pkg=$PKG
+
+
+EOF
+}
+
+case "$1" in
+	gpg | agpg )
+		SIGNPRG="$1 $SIGNOPTS"
+		success_fail
+		exit 0
+		;;
+	bug )
+		PKG_VERS=$(sed -n '/^-----/,/^Automatic/ s/^Subject: Log for \([^ ]*\) build of \([^ ]*\) .*/\2/p')
+		bug_report $(echo "$PKG_VERS" |sed 's/_/ /')
+		;;
+	* )
+		echo "Usage: $(basename $0) gpg|agpg|bug"
+		exit 1
+		;;
+esac

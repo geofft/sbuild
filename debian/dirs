@@ -1,0 +1,7 @@
+etc
+usr/bin
+usr/lib/sbuild
+usr/share/doc/sbuild
+usr/share/doc/sbuild/examples
+usr/share/man/man1
+var/lib/sbuild/srcdep-lock

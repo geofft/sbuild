@@ -1,0 +1,72 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+INSTALL=/usr/bin/install
+DESTDIR=$(CURDIR)/debian/sbuild
+
+# This is the debhelper compatability version to use.
+export DH_COMPAT=2
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	# Add here commands to configure the package.
+	touch configure-stamp
+
+build: configure-stamp build-stamp
+build-stamp:
+	dh_testdir
+
+	# Add here commands to compile the package.
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	-$(MAKE) clean
+
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/sbuild.
+	$(INSTALL) -m 755 sbuild update-sourcedeps avg-pkg-build-time \
+		$(DESTDIR)/usr/bin/
+	ln -s /usr/bin/avg-pkg-build-time $(DESTDIR)/usr/bin/avg-pkg-build-space
+	$(INSTALL) -m 644 sbuild.conf sbuild.conf.local $(DESTDIR)/etc/
+
+	cp -a configs example.sbuildrc $(DESTDIR)/usr/share/doc/sbuild/examples/.
+	cp bin/* chroot/* $(DESTDIR)/usr/lib/sbuild/
+	mv $(DESTDIR)/usr/lib/sbuild/README-buildd.chroot \
+		$(DESTDIR)/usr/share/doc/sbuild/
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installdocs debian/cvslogs.old
+	dh_installman
+	dh_installchangelogs 
+	dh_compress -Xbuildd.chroot -XREADME-buildd.chroot -XREADME-buildd.chroot.pre-sarge -Xbuildd.chroot.pre-sarge
+	dh_fixperms
+	dh_installdeb
+	dh_perl
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+# Build architecture-dependent files here.
+binary-arch: build
+# We have nothing to do by default.
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure

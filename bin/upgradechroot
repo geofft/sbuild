@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+
+DEFAULT_CHROOT="oldstable stable testing unstable"
+USAGE_STRING="${0##*/} <chroot> (default: $DEFAULT_CHROOT)"
+
+. /usr/lib/sbuild/common_functions
+CHROOTS=${*:-"$DEFAULT_CHROOT"}
+
+for i in $CHROOTS; do
+	parse_arg $i
+	echo -e "\n   $i:"
+	chrapt $i apt-get -uy upgrade
+	#chrapt $i apt-get autoclean
+done

@@ -1,0 +1,280 @@
+sbuild (0.33) unstable; urgency=low
+
+  * Man page sbuild.1 revised.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 16 Sep 2004 16:42:18 +0200
+
+sbuild (0.32) unstable; urgency=low
+
+  * Added ~ as a legal character for debian version (post-sarge).
+  * A few minor changes in README.chroot-buildd and man page.
+  * Added -k and -e options as overriding for -m default in package signing.
+    Man page changed to reflect new features.
+    (closes: #260870)
+  * Removed the CVS $Log$
+  * Removed the CVS Revision 1.1  2004/09/17 13:17:41  frankie
+  * Removed the CVS Initial revision
+  * Removed the CVS variable in sbuild in order to import a new sane
+    tree onto Alioth repo. Old logs are now stored in a new cvslogs.old file.
+  * Minor revisions to ducumentation files.
+  * Added Michael Banck as Uploader.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 16 Sep 2004 16:14:27 +0200
+
+sbuild (0.31) unstable; urgency=low
+
+  * Patch for #239339 revised:
+  	Escaping to manage correctly possible nested RE. 
+        (closes: #268712)
+  	Doing removes only in chroot environment.
+        (closes: #264834).
+  * Changed a bit man page to clarify better synopsis.
+    (closes: #265998)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 28 Aug 2004 21:27:12 +0200
+
+sbuild (0.30) unstable; urgency=high
+
+  The "later better than never" release.
+
+  Thanks Michael Banck, Martin Michlmayr and other submitters for useful patches.
+
+  * example.sbuildrc now return 1 to satisfy perl require syntax.
+    (closes: #228410)
+  * Now copies the orig.tar.gz into $(CHROOT)/build/<user>/ for non-native packages.
+    (closes: #239339)
+  * Corrected abort-current-build to manage correctly ps output.
+    (closes: #249995)
+  * Now should manage packages which provides the same pkgs of other yet installed ones.
+    (closes: #259315)
+  * build.chroot rewritten to use dbootstrap straight on.
+    (closes: #235726,#228412,#228412)
+  * Using dh_installman instead of obsolete dh_installmanpages. Added
+    debian/manpages for that.
+  * Alternatives modified for current ones in testing/sid.
+    (closes: #228792)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue,  3 Aug 2004 18:21:22 +0200
+
+sbuild (0.29) unstable; urgency=low
+
+  * Now depends on exim4
+    (closes: #228591)
+  * Non "noninteractive" is in lowercase currently.
+    (closes: #228800)
+  * Added /usr/bin/avg-pkg-build-space as symlink to /usr/bin/avg-pkg-build-time
+    (closes: #228445)
+  * add_sbuild_user corrected to show the true path of example.sbuildrc
+    (closes: #228411)
+  * removing obsolete packages in sid, and updated required ones
+    (closes: #220932)
+  * README.buildd-chroot updated
+    (closes: #220933)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 23 Jan 2004 20:09:56 +0100
+
+sbuild (0.28) unstable; urgency=low
+
+  * Using latest instead of lastest.
+    (closes: #202740)
+  * Changing dependencies in buildd.chroot for current gcc.
+    (closes: #180447)
+  * Configuration examples now moved into /usr/share/doc/sbuild/examples
+    Man changed as consequence.
+    (closes: #208965)
+  * Policy bumped to 3.6.1.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 11 Nov 2003 16:21:33 +0100
+
+sbuild (0.27) unstable; urgency=low
+
+  * sg is not available in hurd, removed in postinst and postrm (patch by Michael Banck).
+   (closes: #206270)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 20 Aug 2003 09:03:41 +0200
+
+sbuild (0.26) unstable; urgency=low
+
+  * Ugh! Wrong control file. Now really updated as needed.
+    (closes: #191203)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 20 Jun 2003 15:54:11 +0200
+
+sbuild (0.25) unstable; urgency=low
+
+  * New maintainer.
+    Uploaders: Roger Leigh <roger@whinlatter.uklinux.net>
+    (closes: #191203)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 20 Jun 2003 15:17:25 +0200
+
+sbuild (0.24) unstable; urgency=low
+
+  * remove -qq from apt-get call in the updatechroot script
+  * fix upgradechroot output and add -u to -y
+  * added oldstable to distribution options
+  * fix for dependency calculation for --arch-all builds from
+    Martin Kögler (Closes: #180859)
+  * libpng-dev => libpng12-0-dev in sbuild.conf
+  * add dpkg-dev to package dependencies - thanks Michael Banck
+    (Closes: #182234)
+  * chroot building fix and waldi's patch still to come
+
+ -- Rick Younie <younie@debian.org>  Sat, 19 Apr 2003 14:41:03 -0700
+
+sbuild (0.23) unstable; urgency=low
+
+  * fixed chroot building - thanks Matt Kraai for the patch and
+    the heads-up - Closes: #167822
+  * use separate stable and testing/unstable required lists
+  * updated the ref-* package lists
+  * added -o/oldstable option to the helper scripts and fixed
+    their usage strings
+
+ -- Rick Younie <younie@debian.org>  Wed,  6 Nov 2002 06:07:22 -0800
+
+sbuild (0.22) unstable; urgency=low
+
+  * dpkg --root isn't fixed so use ppack for the checkchroot
+    script, recommend searchscripts instead of suggest
+  * add a note to README.Debian and the man page that sbuild must be
+    run in ~/build (or wherever the chroot-* symlink is) for sbuild
+    to find the chroot (thanks Otavio)
+
+ -- Rick Younie <younie@debian.org>  Sat, 14 Sep 2002 19:38:16 -0700
+
+sbuild (0.21) unstable; urgency=low
+
+  * the new dpkg has gone into testing so add dselect to the
+    buildd.chroot required list there as well
+
+ -- Rick Younie <younie@debian.org>  Mon, 19 Aug 2002 22:35:24 -0700
+
+sbuild (0.20) unstable; urgency=low
+
+  * added a note that the original tarball has to be in the sbuild work
+    directory $CHROOT/build/<user> for an "sbuild --source" build
+  * removed the old potato chroot description; it can be gotten from the
+    woody version of the package if needed
+  * have sbuild make a ~/build/current symlink to the current build log
+
+ -- Rick Younie <younie@debian.org>  Sat, 17 Aug 2002 09:26:55 -0700
+
+sbuild (0.19) unstable; urgency=low
+
+  * ref-stable = woody
+  * re-added deborphan, searchscripts Suggests
+  * add a note about setting up .sbuildrc
+  * have sbuild, chrapt ignore base apt.conf{,.d}
+  * handle dpkg/dselect unstable split in buildd.chroot; copy over
+    /etc/hosts to chroot
+
+ -- Rick Younie <younie@debian.org>  Sat, 20 Jul 2002 06:26:05 -0700
+
+sbuild (0.18) unstable; urgency=low
+
+  * split ref-testing from ref-unstable instead of symlink as they
+    differ now
+  * unstable dpkg --root is broken currently so use ppack instead of
+    dpkg for checkchroot
+  * don't 'touch' downloaded source; in buildd context, buildd-watcher
+    should use ctime not mtime to look for old files
+  * add a blurb about using chrapt to finish off the chroot build, in
+    case debootstrap doesn't quite get it right
+
+ -- Rick Younie <younie@debian.org>  Sat, 20 Jul 2002 06:26:05 -0700
+
+sbuild (0.17) unstable; urgency=low
+
+  * removed debconf-utils from unstable reference list
+  * include Ryan's sbuild changes to allow the buildds to
+    autobuild for security
+  * include Ryan's debootstrap script for chroot building
+  * the SBUILD_CHROOT_ROOT environment variable is gone.  The chroots
+    are now found by the ~/build/chroot-$DIST symlinks or absolute path.
+  * moved the helper scripts to /usr/lib/sbuild
+  * wrong switch so the 0.5 changelog was skipped; again, Closes: #138915
+  * create blank source-dependencies files on install
+
+ -- Rick Younie <younie@debian.org>  Thu, 11 Jul 2002 01:22:56 -0700
+
+sbuild (0.6) unstable; urgency=low
+
+  * added dobuildlog, a shell script for processing build logs:
+    file a bug, sign the changelog, reply to buildd if you're
+    an admin
+  * recommend fakeroot instead of depend as some arches don't have
+    it.  (Closes: #145753)
+
+ -- Rick Younie <younie@debian.org>  Fri,  3 May 2002 22:22:41 -0700
+
+sbuild (0.5) unstable; urgency=low
+
+  * fix copyright file lintian errors
+  * added ~/.wgetrc warning to man update-sourcedeps man page,
+    Closes: #138915
+
+ -- Rick Younie <younie@debian.org>  Wed, 10 Apr 2002 00:27:25 -0700
+
+sbuild (0.4) unstable; urgency=low
+
+  * made /etc/sbuild.conf a conffile - thanks Gergely Nagy.
+    (Closes: #136374)
+
+ -- Rick Younie <younie@debian.org>  Sun,  3 Mar 2002 21:51:51 -0800
+
+sbuild (0.3) unstable; urgency=low
+
+  * added mailfrom config item so the msg body From: can be
+    overridden
+  * noninteractive -> Noninteractive for Ryan Murray
+  * (re-)added conffile sbuild.conf.local for local changes that aren't
+    suitable for ~/.sbuildrc
+  * removed the bashrc & profile example files; they were part of my
+    original local sbuild deb and are just clutter
+
+ -- Rick Younie <younie@debian.org>  Sat, 23 Feb 2002 11:44:12 -0800
+
+sbuild (0.2.5) unstable; urgency=low
+
+  * add From/To headers to sbuild mail - thanks Gergely Nagy
+   (Closes: #129850)
+  * added deborphan to Suggests; -f is useful for finding the
+    minimal chroot for an arch
+
+ -- Rick Younie <younie@debian.org>  Fri, 18 Jan 2002 18:46:33 -0800
+
+sbuild (0.2.4) unstable; urgency=low
+
+  * Closes #120309 (the ITP)
+  * the sbuildrc:$source_dependencies config item got lost
+  * removed Phil Blundell's apt "Replaces:" patch.  This is a
+    workaround for an apt weakness that shouldn't be depended on.
+  * added fakeroot dependency.  Thanks Michael Schmitz.
+
+ -- Rick Younie <younie@debian.org>  Thu,  8 Dec 2001 05:55:08 -0800
+
+sbuild (0.2.3) unstable; urgency=low
+
+  * show all changes in initial *.changes
+
+ -- Rick Younie <younie@debian.org>  Thu,  6 Dec 2001 05:55:08 -0800
+
+sbuild (0.2.2) unstable; urgency=low
+
+  * don't copy /etc/fstab to chroot
+
+ -- Rick Younie <younie@debian.org>  Sun,  2 Dec 2001 00:34:38 -0800
+
+sbuild (0.2.1) unstable; urgency=low
+
+  * dpkg-buildpackage craps out on the unknown -d switch in the
+    stable chroot.
+
+ -- Rick Younie <younie@debian.org>  Fri, 30 Nov 2001 06:53:24 -0800
+
+sbuild (0.2) unstable; urgency=low
+
+  * Initial package
+
+ -- Rick Younie <younie@debian.org>  Thu,  8 Nov 2001 00:18:34 -0800
