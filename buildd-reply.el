@@ -14,77 +14,11 @@
 ;;;
 ;;;	You should have received a copy of the GNU General Public License
 ;;;	along with this program; if not, write to the Free Software
-;;;	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+;;;	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ;;;
 ;;; This file is not part of GNU Emacs.
 ;;;
-;;; $Id: buildd-reply.el,v 1.13 2000/03/07 09:35:50 rnhodek Exp $
-;;;
-;;; $Log: buildd-reply.el,v $
-;;; Revision 1.13  2000/03/07 09:35:50  rnhodek
-;;; buildd-bug: Also insert a pointer to complete build log.
-;;;
-;;; Revision 1.12  2000/03/01 14:18:35  rnhodek
-;;; Two new functions:
-;;;  - buildd-bug-change-category changes the failed category of a failed
-;;;    package; you use it from a mail buffer with a reply to the bug
-;;;    report (if the maintainer hasn't changed the subject...); you are
-;;;    prompted for a new category, which can be TAB-expanded.
-;;;  - buildd-bug-comment adds next text to the fail message of a package;
-;;;    used the same way as buildd-bug-change-category above, but you can
-;;;    insert arbitrary text; with [CAT] you can also set/change the category.
-;;; New changed keybindings: C-c C-a (formerly buildd-bug-ack-append) is
-;;; now a prefix for 3 bindings that append something to fail messages:
-;;;  - C-c C-a C-n -> buildd-bug-ack-append (i.e., append a bug number)
-;;;  - C-c C-a C-a -> buildd-bug-comment (append arbitrary text)
-;;;  - C-c C-a C-c -> buildd-bug-change-category
-;;;
-;;; Revision 1.11  2000/01/19 13:08:44  rnhodek
-;;; Prefix arg for buildd-bug-ack-append doesn't send mail immediately,
-;;; but lets you edit the To: address (or anything else).
-;;;
-;;; Revision 1.10  1999/12/07 14:46:18  rnhodek
-;;; New function buildd-reopen-bug.
-;;;
-;;; Revision 1.9  1999/10/21 11:04:18  rnhodek
-;;; Don't hardcode email addr of buildd.
-;;;
-;;; Revision 1.8  1999/08/26 09:31:08  rnhodek
-;;; Move buildd-add-sd-map to global key C-c C-v.
-;;;
-;;; Revision 1.7  1999/08/26 09:26:41  rnhodek
-;;; New function buildd-add-sd-map for inserting a package alphabetically
-;;; into a sd_map-* file.
-;;; buildd-find-place-for-new-source-dep: package name can contain also [.+-].
-;;; buildd-find-place-for-new-source-dep, buildd-edit-manual-source-deps:
-;;; support for "ARCHS |" prefixes (ignore them when sorting).
-;;;
-;;; Revision 1.6  1999/05/04 09:02:46  rnhodek
-;;; edit-manual-src-deps: '.' also allowed in package names.
-;;;
-;;; Revision 1.5  1999/04/26 12:37:52  rnhodek
-;;; Remove overflowous paren...
-;;;
-;;; Revision 1.4  1999/04/26 12:36:12  rnhodek
-;;; Rewrite buildd-edit-manual-source-deps for andrea:
-;;;  - Default file name is madd_sd-DIST, where DIST is taken from the
-;;;    (dist=XXX) part of the subject
-;;;  - Use "=>" instead of ":" after the keyword
-;;; More flexible displaying of madd_sd buffer by using pop-to-buffer.
-;;;
-;;; Revision 1.3  1999/04/20 13:41:59  rnhodek
-;;; In buildd-bug, insert a Severity: important header;
-;;; cannot-build-from-source type bugs should usually be important.
-;;;
-;;; Revision 1.2  1998/12/07 12:47:27  rnhodek
-;;; New function buildd-edit-manual-source-deps, contributed by James
-;;; Troup; slightly adapted by me for rmail.
-;;; buildd-depretry can now also extract dependencies from the error
-;;; messages from sbuild ("after installing, the following ... are unsatisfied").
-;;;
-;;; Revision 1.1  1998/11/25 13:21:42  rnhodek
-;;; Initial version.
-;;;
+;;; $Id$
 ;;;
 
 (defun buildd-prepare-mail (label send-now &rest ins)

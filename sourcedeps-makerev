@@ -16,25 +16,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: sourcedeps-makerev,v 1.4 1999/10/21 09:20:32 rnhodek Exp $
-#
-# $Log: sourcedeps-makerev,v $
-# Revision 1.4  1999/10/21 09:20:32  rnhodek
-# Fix parsing of specials again.
-# Omit abbrevs from output.
-#
-# Revision 1.3  1999/10/21 08:38:57  rnhodek
-# Fix skipping special defs (patches can contain lines with only
-# spaces.)
-#
-# Revision 1.2  1999/10/20 11:50:43  rnhodek
-# Fix while loop to skip special defs.
-# Remove a leftover.
-#
-# Revision 1.1  1999/10/19 15:18:05  rnhodek
-# *** empty log message ***
+# $Id$
 #
 
 # this should use perl or python apt, taking in the chroots to act on

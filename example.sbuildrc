@@ -2,7 +2,7 @@
 # example for ~/.sbuildrc
 # commented out stuff are defaults
 #
-# $Id: example.sbuildrc,v 1.2 2000/03/09 13:13:16 rnhodek Exp $
+# $Id$
 #
 
 # Directory for writing build logs to

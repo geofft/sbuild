@@ -1,10 +1,9 @@
-                                                    -*- mode: indented-text -*-
 
 
                           wanna-build & Co. Usage
                           -----------------------
 
-																			Roman Hodek, July 9th 1998 - Mar 2000
+					Roman Hodek, July 9th 1998 - Mar 2000
 
 
 wanna-build (and its aliases) are intended to better coordinate the package
@@ -489,48 +488,4 @@ installed in the archive before the frozen version comes in from
 quinn-diff, the binary packages are already lost and cannot be reuploaded.
 
 #
-# $Id: README,v 1.10 2000/03/01 12:53:40 rnhodek Exp $
-# $Log: README,v $
-# Revision 1.10  2000/03/01 12:53:40  rnhodek
-# *** empty log message ***
-#
-# Revision 1.9  2000/03/01 12:27:57  rnhodek
-# Renamed --age to --min-age; new --max-days.
-#
-# Revision 1.8  2000/03/01 12:11:26  rnhodek
-# Also documented --age.
-#
-# Revision 1.7  2000/03/01 12:05:17  rnhodek
-# Documented a few newer options.
-#
-# Revision 1.6  2000/01/28 14:53:12  rnhodek
-# Remove some m68k references where not appropriate anymore.
-# Some fixes here and there.
-#
-# Revision 1.5  1998/11/26 10:20:17  rnhodek
-# Documented new section ordering.
-# List new states Dep-Wait-Removed, Install-Wait, Reupload-Wait.
-# Say that arg to --dist can be abbreviated now.
-# Document new usage of -m with --dep-wait.
-# Give docs for some new options: --dep-wait, --manual-edit,
-# --create-db, --create-maintenance-lock, --remove-maintenance-lock.
-# New chapter about the delayed-frozen-install problem.
-#
-# Revision 1.4  1998/09/10 12:26:45  rnhodek
-# Document new --give-back, --forget options.
-# New --import, --export only described at the end, they're not public.
-#
-# Revision 1.3  1998/07/27 11:10:13  rnhodek
-# Added an option summary, and documented some more options.
-#
-# Revision 1.2  1998/06/17 11:48:00  rnhodek
-# Removed tabs.
-#
-# Revision 1.1  1998/06/16 15:09:19  rnhodek
-# Initial writing.
-#
-#
-# Local variables:
-#   fill-column: 75
-#   tab-width: 1
-# End:
+# $Id$

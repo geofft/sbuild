@@ -1,8 +1,5 @@
-                                                    -*- mode: indented-text -*-
-
-
-																								wanna-build Mail Interface
-																								--------------------------
+			wanna-build Mail Interface
+			--------------------------
 
 There's now also a mail interface to wanna-build on kullervo, for people
 who consider kullervo too slow for interactive work :-)
@@ -54,13 +51,4 @@ Hope it works... :-)
 
 
 #
-# $Id: README.mail,v 1.1 1998/06/19 12:53:00 rnhodek Exp $
-# $Log: README.mail,v $
-# Revision 1.1  1998/06/19 12:53:00  rnhodek
-# Initial version.
-#
-#
-# Local variables:
-#   fill-column: 75
-#   tab-width: 1
-# End:
+# $Id$

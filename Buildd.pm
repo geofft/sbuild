@@ -14,77 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: Buildd.pm,v 1.19 2002/10/10 18:50:41 rnhodek Exp $
-#
-# $Log: Buildd.pm,v $
-# Revision 1.19  2002/10/10 18:50:41  rnhodek
-# Security/accepted autobuilding patch by Ryan.
-#
-# Revision 1.18  1999/08/10 14:15:28  rnhodek
-# Change lock_interval from 5s to 15s; there were some cases where a
-# valid lock was broken.
-#
-# Revision 1.17  1999/08/04 09:07:25  rnhodek
-# Implemented collecting of statistical data for buildd; several figures
-# are written to files in ~/stats where some script will pick them up.
-#
-# Revision 1.16  1998/10/20 12:51:07  rnhodek
-# Change message if locking failed.
-#
-# Revision 1.15  1998/10/13 11:50:22  rnhodek
-# Use more elegant 'local' for ignoring SIGPIPE.
-#
-# Revision 1.14  1998/10/09 13:16:11  rnhodek
-# Replace single '.'s in a line by ".." for sendmail.
-# Ignore SIGPIPE during sendmail pipe.
-#
-# Revision 1.13  1998/10/09 09:51:29  rnhodek
-# In exitstatus, don't use / but >>, otherwise we get a floating point
-# result :-)
-#
-# Revision 1.12  1998/10/08 14:12:14  rnhodek
-# Removed parse_deplist and build_deplist; not needed anymore.
-#
-# Revision 1.11  1998/10/06 10:20:23  rnhodek
-# New functions parse_deplist and build_deplist.
-#
-# Revision 1.10  1998/09/22 09:49:17  rnhodek
-# If lock_file fails, not only warn but also return.
-#
-# Revision 1.9  1998/09/21 12:37:38  rnhodek
-# Make sure every log message ends in a newline, to avoid format errors
-# in the log file.
-#
-# Revision 1.8  1998/09/21 11:24:58  rnhodek
-# Fix removing of unneeded final newlines in logger.
-#
-# Revision 1.7  1998/09/19 23:08:34  rnhodek
-# Fix typos.
-#
-# Revision 1.6  1998/09/17 14:11:34  rnhodek
-# In logger, remove too much newlines before prepending time/name.
-#
-# Revision 1.5  1998/09/16 15:54:34  rnhodek
-# Must use $>, not $< which is the real uid...
-# GECOS field index is 6, not 4.
-#
-# Revision 1.4  1998/09/16 15:36:04  rnhodek
-# -f on sendmail didn't work, need to construct a From: line manually.
-# For this, gather some global infos in Buildd.om (user name, full name,
-# hostname), so those need not be hardwired.
-#
-# Revision 1.3  1998/09/16 14:38:03  rnhodek
-# Add -f buildd option to sendmail call; hope this avoids that mails are
-# sent as From: nobody.
-#
-# Revision 1.2  1998/09/15 11:45:49  rnhodek
-# Use new exitstatus function.
-#
-# Revision 1.1  1998/09/11 12:25:02  rnhodek
-# Initial writing
-#
+# $Id$
 #
 
 package Buildd;

@@ -15,64 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: wanna-build-mail.pl,v 1.8 1999/06/18 09:48:15 rnhodek Exp $
-#
-# $Log: wanna-build-mail.pl,v $
-# Revision 1.8  1999/06/18 09:48:15  rnhodek
-# Aiee... forgot to define new config vars for gpg.
-#
-# Revision 1.7  1999/06/18 09:41:08  rnhodek
-# Added GnuPG support:
-#   Now two keyrings (rbuilder-keyring.{pgp,gpg}.
-#   If PGP installed and keyring exists, first try PGP; if returns 0
-#   status or some comment about the signature, don't try gpg.
-#   Otherwise try verifying gpg.
-# Also support PGP/MIME like rbuilder.
-#
-# Revision 1.6  1999/05/31 11:33:56  rnhodek
-# Remove calls to symlinks of wanna-build (list-needs-build, build-info etc.)
-# and use wanna-build itself with appropriate option instead (this removes the
-# necessity to have the symlinks; you may still want them for typing
-# convenience...)
-# Remove assumption that wanna-build & Co. are installed in /usr/local; remove
-# absolute paths where possible and otherwise search for it in /usr/local/bin
-# and /usr/bin.
-# do-merge-*: Remove hardcoded /usr/local/var/debbuild path; extract the path
-# from /etc/wanna-build-conf.
-#
-# Revision 1.5  1998/10/09 08:47:07  rnhodek
-# Implement additional 'g' and 'd' commands (give-back and dep-wait).
-#
-# Revision 1.4  1998/09/21 10:16:19  rnhodek
-# Removed unneeded "_args" (comes from cut&paste...)
-#
-# Revision 1.3  1998/06/22 12:43:53  rnhodek
-# One @list_args should have been @vlist_args.
-#
-# Revision 1.2  1998/06/22 12:34:22  rnhodek
-# Make run with -T (is setgid)
-# Un-comment-out PGP checking.
-#
-# Revision 1.1  1998/06/22 12:04:07  rnhodek
-# Renamed wanna-build-mail to wanna-build-mail.pl
-#
-# Revision 1.5  1998/06/19 13:30:18  rnhodek
-# Call date with path.
-#
-# Revision 1.4  1998/06/19 13:24:30  rnhodek
-# Added -U options to modifying wanna-build calls
-#
-# Revision 1.3  1998/06/19 13:21:28  rnhodek
-# Removed debugging definitions of dirs...
-#
-# Revision 1.2  1998/06/19 12:56:16  rnhodek
-# Added vlist command.
-#
-# Revision 1.1  1998/06/19 12:41:38  rnhodek
-# Initial version.
-#
+# $Id$
 #
 
 use strict;

@@ -3,7 +3,7 @@
 # supposed to be changed only by the buildd author, not by the user.
 # Of course you're free to override values here in ~buildd/buildd.conf.
 #
-# $Id: buildd.conf.global,v 1.4 2002/04/29 22:28:49 rnhodek Exp $
+# $Id$
 #
 
 # max. number of packages to pass to sbuild at once

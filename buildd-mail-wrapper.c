@@ -14,16 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: buildd-mail-wrapper.c,v 1.8 1999/07/21 12:53:22 rnhodek Exp $
- *
- * $Log: buildd-mail-wrapper.c,v $
- * Revision 1.8  1999/07/21 12:53:22  rnhodek
- * Set umask to 022 before stating real mail handler.
- *
- * Revision 1.7  1998/11/05 12:59:14  rnhodek
- * Insert CVS headers.
+ * $Id$
  *
  */
 

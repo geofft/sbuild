@@ -15,16 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: shlibdb-dump,v 1.2 1999/04/26 14:27:55 rnhodek Exp $
-#
-# $Log: shlibdb-dump,v $
-# Revision 1.2  1999/04/26 14:27:55  rnhodek
-# Make output sorted.
-#
-# Revision 1.1  1999/04/26 13:59:00  rnhodek
-# Initial writing.
+# $Id$
 #
 
 BEGIN {
