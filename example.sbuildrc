@@ -12,12 +12,10 @@
 #$mailto = "roman";
 $mailto = "";
 
-# Maintainer name to use in .changes files (mandatory, no default!)
+# Name to use as override in .changes files for the Maintainer: field.
 #$maintainer_name="Roman Hodek <Roman.Hodek\@informatik.uni-erlangen.de>";
-$maintainer_name="";
 
-# Uploader name to use in .changes for the current upload. 
-# It overrides $maintainer_name, but it's optional.
+# Name to use as override in .changes file for the Changed-By: field.
 #$uploader_name="Francesco Paolo Lovergine <frankie@debian.org>";
 
 # Keyid to use in .changes for the current upload.

@@ -13,6 +13,9 @@ sbuild (0.35) unreleased; urgency=low
   * sbuild: Only override Distribution in .changes if specified as option on 
     the command-line. (closes: #300145)
   * sbuild: Specify full path for Dir::Etc::main and Dir::Etc::parts.
+  * example.sbuildrc: Clarify that $maintainer_name is not mandatory and
+    overrides Maintainer: field, whereas $uploader_name overrides 
+    the Changed-By: field in changes.
 
  -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
 
