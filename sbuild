@@ -1618,7 +1618,7 @@ sub get_dpkg_status {
 					 $result{$pkg}->{'Version'} eq '=*=PROVIDED=*=');
 			next;
 		}
-		if (!$version) {
+		if ($version eq "") {
 			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
 					   "no Version: field for package $pkg\n";
 			next;
