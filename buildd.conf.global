@@ -71,5 +71,8 @@ $wanna_build_user = "";
 # below
 $no_warn_pattern = '^build/(SKIP|REDO|SAVED-CHANGES|HOLD-BACK|Attic|buildd\.pid|chroot-[^/]*)$';
 
+# Should buildd send "Should I build" messages?
+$should_build_msgs = 1;
+
 # don't remove this, Perl needs it
 1;

@@ -49,14 +49,12 @@ die "Cannot stat $my_config_global: $!\n" if !@config_g_stats;
 my $my_config_g_time = $config_g_stats[ST_MTIME];
 
 read_config();
-$conf::nice_level ||= 10;
 $conf::delay_after_give_back ||= 8*60;
 $conf::idle_sleep_time ||= 5*60;
 @conf::take_from_dists = @distlist if !@conf::take_from_dists;
 $conf::wanna_build_user ||= $Buildd::username;
 $conf::apt_get ||= "/usr/bin/apt-get";
 $conf::sudo ||= "/usr/bin/sudo";
-$conf::should_build_msgs ||= 1;
 
 if ($conf::sshcmd) {
 	if ($conf::sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
