@@ -32,8 +32,8 @@ $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 
 read_config();
 
-if ($sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
-	$sshcmd .= " -S $main::HOME/build/$conf::sshsocket";
+if ($conf::sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
+	$conf::sshcmd .= " -S $main::HOME/build/$conf::sshsocket";
 }
 
 $conf::dupload_to ||= "anonymous-ftp-master";
