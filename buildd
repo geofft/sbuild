@@ -142,6 +142,7 @@ MAINLOOP: while( 1 ) {
 		unlink("$main::HOME/EXIT-DAEMON-PLEASE");
 		&shutdown("NONE (flag file exit)");
 	}
+	check_ssh_master();
 
 	my $done = 0;
 	my $thisdone;
@@ -158,7 +159,6 @@ MAINLOOP: while( 1 ) {
 		}
 	} while( $thisdone );
 
-	check_ssh_master();
 	foreach $dist (@conf::take_from_dists) {
 		check_restart();
 		check_reread_config();
