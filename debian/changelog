@@ -11,7 +11,8 @@ sbuild (0.35) unreleased; urgency=low
   * sbuild: Removed check for specific distributions. Instead, fail if 
     build/chroot-$dist is not there.
   * sbuild: Only override Distribution in .changes if specified as option on 
-    the command-line. (closes: #300145)
+    the command-line. 
+    (closes: #300145)
   * sbuild: Specify full path for Dir::Etc::main and Dir::Etc::parts.
   * example.sbuildrc: Clarify that $maintainer_name is not mandatory and
     overrides Maintainer: field, whereas $uploader_name overrides 
