@@ -95,9 +95,9 @@ the variables for your system.
 
 Now try a build:
 
-  /usr/lib/sbuild/chrapt $CHROOT apt-get update
-  /usr/lib/sbuild/chrapt $CHROOT apt-get upgrade
-     - or "/usr/lib/sbuild/chrapt $CHROOT apt-get -f install"
+  /usr/share/sbuild/chrapt $CHROOT apt-get update
+  /usr/share/sbuild/chrapt $CHROOT apt-get upgrade
+     - or "/usr/share/sbuild/chrapt $CHROOT apt-get -f install"
        first if the chroot is broken
   cd ~/build && sbuild -v -d $DIST -p successful ed_0.2-19
 

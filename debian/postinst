@@ -37,6 +37,10 @@ case "$1" in
         # avg-* files from previous purge might have wrong GID
         chown -R :sbuild /var/lib/sbuild
 
+	if dpkg --compare-versions "$2" le-nl "0.34"; then
+          ln -sf ../share/sbuild /usr/lib/sbuild
+	fi
+
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

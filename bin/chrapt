@@ -1,7 +1,7 @@
 #!/bin/bash
 
 USAGE_STRING="${0##*/} <chroot> apt-get|apt-cache args"
-. /usr/lib/sbuild/common_functions
+. /usr/share/sbuild/common_functions
 parse_arg $1
 shift
 

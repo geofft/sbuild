@@ -33,7 +33,7 @@ $HOME = $main::HOME;
 # defaults:
 @dist_parts = qw(main contrib non-free);
 $source_dependencies = "/etc/source-dependencies";
-$mailprog = "/usr/lib/sendmail";
+$mailprog = "/usr/sbin/sendmail";
 $dpkg = "/usr/bin/dpkg";
 $sudo = "/usr/bin/sudo";
 $fakeroot = "/usr/bin/fakeroot";
@@ -2960,7 +2960,7 @@ sub basename {
 sub df {
 	my $dir = shift;
 
-	my $free = `/bin/df $dir | tail -1`;
+	my $free = `/bin/df $dir | tail -n 1`;
 	my @free = split( /\s+/, $free );
 	return $free[3];
 }

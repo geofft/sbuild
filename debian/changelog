@@ -16,6 +16,11 @@ sbuild (0.35) unreleased; urgency=low
   * example.sbuildrc: Clarify that $maintainer_name is not mandatory and
     overrides Maintainer: field, whereas $uploader_name overrides 
     the Changed-By: field in changes.
+  * Applied patch by Santiago Vila:
+    - Moves scripts from /usr/lib/sbuild to /usr/share/sbuild and modifies
+      all callers accordingly.
+    - Add -n option to tail to comply with POSIX.
+    - Call /usr/sbin/sendmail instead of /usr/lib/sendmail.
 
  -- Michael Banck <mbanck@debian.org>  Sat,  8 Jan 2005 23:07:33 +0100
 

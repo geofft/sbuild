@@ -75,7 +75,7 @@ and mount it:
 
 The add_sbuild_user script sets up the new chroot for a user:
 
-  sudo /usr/lib/sbuild/add_sbuild_user $TARGET $SUITE <user>
+  sudo /usr/share/sbuild/add_sbuild_user $TARGET $SUITE <user>
 
 -------------------------------------------------------------------------
 EOF

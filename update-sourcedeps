@@ -3,8 +3,15 @@
 # $Id$
 #
 # $Log$
-# Revision 1.1  2004/09/17 13:17:41  frankie
-# Initial revision
+# Revision 1.2  2005/03/30 23:45:03  mbanck
+#   * Applied patch by Santiago Vila:
+#     - Moves scripts from /usr/lib/sbuild to /usr/share/sbuild and modifies
+#       all callers accordingly.
+#     - Add -n option to tail to comply with POSIX.
+#     - Call /usr/sbin/sendmail instead of /usr/lib/sendmail.
+#
+# Revision 1.1.1.1  2004/09/17 13:17:41  frankie
+# Imported sources
 #
 # Revision 1.18  2000/05/03 13:11:08  rnhodek
 # Switch back to buildd.debian.org after andrea on auric has been fixed.
@@ -76,7 +83,7 @@ set -e
 
 set +e	# don't die if .sbuildrc is missing
 dbfull=$(cat /etc/sbuild.conf /etc/sbuild.conf.local ~/.sbuildrc 2>/dev/null | \
-	sed -n '/^\$source_dependencies\>/s/.*"\(.*\)".*/\1/p' | tail -1)
+	sed -n '/^\$source_dependencies\>/s/.*"\(.*\)".*/\1/p' | tail -n 1)
 set -e
 
 dbdir=${dbfull%/*}

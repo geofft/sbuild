@@ -3,7 +3,7 @@
 # changes the dpkg status of a package in a chroot to "hold"
 
 USAGE_STRING="${0##*/} <chroot> pkg1 [pkg2..]"
-. /usr/lib/sbuild/common_functions
+. /usr/share/sbuild/common_functions
 parse_arg $1
 shift
 

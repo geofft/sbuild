@@ -8,7 +8,7 @@ if [ $(id -u) != 0 ]; then
 fi
 
 USAGE_STRING="${0##*/} <chroot>"
-. /usr/lib/sbuild/common_functions
+. /usr/share/sbuild/common_functions
 parse_arg $1
 
 tfile=$(tempfile)
@@ -21,7 +21,7 @@ grep-status -F Status -s Package ' installed' $CHROOT/var/lib/dpkg/status | awk 
 echo "DELETE             ADD"
 echo "============================"
 diff -u $tfile $CHROOT/../ref-$DIST |
-	tail +3 |
+	tail -n +3 |
 	grep ^[+-] |
 	sed -e 's/^-//' -e "s/^+/                   /" |
 	sort

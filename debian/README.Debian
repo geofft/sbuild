@@ -9,8 +9,8 @@ chroots
 helper scripts
 ==============
 
-  /usr/lib/sbuild/README.bins describes the helper shell scripts
-  that are in /usr/lib/sbuild.
+  /usr/share/sbuild/README.bins describes the helper shell scripts
+  that are in /usr/share/sbuild.
 
 
 extras
