@@ -1,3 +1,17 @@
+sbuild (0.34) unstable; urgency=high
+
+  Francesco Paolo Lovergine:
+
+  * Removed searchscripts recommendation in debian/control. That was requested
+    by ppack now removed in archive.
+    (closes: #272318)
+  * checkchroot now uses grep-dctrl, thanks Clint Adams.
+    Introduced dependency from grep-dctrl due to checkchroot.
+    (closes: #260881,#265994)
+  * Updated ref-* files for unstable and testing as well as the related README file.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 25 Sep 2004 17:42:57 +0200
+
 sbuild (0.33) unstable; urgency=low
 
   * Man page sbuild.1 revised.
@@ -12,8 +26,12 @@ sbuild (0.32) unstable; urgency=low
     Man page changed to reflect new features.
     (closes: #260870)
   * Removed the CVS $Log$
-  * Removed the CVS Revision 1.1  2004/09/17 13:17:41  frankie
-  * Removed the CVS Initial revision
+  * Removed the CVS Revision 1.2  2004/09/29 12:58:10  frankie
+  * Removed the CVS New ref-* uptodate for sarge/sid.
+  * Removed the CVS Changed depends and checkchroot to solve critical bug.
+  * Removed the CVS
+  * Removed the CVS Revision 1.1.1.1  2004/09/17 13:17:41  frankie
+  * Removed the CVS Imported sources
   * Removed the CVS variable in sbuild in order to import a new sane
     tree onto Alioth repo. Old logs are now stored in a new cvslogs.old file.
   * Minor revisions to ducumentation files.

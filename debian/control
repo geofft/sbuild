@@ -8,8 +8,8 @@ Standards-Version: 3.6.1
 
 Package: sbuild
 Architecture: all
-Depends: ${perl:Depends}, adduser, apt, exim4 | mail-transport-agent, sudo, dpkg-dev
-Recommends: fakeroot, debootstrap, searchscripts
+Depends: ${perl:Depends}, adduser, apt, exim4 | mail-transport-agent, sudo, dpkg-dev, grep-dctrl
+Recommends: fakeroot, debootstrap
 Suggests: wget, deborphan
 Description: Tool for building Debian binary packages from Debian sources
  sbuild is part of a suite of programs -- consisting of

@@ -2,17 +2,21 @@
 
 # check the package list in a chroot against a reference.
 
+if [ $(id -u) != 0 ]; then
+	echo "You must be root to run this script, sorry."
+	exit 1
+fi
+
 USAGE_STRING="${0##*/} <chroot>"
 . /usr/lib/sbuild/common_functions
 parse_arg $1
 
 tfile=$(tempfile)
 
-ppack -Iq '*' -r $CHROOT >$tfile
-# NOTE: v. 1.10.x "dpkg --root" is broken, so use ppack
-#COLUMNS=200 dpkg 2>/dev/null --root=$CHROOT --list '*' |
-# 	grep ^ii |
-# 	awk '{print $2}' >$tfile
+# NOTE: v. 1.10.x "dpkg --root" is broken, so use grep-status
+#COLUMNS=200 dpkg 2>/dev/null --list | grep ^ii | awk '{print $2}' >$tfile
+
+grep-status -F Status -s Package ' installed' $CHROOT/var/lib/dpkg/status | awk '{print $2}' | sort >$tfile
 
 echo "DELETE             ADD"
 echo "============================"
@@ -22,5 +26,5 @@ diff -u $tfile $CHROOT/../ref-$DIST |
 	sed -e 's/^-//' -e "s/^+/                   /" |
 	sort
 
-rm $tfile
+rm -f $tfile
 
