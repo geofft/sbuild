@@ -1,0 +1,71 @@
+Date: Tue, 2 Mar 1999 17:12:00 +0100 (MET)
+From: Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+To: m68k-build@nocrew.org
+Subject: building m68k packages on demand now possible
+
+As I promised last week, there is now a facility to compile packages
+on demand for m68k.
+
+How it works: Send a mail to rbuilder@m68k.debian.org. The body must
+be signed with PGP, and the signator must be allowed to use rbuilder.
+(Allowed persons are currently Wichert, Joey, and myself). The body
+should look like this:
+
+  build ftp://ftp.uni-erlangen.de/pub/Linux/debian/dists/unstable/main/source/base/hostname_2.04.dsc
+  distributions stable frozen unstable
+  upload to ftp://ftp.uni-erlangen.de/pub/Linux/INCOMING
+
+The "build" command has an URL of an .dsc file as argument. It tells
+which package to be built. The other source files (diff.gz,
+orig.tar.gz) are fetched from the same FTP directory.
+
+The "distributions" command tells rbuilder for which distributions to
+build the package. It will register it for those dists in the
+wanna-build database and omit dists where this doesn't work (e.g.
+because somebody else has taken it already, or a newer version is
+already installed, and so on...) The distribs given here minus those
+who couldn't be registered are used in the .changes file, no matter
+what the package says.
+
+The "upload" command gives an FTP URL to which all .debs and the
+.changes are finally uploaded. It must be an anonymously writable
+directory.
+
+All three commands are currently necessary.
+
+Hope it works :-) and have fun.
+
+Roman
+
+------------------------------------------------------------------------------
+
+Update 06/09/2000: The mail syntax has slightly changed... This was
+necessary to properly handle packages with epochs. (The .dsc filename
+doesn't contain the epoch, but wanna-build requires it.) It is now
+
+  build PACKAGE_VERSION
+  fetch from FTP-URL
+  distributions DIST-LIST
+  upload to FTP-URL
+
+The above example rewritten:
+
+  build hostname_1:2.04
+  fetch from ftp://ftp.uni-erlangen.de/pub/Linux/debian/dists/unstable/main/source/base/
+  distributions stable frozen unstable
+  upload to ftp://ftp.uni-erlangen.de/pub/Linux/INCOMING
+
+rbuilder will download hostname_2.04.dsc, even though the build
+argument has an epoch. But version 1:2.04 will be registered in the
+wanna-build database.
+
+BTW, with the new feature of chroot builds, you now can safely build,
+e.g., stable packages on kullervo, which has potato installed :-)
+
+BTW^2: I hope the problems with wanna-build that happened in the past
+are solved. Discarding wanna-build altogether wasn't the right
+solution, instead the correct fix is not to give back packages if
+they fail to build. The give-back moved them into state Needs-Build
+and the stable build daemon would take them, but probably couldn't
+find the sources. And it is now allowed to re-take a package, i.e.
+take it again if it's already taken (by the same user).

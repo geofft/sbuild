@@ -1,0 +1,75 @@
+#
+# /etc/buildd.conf.global: configurations for buildd & Co. that are
+# supposed to be changed only by the buildd author, not by the user.
+# Of course you're free to override values here in ~buildd/buildd.conf.
+#
+# $Id: buildd.conf.global,v 1.4 2002/04/29 22:28:49 rnhodek Exp $
+#
+
+# max. number of packages to pass to sbuild at once
+$max_build = 10;
+
+# nice level to run sbuild
+$nice_level = 10;
+
+# time to sleep when idle (between wanna-build --list=needs-build calls)
+$idle_sleep_time = 5*60;
+
+# min. kB to be free on build filesystem
+$min_free_space = 10*1024;
+
+# list of distributions that buildd should take packages from
+@take_from_dists = qw(stable frozen unstable);
+
+# list of packages which shouldn't be picked up by buildd
+@no_auto_build = ();
+
+# list of packages which should only be taken if there absolutely
+# nothing else to do (probably packages included in @no_auto_build
+# because they take too long)
+@weak_no_auto_build = ();
+
+# how long to avoid packages that have automatically been given back by sbuild
+# (in minutes)
+$delay_after_give_back = 8 * 60; # 8 hours
+
+# how many days until to archive package logs
+$pkg_log_keep = 7;
+
+# how many days until to archive build logs
+$build_log_keep = 2;
+
+# how many days until to rotate daemon logs (one is kept as daemon.log.old,
+# others are moved to old-logs and gzipped)
+$daemon_log_rotate = 1;
+
+# how many days until to archive old daemon logs in a .tar.gz
+$daemon_log_keep = 7;
+
+# age (in days) after which a warning is issued for file in upload and
+# dirs in build
+$warning_age = 7;
+
+# if more than 5 error mails are received within that time, they're
+# not forwarded to avoid possible mail loops
+$error_mail_window = 8*60*60;
+
+# period for making of statistic summary
+$statistics_period = 7;
+
+# If wanna-build & Co. are installed on the local machine, set the
+# following to the empty string. Otherwise make it an rsh/ssh command
+# to execute the cmd on the machine where wanna-build is installed,
+# e.g. "ssh -l roman kullervo.infodrom.north.de"
+$sshcmd = "";
+
+# Username to use for wanna-build. Default if empty is the username of the user
+# running the daemon.
+$wanna_build_user = "";
+
+# buildd-watcher doesn't complain about old files if they match the regexp
+# below
+$no_warn_pattern = '^build/(SKIP|REDO|SAVED-CHANGES|HOLD-BACK|Attic|buildd\.pid|chroot-[^/]*)$';
+
+# don't remove this, Perl needs it
+1;

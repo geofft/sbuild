@@ -1,0 +1,329 @@
+#!/usr/bin/perl
+#
+# buildd-uploader: upload finished packages for buildd
+# Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: buildd-uploader,v 1.33 2002/10/10 18:50:43 rnhodek Exp $
+#
+# $Log: buildd-uploader,v $
+# Revision 1.33  2002/10/10 18:50:43  rnhodek
+# Security/accepted autobuilding patch by Ryan.
+#
+# Revision 1.32  2001/06/18 09:57:04  rnhodek
+# Use --database option when wanna_build_dbbase set in config.
+#
+# Revision 1.31  2000/10/19 08:55:44  rnhodek
+# Add --user option in wanna-build call.
+#
+# Revision 1.30  2000/02/07 12:59:00  rnhodek
+# Also here use --no-down-propagation.
+#
+# Revision 1.29  1999/08/10 10:02:41  rnhodek
+# Fix two typos.
+#
+# Revision 1.28  1999/08/09 14:03:50  rnhodek
+# Support for non-US packages:
+#  - New function upload() with the common code. Called twice, for each
+#    upload dir.
+#  - Calling uploaded-build is done only once for all upload dirs.
+#
+# Revision 1.27  1999/08/04 09:07:26  rnhodek
+# Implemented collecting of statistical data for buildd; several figures
+# are written to files in ~/stats where some script will pick them up.
+#
+# Revision 1.26  1999/05/31 11:33:54  rnhodek
+# Remove calls to symlinks of wanna-build (list-needs-build, build-info etc.)
+# and use wanna-build itself with appropriate option instead (this removes the
+# necessity to have the symlinks; you may still want them for typing
+# convenience...)
+# Remove assumption that wanna-build & Co. are installed in /usr/local; remove
+# absolute paths where possible and otherwise search for it in /usr/local/bin
+# and /usr/bin.
+# do-merge-*: Remove hardcoded /usr/local/var/debbuild path; extract the path
+# from /etc/wanna-build-conf.
+#
+# Revision 1.25  1998/11/04 15:11:45  rnhodek
+# Fixed typo in pattern (Propagating vs. Propagated).
+#
+# Revision 1.24  1998/11/04 12:09:57  rnhodek
+# Fixed silly error when calling uploaded-build (forgotten read loop...).
+#
+# Revision 1.23  1998/11/04 10:19:13  rnhodek
+# Log $msgs only if non-empty to avoid empty lines in log.
+#
+# Revision 1.22  1998/11/03 16:00:45  rnhodek
+# When calling uploaded-build, filter out "Propagated new state to..."
+# messages and remember the packages for this is done; for those, also
+# filter out "already uploaded" messages.
+#
+# Revision 1.21  1998/10/15 08:09:32  rnhodek
+# Made default assignment of dupload_to more elegant.
+#
+# Revision 1.20  1998/10/15 03:18:28  james
+# Really working $dupload_to stuff.
+#
+# Revision 1.19  1998/10/15 02:18:49  james
+# Ensure there's a default .
+#
+# Revision 1.18  1998/10/15 02:00:58  james
+# Added a $dupload_to variable for use by buildd-upload to control where it
+# tries to send its upload's to (this is badly needed by cookie-monster, as
+# long as the WiN backbone continues to be lame).
+#
+# Revision 1.17  1998/10/08 14:15:20  rnhodek
+# Hope additional parens remove the overflowous newline in log file.
+#
+# Revision 1.16  1998/09/28 10:27:15  rnhodek
+# Add missing [ in one regexp; cause current job in logs to be wrong.
+#
+# Revision 1.15  1998/09/28 10:04:31  rnhodek
+# Also log number of jobs to be uploaded.
+#
+# Revision 1.14  1998/09/28 08:33:36  rnhodek
+# Need explicit path when locking/unlocking daemon log, since uploader
+# cd's to upload/; this was the reason for the stale locks.
+#
+# Revision 1.13  1998/09/25 09:43:56  rnhodek
+# Log pid for debugging stale locks.
+#
+# Revision 1.12  1998/09/24 10:04:28  rnhodek
+# Extra unlock_file() for daemon.log if nothing to do; there were
+# spurious stale lock files everytime the uploader didn't do anything...
+#
+# Revision 1.11  1998/09/21 14:26:36  rnhodek
+# Mention correct file in error mail on SIGPIPE.
+#
+# Revision 1.10  1998/09/21 11:15:41  rnhodek
+# In case of dupload errors, also log removed .uploaded files and
+# mention them in the error mail; also append complete output of dupload
+# to that mail.
+#
+# Revision 1.9  1998/09/19 13:51:45  rnhodek
+# Call wanna-build binaries through $conf::sshcmd so that they don't
+# must be locally installed.
+#
+# Revision 1.8  1998/09/16 14:06:04  rnhodek
+# Need to lock daemon.log, because buildd-uploader has no signal for log
+# file changing.
+#
+# Revision 1.7  1998/09/16 12:22:55  rnhodek
+# If dupload returns status 141, it has been killed by SIGPIPE, which
+# means the connection broke.
+# Fix variables in "upload error" fail messages.
+# Record also currently uploaded file for SIGPIPE error.
+#
+# Revision 1.6  1998/09/15 14:03:45  rnhodek
+# Fixed typo.
+#
+# Revision 1.5  1998/09/15 11:48:19  rnhodek
+# Use new exitstatus function.
+#
+# Revision 1.4  1998/09/15 11:31:52  rnhodek
+# Added analyzing of dupload output and checking for errors.
+#
+# Revision 1.3  1998/09/15 09:10:32  rnhodek
+# Insert spaces in uploaded list.
+#
+# Revision 1.2  1998/09/14 11:16:15  rnhodek
+# Explicitly set $PATH.
+#
+# Revision 1.1  1998/09/11 12:21:01  rnhodek
+# Initial writing
+#
+#
+
+BEGIN {
+	($main::HOME = $ENV{'HOME'})
+		or die "HOME not defined in environment!\n";
+	push( @INC, "$main::HOME/lib" );
+}
+
+use strict;
+use Buildd;
+$ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
+
+read_config();
+$conf::dupload_to ||= "erlangen";
+$conf::dupload_to_non_us ||= "non-us";
+$conf::dupload_to_security ||= "security";
+
+lock_file( "$main::HOME/daemon.log" );
+END { unlock_file( "$main::HOME/daemon.log" ); }
+open_log();
+
+upload( "upload-security", $conf::dupload_to_security );
+upload( "upload", $conf::dupload_to );
+upload( "upload-non-US", $conf::dupload_to_non_us );
+
+my $dist;
+my @propagated_pkgs = ();
+foreach $dist (qw(oldstable-security stable stable-security testing testing-security unstable)) {
+	next if !exists $main::done{$dist} || !@{$main::done{$dist}};
+	logger( "Setting to Uploaded($dist): ",
+			(map { my $x = $_; $x =~ s/_\S+\.changes$//; "$x "; }
+				@{$main::done{$dist}}), "\n" );
+	my $msgs = "";
+	if (open( PIPE, "$conf::sshcmd wanna-build --uploaded --user=$conf::wanna_build_user ".
+					($conf::wanna_build_dbbase?"--database=$conf::wanna_build_dbbase ":"").
+					"--no-down-propagation --dist=$dist ".
+					"@{$main::done{$dist}} 2>&1 |" )) {
+		while( <PIPE> ) {
+			if (/^(\S+): Propagating new state /) {
+				push( @propagated_pkgs, $1 );
+			}
+			elsif (/^(\S+): already uploaded/ &&
+				   isin( $1, @propagated_pkgs )) {
+				# be quiet on this
+			}
+			else {
+				$msgs .= $_;
+			}
+		}
+		close( PIPE );
+		logger( $msgs ) if $msgs;
+		logger( "uploaded-build failed with status ", exitstatus($?), "\n" )
+			if $?;
+	}
+	else {
+		logger( "Cannot spawn uploaded-build: $!\n" );
+	}
+}
+
+exit 0;
+
+
+sub upload {
+	my $udir = shift;
+	my $upload_to = shift;
+	
+	chdir( "$main::HOME/$udir" ) || return;
+	lock_file( "$main::HOME/$udir" );
+
+	my( $f, $g, @before, @after );
+	foreach $f (<*.changes>) {
+		($g = $f) =~ s/\.changes$/\.upload/;
+		push( @before, $f ) if ! -f $g;
+	}
+	if (!@before) {
+		logger( "Nothing to do for $udir\n" );
+		unlock_file( "$main::HOME/$udir" );
+		return;
+	}
+
+	logger( scalar(@before), " jobs to upload in $udir: @before\n" );
+	do_dupload( $upload_to, @before );
+
+	foreach $f (<*.changes>) {
+		($g = $f) =~ s/\.changes$/\.upload/;
+		push( @after, $f ) if ! -f $g;
+	}
+	if (@after) {
+		logger( "The following jobs were not processed (successfully):\n".
+				"@after\n" );
+	}
+	else {
+		logger( "dupload successful.\n" );
+	}
+	unlock_file( "$main::HOME/$udir" );
+	write_stats( "uploads", scalar(@before) - scalar(@after) );
+
+	foreach $f (@before) {
+		next if isin( $f, @after );
+		if (!open( F, "<$f" )) {
+			logger( "Cannot open $f: $!\n" );
+			next;
+		}
+		my $text;
+		{ local($/); undef $/; $text = <F>; }
+		close( F );
+		if ($text !~ /^Distribution:\s*(.*)\s*$/m) {
+			logger( "$f doesn't have a Distribution: field\n" );
+			next;
+		}
+		my @dists = split( /\s+/, $1 );
+		foreach (@dists) {
+			push( @{$main::done{$_}}, $f );
+		}
+	}
+}
+
+sub do_dupload {
+	my $upload_to = shift;
+	my @jobs = @_;
+	local( *PIPE );
+	my( $current_job, $current_file, @failed, $errs );
+
+	if (!open( PIPE, "dupload -k --to $upload_to @jobs </dev/null 2>&1 |" )) {
+ 		logger( "Cannot spawn dupload: $!\n" );
+		return;
+	}
+
+	my $dup_log = "";
+	while( <PIPE> ) {
+		$dup_log .= $_;
+		chomp;
+		if (/^\[ job \S+ from (\S+\.changes)$/) {
+			$current_job = $1;
+		}
+		elsif (/^warning: MD5sum mismatch for (\S+), skipping/i) {
+			my $f = $1;
+			logger( "dupload error: md5sum mismatch for $f\n" );
+			$errs .= "md5sum mismatch on file $f ($current_job)\n";
+			push( @failed, $current_job );
+		}
+		elsif (/^\[ Uploading job (\S+)$/) {
+			$current_job = "$1.changes";
+		}
+		elsif (/^warning: dupload: Can't upload (\S+)/i ||
+			   /^\s(\S+).*scp: (.*)$/) {
+			my($f, $e) = ($1, $2);
+			logger( "dupload error: upload error for $f\n" );
+			logger( "($e)\n" ) if $e;
+			$errs .= "upload error on file $f ($current_job)\n";
+			push( @failed, $current_job );
+		}
+		elsif (/^\s(\S+)\s+[\d.]+ kB /) {
+			$current_file = $1;
+		}
+	}
+	close( PIPE );
+	if ($?) {
+		if (($? >> 8) == 141) {
+			logger( "dupload error: SIGPIPE (broken connection)\n" );
+			$errs .= "upload error (broken connection) during ".
+					 "file $current_file ($current_job)\n";
+			push( @failed, $current_job );
+		}
+		else {
+			logger( "dupload exit status ", exitstatus($?), "\n" );
+			$errs .= "dupload exit status ".exitstatus($?)."\n";
+		}
+	}
+
+	foreach (@failed) {
+		my $u;
+		($u = $_) =~ s/\.changes$/\.upload/;
+		unlink( $u );
+		logger( "Removed $u due to upload errors.\n" );
+		$errs .= "Removed $u to reupload later.\n";
+	}
+
+	if ($errs) {
+		$errs .= "\nComplete output from dupload:\n\n$dup_log";
+		send_mail( $conf::admin_mail, "dupload errors", $errs );
+	}
+}

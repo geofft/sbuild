@@ -1,0 +1,42 @@
+#!/usr/bin/perl
+
+use File::Basename;
+$progname = basename($0);
+
+use DB_File;
+use GDBM_File;
+
+die "Filename missing\n" if !@ARGV;
+die "$ARGV[0]: $!\n" if !-f $ARGV[0];
+
+if ($progname =~ /catdb/) {
+	tie %db, 'DB_File', $ARGV[0], O_RDONLY, 0664, $DB_HASH;
+}
+elsif ($progname =~ /catgdbm/) {
+	tie %db, 'GDBM_File', $ARGV[0], GDBM_READER, 0644;
+}
+else {
+	die "Called for unknown db type\n";
+}
+shift;
+
+if (@ARGV > 0) {
+	foreach $key (@ARGV) {
+		print "-"x78, "\n";
+		if (exists $db{$key}) {
+			print "$key:\n$db{$key}\n";
+		}
+		else {
+			print "*UNDEFINED*\n";
+		}
+	}
+}
+else {
+	while( ($key,$val) = each %db ) {
+		print "-"x78, "\n";
+		print "$key:\n$val\n";
+	}
+}
+
+untie %db;
+exit 0;

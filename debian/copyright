@@ -1,0 +1,29 @@
+This is Debian's prepackaged version of the build daemon and
+associated tools.
+
+The build daemon is maintained as a Debian package by me, Ryan Murray
+<rmurray@debian.org>, from the SVN repository,
+ http://svn.cyberhqz.com/svn/wanna-build
+
+Everything except andrea (which was written by James Troup) was
+originally written by Roman Hodek.
+
+Program Copyright (C) 2002,2003,2004,2005 Ryan Murray <rmurray@debian.org>
+                      1998,1999,2000,2001 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+                                          James Troup <james@nocrew.org>
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; version 2 dated June, 1991.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+On Debian GNU systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.

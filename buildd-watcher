@@ -1,0 +1,567 @@
+#!/usr/bin/perl
+#
+# buildd-uploader: controller and log rotator for buildd
+# Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: buildd-watcher,v 1.27 2002/10/10 18:50:43 rnhodek Exp $
+#
+# $Log: buildd-watcher,v $
+# Revision 1.27  2002/10/10 18:50:43  rnhodek
+# Security/accepted autobuilding patch by Ryan.
+#
+# Revision 1.26  2000/06/15 14:16:02  rnhodek
+# When archiving build logs, also make a .index file that contains only
+# the file names; this can be used by a CGI script to find old build
+# logs.
+#
+# Revision 1.25  2000/01/12 09:01:18  rnhodek
+# Fix Y2K buglet (2000 was printed as 100 in graphs).
+#
+# Revision 1.24  1999/10/29 13:03:43  rnhodek
+# New give-back value in statistics.
+#
+# Revision 1.23  1999/09/01 11:24:09  rnhodek
+# Purge dates older than $conf::error_mail_window from
+# ~/mail-errormails, and remove the file if it becomes empty.
+#
+# Revision 1.22  1999/08/27 13:11:07  rnhodek
+# Forgotten parameter to format_date().
+#
+# Revision 1.21  1999/08/06 09:39:41  rnhodek
+# Rotating daemon log: need to use mv instead of rename for cross-dir
+# move (might be different filesystems).
+#
+# Revision 1.20  1999/08/06 08:11:07  rnhodek
+# Some more fixes and changes to the statistics code.
+#
+# Revision 1.19  1999/08/05 12:26:02  rnhodek
+# Added some more statistics and implemented graphs for some figures.
+#
+# Revision 1.18  1999/08/04 12:28:44  rnhodek
+# Implemented statistics summary.
+#
+# Revision 1.17  1999/06/01 06:50:26  rnhodek
+# Remove hardcoded path of buildd.
+#
+# Revision 1.16  1998/10/20 14:41:55  rnhodek
+# Fix the empty pid file problem in a more elegant way by creating the
+# file atomically (first create/write under another name, then rename).
+#
+# Revision 1.15  1998/10/20 14:35:54  rnhodek
+# Fixed handling of empty pid file.
+#
+# Revision 1.14  1998/10/08 14:07:28  rnhodek
+# Removed checking of DEPENDENCY-WAIT; this is done in wanna-build now.
+#
+# Revision 1.13  1998/10/08 11:37:55  rnhodek
+# Rewrite load_Packages for FetchFile module.
+#
+# Revision 1.12  1998/10/06 11:51:54  rnhodek
+# Do not restart the daemon if a file NO-DAEMON-PLEASE exists.
+#
+# Revision 1.11  1998/10/06 10:17:56  rnhodek
+# Once per day check the dependencies in DEPENDENCY-WAIT.
+#
+# Revision 1.10  1998/09/29 14:51:37  rnhodek
+# Fix pattern for daemon logs.
+#
+# Revision 1.9  1998/09/29 14:32:40  rnhodek
+# While the watcher is running, keep a pid file 'watcher-running' to
+# avoid that more than one watcher runs at a time (more can happen if a
+# watcher needs more time than the start interval).
+# Add a fudge of 10 minutes to all keep times, to avoid that the rotate
+# times shift more and more to the past over time.
+# Touch stamp files immediately for the same reason.
+# Fix an off-by-one bug for the month in format_time.
+#
+# Revision 1.8  1998/09/29 11:55:49  rnhodek
+# Ignore old files matching $conf::no_warn_pattern.
+#
+# Revision 1.7  1998/09/28 08:35:22  rnhodek
+# Remove debugging output of pid.
+#
+# Revision 1.6  1998/09/25 09:43:03  rnhodek
+# -e is not true for broken symlinks, add || -l.
+# Log pid for debugging stale locks.
+#
+# Revision 1.5  1998/09/23 13:18:07  rnhodek
+# When looking for old files, also look at regular files and symlinks in
+# build; use lstat instead of stat to get the real age of symlinks.
+# Send a mail only if there is really stuff to warn about.
+#
+# Revision 1.4  1998/09/17 13:54:34  rnhodek
+# Read build/PURGE and rm -rf the dirs in there for buildd-mail.
+#
+# Revision 1.3  1998/09/16 11:37:47  rnhodek
+# Redirect find stderr to /dev/null, error messages are usually not
+# important and clutter up the log.
+#
+# Revision 1.2  1998/09/14 11:16:25  rnhodek
+# Explicitly set $PATH.
+#
+# Revision 1.1  1998/09/11 12:21:01  rnhodek
+# Initial writing
+#
+#
+
+BEGIN {
+	($main::HOME = $ENV{'HOME'})
+		or die "HOME not defined in environment!\n";
+	push( @INC, "$main::HOME/lib" );
+}
+
+use strict;
+use Buildd;
+use POSIX qw(ESRCH LONG_MAX);
+use Cwd;
+sub ST_MTIME() { 9 }
+$ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
+my $fudge = 1/24/6; # 10 minutes in units of a day
+chomp( $main::arch = `dpkg --print-installation-architecture` );
+
+read_config();
+chdir( "$main::HOME" );
+open_log();
+
+# check if another watcher is still running
+my $watcher_pid;
+if (open( PID, "<watcher-running")) {
+	$watcher_pid = <PID>;
+	close( PID );
+	$watcher_pid =~ /^\s*(\d+)/; $watcher_pid = $1;
+	if (!$watcher_pid || (kill( 0, $watcher_pid ) == 0 && $! == ESRCH)) {
+		logger( "Ignoring stale watcher-running file (pid $watcher_pid).\n" );
+	}
+	else {
+		logger( "Another buildd-watcher is still running ".
+				"(pid $watcher_pid) -- exiting.\n" );
+		exit 0;
+	}
+}
+open( F, ">watcher-running.new" )
+	or die "Can't create watcher-running.new: $!\n";
+printf F "%5d\n", $$;
+close( F );
+rename( "watcher-running.new", "watcher-running" )
+	or die "Can't rename watcher-running.new: $!\n";
+END { unlink( "watcher-running" ); }
+
+# check if buildd is still running, restart it if needed.
+my $restart = 0;
+my $daemon_pid;
+if (open( PID, "<build/buildd.pid" )) {
+	$daemon_pid = <PID>;
+	close( PID );
+	$daemon_pid =~ /^\s*(\d+)/; $daemon_pid = $1;
+	if (!$daemon_pid || (kill( 0, $daemon_pid ) == 0 && $! == ESRCH)) {
+		logger( "pid file exists, but process $daemon_pid doesn't exist.\n" );
+		$restart = 1;
+	}
+}
+else {
+	logger( "daemon not running (no pid file).\n" );
+	$restart = 1;
+}
+
+# do dir-purges that buildd-mail can't do (is running as nobody, so no sudo)
+lock_file( "build/PURGE" );
+my @to_purge = ();
+if (open( F, "<build/PURGE" )) {
+	@to_purge = <F>;
+	close( F );
+	unlink( "build/PURGE" );
+	chomp( @to_purge );
+}
+unlock_file( "build/PURGE" );
+
+foreach (@to_purge) {
+	next if ! -d $_;
+	system "sudo rm -rf $_";
+	logger( "Purged $_\n" );
+}
+
+# cut down mail-errormails file
+my $now = time;
+my @em = ();
+if (open( F, "<mail-errormails" )) {
+	chomp( @em = <F> );
+	close( F );
+}
+shift @em while @em && ($now - $em[0]) > $conf::error_mail_window;
+if (@em) {
+	open( F, ">mail-errormails" );
+	print F join( "\n", @em ), "\n";
+	close( F );
+}
+else {
+	unlink( "mail-errormails" );
+}
+
+# check for old stuff in build and upload dirs
+my @warnings;
+my $file;
+foreach $file (<upload/*>) {
+	push( @warnings, $file ) if -M $file >= $conf::warning_age;
+}
+foreach $file (<build/*>) {
+	lstat $file;
+	if (! -d _ || -l _) {
+		push( @warnings, $file ) if -C _ >= $conf::warning_age;
+	}
+	else {
+		my $changed_files =
+			`find $file -mtime -$conf::warning_age -print 2>/dev/null`;
+		push( @warnings, $file ) if !$changed_files;
+	}
+}
+@warnings = grep( !/$conf::no_warn_pattern/, @warnings );
+if (@warnings) {
+	my %reported;
+	my @do_warn;
+	if (open( W, "<reported-old-files" )) {
+		while( <W> ) {
+			next if !/^(\S+)\s+(\d+)$/;
+			$reported{$1} = $2;
+		}
+		close( W );
+	}
+
+	foreach (@warnings) {
+		if (!exists($reported{$_}) ||
+			($now - $reported{$_}) >= $conf::warning_age*24*60*60) {
+			push( @do_warn, $_ );
+			$reported{$_} = $now;
+		}
+	}
+
+	my $old_umask = umask 007;
+	open( W, ">reported-old-files" )
+		or die "Can't create/write reported-old-files: $!\n";
+	foreach (keys %reported) {
+		print W "$_ $reported{$_}\n" if -e $_ || -l $_;
+	}
+	close( W );
+	umask $old_umask;
+	
+	send_mail( $conf::admin_mail, "buildd-watcher found some old files",
+			   "buildd-watcher has found some old files or directories in\n".
+			   "~buildd/upload and/or ~buildd/build. Those are:\n\n  ".
+			   join( "\n  ", @do_warn ). "\n\n".
+			   "Please have a look at them and remove them if ".
+			   "they're obsolete.\n" )
+		if @do_warn;
+}
+
+# archive old package/build log files
+archive_logs( "logs", "*", "old-logs/plog", $conf::pkg_log_keep );
+archive_logs( "build", "build-*.log", "old-logs/blog", $conf::build_log_keep );
+
+# rotate daemon's log file
+if (!-f "old-logs/daemon-stamp" ||
+	-M "old-logs/daemon-stamp" > $conf::daemon_log_rotate-$fudge) {
+
+	logger( "Rotating daemon log file\n" );
+	system "touch old-logs/daemon-stamp";
+
+	my $d = format_time(time);
+	if (-f "daemon.log.old") {
+		system "mv daemon.log.old old-logs/daemon-$d.log";
+		system "gzip -9 old-logs/daemon-$d.log";
+	}
+
+	lock_file( "daemon.log" );
+	rename( "daemon.log", "daemon.log.old" );
+	my $old_umask = umask 0007;
+	system "touch daemon.log";
+	umask $old_umask;
+	kill( 1, $daemon_pid ) if $daemon_pid;
+	reopen_log();
+	unlock_file( "daemon.log" );
+	
+	my $text;
+	open( F, "<daemon.log.old" );
+	{ local($/); undef $/; $text = <F>; }
+	close( F );
+	send_mail( $conf::admin_mail, "Build Daemon Log $d", $text );
+}
+archive_logs( "old-logs", "daemon-*.log.gz", "old-logs/dlog", $conf::daemon_log_keep );
+
+# make buildd statistics
+if (!-f "stats/Stamp" ||
+	-M "stats/Stamp" > $conf::statistics_period-$fudge) {
+
+	logger( "Making buildd statistics\n" );
+	lock_file( "stats" );
+	my $lasttime = 0;
+	if (open( F, "<stats/Stamp" )) {
+		chomp( $lasttime = <F> );
+		close( F );
+	}
+	my $now = time;
+	
+	make_statistics( $lasttime, $now );
+	
+	open( F, ">stats/Stamp" );
+	print F "$now\n";
+	close( F );
+	unlock_file( "stats" );
+
+	my $text;
+	open( F, "<stats/Summary" );
+	{ local($/); undef $/; $text = <F>; }
+	close( F );
+	send_mail( $conf::statistics_mail, "Build Daemon Statistics", $text );
+}
+
+if ($restart) {
+	if (-f "NO-DAEMON-PLEASE") {
+		logger( "NO-DAEMON-PLEASE exists, not starting daemon\n" );
+	}
+	else {
+		defined(my $pid = fork) or die "$0: can't fork to restart buildd: $!\n";
+		if ($pid == 0) {
+			exec "buildd";
+			logger( "Failed to start daemon: $!\n" );
+			exit( 1 );
+		}
+	}
+}
+
+
+
+exit 0;
+
+
+sub archive_logs {
+	my $dir = shift;
+	my $pattern = shift;
+	my $destpat = shift;
+	my $minage = shift;
+	my( $olddir, $file, @todo, $oldest, $newest, $oldt, $newt );
+	
+	return if -f "$destpat-stamp" && -M "$destpat-stamp" < $minage-$fudge;
+	logger( "Archiving logs in $dir:\n" );
+	system "touch $destpat-stamp";
+
+	$olddir = cwd;
+	chdir( $dir );
+
+	$oldest = LONG_MAX;
+	$newest = 0;
+	foreach $file (glob($pattern)) {
+		if (-M $file >= $minage) {
+			push( @todo, $file );
+			my $modtime = (stat(_))[ST_MTIME];
+			$oldest = $modtime if $oldest > $modtime;
+			$newest = $modtime if $newest < $modtime;
+		}
+	}
+	if (@todo) {
+		$oldt = format_time($oldest);
+		$newt = format_time($newest);
+		$file = "$main::HOME/$destpat-$oldt-$newt.tar";
+		
+		system "tar cf $file @todo";
+		system "gzip -9 $file";
+
+		if ($dir eq "logs") {
+			local (*F);
+			if (open( F, ">$main::HOME/$destpat-$oldt-$newt.index" )) {
+				print F join( "\n", @todo ), "\n";
+				close( F );
+			}
+		}
+		
+		unlink( @todo );
+		logger( "Archived ", scalar(@todo), " files from $oldt to $newt\n" );
+	}
+	else {
+		logger( "No files to archive\n" );
+	}
+
+	chdir( $olddir );
+}
+
+BEGIN {
+	%main::graph_maxval =
+		( "builds-per-day"		=> 100,
+		  "uploads-per-day"		=> 100,
+		  "failed-per-day"		=> 50,
+		  "dep-wait-per-day"	=> 50,
+		  "give-back-per-day"	=> 50,
+		  "time-per-build"		=> 10*60*60,
+		  "build-time-percent"	=> 1,
+		  "idle-time-percent"	=> 1 );
+}
+
+sub make_statistics {
+	my $start_time = shift;
+	my $end_time = shift;
+	my @svars = qw(taken builds uploads	failed dep-wait no-build give-back
+				   idle-time build-time);
+	my ($s_taken, $s_builds, $s_uploads, $s_failed, $s_dep_wait, $s_no_build,
+		$s_give_back, $s_idle_time, $s_build_time);
+	local( *F, *G, *OUT );
+	
+	my $var;
+	foreach $var (@svars) {
+		my $svar = "s_$var";
+		$svar =~ s/-/_/g;
+		eval "\$$svar = 0;";
+		if (-f "stats/$var") {
+			if (!open( F, "<stats/$var" )) {
+				logger( "can't open stats/$var: $!\n" );
+				next;
+			}
+			my $n = 0;
+			while( <F> ) {
+				chomp;
+				$n += $_;
+			}
+			close( F );
+			eval "\$$svar = $n;";
+			unlink( "stats/$var" );
+		}
+	}
+
+	my $total_time = $end_time - $start_time;
+	my $days = $total_time / (24*60*60);
+	
+	if (!open( OUT, ">stats/Summary" )) {
+		logger( "Can't create stats/Summary: $!\n" );
+		return;
+	}
+
+	printf OUT "Build daemon statistics from %s to %s (%3.2f days):\n\n",
+			   format_time($start_time), format_time($end_time), $days;
+	
+	print  OUT "           #packages  % of taken  pkgs/day\n";
+	print  OUT "-------------------------------------------\n";
+	printf OUT "taken    : %5d                  %7.2f\n",
+			   $s_taken, $s_taken/$days;
+	printf OUT "builds   : %5d       %7.2f%%   %7.2f\n",
+			   $s_builds, $s_taken ? $s_builds*100/$s_taken : 0, $s_builds/$days;
+	printf OUT "uploaded : %5d       %7.2f%%   %7.2f\n",
+			   $s_uploads, $s_taken ? $s_uploads*100/$s_taken : 0, $s_uploads/$days;
+	printf OUT "failed   : %5d       %7.2f%%   %7.2f\n",
+			   $s_failed, $s_taken ? $s_failed*100/$s_taken : 0, $s_failed/$days;
+	printf OUT "dep-wait : %5d       %7.2f%%   %7.2f\n",
+			   $s_dep_wait, $s_taken ? $s_dep_wait*100/$s_taken : 0, $s_dep_wait/$days;
+	printf OUT "give-back: %5d       %7.2f%%   %7.2f\n",
+			   $s_give_back, $s_taken ? $s_give_back*100/$s_taken : 0, $s_give_back/$days;
+	printf OUT "no-build : %5d       %7.2f%%   %7.2f\n",
+			   $s_no_build, $s_taken ? $s_no_build*100/$s_taken : 0, $s_no_build/$days;
+	print  OUT "\n";
+
+	print  OUT "          time          % of total\n";
+	print  OUT "----------------------------------\n";
+	printf OUT "building: %s  %7.2f%%\n",
+			   print_time($s_build_time), $s_build_time*100/$total_time;
+	printf OUT "idle    : %s  %7.2f%%\n",
+			   print_time($s_idle_time), $s_idle_time*100/$total_time;
+	printf OUT "total   : %s\n", print_time($total_time);
+	print  OUT "\n";
+
+	my $proc = $s_uploads+$s_failed+$s_dep_wait+$s_no_build+$s_give_back;
+	printf OUT "processed package (upl+fail+dep+nob): %7d\n", $proc;
+	printf OUT "slipped (proc-taken)                : %7d\n", $proc-$s_taken;
+	printf OUT "builds/taken package                : %7.2f\n",
+			   $s_builds/$s_taken
+		if $s_taken;
+	printf OUT "avg. time/taken package             : %s\n",
+			   print_time($s_build_time/$s_taken)
+		if $s_taken;
+	printf OUT "avg. time/processed package         : %s\n",
+			   print_time($s_build_time/$proc)
+		if $proc;
+	printf OUT "avg. time/build                     : %s\n",
+			   print_time($s_build_time/$s_builds)
+		if $s_builds;
+	print  OUT "\n";
+
+	my $date = format_date(time);
+	print_graph( $s_builds/$days, $date, "builds-per-day" );
+	print_graph( $s_uploads/$days, $date, "uploads-per-day" );
+	print_graph( $s_failed/$days, $date, "failed-per-day" );
+	print_graph( $s_dep_wait/$days, $date, "dep-wait-per-day" );
+	print_graph( $s_give_back/$days, $date, "give-back-per-day" );
+	print_graph( $s_build_time/$s_builds, $date, "time-per-build" )
+		if $s_builds;
+	print_graph( $s_build_time/$total_time, $date, "build-time-percent" );
+	print_graph( $s_idle_time/$total_time, $date, "idle-time-percent" );
+
+	my $g;
+	foreach $g (qw(builds-per-day uploads-per-day failed-per-day
+			       dep-wait-per-day time-per-build build-time-percent
+				   idle-time-percent)) {
+		next if !open( G, "<stats/graphs/$g" );
+		print OUT "$g (max. $main::graph_maxval{$g}):\n\n";
+		while( <G> ) {
+			print OUT $_;
+		}
+		close( G );
+		print OUT "\n";
+	}
+
+	close( OUT );
+}
+
+sub print_time {
+	my $t = shift;
+	my $str = sprintf "%02d:%02d:%02d", int($t/3600), int(($t%3600)/60),
+										int($t%60);
+	$str = " "x(10-length($str)) . $str;
+	return $str;
+}
+
+sub print_graph {
+	my $val = shift;
+	my $date = shift;
+	my $graph = shift;
+	my $width = 72;
+	local( *G );
+
+	if (!exists $main::graph_maxval{$graph}) {
+		logger( "Unknown graph $graph\n" );
+		return;
+	}
+	if (!open( G, ">>stats/graphs/$graph" )) {
+		logger( "Can't create stats/graphs/$graph: $!\n" );
+		return;
+	}
+	$val = int( $val*$width/$main::graph_maxval{$graph} + 0.5 );
+	my $str = $val > $width ? "*"x($width-1)."+" : "*"x$val;
+	$date = substr( $date, 0, 6 );
+	$date .= " " x (6-length($date));
+	print G "$date $str\n";
+	close( G );
+}
+
+sub format_time {
+	my $t = shift;
+	my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = localtime($t);
+
+	return sprintf "%04d%02d%02d-%02d%02d",
+				   $year+1900, $mon+1, $mday, $hour, $min;
+}
+
+sub format_date {
+	my $t = shift;
+	my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = localtime($t);
+
+	return sprintf "%02d%02d%02d", $year%100, $mon+1, $mday;
+}

@@ -1,0 +1,59 @@
+#!/bin/sh -e
+# Script that uses debootstrap 0.2.45 to build a build-essential
+# chroot for buildd use
+
+# user suite target <mirror>
+if [ "$#" -lt "3" ]; then
+	echo "usage: buildd-make-chroot user suite target <mirror>"
+	exit 1
+fi
+
+if [ "$#" -gt "4" ]; then
+	echo "usage: buildd-make-chroot user suite target <mirror>"
+	exit 1
+fi
+
+USER=$1
+SUITE=$2
+TARGET=$3
+debootstrap --variant=buildd $SUITE $TARGET $4
+echo "# put any local/close mirrors at the top of the file" > $TARGET/etc/apt/sources.list
+echo "deb http://incoming.debian.org/debian $SUITE main contrib" >> $TARGET/etc/apt/sources.list
+echo "deb-src http://incoming.debian.org/debian $SUITE main contrib" >> $TARGET/etc/apt/sources.list
+case "$2" in
+	sid)
+	    echo "deb http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
+	;;
+	woody)
+	    echo "deb http://non-us.debian.org/debian-non-US $SUITE/non-US main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://non-us.debian.org/debian-non-US $SUITE/non-US main contrib" >> $TARGET/etc/apt/sources.list
+	    
+	    echo "deb http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+
+	    echo "deb http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+
+	    echo "deb http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	;;
+	sarge)
+	    echo "deb http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	;;
+esac
+
+getent passwd $USER | sed -r 's/^([^:]+):x/\1:*/' >> $TARGET/etc/passwd
+getent group $USER | sed -r 's/^([^:]+):x/\1:*/' >> $TARGET/etc/group
+echo $USER  ALL=NOPASSWD:  ALL >> $TARGET/etc/sudoers
+mkdir -p $TARGET/var/debbuild/srcdep-lock $TARGET/build/$USER $TARGET/`getent passwd $USER | awk -v FS=":" '{ print $6 }'`
+chown -R $USER:$USER $TARGET/var/debbuild $TARGET/build/$USER $TARGET/`getent passwd $USER | awk -v FS=":" '{ print $6 }'`
+chmod -R 02775 $TARGET/var/debbuild
+echo "Successfully setup chroot for a buildd"

@@ -1,0 +1,2717 @@
+#!/usr/bin/perl
+# 
+# wanna-build: coordination script for Debian/m68k builders
+# Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: wanna-build,v 1.130 2002/10/10 18:50:46 rnhodek Exp $
+#
+# $Log: wanna-build,v $
+# Revision 1.130  2002/10/10 18:50:46  rnhodek
+# Security/accepted autobuilding patch by Ryan.
+#
+# Revision 1.129  2001/09/18 09:46:44  rnhodek
+# Update section and priority when moving out a package from Dep-Wait,
+# too.
+#
+# Revision 1.128  2001/05/30 08:45:42  rnhodek
+# New cmd line options --database (-b) and --arch (-A).
+#
+# Revision 1.127  2001/05/29 08:24:11  rnhodek
+# Fixes to help text by James.
+#
+# Revision 1.126  2001/05/03 09:37:17  rnhodek
+# version_compare: also accept '==' as relation (same as '=').
+#
+# Revision 1.125  2000/10/19 09:14:30  rnhodek
+# read_db: fix regexp.
+#
+# Revision 1.124  2000/10/17 08:10:01  rnhodek
+# Append @hostname to From in mails only if $db_maint doesn't contain an
+# @ yet.
+#
+# Revision 1.123  2000/03/03 12:12:50  rnhodek
+# parse_sources: delete Arch: all packages only if database version if
+# <= source version.
+#
+# Revision 1.122  2000/03/03 10:46:28  rnhodek
+# The Arch: all deleting was a reall Bad Idea (TM) ... it deleted
+# packages where *at least* one binary pkg is Arch: all -- not really
+# what I wanted :-)
+# The correct thing to do is a new --merge-sources: It checks for source
+# packages that are Arch: all and deletes them.
+#
+# Revision 1.121  2000/03/02 13:21:58  rnhodek
+# parse_packages: if an Arch: all package exists in the db, delete it;
+# it probably just has changed architecture.
+# parse_quinn: also delete pkgs in states Building or Uploaded if they
+# disappear from quinn-diff.
+#
+# Revision 1.120  2000/03/01 13:00:38  rnhodek
+# Introduced failed categories:
+#  - new option -c (--category)
+#  - default action is --failed if -c option given (to change category)
+#  - new code letter for ordering ('f') that orders by failed category
+#  - different default list order for failed packages (includes 'f')
+#  - parsing of [XXX] headers in failed messages and translation to categories
+#  - if category changes to r or n, add a note to the failed msgs with date
+# Reordered checks in add_one_failed to avoid useless warnings/notes be
+# printed before a fatal error.
+# New options --min-age (-a) and --max-age to restrict package to list
+# by last state change; new function parse_date for this.
+#
+# Revision 1.119  2000/02/23 12:27:26  rnhodek
+# parse_quinn: Added a warning for packages that have a newer version in
+# the db than in quinn and the state is one of Installed Install-Wait
+# Reupload-Wait Not-For-Us; then the newer version is questionable... it
+# could be caused by a lame mirror, or it is plain wrong.
+#
+# Revision 1.118  2000/02/23 10:42:32  rnhodek
+# Add missing \n in a print statement.
+#
+# Revision 1.117  2000/02/04 14:00:23  rnhodek
+# New option --no-down-propagation (-D) to supress state propagation to
+# ``smaller'' distributions (i.e. from unstable to frozen or frozen to stable).
+#
+# Revision 1.116  2000/02/04 13:54:54  rnhodek
+# New option --no-propagation (-N) to supress state propagation to other
+# distributions (needed sometimes for fixing things manually.)
+#
+# Revision 1.115  2000/02/04 13:51:06  rnhodek
+# Propagate also --no-build changes to other distributions.
+#
+# Revision 1.114  2000/01/25 13:04:20  rnhodek
+# WrapDB::FETCH: don't match newlines in data.
+#
+# Revision 1.113  1999/11/15 12:33:00  rnhodek
+# Fix bug in regexp for stripping file extension (in add_packages).
+#
+# Revision 1.112  1999/08/23 14:12:46  rnhodek
+# Ignore entries in a Packages file with a foreign architecture (needed
+# for merging the Packages file in proposed-updates.)
+# New global var $my_arch.
+#
+# Revision 1.111  1999/08/10 08:15:40  rnhodek
+# parse_quinn: allow section to contain [\w\d-/]; needed for things
+# like non-US/non-free as section.
+#
+# Revision 1.110  1999/08/04 09:17:23  rnhodek
+# add_one_building: Print the warning that previous version failed also
+# if the previous state was Failed-Removed.
+#
+# Revision 1.109  1999/08/03 11:38:59  rnhodek
+# propagate_ta: I hope I have found now where the empty
+# HASH(0x........): fields come from; it seems the hash assignment in
+# propagate_ta doesn't work as expected in perl-5.005; copy elements
+# explicitly.
+# FETCH: try to ignore HASH(): prefixes (just to be sure...)
+#
+# Revision 1.108  1999/07/28 09:58:29  rnhodek
+# When storing an entry to db, skip fields where key or value are
+# references (and print a warning); this happened some times now, don't
+# know why.
+# Better error messages in check_entry().
+#
+# Revision 1.107  1999/07/27 12:06:54  rnhodek
+# Don't let --info -dall create not-yet-existing databases.
+#
+# Revision 1.106  1999/07/23 12:48:58  rnhodek
+# When sending mail, add domain name to target address; also add a From:
+# header with domain.
+#
+# Revision 1.105  1999/06/14 12:16:49  rnhodek
+# parse_packages: now can also changed Installed->Installed if a newer
+# version than registered appears in the Packages file (happens if
+# someone uploads a package without any wanna-build interaction).
+#
+# Revision 1.104  1999/06/14 08:56:55  rnhodek
+# Don't use getlogin() to determine $real_user; it gives wrong results
+# if su has been used.
+#
+# Revision 1.103  1999/06/08 14:21:38  rnhodek
+# parse_quinn: Accept empty section and priority values and replace them
+# by "unknown".
+#
+# Revision 1.102  1999/05/27 11:59:28  rnhodek
+# New functions version_eq and version_lesseq, version_less_p renamed to
+# version_less (all interfaces to version_compare).
+# version_compare: new optional arg "strict" or "non-strict" defines
+# whether to ignore epochs or not; also global variable
+# $strict_epoch_compare for this as default; if in non-strict mode and
+# one version has an epoch and the other not, ignore the epoch; this is
+# to still allow using filenames as arguments, which never show the
+# epoch.
+# add_one_*: whenever storing a version number coming from the command
+# line and that version doesn't contain an epoch but the db version
+# does, copy that epoch (new function add_epoch).
+# parse_packages: Use strict comparisons except when introducing epochs;
+# special case for introducing epochs.
+# parse_quinn: Always use strict comparisons; add epoch for packages in
+# states other than Installed here.
+# New option: --introduce-epochs.
+# New config var $ignore_epchs; must be true if quinn-diff input doesn't
+# have epoch numbers.
+# parse_quinn: keep version numbers of Not-For-Us package up-to-date.
+#
+# Revision 1.101  1999/05/26 09:21:18  rnhodek
+# If one takes a package he already owns, don't give him a NOT OK, but
+# an ok together with a note.
+#
+# Revision 1.100  1999/05/17 13:48:11  rnhodek
+# Fix /tmp insecurity with --manual-edit.
+#
+# Revision 1.99  1999/05/12 14:18:59  rnhodek
+# parse_quinn_diff: strip also epochs with no digits (i.e., a leading
+# ':'); this is generated by quinn-diff if it can't find a package with
+# an epoched version in Packages-source.
+#
+# Revision 1.98  1999/03/08 13:48:54  rnhodek
+# Argl... last commit was a mistake. Here's the proper log message:
+# In parse_packages, it can happen that multiple version for one source
+# package exist. So in the "already done?" test have to ask for same
+# version number, too, before omitting to process.
+#
+# Revision 1.97  1999/03/08 13:46:37  rnhodek
+# NEWS
+#
+# Revision 1.96  1999/03/08 13:07:30  rnhodek
+# New version --pretend-avail to move packages out of Dep-Wait state.
+#
+# Revision 1.95  1999/03/01 13:51:51  rnhodek
+# Argl... must set Package field if parse_packages creates a new entry.
+#
+# Revision 1.94  1999/03/01 13:45:12  rnhodek
+# Removed meaningless line numbers in error messages of check_entry.
+# No checks at all in manual-edit mode.
+#
+# Revision 1.93  1999/03/01 13:30:05  rnhodek
+# in parse_packages, do not ignore unknown packages anymore; this was
+# done initially to keep the databases smaller, but now they contain
+# most of the packages anyway.
+#
+# Revision 1.92  1999/02/17 11:28:00  rnhodek
+# Make give-back --override work...
+# On --info and --forget, strip version (anything following a '_') from
+# arguments.
+#
+# Revision 1.91  1999/02/17 11:05:35  rnhodek
+# Allow give-back from any-state with --override.
+#
+# Revision 1.90  1999/02/03 13:26:01  rnhodek
+# In info_packages, print distrib also for not registered packages.
+#
+# Revision 1.89  1999/02/03 13:14:48  rnhodek
+# Mention distribution in "new version of ..." mails.
+# Allow --dist=all (-da) for build-info; prints infos for all known
+# distributions.
+# In the output of build-info, always start the fail messages in a new
+# line to make output more readable.
+#
+# Revision 1.88  1999/01/18 12:17:25  rnhodek
+# Handle EAGAIN error code when opening the database; this happens
+# rather often now since the switch to gdbm, don't know why; if the
+# result of the tie is EAGAIN, wait 2 seconds and try again, this 30
+# times.
+#
+# Revision 1.87  1999/01/08 12:46:07  rnhodek
+# Don't warn if a package goes Reupload-Wait -> Installed.
+#
+# Revision 1.86  1999/01/08 12:09:16  rnhodek
+# Switched from DB databases to GDBM, because DB crashed sometimes for
+# no good reason when writing entries.
+# Setting the debug vars for db classes must be done in a BEGIN to have
+# effect.
+# Reorganized loop body of parse_packages so that reason for not
+# changing state of a package is printed correctly with $verbose >= 2.
+#
+# Revision 1.85  1998/12/22 16:39:22  rnhodek
+# Implemented version comparison in Perl, to save the time for forking
+# dpkg a lot of times; since this isn't 100% correct, add a new flag
+# --correct-compare, which will force to use dpkg --compare-versions.
+#
+# Revision 1.84  1998/12/22 16:25:33  rnhodek
+# Made program name and option handling more general; replace big
+# switches by table-driven approach.
+#
+# Revision 1.83  1998/12/22 14:57:41  rnhodek
+# Replace the ugly $main::var syntax for global variables by $var
+# together with a use vars.
+#
+# Revision 1.82  1998/12/22 14:28:37  rnhodek
+# Remove all uses of $', because if it's used once, $`,$&,$' are set by
+# Perl for *all* regexp matches, which can slow down a script
+# consiberably.
+# On "Bad distribution" error also print what is not acceptable.
+#
+# Revision 1.81  1998/12/16 13:37:50  rnhodek
+# Allow --uploaded on packages in Install-Wait also without --override.
+#
+# Revision 1.80  1998/12/15 16:22:29  rnhodek
+# Allow --take and --uploaded for package in Install-Wait with
+# --override.
+# In parse_packages, use the version in the Source: field if it exists,
+# instead of the version of the binary package.
+#
+# Revision 1.79  1998/12/15 14:39:06  rnhodek
+# If a packages goes to Failed, Dep-Wait or Needs-Build and is in
+# Install-Wait in another distrib, propagate the state change to
+# there, too.
+#
+# Revision 1.78  1998/12/11 09:57:38  rnhodek
+# If copying a state from another dist (in parse_quinn), also set the
+# Package: field, because the entry might not have existed before.
+#
+# Revision 1.77  1998/11/27 13:04:05  rnhodek
+# In --list=all, print also now many packages in each state.
+#
+# Revision 1.76  1998/11/26 12:21:31  rnhodek
+# Set Installed-Version for all packages, not only those changing to
+# Installed.
+#
+# Revision 1.75  1998/11/26 10:22:16  rnhodek
+# Allow states Failed-Removed, Dep-Wait-Removed, Install-Wait, and
+# Reupload-Wait with --list.
+# Print Installed-Version: field in the first keys with --info.
+#
+# Revision 1.74  1998/11/25 16:57:35  rnhodek
+# Argument to -d or --dist can now be abbreviated as 's', 'f', or 'u'.
+# New field Installed-Version: for each package, giving the version
+# currently installed in the archive.
+# Introduced new states Install-Wait and Reupload-Wait, as part of the
+# fix for the frozen-delay-problem:
+# If a package is installed in frozen with a delay, quinn-diff will list
+# it for unstable earlier than for stable; due to this, the build
+# daemons can compile the package for unstable and may not yet upload it
+# for frozen; instead of making such packages Needs-Build, wanna-build
+# now makes them Install-Wait or Reupload-Wait (depending on if the pkg
+# is already installed in an other dist); Install-Wait goes to
+# Reupload-Wait as soon as the version is installed somewhere; when
+# going to Reupload-Wait, a mail is sent to the previous builder to
+# reupload the package for this distribution.
+#
+# Revision 1.73  1998/11/19 15:53:05  rnhodek
+# Implemented global maintenance locks (for all databases); this is
+# necessary because the --merge-* actions work for separate distribs,
+# but the data belong together and distribs should be consistent.
+#
+# Revision 1.72  1998/11/10 15:34:27  rnhodek
+# For --list, sort sections not any more alphabetically, but by
+# "importance" (where that is a bit subjective...).
+# For sorting by priorities and sections use hashes which give a numeric
+# sorting value, instead of a subroutine (which is less efficient).
+#
+# Revision 1.71  1998/11/04 15:58:25  rnhodek
+# Do not send mails for "message appended" state changes.
+#
+# Revision 1.70  1998/11/03 14:43:21  rnhodek
+# Fix a bug in propagate_ta, which caused it to not propagate if
+# change_state didn't really change the state...; same thing as in log_ta.
+#
+
+package conf;
+# defaults
+$basedir = "/var/state/debbuild";
+$dbbase = "build-db";
+$ignore_epochs = 0;
+$transactlog = "transactions.log";
+$mailprog = "/usr/lib/sendmail";
+require "/org/wanna-build/etc/wanna-build.conf";
+die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;
+die "dbbase is empty\n" if ! $dbbase;
+die "transactlog is empty\n" if ! $transactlog;
+die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
+	if !-x $conf::mailprog;
+package main;
+
+use strict;
+use IO;
+use POSIX;
+use FileHandle;
+use Time::Local;
+
+use vars qw($verbose $mail_logs $list_order $list_state @distributions
+			%dist_order $curr_date $op_mode $user $real_user $distribution
+			$fail_reason $opt_override $import_from $export_to $opt_create_db
+			$opt_correct_version_cmp $transactlog %db %otherdb %otherdb_lock
+			%prioval %sectval $info_all_dists $strict_epoch_compare
+			$opt_introduce_epochs $hostname $my_arch $opt_no_propagation
+			$opt_no_down_propagation $category %catval %short_category
+			$short_date $list_min_age %monname $dbbase);
+
+# global vars
+$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
+$verbose = 0;
+$mail_logs = "";
+@distributions = qw(oldstable-security stable testing unstable stable-security testing-security);
+%dist_order = ( 'oldstable-security' => 0, stable => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, unstable => 3 );
+chomp( $curr_date = `/bin/date '+%Y %b %d %H:%M:%S'` );
+chomp( $short_date = `/bin/date '+%m/%d/%y'` );
+chomp( $hostname = `/bin/hostname -f` );
+chomp( $my_arch = `/usr/bin/dpkg --print-installation-architecture` );
+$curr_date =~ /^(.*)$/; $curr_date = $1; # untaint
+$| = 1;
+
+# map program invocation names to operation modes
+my %prognames = ( "uploaded-build"  => "set-uploaded",
+				  "failed-build"    => "set-failed",
+				  "no-build"		=> "set-not-for-us",
+				  "give-back-build" => "set-needs-build",
+				  "dep-wait-build"  => "set-dep-wait",
+				  "forget-build"	=> "forget",
+				  "merge-quinn"		=> "merge-quinn",
+				  "merge-packages"  => "merge-packages",
+				  "merge-sources"   => "merge-sources",
+				  "build-info"		=> "info" );
+
+%short_category = ( u => "uploaded-fixed-pkg",
+				    f => "fix-expected",
+					r => "reminder-sent",
+					n => "nmu-offered",
+					e => "easy",
+					m => "medium",
+					h => "hard",
+					c => "compiler-error",
+					"" => "none" );
+
+my $progname;
+($progname = $0) =~ s,.*/,,;
+if ($prognames{$progname}) {
+	$op_mode = $prognames{$progname};
+}
+elsif ($progname =~ /^list-(.*)$/) {
+	$op_mode = "list";
+	$list_state = ($1 eq "all") ? "" : $1;
+}
+
+my %options =
+	(# flags
+	 verbose        => { short => "v", flag => \$verbose },
+	 override		=> { short => "o", flag => \$opt_override },
+	 "create-db"	=> { flag => \$opt_create_db },
+	 "correct-compare" => { flag => \$opt_correct_version_cmp },
+	 "introduce-epochs" => { flag => \$opt_introduce_epochs },
+	 "no-propagation" => { short => "N", flag => \$opt_no_propagation },
+	 "no-down-propagation" => { short => "D", flag => \$opt_no_down_propagation },
+	 # normal actions
+	 take			=> { mode => "set-building" },
+	 failed			=> { short => "f", mode => "set-failed" },
+	 uploaded		=> { short => "u", mode => "set-uploaded" },
+	 "no-build"		=> { short => "n", mode => "set-not-for-us" },
+	 "give-back"	=> { mode => "set-needs-build" },
+	 "dep-wait"		=> { mode => "set-dep-wait" },
+	 forget			=> { mode => "forget" },
+	 "merge-quinn"  => { mode => "merge-quinn" },
+	 "merge-partial-quinn" => { mode => "merge-partial-quinn" },
+	 "merge-packages" => { mode => "merge-packages" },
+	 "merge-sources" => { mode => "merge-sources" },
+	 "pretend-avail" => { short => "p", mode => "pretend-avail" },
+	 info			=> { short => "i", mode => "info" },
+	 list			=>
+	 { short => "l", mode => "list", arg => \$list_state,
+	   code => sub {
+		   die "Unknown state to list: $list_state\n"
+			   if !isin( $list_state, qw(needs-build building uploaded
+										 failed installed dep-wait
+										 not-for-us all failed-removed
+										 dep-wait-removed install-wait
+										 reupload-wait));} },
+	 # options with args
+	 dist           =>
+	 { short => "d", arg => \$distribution,
+	   code => sub {
+		   if ($distribution eq "a" || $distribution eq "all") {
+			   $info_all_dists = 1;
+			   $distribution = "";
+		   }
+		   else {
+			   $distribution = "stable"   if $distribution eq "s";
+			   $distribution = "testing"  if $distribution eq "t";
+			   $distribution = "unstable" if $distribution eq "u";
+		   }
+	   } },
+	 order          =>
+	 { short => "O", arg => \$list_order,
+	   code => sub {
+		   die "Bad ordering character\n"
+			   if $list_order !~ /^[Spsncb]+$/;
+	   } },
+	 message        => { short => "m", arg => \$fail_reason },
+	 database       => { short => "b", arg => \$conf::dbbase },
+	 arch           => { short => "A", arg => \$my_arch },
+	 user           => { short => "U", arg => \$user },
+	 category		=> { short => "c", arg => \$category,
+						 code => sub {
+							 $category = $short_category{$category}
+								 if exists $short_category{$category};
+							 die "Unknown category: $category\n"
+								 if !isin( $category, values %short_category );
+						 } },
+	 "min-age"      => { short => "a", arg => \$list_min_age,
+						 code => sub {
+							 die "Argument of --min-age must be a non-zero number\n"
+								 if $list_min_age == 0;
+							 $list_min_age *= 24*60*60;
+						 } },
+	 "max-age"      => { arg => \$list_min_age,
+						 code => sub {
+							 die "Argument of --max-age must be a non-zero number\n"
+								 if $list_min_age == 0;
+							 $list_min_age *= -24*60*60;
+						 } },
+	 # special actions
+	 import         => { arg => \$import_from, mode => "import" },
+	 export         => { arg => \$export_to, mode => "export" },
+	 "manual-edit"  => { mode => "manual-edit" },
+	 "create-maintenance-lock" => { mode => "maintlock-create" },
+	 "remove-maintenance-lock" => { mode => "maintlock-remove" },
+	 "clean-db" => { mode => "clean-db" },
+	 );
+
+while( @ARGV && $ARGV[0] =~ /^-/ ) {
+	$_ = shift @ARGV;
+	last if $_ eq "--";
+	my($opt, $optname, $arg);
+	if (/^--([^=]+)(=|$)/) {
+		$optname = $1;
+		$opt = $options{$optname};
+		$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
+	}
+	else {
+		$optname = substr( $_, 1, 1 );
+		$opt = (grep { $_->{short} eq $optname } values %options)[0];
+		$arg = $1 if /^-$optname(.+)$/;
+	}
+	if (!$opt) {
+		warn "Unknown option: --$1\n";
+		usage();
+	}
+	if ($opt->{arg}) {
+		if (!defined $arg) {
+			die "$optname option missing argument\n" if !@ARGV;
+			$arg = shift @ARGV;
+		}
+		${$opt->{arg}} = $arg;
+	}
+	elsif (defined $arg) {
+		die "Option $optname takes no argument\n";
+	}
+	
+	if ($opt->{mode}) {
+		die "Conflicting operation modes\n" if $op_mode;
+		$op_mode = $opt->{mode};
+	}
+	if ($opt->{flag}) {
+		${$opt->{flag}}++;
+	}
+	if ($opt->{code}) {
+		&{$opt->{code}};
+	}
+}
+
+$op_mode = $category ? "set-failed" : "set-building"
+	if !$op_mode; # default operation
+$list_order = $list_state eq "failed" ? 'fcpsn' : 'Scpsn'
+	if !$list_order;
+$distribution ||= "unstable";
+die "Bad distribution '$distribution'\n"
+	if !isin($distribution, @distributions);
+$conf::dbbase =~ m#^([^/]+/)#;
+$transactlog = "$conf::basedir/$1$conf::transactlog";
+
+if ($verbose) {
+	my $version = '$Revision: 1.130 $ $Date: 2002/10/10 18:50:46 $ $Author: rnhodek $';
+	$version =~ s/\$ ?//g;
+	print "wanna-build $version\n";
+}
+
+if (!@ARGV && !isin( $op_mode, qw(list merge-quinn merge-partial-quinn import export
+				  merge-packages manual-edit maintlock-create
+				  merge-sources maintlock-remove clean-db))) {
+	warn "No packages given.\n";
+	usage();
+}
+
+$real_user = (getpwuid($<))[0];
+die "Can't determine your user name\n"
+	if $op_mode ne "list" && !$user &&
+	   !($user = $real_user);
+
+if ($op_mode eq "set-failed" && !$fail_reason && !$category) {
+	print "Enter reason for failing (end with '.' alone on its line):\n";
+	my $line;
+	while(1) {
+		$line = <STDIN>;
+		last if $line eq ".\n";
+		$line = ".\n" if $line eq "\n";
+		$fail_reason .= $line;
+	}
+	chomp( $fail_reason );
+}
+if ($op_mode eq "set-dep-wait" && !$fail_reason) {
+	print "Enter dependencies (one line):\n";
+	my $line;
+	while( !$line && !eof(STDIN) ) {
+		chomp( $line = <STDIN> );
+	}
+	die "No dependencies given\n" if !$line;
+	$fail_reason = $line;
+}
+
+if ($op_mode eq "maintlock-create") {
+	create_maintlock();
+	exit 0;
+}
+if ($op_mode eq "maintlock-remove") {
+	remove_maintlock();
+	exit 0;
+}
+waitfor_maintlock() if $op_mode !~ /^(?:merge-|clean-db$)/;
+
+if (!-f db_filename( $distribution ) && !$opt_create_db) {
+	die "Database for $distribution doesn't exist\n";
+}
+lock_db( $distribution );
+END {
+    untie %db;
+	unlock_db( $distribution );
+	foreach (@distributions) {
+		untie %{$otherdb{$_}} if tied(%{$otherdb{$_}});
+		unlock_db( $_ ) if $otherdb_lock{$_};
+	}
+}
+
+tie %db, 'WrapDB', db_filename( $distribution )
+	or die "FATAL: Cannot open database\n";
+
+process();
+
+if ($mail_logs && $conf::log_mail) {
+	send_mail( $conf::log_mail,
+			   "wanna-build $distribution state changes $curr_date",
+			   "State changes at $curr_date for distribution ".
+			   "$distribution:\n\n$mail_logs\n" );
+}
+
+exit 0;
+
+
+sub process {
+
+	SWITCH: foreach ($op_mode) {
+		/^set-(.+)/ && do {
+			add_packages( $1, @ARGV );
+			last SWITCH;
+		};
+		/^list/ && do {
+			list_packages( $list_state );
+			last SWITCH;
+		};
+		/^info/ && do {
+			info_packages( @ARGV );
+			last SWITCH;
+		};
+		/^forget/ && do {
+			forget_packages( @ARGV );
+			last SWITCH;
+		};
+		/^merge-partial-quinn/ && do {
+			parse_quinn_diff(1);
+			last SWITCH;
+		};
+		/^merge-quinn/ && do {
+			parse_quinn_diff(0);
+			last SWITCH;
+		};
+		/^merge-packages/ && do {
+			parse_packages();
+			last SWITCH;
+		};
+		/^merge-sources/ && do {
+			parse_sources();
+			last SWITCH;
+		};
+		/^pretend-avail/ && do {
+			pretend_avail( @ARGV );
+			last SWITCH;
+		};
+		/^import/ && do {
+			die "You are not the wanna-build database admin.  Contact rmurray\@d.o\n";
+			%db = (); # clear all current contents
+			read_db( $import_from );
+			last SWITCH;
+		};
+		/^export/ && do {
+			write_db( $export_to );
+			last SWITCH;
+		};
+		/^manual-edit/ && do {
+			my $tmpfile_pattern = "/tmp/wanna-build-$distribution.$$-";
+			my ($tmpfile, $i);
+			for( $i = 0;; ++$i ) {
+				$tmpfile = $tmpfile_pattern . $i;
+				last if ! -e $tmpfile;
+			}
+			write_db( $tmpfile );
+			my $editor = $ENV{'VISUAL'} ||
+						 "/usr/bin/sensible-editor";
+			system "$editor $tmpfile";
+			%db = (); # clear all current contents
+			read_db( $tmpfile );
+			unlink( $tmpfile );
+			last SWITCH;
+		};
+		/^clean-db/ && do {
+			my %new_db;
+			tie %new_db, 'WrapDB', db_filename( $distribution ) . ".new"
+				or die "FATAL: Cannot create new database\n";
+			%new_db = %db;
+			untie %db or die "FATAL: Cannot untie old database\n";
+			system ("cp " . db_filename( $distribution ) . ".new " .
+				db_filename( $distribution ) ) == 0
+				or die "FATAL: Cannot overwrite old database";
+			unlink db_filename( $distribution ) . ".new";
+			%db = %new_db;
+			last SWITCH;
+		};
+
+		die "Unexpected operation mode $op_mode\n";
+	}
+}
+
+sub add_packages {
+	my $newstate = shift;
+	my( $package, $name, $version, $ok, $reason );
+	
+	foreach $package (@_) {
+		$package =~ s,^.*/,,; # strip path
+		$package =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
+		$package =~ s/_[a-zA-Z\d-]+\.changes$//; # strip extension
+		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+-]+)/) {
+			($name,$version) = ($1,$2);
+			$version =~ s/^\d+://; # strip epoch
+		}
+		else {
+			warn "$package: can't extract package name and version ".
+				 "(bad format)\n";
+			next;
+		}
+
+		if ($op_mode eq "set-building") {
+			add_one_building( $name, $version );
+		}
+		elsif ($op_mode eq "set-uploaded") {
+			add_one_uploaded( $name, $version );
+		}
+		elsif ($op_mode eq "set-failed") {
+			add_one_failed( $name, $version );
+		}
+		elsif ($op_mode eq "set-not-for-us") {
+			add_one_notforus( $name, $version );
+		}
+		elsif ($op_mode eq "set-needs-build") {
+			add_one_needsbuild( $name, $version );
+		}
+		elsif ($op_mode eq "set-dep-wait") {
+			add_one_depwait( $name, $version );
+		}
+	}
+}
+
+sub add_one_building {
+	my $name = shift;
+	my $version = shift;
+	my( $ok, $reason );
+
+	$ok = 1;
+	if (exists($db{$name})) {
+		my $pkg = $db{$name};
+		if ($pkg->{'State'} eq "Not-For-Us") {
+			$ok = 0;
+			$reason = "not suitable for this architecture";
+		}
+		elsif ($pkg->{'State'} =~ /^Dep-Wait/) {
+			$ok = 0;
+			$reason = "not all source dependencies available yet";
+			$reason .= "\nalso the package doesn't need builing"
+				if $pkg->{'State'} eq 'Dep-Wait-Removed';
+		}
+		elsif ($pkg->{'State'} eq "Uploaded" &&
+			   (version_lesseq($version, $pkg->{'Version'}))) {
+			$ok = 0;
+			$reason = "already uploaded by $pkg->{'Builder'}";
+			$reason .= " (in newer version $pkg->{'Version'})"
+				if !version_eq($pkg->{'Version'}, $version);
+		}
+		elsif ($pkg->{'State'} eq "Installed" &&
+			   version_less($version,$pkg->{'Version'})) {
+			if ($opt_override) {
+				print "$name: Warning: newer version $pkg->{'Version'} ".
+					  "already installed, but overridden.\n";
+			}
+			else {
+				$ok = 0;
+				$reason = "newer version $pkg->{'Version'} already in ".
+						  "archive; doesn't need rebuilding";
+				print "$name: Note: If the following is due to an epoch ",
+					  " change, use --override\n";
+			}
+		}
+		elsif ($pkg->{'State'} eq "Installed" &&
+			   version_eq($version, $pkg->{'Version'})) {
+			$ok = 0;
+			$reason = "is up-to-date in the archive; doesn't need rebuilding";
+		}
+		elsif ($pkg->{'State'} eq "Needs-Build" &&
+			   version_less($version,$pkg->{'Version'})) {
+			if ($opt_override) {
+				print "$name: Warning: newer version $pkg->{'Version'} ".
+					  "needs building, but overridden.";
+			}
+			else {
+				$ok = 0;
+				$reason = "newer version $pkg->{'Version'} needs building, ".
+						  "not $version";
+			}
+		}
+		elsif ($pkg->{'State'} eq "Building") {
+			if (version_less($pkg->{'Version'},$version)) {
+				print "$name: Warning: Older version $pkg->{'Version'} ",
+				      "is being built by $pkg->{'Builder'}\n";
+				if ($pkg->{'Builder'} ne $user) {
+					send_mail( $pkg->{'Builder'},
+							   "package takeover in newer version",
+							   "You are building package '$name' in ".
+							   "version $version\n".
+							   "(as far as I'm informed).\n".
+							   "$user now has taken the newer ".
+							   "version $version for building.".
+							   "You can abort the build if you like.\n" );
+				}
+			}
+			else {
+				if ($opt_override) {
+					print "User $pkg->{'Builder'} had already ",
+					      "taken the following package,\n",
+						  "but overriding this as you request:\n";
+					send_mail( $pkg->{'Builder'}, "package takeover",
+							   "The package '$name' (version $version) that ".
+							   "was locked by you\n".
+							   "has been taken over by $user\n" );
+				}
+				elsif ($pkg->{'Builder'} eq $user) {
+					print "$name: Note: already taken by you.\n";
+					print "$name: ok\n" if $verbose;
+					return;
+				}
+				else {
+					$ok = 0;
+					$reason = "already taken by $pkg->{'Builder'}";
+					$reason .= " (in newer version $pkg->{'Version'})"
+						if !version_eq($pkg->{'Version'}, $version);
+				}
+			}
+		}
+		elsif ($pkg->{'State'} =~ /^Failed/ &&
+			   version_eq($pkg->{'Version'}, $version)) {
+			if ($opt_override) {
+				print "The following package previously failed ",
+					  "(by $pkg->{'Builder'})\n",
+					  "but overriding this as you request:\n";
+				send_mail( $pkg->{'Builder'}, "failed package takeover",
+						   "The package '$name' (version $version) that ".
+						   "is locked by you\n".
+						   "and has failed previously has been taken over ".
+						   "by $user\n" )
+					if $pkg->{'Builder'} ne $user;
+			}
+			else {
+				$ok = 0;
+				$reason = "build of $version failed previously:\n    ";
+				$reason .= join( "\n    ", split( "\n", $pkg->{'Failed'} ));
+				$reason .= "\nalso the package doesn't need builing"
+					if $pkg->{'State'} eq 'Failed-Removed';
+			}
+		}
+	}
+	if ($ok) {
+		print "$name: Warning: Previous version failed!\n"
+			if $db{$name}->{'Previous-State'} =~ /^Failed/ ||
+			   $db{$name}->{'State'} =~ /^Failed/;
+		change_state( $name, 'Building' );
+		$db{$name}->{'Package'} = $name;
+		$db{$name}->{'Version'} = add_epoch($version, $db{$name}->{'Version'});
+		$db{$name}->{'Builder'} = $user;
+		log_ta( $name, "--take" );
+		propagate_ta( $name, "--take" );
+		print "$name: ok\n" if $verbose;
+	}
+	else {
+		print "$name: NOT OK!\n  $reason\n";
+	}
+}
+
+sub add_one_uploaded {
+	my $name = shift;
+	my $version = shift;
+
+	if (!exists($db{$name})) {
+		print "$name: not registered yet.\n";
+		return;
+	}
+	my $pkg = $db{$name};
+
+	if ($pkg->{'State'} eq "Uploaded" &&
+		version_eq($version, $pkg->{'Version'})) {
+		print "$name: already uploaded\n";
+		return;
+	}
+	if (!isin( $pkg->{'State'}, qw(Building))) {
+		print "$name: not taken for building (state is $pkg->{'State'}). ",
+			  "Skipping.\n";
+		return;
+	}
+	if ($pkg->{'Builder'} ne $user) {
+		print "$name: not taken by you, but by $pkg->{'Builder'}. Skipping.\n";
+		return;
+	}
+	if (!version_eq($pkg->{'Version'}, $version)) {
+		print "$name: version mismatch ($pkg->{'Version'} registered). ",
+			  "Skipping.\n";
+		return;
+	}
+
+	change_state( $name, 'Uploaded' );
+	log_ta( $name, "--uploaded" );
+	propagate_ta( $name, "--uploaded" );
+	print "$name: registered as uploaded\n" if $verbose;
+}
+
+sub add_one_failed {
+	my $name = shift;
+	my $version = shift;
+	my ($state, $cat);
+
+	if (!exists($db{$name})) {
+		print "$name: not registered yet.\n";
+		return;
+	}
+	$state = $db{$name}->{'State'};
+
+	if ($state eq "Not-For-Us") {
+		print "$name: not suitable for this architecture anyway. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Failed-Removed") {
+		print "$name: failed previously and doesn't need building. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Dep-Wait-Removed") {
+		print "$name: waiting for dependencies and doesn't need building. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Installed") {
+		print "$name: Is already installed in archive. Skipping.\n";
+		return;
+	}
+	elsif ($db{$name}->{'Builder'} &&
+		   (($user ne $db{$name}->{'Builder'}) &&
+		    !($db{$name}->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $user))) {
+		print "$name: not taken by you, but by ".
+			  "$db{$name}->{'Builder'}. Skipping.\n";
+		return;
+	}
+	elsif (version_less($version,$db{$name}->{'Version'}) &&
+		   !version_eq($version, $db{$name}->{'Version'})) {
+		print "$name: build already succeeded for newer version ".
+			  "$db{$name}->{'Version'} ".
+			  "(by $db{$name}->{'Builder'})\n";
+		return;
+	}
+
+	$cat = $category;
+	if (!$cat && $fail_reason =~ /^\[([^\]]+)\]/) {
+		$cat = $1;
+		$cat = $short_category{$cat} if exists $short_category{$cat};
+		if (!isin( $cat, values %short_category )) {
+			print "$name: Warning: unknown category $cat; discarded\n";
+			$cat = "";
+		}
+		$fail_reason =~ s/^\[[^\]]+\][ \t]*\n*//;
+	}
+
+	if ($state eq "Needs-Build") {
+		print "$name: Warning: not registered for building previously, ".
+			  "but processing anyway.\n";
+	}
+	elsif ($state eq "Uploaded") {
+		print "$name: Warning: marked as uploaded previously, ".
+			  "but processing anyway.\n";
+	}
+	elsif ($state eq "Dep-Wait") {
+		print "$name: Warning: marked as waiting for dependencies, ".
+			  "but processing anyway.\n";
+	}
+	elsif ($state eq "Failed") {
+		print "$name: already registered as failed; will append new message\n"
+			if $fail_reason;
+		print "$name: already registered as failed; changing category\n"
+			if $cat;
+	}
+
+	if (($cat eq "reminder-sent" || $cat eq "nmu-offered") &&
+		exists $db{$name}->{'Failed-Category'} &&
+		$db{$name}->{'Failed-Category'} ne $cat) {
+		(my $action = $cat) =~ s/-/ /;
+		$fail_reason .= "\n$short_date: $action";
+	}
+
+	change_state( $name, 'Failed' );
+	$db{$name}->{'Version'} = add_epoch($version, $db{$name}->{'Version'});
+	$db{$name}->{'Builder'} = $user;
+	$db{$name}->{'Failed'} .= "\n" if $db{$name}->{'Failed'};
+	$db{$name}->{'Failed'} .= $fail_reason;
+	$db{$name}->{'Failed-Category'} = $cat if $cat;
+	log_ta( $name, "--failed" );
+	propagate_ta( $name, "--failed" );
+	print "$name: registered as failed\n" if $verbose;
+}
+
+sub add_one_notforus {
+	my $name = shift;
+	my $version = shift;
+
+	if ($db{$name}->{'State'} eq 'Not-For-Us') {
+		# reset Not-For-Us state in case it's called twice; this is
+		# the only way to get a package out of this state...
+		# There is no really good state in which such packages should
+		# be put :-( So use Failed for now.
+		change_state( $name, 'Failed' );
+		$db{$name}->{'Package'} = $name;
+		$db{$name}->{'Version'} = add_epoch($version, $db{$name}->{'Version'});
+		$db{$name}->{'Failed'} = "Was Not-For-Us previously";
+		delete $db{$name}->{'Builder'};
+		delete $db{$name}->{'Depends'};
+		log_ta( $name, "--no-build(rev)" );
+		propagate_ta( $name, "--no-build(rev)" );
+		print "$name: now not unsuitable anymore\n";
+
+		send_mail( $conf::notforus_maint,
+				   "$name moved out of Not-For-Us state",
+				   "The package '$name' has been moved out of the Not-For-Us ".
+				   "state by $user.\n".
+				   "It should probably also be removed from ".
+				   "Packages-arch-specific or\n".
+				   "the action was wrong.\n" )
+			if $conf::notforus_maint;
+	}
+	else {
+		change_state( $name, 'Not-For-Us' );
+		$db{$name}->{'Package'} = $name;
+		$db{$name}->{'Version'} = add_epoch($version, $db{$name}->{'Version'});
+		delete $db{$name}->{'Builder'};
+		delete $db{$name}->{'Depends'};
+		log_ta( $name, "--no-build" );
+		propagate_ta( $name, "--no-build" );
+		print "$name: registered as unsuitable\n" if $verbose;
+
+		send_mail( $conf::notforus_maint,
+				   "$name set to Not-For-Us",
+				   "The package '$name' has been set to state Not-For-Us ".
+				   "by $user.\n".
+				   "It should probably also be added to ".
+				   "Packages-arch-specific or\n".
+				   "the Not-For-Us state is wrong.\n" )
+			if $conf::notforus_maint;
+	}
+}
+
+sub add_one_needsbuild {
+	my $name = shift;
+	my $version = shift;
+	my $state;
+
+	if (!exists($db{$name})) {
+		print "$name: not registered; can't give back.\n";
+		return;
+	}
+	$state = $db{$name}->{'State'};
+
+	if ($state eq "Dep-Wait") {
+		if ($opt_override) {
+			print "$name: Forcing source dependency list to be cleared\n";
+		}
+		else {
+			print "$name: waiting for source dependencies. Skipping\n",
+				  "  (use --override to clear dependency list and ",
+				  "give back anyway)\n";
+			return;
+		}
+	}
+	elsif ($state ne "Building") {
+		print "$name: not taken for building (state is $state).";
+		if ($opt_override) {
+			print "\n$name: Forcing give-back\n";
+		}
+		else {
+			print " Skipping.\n";
+			return;
+		}
+	}
+	if ($user ne $db{$name}->{'Builder'} &&
+		    !($db{$name}->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $user)) {
+		print "$name: not taken by you, but by ".
+			  "$db{$name}->{'Builder'}. Skipping.\n";
+		return;
+	}
+	if (!version_eq($db{$name}->{'Version'}, $version)) {
+		print "$name: version mismatch ($db{$name}->{'Version'} registered). ",
+			  "Skipping.\n";
+		return;
+	}
+	change_state( $name, 'Needs-Build' );
+	delete $db{$name}->{'Builder'};
+	delete $db{$name}->{'Depends'};
+	log_ta( $name, "--give-back" );
+	propagate_ta( $name, "--give-back" );
+	print "$name: given back\n" if $verbose;
+}
+
+sub add_one_depwait {
+	my $name = shift;
+	my $version = shift;
+	my $state;
+
+	if (!exists($db{$name})) {
+		print "$name: not registered yet.\n";
+		return;
+	}
+	$state = $db{$name}->{'State'};
+
+	if ($state eq "Dep-Wait") {
+		print "$name: merging with previously registered dependencies\n";
+	}
+	
+	if (isin( $state, qw(Needs-Build Failed))) {
+		print "$name: Warning: not registered for building previously, ".
+			  "but processing anyway.\n";
+	}
+	elsif ($state eq "Not-For-Us") {
+		print "$name: not suitable for this architecture anyway. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Failed-Removed") {
+		print "$name: failed previously and doesn't need building. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Dep-Wait-Removed") {
+		print "$name: already in Dep-Wait and doesn't need building. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Installed") {
+		print "$name: Is already installed in archive. Skipping.\n";
+		return;
+	}
+	elsif ($state eq "Uploaded") {
+		print "$name: Is already uploaded. Skipping.\n";
+		return;
+	}
+	elsif ($db{$name}->{'Builder'} &&
+		   $user ne $db{$name}->{'Builder'}) {
+		print "$name: not taken by you, but by ".
+			  "$db{$name}->{'Builder'}. Skipping.\n";
+		return;
+	}
+	elsif (version_less($version,$db{$name}->{'Version'}) &&
+		   !version_eq($version, $db{$name}->{'Version'})) {
+		print "$name: build already succeeded for newer version ".
+			  "$db{$name}->{'Version'} ".
+			  "(by $db{$name}->{'Builder'})\n";
+		return;
+	}
+	elsif ($fail_reason =~ /^\s*$/ ||
+		   !parse_deplist( $fail_reason, 1 )) {
+		print "$name: Bad dependency list\n";
+		return;
+	}
+	change_state( $name, 'Dep-Wait' );
+	$db{$name}->{'Version'} = add_epoch($version, $db{$name}->{'Version'});
+	$db{$name}->{'Builder'} = $user;
+	my $deplist = parse_deplist( $db{$name}->{'Depends'} );
+	my $new_deplist = parse_deplist( $fail_reason );
+	# add new dependencies, maybe overwriting old entries
+	foreach (keys %$new_deplist) {
+		$deplist->{$_} = $new_deplist->{$_};
+	}
+	$db{$name}->{'Depends'} = build_deplist($deplist);
+	log_ta( $name, "--dep-wait" );
+	propagate_ta( $name, "--dep-wait" );
+	print "$name: registered as waiting for dependencies\n" if $verbose;
+}
+
+sub add_epoch {
+	my $vnew = shift;
+	my $vold = shift;
+
+	if ($vnew !~ /^\d+:/ && $vold =~ /^(\d+:)/) {
+		$vnew = "$1$vnew";
+	}
+	return $vnew;
+}
+
+
+sub parse_sources {
+	my %pkgs;
+	my $name;
+
+	local($/) = ""; # read in paragraph mode
+	while( <> ) {
+		my( $name, $version, $arch );
+		/^Package:\s*(\S+)\s*$/mi and $name = $1;
+		/^Version:\s*(\S+)\s*$/mi and $version = $1;
+		/^Architecture:\s*(\S+)\s*$/mi and $arch = $1;
+
+		$pkgs{$name}++;
+
+		if ($arch eq "all" && exists $db{$name} &&
+			!version_less( $version, $db{$name}->{'Version'} )) {
+			# package is now Arch: all, delete it from db
+			change_state( $name, 'deleted' );
+			log_ta( $name, "--merge-sources" );
+			print "$name ($db{$name}->{'Version'}): deleted ".
+				  "from database, because now Arch: all\n"
+					  if $verbose;
+			delete $db{$name};
+		}
+	}
+	# remove installed packages that no longer have source available
+	foreach $name (keys %db) {
+		next if !isin( $db{$name}->{'State'}, qw(Installed) );
+		if (!$pkgs{$name}) {
+			change_state( $name, 'deleted' );
+			log_ta( $name, "--merge-sources" );
+			print "$name ($db{$name}->{'Version'}): ".
+				  "deleted from database, because ".
+				  "not in Sources anymore\n"
+					  if $verbose;
+			delete $db{$name};
+		}
+	}
+}
+
+# This function looks through a Packages file and sets the state of
+# packages to 'Installed'
+sub parse_packages {
+	my $file = shift;
+	my %done;
+	my $installed;
+
+	$strict_epoch_compare = 1 if !$opt_introduce_epochs;
+	
+	local($/) = ""; # read in paragraph mode
+	while( <> ) {
+		my( $name, $version, $source, $sourcev, $arch );
+		/^Package:\s*(\S+)\s*$/mi and $name = $1;
+		/^Version:\s*(\S+)\s*$/mi and $version = $1;
+		/^Source:\s*(\S+)\s*(\((\S+)\))?$/mi and ($source,$sourcev) = ($1, $3);
+		/^Architecture:\s*(\S+)\s*$/mi and $arch = $1;
+		next if !$name || !$version;
+		next if ($arch ne $my_arch and $arch ne "all");
+		$installed->{$name} = $version;
+		$version = $sourcev if $sourcev;
+		$version =~ s/^\d+:// if $conf::ignore_epochs;
+		next if $arch ne $my_arch;
+		$name = $source if $source;
+		next if $done{$name} eq $version;
+		$done{$name} = $version;
+
+		if (exists $db{$name}) {
+			$db{$name}->{'Installed-Version'} = $version;
+			if ($db{$name}->{'State'} eq "Installed" &&
+				epoch_introduced($version, $db{$name}->{'Version'})) {
+				$db{$name}->{'Version'} = $version;
+				warn "Notice: $name: added epoch (now version $version)\n"
+					if $verbose;
+			}
+			if (isin( $db{$name}->{'State'}, qw(Not-For-Us)) ||
+				($db{$name}->{'State'} eq "Installed" &&
+				 version_eq($version, $db{$name}->{'Version'}))) {
+				print "Skipping $name because State == $db{$name}->{'State'}\n"
+					if $verbose >= 2;
+				next;
+			}
+			if (version_less($version, $db{$name}->{'Version'})) {
+				print "Skipping $name ($version) because have newer ".
+					"version ($db{$name}->{'Version'}) in db.\n"
+						if $verbose >= 2;
+				next;
+			}
+
+			if (!version_eq($version, $db{$name}->{'Version'}) &&
+			   $db{$name}->{'State'} ne "Installed") {
+				warn "Warning: $name: newer version than expected appeared ".
+					 "in archive ($version vs. $db{$name}->{'Version'})\n";
+				delete $db{$name}->{'Builder'};
+			}
+
+			if (!isin( $db{$name}->{'State'}, qw(Uploaded) )) {
+				warn "Warning: Package $name was not in uploaded state ".
+					 "before (but in '$db{$name}->{'State'}').\n";
+				delete $db{$name}->{'Builder'};
+			}
+		}
+		
+		change_state( $name, 'Installed' );
+		$db{$name}->{'Package'} = $name;
+		$db{$name}->{'Version'} = $version;
+		$db{$name}->{'Installed-Version'} = $version;
+		log_ta( $name, "--merge-packages" );
+		print "$name ($version) is up-to-date now.\n" if $verbose;
+	}
+
+	check_dep_wait( "--merge-packages", $installed );
+}
+
+sub epoch_introduced {
+	my $v1 = shift;
+	my $v2 = shift;
+
+	return $opt_introduce_epochs &&
+		   version_eq($v1, $v2, "nostrict") &&
+		   !version_eq($v1, $v2, "strict");
+}
+
+sub pretend_avail {
+	my ($package, $name, $version, $installed);
+	
+	foreach $package (@_) {
+		$package =~ s,^.*/,,; # strip path
+		$package =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
+		$package =~ s/_[\w\d]+\.changes$//; # strip extension
+		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+-]+)/) {
+			($name,$version) = ($1,$2);
+			$version =~ s/^\d+:// if $conf::ignore_epochs;
+		}
+		else {
+			warn "$package: can't extract package name and version ".
+				 "(bad format)\n";
+			next;
+		}
+		$installed->{$name} = $version;
+	}
+
+	check_dep_wait( "--pretend-avail", $installed );
+}
+
+sub check_dep_wait {
+	my $action = shift;
+	my $installed = shift;
+	
+	# check all packages in state Dep-Wait if dependencies are all
+	# available now
+	my $name;
+	foreach $name (keys %db) {
+		next if $db{$name}->{'State'} ne "Dep-Wait";
+		my $deps = $db{$name}->{'Depends'};
+		if (!$deps) {
+			print "$name: was in state Dep-Wait, but with empty ",
+				  "dependencies!\n";
+			goto make_needs_build;
+		}
+		my $deplist = parse_deplist($deps);
+		my $new_deplist;
+		my $allok = 1;
+		my @removed_deps;
+		foreach (keys %$deplist) {
+			if (!exists $installed->{$_} ||
+				($deplist->{$_}->{'Rel'} && $deplist->{$_}->{'Version'} &&
+				 !version_compare( $installed->{$_},
+								   $deplist->{$_}->{'Rel'},
+								   $deplist->{$_}->{'Version'}))) {
+				$allok = 0;
+				$new_deplist->{$_} = $deplist->{$_};
+			}
+			else {
+				push( @removed_deps, $_ );
+			}
+		}
+		if ($allok) {
+		  make_needs_build:
+			change_state( $name, 'Needs-Build' );
+			log_ta( $name, $action );
+			delete $db{$name}->{'Depends'};
+			propagate_ta( $name, $action ) if $action ne "--merge-packages";
+			print "$name ($db{$name}->{'Version'}) has all ",
+				  "dependencies available now\n" if $verbose;
+		}
+		elsif (@removed_deps) {
+			$db{$name}->{'Depends'} = build_deplist( $new_deplist );
+			print "$name ($db{$name}->{'Version'}): some dependencies ",
+				  "(@removed_deps) available now, but not all yet\n"
+				if $verbose;
+		}
+	}
+}
+
+# This function accepts quinn-diff output (either from a file named on
+# the command line, or on stdin) and sets the packages named there to
+# state 'Needs-Build'.
+sub parse_quinn_diff {
+	my $partial = shift;
+	my %quinn_pkgs;
+	my $dubious = "";
+	
+	$strict_epoch_compare = 1;
+
+	while( <> ) {
+		next if !m,^([\w\d-/]*)/			# section
+			       ([\w\d.+-]+)_			# package name
+				   ([\w\d:.+-]+)\.dsc\s*	# version
+				   \[([^:]*):				# priority
+				   ([^]]+)\]\s*$,x;			# rest of notes
+		my($section,$name,$version,$priority,$notes) = ($1, $2, $3, $4, $5);
+		$version =~ s/^\d*:// if $conf::ignore_epochs;
+		$quinn_pkgs{$name}++;
+		$section ||= "unknown";
+		$priority ||= "unknown";
+		$priority = "standard" if ($name eq "debian-installer");
+
+		if (exists($db{$name}) &&
+			epoch_introduced($db{$name}->{'Version'}, $version)) {
+			warn "Notice: $name: added epoch (now version $version)\n"
+				if $verbose;
+			$db{$name}->{'Version'} = $version;
+		}
+
+		# Always update section and priority.
+		if (exists($db{$name})) {
+			my $ent = $db{$name};
+
+			$ent->{'Section'}  = $section if not defined
+				$ent->{'Section'} or $section ne "unknown";
+			$ent->{'Priority'} = $priority if not defined
+				$ent->{'Priority'} or $priority ne "unknown";
+		}
+
+		if (exists($db{$name}) &&
+			$db{$name}->{'State'} =~ /^Dep-Wait/ &&
+			version_less( $db{$name}->{'Version'}, $version )) {
+			change_state( $name, 'Dep-Wait' );
+			$db{$name}->{'Version'}  = $version;
+			log_ta( $name, "--merge-quinn" );
+			print "$name ($version) still waiting for dependencies.\n"
+				if $verbose;
+		}
+		elsif (exists($db{$name}) &&
+			   $db{$name}->{'State'} =~ /-Removed$/ &&
+			   version_eq($db{$name}->{'Version'}, $version)) {
+			# reinstantiate a package that has been removed earlier
+			# (probably due to a quinn-diff malfunction...)
+			my $ent = $db{$name};
+			my $newstate = $ent->{'State'};
+			$newstate =~ s/-Removed$//;
+			change_state( $name, $newstate );
+			$ent->{'Version'}  = $version;
+			$ent->{'Notes'}    = $notes;
+			log_ta( $name, "--merge-quinn" );
+			print "$name ($version) reinstantiated to $newstate.\n"
+				if $verbose;
+		}
+		elsif (exists($db{$name}) &&
+			   $db{$name}->{'State'} eq "Not-For-Us" &&
+			   version_less( $db{$name}->{'Version'}, $version )) {
+			# for Not-For-Us packages just update the version etc., but
+			# keep the state
+			my $ent = $db{$name};
+			change_state( $name, "Not-For-Us" );
+			$ent->{'Package'}  = $name;
+			$ent->{'Version'}  = $version;
+			$ent->{'Notes'}    = $notes;
+			delete $ent->{'Builder'};
+			log_ta( $name, "--merge-quinn" );
+			print "$name ($version) still Not-For-Us.\n" if $verbose;
+		}
+		elsif (!exists($db{$name}) ||
+			   $db{$name}->{'State'} ne "Not-For-Us" &&
+			   version_less( $db{$name}->{'Version'}, $version )) {
+			my $ent = $db{$name};
+			if ($ent->{'State'} eq 'Building') {
+				send_mail( $ent->{'Builder'},
+						   "new version of $name (dist=$distribution)",
+						   "As far as I'm informed, you're currently ".
+						   "building the package $name\n".
+						   "in version $db{$name}->{'Version'}.\n\n".
+						   "Now there's a new source version $version. ".
+						   "If you haven't finished\n".
+						   "compiling $name yet, you can stop it to ".
+						   "save some work.\n".
+						   "Just to inform you...\n".
+						   "(This is an automated message)\n" );
+				print "$name: new version ($version) while building ".
+					  "$ent->{'Version'} -- sending mail ".
+					  "to builder ($ent->{'Builder'})\n"
+				  if $verbose;
+			}
+			my $oth_ent;
+			if ($oth_ent = exists_in_other_dist( $name, $version, 1 )) {
+				my $newstate = '';
+				my $text;
+				my $builder = exists($oth_ent->{'Builder'}) ?
+							  $oth_ent->{'Builder'} : $conf::db_maint;
+				if ($oth_ent->{'State'} eq 'Failed') {
+					$newstate = 'Failed';
+					$text = "already set to Failed in dist ".
+							"$oth_ent->{'Dist'}; entry copied";
+				}
+				elsif ($oth_ent->{'State'} eq 'Dep-Wait') {
+					$newstate = 'Dep-Wait';
+					$text = "already set to Dep-Wait in dist ".
+							"$oth_ent->{'Dist'}; entry copied";
+				}
+
+				if ($newstate) {
+					change_state( $name, $newstate );
+					$ent->{'Package'}  = $name;
+					$ent->{'Version'}  = $version;
+					$ent->{'Section'}  = $section;
+					$ent->{'Priority'} = $priority;
+					$ent->{'Notes'}    = $notes;
+					$ent->{'Builder'}  = $builder;
+					my $field;
+					foreach $field (qw(Failed Old-Failed Depends)) {
+						if ($oth_ent->{$field}) {
+							$ent->{$field} = $oth_ent->{$field};
+						}
+						else {
+							delete $ent->{$field};
+						}
+					}
+					log_ta( $name, "--merge-quinn" );
+					print "$name ($version) $text\n" if $verbose;
+					next;
+				}
+			}
+			change_state( $name, 'Needs-Build' );
+			$ent->{'Package'}  = $name;
+			$ent->{'Version'}  = $version;
+			$ent->{'Section'}  = $section;
+			$ent->{'Priority'} = $priority;
+			$ent->{'Notes'}    = $notes;
+			delete $ent->{'Builder'};
+			log_ta( $name, "--merge-quinn" );
+			print "$name ($version) needs rebuilding now.\n" if $verbose;
+		}
+		elsif (exists($db{$name}) &&
+			   !version_eq( $db{$name}->{'Version'}, $version ) &&
+			   isin( $db{$name}->{'State'}, qw(Installed Not-For-Us) )) {
+			print "$name: skipping because version in db ".
+				  "($db{$name}->{'Version'}) is >> than ".
+				  "what quinn-diff says ($version) ".
+				  "(state is $db{$name}->{'State'}\n"
+					  if $verbose;
+			$dubious .= "$db{$name}->{'State'}: ".
+						"db ${name}_$db{$name}->{'Version'} >> ".
+						"quinn $version\n" if !$partial;
+		}
+		elsif ($verbose >= 2) {
+			if ($db{$name}->{'State'} eq "Not-For-Us") {
+				print "Skipping $name because State == ".
+					  "$db{$name}->{'State'}\n";
+			}
+			elsif (!version_less($db{$name}->{'Version'}, $version)) {
+				print "Skipping $name because version in db ".
+					  "($db{$name}->{'Version'}) is >= than ".
+					  "what quinn-diff says ($version)\n";
+			}
+		}
+	}
+
+	if ($dubious) {
+		send_mail( $conf::db_maint,
+				   "Dubious versions in $distribution $conf::dbbase database",
+				   "The following packages have a newer version in the ".
+				   "wanna-build database\n".
+				   "than what quinn-diff says, and this is strange for ".
+				   "their state\n".
+				   "It could be caused by a lame mirror, or the version ".
+				   "in the database\n".
+				   "is wrong.\n\n".
+				   $dubious );
+	}
+
+	# Now re-check the DB for packages in states Needs-Build, Failed,
+	# or Dep-Wait and remove them if they're not listed anymore by quinn-diff.
+	if ( !$partial ) {
+		my $name;
+		foreach $name (keys %db) {
+			next if !isin( $db{$name}->{'State'},
+						   qw(Needs-Build Building Uploaded Failed Dep-Wait) );
+			my $virtual_delete = $db{$name}->{'State'} eq 'Failed' ||
+								 $db{$name}->{'State'} eq 'Dep-Wait';
+			if (!$quinn_pkgs{$name}) {
+				change_state( $name, $virtual_delete ?
+							  $db{$name}->{'State'}."-Removed" :
+							  'deleted' );
+				log_ta( $name, "--merge-quinn" );
+				print "$name ($db{$name}->{'Version'}): ".
+					  ($virtual_delete ? "(virtually) " : "") . "deleted ".
+					  "from database, because not in quinn-diff anymore\n"
+						  if $verbose;
+				delete $db{$name} if !$virtual_delete;
+			}
+		}
+	}
+}
+
+sub send_reupload_mail {
+	my $to = shift;
+	my $pkg = shift;
+	my $version = shift;
+	my $dist = shift;
+	my $other_dist = shift;
+
+	send_mail( $to,
+			   "Please reupload ${pkg}_${version} for $dist",
+			   "You have recently built (or are currently building)\n".
+			   "${pkg}_${version} for $other_dist.\n".
+			   "This version is now also needed in the $dist distribution.\n".
+			   "Please reupload the files now present in the Debian archive\n".
+			   "(best with buildd-reupload).\n" );
+}
+
+
+# for sorting priorities and sections
+BEGIN {
+	%prioval = ( required             => -5,
+				 important            => -4,
+				 standard             => -3,
+				 optional             => -2,
+				 extra                => -1,
+				 unknown              => -1 );
+	%sectval = ( 
+				 libs			=> -200,
+				 'debian-installer'	=> -199,
+				 base			=> -198,
+				 devel			=> -197,
+				 shells			=> -196,
+				 perl			=> -195,
+				 python			=> -194,
+				 graphics		=> -193,
+				 admin			=> -192,
+				 utils			=> -191,
+				 x11			=> -190,
+				 editors		=> -189,
+				 net			=> -188,
+				 mail			=> -187,
+				 news			=> -186,
+				 tex			=> -185,
+				 text			=> -184,
+				 web			=> -183,
+				 doc			=> -182,
+				 interpreters		=> -181,
+				 gnome			=> -180,
+				 kde			=> -179,
+				 games			=> -178,
+				 misc			=> -177,
+				 otherosfs		=> -176,
+				 oldlibs		=> -175,
+				 libdevel		=> -174,
+				 sound			=> -173,
+				 math			=> -172,
+				 science		=> -171,
+				 comm			=> -170,
+				 electronics		=> -169,
+				 hamradio		=> -168,
+				 'non-US'		=> -167,
+				 embedded		=> -166,
+	);
+	foreach my $i (keys %sectval) {
+		$sectval{"contrib/$i"} = $sectval{$i}+40;
+		$sectval{"non-free/$i"} = $sectval{$i}+80;
+	}
+	$sectval{'unknown'}	= -165;
+
+	%catval =  ( "none"			      => -20,
+				 "uploaded-fixed-pkg" => -19,
+				 "fix-expected"       => -18,
+				 "reminder-sent"      => -17,
+				 "nmu-offered"        => -16,
+				 "easy"               => -15,
+				 "medium"		      => -14,
+				 "hard"		          => -13,
+				 "compiler-error"     => -12 );
+}
+
+sub sort_list_func {
+	my( $letter, $x, $ax, $bx );
+
+	foreach $letter (split( "", $list_order )) {
+	  SWITCH: foreach ($letter) {
+		  /p/ && do {
+			  $x = $prioval{$a->{'Priority'}} <=> $prioval{$b->{'Priority'}};
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+		  /s/ && do {
+			  $x = $sectval{$a->{'Section'}} <=> $sectval{$b->{'Section'}};
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+		  /n/ && do {
+			  $x = $a->{'Package'} cmp $b->{'Package'};
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+		  /b/ && do {
+			  $x = $a->{'Builder'} cmp $b->{'Builder'};
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+		  /c/ && do {
+			  $ax = ($a->{'Notes'} =~ /^(out-of-date|partial)/) ? 0 :
+				    ($a->{'Notes'} =~ /^uncompiled/) ? 2 : 1;
+			  $bx = ($b->{'Notes'} =~ /^(out-of-date|partial)/) ? 0 :
+				    ($b->{'Notes'} =~ /^uncompiled/) ? 2 : 1;
+			  $x = $ax <=> $bx;
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+		  /f/ && do {
+			  my $ca = exists $a->{'Failed-Category'} ?
+				  $a->{'Failed-Category'} : "none";
+			  my $cb = exists $b->{'Failed-Category'} ?
+				  $b->{'Failed-Category'} : "none";
+			  $x = $catval{$ca} <=> $catval{$cb};
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+		  /S/ && do {
+			  my $pa = $prioval{$a->{'Priority'}} >
+				  $prioval{'standard'};
+			  my $pb = $prioval{$b->{'Priority'}} >
+				  $prioval{'standard'};
+			  $x = $pa <=> $pb;
+			  return $x if $x != 0;
+			  last SWITCH;
+		  };
+	  }
+	}
+	return 0;
+}
+
+sub list_packages {
+	my $state = shift;
+	my( $name, $pkg, @list );
+	my $cnt = 0;
+	my %scnt;
+	my $ctime = time;
+
+	foreach $name (keys %db) {
+		$pkg = $db{$name};
+		next if $state ne "all" && $pkg->{'State'} !~ /^\Q$state\E$/i;
+		next if $user && $pkg->{'Builder'} ne $user;
+		next if $category && $pkg->{'State'} eq "Failed" &&
+				$pkg->{'Failed-Category'} ne $category;
+		next if ($list_min_age > 0 &&
+				 ($ctime-parse_date($pkg->{'State-Change'})) < $list_min_age)||
+				($list_min_age < 0 &&
+				 ($ctime-parse_date($pkg->{'State-Change'})) > -$list_min_age);
+		push( @list, $pkg );
+	}
+
+	foreach $pkg (sort sort_list_func @list) {
+		print "$pkg->{'Section'}/$pkg->{'Package'}_$pkg->{'Version'}";
+		print ": $pkg->{'State'}"
+			if $state eq "all";
+		print " by $pkg->{'Builder'}"
+			if $pkg->{'State'} ne "Needs-Build" && $pkg->{'Builder'};
+		print " [$pkg->{'Priority'}:$pkg->{'Notes'}";
+		print ":PREV-FAILED"
+			if $pkg->{'Previous-State'} =~ /^Failed/;
+		print "]\n";
+		print "  Reasons for failing:\n",
+			  "    [Category: ",
+			  exists $pkg->{'Failed-Category'} ? $pkg->{'Failed-Category'} : "none",
+			  "]\n    ",
+			  join("\n    ",split("\n",$pkg->{'Failed'})), "\n"
+			if $pkg->{'State'} =~ /^Failed/;
+		print "  Dependencies: $pkg->{'Depends'}\n"
+			if $pkg->{'State'} eq "Dep-Wait";
+		print "  Previous state was $pkg->{'Previous-State'} until ",
+			  "$pkg->{'State-Change'}\n"
+			if $verbose && $pkg->{'Previous-State'};
+		print "  Previous failing reasons:\n    ",
+		      join("\n    ",split("\n",$pkg->{'Old-Failed'})), "\n"
+			if $verbose && $pkg->{'Old-Failed'};
+		++$cnt;
+		$scnt{$pkg->{'State'}}++ if $state eq "all";
+	}
+	if ($state eq "all") {
+		foreach (sort keys %scnt) {
+			print "Total $scnt{$_} package(s) in state $_.\n";
+		}
+	}
+	print "Total $cnt package(s)\n";
+	
+}
+
+BEGIN {
+	%monname = ('jan', 0, 'feb', 1, 'mar', 2, 'apr', 3, 'may', 4, 'jun', 5,
+				'jul', 6, 'aug', 7, 'sep', 8, 'oct', 9, 'nov', 10, 'dec', 11 );
+}
+
+sub parse_date {
+	my $text = shift;
+
+	return 0 if !$text;
+	die "Cannot parse date: $text\n"
+		if $text !~ /^(\d{4}) (\w{3}) (\d+) (\d{2}):(\d{2}):(\d{2})$/;
+	my ($year, $mon, $day, $hour, $min, $sec) = ($1, $2, $3, $4, $5, $6);
+	$mon =~ y/A-Z/a-z/;
+	die "Invalid month name $mon" if !exists $monname{$mon};
+	$mon = $monname{$mon};
+	return timelocal($sec, $min, $hour, $day, $mon, $year);
+}
+
+sub info_packages {
+	my( $name, $pkg, $key, $dist );
+	my @firstkeys = qw(Package Version Builder State Section Priority
+					   Installed-Version Previous-State State-Change);
+	my @dists = $info_all_dists ? @distributions : ($distribution);
+	
+	foreach $dist (@dists) {
+		if ($dist ne $distribution) {
+			if (!-f db_filename( $dist ) || !open_other_db( $dist )) {
+				warn "Cannot open database for $dist!\n";
+				@dists = grep { $_ ne $dist } @dists;
+			}
+		}
+	}
+
+	foreach $name (@_) {
+		$name =~ s/_.*$//; # strip version
+		foreach $dist (@dists) {
+			my $db = $dist ne $distribution ? $otherdb{$dist} : \%db;
+			my $pname = "$name" . ($info_all_dists ? "($dist)" : "");
+			
+			if (!exists( $db->{$name} )) {
+				print "$pname: not registered\n";
+				next;
+			}
+			$pkg = $db->{$name};
+
+			print "$pname:\n";
+			foreach $key (@firstkeys) {
+				next if !exists $pkg->{$key};
+				my $val = $pkg->{$key};
+				chomp( $val );
+				$val = "\n$val" if isin( $key, qw(Failed Old-Failed));
+				$val =~ s/\n/\n /g;
+				printf "  %-20s: %s\n", $key, $val;
+			}
+			foreach $key (sort keys %$pkg) {
+				next if isin( $key, @firstkeys );
+				my $val = $pkg->{$key};
+				chomp( $val );
+				$val = "\n$val" if isin( $key, qw(Failed Old-Failed));
+				$val =~ s/\n/\n /g;
+				printf "  %-20s: %s\n", $key, $val;
+			}
+		}
+	}
+}
+
+sub forget_packages {
+	my( $name, $pkg, $key, $data );
+	
+	foreach $name (@_) {
+		$name =~ s/_.*$//; # strip version
+		if (!exists( $db{$name} )) {
+			print "$name: not registered\n";
+			next;
+		}
+		$pkg = $db{$name};
+
+		$data = "";
+		foreach $key (sort keys %$pkg) {
+			my $val = $pkg->{$key};
+			chomp( $val );
+			$val =~ s/\n/\n /g;
+			$data .= sprintf "  %-20s: %s\n", $key, $val;
+		}
+		send_mail( $conf::db_maint,
+				   "$name deleted from DB $conf::dbbase",
+				   "The package '$name' has been deleted from the database ".
+				   "by $user.\n\n".
+				   "Data registered about the deleted package:\n".
+				   "$data\n" ) if $conf::db_maint;
+		change_state( $name, 'deleted' );
+		log_ta( $name, "--forget" );
+		delete $db{$name};
+		print "$name: deleted from database\n" if $verbose;
+	}
+}
+
+
+sub lock_db {
+	my $dist = shift;
+	my $try = 0;
+	my $lockfile = db_filename($dist) . ".lock";
+	local( *F );
+	
+	print "Locking $dist database\n" if $verbose >= 2;
+  repeat:
+	if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+		if ($! == EEXIST) {
+			# lock file exists, wait
+			goto repeat if !open( F, "<$lockfile" );
+			my $line = <F>;
+			close( F );
+			if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
+				warn "Bad lock file contents -- still trying\n";
+			}
+			else {
+				my($pid, $usr) = ($1, $2);
+				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+					# process doesn't exist anymore, remove stale lock
+					print "Removing stale lock file (pid $pid, user $usr)\n";
+					unlink( $lockfile );
+					goto repeat;
+				}
+				warn "Database locked by $usr -- please wait\n" if $try == 0;
+			}
+			if (++$try > 200) {
+				# avoid the END routine removes the lock
+				$main::keep_lock{$dist} = 1;
+				die "Lock still present after 200 * 5 seconds.\n";
+			}
+			sleep 5;
+			goto repeat;
+		}
+		die "Can't create lock file $lockfile: $!\n";
+	}
+	F->print("$$ $real_user\n");
+	F->close();
+}
+
+sub unlock_db {
+	my $dist = shift;
+	my $lockfile = db_filename($dist) . ".lock";
+
+	if (!$main::keep_lock{$dist}) {
+		print "Unlocking $dist database\n" if $verbose >= 2;
+		unlink $lockfile;
+	}
+}
+
+sub create_maintlock {
+	my $lockfile = db_filename("maintenance") . ".lock";
+	my $try = 0;
+	local( *F );
+	
+	print "Creating maintenance lock\n" if $verbose >= 2;
+  repeat:
+	if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+		if ($! == EEXIST) {
+			# lock file exists, wait
+			goto repeat if !open( F, "<$lockfile" );
+			my $line = <F>;
+			close( F );
+			if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
+				warn "Bad maintenance lock file contents -- still trying\n";
+			}
+			else {
+				my($pid, $usr) = ($1, $2);
+				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+					# process doesn't exist anymore, remove stale lock
+					print "Removing stale lock file (pid $pid, user $usr)\n";
+					unlink( $lockfile );
+					goto repeat;
+				}
+				warn "Maintenance lock already exists by $usr -- ".
+					 "please wait\n" if $try == 0;
+			}
+			if (++$try > 120) {
+				die "Lock still present after 120 * 60 seconds.\n";
+			}
+			sleep 60;
+			goto repeat;
+		}
+		die "Can't create maintenance lock $lockfile: $!\n";
+	}
+	F->print(getppid(), " $real_user\n");
+	F->close();
+}
+
+sub remove_maintlock {
+	my $lockfile = db_filename("maintenance") . ".lock";
+
+	print "Removing maintenance lock\n" if $verbose >= 2;
+	unlink $lockfile;
+}
+
+sub waitfor_maintlock {
+	my $lockfile = db_filename("maintenance") . ".lock";
+	my $try = 0;
+	local( *F );
+	
+	print "Checking for maintenance lock\n" if $verbose >= 2;
+  repeat:
+	if (open( F, "<$lockfile" )) {
+		my $line = <F>;
+		close( F );
+		if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
+			warn "Bad maintenance lock file contents -- still trying\n";
+		}
+		else {
+			my($pid, $usr) = ($1, $2);
+			if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+				# process doesn't exist anymore, remove stale lock
+				print "Removing stale maintenance lock (pid $pid, user $usr)\n";
+				unlink( $lockfile );
+				return;
+			}
+			warn "Databases locked for general maintenance by $usr -- ".
+				 "please wait\n" if $try == 0;
+		}
+		if (++$try > 120) {
+			die "Lock still present after 120 * 60 seconds.\n";
+		}
+		sleep 60;
+		goto repeat;
+	}
+}
+
+
+sub read_db {
+	my $file = shift;
+
+	print "Reading ASCII database from $file..." if $verbose >= 1;
+	open( F, "<$file" ) or
+		die "Can't open database $file: $!\n";
+
+	local($/) = ""; # read in paragraph mode
+	while( <F> ) {
+		my( %thispkg, $name );
+		s/[\s\n]+$//;
+		s/\n[ \t]+/\376\377/g;  # fix continuation lines
+		s/\376\377\s*\376\377/\376\377/og;
+  
+		while( /^(\S+):[ \t]*(.*)[ \t]*$/mg ) {
+			my ($key, $val) = ($1, $2);
+			$val =~ s/\376\377/\n/g;
+			$thispkg{$key} = $val;
+		}
+		check_entry( \%thispkg );
+		# add to db
+		$name = $thispkg{'Package'};
+		$db{$name} = \%thispkg;
+	}
+	close( F );
+	print "done\n" if $verbose >= 1;
+}
+
+sub check_entry {
+	my $pkg = shift;
+	my $field;
+
+	return if $op_mode eq "manual-edit"; # no checks then
+	
+	# check for required fields
+	if (!exists $pkg->{'Package'}) {
+		print STDERR "Bad entry: ",
+			  join( "\n", map { "$_: $pkg->{$_}" } keys %$pkg ), "\n";
+		die "Database entry lacks Package: field\n";
+	}
+	if (!exists $pkg->{'Version'}) {
+		die "Database entry for $pkg->{'Package'} lacks Version: field\n";
+	}
+	# if no State: field, generate one (for old db compat)
+	if (!exists($pkg->{'State'})) {
+		$pkg->{'State'} =
+			exists $pkg->{'Failed'} ? 'Failed' : 'Building';
+	}
+	# check state field
+	die "Bad state $pkg->{'State'} of package $pkg->{Package}\n"
+		if !isin( $pkg->{'State'},
+				  qw(Needs-Build Building Uploaded Installed Dep-Wait
+					 Dep-Wait-Removed Failed Failed-Removed Not-For-Us
+					 ) );
+}
+
+sub write_db {
+	my $file = shift;
+	my($pkg,$key);
+	
+	print "Writing ASCII database to $file..." if $verbose >= 1;
+	open( F, ">$file" ) or
+		die "Can't open database $file: $!\n";
+
+	foreach $pkg (sort keys %db) {
+		foreach $key (keys %{$db{$pkg}}) {
+			my $val = $db{$pkg}->{$key};
+			chomp( $val );
+			$val =~ s/\n/\n /g;
+			print F "$key: $val\n";
+		}
+		print F "\n";
+	}
+	close( F );
+	print "done\n" if $verbose >= 1;
+}
+
+sub change_state {
+	my $name = shift;
+	my $newstate = shift;
+	my $for_dist = shift;
+	my $db;
+	if ($for_dist) {
+		return if !open_other_db( $for_dist );
+		$db = $otherdb{$for_dist};
+	}
+	else {
+		$db = \%db;
+	}
+	my $state = \$db->{$name}->{'State'};
+	
+	return if $$state eq $newstate;
+	if (not ((m/^Failed/ =~ $db->{$name}->{'Previous-State'}) and
+	 $$state eq 'Needs-Build' and $newstate eq 'Building'))
+	{
+		$db->{$name}->{'Previous-State'} = $$state || 'unknown';
+	}
+	$db->{$name}->{'State-Change'} = $curr_date;
+
+	if ($$state eq 'Failed') {
+		$db->{$name}->{'Old-Failed'} =
+			"-"x20 . " $db->{$name}->{'Version'} " . "-"x20 . "\n" .
+			$db->{$name}->{'Failed'} . "\n" .
+			$db->{$name}->{'Old-Failed'};
+		delete $db->{$name}->{'Failed'};
+		delete $db->{$name}->{'Failed-Category'};
+	}
+	$$state = $newstate;
+}
+
+sub propagate_ta {
+	my $name = shift;
+	my $action = shift;
+	my $dist;
+
+	return if $opt_no_propagation;
+	
+	foreach $dist (@distributions) {
+		next if $dist eq $distribution;
+		next if dist_cmp ($dist, $distribution) == 0;
+		next if $opt_no_down_propagation && dist_cmp($dist, $distribution) < 0;
+		next if ! -f db_filename( $dist );
+		next if !open_other_db( $dist );
+		my $odb = $otherdb{$dist};
+
+		my $pkg = $db{$name};
+		# same compensation for change_state() not setting
+		# Previous-State as in log_ta
+		my $pstate = ($pkg->{'State-Change'} eq $curr_date) ?
+			$pkg->{'Previous-State'} : $pkg->{'State'};
+		if (exists($odb->{$name}) &&
+			version_eq($pkg->{'Version'}, $odb->{$name}->{'Version'}) &&
+			($pstate eq $odb->{$name}->{'State'})) {
+			delete $odb->{$name};
+			# it seems the following can trigger a Perl bug, so copy elements
+			# of the hash explicitly:
+			# %{$odb->{$name}} = %{$pkg};
+			foreach (keys %$pkg) {
+				$odb->{$name}->{$_} = $pkg->{$_};
+			}
+			log_ta( $name, $action, $dist );
+			print "$name: Propagating new state $pkg->{'State'} ".
+				  "also to $dist database.\n"
+		}
+	}
+}
+
+sub exists_in_other_dist {
+	my $name = shift;
+	my $version = shift;
+	my $inst_v_ok = shift;
+	my $dist;
+
+	foreach $dist (@distributions) {
+		next if $dist eq $distribution;
+		next if ! -f db_filename( $dist );
+		next if !open_other_db( $dist );
+		my $odb = $otherdb{$dist};
+
+		if (exists($odb->{$name}) &&
+			(version_eq($version, $odb->{$name}->{'Version'}) ||
+			 ($inst_v_ok &&
+			  version_eq($version, $odb->{$name}->{'Installed-Version'})))) {
+			my $oth_ent = $odb->{$name};
+			my %rv;
+			foreach (qw(State Builder Failed Old-Failed Depends
+						Installed-Version)) {
+				$rv{$_} = $oth_ent->{$_} if exists $oth_ent->{$_};
+			}
+			$rv{'Dist'} = $dist;
+			return \%rv;
+		}
+	}
+	return 0;
+}
+
+sub open_other_db {
+	my $dist = shift;
+
+	if (!tied(%{$otherdb{$dist}})) {
+		lock_db( $dist );
+		$otherdb_lock{$dist} = 1;
+		if (!(tie %{$otherdb{$dist}}, 'WrapDB', db_filename($dist))){
+			warn "Serious warning: Cannot open database for $dist\n";
+			unlock_db( $dist );
+			$otherdb_lock{$dist} = 0;
+			return 0;
+		}
+	}
+	return 1;
+}
+
+sub log_ta {
+	my $name = shift;
+	my $action = shift;
+	my $dist = shift;
+	my $db;
+	if ($dist) {
+		return if !open_other_db( $dist );
+		$db = $otherdb{$dist};
+	}
+	else {
+		$dist = $distribution;
+		$db = \%db;
+	}
+	my $pkg = $db->{$name};
+	my $str;
+	my $prevstate;
+
+	# change_state() may not have set Previous-State, if the new state
+	# was identical. We can recognize this by the date.
+	$prevstate = ($pkg->{'State-Change'} eq $curr_date) ?
+		$pkg->{'Previous-State'} : $pkg->{'State'};
+	$str = "$action($dist): ${name}_$pkg->{'Version'} ".
+		   "changed from $prevstate to $pkg->{'State'} ".
+		   "by $real_user as $user";
+	
+	if (!open( LOG, ">>$transactlog" )) {
+		warn "Can't open log file $transactlog: $!\n";
+		return;
+	}
+	print LOG "$curr_date: $str\n";
+	close( LOG );
+
+	if (!($prevstate eq 'Failed' && $pkg->{'State'} eq 'Failed')) {
+		$str .= " (with --override)"
+			if $opt_override;
+		$mail_logs .= "$str\n";
+	}
+}
+
+
+sub version_less {
+	my $v1 = shift;
+	my $v2 = shift;
+	my $strict = shift;
+	
+	return version_compare( $v1, "<<", $v2, $strict );
+}
+
+sub version_lesseq {
+	my $v1 = shift;
+	my $v2 = shift;
+	my $strict = shift;
+
+	return version_compare( $v1, "<=", $v2, $strict );
+}
+
+sub version_eq {
+	my $v1 = shift;
+	my $v2 = shift;
+	my $strict = shift;
+
+	return version_compare( $v1, "=", $v2, $strict );
+}
+
+sub version_compare {
+	my $v1 = shift;
+	my $rel = shift;
+	my $v2 = shift;
+	my $strict = shift;
+	my $do_strict = 0;
+	
+	$do_strict = defined($strict) ? ($strict eq "strict") : $strict_epoch_compare;
+	if (!$do_strict) {
+		# ignore epoch in comparison if strict comparison not requested and
+		# one of the versions has an epoch and the other not
+		my ($have_epoch1, $have_epoch2) = (0, 0);
+		$have_epoch1 = 1 if $v1 =~ /^\d+:/;
+		$have_epoch2 = 1 if $v2 =~ /^\d+:/;
+		if ($have_epoch1 != $have_epoch2) {
+			$v1 =~ s/^\d+://;
+			$v2 =~ s/^\d+://;
+		}
+	}
+		
+	if ($opt_correct_version_cmp) {
+		system "dpkg", "--compare-versions", $v1, $rel, $v2;
+		return $? == 0;
+	}
+	else {
+		if ($rel eq "=" || $rel eq "==") {
+			return $v1 eq $v2;
+		}
+		elsif ($rel eq "<<") {
+			return do_version_cmp( $v1, $v2 );
+		}
+		elsif ($rel eq "<=" || $rel eq "<") {
+			return $v1 eq $v2 || do_version_cmp( $v1, $v2 );
+		}
+		elsif ($rel eq ">=" || $rel eq ">") {
+			return !do_version_cmp( $v1, $v2 );
+		}
+		elsif ($rel eq ">>") {
+			return $v1 ne $v2 && !do_version_cmp( $v1, $v2 );
+		}
+		else {
+			die "dpkg_own_version_cmp called with bad relation '$rel'\n";
+		}
+	}
+}
+
+sub do_version_cmp {
+	my($versa, $versb) = @_;
+	my($epocha,$upstra,$reva);
+	my($epochb,$upstrb,$revb);
+	my($r);
+
+	($epocha,$upstra,$reva) = split_version($versa);
+	($epochb,$upstrb,$revb) = split_version($versb);
+
+	# compare epochs
+	return 1 if $epocha < $epochb;
+	return 0 if $epocha > $epochb;
+
+	# compare upstream versions
+	$r = version_cmp_single( $upstra, $upstrb );
+	return $r < 0 if $r != 0;
+
+	# compare Debian revisions
+	$r = version_cmp_single( $reva, $revb );
+	return $r < 0;
+}
+
+sub version_cmp_single {
+	my($versa, $versb) = @_;
+	my($a,$b,$lena,$lenb,$va,$vb,$i);
+
+	for(;;) {
+		# compare non-numeric parts
+		$versa =~ /^([^\d]*)(.*)/; $a = $1; $versa = $2;
+		$versb =~ /^([^\d]*)(.*)/; $b = $1; $versb = $2;
+		$lena = length($a);
+		$lenb = length($b);
+		for( $i = 0; $i < $lena || $i < $lenb; ++$i ) {
+			$va = $i < $lena ? ord(substr( $a, $i, 1 )) : 0;
+			$vb = $i < $lenb ? ord(substr( $b, $i, 1 )) : 0;
+			last if !$va && !$vb;
+			$va += 256 if $va && substr( $a, $i, 1 ) !~ /[a-zA-Z]/;
+			$vb += 256 if $vb && substr( $b, $i, 1 ) !~ /[a-zA-Z]/;
+			return $va - $vb if $va != $vb;
+		}
+		# compare numeric parts
+		$versa =~ /^(\d*)(.*)/; $a = $1; $a ||= 0; $versa = $2;
+		$versb =~ /^(\d*)(.*)/; $b = $1; $b ||= 0; $versb = $2;
+		return $a - $b if $a != $b;
+		return 0 if !$versa && !$versb;
+		return -1 if !$versa;
+		return +1 if !$versb;
+	}
+}
+
+sub split_version {
+	my($vers) = @_;
+	my($epoch,$revision) = (0,"");
+
+	if ($vers =~ /^(\d+):(.*)/) {
+		$epoch = $1;
+		$vers = $2;
+	}
+
+	if ($vers =~ /(.*)-([^-]+)$/) {
+		$revision = $2;
+		$vers = $1;
+	}
+
+	return( $epoch, $vers, $revision );
+}
+
+sub dist_cmp {
+	my $d1 = shift;
+	my $d2 = shift;
+
+	return $dist_order{$d1} <=> $dist_order{$d2};
+}
+
+
+
+sub send_mail {
+	my $to = shift;
+	my $subject = shift;
+	my $text = shift;
+
+	my $from = $conf::db_maint;
+	$from .= "\@$hostname" if $from !~ /\@/;
+
+	$to .= '@' . $hostname if $to !~ /\@/;
+	$text =~ s/^\.$/../mg;
+	local $SIG{'PIPE'} = 'IGNORE';
+	open( PIPE,  "| $conf::mailprog -oem $to" )
+		or die "Can't open pipe to $conf::mailprog: $!\n";
+	chomp $text;
+	print PIPE "From: $from\n";
+	print PIPE "Subject: $subject\n\n";
+	print PIPE "$text\n";
+	close( PIPE );
+}
+
+sub isin {
+	my $val = shift;
+
+	return grep( $_ eq $val, @_ );
+}
+
+sub db_filename {
+	my $dist = shift;
+	return "$conf::basedir/$conf::dbbase-$dist";
+}
+
+sub parse_deplist {
+	my $deps = shift;
+	my $verify = shift;
+	my %result;
+	
+	foreach (split( /\s*,\s*/, $deps )) {
+		if (!/^(\S+)\s*(\(\s*(>>|>=)\s*(\S+)\s*\))?\s*$/) {
+			return 0 if $verify;
+			warn( "parse_deplist: bad dependency $_\n" );
+			next;
+		}
+		next if $verify;
+		my($dep, $rel, $relv) = ($1, $3, $4);
+		$result{$dep}->{'Package'} = $dep;
+		if ($rel && $relv) {
+			$result{$dep}->{'Rel'} = $rel;
+			$result{$dep}->{'Version'} = $relv;
+		}
+	}
+	return 1 if $verify;
+	return \%result;
+}
+
+sub build_deplist {
+	my $list = shift;
+	my($key, $result);
+	
+	foreach $key (keys %$list) {
+		$result .= ", " if $result;
+		$result .= $key;
+		$result .= " ($list->{$key}->{'Rel'} $list->{$key}->{'Version'})"
+			if $list->{$key}->{'Rel'} && $list->{$key}->{'Version'};
+	}
+	return $result;
+}
+
+sub usage {
+	my $prgname;
+	($prgname = $0) =~ s,^.*/,,;
+	print <<"EOF";
+Usage: $prgname <options...> <package_version...>
+Options:
+    -v, --verbose: Verbose execution.
+    --take: Take package for building [default operation]
+    -f, --failed: Record in database that a build failed due to
+        deficiencies in the package (that aren't fixable without a new
+        source version).
+    -u, --uploaded: Record in the database that the packages build
+        correctly and were uploaded.
+    -n, --no-build: Record in the database that the packages aren't
+        desired for m68k and shouldn't appear in listings even if
+        they're out of date.
+    --dep-wait: Record in the database that the packages are waiting
+        for some source dependencies to become available
+    --merge-quinn: Merge quinn-diff output into database.
+    --merge-packages: Merge Packages files into database.
+    --pretend-avail: Pretend that given packages are available now and give
+        free packages waiting for them
+    -i SRC_PKG, --info SRC_PKG: Show information for source package
+    -l STATE, --list=STATE: List all packages in state STATE; can be
+        combined with -U to restrict to a specific user; STATE can
+        also be 'all'
+    -m MESSAGE, --message=MESSAGE: Give reason why package failed or
+        source dependency list
+        (used with -f and --dep-wait)
+    -o, --override: Override another user's lock on a package, i.e.
+        take it over; a notice mail will be sent to the other user
+    -U USER, --user=USER: select user name for which listings should
+        apply, if not given all users are listed.
+        if -l is missing, set user name to be entered in db; usually
+        automatically choosen
+    --import FILE: Import database from a ASCII file FILE
+    --export FILE: Export database to a ASCII file FILE
+The remaining arguments (depending on operation) usually start with
+"name_version", the trailer is ignored. This allows to pass the names
+of .dsc files, for which file name completion can be used.
+--merge-packages and --merge-quinn take Package/quin--diff file names
+on the command line or read stdin. --list needs nothing more on the
+command line. --info takes source package names (without version).
+EOF
+	exit 1;
+}
+
+# ----------------------------------------------------------------------------
+
+package WrapCaller;
+
+BEGIN { $WrapCaller::debug = 0; }
+
+sub TIEHASH {
+    my $pkg = shift;
+	my $refob = shift;
+	my $key = shift;
+
+	bless { REF => $refob, KEY => $key, DATA => { @_ } }, $pkg;
+}
+
+sub FETCH {
+	my $self = shift;
+	my $key = shift;
+	
+	print "CFETCH($key)\n" if $WrapCaller::debug;
+	return $self->{'DATA'}->{$key};
+}
+
+sub FIRSTKEY {
+	my $self = shift;
+	
+	print "CFIRST\n" if $WrapCaller::debug;
+	my $a = scalar keys %{$self->{'DATA'}}; # reset each operator
+	return each %{$self->{'DATA'}}
+}
+
+sub NEXTKEY {
+	my $self = shift;
+	
+	print "CNEXT\n" if $WrapCaller::debug;
+	return each %{$self->{'DATA'}};
+}
+
+sub EXISTS {
+	my $self = shift;
+	my $key = shift;
+	
+	return exists $self->{'DATA'}->{$key};
+}
+
+sub STORE {
+	my $self = shift;
+	my $key = shift;
+	my $val = shift;
+
+	print "CSTORE($key,$val)\n" if $WrapCaller::debug;
+	$self->{'DATA'}->{$key} = $val;
+	$self->{'REF'}->STORE( $self->{'KEY'}, $self->{'DATA'} );
+}
+
+sub DELETE {
+	my $self = shift;
+	my $key = shift;
+
+	print "CDELETE($key)\n" if $WrapCaller::debug;
+	delete $self->{'DATA'}->{$key};
+	$self->{'REF'}->STORE( $self->{'KEY'}, $self->{'DATA'} );
+}
+
+sub CLEAR {
+	my $self = shift;
+
+	print "CCLEAR()\n" if $WrapCaller::debug;
+	%{$self->{'DATA'}} = {};
+	$self->{'REF'}->STORE( $self->{'KEY'}, $self->{'DATA'} );
+}
+
+
+package WrapDB;
+use GDBM_File;
+
+BEGIN { $WrapDB::debug = 0; }
+
+sub new {
+    my $pkg = shift;
+    $pkg->TIEHASH(@_);
+}
+
+sub TIEHASH {
+    my $pkg = shift;
+	my $file = shift;
+	my $try = 0;
+	my $db;
+	
+  repeat:
+	$db = GDBM_File::TIEHASH( 'GDBM_File', $file, GDBM_WRCREAT, 0664 );
+	if (!defined $db) {
+		if ($! == POSIX::EAGAIN && ++$try < 30) {
+			sleep 2;
+			goto repeat;
+		}
+		warn "WrapDB: opening DB file $file failed: $!\n";
+		return undef;
+	}
+	bless { _DB => $db }, $pkg;
+}
+
+sub FETCH {
+    my $self = shift;
+	my $key = shift;
+	my $db = $self->{'_DB'};
+	
+	print "FETCH: key=\"$key\"\n" if $WrapDB::debug;
+
+	if (exists $self->{$key}) {
+		print "FETCH: already fetched\n" if $WrapDB::debug;
+		tie %{$self->{$key}}, 'WrapCaller', $self, $key, %{$self->{$key}}
+			if !tied(%{$self->{$key}});
+		return $self->{$key};
+	}
+	
+	my $val = $db->FETCH( $key );
+	if (!defined $val) {
+		print "FETCH: undefined in db\n" if $WrapDB::debug;
+		tie %{$self->{$key}}, 'WrapCaller', $self, $key;
+		return $self->{$key};
+	}
+	print "FETCH: db val=\"$val\"\n" if $WrapDB::debug;
+
+	$val =~ s/[\s\n]+$//;
+	$val =~ s/\n[ \t]+/\376\377/g;  # fix continuation lines
+	$val =~ s/\376\377\s*\376\377/\376\377/og;
+	$val =~ s/^HASH\(0x[0-9a-f]+\): //g;
+	my %newhash;
+	while( $val =~ /^(\S+):[ \t]*(.*)[ \t]*$/mg ) {
+		my ($k, $v) = ($1, $2);
+		$v =~ s/\376\377/\n/g;
+		$newhash{$k} = $v;
+		print "FETCH: storing $k: $v\n" if $WrapDB::debug;
+	}
+	main::check_entry( \%newhash );
+	tie %{$self->{$key}}, 'WrapCaller', $self, $key, %newhash;
+	return $self->{$key};
+}
+
+sub STORE {
+    my $self = shift;
+	my $key = shift;
+	my $val = shift;
+	my $db = $self->{'_DB'};
+
+	print "STORE: key=\"$key\", val=\"$val\"\n" if $WrapDB::debug;
+	$self->{$key} = $val;
+	
+	my $str = "";
+	my( $k, $v );
+	while( ($k, $v) = each %{$self->{$key}} ) {
+		if (ref($k)){
+			warn "Warning: reference as key $k in package entry!\n";
+			next;
+		}
+		if (ref($v)){
+			warn "Warning: reference as value $v in package entry!\n";
+			next;
+		}
+		chomp( $v );
+		$v =~ s/\n/\n /g;
+		$str .= "$k: $v\n";
+		print "STORE: found key $k\n" if $WrapDB::debug;
+	}
+	print "STORE: storing string \"$str\"\n" if $WrapDB::debug;
+	$db->STORE( $key, $str );
+}
+
+sub DELETE {
+    my $self = shift;
+	my $key = shift;
+	my $db = $self->{'_DB'};
+
+	delete $self->{$key};
+	$db->DELETE( $key );
+	print "DELETE $key\n" if $WrapDB::debug;
+}
+
+sub CLEAR {
+    my $self = shift;
+	my $db = $self->{'_DB'};
+
+	foreach (keys %$self) {
+		next if $_ eq "_DB";
+		delete $self->{$_};
+	}
+	$db->CLEAR();
+}
+
+sub EXISTS {
+    my $self = shift;
+	my $key = shift;
+	my $db = $self->{'_DB'};
+
+	return exists $self->{$key} || $db->EXISTS($key);
+}
+
+sub FIRSTKEY {
+    my $self = shift;
+	my $db = $self->{'_DB'};
+
+	return $db->FIRSTKEY();
+}
+	
+sub NEXTKEY {
+    my $self = shift;
+	my $key = shift;
+	my $db = $self->{'_DB'};
+
+	return $db->NEXTKEY( $key );
+}
+	
+sub DESTROY {
+    my $self = shift;
+	my $db = $self->{'_DB'};
+
+	print "DESTROY\n" if $WrapDB::debug;
+	# The unties and deletes below may seen paranoid, but without them
+	# Perl segfaults...
+	foreach (keys %{$self}) {
+		untie %{$self->{$_}} if tied( %{$self->{$_}} );
+		delete $self->{$_} if $_ ne "_DB";
+	}
+	$db->DESTROY();
+	delete $self->{'_DB'};
+	print "DESTROY END\n" if $WrapDB::debug;
+}
+

@@ -1,0 +1,158 @@
+.\"
+.\" sbuild.1 - the *roff document processor source for the sbuild manual
+.\"
+.\" This file is part of Debian GNU/Linux's prepackaged version of wanna-build.
+.\" Copyright (C) 1998 James Troup <james@nocrew.org>.
+.\"
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License , or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; see the file COPYING.  If not, write to
+.\" the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+.\"
+.TH sbuild 1 .\" "Command Manual" 1998-11-17 "November 17, 1998"
+.SH NAME
+sbuild \- build debian packages from source
+.SH SYNOPSIS
+.B sbuild
+[\-a/\-\-add-depends=<dependency-line>] [\-A/\-\-arch\-all]
+[\-b/\-\-batch] [\-d/\-\-dist=<distribution>] [\-D/\-\-debug]
+[\-f/\-\-force-depends=<dependency-line>]
+[\-m/\-\-maintainer=<maintainer>] [\-\-purge=<mode>]
+[\-s/\-\-source] [\-v/\-\-verbose]
+[\-\-auto\-give\-back] [\-\-nolog] [\-\-make\-binNMU=<entry>]
+package-to-build [ ... ]
+.SH VERSION
+This man page documents sbuild from 1998-11-17.
+.SH DESCRIPTION
+\fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
+source.  It is similar to dbuild and debbuild, but, unlike them, it
+knows about source dependencies.
+.PP
+\fBsbuild\fR can fetch the Debian source over a network via ftp or NFS or it
+can use locally available source.
+.PP
+\fBsbuild\fR mails the build logs to a user.  It is configured by the
+configuration files /etc/sbuild.conf and ~/.sbuildrc.  Example
+sbuildrc and sbuild.conf files are available in
+/usr/doc/sbuild/examples/.  \fBsbuild\fR will not run without a valid
+~/.sbuildrc.
+.PP
+source dependencies are read from /etc/source-dependencies; see that
+file for more information on source-dependencies.
+.SS OPTIONS
+.TP
+.IR \-a , "--add-depends=<dependency-line>"
+This option adds some source dependency information for a package. It
+can be given more than one time with accumulating effect. The argument
+is a line of source dependencies in the same format as in
+\fI/etc/source-dependencies\fR. The given dependencies are appended to
+the src-deps from source-dependencies-* files or package src-deps, resp.
+.TP
+.IR \-A , "--arch-all"
+Also build Architecture: all packages, i.e. use dpkg-buildpackage -b
+instead of -B.
+.TP
+.IR \-b , "--batch"
+Operate in batchmode, i.e. write a build-progess file during execution
+and files on shutdown to faciliate a clean restart.
+.TP
+.IR \-d , "--distribution=<distribution>"
+Fetch source packages from specified distribution.
+.TP
+.IR \-f , "--force-depends=<dependency-line>"
+This option overrides source dependency information for a package. It
+can be given more than one time with accumulating effect. The argument
+is a line of source dependencies in the same format as in
+\fI/etc/source-dependencies\fR.
+.TP
+.IR \-D , "--debug"
+Enable debug output.
+.TP
+.IR \-m , "--maintainer=<maintainer>"
+Passed to dpkg-genchanges and is used to set the Maintainer: field in the .changes file(s).
+.TP
+.IR \-n , "--nolog"
+Do not create a package log file in the $log_dir directory and no
+build log file, but print everything to stdout. Also do not send any
+log mails.
+.TP
+.IR \-p , "--purge=<mode>"
+\fImode\fR decides if to delete the build directory. Possible values
+are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
+.TP
+.IR \-s , "--source"
+Also build source package, i.e. use dpkg-buildpackage without -B. This
+also switches on --purge=never.
+.TP
+.IR \-v , "--verbose"
+Be verbose, i.e. all information goes to stdout as well as to the log files.
+.TP
+.IR "--auto-give-back[=[[<wbuser>@]<user>@]<host>]"
+If the build fails before the build has begun automatically give the
+package back to wanna-build.
+The optional arguments are needed if wanna-build isn't on the local
+machine. \fIhost\fR is on which host to start wanna-build, \fIuser\R
+the user as who to log in there. If \fIwbuser\fR is used for the
+--user option of wanna-build and needed only if different from
+\fIuser\fR.
+.TP
+.IR "--store-built-packages=<prog>"
+After each build, check if built packages are source dependencies
+themselves (i.e., might be needed by later builds). If this is true,
+those packages and their dependencies (from the same build) are passed
+to \fIprog\fR, which is expected to make them available to apt. Then,
+apt is called to install those packages.
+.TP
+.IR "--make-binNMU=<entry>"
+With this option, \fBsbuild\fR will create a new changelog entry in
+debian/changelog of every package built. The version number will be in
+the format for binary-only NMUs (three dotted parts in the Debian
+revision); the maintainer is set to the maintainer name configured for
+\fBsbuild\fR. The \fIentry\fR parameter will be used as a changelog
+entry after a fixed one "Binary-only non-maintainer upload for ARCH --
+no source changes". Please note that the versions in the
+\fIpackage-to-build\fR arguments still have to be the unmodified
+(non-NMU ones) so that sources can be found. The version number in log
+files and mails will be modified by \fBsbuild\fR automatically.
+.SH ENVIRONMENT VARIABLES
+The following environment variables are used by \fBsbuild\fR:
+.IP "HOME"
+The home directory of the user.
+.IP "LOGNAME"
+Used in lockfiles.
+.IP "sourcebase"
+A URL for a Debian source distribution; generated by sbuild for scripts in source-dependencies.
+.IP "binarybase"
+A URL for a Debian binary distribution; generated by sbuild for scripts in source-dependencies.
+.SH FILES
+/etc/sbuild.conf - global configuration, maintained by the sbuild maintainer
+.PP
+/etc/sbuild.conf.local - configuration local to the machine
+.PP
+~/.sbuildrc - user specific configuration
+.SH BUGS
+None known at this time.
+.PP
+Email bug reports to
+.BR <buildd-disc@nocrew.org> .
+Be sure to include the word ``sbuild'' somewhere in the ``Subject:'' field.
+.SH AUTHOR
+.nf
+Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+.fi
+.SH ACKNOWLEDGEMENTS
+\fBsbuild\fR is based on debbuild, written by James Troup <james@nocrew.org>.
+.SH "SEE ALSO"
+.SP
+.BR dbuild ( 1 ),
+.BR sbuild.conf ( 5 ), 
+.BR sbuildrc ( 5 ).

@@ -1,0 +1,66 @@
+                                                    -*- mode: indented-text -*-
+
+
+																								wanna-build Mail Interface
+																								--------------------------
+
+There's now also a mail interface to wanna-build on kullervo, for people
+who consider kullervo too slow for interactive work :-)
+
+To use it, send mail to <wanna-build@kullervo.infodrom.north.de>. Subject
+doesn't matter. The body must be signed with PGP, with a key registered in
+/usr/local/var/debbuild/mail-keyring.pgp. Only keys in there are authorized
+to use the mail interface. Additionally, the file mail-users in the same
+directory is used to map PGP-key names to user names on kullervo.
+
+In the body (the PGP-signed part), you can write commands like:
+
+------------------------------------------------------------------------------
+wanna-build hello_1.0-1
+uploaded tst1_1.0 tst2_0.99a
+info hello
+list needs-build failed
+------------------------------------------------------------------------------
+
+The commands below are available. All be be abbreviated to their first
+letter and must start in column 0.
+
+  wanna-build <package_version...>
+  uploaded-build <package_version...>
+		failed-build <package_version...>
+   <fail-text>
+  info <package...>
+  list <states...>
+  vlist <states...>
+
+An argument <package_version> is package name + version number, as usual
+with wanna-build. The info command only takes plain package names, no
+versions. The list command takes states (installed, needs-build, building,
+uploaded, failed, not-for-us) and additionally "all" (for any state). The
+vlist command is the same as list, but includes a -v option, so that
+previous state and old failing messages are printed, too.
+
+The failed-build command, in difference to the others, also needs a failing
+message. You put this message in the lines after the command, each line
+with some whitespace at the start. This whitespace is stripped for the
+message actually passed to failed-build. The first line without whitespace
+is treated as the next command.
+
+The mail processor sends a reply mail with all the program output to the
+address the request came from (From: header). Alternatively, it obeys a
+Reply-To: header if present.
+
+Hope it works... :-)
+
+
+#
+# $Id: README.mail,v 1.1 1998/06/19 12:53:00 rnhodek Exp $
+# $Log: README.mail,v $
+# Revision 1.1  1998/06/19 12:53:00  rnhodek
+# Initial version.
+#
+#
+# Local variables:
+#   fill-column: 75
+#   tab-width: 1
+# End:

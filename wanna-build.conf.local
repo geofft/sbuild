@@ -1,0 +1,52 @@
+#
+# /etc/wanna-build.conf: local wanna-build configuration
+#
+# This is an example file, values are for for the m68k wanna-build on
+# m68k.debian.org.
+#
+
+# directory for the databases, lock files and log files
+$basedir = "/usr/local/var/debbuild";
+
+# ignore all epochs? (needed if quinn-diff prints no epochs)
+#$ignore_epochs = 0;
+
+# mail address of database maintainer (informed about a few things)
+$db_maint = "roman";
+
+# mail address of not-for-us maintainer (informed about Not-For-Us state
+# changes)
+$notforus_maint = "roman";
+
+# mail address for logs of all state changes
+$log_mail = "m68k-changes\@nocrew.org";
+
+# where to send wanna-build statistics mails
+$stat_mail = "m68k-changes\@nocrew.org";
+
+# file to publish statistics over WWW (optional)
+$web_stats = "/var/www/buildd/stats.txt";
+
+# sections to import and maintain in the database
+# the full list would be:
+# @sections = qw(main contrib non-free non-US non-US/main non-US/contrib non-US/non-free);
+@sections = qw(main non-US/main);
+
+# source for Packages files (for do-merge-packages)
+# can be an ftp or http URL, or a local path
+$pkgs_source = "ftp://ftp.uni-erlangen.de/pub/Linux/debian";
+
+# source for quinn-diff output (for do-merge-quinn)
+# can be an ftp or http URL, or a local path
+$quinn_source = "http://ftp.uni-erlangen.de/pub/Linux/LOCAL/Debian-support/quinn-diff";
+#$quinn_source = "http://buildd.debian.org/quinn-diff/output";
+
+# Is there quinn-diff output for more than one section (main)? This changes
+# what structure under $quinn_source is assumed:
+#   $quinn_source_has_section == 0 : ARCH/source-dependencies-DIST.gz
+#   $quinn_source_has_section == 1 : ARCH/SECTION/DIST
+# ftp.uni-erlangen.de is multi-section, buildd.debian.org not (yet)
+$quinn_source_multi_section = 1;
+
+# don't remove this, Perl needs it:
+1;

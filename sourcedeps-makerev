@@ -1,0 +1,100 @@
+#!/usr/bin/perl
+#
+# sourcedeps-makerev: build reverse index of source dependencies
+#   (i.e., a list of all packages that appear as srcdeps)
+# Copyright (C) 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: sourcedeps-makerev,v 1.4 1999/10/21 09:20:32 rnhodek Exp $
+#
+# $Log: sourcedeps-makerev,v $
+# Revision 1.4  1999/10/21 09:20:32  rnhodek
+# Fix parsing of specials again.
+# Omit abbrevs from output.
+#
+# Revision 1.3  1999/10/21 08:38:57  rnhodek
+# Fix skipping special defs (patches can contain lines with only
+# spaces.)
+#
+# Revision 1.2  1999/10/20 11:50:43  rnhodek
+# Fix while loop to skip special defs.
+# Remove a leftover.
+#
+# Revision 1.1  1999/10/19 15:18:05  rnhodek
+# *** empty log message ***
+#
+
+# this should use perl or python apt, taking in the chroots to act on
+# for each dist somehow, and then for each chroot, dump all
+# build-deps, and then add them to the *.rev files.  buildd-mail can then
+# read it in, and only try to move packages that are build-deps
+exit 0;
+
+while( <> ) {
+	chomp;
+	next if /^\s*$/ || /^\s*#/;
+	while( /\\$/ ) {
+		chop;
+		$_ .= <F>;
+		chomp;
+	}
+	if ($in_special) {
+		$in_special = 0 if /^$/;
+	}
+	elsif (/^(\*\*?[\w\d.+-]+):\s*$/) {
+		$in_special = 1;
+	}
+	elsif (/^abbrev\s+([\w\d.+-]+)\s*=\s*(.*)\s*$/) {
+		my ($abbrev, $def) = ($1, $2);
+		parse_one_srcdep( $abbrev, $def );
+		$abbrevs{$abbrev} = 1;
+	}
+	elsif (!/^([\w\d.+-]+):\s*(.*)\s*$/) {
+		warn "Syntax error in line $.\n";
+	}
+	else {
+		my( $pkg, $deps ) = ($1, $2);
+		parse_one_srcdep( $pkg, $deps );
+	}
+}
+
+foreach (keys %abbrevs) {
+	delete $deppkgs{$_};
+}
+print join( "\n", sort keys %deppkgs ), "\n";
+exit 0;
+
+sub parse_one_srcdep {
+	my $pkg = shift;
+	my $deps = shift;
+	
+	$deps =~ s/^\s*(.*)\s*$/$1/;
+	foreach (split( /\s*,\s*/, $deps )) {
+		if (/^\&/) {
+			s/^\&\s+//;
+		}
+		my @alts = split( /\s*\|\s*/, $_ );
+		foreach (@alts) {
+			if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+				warn "Warning: syntax error in dependency '$_' of $pkg\n";
+				next;
+			}
+			my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
+			next if $dep =~ /^[*!]/;
+			$deppkgs{$dep}++;
+		}
+	}
+}

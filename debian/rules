@@ -1,0 +1,162 @@
+#!/usr/bin/make -f
+# debian/rules file - for wanna-build.
+# Based on sample debian/rules file - for GNU Hello (1.3).
+# Copyright 1994,1995 by Ian Jackson.
+# Copyright 1998,1999 by James Troup.
+# Copyright 2004 by Ryan Murray.
+# I hereby give you perpetual unlimited permission to copy,
+# modify and relicense this file, provided that you do not remove
+# my name from the file itself.  (I assert my moral right of
+# paternity under the Copyright, Designs and Patents Act 1988.)
+# This file may have to be extensively modified
+
+STRIP=strip --remove-section=.comment --remove-section=.note
+
+build:
+	$(checkdir)
+	$(MAKE)
+	touch build
+
+clean:
+	$(checkdir)
+	$(MAKE) clean
+	-rm -f build buildd-mail-wrapper wanna-build-mail *~
+	-rm -rf debian/tmp/ debian/*~ debian/files debian/substvars
+
+binary-indep: binary-sbuild
+
+binary-sbuild: checkroot
+	$(checkdir)
+	-rm -rf debian/tmp/	
+	install -d debian/tmp/DEBIAN
+	install -m 755 debian/sbuild.postinst debian/tmp/DEBIAN/postinst
+
+	install -d debian/tmp/var/debbuild/srcdep-lock
+
+	install -d debian/tmp/usr/bin
+	install -m 755 sbuild avg-pkg-build-time update-sourcedeps \
+		debian/tmp/usr/bin/
+
+	install -d debian/tmp/etc
+	install -m 644 sbuild.conf debian/tmp/etc
+
+	install -d debian/tmp/usr/share/man/man1
+	install -m 644 sbuild.1 avg-pkg-build-time.1 debian/tmp/usr/share/man/man1/
+	gzip -9v debian/tmp/usr/share/man/man1/*
+
+	install -d debian/tmp/usr/share/doc/sbuild/examples
+	install -m 644 NEWS debian/tmp/usr/share/doc/sbuild/changelog
+	install -m 644 README.chroot-building debian/tmp/usr/share/doc/sbuild/
+	install -m 644 sbuild.conf.local debian/tmp/usr/share/doc/sbuild/examples
+	install -m 644 example.sbuildrc debian/tmp/usr/share/doc/sbuild/examples/sbuildrc
+	install -m 644 debian/changelog debian/tmp/usr/share/doc/sbuild/changelog.Debian
+	find debian/tmp/usr/share/doc/sbuild/ -type f | xargs gzip -9v
+	install -m 644 debian/copyright debian/tmp/usr/share/doc/sbuild/
+
+	dpkg-gencontrol -psbuild -isp
+	chown -R root.root debian/tmp
+	chmod -R go=rX debian/tmp
+	dpkg --build debian/tmp ..
+
+binary-arch: binary-buildd binary-wanna-build
+
+binary-buildd: checkroot build
+	$(checkdir)
+	-rm -rf debian/tmp
+	install -d debian/tmp/DEBIAN
+	install -m 755 debian/buildd.postinst debian/tmp/DEBIAN/postinst
+
+	install -d debian/tmp/usr/bin
+	install -m 755 buildd buildd-mail buildd-mail-wrapper buildd-uploader \
+		buildd-watcher debian/tmp/usr/bin
+	$(STRIP) debian/tmp/usr/bin/buildd-mail-wrapper
+	install -m 755 vlog debian/tmp/usr/bin/buildd-vlog
+	install -m 755 abort-current-build debian/tmp/usr/bin/buildd-abort
+	install -m 755 update_chroot debian/tmp/usr/bin/buildd-update-chroots
+
+	install -d debian/tmp/etc/cron.d
+	install -m 644 buildd.conf.global debian/tmp/etc
+
+	install -d debian/tmp/usr/share/perl5/
+	install -m 644 Buildd.pm debian/tmp/usr/share/perl5/
+
+	install -d debian/tmp/usr/share/emacs/site-lisp
+	install -m 644 buildd-reply.el debian/tmp/usr/share/emacs/site-lisp/
+	# XXX: still need /usr/lib/emacsen-common/packages/{install,remove} !
+
+	install -d debian/tmp/usr/share/man/man1/
+	install -m 644 buildd.1 buildd-mail-wrapper.1 buildd-uploader.1 \
+		debian/tmp/usr/share/man/man1	
+	gzip -9v debian/tmp/usr/share/man/man1/*
+
+	install -d debian/tmp/usr/share/doc/buildd/examples
+	install -m 644 README.buildd-admin debian/tmp/usr/share/doc/buildd/README.admin
+	install -m 644 crontab debian/tmp/usr/share/doc/buildd/examples/crontab
+	install -m 644 NEWS debian/tmp/usr/share/doc/buildd/changelog
+	install -m 644 buildd.conf debian/tmp/usr/share/doc/buildd/examples
+	install -m 644 setup_system debian/tmp/usr/share/doc/buildd/examples/buildd-setup-system
+	install -m 644 debian/changelog debian/tmp/usr/share/doc/buildd/changelog.Debian
+	find debian/tmp/usr/share/doc/buildd/ -type f | xargs gzip -9v
+	install -m 644 debian/copyright debian/tmp/usr/share/doc/buildd/
+
+	dpkg-shlibdeps buildd-mail-wrapper
+	dpkg-gencontrol -pbuildd -isp
+	chown -R root.root debian/tmp
+	chmod -R go=rX debian/tmp
+	dpkg --build debian/tmp ..
+
+binary-wanna-build: checkroot
+	$(checkdir)
+	-rm -rf debian/tmp
+	install -d debian/tmp/DEBIAN
+
+	install -d debian/tmp/usr/bin/wb-short
+	install -m 755 wanna-build wanna-build-mail wanna-build-mail.pl \
+		wanna-build-statistics check-old-builds do-merge-packages \
+		do-merge-quinn debian/tmp/usr/bin 
+	$(STRIP) debian/tmp/usr/bin/wanna-build-mail
+	install -m 755 catdb debian/tmp/usr/bin/wanna-build-catdb
+	ln -s wanna-build-catdb debian/tmp/usr/bin/wanna-build-catgdbm
+	set -e; for link in dep-wait-build failed-build forget-build \
+	                    give-back-build merge-packages merge-quinn \
+	                    no-build uploaded-build list-all list-building \
+	                    list-dep-wait list-failed list-installed \
+	                    list-needs-build list-not-for-us list-uploaded; do \
+		ln -s ../wanna-build debian/tmp/usr/bin/wb-short/$$link; \
+	done
+	ln -s ../wanna-build-catdb debian/tmp/usr/bin/wb-short/catdb
+	ln -s ../wanna-build-catgdbm debian/tmp/usr/bin/wb-short/catgdbm
+
+	install -d debian/tmp/etc
+	install -m 644 wanna-build.conf debian/tmp/etc
+
+	install -d debian/tmp/usr/share/doc/wanna-build/examples/
+	install -m 644 wanna-build.conf.local debian/tmp/usr/share/doc/wanna-build/examples/
+	install -m 644 README README.mail README.failcat debian/tmp/usr/share/doc/wanna-build/
+	install -m 644 NEWS debian/tmp/usr/share/doc/wanna-build/changelog
+	install -m 644 debian/changelog debian/tmp/usr/share/doc/wanna-build/changelog.Debian
+	find debian/tmp/usr/share/doc/wanna-build/ -type f | xargs gzip -9v
+	install -m 644 debian/copyright debian/tmp/usr/share/doc/wanna-build/
+
+	dpkg-shlibdeps wanna-build-mail
+	dpkg-gencontrol -pwanna-build -isp
+	chown -R root.root debian/tmp
+	chmod -R go=rX debian/tmp
+	dpkg --build debian/tmp ..
+
+define checkdir
+	test -f buildd-mail-wrapper.c -a -f debian/rules
+endef
+
+# Below here is fairly generic really
+
+binary:		binary-indep binary-arch
+
+source diff:
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+checkroot:
+	$(checkdir)
+	test root = "`whoami`"
+
+.PHONY: binary binary-arch binary-indep clean checkroot

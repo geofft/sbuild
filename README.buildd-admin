@@ -1,0 +1,282 @@
+                                                    -*- mode: indented-text -*-
+
+                  Overview of buildd Administration
+                  =================================
+
+This document should give you a rough idea how to administer a build
+daemon, i.e. how it basically works and how to reply to the mails sent
+to you. It does not yet cover configuration of buildd in a proper way,
+sorry.
+
+
+1) Overview of Operation
+========================
+
+The buildd system consists of the following parts:
+
+  buildd: This is the daemon itself. It basically runs in a loop,
+    first requesting some package in state Needs-Build from the
+    wanna-build database and then compiling those packages.
+
+  buildd-mail: This script processes mails directed to buildd, i.e.
+    your answers to build logs etc.
+
+  buildd-uploader: This script uploads finished jobs regularly and is
+    called by cron.
+
+  buildd-watcher: This does some regular maintenance stuff, like
+    archiving log files and finding outdated files so that the disk
+    doesn't fill up with them. It also restarts buildd if it should
+    have died for some reason.
+
+1.1) buildd
+-----------
+
+The most important component is of course buildd itself. It runs as a
+daemon, i.e. all the time, no need to start it by cron or the like. It
+also usually lowers its priority (config var $nice_level), so that
+other foreground jobs aren't delayed too much.
+
+buildd runs in a permanent loop where it tries to compile packages. To
+do this, it first needs to know which packages to build. Therefore it
+calls wanna-build --list=needs-build for all distributions (in order
+stable -> frozen -> unstable) and if the output is non-empty, it takes
+some of those packages needing rebuilding. You can restrict which
+distributions to look at with the @take_from_dists config var, and how
+many packages to take at a time with $max_build.
+
+There is additionally a file called REDO in ~/build, where
+occasionally some packages are dumped to be picked up later by buildd.
+This file is checked before new packages are requested from
+wanna-build. REDO also contains distributions for the packages, and
+here again stable has priority before frozen and that before unstable,
+as usual. The rationale is that stable/frozen packages are usually
+more urgent than unstable ones.
+
+If the daemon now has got some packages from wanna-build, it tries to
+take them for building (wanna-build --take). This should usually go
+ok, but in rare cases it can happen that somebody else already took
+the package in the meantime between listing and taking (race
+condition). Those packages are ignored. Another exception that can
+happen are packages that failed in the previous version. To avoid
+unnecessary work, buildd doesn't immediately start to build those
+packages but asks its administrator first. This will be discussed in
+greater length in a following section ("Should I build" mails).
+
+Ok, if all packages are taken, either from wanna-build or from REDO,
+buildd starts a sbuild run to build all the stuff. sbuild will send
+log mails to the admin, who later sends answers, but this doesn't
+touch buildd anymore. It goes back to the start of the loop and tries
+to take more packages and build them...
+
+Some special notes:
+
+buildd automatically detects if either the config file ~/buildd.conf
+or its binary has been changed while it is running, and it takes
+appropriate action. So there's no need to restart the daemon or send
+it some signal.
+
+You can interrupt a running buildd by sending it a SIGINT or SIGTERM.
+It will then kill a subsidiary sbuild process (if currently running).
+sbuild also has a shutdown handling for this and dumps unfinished jobs
+into the REDO file, so they'll be retried later. buildd blocks these
+signals if they could lead to inconsistencies.
+
+There is also some way to influence which packages buildd takes --or
+more exactly-- doesn't take to build. The config variable
+@no_auto_build lists packages that should never be taken by buildd,
+either because auto-building doesn't work or because they need to much
+time on this machine, or ... There is also a @weak_no_auto_build for
+packages that usually are too (time-)expensive to build here, but
+should be taken nevertheless if the daemon would be idle otherwise.
+Packages in @weak_no_auto_build are taken only if there are no other
+packages left in state Needs-Build in any distribution, and also REDO
+is empty.
+
+If sbuild gives back a package to wanna-build (because source couldn't
+be downloaded or the like), buildd will find the SBUILD-GIVEN-BACK
+file created by sbuild and it will remember when those give-backs have
+happened. To avoid trying the same package(s) over and over, such
+given back packages aren't taken immediately again. They have a
+waiting period of $delay_after_give_back minutes.
+
+
+1.2 buildd-mail
+---------------
+
+buildd-mail is the mail processor of the buildd system. It should be
+listed in the user buildd's ~/.forward file, e.g.:
+
+  "|/home/buildd/bin/buildd-mail-wrapper"
+
+The wrapper is necessary to allow setuid-ness, and also queues up
+incoming mails in ~/mqueue, so that the MTA process can exit and
+doesn't need to wait for buildd-mail to finish.
+
+There's not much to say here about operation of buildd-mail, because
+it just receives your answers to log files etc., and this will be
+described in more detail in the next section.
+
+The only (a bit) special thing is that buildd-mail also receives the
+"INSTALLED" mails from dinstall and analyzes them. It deletes all
+files from ~/upload when they're installed in the master archive.
+It also receives the "new version of ..." mails from wanna-build, that
+are sent whenever a new version of a package in state Building
+arrives.
+
+There is also a file ~/mail-blacklist that contains a list of (Perl)
+regular expressions. If a mail arrives from an address that matches
+one of those patterns, the mail is deleted. This is simply to avoid
+spam.
+
+
+1.3 buildd-uploader
+-------------------
+
+buildd-uploader is started by cron a few times per day and uploads all
+finished jobs which are in ~/upload. It simply uses dupload, as you
+expected. It of course ignores jobs for which a *.upload file already
+exists, i.e. those which already have been uploaded. After uploading,
+it calls wanna-build --uploaded for all the packages it processed.
+
+The --to option of dupload can be set with the $dupload_to config var;
+default is "erlangen". In all other respects, dupload is configured
+with ~/.duploadrc.
+
+In case of upload errors it sends a log mail to the admin, who has to
+fix the situation manually. However, errors should be seldom. The
+*.upload file of a failed job is deleted, so it's retried as a whole
+in the next run.
+
+
+1.4 buildd-watcher
+------------------
+
+buildd-watcher performs some regular maintenance tasks:
+
+ - If checks if buildd is running and restarts it if not. This is
+   meant as a safeguard against spuriously crashing daemons, no manual
+   intervention is required to restart it.
+
+   If you really don't have to have a daemon running, create a file
+   NO-DAEMON-PLEASE in the daemon's home dir. Then buildd-watcher
+   won't restart buildd.
+
+ - It purges build directories that are no longer needed. This would
+   be actually the job of buildd-mail, but since the latter is started
+   setuid, it can't use sudo and the build dirs can contain root-owned
+   files. So buildd-mail just appends the name of a directory to
+   delete to ~/build/PURGE, and buildd-watcher reads that file and
+   removes all the directories.
+
+ - It checks for old files in the build/ and upload/ directories, so
+   that no forgotten files can fill up the disk over time. Files are
+   considered "old" if they're older than $warning_age days. There's
+   additionally a Perl regexp $no_warn_pattern. buildd-watcher doesn't
+   warn about files matching this pattern. So files expected to be
+   there should be included in it, like build/buildd.pid, build/REDO,
+   ...
+
+ - It archives old log files into ~/old-logs/ and rotates the main log
+   file ~/daemon.log. Files to be archived are:
+
+    - package logs: logs/*                   -> old-logs/plog-<DATE>.tar.gz
+    - sbuild logs:  build/build*.log         -> old-logs/blog-<DATE>.tar.gz
+    - daemon logs:  old-logs/daemon-*.log.gz -> old-logs/dlog-<DATE>.tar.gz
+
+   Additionally daemon.log is renamed to daemon.log.old, and SIGHUP is
+   sent to buildd to open the new log file. If an daemon.log.old
+   already existed, it's compressed and moved to old-logs/daemon-<DATE>.log.gz.
+   
+   There are several config vars how long to keep the kinds of log
+   files until they're archived: $pkg_log_keep, $build_log_keep,
+   $daemon_log_rotate, and $daemon_log_keep. All are measured in days.
+
+
+2) Replying to Mails
+====================
+
+You'll receive lots of mail from buildd and its friends, most of them
+build logs. But there are also some other kinds of mails: "Should I
+build?" from buildd, dupload errors, and warnings about old files. The
+latter two are not complicated and obvious to handle. But the former two
+require that you reply in a certain way.
+
+To make daily administration easier, there is a set of Emacs Lisp
+functions (for Rmail and Gnus) that allow you to send most answers
+with two keystrokes. The library is called buildd-reply.el and can be
+found in the wanna-build CVS archive, where also all other buildd
+scripts reside. The keystrokes in Emacs are given in square brackets.
+
+2.1) Build Logs
+---------------
+
+All build logs replies are recognized by their subject. It should be
+of the form
+
+  Re: Log for (successful|failed) build of PACKAGE_VERSION (dist=DIST)
+
+The subject line gives buildd-mail already a lot of needed infos: The
+package name and version, and for which distribution is has been
+compiled. The successful/failed information is ignored.
+
+The body of the reply mail is in most cases only a single keyword,
+sometimes with arguments. Anyway, there should be no excess blank
+lines or similar.
+
+
+2.1.1 Successful [C-c C-o]
+................
+
+This is the most often used reply, and also different from the others
+because it does not consist of a single keyword. Instead, you send
+back a signed version of the .changes file of the package. The
+.changes can be found at the end of the build log. The Emacs function
+automatically extracts the .changes from the log and signs it (with
+mailcrypt). If you do not Emacs, you have to cut the .changes manually
+somehow (depending on the mailer) and invoke some kind of PGP backend.
+
+buildd-mail recognizes "ok" mails by the "--- BEGIN PGP SIGNED MESSAGE"
+line. If such a mail is received, it is first checked if the package
+isn't outdated.
+
+
+2.1.2 retry [C-c C-r]
+...........
+
+2.1.3 fail [C-c C-f]
+..........
+
+2.1.4 dep-wait [C-c C-d]
+.............
+
+2.1.5 giveback [C-c M-g]
+..............
+
+2.1.6 manual [C-c C-m]
+............
+
+2.1.7 newvers [C-c C-n]
+.............
+
+2.1.8 not-for-us [C-c M-n]
+................
+
+2.1.9 upload-remove [C-c C-]
+...................
+
+2.1.10 purge [C-c C-p]
+............
+
+
+2.2 Other Emacs Actions
+-----------------------
+
+"\C-c\C-s" 'buildd-edit-manual-source-deps
+"\C-c\C-b" 'buildd-bug
+"\C-c\C-a" 'buildd-bug-ack-append
+
+
+3) Log Files
+============
+

@@ -1,0 +1,5 @@
+#!/bin/sh -e
+update-sourcedeps || true
+if [ ! -e /etc/sbuild.conf.local ]; then
+	zcat /usr/share/doc/sbuild/examples/sbuild.conf.local.gz > /etc/sbuild.conf.local
+fi

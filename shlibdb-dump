@@ -1,0 +1,116 @@
+#!/usr/bin/perl
+#
+# shlibdb-dump: dump shlibsig db as ascii
+# Copyright (C) 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+# $Id: shlibdb-dump,v 1.2 1999/04/26 14:27:55 rnhodek Exp $
+#
+# $Log: shlibdb-dump,v $
+# Revision 1.2  1999/04/26 14:27:55  rnhodek
+# Make output sorted.
+#
+# Revision 1.1  1999/04/26 13:59:00  rnhodek
+# Initial writing.
+#
+
+BEGIN {
+        ($HOME = $ENV{'HOME'})
+                or die "HOME not defined in environment!\n";
+        push( @INC, "$main::HOME/lib" );
+}
+
+package conf;
+$HOME = $main::HOME;
+# defaults:
+$shlib_db_dir = ".";
+# read conf files
+require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
+require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
+package main;
+
+use strict;
+use DB_File;
+use vars qw($dist $installed $verbose %db $HOME);
+
+$dist = "unstable";
+$verbose = 0;
+$installed = 0;
+
+my %options =
+	(# flags
+	 verbose          => { short => "v", flag => \$verbose },
+	 installed        => { short => "i", flag => \$installed },
+	 # options with args
+	 dist             => { short => "d", arg => \$dist },
+	 libdir           => { short => "l", arg => \$conf::shlib_db_dir }
+	);
+					   
+while( @ARGV && $ARGV[0] =~ /^-/ ) {
+	$_ = shift @ARGV;
+	last if $_ eq "--";
+	my($opt, $optname, $arg);
+	if (/^--([^=]+)(=|$)/) {
+		$optname = $1;
+		$opt = $options{$optname};
+		$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
+	}
+	else {
+		$optname = substr( $_, 1, 1 );
+		$opt = (grep { $_->{short} eq $optname } values %options)[0];
+		$arg = $1 if /^-$optname(.+)$/;
+	}
+	if (!$opt) {
+		warn "Unknown option: --$1\n";
+		usage();
+	}
+	if ($opt->{arg}) {
+		if (!defined $arg) {
+			die "$optname option missing argument\n" if !@ARGV;
+			$arg = shift @ARGV;
+		}
+		${$opt->{arg}} = $arg;
+	}
+	elsif (defined $arg) {
+		die "Option $optname takes no argument\n";
+	}
+	
+	if ($opt->{flag}) {
+		${$opt->{flag}}++;
+	}
+	if ($opt->{code}) {
+		&{$opt->{code}};
+	}
+}
+
+# some checks
+die "Database dir $conf::shlib_db_dir is not a directory\n"
+	if ! -d $conf::shlib_db_dir;
+
+my $dbname = "$conf::shlib_db_dir/shlibsigs-".
+			 ($installed ? "installed" : $dist);
+tie %db, 'DB_File', $dbname, O_RDONLY, 0644, $DB_HASH;
+die "Cannot open database $dbname: $!\n" if !tied %db;
+
+my $key;
+foreach $key (sort keys %db) {
+	my ($version, $md5) = split( ' ', $db{$key} );
+	next if $md5 eq "*";
+	print "$key => $md5\n";
+}
+
+untie %db;
+exit 0;
