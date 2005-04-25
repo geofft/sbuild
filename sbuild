@@ -1639,7 +1639,7 @@ sub get_dpkg_status {
 		if ($provides) {
 			foreach (split( /\s*,\s*/, $provides )) {
 				$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
-					if isin( $_, @interest );
+					if isin( $_, @interest ) and not exists($result{$_});
 			}
 		}
 	}
