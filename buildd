@@ -128,11 +128,6 @@ my $dist;
 MAINLOOP: while( 1 ) {
 	check_restart();
 	check_reread_config();
-
-	if ( -f "$main::HOME/EXIT-DAEMON-PLEASE" ) {
-		unlink("$main::HOME/EXIT-DAEMON-PLEASE");
-		&shutdown("NONE (flag file exit)");
-	}
 	check_ssh_master();
 
 	my $done = 0;
@@ -718,6 +713,11 @@ sub check_restart {
 		unlink( "buildd.pid" );
 		kill ( 15, $main::ssh_pid ) if $main::ssh_pid;
 		exec $my_binary;
+	}
+
+	if ( -f "$main::HOME/EXIT-DAEMON-PLEASE" ) {
+		unlink("$main::HOME/EXIT-DAEMON-PLEASE");
+		&shutdown("NONE (flag file exit)");
 	}
 }
 
