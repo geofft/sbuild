@@ -763,7 +763,7 @@ EOF
 				   " minutes of inactivity\n";
 	}
 	$main::pkg_end_time = time;
-	my $date = `date +%Y%m%d-%H%M`;
+	my $date = strftime("%Y%m%d-%H%M\n",localtime);
 	print PLOG "*"x78, "\n";
 	print PLOG "Build finished at $date";
 	chdir( $main::cwd );
@@ -2283,8 +2283,7 @@ sub get_special {
 
 
 sub open_log {
-	my $date = `date +%Y%m%d-%H%M`;
-	chomp( $date );
+	my $date = strftime("%Y%m%d-%H%M",localtime);
 
 	if ($main::nolog) {
 		open( LOG, ">&STDOUT" );
@@ -2316,8 +2315,7 @@ sub open_log {
 }
 
 sub close_log {
-	my $date = `date +%Y%m%d-%H%M`;
-	chomp( $date );
+	my $date = strftime("%Y%m%d-%H%M",localtime);
 
 	kill( 15, $main::tee_pid ) if $main::verbose;
 	close( LOG );
@@ -2332,7 +2330,7 @@ sub close_log {
 }
 
 sub open_pkg_log {
-	my $date = `date +%Y%m%d-%H%M`;
+	my $date = strftime("%Y%m%d-%H%M\n",localtime);
 	my $pkg = shift;
 
 	if ($main::nolog) {
@@ -2378,7 +2376,7 @@ sub open_pkg_log {
 }
 
 sub close_pkg_log {
-	my $date = `date +%Y%m%d-%H%M`;
+	my $date = strftime("%Y%m%d-%H%M\n",localtime);
 	my $pkg = shift;
 	my $t = $main::pkg_end_time - $main::pkg_start_time;
 	
@@ -2526,7 +2524,7 @@ sub write_srcdep_lock_file {
 	}
 	print "Writing srcdep lock file $f:\n" if $main::debug;
 
-	chomp( my $user = `/usr/bin/whoami` );
+	my $user = getpwuid($<);
 	print F "$main::current_job $$ $user\n";
 	print "Job $main::current_job pid $$ user $user\n" if $main::debug;
 	foreach (@$deps) {
