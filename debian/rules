@@ -36,8 +36,11 @@ binary-sbuild: checkroot
 
 	install -d debian/tmp/usr/bin
 	install -m 755 sbuild avg-pkg-build-time update-sourcedeps \
-		buildd-make-chroot \
 		debian/tmp/usr/bin/
+
+	install -d debian/tmp/usr/sbin
+	install -m 755 buildd-make-chroot \
+		debian/tmp/usr/sbin/
 
 	install -d debian/tmp/etc
 	install -m 644 sbuild.conf debian/tmp/etc
