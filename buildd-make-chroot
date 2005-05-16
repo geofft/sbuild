@@ -57,3 +57,6 @@ mkdir -p $TARGET/var/debbuild/srcdep-lock $TARGET/build/$USER $TARGET/`getent pa
 chown -R $USER:$USER $TARGET/var/debbuild $TARGET/build/$USER $TARGET/`getent passwd $USER | awk -v FS=":" '{ print $6 }'`
 chmod -R 02775 $TARGET/var/debbuild
 echo "Successfully setup chroot for a buildd"
+echo Possible commands to append to fstab:
+echo echo $SUITE-proc $TARGET/proc proc defaults 0 0 \>\> /etc/fstab
+echo echo $SUITE-devpts $TARGET/dev/pts devpts defaults,gid=5,mode=600 0 0 \>\> /etc/fstab
