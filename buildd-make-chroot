@@ -39,8 +39,6 @@ case "$2" in
 	    echo "deb-src http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
 	;;
 	sarge)
-	    echo "deb http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
-	    echo "deb-src http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
 	    echo "deb http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
 	    echo "deb-src http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
 	    echo "deb http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
