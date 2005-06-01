@@ -241,13 +241,22 @@ if (-d "chroot-$main::distribution") {
 	$main::ilock_file = "$conf::srcdep_lock_dir/install";
 	my $absroot = "$main::cwd/$main::chroot_dir";
 	$main::chroot_apt_options =
-		"-o Dir::State=$absroot/var/".
-			(-d "$absroot/var/lib/apt" ? "lib":"state")."/apt ".
-		"-o Dir::State::status=$absroot/var/lib/dpkg/status ".
-		"-o Dir::Cache=$absroot/var/cache/apt ".
-		"-o Dir::Etc=$absroot/etc/apt ".
-		"-o DPkg::Options::=--root=$absroot ".
-		"-o DPkg::Run-Directory=$absroot";
+		"-o Dir::State::status=$absroot/var/lib/dpkg/status".
+		" -o DPkg::Options::=--root=$absroot".
+		" -o DPkg::Run-Directory=$absroot";
+	my $aptconf = "$absroot/var/debbuild/apt.conf";
+	$ENV{'APT_CONFIG'} = $aptconf;
+	if ( ! -f $aptconf ) {
+		if (open F, ">$aptconf") {
+			print F "Dir \"$absroot/\";\n";
+			close F;
+		} else {
+			$main::chroot_apt_options .=
+			" -o Dir::State=$absroot/var/lib/apt".
+			" -o Dir::Cache=$absroot/var/cache/apt".
+			" -o Dir::Etc=$absroot/etc/apt";
+		}
+	}
 	$main::chroot_apt_op = '$CHROOT_OPTIONS';
 }
 write_jobs_file();

@@ -373,12 +373,20 @@ sub do_build {
 
 	if (-d "chroot-$dist") {
 		my $absroot = cwd() . "/chroot-$dist";
-		$chroot_apt_options =
-		"-o Dir::State=$absroot/var/" . ( -d "$absroot/var/lib/apt" ?
-			"lib/" : "state/") . "apt ".
-		"-o Dir::State::status=$absroot/var/lib/dpkg/status ".
-		"-o Dir::Cache=$absroot/var/cache/apt ".
-		"-o Dir::Etc=$absroot/etc/apt ";
+		$chroot_apt_options = "-o Dir::State::status=$absroot/var/lib/dpkg/status";
+		my $aptconf = "$absroot/var/debbuild/apt.conf";
+		$ENV{'APT_CONFIG'} = $aptconf;
+		if ( ! -f $aptconf ) {
+			if (open F, ">$aptconf") {
+				print F "Dir \"$absroot/\";\n";
+				close F;
+			} else {
+				$chroot_apt_options .=
+				" -o Dir::State=$absroot/var/lib/apt" .
+				"-o Dir::Cache=$absroot/var/cache/apt ".
+				"-o Dir::Etc=$absroot/etc/apt";
+			}
+		}
 	}
 
 	if (-x "$conf::apt_get") {
