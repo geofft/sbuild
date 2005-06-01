@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #
 # update-shlibdb: build/update database of shlib signatures
 # Copyright (C) 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
@@ -123,10 +123,11 @@ if ($installed) {
 	}
 }
 else {
-	open( F, "/org/ftp.debian.org/database/dists/$dist_$component_binary-$arch.list" );
+	open( F, "/org/ftp.debian.org/database/dists/${dist}_${component}_binary-${arch}.list" )
 		or die "Cannot open file list: $!\n";
 	chomp( my @files = <F> );
 	close( F );
+
 	foreach $file (@files) {
 		scan_a_package( $file );
 	}
@@ -164,7 +165,7 @@ foreach (keys %lib_to_dev) {
 }
 
 foreach $libpkg (keys %pkg_shlibs_md5) {
-	next if !exists $lib_to_dev{$libpkg};
+	warn "WARNING: $libpkg with shlibs file isn't a -dev\n", next if !exists $lib_to_dev{$libpkg};
 	foreach $devpkg (keys %{$lib_to_dev{$libpkg}}) {
 		$dev_to_lib{$devpkg}->{$libpkg} = 1;
 	}
@@ -196,7 +197,7 @@ sub scan_a_package {
 	print "Scanning $pkg\n" if $verbose >= 2;
 
 	if (!open( PIPE, "ar p $file control.tar.gz | ".
-			   "tar xzOf - control | grep '^Version:' 2>&1 |" )) {
+			   "tar xzOf - ./control | grep '^Version:' 2>&1 |" )) {
 		warn "Cannot open pipe to ar/tar: $!\n";
 		return;
 	}
@@ -215,9 +216,9 @@ sub scan_a_package {
 	}
 	while( <PIPE> ) {
 		my @f = split;
-		my $manyfields = (@f >= 8);
+		my $manyfields = 0; #(@f >= 8);
 		my $mode = $f[0];
-		my $name = "/" . $f[$manyfields ? 7 : 5];
+		my $name = normalize_path("/" . $f[$manyfields ? 7 : 5]);
 		my $link = $f[$manyfields ? 9 : 7];
 		if ($mode =~ /^-/ && $name =~ m,/[^/]+\.so\.[^/]+$,) {
 			my $so = $name;
@@ -243,7 +244,7 @@ sub scan_a_package {
 
 	if ($have_shlibs) {
 		if (!open( PIPE, "ar p $file control.tar.gz | ".
-				   "tar xzOf - shlibs 2>&1 |" )) {
+				   "tar xzOf - ./shlibs 2>&1 |" )) {
 			warn "Cannot open pipe to ar/tar: $!\n";
 			return;
 		}
@@ -251,7 +252,7 @@ sub scan_a_package {
 		{ local($/); $shlibs_contents = <PIPE>; }
 		close( PIPE );
 
-		if ($shlibs_contents =~ /^tar: shlibs: not found/mi) {
+		if ($shlibs_contents =~ m#^tar: ./shlibs: Not found#mi) {
 			# no warning here...
 		}
 		elsif ($?) {
@@ -263,7 +264,7 @@ sub scan_a_package {
 		}
 	}
 
-	set_db( $pkg, $version );
+	set_db( $pkg, $version, $pkg_shlibs_md5{$pkg} );
 }
 
 
@@ -352,7 +353,7 @@ sub read_dpkg_status {
 
 sub make_shlibs_md5 {
 	my $contents = shift;
-	my $md5 = new MD5;
+	my $md5 = new Digest::MD5;
 
 	foreach (split( "\n", $contents )) {
 		next if /^\s*$/;
