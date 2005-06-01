@@ -15,13 +15,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 # $Id$
 #
+# $Log: wanna-build-statistics,v $
+# Revision 1.4  2000/10/19 09:15:37  rnhodek
+# percent: handle $total == 0 case.
+#
+# Revision 1.3  1999/01/13 09:57:17  rnhodek
+# If wanna-build returns error status, also print last message from it.
+#
+# Revision 1.2  1998/12/16 10:51:34  rnhodek
+# Print nothing at all if wanna-build says that the db doesn't exist.
+# Remove debugging stuff.
+#
+# Revision 1.1  1998/12/16 10:29:09  rnhodek
+# Initial writing.
+#
 
 use strict;
-use vars qw($verbose $dist $database $fromfile);
+use vars qw($verbose $dist $database);
 
 $verbose = 0;
 $dist = "unstable";
@@ -31,9 +45,6 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	$_ = shift @ARGV;
 	if (/^-v$/ || /^--verbose$/) {
 		$verbose++;
-	}
-	elsif (/^--database=(.*)$/) {
-		$database = $1;
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -46,15 +57,15 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 			$dist = shift @ARGV;
 		}
 		$dist = "stable"   if $dist eq "s";
-		$dist = "frozen"   if $dist eq "f";
+		$dist = "testing"  if $dist eq "t";
 		$dist = "unstable" if $dist eq "u";
-		die "Bad distribution\n" if !isin($dist, qw(stable frozen unstable));
-	}
-	elsif (/^--file=(.*)$/) {
-		$fromfile = $1;
+		die "Bad distribution\n" if !isin($dist, qw(stable testing unstable stable-security testing-security));
 	}
 	elsif (/^--$/) {
 		last;
+	}
+	elsif (/^--database=(.*)$/) {
+		$database = $1;
 	}
 	else {
 		die "Unknown option: $_\n";
@@ -62,13 +73,8 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 }
 
 my($lastmsg, %n_state, $total, %n_builder);
-if ($fromfile) {
-	open( PIPE, "< $fromfile" ) or die "Cannot open $fromfile";
-}
-else {
-	open( PIPE, "wanna-build --dist=$dist --list=all 2>&1 |" )
-		or die "Cannot spawn wanna-build: $!\n";
-}
+open( PIPE, "wanna-build --database=$database --dist=$dist --list=all 2>&1 |" )
+	or die "Cannot spawn wanna-build: $!\n";
 while( <PIPE> ) {
 	if (/^Database for $dist doesn't exist$/) {
 		exit 1;
@@ -95,7 +101,7 @@ print "--------------", "-" x length($dist), "\n";
 
 my $total_width = 78;
 my @state_list = qw(Installed Needs-Build Building Uploaded Failed Dep-Wait
-					Reupload-Wait Install-Wait Failed-Removed Dep-Wait-Removed
+					Failed-Removed Dep-Wait-Removed
 					Not-For-Us);
 my $statewidth = 0;
 grep { $statewidth = length($_) if length($_) > $statewidth } @state_list;
@@ -150,7 +156,7 @@ sub percent {
 	}
 
 	return sprintf "%6.2f%%", $n*100/$total if $total;
-	return sprintf "%6.2f%%", 0 if !$total;
+	return sprintf "%6.2f%%", 0;
 }
 
 sub isin {
