@@ -383,8 +383,8 @@ sub do_build {
 			} else {
 				$chroot_apt_options .=
 				" -o Dir::State=$absroot/var/lib/apt" .
-				"-o Dir::Cache=$absroot/var/cache/apt ".
-				"-o Dir::Etc=$absroot/etc/apt";
+				" -o Dir::Cache=$absroot/var/cache/apt".
+				" -o Dir::Etc=$absroot/etc/apt";
 			}
 		}
 	}
