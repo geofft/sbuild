@@ -9,7 +9,7 @@ sudo chmod -R 2775 /var/debbuild
 cd ~buildd
 zcat /usr/share/doc/buildd/examples/buildd.conf.gz > buildd.conf
 zcat /usr/share/doc/sbuild/examples/sbuildrc.gz > .sbuildrc
-mkdir -p build logs mqueue old-logs stats/graphs upload upload-non-US upload-security
+mkdir -p build logs mqueue old-logs stats/graphs upload upload-security
 chmod o= upload-security old-logs mqueue logs build
 echo "|/usr/bin/buildd-mail-wrapper" > .forward
 mkdir .ssh
