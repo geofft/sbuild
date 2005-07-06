@@ -85,7 +85,7 @@ sub get_files_from_changes {
 sub split_debname {
 	my $pkgv = shift;
 	
-	if ($pkgv !~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+-]+)(_([a-zA-Z\d-]+))?\.deb$/) {
+	if ($pkgv !~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.~+-]+)(_([a-zA-Z\d-]+))?\.deb$/) {
 		warn "Bad package name: $pkgv\n";
 		return ("", "", "");
 	}

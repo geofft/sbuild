@@ -494,7 +494,7 @@ sub build {
 	# count build time from now, ignoring the installation of source deps
 	$main::pkg_start_time = time;
 	$main::this_space = 0;
-	$pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+-]+)/;
+	$pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
 	my ($pkg, $version) = ($1,$2);
 	(my $sversion = $version) =~ s/^\d+://;
 	my $tmpunpackdir = $dsc;
@@ -2860,7 +2860,7 @@ sub fixup_pkgv {
 	
 	$$pkgv =~ s,^.*/,,; # strip path
 	$$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
-	$$pkgv =~ s/_[a-zA-Z\d+-]+\.(changes|deb)$//; # strip extension
+	$$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
 }
 
 sub format_deps {

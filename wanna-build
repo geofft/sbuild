@@ -398,7 +398,7 @@ sub add_packages {
 		$package =~ s,^.*/,,; # strip path
 		$package =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
 		$package =~ s/_[a-zA-Z\d-]+\.changes$//; # strip extension
-		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+-]+)/) {
+		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+~-]+)/) {
 			($name,$version) = ($1,$2);
 			$version =~ s/^\d+://; # strip epoch
 		}
@@ -999,7 +999,7 @@ sub pretend_avail {
 		$package =~ s,^.*/,,; # strip path
 		$package =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
 		$package =~ s/_[\w\d]+\.changes$//; # strip extension
-		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+-]+)/) {
+		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+~-]+)/) {
 			($name,$version) = ($1,$2);
 			$version =~ s/^\d+:// if $conf::ignore_epochs;
 		}
@@ -1077,7 +1077,7 @@ sub parse_quinn_diff {
 	while( <> ) {
 		next if !m,^([\w\d-/]*)/			# section
 			       ([\w\d.+-]+)_			# package name
-				   ([\w\d:.+-]+)\.dsc\s*	# version
+				   ([\w\d:.~+-]+)\.dsc\s*	# version
 				   \[([^:]*):				# priority
 				   ([^]]+)\]\s*$,x;			# rest of notes
 		my($section,$name,$version,$priority,$notes) = ($1, $2, $3, $4, $5);

@@ -550,7 +550,7 @@ sub get_changelog {
 	my $retried = 0;
 	local( *PIPE, *DSC, *F );
 
-	$pkg =~ /^([\w\d.+-]+)_([\w\d:.+-]+)/;
+	$pkg =~ /^([\w\d.+-]+)_([\w\d:.~+-]+)/;
 	my ($n, $v) = ($1, $2);
 	(my $v_ne = $v) =~ s/^\d+://;
 	my $pkg_ne = "${n}_${v_ne}";
