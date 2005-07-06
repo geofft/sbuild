@@ -73,7 +73,7 @@ $wanna_build_user = "";
 
 # buildd-watcher doesn't complain about old files if they match the regexp
 # below
-$no_warn_pattern = '^build/(SKIP|REDO|SAVED-CHANGES|HOLD-BACK|Attic|buildd\.pid|chroot-[^/]*)$';
+$no_warn_pattern = '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$';
 
 # Should buildd send "Should I build" messages?
 $should_build_msgs = 1;
