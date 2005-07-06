@@ -33,6 +33,7 @@ use Cwd;
 sub ST_MTIME() { 9 }
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 my $fudge = 1/24/6; # 10 minutes in units of a day
+my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 
 read_config();
 chdir( "$main::HOME" );
@@ -113,23 +114,38 @@ else {
 }
 
 # check for old stuff in build and upload dirs
-my @warnings;
+my %warnfile;
 my $file;
+my $dev;
+my $ino;
 foreach $file (<upload/*>) {
-	push( @warnings, $file ) if -M $file >= $conf::warning_age;
+	($dev,$ino) = lstat $file;
+	$warnfile{"$dev:$ino"} = $file if -M $file >= $conf::warning_age;
 }
-foreach $file (<build/*>) {
-	lstat $file;
-	if (! -d _ || -l _) {
-		push( @warnings, $file ) if -C _ >= $conf::warning_age;
+foreach $file (<build/chroot-*/build/$username/*>) {
+	($dev,$ino) = lstat $file;
+	if (! -d _ && ! -l _) {
+		$warnfile{"$dev:$ino"} = $file if -C _ >= $conf::warning_age;
 	}
 	else {
 		my $changed_files =
-			`find $file -mtime -$conf::warning_age -print 2>/dev/null`;
-		push( @warnings, $file ) if !$changed_files;
+			`find $file -ctime -$conf::warning_age -print 2>/dev/null`;
+		$warnfile{"$dev:$ino"} = $file if !$changed_files;
 	}
 }
-@warnings = grep( !/$conf::no_warn_pattern/, @warnings );
+foreach $file (<build/*>) {
+	next if $file =~ m#^build/chroot-[^/]+$#;
+	($dev,$ino) = lstat $file;
+	if (! -d _ && ! -l _) {
+		$warnfile{"$dev:$ino"} = $file if -C _ >= $conf::warning_age;
+	}
+	else {
+		my $changed_files =
+			`find $file -ctime -$conf::warning_age -print 2>/dev/null`;
+		$warnfile{"$dev:$ino"} = $file if !$changed_files;
+	}
+}
+my @warnings = grep( !/$conf::no_warn_pattern/, sort values %warnfile );
 if (@warnings) {
 	my %reported;
 	my @do_warn;
