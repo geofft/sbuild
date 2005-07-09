@@ -2,7 +2,7 @@ Source: wanna-build
 Section: devel
 Priority: extra
 Maintainer: Ryan Murray <rmurray@debian.org>
-Standards-Version: 3.6.0
+Standards-Version: 3.6.2
 
 Package: sbuild
 Architecture: all
@@ -21,7 +21,7 @@ Description: Tool for building Debian binary packages from Debian sources
 
 Package: wanna-build
 Architecture: any
-Depends: ${shlibs:Depends}, perl5
+Depends: ${shlibs:Depends}, perl5, libmldbm-perl
 Recommends: exim | mail-transport-agent, cron, wget
 Suggests: gnupg
 Description: Database for packages needed recompiled

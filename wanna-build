@@ -40,6 +40,8 @@ use IO;
 use POSIX;
 use FileHandle;
 use Time::Local;
+use GDBM_File;
+use MLDBM qw(GDBM_File);
 
 use vars qw($verbose $mail_logs $list_order $list_state @distributions
 			%dist_order $curr_date $op_mode $user $real_user $distribution
@@ -292,7 +294,7 @@ END {
 	}
 }
 
-tie %db, 'WrapDB', db_filename( $distribution )
+tie %db, 'MLDBM', db_filename( $distribution ), GDBM_WRCREAT, 0664
 	or die "FATAL: Cannot open database\n";
 
 process();
@@ -347,7 +349,6 @@ sub process {
 			last SWITCH;
 		};
 		/^import/ && do {
-			die "You are not the wanna-build database admin.  Contact rmurray\@d.o\n";
 			%db = (); # clear all current contents
 			read_db( $import_from );
 			last SWITCH;
@@ -374,7 +375,7 @@ sub process {
 		};
 		/^clean-db/ && do {
 			my %new_db;
-			tie %new_db, 'WrapDB', db_filename( $distribution ) . ".new"
+			tie %new_db, 'MLDBM', db_filename( $distribution ) . ".new", GDBM_WRCREAT, 0664
 				or die "FATAL: Cannot create new database\n";
 			%new_db = %db;
 			untie %db or die "FATAL: Cannot untie old database\n";
@@ -1876,7 +1877,7 @@ sub open_other_db {
 	if (!tied(%{$otherdb{$dist}})) {
 		lock_db( $dist );
 		$otherdb_lock{$dist} = 1;
-		if (!(tie %{$otherdb{$dist}}, 'WrapDB', db_filename($dist))){
+		if (!(tie %{$otherdb{$dist}}, 'MLDBM', db_filename($dist), 0, 0664)){
 			warn "Serious warning: Cannot open database for $dist\n";
 			unlock_db( $dist );
 			$otherdb_lock{$dist} = 0;
@@ -2185,232 +2186,3 @@ command line. --info takes source package names (without version).
 EOF
 	exit 1;
 }
-
-# ----------------------------------------------------------------------------
-
-package WrapCaller;
-
-BEGIN { $WrapCaller::debug = 0; }
-
-sub TIEHASH {
-    my $pkg = shift;
-	my $refob = shift;
-	my $key = shift;
-
-	bless { REF => $refob, KEY => $key, DATA => { @_ } }, $pkg;
-}
-
-sub FETCH {
-	my $self = shift;
-	my $key = shift;
-	
-	print "CFETCH($key)\n" if $WrapCaller::debug;
-	return $self->{'DATA'}->{$key};
-}
-
-sub FIRSTKEY {
-	my $self = shift;
-	
-	print "CFIRST\n" if $WrapCaller::debug;
-	my $a = scalar keys %{$self->{'DATA'}}; # reset each operator
-	return each %{$self->{'DATA'}}
-}
-
-sub NEXTKEY {
-	my $self = shift;
-	
-	print "CNEXT\n" if $WrapCaller::debug;
-	return each %{$self->{'DATA'}};
-}
-
-sub EXISTS {
-	my $self = shift;
-	my $key = shift;
-	
-	return exists $self->{'DATA'}->{$key};
-}
-
-sub STORE {
-	my $self = shift;
-	my $key = shift;
-	my $val = shift;
-
-	print "CSTORE($key,$val)\n" if $WrapCaller::debug;
-	$self->{'DATA'}->{$key} = $val;
-	$self->{'REF'}->STORE( $self->{'KEY'}, $self->{'DATA'} );
-}
-
-sub DELETE {
-	my $self = shift;
-	my $key = shift;
-
-	print "CDELETE($key)\n" if $WrapCaller::debug;
-	delete $self->{'DATA'}->{$key};
-	$self->{'REF'}->STORE( $self->{'KEY'}, $self->{'DATA'} );
-}
-
-sub CLEAR {
-	my $self = shift;
-
-	print "CCLEAR()\n" if $WrapCaller::debug;
-	%{$self->{'DATA'}} = {};
-	$self->{'REF'}->STORE( $self->{'KEY'}, $self->{'DATA'} );
-}
-
-
-package WrapDB;
-use GDBM_File;
-
-BEGIN { $WrapDB::debug = 0; }
-
-sub new {
-    my $pkg = shift;
-    $pkg->TIEHASH(@_);
-}
-
-sub TIEHASH {
-    my $pkg = shift;
-	my $file = shift;
-	my $try = 0;
-	my $db;
-	
-  repeat:
-	$db = GDBM_File::TIEHASH( 'GDBM_File', $file, GDBM_WRCREAT, 0664 );
-	if (!defined $db) {
-		if ($! == POSIX::EAGAIN && ++$try < 30) {
-			sleep 2;
-			goto repeat;
-		}
-		warn "WrapDB: opening DB file $file failed: $!\n";
-		return undef;
-	}
-	bless { _DB => $db }, $pkg;
-}
-
-sub FETCH {
-    my $self = shift;
-	my $key = shift;
-	my $db = $self->{'_DB'};
-	
-	print "FETCH: key=\"$key\"\n" if $WrapDB::debug;
-
-	if (exists $self->{$key}) {
-		print "FETCH: already fetched\n" if $WrapDB::debug;
-		tie %{$self->{$key}}, 'WrapCaller', $self, $key, %{$self->{$key}}
-			if !tied(%{$self->{$key}});
-		return $self->{$key};
-	}
-	
-	my $val = $db->FETCH( $key );
-	if (!defined $val) {
-		print "FETCH: undefined in db\n" if $WrapDB::debug;
-		tie %{$self->{$key}}, 'WrapCaller', $self, $key;
-		return $self->{$key};
-	}
-	print "FETCH: db val=\"$val\"\n" if $WrapDB::debug;
-
-	$val =~ s/[\s\n]+$//;
-	$val =~ s/\n[ \t]+/\376\377/g;  # fix continuation lines
-	$val =~ s/\376\377\s*\376\377/\376\377/og;
-	$val =~ s/^HASH\(0x[0-9a-f]+\): //g;
-	my %newhash;
-	while( $val =~ /^(\S+):[ \t]*(.*)[ \t]*$/mg ) {
-		my ($k, $v) = ($1, $2);
-		$v =~ s/\376\377/\n/g;
-		$newhash{$k} = $v;
-		print "FETCH: storing $k: $v\n" if $WrapDB::debug;
-	}
-	main::check_entry( \%newhash );
-	tie %{$self->{$key}}, 'WrapCaller', $self, $key, %newhash;
-	return $self->{$key};
-}
-
-sub STORE {
-    my $self = shift;
-	my $key = shift;
-	my $val = shift;
-	my $db = $self->{'_DB'};
-
-	print "STORE: key=\"$key\", val=\"$val\"\n" if $WrapDB::debug;
-	$self->{$key} = $val;
-	
-	my $str = "";
-	my( $k, $v );
-	while( ($k, $v) = each %{$self->{$key}} ) {
-		if (ref($k)){
-			warn "Warning: reference as key $k in package entry!\n";
-			next;
-		}
-		if (ref($v)){
-			warn "Warning: reference as value $v in package entry!\n";
-			next;
-		}
-		chomp( $v );
-		$v =~ s/\n/\n /g;
-		$str .= "$k: $v\n";
-		print "STORE: found key $k\n" if $WrapDB::debug;
-	}
-	print "STORE: storing string \"$str\"\n" if $WrapDB::debug;
-	$db->STORE( $key, $str );
-}
-
-sub DELETE {
-    my $self = shift;
-	my $key = shift;
-	my $db = $self->{'_DB'};
-
-	delete $self->{$key};
-	$db->DELETE( $key );
-	print "DELETE $key\n" if $WrapDB::debug;
-}
-
-sub CLEAR {
-    my $self = shift;
-	my $db = $self->{'_DB'};
-
-	foreach (keys %$self) {
-		next if $_ eq "_DB";
-		delete $self->{$_};
-	}
-	$db->CLEAR();
-}
-
-sub EXISTS {
-    my $self = shift;
-	my $key = shift;
-	my $db = $self->{'_DB'};
-
-	return exists $self->{$key} || $db->EXISTS($key);
-}
-
-sub FIRSTKEY {
-    my $self = shift;
-	my $db = $self->{'_DB'};
-
-	return $db->FIRSTKEY();
-}
-	
-sub NEXTKEY {
-    my $self = shift;
-	my $key = shift;
-	my $db = $self->{'_DB'};
-
-	return $db->NEXTKEY( $key );
-}
-	
-sub DESTROY {
-    my $self = shift;
-	my $db = $self->{'_DB'};
-
-	print "DESTROY\n" if $WrapDB::debug;
-	# The unties and deletes below may seen paranoid, but without them
-	# Perl segfaults...
-	foreach (keys %{$self}) {
-		untie %{$self->{$_}} if tied( %{$self->{$_}} );
-		delete $self->{$_} if $_ ne "_DB";
-	}
-	$db->DESTROY();
-	delete $self->{'_DB'};
-	print "DESTROY END\n" if $WrapDB::debug;
-}
-
