@@ -41,7 +41,7 @@ use POSIX;
 use FileHandle;
 use Time::Local;
 use GDBM_File;
-use MLDBM qw(GDBM_File);
+use MLDBM qw(GDBM_File Storable);
 
 use vars qw($verbose $mail_logs $list_order $list_state @distributions
 			%dist_order $curr_date $op_mode $user $real_user $distribution
