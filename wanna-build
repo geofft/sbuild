@@ -50,7 +50,7 @@ use vars qw($verbose $mail_logs $list_order $list_state @distributions
 			%prioval %sectval $info_all_dists $strict_epoch_compare
 			$opt_introduce_epochs $hostname $my_arch $opt_no_propagation
 			$opt_no_down_propagation $category %catval %short_category
-			$short_date $list_min_age %monname $dbbase);
+			$short_date $list_min_age %monname $dbbase $host_set);
 
 # global vars
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
@@ -58,11 +58,8 @@ $verbose = 0;
 $mail_logs = "";
 @distributions = qw(oldstable-security stable testing unstable stable-security testing-security);
 %dist_order = ( 'oldstable-security' => 0, stable => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, unstable => 3 );
-chomp( $curr_date = `/bin/date '+%Y %b %d %H:%M:%S'` );
-chomp( $short_date = `/bin/date '+%m/%d/%y'` );
-chomp( $hostname = `/bin/hostname -f` );
-chomp( $my_arch = `/usr/bin/dpkg --print-installation-architecture` );
-$curr_date =~ /^(.*)$/; $curr_date = $1; # untaint
+$curr_date = strftime("%Y %b %d %H:%M:%S");
+$short_date = strftime("%m/%d/%y");
 $| = 1;
 
 # map program invocation names to operation modes
@@ -2079,6 +2076,11 @@ sub send_mail {
 	my $text = shift;
 
 	my $from = $conf::db_maint;
+
+	if ($host_set != 1) {
+		chomp( $hostname = `/bin/hostname -f` );
+		$host_set = 1;
+	}
 	$from .= "\@$hostname" if $from !~ /\@/;
 
 	$to .= '@' . $hostname if $to !~ /\@/;
