@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 # 
-# wanna-build: coordination script for Debian/m68k builders
+# wanna-build: coordination script for Debian buildds
 # Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright (C) 2005 Ryan Murray <rmurray@debian.org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -58,8 +59,8 @@ $verbose = 0;
 $mail_logs = "";
 @distributions = qw(oldstable-security stable testing unstable stable-security testing-security);
 %dist_order = ( 'oldstable-security' => 0, stable => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, unstable => 3 );
-$curr_date = strftime("%Y %b %d %H:%M:%S");
-$short_date = strftime("%m/%d/%y");
+$curr_date = strftime("%Y %b %d %H:%M:%S",localtime);
+$short_date = strftime("%m/%d/%y",localtime);
 $| = 1;
 
 # map program invocation names to operation modes
@@ -116,6 +117,7 @@ my %options =
 	 "merge-packages" => { mode => "merge-packages" },
 	 "merge-sources" => { mode => "merge-sources" },
 	 "pretend-avail" => { short => "p", mode => "pretend-avail" },
+	 "merge-all"     => { mode => "merge-all" },
 	 info			=> { short => "i", mode => "info" },
 	 list			=>
 	 { short => "l", mode => "list", arg => \$list_state,
@@ -342,7 +344,18 @@ sub process {
 			last SWITCH;
 		};
 		/^pretend-avail/ && do {
-			pretend_avail( @ARGV );
+			pretend_avail();
+			last SWITCH;
+		};
+		/^merge-all/ && do {
+			my @ARGS = @ARGV;
+			@ARGV = ( $ARGS[0] );
+			parse_packages();
+			@ARGV = ( $ARGS[1] );
+			parse_quinn_diff(0);
+			@ARGV = ( $ARGS[2] );
+			parse_sources();
+			clean_db();
 			last SWITCH;
 		};
 		/^import/ && do {
@@ -371,16 +384,7 @@ sub process {
 			last SWITCH;
 		};
 		/^clean-db/ && do {
-			my %new_db;
-			tie %new_db, 'MLDBM', db_filename( $distribution ) . ".new", GDBM_WRCREAT, 0664
-				or die "FATAL: Cannot create new database\n";
-			%new_db = %db;
-			untie %db or die "FATAL: Cannot untie old database\n";
-			system ("cp " . db_filename( $distribution ) . ".new " .
-				db_filename( $distribution ) ) == 0
-				or die "FATAL: Cannot overwrite old database";
-			unlink db_filename( $distribution ) . ".new";
-			%db = %new_db;
+			clean_db();
 			last SWITCH;
 		};
 
@@ -2140,6 +2144,19 @@ sub build_deplist {
 			if $list->{$key}->{'Rel'} && $list->{$key}->{'Version'};
 	}
 	return $result;
+}
+
+sub clean_db {
+	my %new_db;
+	tie %new_db, 'MLDBM', db_filename( $distribution ) . ".new", GDBM_WRCREAT, 0664
+		or die "FATAL: Cannot create new database\n";
+	%new_db = %db;
+	untie %db or die "FATAL: Cannot untie old database\n";
+	system ("cp " . db_filename( $distribution ) . ".new " .
+		db_filename( $distribution ) ) == 0
+		or die "FATAL: Cannot overwrite old database";
+	unlink db_filename( $distribution ) . ".new";
+	%db = %new_db;
 }
 
 sub usage {
