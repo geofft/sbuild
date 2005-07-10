@@ -552,7 +552,7 @@ sub add_one_building {
 		print "$name: Warning: Previous version failed!\n"
 			if $pkg->{'Previous-State'} =~ /^Failed/ ||
 			   $pkg->{'State'} =~ /^Failed/;
-		change_state( $pkg, 'Building' );
+		change_state( \$pkg, 'Building' );
 		$pkg->{'Package'} = $name;
 		$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
 		$pkg->{'Builder'} = $user;
@@ -596,7 +596,7 @@ sub add_one_uploaded {
 		return;
 	}
 
-	change_state( $pkg, 'Uploaded' );
+	change_state( \$pkg, 'Uploaded' );
 	log_ta( $pkg, "--uploaded" );
 	propagate_ta( $pkg, "--uploaded" );
 	$db{$name} = $pkg;
@@ -683,7 +683,7 @@ sub add_one_failed {
 		$fail_reason .= "\n$short_date: $action";
 	}
 
-	change_state( $pkg, 'Failed' );
+	change_state( \$pkg, 'Failed' );
 	$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
 	$pkg->{'Builder'} = $user;
 	$pkg->{'Failed'} .= "\n" if $pkg->{'Failed'};
@@ -705,7 +705,7 @@ sub add_one_notforus {
 		# the only way to get a package out of this state...
 		# There is no really good state in which such packages should
 		# be put :-( So use Failed for now.
-		change_state( $pkg, 'Failed' );
+		change_state( \$pkg, 'Failed' );
 		$pkg->{'Package'} = $name;
 		$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
 		$pkg->{'Failed'} = "Was Not-For-Us previously";
@@ -725,7 +725,7 @@ sub add_one_notforus {
 			if $conf::notforus_maint;
 	}
 	else {
-		change_state( $pkg, 'Not-For-Us' );
+		change_state( \$pkg, 'Not-For-Us' );
 		$pkg->{'Package'} = $name;
 		$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
 		delete $pkg->{'Builder'};
@@ -790,7 +790,7 @@ sub add_one_needsbuild {
 			  "Skipping.\n";
 		return;
 	}
-	change_state( $pkg, 'Needs-Build' );
+	change_state( \$pkg, 'Needs-Build' );
 	delete $pkg->{'Builder'};
 	delete $pkg->{'Depends'};
 	log_ta( $pkg, "--give-back" );
@@ -857,7 +857,7 @@ sub add_one_depwait {
 		print "$name: Bad dependency list\n";
 		return;
 	}
-	change_state( $pkg, 'Dep-Wait' );
+	change_state( \$pkg, 'Dep-Wait' );
 	$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
 	$pkg->{'Builder'} = $user;
 	my $deplist = parse_deplist( $pkg->{'Depends'} );
@@ -905,8 +905,8 @@ sub parse_sources {
 
 			if ($arch eq "all" && !version_less( $version, $pkg->{'Version'} )) {
 				# package is now Arch: all, delete it from db
-				change_state( $pkg, 'deleted' );
-				log_ta( $name, "--merge-sources" );
+				change_state( \$pkg, 'deleted' );
+				log_ta( $pkg, "--merge-sources" );
 				print "$name ($pkg->{'Version'}): deleted ".
 					  "from database, because now Arch: all\n"
 						  if $verbose;
@@ -928,7 +928,7 @@ sub parse_sources {
 		my $pkg = $db{$name};
 		next if !isin( $pkg->{'State'}, qw(Installed) );
 		if (!$pkgs{$name}) {
-			change_state( $pkg, 'deleted' );
+			change_state( \$pkg, 'deleted' );
 			log_ta( $pkg, "--merge-sources" );
 			print "$name ($pkg->{'Version'}): ".
 				  "deleted from database, because ".
@@ -942,7 +942,6 @@ sub parse_sources {
 # This function looks through a Packages file and sets the state of
 # packages to 'Installed'
 sub parse_packages {
-	my $file = shift;
 	my %done;
 	my $installed;
 
@@ -1001,9 +1000,11 @@ sub parse_packages {
 					 "before (but in '$pkg->{'State'}').\n";
 				delete $pkg->{'Builder'};
 			}
+		} else {
+			$pkg = {};
 		}
 		
-		change_state( $pkg, 'Installed' );
+		change_state( \$pkg, 'Installed' );
 		$pkg->{'Package'} = $name;
 		$pkg->{'Version'} = $version;
 		$pkg->{'Installed-Version'} = $version;
@@ -1081,7 +1082,7 @@ sub check_dep_wait {
 		}
 		if ($allok) {
 		  make_needs_build:
-			change_state( $pkg, 'Needs-Build' );
+			change_state( \$pkg, 'Needs-Build' );
 			log_ta( $pkg, $action );
 			delete $pkg->{'Depends'};
 			propagate_ta( $pkg, $action ) if $action ne "--merge-packages";
@@ -1146,7 +1147,7 @@ sub parse_quinn_diff {
 		if (defined($pkg) &&
 			$pkg->{'State'} =~ /^Dep-Wait/ &&
 			version_less( $pkg->{'Version'}, $version )) {
-			change_state( $pkg, 'Dep-Wait' );
+			change_state( \$pkg, 'Dep-Wait' );
 			$pkg->{'Version'}  = $version;
 			log_ta( $pkg, "--merge-quinn" );
 			$db{$name} = $pkg;
@@ -1160,7 +1161,7 @@ sub parse_quinn_diff {
 			# (probably due to a quinn-diff malfunction...)
 			my $newstate = $pkg->{'State'};
 			$newstate =~ s/-Removed$//;
-			change_state( $pkg, $newstate );
+			change_state( \$pkg, $newstate );
 			$pkg->{'Version'}  = $version;
 			$pkg->{'Notes'}    = $notes;
 			log_ta( $pkg, "--merge-quinn" );
@@ -1173,7 +1174,7 @@ sub parse_quinn_diff {
 			   version_less( $pkg->{'Version'}, $version )) {
 			# for Not-For-Us packages just update the version etc., but
 			# keep the state
-			change_state( $pkg, "Not-For-Us" );
+			change_state( \$pkg, "Not-For-Us" );
 			$pkg->{'Package'}  = $name;
 			$pkg->{'Version'}  = $version;
 			$pkg->{'Notes'}    = $notes;
@@ -1220,7 +1221,7 @@ sub parse_quinn_diff {
 				}
 
 				if ($newstate) {
-					change_state( $pkg, $newstate );
+					change_state( \$pkg, $newstate );
 					$pkg->{'Package'}  = $name;
 					$pkg->{'Version'}  = $version;
 					$pkg->{'Section'}  = $section;
@@ -1242,7 +1243,7 @@ sub parse_quinn_diff {
 					next;
 				}
 			}
-			change_state( $pkg, 'Needs-Build' );
+			change_state( \$pkg, 'Needs-Build' );
 			$pkg->{'Package'}  = $name;
 			$pkg->{'Version'}  = $version;
 			$pkg->{'Section'}  = $section;
@@ -1302,7 +1303,7 @@ sub parse_quinn_diff {
 			my $virtual_delete = $pkg->{'State'} eq 'Failed' ||
 								 $pkg->{'State'} eq 'Dep-Wait';
 			if (!$quinn_pkgs{$name}) {
-				change_state( $name, $virtual_delete ?
+				change_state( \$pkg, $virtual_delete ?
 							  $pkg->{'State'}."-Removed" :
 							  'deleted' );
 				log_ta( $pkg, "--merge-quinn" );
@@ -1598,8 +1599,8 @@ sub forget_packages {
 				   "by $user.\n\n".
 				   "Data registered about the deleted package:\n".
 				   "$data\n" ) if $conf::db_maint;
-		change_state( $name, 'deleted' );
-		log_ta( $name, "--forget" );
+		change_state( \$pkg, 'deleted' );
+		log_ta( $pkg, "--forget" );
 		delete $db{$name};
 		print "$name: deleted from database\n" if $verbose;
 	}
@@ -1815,14 +1816,15 @@ sub write_db {
 }
 
 sub change_state {
-	my $pkg = shift;
+	my $pkgr = shift;
+	my $pkg = $$pkgr;
 	my $newstate = shift;
 	my $for_dist = shift;
 	my $db;
 	if ($for_dist) {
 		return if !open_other_db( $for_dist );
 		$db = $otherdb{$for_dist};
-		$pkg = $db{$pkg->{'Package'}};
+		$pkg = \$db{$pkg->{'Package'}};
 	}
 	else {
 		$db = \%db;
