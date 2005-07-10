@@ -2057,6 +2057,16 @@ sub do_version_cmp {
 	return $r < 0;
 }
 
+sub order {
+	for ($_[0])
+	{
+	/\~/     and return -1;
+	/\d/     and return  0;
+	/[a-z]/i and return ord;
+		     return (ord) + 256;
+	}
+}
+
 sub version_cmp_single {
 	my($versa, $versb) = @_;
 	my($a,$b,$lena,$lenb,$va,$vb,$i);
@@ -2068,11 +2078,8 @@ sub version_cmp_single {
 		$lena = length($a);
 		$lenb = length($b);
 		for( $i = 0; $i < $lena || $i < $lenb; ++$i ) {
-			$va = $i < $lena ? ord(substr( $a, $i, 1 )) : 0;
-			$vb = $i < $lenb ? ord(substr( $b, $i, 1 )) : 0;
-			last if !$va && !$vb;
-			$va += 256 if $va && substr( $a, $i, 1 ) !~ /[a-zA-Z]/;
-			$vb += 256 if $vb && substr( $b, $i, 1 ) !~ /[a-zA-Z]/;
+			$va = $i < $lena ? order(substr( $a, $i, 1 )) : 0;
+			$vb = $i < $lenb ? order(substr( $b, $i, 1 )) : 0;
 			return $va - $vb if $va != $vb;
 		}
 		# compare numeric parts
