@@ -37,6 +37,7 @@ die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
 package main;
 
 use strict;
+no strict 'refs';
 use IO;
 use POSIX;
 use FileHandle;
