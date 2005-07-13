@@ -1121,6 +1121,7 @@ sub parse_quinn_diff {
 		$quinn_pkgs{$name}++;
 		$section ||= "unknown";
 		$priority ||= "unknown";
+		$priority = "unknown" if $priority eq "-";
 		$priority = "standard" if ($name eq "debian-installer");
 
 		my $pkg = $db{$name};
