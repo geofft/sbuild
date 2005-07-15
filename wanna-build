@@ -345,7 +345,7 @@ sub process {
 			last SWITCH;
 		};
 		/^pretend-avail/ && do {
-			pretend_avail();
+			pretend_avail( @ARGV );
 			last SWITCH;
 		};
 		/^merge-all/ && do {
