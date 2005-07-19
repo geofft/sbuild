@@ -46,7 +46,6 @@ open_log();
 
 upload( "upload-security", $conf::dupload_to_security );
 upload( "upload", $conf::dupload_to );
-upload( "upload-non-US", $conf::dupload_to_non_us );
 
 my $dist;
 my @propagated_pkgs = ();
@@ -167,12 +166,16 @@ sub do_dupload {
 		elsif (/^\[ Uploading job (\S+)$/) {
 			$current_job = "$1.changes";
 		}
-		elsif (/^warning: dupload: Can't upload (\S+)/i ||
+		elsif (/dupload: fatal error: Can't upload (\S+)/i ||
 			   /^\s(\S+).*scp: (.*)$/) {
 			my($f, $e) = ($1, $2);
 			logger( "dupload error: upload error for $f\n" );
 			logger( "($e)\n" ) if $e;
 			$errs .= "upload error on file $f ($current_job)\n";
+			push( @failed, $current_job );
+		}
+		elsif (/Timeout at [\S]+ line [\d]+$/) {
+			$errs .= "upload timeout on file $current_job\n";
 			push( @failed, $current_job );
 		}
 		elsif (/^\s(\S+)\s+[\d.]+ kB /) {
