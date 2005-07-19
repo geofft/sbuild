@@ -1377,7 +1377,6 @@ BEGIN {
 				 comm			=> -170,
 				 electronics		=> -169,
 				 hamradio		=> -168,
-				 'non-US'		=> -167,
 				 embedded		=> -166,
 	);
 	foreach my $i (keys %sectval) {

@@ -318,7 +318,6 @@ elsif ($subject =~ /^([-+~\.\w]+\.changes) (INSTALL|ACCEPT)ED/) {
 	my $changes_f = $1;
 	my( @to_remove, $upload_f, $pkgv );
 	my $upload_dir = "$main::HOME/upload";
-	$upload_dir .= "-non-US" if -f "$upload_dir-non-US/$changes_f";
 	$upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
 	if (-f "$upload_dir/$changes_f" && open( F, "<$upload_dir/$changes_f" )) {
@@ -506,8 +505,7 @@ sub prepare_for_upload {
 	}
 
 	my $upload_dir = "$main::HOME/upload" .
-		(is_for_security( $changes ) ? "-security" : 
-		(is_for_non_us( $pkg, $changes ) ? "-non-US" : ""));
+		(is_for_security( $changes ) ? "-security" : "");
 	
 	if (! -d $upload_dir &&!mkdir( $upload_dir, 0750 )) {
 		$error .= "Cannot create directory $upload_dir";
@@ -628,7 +626,7 @@ sub remove_from_upload {
 	$pkg_noep =~ s/_\d*:/_/;
 	$changes_f = "${pkg_noep}_$main::arch.changes";
 	my $upload_dir = "$main::HOME/upload";
-	$upload_dir .= "-non-US" if -f "$upload_dir-non-US/$changes_f";
+	$upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
 	if (!-f "$upload_dir/$changes_f") {
 		logger( "$changes_f does not exist\n" );
