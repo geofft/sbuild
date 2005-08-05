@@ -166,7 +166,7 @@ sub do_dupload {
 		elsif (/^\[ Uploading job (\S+)$/) {
 			$current_job = "$1.changes";
 		}
-		elsif (/dupload: fatal error: Can't upload (\S+)/i ||
+		elsif (/dupload fatal error: Can't upload (\S+)/i ||
 			   /^\s(\S+).*scp: (.*)$/) {
 			my($f, $e) = ($1, $2);
 			logger( "dupload error: upload error for $f\n" );
