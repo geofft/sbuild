@@ -37,6 +37,7 @@ binary-sbuild: checkroot
 	install -d debian/tmp/usr/bin
 	install -m 755 sbuild avg-pkg-build-time update-sourcedeps \
 		debian/tmp/usr/bin/
+	cat WannaBuild.pm >> debian/tmp/usr/bin/sbuild
 
 	install -d debian/tmp/usr/sbin
 	install -m 755 buildd-make-chroot \
@@ -134,6 +135,9 @@ binary-wanna-build: checkroot
 
 	install -d debian/tmp/etc
 	install -m 644 wanna-build.conf debian/tmp/etc
+
+	install -d debian/tmp/usr/share/perl5/
+	install -m 644 WannaBuild.pm debian/tmp/usr/share/perl5/
 
 	install -d debian/tmp/usr/share/doc/wanna-build/examples/
 	install -m 644 wanna-build.conf.local debian/tmp/usr/share/doc/wanna-build/examples/

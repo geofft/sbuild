@@ -16,18 +16,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # $Id$
 #
 
 package conf;
 # defaults
-$basedir = "/var/state/debbuild";
+$basedir = "/var/lib/debbuild";
 $dbbase = "build-db";
-$ignore_epochs = 0;
 $transactlog = "transactions.log";
-$mailprog = "/usr/lib/sendmail";
+$mailprog = "/usr/sbin/sendmail";
 require "/org/wanna-build/etc/wanna-build.conf";
 die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;
 die "dbbase is empty\n" if ! $dbbase;
@@ -44,15 +43,16 @@ use FileHandle;
 use Time::Local;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
+use WannaBuild;
 
 use vars qw($verbose $mail_logs $list_order $list_state @distributions
 			%dist_order $curr_date $op_mode $user $real_user $distribution
 			$fail_reason $opt_override $import_from $export_to $opt_create_db
-			$opt_correct_version_cmp $transactlog %db %otherdb %otherdb_lock
-			%prioval %sectval $info_all_dists $strict_epoch_compare
-			$opt_introduce_epochs $hostname $my_arch $opt_no_propagation
-			$opt_no_down_propagation $category %catval %short_category
-			$short_date $list_min_age %monname $dbbase $host_set);
+			$transactlog %db %otherdb %otherdb_lock %prioval %sectval
+			$info_all_dists
+			$hostname $arch $opt_no_propagation $opt_no_down_propagation
+			$category %catval %short_category $short_date $list_min_age
+			%monname $dbbase $host_set);
 
 # global vars
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
@@ -101,8 +101,7 @@ my %options =
 	 verbose        => { short => "v", flag => \$verbose },
 	 override		=> { short => "o", flag => \$opt_override },
 	 "create-db"	=> { flag => \$opt_create_db },
-	 "correct-compare" => { flag => \$opt_correct_version_cmp },
-	 "introduce-epochs" => { flag => \$opt_introduce_epochs },
+	 "correct-compare" => { flag => \$WannaBuild::opt_correct_version_cmp },
 	 "no-propagation" => { short => "N", flag => \$opt_no_propagation },
 	 "no-down-propagation" => { short => "D", flag => \$opt_no_down_propagation },
 	 # normal actions
@@ -151,7 +150,7 @@ my %options =
 	   } },
 	 message        => { short => "m", arg => \$fail_reason },
 	 database       => { short => "b", arg => \$conf::dbbase },
-	 arch           => { short => "A", arg => \$my_arch },
+	 arch           => { short => "A", arg => \$arch },
 	 user           => { short => "U", arg => \$user },
 	 category		=> { short => "c", arg => \$category,
 						 code => sub {
@@ -351,11 +350,12 @@ sub process {
 		/^merge-all/ && do {
 			my @ARGS = @ARGV;
 			@ARGV = ( $ARGS[0] );
-			parse_packages();
+			my $pkgs = parse_packages();
 			@ARGV = ( $ARGS[1] );
-			parse_quinn_diff(0);
+			my $newver = parse_quinn_diff(0);
 			@ARGV = ( $ARGS[2] );
-			parse_sources();
+			my $build_deps = parse_sources();
+			set_dep_wait( $build_deps, $pkgs, $newver );
 			clean_db();
 			last SWITCH;
 		};
@@ -403,7 +403,6 @@ sub add_packages {
 		$package =~ s/_[a-zA-Z\d-]+\.changes$//; # strip extension
 		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+~-]+)/) {
 			($name,$version) = ($1,$2);
-			$version =~ s/^\d+://; # strip epoch
 		}
 		else {
 			warn "$package: can't extract package name and version ".
@@ -554,7 +553,7 @@ sub add_one_building {
 			   $pkg->{'State'} =~ /^Failed/;
 		change_state( \$pkg, 'Building' );
 		$pkg->{'Package'} = $name;
-		$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
+		$pkg->{'Version'} = $version;
 		$pkg->{'Builder'} = $user;
 		log_ta( $pkg, "--take" );
 		propagate_ta( $pkg, "--take" );
@@ -684,7 +683,7 @@ sub add_one_failed {
 	}
 
 	change_state( \$pkg, 'Failed' );
-	$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
+	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $user;
 	$pkg->{'Failed'} .= "\n" if $pkg->{'Failed'};
 	$pkg->{'Failed'} .= $fail_reason;
@@ -707,7 +706,7 @@ sub add_one_notforus {
 		# be put :-( So use Failed for now.
 		change_state( \$pkg, 'Failed' );
 		$pkg->{'Package'} = $name;
-		$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
+		$pkg->{'Version'} = $version;
 		$pkg->{'Failed'} = "Was Not-For-Us previously";
 		delete $pkg->{'Builder'};
 		delete $pkg->{'Depends'};
@@ -727,7 +726,7 @@ sub add_one_notforus {
 	else {
 		change_state( \$pkg, 'Not-For-Us' );
 		$pkg->{'Package'} = $name;
-		$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
+		$pkg->{'Version'} = $version;
 		delete $pkg->{'Builder'};
 		delete $pkg->{'Depends'};
 		log_ta( $pkg, "--no-build" );
@@ -858,7 +857,7 @@ sub add_one_depwait {
 		return;
 	}
 	change_state( \$pkg, 'Dep-Wait' );
-	$pkg->{'Version'} = add_epoch($version, $pkg->{'Version'});
+	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $user;
 	my $deplist = parse_deplist( $pkg->{'Depends'} );
 	my $new_deplist = parse_deplist( $fail_reason );
@@ -873,31 +872,35 @@ sub add_one_depwait {
 	print "$name: registered as waiting for dependencies\n" if $verbose;
 }
 
-sub add_epoch {
-	my $vnew = shift;
-	my $vold = shift;
-
-	if ($vnew !~ /^\d+:/ && $vold =~ /^(\d+:)/) {
-		$vnew = "$1$vnew";
-	}
-	return $vnew;
-}
-
 
 sub parse_sources {
 	my %pkgs;
+	my %srcver;
 	my $name;
 
 	local($/) = ""; # read in paragraph mode
 	while( <> ) {
-		my( $name, $version, $arch, $section, $priority );
+		my( $name, $version, $arch, $section, $priority, $builddep, $buildconf );
 		/^Package:\s*(\S+)\s*$/mi and $name = $1;
 		/^Version:\s*(\S+)\s*$/mi and $version = $1;
 		/^Architecture:\s*(\S+)\s*$/mi and $arch = $1;
 		/^Section:\s*(\S+)\s*$/mi and $section = $1;
 		/^Priority:\s*(\S+)\s*$/mi and $priority = $1;
+		/^Build-Depends:\s*(.*)\s*$/mi and $builddep = $1;
+		/^Build-Conflicts:\s*(.*)\s*$/mi and $buildconf = $1;
 
-		$pkgs{$name}++;
+		next if (defined $srcver{$name} and version_less( $version, $srcver{$name} ));
+		$srcver{$name} = $version;
+		if ($buildconf) {
+		    $buildconf = join( ", ", map { "!$_" } split( /\s*,\s*/, $buildconf ));
+		    if ($builddep) {
+			$builddep .= "," . $buildconf;
+		    } else {
+			$builddep = $buildconf;
+		    }
+		}
+
+		$pkgs{$name} = defined $builddep ? $builddep : "";
 		my $pkg = $db{$name};
 
 		if (defined $pkg) {
@@ -916,10 +919,10 @@ sub parse_sources {
 
 			# Always update priority and section, if available
 			$pkg->{'Priority'} = $priority, $change++
-				if defined $priority;
+				if defined $priority and $pkg->{'Priority'} ne $priority;
 
 			$pkg->{'Section'} = $section, $change++
-				if defined $section;
+				if defined $section and $pkg->{'Section'} ne $section;
 			$db{$name} = $pkg if $change;
 		}
 	}
@@ -927,7 +930,7 @@ sub parse_sources {
 	foreach $name (keys %db) {
 		my $pkg = $db{$name};
 		next if !isin( $pkg->{'State'}, qw(Installed) );
-		if (!$pkgs{$name}) {
+		if (not defined($pkgs{$name})) {
 			change_state( \$pkg, 'deleted' );
 			log_ta( $pkg, "--merge-sources" );
 			print "$name ($pkg->{'Version'}): ".
@@ -937,6 +940,7 @@ sub parse_sources {
 			delete $db{$name};
 		}
 	}
+	return \%pkgs;
 }
 
 # This function looks through a Packages file and sets the state of
@@ -945,21 +949,26 @@ sub parse_packages {
 	my %done;
 	my $installed;
 
-	$strict_epoch_compare = 1 if !$opt_introduce_epochs;
-	
 	local($/) = ""; # read in paragraph mode
 	while( <> ) {
-		my( $name, $version, $source, $sourcev, $arch );
+		my( $name, $version, $source, $sourcev, $architecture, $provides );
 		/^Package:\s*(\S+)\s*$/mi and $name = $1;
 		/^Version:\s*(\S+)\s*$/mi and $version = $1;
 		/^Source:\s*(\S+)\s*(\((\S+)\))?$/mi and ($source,$sourcev) = ($1, $3);
-		/^Architecture:\s*(\S+)\s*$/mi and $arch = $1;
+		/^Architecture:\s*(\S+)\s*$/mi and $architecture = $1;
+		/^Provides:\s*(\S+)\s*$/mi and $provides = $1;
 		next if !$name || !$version;
-		next if ($arch ne $my_arch and $arch ne "all");
+		next if ($arch ne $architecture and $architecture ne "all");
+		next if (defined ($installed->{$name}) and version_less( $version, $installed->{$name} ));
 		$installed->{$name} = $version;
+		if ($provides) {
+			foreach (split( /\s*,\s*/, $provides )) {
+				$installed->{$_} = ""
+				    if not defined ($installed->{$_});
+			}
+		}
 		$version = $sourcev if $sourcev;
-		$version =~ s/^\d+:// if $conf::ignore_epochs;
-		next if $arch ne $my_arch;
+		next if $architecture ne $arch;
 		$name = $source if $source;
 		next if $done{$name} eq $version;
 		$done{$name} = $version;
@@ -968,12 +977,6 @@ sub parse_packages {
 
 		if (defined $pkg) {
 			$pkg->{'Installed-Version'} = $version;
-			if ($pkg->{'State'} eq "Installed" &&
-				epoch_introduced($version, $pkg->{'Version'})) {
-				$pkg->{'Version'} = $version;
-				warn "Notice: $name: added epoch (now version $version)\n"
-					if $verbose;
-			}
 			if (isin( $pkg->{'State'}, qw(Not-For-Us)) ||
 				($pkg->{'State'} eq "Installed" &&
 				 version_eq($version, $pkg->{'Version'}))) {
@@ -1014,15 +1017,7 @@ sub parse_packages {
 	}
 
 	check_dep_wait( "--merge-packages", $installed );
-}
-
-sub epoch_introduced {
-	my $v1 = shift;
-	my $v2 = shift;
-
-	return $opt_introduce_epochs &&
-		   version_eq($v1, $v2, "nostrict") &&
-		   !version_eq($v1, $v2, "strict");
+	return $installed;
 }
 
 sub pretend_avail {
@@ -1034,7 +1029,6 @@ sub pretend_avail {
 		$package =~ s/_[\w\d]+\.changes$//; # strip extension
 		if ($package =~ /^([\w\d.+-]+)_([\w\d:.+~-]+)/) {
 			($name,$version) = ($1,$2);
-			$version =~ s/^\d+:// if $conf::ignore_epochs;
 		}
 		else {
 			warn "$package: can't extract package name and version ".
@@ -1106,18 +1100,17 @@ sub check_dep_wait {
 sub parse_quinn_diff {
 	my $partial = shift;
 	my %quinn_pkgs;
+	my %new_vers;
 	my $dubious = "";
 	
-	$strict_epoch_compare = 1;
-
 	while( <> ) {
+		my $change = 0;
 		next if !m,^([\w\d-/]*)/			# section
 			       ([\w\d.+-]+)_			# package name
 				   ([\w\d:.~+-]+)\.dsc\s*	# version
 				   \[([^:]*):				# priority
 				   ([^]]+)\]\s*$,x;			# rest of notes
 		my($section,$name,$version,$priority,$notes) = ($1, $2, $3, $4, $5);
-		$version =~ s/^\d*:// if $conf::ignore_epochs;
 		$quinn_pkgs{$name}++;
 		$section ||= "unknown";
 		$priority ||= "unknown";
@@ -1126,23 +1119,13 @@ sub parse_quinn_diff {
 
 		my $pkg = $db{$name};
 
-		if (defined($pkg) &&
-			epoch_introduced($pkg->{'Version'}, $version)) {
-			warn "Notice: $name: added epoch (now version $version)\n"
-				if $verbose;
-			$pkg->{'Version'} = $version;
-			$db{$name} = $pkg;
-		}
-
 		# Always update section and priority.
 		if (defined($pkg)) {
-			my $change = 0;
 
 			$pkg->{'Section'}  = $section, $change++ if not defined
 				$pkg->{'Section'} or $section ne "unknown";
 			$pkg->{'Priority'} = $priority, $change++ if not defined
 				$pkg->{'Priority'} or $priority ne "unknown";
-			$db{$name} = $pkg if $change;
 		}
 
 		if (defined($pkg) &&
@@ -1151,7 +1134,7 @@ sub parse_quinn_diff {
 			change_state( \$pkg, 'Dep-Wait' );
 			$pkg->{'Version'}  = $version;
 			log_ta( $pkg, "--merge-quinn" );
-			$db{$name} = $pkg;
+			$change++;
 			print "$name ($version) still waiting for dependencies.\n"
 				if $verbose;
 		}
@@ -1166,7 +1149,7 @@ sub parse_quinn_diff {
 			$pkg->{'Version'}  = $version;
 			$pkg->{'Notes'}    = $notes;
 			log_ta( $pkg, "--merge-quinn" );
-			$db{$name} = $pkg;
+			$change++;
 			print "$name ($version) reinstantiated to $newstate.\n"
 				if $verbose;
 		}
@@ -1181,7 +1164,7 @@ sub parse_quinn_diff {
 			$pkg->{'Notes'}    = $notes;
 			delete $pkg->{'Builder'};
 			log_ta( $pkg, "--merge-quinn" );
-			$db{$name} = $pkg;
+			$change++;
 			print "$name ($version) still Not-For-Us.\n" if $verbose;
 		}
 		elsif (!defined($pkg) ||
@@ -1252,7 +1235,7 @@ sub parse_quinn_diff {
 			$pkg->{'Notes'}    = $notes;
 			delete $pkg->{'Builder'};
 			log_ta( $pkg, "--merge-quinn" );
-			$db{$name} = $pkg;
+			$new_vers{$name}++;
 			print "$name ($version) needs rebuilding now.\n" if $verbose;
 		}
 		elsif (defined($pkg) &&
@@ -1278,6 +1261,7 @@ sub parse_quinn_diff {
 					  "what quinn-diff says ($version)\n";
 			}
 		}
+		$db{$name} = $pkg if $change;
 	}
 
 	if ($dubious) {
@@ -1312,10 +1296,15 @@ sub parse_quinn_diff {
 					  ($virtual_delete ? "(virtually) " : "") . "deleted ".
 					  "from database, because not in quinn-diff anymore\n"
 						  if $verbose;
-				delete $db{$name} if !$virtual_delete;
+				if ($virtual_delete) {
+				    $db{$name} = $pkg;
+				} else {
+				    delete $db{$name};
+				}
 			}
 		}
 	}
+	return \%new_vers;
 }
 
 sub send_reupload_mail {
@@ -1968,150 +1957,6 @@ sub log_ta {
 }
 
 
-sub version_less {
-	my $v1 = shift;
-	my $v2 = shift;
-	my $strict = shift;
-	
-	return version_compare( $v1, "<<", $v2, $strict );
-}
-
-sub version_lesseq {
-	my $v1 = shift;
-	my $v2 = shift;
-	my $strict = shift;
-
-	return version_compare( $v1, "<=", $v2, $strict );
-}
-
-sub version_eq {
-	my $v1 = shift;
-	my $v2 = shift;
-	my $strict = shift;
-
-	return version_compare( $v1, "=", $v2, $strict );
-}
-
-sub version_compare {
-	my $v1 = shift;
-	my $rel = shift;
-	my $v2 = shift;
-	my $strict = shift;
-	my $do_strict = 0;
-	
-	$do_strict = defined($strict) ? ($strict eq "strict") : $strict_epoch_compare;
-	if (!$do_strict) {
-		# ignore epoch in comparison if strict comparison not requested and
-		# one of the versions has an epoch and the other not
-		my ($have_epoch1, $have_epoch2) = (0, 0);
-		$have_epoch1 = 1 if $v1 =~ /^\d+:/;
-		$have_epoch2 = 1 if $v2 =~ /^\d+:/;
-		if ($have_epoch1 != $have_epoch2) {
-			$v1 =~ s/^\d+://;
-			$v2 =~ s/^\d+://;
-		}
-	}
-		
-	if ($opt_correct_version_cmp) {
-		system "dpkg", "--compare-versions", $v1, $rel, $v2;
-		return $? == 0;
-	}
-	else {
-		if ($rel eq "=" || $rel eq "==") {
-			return $v1 eq $v2;
-		}
-		elsif ($rel eq "<<") {
-			return do_version_cmp( $v1, $v2 );
-		}
-		elsif ($rel eq "<=" || $rel eq "<") {
-			return $v1 eq $v2 || do_version_cmp( $v1, $v2 );
-		}
-		elsif ($rel eq ">=" || $rel eq ">") {
-			return !do_version_cmp( $v1, $v2 );
-		}
-		elsif ($rel eq ">>") {
-			return $v1 ne $v2 && !do_version_cmp( $v1, $v2 );
-		}
-		else {
-			die "dpkg_own_version_cmp called with bad relation '$rel'\n";
-		}
-	}
-}
-
-sub do_version_cmp {
-	my($versa, $versb) = @_;
-	my($epocha,$upstra,$reva);
-	my($epochb,$upstrb,$revb);
-	my($r);
-
-	($epocha,$upstra,$reva) = split_version($versa);
-	($epochb,$upstrb,$revb) = split_version($versb);
-
-	# compare epochs
-	return 1 if $epocha < $epochb;
-	return 0 if $epocha > $epochb;
-
-	# compare upstream versions
-	$r = version_cmp_single( $upstra, $upstrb );
-	return $r < 0 if $r != 0;
-
-	# compare Debian revisions
-	$r = version_cmp_single( $reva, $revb );
-	return $r < 0;
-}
-
-sub order {
-	for ($_[0])
-	{
-	/\~/     and return -1;
-	/\d/     and return  0;
-	/[a-z]/i and return ord;
-		     return (ord) + 256;
-	}
-}
-
-sub version_cmp_single {
-	my($versa, $versb) = @_;
-	my($a,$b,$lena,$lenb,$va,$vb,$i);
-
-	for(;;) {
-		# compare non-numeric parts
-		$versa =~ /^([^\d]*)(.*)/; $a = $1; $versa = $2;
-		$versb =~ /^([^\d]*)(.*)/; $b = $1; $versb = $2;
-		$lena = length($a);
-		$lenb = length($b);
-		for( $i = 0; $i < $lena || $i < $lenb; ++$i ) {
-			$va = $i < $lena ? order(substr( $a, $i, 1 )) : 0;
-			$vb = $i < $lenb ? order(substr( $b, $i, 1 )) : 0;
-			return $va - $vb if $va != $vb;
-		}
-		# compare numeric parts
-		$versa =~ /^(\d*)(.*)/; $a = $1; $a ||= 0; $versa = $2;
-		$versb =~ /^(\d*)(.*)/; $b = $1; $b ||= 0; $versb = $2;
-		return $a - $b if $a != $b;
-		return 0 if !$versa && !$versb;
-		return -1 if !$versa;
-		return +1 if !$versb;
-	}
-}
-
-sub split_version {
-	my($vers) = @_;
-	my($epoch,$revision) = (0,"");
-
-	if ($vers =~ /^(\d+):(.*)/) {
-		$epoch = $1;
-		$vers = $2;
-	}
-
-	if ($vers =~ /(.*)-([^-]+)$/) {
-		$revision = $2;
-		$vers = $1;
-	}
-
-	return( $epoch, $vers, $revision );
-}
-
 sub dist_cmp {
 	my $d1 = shift;
 	my $d2 = shift;
@@ -2157,6 +2002,7 @@ sub db_filename {
 	return "$conf::basedir/$conf::dbbase-$dist";
 }
 
+# for parsing input to dep-wait
 sub parse_deplist {
 	my $deps = shift;
 	my $verify = shift;
@@ -2178,6 +2024,59 @@ sub parse_deplist {
 	}
 	return 1 if $verify;
 	return \%result;
+}
+
+# for parsing Build-Depends from Sources
+sub parse_srcdeplist {
+    my $pkg = shift;
+    my $deps = shift;
+    my $arch = shift;
+    my $dep;
+    my @results;
+    
+    foreach $dep (split( /\s*,\s*/, $deps )) {
+	my @alts = split( /\s*\|\s*/, $dep );
+	$_ = shift @alts;
+#	foreach (@alts) {
+	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+		    warn( "parse_srcdeplist: bad dependency $_\n" );
+		    next;
+	    }
+	    my($dep, $rel, $relv, $archlist) = ($1, $3, $4, $6);
+	    if ($archlist) {
+		$archlist =~ s/^\s*(.*)\s*$/$1/;
+		my @archs = split( /\s+/, $archlist );
+		my ($use_it, $ignore_it, $include) = (0, 0, 0);
+		foreach (@archs) {
+		    if (/^!/) {
+			    $ignore_it = 1 if substr($_, 1) eq $arch;
+		    }
+		    else {
+			    $use_it = 1 if $_ eq $arch;
+			    $include = 1;
+		    }
+		}
+		warn "Warning: inconsistent arch restriction on ",
+			 "$pkg: $dep depedency\n"
+				 if $ignore_it && $use_it;
+		next if $ignore_it || ($include && !$use_it);
+	    }
+	    my $neg = 0;
+	    if ($dep =~ /^!/) {
+		    $dep =~ s/^!\s*//;
+		    $neg = 1;
+	    }
+	    my $result;
+	    $result->{'Package'} = $dep;
+	    $result->{'Neg'} = $neg;
+	    if ($rel && $relv) {
+		    $result->{'Rel'} = $rel;
+		    $result->{'Version'} = $relv;
+	    }
+	    push @results, $result;
+#	}
+    }
+    return \@results;
 }
 
 sub build_deplist {
@@ -2205,6 +2104,45 @@ sub clean_db {
 	unlink db_filename( $distribution ) . ".new";
 	%db = %new_db;
 }
+
+
+sub set_dep_wait {
+    my $bd = shift;
+    my $pkgs = shift;
+    my $new_vers = shift;
+    my $key;
+    my $dep;
+    
+    foreach $key (keys %$new_vers) {
+	my $pkg = $db{$key};
+	next
+	    if defined $pkg and $pkg->{'State'} ne "Needs-Build";
+	my $deps;
+	$deps = parse_srcdeplist($key,$bd->{$key},$arch);
+	my $change = 0;
+	foreach $dep (@$deps) {
+	    if ($dep->{'Rel'} and $pkgs->{$dep->{'Package'}} ne "") {
+		if ($dep->{'Neg'} == 0) {
+		    if (!version_compare( $pkgs->{$dep->{'Package'}}, $dep->{'Rel'}, $dep->{'Version'} )) {
+			if (version_compare( $dep->{'Version'}, ">>", $pkgs->{$dep->{'Package'}} )) {
+			    $change++;
+			    my $deplist = parse_deplist( $pkg->{'Depends'} );
+			    $deplist->{$dep->{'Package'}} = $dep;
+			    $pkg->{'Depends'} = build_deplist($deplist);
+			}
+		    }
+		}
+	    }
+	}
+	if ($change) {
+	    change_state( \$pkg, 'Dep-Wait' );
+	    log_ta( $pkg, "--merge-all" );
+	    $db{$key} = $pkg;
+	    print "Auto-Dep-Waiting ${key}_$pkg->{'Version'}\n" if $verbose;
+	}
+    }
+}
+
 
 sub usage {
 	my $prgname;

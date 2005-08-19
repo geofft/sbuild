@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # $Id$
 #
@@ -76,6 +76,7 @@ use GDBM_File;
 use POSIX;
 use FileHandle;
 use Cwd;
+#use WannaBuild;
 
 # avoid intermixing of stdout and stderr
 $| = 1;
@@ -1456,7 +1457,7 @@ sub filter_dependencies {
 			if ($stat->{'Installed'}) {
 				my ($rel, $vers) = ($dep->{'Rel'}, $dep->{'Version'});
 				my $ivers = $stat->{'Version'};
-				if (!$rel || version_cmp( $ivers, $rel, $vers )){
+				if (!$rel || WannaBuild::version_compare( $ivers, $rel, $vers )){
 					print "$name: neg dep, installed, not versioned or ",
 						  "version relation satisfied --> remove\n" if $main::debug;
 					print PLOG "$name: installed (negative dependency)";
@@ -1491,7 +1492,7 @@ sub filter_dependencies {
 				next;
 			}
 			my $ivers = $stat->{'Version'};
-			if (!$rel || version_cmp( $ivers, $rel, $vers )) {
+			if (!$rel || WannaBuild::version_compare( $ivers, $rel, $vers )) {
 				print "$name: pos dep, installed, no versioned dep or ",
 					  "version ok\n" if $main::debug;
 				print PLOG "$name: already installed ($ivers";
@@ -1506,7 +1507,7 @@ sub filter_dependencies {
 			print PLOG "$name: non-matching version installed ",
 				  "($ivers ! $rel $vers)\n";
 			if ($rel =~ /^</ ||
-				($rel eq '=' && version_cmp($ivers, '>>', $vers))) {
+				($rel eq '=' && WannaBuild::version_compare($ivers, '>>', $vers))) {
 				print "$name: would be a downgrade!\n" if $main::debug;
 				print PLOG "$name: would have to downgrade!\n";
 			}
@@ -1564,7 +1565,7 @@ sub check_dependencies {
 				if (!$dep->{'Rel'}) {
 					$fail .= "$name(still installed) ";
 				}
-				elsif (version_cmp($stat->{'Version'}, $dep->{'Rel'},
+				elsif (WannaBuild::version_compare($stat->{'Version'}, $dep->{'Rel'},
 								   $dep->{'Version'})) {
 					$fail .= "$name(inst $stat->{'Version'} $dep->{'Rel'} ".
 							 "conflicted $dep->{'Version'})\n";
@@ -1582,7 +1583,7 @@ sub check_dependencies {
 					$f .= "$name(missing) ";
 				}
 				elsif ($d->{'Rel'} &&
-					   !version_cmp( $stat->{'Version'}, $d->{'Rel'},
+					   !WannaBuild::version_compare( $stat->{'Version'}, $d->{'Rel'},
 									 $d->{'Version'} )) {
 					$f =~ s/ $/\|/ if $f;
 					$f .= "$name(inst $stat->{'Version'} ! $d->{'Rel'} ".
@@ -1662,15 +1663,6 @@ sub get_dpkg_status {
 	}
 	close( STATUS );
 	return \%result;
-}
-
-sub version_cmp {
-	my $v1 = shift;
-	my $rel = shift;
-	my $v2 = shift;
-	
-	system "$conf::dpkg", "--compare-versions", $v1, $rel, $v2;
-	return $? == 0;
 }
 
 sub run_script {
@@ -2160,7 +2152,6 @@ sub get_virtuals {
 
 	return \%provided_by;
 }
-
 
 sub parse_one_srcdep {
 	my $pkg = shift;
