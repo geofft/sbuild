@@ -589,6 +589,10 @@ sub add_one_uploaded {
 		print "$name: not taken by you, but by $pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
+	# strip epoch -- buildd-uploader goes based on the filename.
+	my $pkgver;
+	($pkgver = $pkg->{'Version'}) =~ s/^\d+://;
+	$version =~ s/^\d+://; # for command line use
 	if (!version_eq($pkg->{'Version'}, $version)) {
 		print "$name: version mismatch ($pkg->{'Version'} registered). ",
 			  "Skipping.\n";
