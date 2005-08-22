@@ -52,7 +52,7 @@ use vars qw($verbose $mail_logs $list_order $list_state @distributions
 			$info_all_dists
 			$hostname $arch $opt_no_propagation $opt_no_down_propagation
 			$category %catval %short_category $short_date $list_min_age
-			%monname $dbbase $host_set);
+			%monname $dbbase $host_set $build_priority);
 
 # global vars
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
@@ -119,6 +119,12 @@ my %options =
 	 "pretend-avail" => { short => "p", mode => "pretend-avail" },
 	 "merge-all"     => { mode => "merge-all" },
 	 info			=> { short => "i", mode => "info" },
+	 'perm-build-priority'    => { mode => "set-permanent-build-priority", arg => \$build_priority,
+	 		      code => sub { die "Invalid build priority: $build_priority\n"
+				if $build_priority !~ /^-?[\d]+$/; } },
+	 'build-priority'    => { mode => "set-build-priority", arg => \$build_priority,
+	 		      code => sub { die "Invalid build priority: $build_priority\n"
+				if $build_priority !~ /^-?[\d]+$/; } },
 	 list			=>
 	 { short => "l", mode => "list", arg => \$list_state,
 	   code => sub {
@@ -146,7 +152,7 @@ my %options =
 	 { short => "O", arg => \$list_order,
 	   code => sub {
 		   die "Bad ordering character\n"
-			   if $list_order !~ /^[Spsncb]+$/;
+			   if $list_order !~ /^[PSpsncb]+$/;
 	   } },
 	 message        => { short => "m", arg => \$fail_reason },
 	 database       => { short => "b", arg => \$conf::dbbase },
@@ -223,7 +229,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 
 $op_mode = $category ? "set-failed" : "set-building"
 	if !$op_mode; # default operation
-$list_order = $list_state eq "failed" ? 'fcpsn' : 'Scpsn'
+$list_order = $list_state eq "failed" ? 'fPcpsn' : 'PScpsn'
 	if !$list_order;
 $distribution ||= "unstable";
 die "Bad distribution '$distribution'\n"
@@ -428,6 +434,12 @@ sub add_packages {
 		elsif ($op_mode eq "set-dep-wait") {
 			add_one_depwait( $name, $version );
 		}
+		elsif ($op_mode eq "set-build-priority") {
+			set_one_buildpri( $name, $version, 'BuildPri' );
+		}
+		elsif ($op_mode eq "set-permanent-build-priority") {
+			set_one_buildpri( $name, $version, 'PermBuildPri' );
+		}
 	}
 }
 
@@ -593,7 +605,7 @@ sub add_one_uploaded {
 	my $pkgver;
 	($pkgver = $pkg->{'Version'}) =~ s/^\d+://;
 	$version =~ s/^\d+://; # for command line use
-	if (!version_eq($pkg->{'Version'}, $version)) {
+	if (!version_eq($pkgver, $version)) {
 		print "$name: version mismatch ($pkg->{'Version'} registered). ",
 			  "Skipping.\n";
 		return;
@@ -692,6 +704,11 @@ sub add_one_failed {
 	$pkg->{'Failed'} .= "\n" if $pkg->{'Failed'};
 	$pkg->{'Failed'} .= $fail_reason;
 	$pkg->{'Failed-Category'} = $cat if $cat;
+	if (defined $pkg->{'PermBuildPri'}) {
+		$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
+	} else {
+		delete $pkg->{'BuildPri'};
+	}
 	log_ta( $pkg, "--failed" );
 	propagate_ta( $pkg, "--failed" );
 	$db{$name} = $pkg;
@@ -733,6 +750,7 @@ sub add_one_notforus {
 		$pkg->{'Version'} = $version;
 		delete $pkg->{'Builder'};
 		delete $pkg->{'Depends'};
+		delete $pkg->{'BuildPri'};
 		log_ta( $pkg, "--no-build" );
 		propagate_ta( $pkg, "--no-build" );
 		print "$name: registered as unsuitable\n" if $verbose;
@@ -802,6 +820,48 @@ sub add_one_needsbuild {
 	print "$name: given back\n" if $verbose;
 }
 
+sub set_one_buildpri {
+	my $name = shift;
+	my $version = shift;
+	my $key = shift;
+	my $pkg = $db{$name};
+	my $state;
+
+	if (!defined($pkg)) {
+		print "$name: not registered; can't set priority.\n";
+		return;
+	}
+	$state = $pkg->{'State'};
+
+	if ($state eq "Not-For-Us") {
+		print "$name: not suitable for this architecture. Skipping.\n";
+		return;
+	} elsif ($state eq "Failed-Removed") {
+		print "$name: failed previously and doesn't need building. Skipping.\n";
+		return;
+	} elsif ($state eq "Dep-Wait-Removed") {
+		print "$name: dep-wait previously and doesn't need building. Skipping.\n";
+		return;
+	}
+	if (!version_eq($pkg->{'Version'}, $version)) {
+		print "$name: version mismatch ($pkg->{'Version'} registered). ",
+			  "Skipping.\n";
+		return;
+	}
+	if ( $build_priority == 0 ) {
+		delete $pkg->{'BuildPri'}
+			if $key eq 'PermBuildPri' and defined $pkg->{'BuildPri'}
+			and $pkg->{'BuildPri'} == $pkg->{$key};
+		delete $pkg->{$key};
+	} else {
+		$pkg->{'BuildPri'} = $build_priority
+			if $key eq 'PermBuildPri';
+		$pkg->{$key} = $build_priority;
+	}
+	$db{$name} = $pkg;
+	print "$name: set to build priority $build_priority\n" if $verbose;
+}
+
 sub add_one_depwait {
 	my $name = shift;
 	my $version = shift;
@@ -863,6 +923,11 @@ sub add_one_depwait {
 	change_state( \$pkg, 'Dep-Wait' );
 	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $user;
+	if (defined $pkg->{'PermBuildPri'}) {
+		$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
+	} else {
+		delete $pkg->{'BuildPri'};
+	}
 	my $deplist = parse_deplist( $pkg->{'Depends'} );
 	my $new_deplist = parse_deplist( $fail_reason );
 	# add new dependencies, maybe overwriting old entries
@@ -1015,6 +1080,11 @@ sub parse_packages {
 		$pkg->{'Package'} = $name;
 		$pkg->{'Version'} = $version;
 		$pkg->{'Installed-Version'} = $version;
+		if (defined $pkg->{'PermBuildPri'}) {
+			$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
+		} else {
+			delete $pkg->{'BuildPri'};
+		}
 		log_ta( $pkg, "--merge-packages" );
 		$db{$name} = $pkg;
 		print "$name ($version) is up-to-date now.\n" if $verbose;
@@ -1394,6 +1464,11 @@ sub sort_list_func {
 
 	foreach $letter (split( "", $list_order )) {
 	  SWITCH: foreach ($letter) {
+		  /P/ && do {
+			$x = $b->{'BuildPri'} <=> $a->{'BuildPri'};
+			return $x if $x != 0;
+			last SWITCH;
+		  };
 		  /p/ && do {
 			  $x = $prioval{$a->{'Priority'}} <=> $prioval{$b->{'Priority'}};
 			  return $x if $x != 0;
@@ -1475,6 +1550,8 @@ sub list_packages {
 		print " [$pkg->{'Priority'}:$pkg->{'Notes'}";
 		print ":PREV-FAILED"
 			if $pkg->{'Previous-State'} =~ /^Failed/;
+		print ":bp{" . $pkg->{'BuildPri'} . "}"
+			if exists $pkg->{'BuildPri'};
 		print "]\n";
 		print "  Reasons for failing:\n",
 			  "    [Category: ",
