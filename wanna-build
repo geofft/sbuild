@@ -1310,6 +1310,7 @@ sub parse_quinn_diff {
 			delete $pkg->{'Builder'};
 			log_ta( $pkg, "--merge-quinn" );
 			$new_vers{$name}++;
+			$change++;
 			print "$name ($version) needs rebuilding now.\n" if $verbose;
 		}
 		elsif (defined($pkg) &&
