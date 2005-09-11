@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Francesco Paolo Lovergine <frankie@debian.org>
 Uploaders: Roger Leigh <rleigh@debian.org>, Michael Banck <mbanck@debian.org>
 Build-Depends-Indep: debhelper (>> 2.0.0)
-Standards-Version: 3.6.1
+Standards-Version: 3.6.2
 
 Package: sbuild
 Architecture: all

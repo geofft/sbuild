@@ -17,8 +17,17 @@ sbuild (0.36) unstable; urgency=low
       + Added %main::dist_locations to store the location of the
         available chroots.
     - Print a readable error if a chroot does not exist.
+  * debian/control: Update to Standards-Version 3.6.2.
+  * debian/copyright: Use the new FSF address.
+  * debian/conffiles: Remove.
+  * debian/rules:
+    - Use debhelper version 4 compatibility mode.
+    - Move the find -maxdepth option to before non-option arguments, to
+      fix find warnings.
+    - Remove template comments.
+    - avg-pkg-build-space symbolic link should be relative.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 10 Sep 2005 23:34:44 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 11 Sep 2005 10:02:19 +0100
 
 sbuild (0.35) unstable; urgency=low
 
