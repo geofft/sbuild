@@ -1,3 +1,25 @@
+sbuild (0.36) unstable; urgency=low
+
+  Roger Leigh:
+
+  * debian/changelog: Convert to UTF-8.
+  * sbuild:
+    - Don't fail in the absence of central sourcedeps.  These are no longer
+      required now source packages are required to have build dependencies,
+      so this should not be fatal.
+    - Added support for schroot:
+      + Added $conf::chroot_mode.  This may be set to "split" (the
+        historical default), or "schroot" (use schroot instead of sudo).
+      + All operations using sudo now check the value of $chroot_mode, and
+        use sudo or schroot accordingly.
+      + When using schroot, %main::dist_order is filled using the schroot
+        chroot priorities.
+      + Added %main::dist_locations to store the location of the
+        available chroots.
+    - Print a readable error if a chroot does not exist.
+
+ -- Roger Leigh <rleigh@debian.org>  Sat, 10 Sep 2005 23:34:44 +0100
+
 sbuild (0.35) unstable; urgency=low
 
   Michael Banck:
@@ -156,7 +178,7 @@ sbuild (0.24) unstable; urgency=low
   * fix upgradechroot output and add -u to -y
   * added oldstable to distribution options
   * fix for dependency calculation for --arch-all builds from
-    Martin Kögler (Closes: #180859)
+    Martin KÃ¶gler (Closes: #180859)
   * libpng-dev => libpng12-0-dev in sbuild.conf
   * add dpkg-dev to package dependencies - thanks Michael Banck
     (Closes: #182234)

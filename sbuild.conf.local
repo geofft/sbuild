@@ -17,5 +17,10 @@
 # Name for dir for source dependency lock files
 #$srcdep_lock_dir = "/var/debbuild/srcdep-lock";
 
+# Chroot behaviour; possible values are "split" (apt and dpkg are run
+# from the host system) and "schroot" (all package operations are done in
+# the chroot with schroot, but the chroot must allow networking)
+#$chroot_mode = "split";
+
 # don't remove this, Perl needs it:
 1;
