@@ -7,8 +7,9 @@ Standards-Version: 3.6.2
 Package: sbuild
 Architecture: all
 Priority: optional
-Depends: perl5, dpkg-dev, apt (>= 0.5), libnet-perl, exim | mail-transport-agent
-Recommends: sudo | super, lftp, wget, python, fakeroot
+Depends: perl5, dpkg-dev, apt (>= 0.5), exim | mail-transport-agent
+Recommends: sudo | super, lftp, wget, fakeroot, debootstrap
+Conflicts: buildd (<< 2005.09.26)
 Suggests: build-essential
 Description: Tool for building Debian binary packages from Debian sources
  sbuild will take one or more Debian source packages and build the 
@@ -16,8 +17,7 @@ Description: Tool for building Debian binary packages from Debian sources
  about source dependencies.
  .
  sbuild is used by the build daemon (buildd).  The package contains
- the sbuild tool itself and `andrea', a tool to auto-generate a subset
- of source dependencies for packages from a Packages file.
+ the sbuild tool itself.
 
 Package: wanna-build
 Architecture: any
@@ -29,7 +29,7 @@ Description: Database for packages needed recompiled
 
 Package: buildd
 Architecture: any
-Depends: ${shlibs:Depends}, perl5, sbuild, dupload, cron, exim | mail-transport-agent
+Depends: ${shlibs:Depends}, perl5, sbuild (>= 2005.09.26), dupload, cron, exim | mail-transport-agent
 Description: Build daemon for automatically compiling Debian packages
  buildd is a build daemon which will recompile Debian packages
  automatically

@@ -29,7 +29,7 @@ use FileHandle;
 require Exporter;
 @WannaBuild::ISA = qw(Exporter);
 @WannaBuild::EXPORT = qw(version_less version_lesseq version_eq
-			version_compare);
+			version_compare binNMU_version);
 
 my $opt_correct_version_cmp;
 
@@ -158,6 +158,29 @@ sub split_version {
 	}
 
 	return( $epoch, $vers, $revision );
+}
+
+sub binNMU_version {
+	my $v = shift;
+	my $binNMUver = shift;
+
+	if ($v =~ /^(.*)-([^-]+)$/) {
+		my ($upstream, $debian) = ($1, $2);
+		my @parts = split( /\./, $debian );
+		if (@parts == 1) {
+			return "$upstream-$debian.0.$binNMUver";
+		}
+		elsif (@parts == 2) {
+			return "$upstream-$debian.$binNMUver";
+		}
+		else {
+			$parts[$#parts]+=$binNMUver;
+			return "$upstream-".join( ".", @parts );
+		}
+	}
+	else {
+		return "$v.0.$binNMUver";
+	}
 }
 
 1;

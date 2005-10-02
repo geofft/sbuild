@@ -16,7 +16,9 @@ fi
 USER=$1
 SUITE=$2
 TARGET=$3
-debootstrap --variant=buildd $SUITE $TARGET $4
+debootstrap --variant=buildd --include=sudo,fakeroot,build-essential $SUITE $TARGET $4
+hostname=`hostname`
+echo 127.0.0.1 $hostname localhost > $TARGET/etc/hosts
 echo "# put any local/close mirrors at the top of the file" > $TARGET/etc/apt/sources.list
 echo "deb http://incoming.debian.org/debian $SUITE main contrib" >> $TARGET/etc/apt/sources.list
 echo "deb-src http://incoming.debian.org/debian $SUITE main contrib" >> $TARGET/etc/apt/sources.list
@@ -35,16 +37,24 @@ case "$2" in
 	    echo "deb http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
 	    echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
 
-	    echo "deb http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
-	    echo "deb-src http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://$hostname:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://$hostname:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
 	;;
 	sarge)
 	    echo "deb http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
 	    echo "deb-src http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
 	    echo "deb http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
 	    echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
-	    echo "deb http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
-	    echo "deb-src http://`hostname`:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://$hostname:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://$hostname:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	;;
+	etch)
+	    echo "deb http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://security.debian.org/ $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	    echo "deb http://$hostname:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	    echo "deb-src http://$hostname:@security.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
 	;;
 esac
 

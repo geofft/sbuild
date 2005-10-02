@@ -1,6 +1,8 @@
 #!/bin/sh
 # parts to be run as root.
-sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --ingroup buildd --disabled-password buildd
+# ons of these, depending on whether you have a buildd group or not
+#sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --ingroup buildd --disabled-password buildd
+sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --group --disabled-password buildd
 sudo chown buildd:buildd /etc/source-dependencies-*
 sudo mkdir -p /var/debbuild/srcdep-lock
 sudo chown -R buildd:buildd /var/debbuild
@@ -9,11 +11,10 @@ sudo chmod -R 2775 /var/debbuild
 cd ~buildd
 zcat /usr/share/doc/buildd/examples/buildd.conf.gz > buildd.conf
 zcat /usr/share/doc/sbuild/examples/sbuildrc.gz > .sbuildrc
-mkdir -p build logs mqueue old-logs stats/graphs upload upload-security
-chmod o= upload-security old-logs mqueue logs build
+mkdir -p .ssh build logs mqueue old-logs stats/graphs upload upload-security
+chmod o= .ssh upload-security old-logs mqueue logs build
 echo "|/usr/bin/buildd-mail-wrapper" > .forward
-mkdir .ssh
 ssh-keygen -t rsa -f .ssh/id_rsa -N ''
 echo I: setup .forward-porters with where you want buildd mail to go.
-echo I: run debootstrap sid build/chroot-unstable http://ftp.debian.org/debian /usr/share/doc/sbuild/examples/sid.chroot
+echo I: run buildd-make-chroot buildd sid build/chroot-unstable http://ftp.debian.org/debian
 echo I: Done.

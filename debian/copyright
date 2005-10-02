@@ -5,8 +5,7 @@ The build daemon is maintained as a Debian package by me, Ryan Murray
 <rmurray@debian.org>, from the SVN repository,
  http://svn.cyberhqz.com/svn/wanna-build
 
-Everything except andrea (which was written by James Troup) was
-originally written by Roman Hodek.
+Most things were originally written by Roman Hodek.
 
 Program Copyright (C) 2002-2005           Ryan Murray <rmurray@debian.org>
                       1998-2002           Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
@@ -23,7 +22,7 @@ Program Copyright (C) 2002-2005           Ryan Murray <rmurray@debian.org>
 
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 On Debian GNU systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL'.

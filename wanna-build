@@ -27,7 +27,7 @@ $basedir = "/var/lib/debbuild";
 $dbbase = "build-db";
 $transactlog = "transactions.log";
 $mailprog = "/usr/sbin/sendmail";
-require "/org/wanna-build/etc/wanna-build.conf";
+require "/etc/wanna-build.conf";
 die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;
 die "dbbase is empty\n" if ! $dbbase;
 die "transactlog is empty\n" if ! $transactlog;
@@ -45,14 +45,14 @@ use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use WannaBuild;
 
-use vars qw($verbose $mail_logs $list_order $list_state @distributions
-			%dist_order $curr_date $op_mode $user $real_user $distribution
-			$fail_reason $opt_override $import_from $export_to $opt_create_db
-			$transactlog %db %otherdb %otherdb_lock %prioval %sectval
-			$info_all_dists
-			$hostname $arch $opt_no_propagation $opt_no_down_propagation
-			$category %catval %short_category $short_date $list_min_age
-			%monname $dbbase $host_set $build_priority);
+our ($verbose, $mail_logs, $list_order, $list_state, @distributions,
+    %dist_order, $curr_date, $op_mode, $user, $real_user, $distribution,
+    $fail_reason, $opt_override, $import_from, $export_to, $opt_create_db,
+    $transactlog, %db, %otherdb, %otherdb_lock, %prioval, %sectval,
+    $info_all_dists, $hostname, $arch, $opt_no_propagation,
+    $opt_no_down_propagation, $category, %catval, %short_category,
+    $short_date, $list_min_age, %monname, $dbbase, $host_set,
+    $build_priority, %new_vers, $binNMUver, %merge_srcvers);
 
 # global vars
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
@@ -119,6 +119,9 @@ my %options =
 	 "pretend-avail" => { short => "p", mode => "pretend-avail" },
 	 "merge-all"     => { mode => "merge-all" },
 	 info			=> { short => "i", mode => "info" },
+	 'binNMU' => { mode => 'set-binary-nmu', arg => \$binNMUver, 
+			     code => sub { die "Invalid binNMU version: $binNMUver\n"
+				if $binNMUver !~ /^([\d]*)$/ and $1 >= 0; } },
 	 'perm-build-priority'    => { mode => "set-permanent-build-priority", arg => \$build_priority,
 	 		      code => sub { die "Invalid build priority: $build_priority\n"
 				if $build_priority !~ /^-?[\d]+$/; } },
@@ -130,10 +133,10 @@ my %options =
 	   code => sub {
 		   die "Unknown state to list: $list_state\n"
 			   if !isin( $list_state, qw(needs-build building uploaded
-										 failed installed dep-wait
-										 not-for-us all failed-removed
-										 dep-wait-removed install-wait
-										 reupload-wait));} },
+						 failed installed dep-wait
+						 not-for-us all failed-removed
+						 dep-wait-removed install-wait
+						 reupload-wait));} },
 	 # options with args
 	 dist           =>
 	 { short => "d", arg => \$distribution,
@@ -255,27 +258,36 @@ die "Can't determine your user name\n"
 	if $op_mode ne "list" && !$user &&
 	   !($user = $real_user);
 
-if ($op_mode eq "set-failed" && !$fail_reason && !$category) {
-	print "Enter reason for failing (end with '.' alone on its line):\n";
-	my $line;
-	while(1) {
-		$line = <STDIN>;
-		last if $line eq ".\n";
-		$line = ".\n" if $line eq "\n";
-		$fail_reason .= $line;
+if (!$fail_reason) {
+	if ($op_mode eq "set-failed" && !$category) {
+		print "Enter reason for failing (end with '.' alone on ".
+		      "its line):\n";
+		my $line;
+		while(1) {
+			$line = <STDIN>;
+			last if $line eq ".\n";
+			$line = ".\n" if $line eq "\n";
+			$fail_reason .= $line;
+		}
+		chomp( $fail_reason );
+	} elsif ($op_mode eq "set-dep-wait") {
+		print "Enter dependencies (one line):\n";
+		my $line;
+		while( !$line && !eof(STDIN) ) {
+			chomp( $line = <STDIN> );
+		}
+		die "No dependencies given\n" if !$line;
+		$fail_reason = $line;
+	} elsif ($op_mode eq "set-binary-nmu" and $binNMUver > 0) {
+		print "Enter changelog entry (one line):\n";
+		my $line;
+		while( !$line && !eof(STDIN) ) {
+			chomp( $line = <STDIN> );
+		}
+		die "No changelog entry given\n" if !$line;
+		$fail_reason = $line;
 	}
-	chomp( $fail_reason );
 }
-if ($op_mode eq "set-dep-wait" && !$fail_reason) {
-	print "Enter dependencies (one line):\n";
-	my $line;
-	while( !$line && !eof(STDIN) ) {
-		chomp( $line = <STDIN> );
-	}
-	die "No dependencies given\n" if !$line;
-	$fail_reason = $line;
-}
-
 if ($op_mode eq "maintlock-create") {
 	create_maintlock();
 	exit 0;
@@ -346,7 +358,7 @@ sub process {
 			last SWITCH;
 		};
 		/^merge-sources/ && do {
-			parse_sources();
+			parse_sources(0);
 			last SWITCH;
 		};
 		/^pretend-avail/ && do {
@@ -358,10 +370,10 @@ sub process {
 			@ARGV = ( $ARGS[0] );
 			my $pkgs = parse_packages();
 			@ARGV = ( $ARGS[1] );
-			my $newver = parse_quinn_diff(0);
+			parse_quinn_diff(0);
 			@ARGV = ( $ARGS[2] );
-			my $build_deps = parse_sources();
-			set_dep_wait( $build_deps, $pkgs, $newver );
+			my $build_deps = parse_sources(1);
+			set_dep_wait( $build_deps, $pkgs );
 			clean_db();
 			last SWITCH;
 		};
@@ -440,6 +452,9 @@ sub add_packages {
 		elsif ($op_mode eq "set-permanent-build-priority") {
 			set_one_buildpri( $name, $version, 'PermBuildPri' );
 		}
+		elsif ($op_mode eq "set-binary-nmu") {
+			set_one_binnmu( $name, $version );
+		}
 	}
 }
 
@@ -466,7 +481,7 @@ sub add_one_building {
 			$ok = 0;
 			$reason = "already uploaded by $pkg->{'Builder'}";
 			$reason .= " (in newer version $pkg->{'Version'})"
-				if !version_eq($pkg->{'Version'}, $version);
+				if !version_eq($pkg, $version);
 		}
 		elsif ($pkg->{'State'} eq "Installed" &&
 			   version_less($version,$pkg->{'Version'})) {
@@ -483,7 +498,7 @@ sub add_one_building {
 			}
 		}
 		elsif ($pkg->{'State'} eq "Installed" &&
-			   version_eq($version, $pkg->{'Version'})) {
+			   pkg_version_eq($pkg,$version)) {
 			$ok = 0;
 			$reason = "is up-to-date in the archive; doesn't need rebuilding";
 		}
@@ -538,7 +553,7 @@ sub add_one_building {
 			}
 		}
 		elsif ($pkg->{'State'} =~ /^Failed/ &&
-			   version_eq($pkg->{'Version'}, $version)) {
+			   pkg_version_eq($pkg, $version)) {
 			if ($opt_override) {
 				print "The following package previously failed ",
 					  "(by $pkg->{'Builder'})\n",
@@ -560,9 +575,16 @@ sub add_one_building {
 		}
 	}
 	if ($ok) {
-		print "$name: Warning: Previous version failed!\n"
-			if $pkg->{'Previous-State'} =~ /^Failed/ ||
-			   $pkg->{'State'} =~ /^Failed/;
+		my $ok = 'ok';
+		if ($pkg->{'Binary-NMU-Version'}) {
+			print "$name: Warning: needs binary NMU $pkg->{'Binary-NMU-Version'}\n" .
+			      "$pkg->{'Binary-NMU-Changelog'}\n";
+			$ok = 'aok';
+		} else {
+			print "$name: Warning: Previous version failed!\n"
+				if $pkg->{'Previous-State'} =~ /^Failed/ ||
+				   $pkg->{'State'} =~ /^Failed/;
+		}
 		change_state( \$pkg, 'Building' );
 		$pkg->{'Package'} = $name;
 		$pkg->{'Version'} = $version;
@@ -570,7 +592,7 @@ sub add_one_building {
 		log_ta( $pkg, "--take" );
 		propagate_ta( $pkg, "--take" );
 		$db{$name} = $pkg;
-		print "$name: ok\n" if $verbose;
+		print "$name: $ok\n" if $verbose;
 	}
 	else {
 		print "$name: NOT OK!\n  $reason\n";
@@ -588,7 +610,7 @@ sub add_one_uploaded {
 	}
 
 	if ($pkg->{'State'} eq "Uploaded" &&
-		version_eq($version, $pkg->{'Version'})) {
+		pkg_version_eq($pkg,$version)) {
 		print "$name: already uploaded\n";
 		return;
 	}
@@ -601,11 +623,19 @@ sub add_one_uploaded {
 		print "$name: not taken by you, but by $pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
-	# strip epoch -- buildd-uploader goes based on the filename.
+	# strip epoch -- buildd-uploader used to go based on the filename.
+	# (to remove at some point)
 	my $pkgver;
 	($pkgver = $pkg->{'Version'}) =~ s/^\d+://;
 	$version =~ s/^\d+://; # for command line use
-	if (!version_eq($pkgver, $version)) {
+	if ($pkg->{'Binary-NMU-Version'} ) {
+		my $nmuver = binNMU_version($pkgver, $pkg->{'Binary-NMU-Version'});
+		if (!version_eq( $nmuver, $version )) {
+			print "$name: version mismatch ($nmuver registered). ",
+				  "Skipping.\n";
+			return;
+		}
+	} elsif (!version_eq($pkgver, $version)) {
 		print "$name: version mismatch ($pkg->{'Version'} registered). ",
 			  "Skipping.\n";
 		return;
@@ -653,11 +683,10 @@ sub add_one_failed {
 			  "$pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
-	elsif (version_less($version,$pkg->{'Version'}) &&
-		   !version_eq($version, $pkg->{'Version'})) {
-		print "$name: build already succeeded for newer version ".
-			  "$pkg->{'Version'} ".
-			  "(by $pkg->{'Builder'})\n";
+	elsif ( !pkg_version_eq($version, $pkg->{'Version'})) {
+		print "$name: version mismatch ".
+			  "$(pkg->{'Version'} ".
+			  "by $pkg->{'Builder'})\n";
 		return;
 	}
 
@@ -699,7 +728,6 @@ sub add_one_failed {
 	}
 
 	change_state( \$pkg, 'Failed' );
-	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $user;
 	$pkg->{'Failed'} .= "\n" if $pkg->{'Failed'};
 	$pkg->{'Failed'} .= $fail_reason;
@@ -727,7 +755,6 @@ sub add_one_notforus {
 		# be put :-( So use Failed for now.
 		change_state( \$pkg, 'Failed' );
 		$pkg->{'Package'} = $name;
-		$pkg->{'Version'} = $version;
 		$pkg->{'Failed'} = "Was Not-For-Us previously";
 		delete $pkg->{'Builder'};
 		delete $pkg->{'Depends'};
@@ -747,10 +774,11 @@ sub add_one_notforus {
 	else {
 		change_state( \$pkg, 'Not-For-Us' );
 		$pkg->{'Package'} = $name;
-		$pkg->{'Version'} = $version;
 		delete $pkg->{'Builder'};
 		delete $pkg->{'Depends'};
 		delete $pkg->{'BuildPri'};
+		delete $pkg->{'Binary-NMU-Version'};
+		delete $pkg->{'Binary-NMU-Changelog'};
 		log_ta( $pkg, "--no-build" );
 		propagate_ta( $pkg, "--no-build" );
 		print "$name: registered as unsuitable\n" if $verbose;
@@ -806,7 +834,7 @@ sub add_one_needsbuild {
 			  "$pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
-	if (!version_eq($pkg->{'Version'}, $version)) {
+	if (!pkg_version_eq($pkg, $version)) {
 		print "$name: version mismatch ($pkg->{'Version'} registered). ",
 			  "Skipping.\n";
 		return;
@@ -818,6 +846,61 @@ sub add_one_needsbuild {
 	propagate_ta( $pkg, "--give-back" );
 	$db{$name} = $pkg;
 	print "$name: given back\n" if $verbose;
+}
+
+sub set_one_binnmu {
+	my $name = shift;
+	my $version = shift;
+	my $pkg = $db{$name};
+	my $state;
+
+	if (!defined($pkg)) {
+		print "$name: not registered; can't register for binNMU.\n";
+		return;
+	}
+	my $db_ver = $pkg->{'Version'};
+
+	if (!version_eq($db_ver, $version)) {
+		print "$name: version mismatch ($db_ver registered). ",
+			  "Skipping.\n";
+		return;
+	}
+	$state = $pkg->{'State'};
+
+	if (defined $pkg->{'Binary-NMU-Version'}) {
+		if ($binNMUver == 0) {
+			change_state( \$pkg, 'Installed' );
+			delete $pkg->{'Builder'};
+			delete $pkg->{'Depends'};
+			delete $pkg->{'Binary-NMU-Version'};
+			delete $pkg->{'Binary-NMU-Changelog'};
+		} elsif ($binNMUver <= $pkg->{'Binary-NMU-Version'}) {
+			print "$name: already building binNMU $pkg->{'BinNMU-Version'}";
+			return;
+		} else {
+			$pkg->{'Binary-NMU-Version'} = $binNMUver;
+			$pkg->{'Binary-NMU-Changelog'} = $fail_reason;
+			$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'}
+				if (defined $pkg->{'PermBuildPri'});
+		}
+		log_ta( $pkg, "--binNMU" );
+		$db{$name} = $pkg;
+		return;
+	}
+
+	if ($state ne 'Installed') {
+		print "${name}_$version: not installed; can't register for binNMU.\n";
+		return;
+	}
+
+	change_state( \$pkg, 'Needs-Build' );
+	delete $pkg->{'Builder'};
+	delete $pkg->{'Depends'};
+	$pkg->{'Binary-NMU-Version'} = $binNMUver;
+	$pkg->{'Binary-NMU-Changelog'} = $fail_reason;
+	log_ta( $pkg, "--binNMU" );
+	$db{$name} = $pkg;
+	print "${name}_: registered for binNMU $binNMUver\n" if $verbose;
 }
 
 sub set_one_buildpri {
@@ -843,7 +926,7 @@ sub set_one_buildpri {
 		print "$name: dep-wait previously and doesn't need building. Skipping.\n";
 		return;
 	}
-	if (!version_eq($pkg->{'Version'}, $version)) {
+	if (!pkg_version_eq($pkg, $version)) {
 		print "$name: version mismatch ($pkg->{'Version'} registered). ",
 			  "Skipping.\n";
 		return;
@@ -908,11 +991,10 @@ sub add_one_depwait {
 			  "$pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
-	elsif (version_less($version,$pkg->{'Version'}) &&
-		   !version_eq($version, $pkg->{'Version'})) {
-		print "$name: build already succeeded for newer version ".
-			  "$pkg->{'Version'} ".
-			  "(by $pkg->{'Builder'})\n";
+	elsif ( !pkg_version_eq($version, $pkg->{'Version'})) {
+		print "$name: version mismatch ".
+			  "($pkg->{'Version'} ".
+			  "by $pkg->{'Builder'})\n";
 		return;
 	}
 	elsif ($fail_reason =~ /^\s*$/ ||
@@ -921,7 +1003,6 @@ sub add_one_depwait {
 		return;
 	}
 	change_state( \$pkg, 'Dep-Wait' );
-	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $user;
 	if (defined $pkg->{'PermBuildPri'}) {
 		$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
@@ -946,10 +1027,11 @@ sub parse_sources {
 	my %pkgs;
 	my %srcver;
 	my $name;
+	my $full = shift;
 
 	local($/) = ""; # read in paragraph mode
 	while( <> ) {
-		my( $name, $version, $arch, $section, $priority, $builddep, $buildconf );
+		my( $version, $arch, $section, $priority, $builddep, $buildconf );
 		/^Package:\s*(\S+)\s*$/mi and $name = $1;
 		/^Version:\s*(\S+)\s*$/mi and $version = $1;
 		/^Architecture:\s*(\S+)\s*$/mi and $arch = $1;
@@ -986,6 +1068,11 @@ sub parse_sources {
 				next;
 			}
 
+			# The "Version" should always be the source version --
+			# not a possible binNMU version number.
+			$pkg->{'Version'} = $version, $change++
+				if ($pkg->{'State'} eq 'Installed' and
+				!version_eq( $pkg->{'Version'}, $version));
 			# Always update priority and section, if available
 			$pkg->{'Priority'} = $priority, $change++
 				if defined $priority and $pkg->{'Priority'} ne $priority;
@@ -996,6 +1083,7 @@ sub parse_sources {
 		}
 	}
 	# remove installed packages that no longer have source available
+	# or binaries installed
 	foreach $name (keys %db) {
 		my $pkg = $db{$name};
 		next if !isin( $pkg->{'State'}, qw(Installed) );
@@ -1007,6 +1095,14 @@ sub parse_sources {
 				  "not in Sources anymore\n"
 					  if $verbose;
 			delete $db{$name};
+		} elsif ($full && not defined $merge_srcvers{$name}) {
+			change_state( \$pkg, 'deleted' );
+			log_ta( $pkg, "--merge-sources" );
+			print "$name ($pkg->{'Version'}): ".
+				  "deleted from database, because ".
+				  "binaries don't exist anymore\n"
+					  if $verbose;
+			delete $db{$name};
 		}
 	}
 	return \%pkgs;
@@ -1015,7 +1111,6 @@ sub parse_sources {
 # This function looks through a Packages file and sets the state of
 # packages to 'Installed'
 sub parse_packages {
-	my %done;
 	my $installed;
 
 	local($/) = ""; # read in paragraph mode
@@ -1028,7 +1123,8 @@ sub parse_packages {
 		/^Provides:\s*(\S+)\s*$/mi and $provides = $1;
 		next if !$name || !$version;
 		next if ($arch ne $architecture and $architecture ne "all");
-		next if (defined ($installed->{$name}) and version_less( $version, $installed->{$name} ));
+		next if (defined ($installed->{$name}) and $installed->{$name} ne "" and
+			version_lesseq( $version, $installed->{$name} ));
 		$installed->{$name} = $version;
 		if ($provides) {
 			foreach (split( /\s*,\s*/, $provides )) {
@@ -1039,28 +1135,35 @@ sub parse_packages {
 		$version = $sourcev if $sourcev;
 		next if $architecture ne $arch;
 		$name = $source if $source;
-		next if $done{$name} eq $version;
-		$done{$name} = $version;
+		next if $merge_srcvers{$name} eq $version;
+		$merge_srcvers{$name} = $version;
 
 		my $pkg = $db{$name};
 
 		if (defined $pkg) {
-			$pkg->{'Installed-Version'} = $version;
 			if (isin( $pkg->{'State'}, qw(Not-For-Us)) ||
-				($pkg->{'State'} eq "Installed" &&
-				 version_eq($version, $pkg->{'Version'}))) {
+				(isin($pkg->{'State'}, qw(Installed)) &&
+				 version_lesseq($version, $pkg->{'Installed-Version'}))) {
 				print "Skipping $name because State == $pkg->{'State'}\n"
 					if $verbose >= 2;
 				next;
 			}
-			if (version_less($version, $pkg->{'Version'})) {
+			if ($pkg->{'Binary-NMU-Version'} ) {
+				my $nmuver = binNMU_version($pkg->{'Version'}, $pkg->{'Binary-NMU-Version'});
+				if (version_less( $version, $nmuver )) {
+					print "Skipping $name ($version) because have newer ".
+						"version ($nmuver) in db.\n"
+							if $verbose >= 2;
+					next;
+				}
+			} elsif (version_less($version, $pkg->{'Version'})) {
 				print "Skipping $name ($version) because have newer ".
 					"version ($pkg->{'Version'}) in db.\n"
 						if $verbose >= 2;
 				next;
 			}
 
-			if (!version_eq($version, $pkg->{'Version'}) &&
+			if (!pkg_version_eq($pkg, $version) &&
 			   $pkg->{'State'} ne "Installed") {
 				warn "Warning: $name: newer version than expected appeared ".
 					 "in archive ($version vs. $pkg->{'Version'})\n";
@@ -1074,17 +1177,19 @@ sub parse_packages {
 			}
 		} else {
 			$pkg = {};
+			$pkg->{'Version'} = $version;
 		}
 		
 		change_state( \$pkg, 'Installed' );
 		$pkg->{'Package'} = $name;
-		$pkg->{'Version'} = $version;
 		$pkg->{'Installed-Version'} = $version;
 		if (defined $pkg->{'PermBuildPri'}) {
 			$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
 		} else {
 			delete $pkg->{'BuildPri'};
 		}
+		delete $pkg->{'Binary-NMU-Version'};
+		delete $pkg->{'Binary-NMU-Changelog'};
 		log_ta( $pkg, "--merge-packages" );
 		$db{$name} = $pkg;
 		print "$name ($version) is up-to-date now.\n" if $verbose;
@@ -1156,6 +1261,7 @@ sub check_dep_wait {
 			propagate_ta( $pkg, $action ) if $action ne "--merge-packages";
 			print "$name ($pkg->{'Version'}) has all ",
 				  "dependencies available now\n" if $verbose;
+			$new_vers{$name}++;
 			$db{$name} = $pkg;
 		}
 		elsif (@removed_deps) {
@@ -1174,7 +1280,6 @@ sub check_dep_wait {
 sub parse_quinn_diff {
 	my $partial = shift;
 	my %quinn_pkgs;
-	my %new_vers;
 	my $dubious = "";
 	
 	while( <> ) {
@@ -1358,6 +1463,7 @@ sub parse_quinn_diff {
 		my $name;
 		foreach $name (keys %db) {
 			my $pkg = $db{$name};
+			next if defined $pkg->{'Binary-NMU-Version'};
 			next if !isin( $pkg->{'State'},
 						   qw(Needs-Build Building Uploaded Failed Dep-Wait) );
 			my $virtual_delete = $pkg->{'State'} eq 'Failed' ||
@@ -1379,7 +1485,6 @@ sub parse_quinn_diff {
 			}
 		}
 	}
-	return \%new_vers;
 }
 
 sub send_reupload_mail {
@@ -1553,6 +1658,8 @@ sub list_packages {
 			if $pkg->{'Previous-State'} =~ /^Failed/;
 		print ":bp{" . $pkg->{'BuildPri'} . "}"
 			if exists $pkg->{'BuildPri'};
+		print ":binNMU"
+			if exists $pkg->{'Binary-NMU-Version'};
 		print "]\n";
 		print "  Reasons for failing:\n",
 			  "    [Category: ",
@@ -2191,11 +2298,10 @@ sub clean_db {
 sub set_dep_wait {
     my $bd = shift;
     my $pkgs = shift;
-    my $new_vers = shift;
     my $key;
     my $dep;
     
-    foreach $key (keys %$new_vers) {
+    foreach $key (keys %new_vers) {
 	my $pkg = $db{$key};
 	next
 	    if defined $pkg and $pkg->{'State'} ne "Needs-Build";
@@ -2204,6 +2310,7 @@ sub set_dep_wait {
 	my $change = 0;
 	foreach $dep (@$deps) {
 	    if ($dep->{'Rel'} and $pkgs->{$dep->{'Package'}} ne "") {
+	        next if $dep->{'Rel'} !~ /^>/;
 		if ($dep->{'Neg'} == 0) {
 		    if (!version_compare( $pkgs->{$dep->{'Package'}}, $dep->{'Rel'}, $dep->{'Version'} )) {
 			if (version_compare( $dep->{'Version'}, ">>", $pkgs->{$dep->{'Package'}} )) {
@@ -2254,7 +2361,7 @@ Options:
         also be 'all'
     -m MESSAGE, --message=MESSAGE: Give reason why package failed or
         source dependency list
-        (used with -f and --dep-wait)
+        (used with -f, --dep-wait, and --binNMU)
     -o, --override: Override another user's lock on a package, i.e.
         take it over; a notice mail will be sent to the other user
     -U USER, --user=USER: select user name for which listings should
@@ -2271,4 +2378,15 @@ on the command line or read stdin. --list needs nothing more on the
 command line. --info takes source package names (without version).
 EOF
 	exit 1;
+}
+
+sub pkg_version_eq {
+	my $pkg = shift;
+	my $version = shift;
+
+	return 1
+	       if (defined $pkg->{'Binary-NMU-Version'}) and 
+	       version_compare(binNMU_version($pkg->{'Version'},
+			$pkg->{'Binary-NMU-Version'}),'=', $version);
+	return version_compare( $pkg->{'Version'}, "=", $version );
 }

@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # $Id$
 #
@@ -31,7 +31,7 @@ $ENV{PATH} .= ":/usr/local/bin" if $ENV{'PATH'} !~ m,/usr/local/bin(:|$),;
 my $reported_file = "$HOME/lib/reported-old-builds";
 my $list_cmd = "wanna-build --list=building -v";
 my $report_days = 10;
-my $mailprog = "/usr/lib/sendmail";
+my $mailprog = "/usr/sbin/sendmail";
 chomp( my $mailname = `cat /etc/mailname` || `hostname` );
 my $sender = $ENV{'LOGNAME'} || (getpwuid($<))[0];
 

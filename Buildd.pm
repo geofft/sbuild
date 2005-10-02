@@ -1,6 +1,7 @@
 #
 # Buildd.pm: library for buildd and friends
 # Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright (C) 2005 Ryan Murray <rmurray@debian.org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # $Id$
 #
@@ -30,7 +31,7 @@ require Exporter;
 @Buildd::ISA = qw(Exporter);
 @Buildd::EXPORT = qw(read_config lock_file unlock_file open_log reopen_log close_log
 					 logger parse_deplist build_deplist send_mail
-					 ll_send_mail isin exitstatus write_stats);
+					 ll_send_mail isin exitstatus write_stats binNMU_version);
 
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
@@ -74,8 +75,10 @@ sub read_config {
 
 sub lock_file {
 	my $file = shift;
+	my $nowait = shift;
 	my $lockfile = "$file.lock";
 	my $try = 0;
+	my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 	
   repeat:
 	if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
@@ -89,27 +92,32 @@ sub lock_file {
 			}
 			else {
 				my($pid, $user) = ($1, $2);
-				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+				my $cnt = kill( 0, $pid );
+				if ($cnt == 0 && $! == ESRCH) {
 					# process doesn't exist anymore, remove stale lock
 					warn "Removing stale lock file $lockfile ".
 						 " (pid $pid, user $user)\n";
 					unlink( $lockfile );
 					goto repeat;
+				} elsif ($cnt >= 1 and $nowait == 1) {
+					# process exists.
+					return 0;
 				}
 			}
 			if (++$try > $Buildd::max_lock_trys) {
 				warn "Lockfile $lockfile still present after ".
 				     "$Buildd::max_lock_trys * $Buildd::lock_interval ".
 					 " seconds -- giving up\n";
-				return;
+				return 0;
 			}
 			sleep $Buildd::lock_interval;
 			goto repeat;
 		}
-		die "Can't create lock file $lockfile: $!\n";
+		die "$Buildd::progname: Can't create lock file $lockfile: $!\n";
 	}
-	F->print("$$ $ENV{'LOGNAME'}\n");
+	F->print("$$ $username\n");
 	F->close();
+	return 1;
 }
 
 sub unlock_file {
@@ -133,9 +141,9 @@ sub write_stats {
 
 sub open_log {
 	open( LOG, ">>$main::HOME/daemon.log" )
-		or die "Cannot open my logfile $main::HOME/daemon.log: $!\n";
+		or die "$0: Cannot open my logfile $main::HOME/daemon.log: $!\n";
 	chmod( 0640, "$main::HOME/daemon.log" )
-		or die "Cannot set modes of $main::HOME/daemon.log: $!\n";
+		or die "$0: Cannot set modes of $main::HOME/daemon.log: $!\n";
 	select( (select(LOG), $| = 1)[0] );
 	open( STDOUT, ">&LOG" )
 		or die "$0: Can't redirect stdout to $main::HOME/daemon.log: $!\n";
@@ -163,8 +171,10 @@ sub close_log {
 }
 
 sub reopen_log {
+	my $errno = $!;
 	close_log();
 	open_log();
+	$! = $errno;
 }
 
 sub send_mail {
@@ -174,12 +184,12 @@ sub send_mail {
 	my $add_headers = shift;
 
 	return ll_send_mail( $addr,
-						 "To: $addr\n".
-						 "Subject: $subject\n".
-						 "From: $Buildd::gecos ".
-						 "<$Buildd::username\@$Buildd::hostname>\n".
-						 ($add_headers ? $add_headers : "").
-						 "\n$text\n" );
+			 "To: $addr\n".
+			 "Subject: $subject\n".
+			 "From: $Buildd::gecos ".
+			 "<$Buildd::username\@$Buildd::hostname>\n".
+			 ($add_headers ? $add_headers : "").
+			 "\n$text\n" );
 }
 
 sub ll_send_mail {
@@ -189,8 +199,8 @@ sub ll_send_mail {
 
 	$text =~ s/^\.$/../mg;
 	local $SIG{'PIPE'} = 'IGNORE';
-	if (!open( MAIL, "|/usr/lib/sendmail -oem '$to'" )) {
-		logger( "Could not open pipe to /usr/lib/sendmail: $!\n" );
+	if (!open( MAIL, "|/usr/sbin/sendmail -oem '$to'" )) {
+		logger( "Could not open pipe to /usr/sbin/sendmail: $!\n" );
 		return 0;
 	}
 	print MAIL $text;
@@ -210,6 +220,29 @@ sub exitstatus {
 	my $stat = shift;
 
 	return ($stat >> 8) . "/" . ($stat % 256);
+}
+
+sub binNMU_version {
+	my $v = shift;
+	my $binNMUver = shift;
+
+	if ($v =~ /^(.*)-([^-]+)$/) {
+		my ($upstream, $debian) = ($1, $2);
+		my @parts = split( /\./, $debian );
+		if (@parts == 1) {
+			return "$upstream-$debian.0.$binNMUver";
+		}
+		elsif (@parts == 2) {
+			return "$upstream-$debian.$binNMUver";
+		}
+		else {
+			$parts[$#parts]+=$binNMUver;
+			return "$upstream-".join( ".", @parts );
+		}
+	}
+	else {
+		return "$v.0.$binNMUver";
+	}
 }
 
 1;

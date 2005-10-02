@@ -2,6 +2,7 @@
 #
 # buildd: daemon to automatically build packages
 # Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright (C) 2005 Ryan Murray <rmurray@debian.org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -15,7 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # $Id$
 #
@@ -92,7 +93,7 @@ if (open( PID, "<buildd.pid" )) {
 }
 
 defined(my $pid = fork) or die "can't fork: $!\n";
-exit if $pid; # father exits
+exit if $pid; # parent exits
 setsid or die "can't start a new session: $!\n";
 
 open( PID, ">buildd.pid" )
@@ -132,14 +133,15 @@ MAINLOOP: while( 1 ) {
 
 	my $done = 0;
 	my $thisdone;
+	my %binNMUlog;
 	do {
 		$thisdone = 0;
 		foreach $dist (@conf::take_from_dists) {
 			check_restart();
 			check_reread_config();
-			my @redo = get_from_REDO( $dist );
+			my @redo = get_from_REDO( $dist, \%binNMUlog );
 			next if !@redo;
-			do_build( $dist, @redo );
+			do_build( $dist, \%binNMUlog, @redo );
 			++$done;
 			++$thisdone;
 		}
@@ -155,7 +157,8 @@ MAINLOOP: while( 1 ) {
 			logger( "Can't spawn wanna-build --list=needs-build: $!\n" );
 			next MAINLOOP;
 		}
-		my(@todo, $total, $nonex, @lowprio_todo);
+		my(@todo, $total, $nonex, @lowprio_todo, $max_build);
+		$max_build = $conf::max_build;
 		while( <PIPE> ) {
 			if ($conf::sshsocket and /^Couldn't connect to $conf::sshsocket: Connection refused[\r]?$/) {
 				unlink( $conf::sshsocket );
@@ -169,8 +172,9 @@ MAINLOOP: while( 1 ) {
 				$nonex = 1;
 			}
 			next if $nonex;
-			next if @todo >= $conf::max_build;
-			my $pv = (split( /\s+/, $_ ))[0];
+			next if @todo >= $max_build;
+			my @line = (split( /\s+/, $_));
+			my $pv = $line[0];
 			next if $conf::no_build_regex && $pv =~ m,$conf::no_build_regex,;
 			next if $conf::build_regex && $pv !~ m,$conf::build_regex,;
 			$pv =~ s,^.*/,,;
@@ -181,6 +185,10 @@ MAINLOOP: while( 1 ) {
 			if (isin( $p, @conf::weak_no_auto_build )) {
 				push( @lowprio_todo, $pv );
 				next;
+			}
+			if ($line[1] =~ /:binNMU/) {
+				$max_build = 1;
+				@todo = ();
 			}
 			push( @todo, $pv );
 		}
@@ -205,9 +213,9 @@ MAINLOOP: while( 1 ) {
 		}
 
 		next if !@todo;
-		@todo = do_wanna_build( $dist, @todo );
+		@todo = do_wanna_build( $dist, \%binNMUlog, @todo );
 		next if !@todo;
-		do_build( $dist, @todo );
+		do_build( $dist, \%binNMUlog, @todo );
 		++$done;
 		last;
 	}
@@ -224,6 +232,7 @@ MAINLOOP: while( 1 ) {
 
 sub get_from_REDO {
 	my $wanted_dist = shift;
+	my $binNMUlog = shift;
 	my @redo = ();
 	local( *F );
 
@@ -242,14 +251,25 @@ sub get_from_REDO {
 				"Raw contents:\n@lines\n" );
 		goto end;
 	}
+	my $max_build = $conf::max_build;
 	foreach (@lines) {
-		if (!/^(\S+)\s+(\S+)\s*$/) {
+		if (!/^(\S+)\s+(\S+)(?:\s*|\s+(\d+)\s+(\S.*))?$/) {
 			logger( "Ignoring/deleting bad line in REDO: $_" );
 			next;
 		}
-		my($pkg, $dist) = ($1, $2);
-		if ($dist eq $wanted_dist && @redo < $conf::max_build) {
-			push( @redo, $pkg );
+		my($pkg, $dist, $binNMUver, $changelog) = ($1, $2, $3, $4);
+		if ($dist eq $wanted_dist && @redo < $max_build) {
+			if (defined $binNMUver) {
+				if (scalar(@redo) == 0) {
+					$binNMUlog->{$pkg} = $changelog;
+					push( @redo, "!$binNMUver!$pkg" );
+				} else {
+					print F $_;
+				}
+				$max_build = scalar(@redo);
+			} else {
+				push( @redo, $pkg );
+			}
 		}
 		else {
 			print F $_;
@@ -297,6 +317,7 @@ sub read_givenback {
 
 sub do_wanna_build {
 	my $dist = shift;
+	my $binNMUlog = shift;
 	my @output = ();
 	my $n = 0;
 	local( *PIPE );
@@ -333,6 +354,21 @@ sub do_wanna_build {
 					last if /^\Q$pkg\E:\s*ok/;
 				}
 			}
+			elsif (/^(\S+):.*needs binary NMU (\d+)/) {
+				my $pkg = $1;
+				my $binNMUver = $2;
+				chop (my $changelog = <PIPE>);
+				my $newpkg;
+				++$n;
+
+				push( @output, grep( /^\Q$pkg\E_/, @_ ) );
+				$binNMUlog->{$output[$#output]} = $changelog;
+				$output[$#output] = "!$binNMUver!" . $output[$#output];
+				# skip until ok line
+				while( <PIPE> ) {
+					last if /^\Q$pkg\E:\s*aok/;
+				}
+			}
 		}
 		close( PIPE );
 		unblock_signals();
@@ -348,6 +384,7 @@ sub do_wanna_build {
 
 sub do_build {
 	my $dist = shift;
+	my $binNMUlog = shift;
 	return if !@_;
 	my $free_space;
 	my $chroot_apt_options;
@@ -423,27 +460,50 @@ sub do_build {
 	
 	logger( "Starting build (dist=$dist) of:\n@_\n" );
 	write_stats( "builds", scalar(@_) );
-	my $build_start_time = time;
+	my $binNMUver;
 
-	my $sbuild_args = "--batch --auto-give-back";
+	my @sbuild_args = ( 'nice', '-n', "$conf::nice_level", 'sbuild',
+			    '--batch', "--stats-dir=$main::HOME/stats",
+			    "--dist=$dist" );
+	my $sbuild_gb = '--auto-give-back';
 	if ($conf::sshcmd) {
-		$sbuild_args .= "=";
-		$sbuild_args .= "$conf::sshsocket\@" if $conf::sshsocket;
-		$sbuild_args .= "$conf::wanna_build_user\@" if $conf::wanna_build_user;
-		$sbuild_args .= "$main::sshuser\@" if $main::sshuser;
-		$sbuild_args .= "$main::sshhost";
+		$sbuild_gb .= "=";
+		$sbuild_gb .= "$conf::sshsocket\@" if $conf::sshsocket;
+		$sbuild_gb .= "$conf::wanna_build_user\@" if $conf::wanna_build_user;
+		$sbuild_gb .= "$main::sshuser\@" if $main::sshuser;
+		$sbuild_gb .= "$main::sshhost";
 	}
-	$sbuild_args .= " --stats-dir=$main::HOME/stats";
-	$sbuild_args .= " --database=$conf::wanna_build_dbbase" if $conf::wanna_build_dbbase;
-	($main::sbuild_pid = fork)
-		or exec "nice -n $conf::nice_level sbuild $sbuild_args --dist=$dist @_";
+	push ( @sbuild_args, $sbuild_gb );
+	push ( @sbuild_args, "--database=$conf::wanna_build_dbbase" )
+		if $conf::wanna_build_dbbase;
+
+	if (scalar(@_) == 1 and $_[0] =~ s/^!(\d+)!//) {
+		$binNMUver = $1;
+
+		push ( @sbuild_args, "--binNMU=$binNMUver", "--make-binNMU=" . $binNMUlog->{$_[0]});
+	}
+
+	if (($main::sbuild_pid = fork) == 0) {
+		{ exec (@sbuild_args, @_) };
+		logger( "Cannot execute sbuild: $!\n" );
+		exit(64);
+	}
+
 	if (!defined $main::sbuild_pid) {
 		logger( "Cannot fork for sbuild: $!\n" );
 		goto failed;
 	}
-	do {} until wait == $main::sbuild_pid;
+	my $rc;
+	while (($rc = wait) != $main::sbuild_pid) {
+		if ($rc == -1) {
+			last if $! == ECHILD;
+			next if $! == EINTR;
+			logger( "wait for sbuild: $!; continuing to wait\n" );
+		} elsif ($rc != $main::sbuild_pid) {
+			logger( "wait for sbuild: returned unexpected pid $rc\n" );
+		}
+	}
 	undef $main::sbuild_pid;
-	my $build_end_time = time;
 
 	if ($?) {
 		logger( "sbuild failed with status ".exitstatus($?)."\n" );
@@ -466,15 +526,22 @@ sub do_build {
 				push( @unfinished, $_ ) if !isin( $_, @finished );
 			}
 			logger( "Adding rest to REDO:\n@unfinished\n" );
-			append_to_REDO( $dist, @unfinished );
+			append_to_REDO( $dist, '', @unfinished );
 			write_stats( "builds", -scalar(@unfinished) );
 		}
 		else {
-			logger( "Assuming all packages unbuilt and adding to REDO:\n@_\n" );
-			append_to_REDO( $dist, @_ );
+			if (defined $binNMUver) {
+				logger( "Assuming binNMU failed and adding to REDO:\n@_\n" );
+				append_to_REDO( $dist, "$binNMUver $binNMUlog->{$_[0]}", @_ ); 
+			} else {
+				logger( "Assuming all packages unbuilt and adding to REDO:\n@_\n" );
+				append_to_REDO( $dist, '', @_ );
+			}
 			write_stats( "builds", -scalar(@_) );
 		}
 		
+		delete $binNMUlog->{$_[0]} if defined $binNMUver;
+
 		if (++$main::sbuild_fails > 2) {
 			logger( "sbuild now failed $main::sbuild_fails times in ".
 					"a row; going to sleep\n" );
@@ -502,7 +569,6 @@ EOF
 		$main::sbuild_fails = 0;
 	}
 	unlink "SBUILD-REDO-DUMPED" if -f "SBUILD-REDO-DUMPED";
-	write_stats( "build-time", $build_end_time - $build_start_time );
 	logger( "Build finished.\n" );
 }
 
@@ -641,6 +707,7 @@ sub df {
 
 sub append_to_REDO {
 	my $dist = shift;
+	my $postfix = shift;
 	my @npkgs = @_;
 	my @pkgs = ();
 	my $pkg;
@@ -657,7 +724,7 @@ sub append_to_REDO {
 	if (open( F, ">>REDO" )) {
 		foreach $pkg (@npkgs) {
 			next if grep( /^\Q$pkg\E\s/, @pkgs );
-			print F "$pkg $dist\n";
+			print F "$pkg ${dist}$postfix\n";
 		}
 		close( F );
 	}

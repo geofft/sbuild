@@ -19,7 +19,7 @@ if [ "$n" -ge 2 ]; then
 fi
 pgid=`awk '{print $3}' <$tmpfile`
 echo "Killing pgid $pgid"
-/bin/kill -15 -$pgid
+sudo perl -e "kill -15, $pgid"
 rm -f $tmpfile
 exit 0
 

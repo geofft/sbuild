@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # $Id$
 #
@@ -331,9 +331,10 @@ sub make_statistics {
 	my $start_time = shift;
 	my $end_time = shift;
 	my @svars = qw(taken builds uploads	failed dep-wait no-build give-back
-				   idle-time build-time);
+				   idle-time build-time remove-time install-download-time);
 	my ($s_taken, $s_builds, $s_uploads, $s_failed, $s_dep_wait, $s_no_build,
-		$s_give_back, $s_idle_time, $s_build_time);
+		$s_give_back, $s_idle_time, $s_build_time, $s_remove_time,
+		$s_install_download_time);
 	local( *F, *G, *OUT );
 	
 	my $var;
@@ -390,6 +391,10 @@ sub make_statistics {
 	print  OUT "----------------------------------\n";
 	printf OUT "building: %s  %7.2f%%\n",
 			   print_time($s_build_time), $s_build_time*100/$total_time;
+	printf OUT "install : %s  %7.2f%%\n",
+			   print_time($s_install_download_time), $s_install_download_time*100/$total_time;
+	printf OUT "removing: %s  %7.2f%%\n",
+			   print_time($s_remove_time), $s_remove_time*100/$total_time;
 	printf OUT "idle    : %s  %7.2f%%\n",
 			   print_time($s_idle_time), $s_idle_time*100/$total_time;
 	printf OUT "total   : %s\n", print_time($total_time);

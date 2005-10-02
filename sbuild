@@ -2,6 +2,7 @@
 #
 # sbuild: build packages, obeying source dependencies
 # Copyright (C) 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright (C) 2005 Ryan Murray <rmurray@debian.org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -274,10 +275,9 @@ foreach $pkgv (@ARGV) {
 	$pkgv =~ s/\.dsc$//;
 	next if !open_pkg_log( $pkgv );
 	(my $pkg = $pkgv) =~ s/_.*$//;
-	$main::pkg_start_time = time;
 	$main::this_space = 0;
 	$main::pkg_status = "failed"; # assume for now
-	$main::current_job = $main::binNMU_name || $pkgv;
+	$main::current_job = $pkgv;
 	$main::additional_deps = [];
 	write_jobs_file( "currently building" );
 	if (should_skip( $pkgv )) {
@@ -302,7 +302,7 @@ foreach $pkgv (@ARGV) {
 	$main::pkg_status = "successful" if build( $dscbase, $pkgv );
 	chdir( $main::cwd );
 	write_jobs_file( $main::pkg_status );
-	append_to_FINISHED( $main::current_job );
+	append_to_FINISHED( $pkgv );
 
   cleanup_packages:
 	undo_specials();
@@ -603,7 +603,7 @@ sub build {
 		}
 		my $tree_version = $1;
 		my $cmp_version = ($main::binNMU && -f "$dir/debian/.sbuild-binNMU-done") ?
-			binNMU_version($version) : $version;
+			WannaBuild::binNMU_version($version,$main::binNMUver) : $version;
 		if ($tree_version ne $cmp_version) {
 			print PLOG "The unpacked source tree $dir is version ".
 					   "$tree_version, not wanted $cmp_version!\n";
@@ -642,7 +642,7 @@ sub build {
 			close( F );
 			$firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 			my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-			my $NMUversion = binNMU_version($version);
+			my $NMUversion = WannaBuild::binNMU_version($version,$main::binNMUver);
 			chomp( my $date = `822-date` );
 			if (!open( F, ">debian/changelog" )) {
 				print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
@@ -711,7 +711,8 @@ EOF
 		return 0;
 	}
 	if ($main::sub_pid == 0) {
-		setpgrp( 0, $$ );
+		open( STDIN, "</dev/null" );
+		setsid;
 		my $binopt = $main::build_source ? "" :
 					 $main::build_arch_all ? "-b" : "-B";
 		if ($main::chroot_dir) {
@@ -777,7 +778,8 @@ EOF
 				   " minutes of inactivity\n";
 	}
 	$main::pkg_end_time = time;
-	my $date = strftime("%Y%m%d-%H%M\n",localtime);
+	write_stats('build-time',$main::pkg_end_time-$main::build_start_time);
+	my $date = strftime("%Y%m%d-%H%M\n",localtime($main::pkg_end_time));
 	print PLOG "*"x78, "\n";
 	print PLOG "Build finished at $date";
 	chdir( $main::cwd );
@@ -822,6 +824,10 @@ EOF
 			}
 			if ($main::chroot_build_dir) {
 				foreach (@files) {
+					if (! -f $_) {
+						print PLOG "ERROR: Package claims to have built $_, but did not.  This is a bug in the packaging.\n";
+						next;
+					}
 					system "mv", $_, "."
 						and print PLOG "ERROR: Could not move $_ to .\n";
 				}
@@ -829,7 +835,7 @@ EOF
 		}
 
 		$changes = "${pkg}_".
-			($main::binNMU ? binNMU_version($sversion) : $sversion).
+			($main::binNMU ? WannaBuild::binNMU_version($sversion,$main::binNMUver) : $sversion).
 			"_$main::arch.changes";
 		if (-r "$main::chroot_build_dir$changes") {
 			my(@do_dists, @saved_dists);
@@ -963,14 +969,7 @@ sub analyze_fail_stage {
 		}
 		else {
 			add_givenback( $pkgv, time );
-			if ($main::stats_dir) {
-				local( *F );
-				lock_file( "$main::stats_dir" );
-				open( F, ">>$main::stats_dir/give-back" );
-				print F "1\n";
-				close( F );
-				unlock_file( "$main::stats_dir" );
-			}
+			write_stats('give-back',1);
 		}
 	}
 }
@@ -1037,6 +1036,7 @@ sub install_deps {
 		}
 	}
 
+	my $install_start_time = time;
 	print "Installing positive dependencies: @positive\n" if $main::debug;
 	if (!run_apt( "-y", \@instd, \@rmvd, @positive )) {
 		print PLOG "Package installation failed\n";
@@ -1064,6 +1064,9 @@ sub install_deps {
 		return 0;
 	}
 	set_removed( @negative );
+	my $install_stop_time = time;
+	write_stats( 'install-download-time',
+		$install_stop_time - $install_start_time );
 	
 	my $fail = check_dependencies( $dep );
 	if ($fail) {
@@ -1256,6 +1259,8 @@ sub uninstall_debs {
 	print PLOG "  $conf::sudo dpkg $chroot_opt --$mode @_\n";
   repeat:
 	my $output;
+	my $remove_start_time = time;
+
 	if (!open( PIPE, "cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null |")) {
 		print PLOG "Can't open pipe to dpkg: $!\n";
 		return 0;
@@ -1272,6 +1277,8 @@ sub uninstall_debs {
 		sleep( 2*60 );
 		goto repeat;
 	}
+	my $remove_end_time = time;
+	write_stats( "remove-time", $remove_end_time - $remove_start_time );
 	print PLOG "dpkg run to remove packages (@_) failed!\n" if $?;
 	return $? == 0;
 }
@@ -1396,6 +1403,12 @@ sub run_apt {
 	if ($status != 0 && $mode ne "-s" &&
 		(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
 		print PLOG "Unable to fetch build-depends\n";
+		$main::pkg_fail_stage = "install-deps-env";
+	}
+	
+	if ($status != 0 && $mode ne "-s" &&
+		(($msgs =~ /^W: Couldn't stat source package list /mi))) {
+		print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
 		$main::pkg_fail_stage = "install-deps-env";
 	}
 	
@@ -2348,7 +2361,7 @@ sub open_pkg_log {
 		$pkg = basename( $pkg );
 		if ($main::binNMU) {
 			$pkg =~ /^([^_]+)_([^_]+)(.*)$/;
-			$pkg = $1."_".binNMU_version($2);
+			$pkg = $1."_".WannaBuild::binNMU_version($2,$main::binNMUver);
 			$main::binNMU_name = $pkg;
 			$pkg .= $3;
 		}
@@ -2404,6 +2417,7 @@ sub close_pkg_log {
 			   "Log for $main::pkg_status build of ".
 			   ($main::binNMU_name || $pkg)." (dist=$main::distribution)",
 			   $main::pkg_logfile ) if !$main::nolog && $conf::mailto;
+	undef $main::binNMU_name;
 }
 
 sub add_time_entry {
@@ -2500,8 +2514,15 @@ sub write_jobs_file {
 	
 	return if !open( F, ">$main::jobs_file" );
 	foreach $job (@ARGV) {
+		my $jobname;
+
+		if ($job eq $main::current_job and $main::binNMU_name) {
+			$jobname = $main::binNMU_name;
+		} else {
+			$jobname = $job;
+		}
 		print F ($job eq $main::current_job) ? "" : "  ",
-				$job,
+				$jobname,
 				($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
 				"\n";
 	}
@@ -2925,28 +2946,6 @@ sub check_dpkg_version {
 		if 0 == system "$conf::dpkg --compare-versions '$version' ge 1.4.1.18";
 }
 
-sub binNMU_version {
-	my $v = shift;
-
-	if ($v =~ /^(.*)-([^-]+)$/) {
-		my ($upstream, $debian) = ($1, $2);
-		my @parts = split( /\./, $debian );
-		if (@parts == 1) {
-			return "$upstream-$debian.0.$main::binNMUver";
-		}
-		elsif (@parts == 2) {
-			return "$upstream-$debian.$main::binNMUver";
-		}
-		else {
-			$parts[$#parts]+=$main::binNMUver;
-			return "$upstream-".join( ".", @parts );
-		}
-	}
-	else {
-		return "$v.0.$main::binNMUver";
-	}
-}
-
 sub shutdown {
 	my $signame = shift;
 	my($job,@npkgs,@pkgs);
@@ -2984,7 +2983,11 @@ sub shutdown {
 	if (open( F, ">>$f" )) {
 		foreach $job (@npkgs) {
 			next if grep( /^\Q$job\E\s/, @pkgs );
-			print F "$job $main::distribution\n";
+			if (not defined $main::binNMUver) {
+				print F "$job $main::distribution\n"; 
+			} else {
+				print F "$job $main::distribution $main::binNMUver $main::binNMU\n"; 
+			}
 		}
 		close( F );
 	}
@@ -3018,10 +3021,22 @@ sub shutdown {
 	# close logs and send mails
 	if ( $main::current_job ) {
 		fixup_pkgv( \$main::current_job );
-		close_pkg_log( $main::current_job );
+		close_pkg_log( $main::binNMU_name || $main::current_job );
 	}
 	close_log();
 	unlink( $main::jobs_file ) if $main::batchmode;
 	$? = 0; $! = 0;
 	exit 0;
+}
+
+sub write_stats {
+	return if not defined $main::stats_dir;
+	my ($cat, $val) = @_;
+	local( *F );
+
+	lock_file( "$main::stats_dir" );
+	open( F, ">>$main::stats_dir/$cat" );
+	print F "$val\n";
+	close( F );
+	unlock_file( "$main::stats_dir" );
 }
