@@ -683,7 +683,7 @@ sub add_one_failed {
 			  "$pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
-	elsif ( !pkg_version_eq($version, $pkg->{'Version'})) {
+	elsif ( !pkg_version_eq($pkg, $version) ) {
 		print "$name: version mismatch ".
 			  "$(pkg->{'Version'} ".
 			  "by $pkg->{'Builder'})\n";
@@ -991,7 +991,7 @@ sub add_one_depwait {
 			  "$pkg->{'Builder'}. Skipping.\n";
 		return;
 	}
-	elsif ( !pkg_version_eq($version, $pkg->{'Version'})) {
+	elsif ( !pkg_version_eq($pkg,$version)) {
 		print "$name: version mismatch ".
 			  "($pkg->{'Version'} ".
 			  "by $pkg->{'Builder'})\n";
@@ -1635,6 +1635,7 @@ sub list_packages {
 	my $ctime = time;
 
 	foreach $name (keys %db) {
+		next if $name =~ /^_/;
 		$pkg = $db{$name};
 		next if $state ne "all" && $pkg->{'State'} !~ /^\Q$state\E$/i;
 		next if $user && $pkg->{'Builder'} ne $user;
