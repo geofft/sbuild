@@ -160,7 +160,8 @@ MAINLOOP: while( 1 ) {
 		my(@todo, $total, $nonex, @lowprio_todo, $max_build);
 		$max_build = $conf::max_build;
 		while( <PIPE> ) {
-			if ($conf::sshsocket and /^Couldn't connect to $conf::sshsocket: Connection refused[\r]?$/) {
+			if ($conf::sshsocket and (/^Couldn't connect to $conf::sshsocket: Connection refused[\r]?$/ or
+			    /^Control socket connect\($conf::sshsocket\): Connection refused[\r]?$/)) {
 				unlink( $conf::sshsocket );
 				check_ssh_master();
 			}
