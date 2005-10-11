@@ -30,7 +30,7 @@ $web_stats = "/var/www/buildd/stats.txt";
 # sections to import and maintain in the database
 # the full list would be:
 # @sections = qw(main contrib non-free non-US non-US/main non-US/contrib non-US/non-free);
-@sections = qw(main non-US/main);
+@sections = qw(main contrib non-US/main non-US/contrib);
 
 # source for Packages files (for do-merge-packages)
 # can be an ftp or http URL, or a local path
@@ -47,6 +47,8 @@ $quinn_source = "http://ftp.uni-erlangen.de/pub/Linux/LOCAL/Debian-support/quinn
 #   $quinn_source_has_section == 1 : ARCH/SECTION/DIST
 # ftp.uni-erlangen.de is multi-section, buildd.debian.org not (yet)
 $quinn_source_multi_section = 1;
+
+#@admin_users = qw(buildd);
 
 # don't remove this, Perl needs it:
 1;

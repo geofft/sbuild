@@ -346,18 +346,30 @@ sub process {
 			last SWITCH;
 		};
 		/^merge-partial-quinn/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			parse_quinn_diff(1);
 			last SWITCH;
 		};
 		/^merge-quinn/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			parse_quinn_diff(0);
 			last SWITCH;
 		};
 		/^merge-packages/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			parse_packages();
 			last SWITCH;
 		};
 		/^merge-sources/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			parse_sources(0);
 			last SWITCH;
 		};
@@ -366,6 +378,9 @@ sub process {
 			last SWITCH;
 		};
 		/^merge-all/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			my @ARGS = @ARGV;
 			@ARGV = ( $ARGS[0] );
 			my $pkgs = parse_packages();
@@ -378,6 +393,9 @@ sub process {
 			last SWITCH;
 		};
 		/^import/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			%db = (); # clear all current contents
 			read_db( $import_from );
 			last SWITCH;
@@ -387,6 +405,9 @@ sub process {
 			last SWITCH;
 		};
 		/^manual-edit/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			my $tmpfile_pattern = "/tmp/wanna-build-$distribution.$$-";
 			my ($tmpfile, $i);
 			for( $i = 0;; ++$i ) {
@@ -403,6 +424,9 @@ sub process {
 			last SWITCH;
 		};
 		/^clean-db/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
 			clean_db();
 			last SWITCH;
 		};
@@ -893,6 +917,13 @@ sub set_one_binnmu {
 		return;
 	}
 
+	my $fullver = binNMU_version($version,$binNMUver);
+	if ( version_lesseq( $fullver, $pkg->{'Installed-Version'} ) )
+	{
+		print "$name: binNMU $fullver is not newer than current version $pkg->{'Installed-Version'}\n";
+		return;
+	}
+
 	change_state( \$pkg, 'Needs-Build' );
 	delete $pkg->{'Builder'};
 	delete $pkg->{'Depends'};
@@ -900,7 +931,7 @@ sub set_one_binnmu {
 	$pkg->{'Binary-NMU-Changelog'} = $fail_reason;
 	log_ta( $pkg, "--binNMU" );
 	$db{$name} = $pkg;
-	print "${name}_: registered for binNMU $binNMUver\n" if $verbose;
+	print "${name}: registered for binNMU $fullver\n" if $verbose;
 }
 
 sub set_one_buildpri {
