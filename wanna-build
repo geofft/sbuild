@@ -243,7 +243,7 @@ $transactlog = "$conf::basedir/$1$conf::transactlog";
 if ($verbose) {
 	my $version = '$Revision$ $Date$ $Author$';
 	$version =~ s/\$ ?//g;
-	print "wanna-build $version\n";
+	print "wanna-build $version on $conf::db_base\n";
 }
 
 if (!@ARGV && !isin( $op_mode, qw(list merge-quinn merge-partial-quinn import export
@@ -899,7 +899,7 @@ sub set_one_binnmu {
 			delete $pkg->{'Binary-NMU-Version'};
 			delete $pkg->{'Binary-NMU-Changelog'};
 		} elsif ($binNMUver <= $pkg->{'Binary-NMU-Version'}) {
-			print "$name: already building binNMU $pkg->{'BinNMU-Version'}";
+			print "$name: already building binNMU $pkg->{'Binary-NMU-Version'}\n";
 			return;
 		} else {
 			$pkg->{'Binary-NMU-Version'} = $binNMUver;
