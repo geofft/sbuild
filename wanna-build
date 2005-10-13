@@ -243,7 +243,7 @@ $transactlog = "$conf::basedir/$1$conf::transactlog";
 if ($verbose) {
 	my $version = '$Revision$ $Date$ $Author$';
 	$version =~ s/\$ ?//g;
-	print "wanna-build $version on $conf::db_base\n";
+	print "wanna-build $version on $conf::dbbase\n";
 }
 
 if (!@ARGV && !isin( $op_mode, qw(list merge-quinn merge-partial-quinn import export
