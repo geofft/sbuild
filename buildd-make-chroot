@@ -15,7 +15,11 @@ fi
 
 USER=$1
 SUITE=$2
-TARGET=$3
+if echo "$3" | grep -Eq '^/'; then
+	TARGET="$3"
+else
+	TARGET="`pwd`/$3"
+fi
 debootstrap --variant=buildd --include=sudo,fakeroot,build-essential $SUITE $TARGET $4
 hostname=`hostname`
 echo 127.0.0.1 $hostname localhost > $TARGET/etc/hosts
