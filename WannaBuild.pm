@@ -25,11 +25,12 @@ use strict;
 use IO;
 use POSIX;
 use FileHandle;
+use Time::Local;
 
 require Exporter;
 @WannaBuild::ISA = qw(Exporter);
 @WannaBuild::EXPORT = qw(version_less version_lesseq version_eq
-			version_compare binNMU_version);
+			version_compare binNMU_version parse_date);
 
 my $opt_correct_version_cmp;
 
@@ -164,23 +165,24 @@ sub binNMU_version {
 	my $v = shift;
 	my $binNMUver = shift;
 
-	if ($v =~ /^(.*)-([^-]+)$/) {
-		my ($upstream, $debian) = ($1, $2);
-		my @parts = split( /\./, $debian );
-		if (@parts == 1) {
-			return "$upstream-$debian.0.$binNMUver";
-		}
-		elsif (@parts == 2) {
-			return "$upstream-$debian.$binNMUver";
-		}
-		else {
-			$parts[$#parts]+=$binNMUver;
-			return "$upstream-".join( ".", @parts );
-		}
-	}
-	else {
-		return "$v.0.$binNMUver";
-	}
+	return "$v+b$binNMUver";
+}
+
+
+my %monname = ('jan', 0, 'feb', 1, 'mar', 2, 'apr', 3, 'may', 4, 'jun', 5,
+		'jul', 6, 'aug', 7, 'sep', 8, 'oct', 9, 'nov', 10, 'dec', 11 );
+
+sub parse_date {
+	my $text = shift;
+
+	return 0 if !$text;
+	die "Cannot parse date: $text\n"
+		if $text !~ /^(\d{4}) (\w{3}) (\d+) (\d{2}):(\d{2}):(\d{2})$/;
+	my ($year, $mon, $day, $hour, $min, $sec) = ($1, $2, $3, $4, $5, $6);
+	$mon =~ y/A-Z/a-z/;
+	die "Invalid month name $mon" if !exists $monname{$mon};
+	$mon = $monname{$mon};
+	return timelocal($sec, $min, $hour, $day, $mon, $year);
 }
 
 1;
