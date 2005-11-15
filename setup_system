@@ -3,10 +3,13 @@
 # ons of these, depending on whether you have a buildd group or not
 #sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --ingroup buildd --disabled-password buildd
 sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --group --disabled-password buildd
-sudo chown buildd:buildd /etc/source-dependencies-*
 sudo mkdir -p /var/debbuild/srcdep-lock
 sudo chown -R buildd:buildd /var/debbuild
 sudo chmod -R 2775 /var/debbuild
+sudo ln -s source-dependencies-stable /etc/source-dependencies-stable-security
+sudo ln -s source-dependencies-testing /etc/source-dependencies-stable-testing
+sudo ln -s source-dependencies-stable /etc/source-dependencies-oldstable-security
+sudo chown buildd:buildd /etc/source-dependencies-*
 # parts to be done as buildd.
 cd ~buildd
 zcat /usr/share/doc/buildd/examples/buildd.conf.gz > buildd.conf
@@ -14,7 +17,18 @@ zcat /usr/share/doc/sbuild/examples/sbuildrc.gz > .sbuildrc
 mkdir -p .ssh build logs mqueue old-logs stats/graphs upload upload-security
 chmod o= .ssh upload-security old-logs mqueue logs build
 echo "|/usr/bin/buildd-mail-wrapper" > .forward
-ssh-keygen -t rsa -f .ssh/id_rsa -N ''
+ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N ''
 echo I: setup .forward-porters with where you want buildd mail to go.
-echo I: run buildd-make-chroot buildd sid build/chroot-unstable http://ftp.debian.org/debian
+echo I: chroot creation commands:
+echo buildd-make-chroot buildd sid build/chroot-unstable http://ftp.debian.org/debian
+echo buildd-make-chroot buildd sarge build/chroot-sarge http://ftp.debian.org/debian
+echo buildd-make-chroot buildd woody build/chroot-woody http://ftp.debian.org/debian
+echo buildd-make-chroot buildd etch build/chroot-etch http://ftp.debian.org/debian
+echo I: Link commands for the chroots:
+echo ln -s chroot-woody chroot-oldstable-security
+echo ln -s chroot-sarge chroot-stable
+echo ln -s chroot-sarge chroot-stable-security
+echo ln -s chroot-etch chroot-testing
+echo ln -s chroot-etch chroot-testing-security
 echo I: Done.
+exit 0
