@@ -153,7 +153,8 @@ MAINLOOP: while( 1 ) {
 		my %givenback = read_givenback();
 		if (!open( PIPE, "$conf::sshcmd wanna-build --list=needs-build --dist=$dist ".
 			($conf::wanna_build_dbbase ?
-			 "--database=$conf::wanna_build_dbbase ":"")."2>&1 |" )) {
+			 "--database=$conf::wanna_build_dbbase ":"").
+			 ($conf::wanna_build_user?"--user=$conf::wanna_build_user " : "")."2>&1 |" )) {
 			logger( "Can't spawn wanna-build --list=needs-build: $!\n" );
 			next MAINLOOP;
 		}

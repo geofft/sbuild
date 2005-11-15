@@ -242,6 +242,8 @@ if ($subject =~ /^Re: Log for \S+ build of (\S+) \(dist=(\S+)\)/i) {
 		purge_pkg( $package, $dist );
 	}
 	elsif ($keyword =~ /^(give|back)/) {
+		$body_text =~ /^(give|back) ([-0-9]+)/;
+		my $pri = $1;
 		if (!check_state( $package, $dist, "Building" )) {
 			# $error already set
 		}

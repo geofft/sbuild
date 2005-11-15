@@ -40,7 +40,6 @@ no strict 'refs';
 use IO;
 use POSIX;
 use FileHandle;
-use Time::Local;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use WannaBuild;
@@ -51,7 +50,7 @@ our ($verbose, $mail_logs, $list_order, $list_state, @distributions,
     $transactlog, %db, %otherdb, %otherdb_lock, %prioval, %sectval,
     $info_all_dists, $hostname, $arch, $opt_no_propagation,
     $opt_no_down_propagation, $category, %catval, %short_category,
-    $short_date, $list_min_age, %monname, $dbbase, $host_set,
+    $short_date, $list_min_age, $dbbase, $host_set,
     $build_priority, %new_vers, $binNMUver, %merge_srcvers);
 
 # global vars
@@ -112,6 +111,7 @@ my %options =
 	 "give-back"	=> { mode => "set-needs-build" },
 	 "dep-wait"		=> { mode => "set-dep-wait" },
 	 forget			=> { mode => "forget" },
+	 'forget-user' => { mode => 'forget-user' },
 	 "merge-quinn"  => { mode => "merge-quinn" },
 	 "merge-partial-quinn" => { mode => "merge-partial-quinn" },
 	 "merge-packages" => { mode => "merge-packages" },
@@ -341,6 +341,13 @@ sub process {
 			info_packages( @ARGV );
 			last SWITCH;
 		};
+		/^forget-user/ && do {
+			die "This operation is restricted to admin users\n"
+				if (defined @conf::admin_users and
+				    !isin( $real_user, @conf::admin_users));
+			forget_users( @ARGV );
+			last SWITCH;
+		};
 		/^forget/ && do {
 			forget_packages( @ARGV );
 			last SWITCH;
@@ -432,6 +439,13 @@ sub process {
 		};
 
 		die "Unexpected operation mode $op_mode\n";
+	}
+	if (not -t and $user =~ /-/) {
+		my $userinfo = $db{'_userinfo'};
+		my $ui = $userinfo->{$user};
+
+		$userinfo->{$user}->{'Last-Seen'} = $curr_date;
+		$db{'_userinfo'} = $userinfo;
 	}
 }
 
@@ -852,7 +866,7 @@ sub add_one_needsbuild {
 			return;
 		}
 	}
-	if ($user ne $pkg->{'Builder'} &&
+	if (defined ($pkg->{'Builder'}) && $user ne $pkg->{'Builder'} &&
 		    !($pkg->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $user)) {
 		print "$name: not taken by you, but by ".
 			  "$pkg->{'Builder'}. Skipping.\n";
@@ -1116,6 +1130,7 @@ sub parse_sources {
 	# remove installed packages that no longer have source available
 	# or binaries installed
 	foreach $name (keys %db) {
+		next if $name =~ /^_/;
 		my $pkg = $db{$name};
 		next if !isin( $pkg->{'State'}, qw(Installed) );
 		if (not defined($pkgs{$name})) {
@@ -1259,6 +1274,7 @@ sub check_dep_wait {
 	# available now
 	my $name;
 	foreach $name (keys %db) {
+		next if $name =~ /^_/;
 		my $pkg = $db{$name};
 		next if $pkg->{'State'} ne "Dep-Wait";
 		my $deps = $pkg->{'Depends'};
@@ -1493,6 +1509,7 @@ sub parse_quinn_diff {
 	if ( !$partial ) {
 		my $name;
 		foreach $name (keys %db) {
+			next if $name =~ /^_/;
 			my $pkg = $db{$name};
 			next if defined $pkg->{'Binary-NMU-Version'};
 			next if !isin( $pkg->{'State'},
@@ -1669,7 +1686,9 @@ sub list_packages {
 		next if $name =~ /^_/;
 		$pkg = $db{$name};
 		next if $state ne "all" && $pkg->{'State'} !~ /^\Q$state\E$/i;
-		next if $user && $pkg->{'Builder'} ne $user;
+		next if $user && ((lc($state) eq 'needs-build' and
+				  ((exists($pkg->{'Builder'})) && ($pkg->{'Builder'} ne $user))) ||
+				  (lc($state) ne 'needs-build' and $pkg->{'Builder'} ne $user));
 		next if $category && $pkg->{'State'} eq "Failed" &&
 				$pkg->{'Failed-Category'} ne $category;
 		next if ($list_min_age > 0 &&
@@ -1690,7 +1709,7 @@ sub list_packages {
 			if $pkg->{'Previous-State'} =~ /^Failed/;
 		print ":bp{" . $pkg->{'BuildPri'} . "}"
 			if exists $pkg->{'BuildPri'};
-		print ":binNMU"
+		print ":binNMU{" . $pkg->{'Binary-NMU-Version'} . "}"
 			if exists $pkg->{'Binary-NMU-Version'};
 		print "]\n";
 		print "  Reasons for failing:\n",
@@ -1717,24 +1736,6 @@ sub list_packages {
 	}
 	print "Total $cnt package(s)\n";
 	
-}
-
-BEGIN {
-	%monname = ('jan', 0, 'feb', 1, 'mar', 2, 'apr', 3, 'may', 4, 'jun', 5,
-				'jul', 6, 'aug', 7, 'sep', 8, 'oct', 9, 'nov', 10, 'dec', 11 );
-}
-
-sub parse_date {
-	my $text = shift;
-
-	return 0 if !$text;
-	die "Cannot parse date: $text\n"
-		if $text !~ /^(\d{4}) (\w{3}) (\d+) (\d{2}):(\d{2}):(\d{2})$/;
-	my ($year, $mon, $day, $hour, $min, $sec) = ($1, $2, $3, $4, $5, $6);
-	$mon =~ y/A-Z/a-z/;
-	die "Invalid month name $mon" if !exists $monname{$mon};
-	$mon = $monname{$mon};
-	return timelocal($sec, $min, $hour, $day, $mon, $year);
 }
 
 sub info_packages {
@@ -1816,6 +1817,23 @@ sub forget_packages {
 	}
 }
 
+sub forget_users {
+	my( $name, $ui );
+	my $change = 0;
+	
+	my $ui = $db{'_userinfo'};
+	foreach $name (@_) {
+		if (!defined( $ui->{$name} )) {
+			print "$name: not registered\n";
+			next;
+		}
+
+		delete $ui->{$name};
+		$change++;
+		print "$name: deleted from database\n" if $verbose;
+	}
+	$db{'_userinfo'} = $ui if $change;
+}
 
 sub lock_db {
 	my $dist = shift;
