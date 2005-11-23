@@ -226,23 +226,7 @@ sub binNMU_version {
 	my $v = shift;
 	my $binNMUver = shift;
 
-	if ($v =~ /^(.*)-([^-]+)$/) {
-		my ($upstream, $debian) = ($1, $2);
-		my @parts = split( /\./, $debian );
-		if (@parts == 1) {
-			return "$upstream-$debian.0.$binNMUver";
-		}
-		elsif (@parts == 2) {
-			return "$upstream-$debian.$binNMUver";
-		}
-		else {
-			$parts[$#parts]+=$binNMUver;
-			return "$upstream-".join( ".", @parts );
-		}
-	}
-	else {
-		return "$v.0.$binNMUver";
-	}
+	return "$v+b$binNMUver";
 }
 
 1;
