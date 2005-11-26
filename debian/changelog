@@ -4,8 +4,11 @@ sbuild (0.37) unstable; urgency=low
     - avg-pkg-build-time, avg-pkg-build-time.1, sbuild, sbuild.1,
       update-sourcedeps, update-sourcedeps.1: Update copyright notices with
       current FSF postal address.
+    - sbuild:
+      + Split changes files sent in the log every 1000 characters,
+        to better conform to mail RFCs.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 20:49:34 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 21:04:31 +0000
 
 sbuild (0.36) unstable; urgency=low
 

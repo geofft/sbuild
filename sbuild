@@ -931,11 +931,17 @@ EOF
 						print F2 "Distribution: $main::distribution\n";
 					}
 					else {
-						print PLOG $_;
-						print F2 $_;
-						if (/^ [a-z0-9]{32}/) {
-							push(@files, (split( /\s+/, $_ ))[5] );
-						}
+					    print F2 $_;
+					    while (length $_ > 1000)
+					    {
+						my $index = rindex($_,' ',1000);
+						print PLOG substr ($_,0,$index) . "\n";
+						$_ = '        ' . substr ($_,$index+1);
+					    }
+					    print PLOG $_;
+					    if (/^ [a-z0-9]{32}/) {
+						push(@files, (split( /\s+/, $_ ))[5] );
+					    }
 					}
 				}
 				close( F2 );
