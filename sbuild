@@ -1147,7 +1147,7 @@ sub install_deps {
 		print "Removed were: @rmvd2\n" if $main::debug;
 		# remove additional packages
 		print PLOG "Trying to uninstall newly installed packages:\n";
-		uninstall_debs( "remove", @instd );
+		uninstall_debs( $main::chroot_dir ? "purge" : "remove", @instd );
 		unlock_file( "$main::ilock_file" );
 		return 0;
 	}
@@ -1155,7 +1155,7 @@ sub install_deps {
 	set_removed( @rmvd );
 	
 	print "Removing negative dependencies: @negative\n" if $main::debug;
-	if (!uninstall_debs( "remove", @negative )) {
+	if (!uninstall_debs( $main::chroot_dir ? "purge" : "remove", @negative )) {
 		print PLOG "Removal of packages failed\n";
 		unlock_file( "$main::ilock_file" );
 		return 0;

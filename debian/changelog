@@ -8,8 +8,9 @@ sbuild (0.37) unstable; urgency=low
       + Split changes files sent in the log every 989 characters, to better
         conform to mail RFCs.
       + Always show versions of installed build dependencies.
+      + Always purge packages when building in a chroot.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 21:17:37 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 21:29:31 +0000
 
 sbuild (0.36) unstable; urgency=low
 
