@@ -7,8 +7,9 @@ sbuild (0.37) unstable; urgency=low
     - sbuild:
       + Split changes files sent in the log every 1000 characters,
         to better conform to mail RFCs.
+      + Always show versions of installed build dependencies.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 21:04:31 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 21:17:37 +0000
 
 sbuild (0.36) unstable; urgency=low
 

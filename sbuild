@@ -1577,10 +1577,10 @@ sub filter_dependencies {
 			if (!$rel || version_cmp( $ivers, $rel, $vers )) {
 				print "$name: pos dep, installed, no versioned dep or ",
 					  "version ok\n" if $main::debug;
-				print PLOG "$name: already installed";
-				print PLOG " (in sufficient version $ivers $rel $vers)"
+				print PLOG "$name: already installed ($ivers";
+				print PLOG " $rel $vers is satisfied"
 					if $rel;
-				print PLOG "\n";
+				print PLOG ")\n";
 				$is_satisfied = 1;
 				last;
 			}
