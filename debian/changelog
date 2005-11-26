@@ -1,3 +1,12 @@
+sbuild (0.37) unstable; urgency=low
+
+  * Sync with upstream SVN:
+    - avg-pkg-build-time, avg-pkg-build-time.1, sbuild, sbuild.1,
+      update-sourcedeps, update-sourcedeps.1: Update copyright notices with
+      current FSF postal address.
+
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 20:49:34 +0000
+
 sbuild (0.36) unstable; urgency=low
 
   Roger Leigh:
