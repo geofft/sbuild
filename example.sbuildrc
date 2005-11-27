@@ -12,7 +12,8 @@
 #$mailto = "roman";
 $mailto = "";
 
-# Name to use as override in .changes files for the Maintainer: field.
+# Name to use as override in .changes files for the Maintainer: field
+# (mandatory, no default!).
 #$maintainer_name="Roman Hodek <Roman.Hodek\@informatik.uni-erlangen.de>";
 
 # Name to use as override in .changes file for the Changed-By: field.
@@ -26,9 +27,6 @@ $mailto = "";
 # "successful", and "always"
 #$purge_build_directory="successful";
 
-# Hack a "frozen" into the Distribution: line if compiling for frozen
-#$hack_changes_for_frozen = 0;
-
 # After that time (in minutes) of inactivity a build is terminated. Activity
 # is measured by output to the log file.
 #$stalled_pkg_timeout = 90;
@@ -40,6 +38,6 @@ $mailto = "";
 #    cint => 300
 #);
 
-# Perl requires this, at the end of the file, please don't remove.
-#1;
+# don't remove this, Perl needs it:
+1;
 

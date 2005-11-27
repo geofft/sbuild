@@ -37,8 +37,11 @@ sbuild (0.37) unstable; urgency=low
       + Remove watches.
       + Update alternatives.
     - avg-pkg-build-space.1: Update text.
+    - example.sbuildrc:
+      + Remove $hack_changes_for_frozen.
+      + Update comments.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 17:59:03 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 18:02:48 +0000
 
 sbuild (0.36) unstable; urgency=low
 
