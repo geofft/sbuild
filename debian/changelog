@@ -31,8 +31,11 @@ sbuild (0.37) unstable; urgency=low
         build an _all.deb, but doesn't.  Instead, warn to the build log.
       + Delete binary-all packages that we didn't ask to be built.
       + By default, set APT::Get::AllowUnauthenticated to "true".
+    - sbuild.conf:
+      + Remove watches.
+      + Update alternatives.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 14:09:40 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 14:17:08 +0000
 
 sbuild (0.36) unstable; urgency=low
 
