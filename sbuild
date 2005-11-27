@@ -49,6 +49,7 @@ $mailfrom = "Source Builder <sbuild>";
 $purge_build_directory = "successful";
 $stalled_pkg_timeout = 90; # minutes
 $srcdep_lock_wait = 1; # minutes
+$chroot_only = 0;
 $chroot_mode = "split";
 %individual_stalled_pkg_timeout = ();
 # read conf files
