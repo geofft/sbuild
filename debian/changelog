@@ -21,8 +21,10 @@ sbuild (0.37) unstable; urgency=low
       + Hardware DEBIAN_FRONTEND to "noninteractive" when installing and
         purging packages.
       + Fix support for '~' in version numbers.
+      + Add Sbuild.pm (upstream WannaBuild.pm), and replace version_cmp()
+        with Sbuild::version_compare().
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 11:53:23 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 12:17:45 +0000
 
 sbuild (0.36) unstable; urgency=low
 

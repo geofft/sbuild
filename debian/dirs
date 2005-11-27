@@ -4,4 +4,5 @@ usr/share/sbuild
 usr/share/doc/sbuild
 usr/share/doc/sbuild/examples
 usr/share/man/man1
+usr/share/perl5
 var/lib/sbuild/srcdep-lock
