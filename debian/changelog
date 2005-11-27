@@ -38,14 +38,14 @@ sbuild (0.37) unstable; urgency=low
       + Update alternatives.
       + Comment out example %individual_stalled_pkg_timeout.
       + Empty @ignore_watches_no_build_deps.
-    - sbuild.conf.local:
-      + Use FHS-compliant pathnames, as in sbuild.conf.
     - avg-pkg-build-space.1: Update text.
     - example.sbuildrc:
       + Remove $hack_changes_for_frozen.
       + Update comments.
+  * sbuild.conf.local:
+    - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 18:21:35 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 18:52:54 +0000
 
 sbuild (0.36) unstable; urgency=low
 
