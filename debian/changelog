@@ -9,9 +9,11 @@ sbuild (0.37) unstable; urgency=low
         conform to mail RFCs.
       + Always show versions of installed build dependencies.
       + Always purge packages when building in a chroot.
-      + Output purged packages line by line, rather than all at once. 
+      + Output purged packages line by line, rather than all at once.
+      + Use strftime() and getpwuid() instead of the external commands
+        date and whoami.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Nov 2005 21:50:54 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 10:53:16 +0000
 
 sbuild (0.36) unstable; urgency=low
 
