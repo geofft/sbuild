@@ -533,7 +533,8 @@ sub fetch_source_files {
 		print PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
 	}
 	else {
-		if ($dscarchs ne "any" && $dscarchs ne "all" && $dscarchs !~ /\b$main::arch\b/) {
+		if ($dscarchs ne "any" && $dscarchs !~ /\b$main::arch\b/ &&
+		    !($dscarchs eq "all" && $main::build_arch_all) )  {
 			print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
 				 "skipping\n";
 			$main::pkg_fail_stage = "arch-check";

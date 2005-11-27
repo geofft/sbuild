@@ -16,8 +16,10 @@ sbuild (0.37) unstable; urgency=low
         not.  This fixes the problem of the root filesystem
         /etc/apt/apt.conf and /etc/apt/apt.conf.d directories being used,
         while the copies in the chroot filesystem are ignored.
+      + Allow arch: all packages to be built when $main::build_arch_all
+        is true.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 11:26:52 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 11:42:11 +0000
 
 sbuild (0.36) unstable; urgency=low
 
