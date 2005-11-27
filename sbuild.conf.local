@@ -9,13 +9,13 @@
 
 # Name of a database for logging package build times (optional, no database
 # is written if empty)
-#$avg_time_db = "/var/debbuild/avg-build-times";
+#$avg_time_db = "/var/lib/sbuild/avg-build-times";
 
 # Name of a database for logging package space requirement (optional)
-#$avg_space_db = "/var/debbuild/avg-build-space";
+#$avg_space_db = "/var/lib/sbuild/avg-build-space";
 
 # Name for dir for source dependency lock files
-#$srcdep_lock_dir = "/var/debbuild/srcdep-lock";
+#$srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 
 # Chroot behaviour; possible values are "split" (apt and dpkg are run
 # from the host system) and "schroot" (all package operations are done in
