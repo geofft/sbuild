@@ -19,55 +19,6 @@
 #
 # $Id$
 #
-# $Log$
-# Revision 1.2  2005/11/26 20:53:41  rleigh
-# Update copyright notice with current FSF postal address.
-#
-# Revision 1.1.1.1  2004/09/17 13:17:41  frankie
-# Imported sources
-#
-# Revision 1.13  2000/10/19 08:48:11  rnhodek
-# Check if /etc/sbuild.conf exists before including it.
-#
-# Revision 1.12  1999/07/13 07:27:39  rnhodek
-# Use GDBM for time/space databases, as perl-5.004 seems not to contain
-# DB_File anymore.
-#
-# Revision 1.11  1999/05/04 14:25:38  rnhodek
-# Also can dump avg-space-db now.
-#
-# Revision 1.10  1999/02/01 09:29:35  rnhodek
-# New option -f (--dbfile) to select DB on the command line.
-#
-# Revision 1.9  1998/11/26 07:04:28  james
-# Handle 1 entry/n entries properly.
-#
-# Revision 1.8  1998/10/01 10:15:32  rnhodek
-# Read sbuild.conf instead of wanna-build.conf; time db now defined
-# there.
-#
-# Revision 1.7  1998/09/24 10:00:26  rnhodek
-# Changed argument handling.
-# Added --add to add a build time manually.
-# New option --top to list ordered by build time.
-#
-# Revision 1.6  1998/09/17 11:10:23  rnhodek
-# Added --dump mode for displaying raw contents.
-# Align package names to 3 tab stops.
-# Display also standard derivation (sigma).
-#
-# Revision 1.5  1998/09/17 09:28:18  rnhodek
-# Fix typo.
-#
-# Revision 1.4  1998/09/17 09:27:07  rnhodek
-# Need to open DB in read+write mode for --delete.
-#
-# Revision 1.3  1998/09/17 09:26:04  rnhodek
-# Added --delete mode.
-#
-# Revision 1.2  1998/09/15 13:03:49  rnhodek
-# Added cvs headers.
-#
 
 ($main::HOME = $ENV{'HOME'})
 	or die "HOME not defined in environment!\n";
