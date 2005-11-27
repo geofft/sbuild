@@ -12,8 +12,12 @@ sbuild (0.37) unstable; urgency=low
       + Output purged packages line by line, rather than all at once.
       + Use strftime() and getpwuid() instead of the external commands
         date and whoami.
+      + Use /var/lib/sbuild/apt.conf if it exists, and create it if it does
+        not.  This fixes the problem of the root filesystem
+        /etc/apt/apt.conf and /etc/apt/apt.conf.d directories being used,
+        while the copies in the chroot filesystem are ignored.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 10:53:16 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 11:26:52 +0000
 
 sbuild (0.36) unstable; urgency=low
 
