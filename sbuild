@@ -887,9 +887,9 @@ EOF
 	}
 	$main::pkg_end_time = time;
 	write_stats('build-time',$main::pkg_end_time-$main::build_start_time);
-	my $date = strftime("%Y%m%d-%H%M\n",localtime($main::pkg_end_time));
+	my $date = strftime("%Y%m%d-%H%M",localtime($main::pkg_end_time));
 	print PLOG "*"x78, "\n";
-	print PLOG "Build finished at $date";
+	print PLOG "Build finished at $date\n";
 	chdir( $main::cwd );
 
 	my @space_files = ("$dir");
@@ -2468,7 +2468,7 @@ sub close_log {
 }
 
 sub open_pkg_log {
-	my $date = strftime("%Y%m%d-%H%M\n",localtime);
+	my $date = strftime("%Y%m%d-%H%M",localtime);
 	my $pkg = shift;
 
 	if ($main::nolog) {
@@ -2515,7 +2515,7 @@ sub open_pkg_log {
 }
 
 sub close_pkg_log {
-	my $date = strftime("%Y%m%d-%H%M\n",localtime);
+	my $date = strftime("%Y%m%d-%H%M",localtime);
 	my $pkg = shift;
 	my $t = $main::pkg_end_time - $main::pkg_start_time;
 	
@@ -2526,7 +2526,7 @@ sub close_pkg_log {
 		add_space_entry( $pkg, $main::this_space );
 	}
 	print PLOG "*"x78, "\n";
-	printf PLOG "Finished at ${date}Build needed %02d:%02d:%02d, %dk disk space\n",
+	printf PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
 		   int($t/3600), int(($t%3600)/60), int($t%60), $main::this_space;
 	kill( 15, $main::pkg_tee_pid ) if $main::verbose && !$main::nolog;
 	close( PLOG );
