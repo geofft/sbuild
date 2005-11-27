@@ -307,7 +307,8 @@ if (-d "$main::dist_locations{\"$main::distribution\"}") {
   	$ENV{'APT_CONFIG'} = $aptconf;
   	if ( ! -f $aptconf ) {
   	    if (open F, ">$aptconf") {
-  	        print F "Dir \"$main::chroot_dir\";\n";
+  	        print F "Dir \"$$main::chroot_dir/\";\n" .
+  	                "APT::Get::AllowUnauthenticated true;\n";
   	        close F;
   	    } else {
   	        $main::chroot_apt_options .=
@@ -972,11 +973,16 @@ EOF
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
 				    if (! -f $_) {
-					print PLOG "ERROR: Package claims to have built $_, but did not.  This is a bug in the packaging.\n";
+					print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
+					next;
+				    }
+				    if (/_all.deb$/ and not $main::build_arch_all) {
+					print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+					unlink($_);
 					next;
 				    }
 				    system "mv", "$main::chroot_build_dir$changes", "."
-					and print PLOG "ERROR: Could not move $_ to .\n";
+					and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 				}
 			}
 			close( F );
@@ -987,12 +993,17 @@ EOF
 		}
 		foreach (@files) {
 			if ($main::chroot_build_dir) {
-				if (! -f $_) {
-				    print PLOG "ERROR: Package claims to have built $_, but did not.  This is a bug in the packaging.\n";
-				    next;
-				}
-				system "mv", "$main::chroot_build_dir$_", "."
-				    and print PLOG "ERROR: Could not move $_ to .\n";
+			    if (! -f $_) {
+				print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
+				next;
+			    }
+			    if (/_all.deb$/ and not $main::build_arch_all) {
+				print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+				unlink($_);
+				next;
+			    }
+			    system "mv", "$main::chroot_build_dir$_", "."
+				and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 			}
 		}
 
@@ -2795,7 +2806,7 @@ sub write_srcdep_lock_file {
 	++$main::srcdep_lock_cnt;
 	my $f = "$conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 	if (!open( F, ">$f" )) {
-		print "Warning: cannot create srcdep lock file $f: $!";
+		print "Warning: cannot create srcdep lock file $f: $!\n";
 		return;
 	}
 	print "Writing srcdep lock file $f:\n" if $main::debug;

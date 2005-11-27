@@ -29,8 +29,10 @@ sbuild (0.37) unstable; urgency=low
         for the dpkg-buildpackage process.
       + Don't create entries to the sbuild log when a package claims to
         build an _all.deb, but doesn't.  Instead, warn to the build log.
+      + Delete binary-all packages that we didn't ask to be built.
+      + By default, set APT::Get::AllowUnauthenticated to "true".
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 13:28:20 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 14:09:40 +0000
 
 sbuild (0.36) unstable; urgency=low
 
