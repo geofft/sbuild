@@ -1341,6 +1341,9 @@ sub uninstall_deps {
 sub uninstall_debs {
 	my $mode = shift;
 	local (*PIPE);
+	local (%ENV) = %ENV; # make local environment
+	# hardwire frontend for debconf to non-interactive
+	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
