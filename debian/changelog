@@ -34,7 +34,7 @@ sbuild (0.37) unstable; urgency=low
       + Add $conf::chroot_only for compatibility with upstream, even
         though we don't use it ourselves.
       + Add $conf::dpkg_source.
-      + Add $build_env_cmnd.
+      + Add $conf::build_env_cmnd.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
