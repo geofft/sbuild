@@ -263,7 +263,7 @@ if (!$fail_reason) {
 		print "Enter reason for failing (end with '.' alone on ".
 		      "its line):\n";
 		my $line;
-		while(1) {
+		while(!eof(STDIN)) {
 			$line = <STDIN>;
 			last if $line eq ".\n";
 			$line = ".\n" if $line eq "\n";
@@ -1234,6 +1234,8 @@ sub parse_packages {
 		} else {
 			delete $pkg->{'BuildPri'};
 		}
+		$pkg->{'Version'} = $version
+			if version_less( $pkg->{'Version'}, $version);
 		delete $pkg->{'Binary-NMU-Version'};
 		delete $pkg->{'Binary-NMU-Changelog'};
 		log_ta( $pkg, "--merge-packages" );
