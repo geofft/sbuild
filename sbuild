@@ -42,6 +42,7 @@ $schroot_options = "";
 $fakeroot = "/usr/bin/fakeroot";
 $apt_get = "/usr/bin/apt-get";
 $apt_cache = "/usr/bin/apt-cache";
+$dpkg_source = "/usr/bin/dpkg-source";
 $pgp_options = "-us -uc";
 $log_dir = "$main::HOME/logs";
 $mailto = "";
@@ -71,6 +72,8 @@ die "apt-get binary $conf::apt_get does not exist or isn't executable\n"
 	if !-x $conf::apt_get;
 die "apt-cache binary $conf::apt_cache does not exist or isn't executable\n"
 	if !-x $conf::apt_cache;
+die "dpkg-source binary $conf::dpkg_source does not exist or isn't executable\n"
+	if !-x $conf::dpkg_source;
 die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
 die "$conf::srcdep_lock_dir is not a directory\n" if ! -d $conf::srcdep_lock_dir;
 die "conf::mailto not set\n" if !$conf::mailto;
@@ -613,7 +616,7 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec "dpkg-source -sn -x $main::cwd/$dsc 2>&1";
+			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
 		}
 		$main::sub_task = "dpkg-source";
 		
@@ -1286,7 +1289,7 @@ sub unpack_special_source {
 				print PLOG "Couldn't cd to $main::chroot_build_dir: $! -- special unpack failed\n";
 				exit 1;
 			}
-			exec "dpkg-source -sn -x $main::cwd/$dsc 2>&1";
+			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
 		}
 		my $dir;
 		while( <PIPE> ) {

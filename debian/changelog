@@ -33,6 +33,7 @@ sbuild (0.37) unstable; urgency=low
       + By default, set APT::Get::AllowUnauthenticated to "true".
       + Add $conf::chroot_only for compatibility with upstream, even
         though we don't use it ourselves.
+      + Add $conf::dpkg_source.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -45,7 +46,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2005 18:52:54 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 28 Nov 2005 21:59:55 +0000
 
 sbuild (0.36) unstable; urgency=low
 
