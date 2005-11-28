@@ -34,6 +34,7 @@ sbuild (0.37) unstable; urgency=low
       + Add $conf::chroot_only for compatibility with upstream, even
         though we don't use it ourselves.
       + Add $conf::dpkg_source.
+      + Add $build_env_cmnd.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -46,7 +47,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 28 Nov 2005 21:59:55 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 28 Nov 2005 22:36:21 +0000
 
 sbuild (0.36) unstable; urgency=low
 

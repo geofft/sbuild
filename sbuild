@@ -43,6 +43,7 @@ $fakeroot = "/usr/bin/fakeroot";
 $apt_get = "/usr/bin/apt-get";
 $apt_cache = "/usr/bin/apt-cache";
 $dpkg_source = "/usr/bin/dpkg-source";
+$build_env_cmnd = "";
 $pgp_options = "-us -uc";
 $log_dir = "$main::HOME/logs";
 $mailto = "";
@@ -821,21 +822,21 @@ EOF
 			if ($conf::chroot_mode eq "schroot") {
 				chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
 				print PLOG "$conf::schroot -c $main::distribution -u $main::username $conf::schroot_options -- ".
-				    "/bin/sh -c 'cd $bdir && exec dpkg-buildpackage $conf::pgp_options ".
+				    "/bin/sh -c 'cd $bdir && exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n'" if $main::debug;
 
 				exec "$conf::schroot", "-c", "$main::distribution", "-u", "$main::username", "--", "/bin/sh", "-c",
-				"cd $bdir && exec dpkg-buildpackage $conf::pgp_options ".
+				"cd $bdir && exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 			} else {
 				print PLOG "$conf::sudo /usr/sbin/chroot $main::chroot_diri ".
 				    "$conf::sudo -u $main::username -H /bin/sh -c cd $bdir && ".
-				    "exec dpkg-buildpackage $conf::pgp_options ".
+				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n" if $main::debug;
 
 				exec "$conf::sudo", "/usr/sbin/chroot", "$main::chroot_dir",
 				"$conf::sudo", "-u", $main::username, "-H", "/bin/sh", "-c",
-				"cd $bdir && exec dpkg-buildpackage $conf::pgp_options ".
+				"cd $bdir && exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 			}
 		}
@@ -847,7 +848,7 @@ EOF
 			print PLOG "dpkg-buildpackage $conf::pgp_options $binopt ".
                                 "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n" if $main::debug;
 
-			exec "dpkg-buildpackage $conf::pgp_options $binopt ".
+			exec "$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
 				"$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 		}
 	}
