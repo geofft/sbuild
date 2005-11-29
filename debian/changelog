@@ -41,6 +41,7 @@ sbuild (0.37) unstable; urgency=low
       + read_build_essential(): Read build-essential from $main::chroot_dir
         instead of the root filesystem.
       + Add @main::toolchain_pkgs and @toolchain_regex.
+      + check_space(): Redirect stderr of du to /dev/null.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -52,8 +53,9 @@ sbuild (0.37) unstable; urgency=low
       + Update comments.
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 21:56:23 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 22:53:30 +0000
 
 sbuild (0.36) unstable; urgency=low
 

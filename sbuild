@@ -2602,7 +2602,7 @@ sub check_space {
 	my @files = @_;
 	local( *PIPE );
 
-	if (!open( PIPE, "sudo /usr/bin/du -s @files |" )) {
+	if (!open( PIPE, "sudo /usr/bin/du -s @files 2>/dev/null |" )) {
 		print PLOG "Cannot determine space needed (du failed): $!\n";
 		return;
 	}
