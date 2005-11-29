@@ -55,6 +55,7 @@ $srcdep_lock_wait = 1; # minutes
 $chroot_only = 0;
 $chroot_mode = "split";
 %individual_stalled_pkg_timeout = ();
+$path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
 # read conf files
 require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
@@ -276,6 +277,11 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	}
 	elsif (/^--make-binNMU=(.+)$/) {
 		$main::binNMU = $1;
+	}
+	elsif (/^--use-snapshot$/) {
+		$main::useSNAP = 1;
+		$main::ld_library_path = "/usr/lib/gcc-snapshot/lib";
+		$conf::path = "/usr/lib/gcc-snapshot/bin:$conf::path";
 	}
 	else {
 		die "Unknown option: $_\n";
@@ -828,22 +834,33 @@ EOF
 			if ($conf::chroot_mode eq "schroot") {
 				chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
 				print PLOG "$conf::schroot -c $main::distribution -u $main::username $conf::schroot_options -- ".
-				    "/bin/sh -c 'cd $bdir && exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
+				    "/bin/sh -c 'cd $bdir && PATH=$conf::path ".
+				    (defined($main::ld_library_path) ?
+				     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
+				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n'" if $main::debug;
 
 				exec "$conf::schroot", "-c", "$main::distribution", "-u", "$main::username", "--", "/bin/sh", "-c",
-				"cd $bdir && exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
+				"cd $bdir && PATH=$conf::path ".
+				    (defined($main::ld_library_path) ?
+				     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
+				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 			} else {
 				print PLOG "$conf::sudo /usr/sbin/chroot $main::chroot_diri ".
-				    "$conf::sudo -u $main::username -H /bin/sh -c cd $bdir && ".
+				    "$conf::sudo -u $main::username -H /bin/sh -c cd $bdir && PATH=$conf::path".
+				    (defined($main::ld_library_path) ?
+				     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n" if $main::debug;
 
 				exec "$conf::sudo", "/usr/sbin/chroot", "$main::chroot_dir",
 				"$conf::sudo", "-u", $main::username, "-H", "/bin/sh", "-c",
-				"cd $bdir && exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+				"cd $bdir && PATH=$conf::path ".
+				 (defined($main::ld_library_path) ?
+				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
+				"exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
+				"$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 			}
 		}
 		else {
@@ -2037,6 +2054,11 @@ sub merge_pkg_build_deps {
 
 	my $old_deps = copy($main::deps{$pkg});
 	# keep deps from the central file marked as overrides (& prefix)
+	if ( $main::useSNAP ) {
+	    $dep->{'Package'} = "gcc-snapshot";
+	    $dep->{'Override'} = 1;
+	    push( @{$main::deps{$pkg}}, $dep );
+	}
 	foreach $dep (@{$main::deps{$pkg}}) {
 		if ($dep->{'Override'}) {
 			print PLOG "Added override: ",
