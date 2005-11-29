@@ -959,17 +959,17 @@ EOF
 						print F2 "Distribution: $main::distribution\n";
 					}
 					else {
-					    print F2 $_;
-					    while (length $_ > 989)
-					    {
-						my $index = rindex($_,' ',989);
-						print PLOG substr ($_,0,$index) . "\n";
-						$_ = '        ' . substr ($_,$index+1);
-					    }
-					    print PLOG $_;
-					    if (/^ [a-z0-9]{32}/) {
-						push(@files, (split( /\s+/, $_ ))[5] );
-					    }
+						print F2 $_;
+						while (length $_ > 989)
+						{
+							my $index = rindex($_,' ',989);
+							print PLOG substr ($_,0,$index) . "\n";
+							$_ = '        ' . substr ($_,$index+1);
+						}
+						print PLOG $_;
+						if (/^ [a-z0-9]{32}/) {
+						    push(@files, (split( /\s+/, $_ ))[5] );
+						}
 					}
 				}
 				close( F2 );
@@ -1000,7 +1000,7 @@ EOF
 			print PLOG "\n";
 		}
 		else {
-			print PLOG "Can't find $changes -- can't dump infos\n";
+			print PLOG "Can't find $changes -- can't dump info\n";
 		}
 		foreach (@files) {
 			if ($main::chroot_build_dir) {
@@ -1404,6 +1404,7 @@ sub uninstall_debs {
 		print PLOG $_;
 	}
 	close( PIPE );
+
 	if ($output =~ /status database area is locked/mi) {
 		print PLOG "Another dpkg is running -- retrying later\n";
 		$output = "";
@@ -1544,7 +1545,7 @@ sub run_apt {
 		sleep( 2*60 );
 		goto repeat;
 	}
-	
+
 	# check for errors that are probably caused by something broken in
 	# the build environment, and give back the packages.
 	if ($status != 0 && $mode ne "-s" &&
