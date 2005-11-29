@@ -98,7 +98,7 @@ $main::distribution = "unstable";
 
 %main::dist_order = ( 'oldstable' => 0, 'oldstable-security' => 0, 'stable' => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, 'unstable' => 3 );
 
-chomp( $main::arch = `dpkg --print-installation-architecture` );
+chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
 $main::verbose = 0;
