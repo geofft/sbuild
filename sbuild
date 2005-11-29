@@ -816,9 +816,10 @@ EOF
 		return 0;
 	}
 	if ($main::sub_pid == 0) {
-	        open( STDIN, "</dev/null" );
+		open( STDIN, "</dev/null" );
 		setsid;
-		my $binopt = $main::build_source ? "" : $main::build_arch_all ? "-b" : "-B";
+		my $binopt = $main::build_source ? "" :
+					 $main::build_arch_all ? "-b" : "-B";
 		if ($main::chroot_dir) {
 			my $bdir = $dir;
 			$bdir =~ s/^\Q$main::chroot_dir\E//;
@@ -833,13 +834,6 @@ EOF
 			}
 			if ($conf::chroot_mode eq "schroot") {
 				chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
-				print PLOG "$conf::schroot -c $main::distribution -u $main::username $conf::schroot_options -- ".
-				    "/bin/sh -c 'cd $bdir && PATH=$conf::path ".
-				    (defined($main::ld_library_path) ?
-				     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n'" if $main::debug;
-
 				exec "$conf::schroot", "-c", "$main::distribution", "-u", "$main::username", "--", "/bin/sh", "-c",
 				"cd $bdir && PATH=$conf::path ".
 				    (defined($main::ld_library_path) ?
@@ -847,13 +841,6 @@ EOF
 				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 			} else {
-				print PLOG "$conf::sudo /usr/sbin/chroot $main::chroot_diri ".
-				    "$conf::sudo -u $main::username -H /bin/sh -c cd $bdir && PATH=$conf::path".
-				    (defined($main::ld_library_path) ?
-				     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n" if $main::debug;
-
 				exec "$conf::sudo", "/usr/sbin/chroot", "$main::chroot_dir",
 				"$conf::sudo", "-u", $main::username, "-H", "/bin/sh", "-c",
 				"cd $bdir && PATH=$conf::path ".
@@ -868,9 +855,6 @@ EOF
 				system "$conf::sudo chmod a+r /etc/ld.so.conf";
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
-			print PLOG "dpkg-buildpackage $conf::pgp_options $binopt ".
-                                "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1\n" if $main::debug;
-
 			exec "$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
 				"$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 		}
