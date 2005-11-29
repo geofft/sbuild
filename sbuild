@@ -1549,12 +1549,26 @@ sub run_apt {
 	# check for errors that are probably caused by something broken in
 	# the build environment, and give back the packages.
 	if ($status != 0 && $mode ne "-s" &&
-	    (($msgs =~ /^W: Couldn't stat source package list /mi))) {
-  	                 print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
-  	                 $main::pkg_fail_stage = "install-deps-env";
-  	         }
+		(($msgs =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
+		($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
+		($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
+		print PLOG "Build environment unusable, giving back\n";
+		$main::pkg_fail_stage = "install-deps-env";
+	}
 
-        $pkgs = $rpkgs = "";
+	if ($status != 0 && $mode ne "-s" &&
+		(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
+		print PLOG "Unable to fetch build-depends\n";
+		$main::pkg_fail_stage = "install-deps-env";
+	}
+	
+	if ($status != 0 && $mode ne "-s" &&
+		(($msgs =~ /^W: Couldn't stat source package list /mi))) {
+		print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
+		$main::pkg_fail_stage = "install-deps-env";
+	}
+	
+	$pkgs = $rpkgs = "";
 	if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
 		($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
 	}

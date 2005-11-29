@@ -42,6 +42,7 @@ sbuild (0.37) unstable; urgency=low
         instead of the root filesystem.
       + Add @main::toolchain_pkgs and @toolchain_regex.
       + check_space(): Redirect stderr of du to /dev/null.
+      + run_apt(): Complete support for "install-deps-env".
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -53,9 +54,10 @@ sbuild (0.37) unstable; urgency=low
       + Update comments.
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
+  *
   * 
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 22:53:30 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 22:58:56 +0000
 
 sbuild (0.36) unstable; urgency=low
 
