@@ -242,7 +242,7 @@ $transactlog = "$conf::basedir/$1$conf::transactlog";
 
 if ($verbose) {
 	my $version = '$Revision$ $Date$ $Author$';
-	$version =~ s/\$ ?//g;
+	$version =~ s/(^\$| \$ .*$)//g;
 	print "wanna-build $version on $conf::dbbase\n";
 }
 
@@ -1149,6 +1149,11 @@ sub parse_sources {
 				  "binaries don't exist anymore\n"
 					  if $verbose;
 			delete $db{$name};
+		} elsif ($full && version_less( $merge_srcvers{$name}, $pkg->{'Version'})) {
+			print "$name ($pkg->{'Version'}): ".
+				  "package is Installed but binaries are from ".
+				  $merge_srcvers{$name}. "\n"
+					  if $verbose;
 		}
 	}
 	return \%pkgs;
@@ -1397,7 +1402,8 @@ sub parse_quinn_diff {
 		}
 		elsif (!defined($pkg) ||
 			   $pkg->{'State'} ne "Not-For-Us" &&
-			   version_less( $pkg->{'Version'}, $version )) {
+			   (version_less( $pkg->{'Version'}, $version ) ||
+			   ($pkg->{'State'} eq "Installed" && version_less($pkg->{'Installed-Version'}, $version)))) {
 			if ($pkg->{'State'} eq 'Building') {
 				send_mail( $pkg->{'Builder'},
 						   "new version of $name (dist=$distribution)",
@@ -1462,6 +1468,8 @@ sub parse_quinn_diff {
 			$pkg->{'Priority'} = $priority;
 			$pkg->{'Notes'}    = $notes;
 			delete $pkg->{'Builder'};
+			delete $pkg->{'Binary-NMU-Version'};
+			delete $pkg->{'Binary-NMU-Changelog'};
 			log_ta( $pkg, "--merge-quinn" );
 			$new_vers{$name}++;
 			$change++;
