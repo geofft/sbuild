@@ -94,6 +94,10 @@ $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
 
+$main::distribution = "unstable";
+
+%main::dist_order = ( 'oldstable' => 0, 'oldstable-security' => 0, 'stable' => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, 'unstable' => 3 );
+
 chomp( $main::arch = `dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
@@ -116,10 +120,6 @@ $main::override_distribution = 0;
 
 $main::new_dpkg = 0;
 check_dpkg_version();
-
-$main::distribution = "unstable";
-
-%main::dist_order = ( 'oldstable' => 0, 'oldstable-security' => 0, 'stable' => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, 'unstable' => 3 );
 
 %main::dist_locations;
 foreach (keys(%main::dist_order)) {
@@ -304,9 +304,9 @@ if (-d "$main::dist_locations{\"$main::distribution\"}") {
 	$conf::srcdep_lock_dir = "$main::chroot_dir/$conf::srcdep_lock_dir";
 	$main::ilock_file = "$conf::srcdep_lock_dir/install";
 	$main::chroot_apt_options =
-		"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status ".
-		"-o DPkg::Options::=--root=$main::chroot_dir ".
-		"-o DPkg::Run-Directory=$main::chroot_dir";
+		"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
+		" -o DPkg::Options::=--root=$main::chroot_dir".
+		" -o DPkg::Run-Directory=$main::chroot_dir";
 
         my $aptconf = "/var/lib/sbuild/apt.conf";
   	$ENV{'APT_CONFIG'} = $aptconf;
@@ -335,6 +335,8 @@ write_jobs_file();
 my( $pkgv, $pkg );
 foreach $pkgv (@ARGV) {
 	my $urlbase;
+
+	
 	($urlbase, $pkgv) = ($1, $3) if $pkgv =~ m,^(\w+://(\S+/)?)([^/]+)$,;
 	$pkgv =~ s/\.dsc$//;
 	next if !open_pkg_log( $pkgv );
@@ -503,6 +505,8 @@ sub fetch_source_files {
 					print PLOG "$conf::apt_get for sources failed\n";
 					return( "ERROR", @made );
 				}
+				# touch the downloaded files, otherwise buildd-watcher
+				# will complain that they're old :)
 				$$dscfile_ref = $dscfile = (grep { /\.dsc$/ } @made)[0];
 			}
 		}
@@ -1197,7 +1201,7 @@ sub install_deps {
 	set_removed( @negative );
 	my $install_stop_time = time;
 	write_stats( 'install-download-time',
-		     $install_stop_time - $install_start_time );
+		$install_stop_time - $install_start_time );
 
 	my $fail = check_dependencies( $dep );
 	if ($fail) {
@@ -1368,7 +1372,7 @@ sub uninstall_debs {
 	local (%ENV) = %ENV; # make local environment
 	# hardwire frontend for debconf to non-interactive
 	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-
+	
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
 	my $chroot_opt =
@@ -1393,10 +1397,10 @@ sub uninstall_debs {
   	         }
 	}
 	while ( <PIPE> ) {
-  	                 $output .= $_;
-  	                 print PLOG $_;
-  	         }
-  	         close( PIPE );
+		$output .= $_;
+		print PLOG $_;
+	}
+	close( PIPE );
 	if ($output =~ /status database area is locked/mi) {
 		print PLOG "Another dpkg is running -- retrying later\n";
 		$output = "";
@@ -1437,7 +1441,7 @@ sub run_apt {
 	my( $msgs, $status, $pkgs, $rpkgs );
 	local (*PIPE);
 	local (%ENV) = %ENV; # make local environment
-	# hardwire frontent for debconf to non-interactive
+	# hardwire frontend for debconf to non-interactive
 	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 
 	@$inst_ret = ();
@@ -1538,6 +1542,8 @@ sub run_apt {
 		goto repeat;
 	}
 	
+	# check for errors that are probably caused by something broken in
+	# the build environment, and give back the packages.
 	if ($status != 0 && $mode ne "-s" &&
 	    (($msgs =~ /^W: Couldn't stat source package list /mi))) {
   	                 print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
@@ -2286,7 +2292,6 @@ sub get_virtuals {
 	return \%provided_by;
 }
 
-
 sub parse_one_srcdep {
 	my $pkg = shift;
 	my $deps = shift;
@@ -2777,12 +2782,12 @@ sub write_jobs_file {
 	
 	return if !open( F, ">$main::jobs_file" );
 	foreach $job (@ARGV) {
-	        my $jobname;
+		my $jobname;
 
 		if ($job eq $main::current_job and $main::binNMU_name) {
-		    $jobname = $main::binNMU_name;
+			$jobname = $main::binNMU_name;
 		} else {
-		    $jobname = $job;
+			$jobname = $job;
 		}
 		print F ($job eq $main::current_job) ? "" : "  ",
 				$jobname,
@@ -3134,7 +3139,7 @@ sub isin {
 
 sub fixup_pkgv {
 	my $pkgv = shift;
-
+	
 	$$pkgv =~ s,^.*/,,; # strip path
 	$$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
 	$$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
@@ -3256,9 +3261,9 @@ sub shutdown {
 		foreach $job (@npkgs) {
 			next if grep( /^\Q$job\E\s/, @pkgs );
 			if (not defined $main::binNMUver) {
-			    print F "$job $main::distribution\n";
+				print F "$job $main::distribution\n"; 
 			} else {
-			    print F "$job $main::distribution $main::binNMUver $main::binNMU\n";
+				print F "$job $main::distribution $main::binNMUver $main::binNMU\n"; 
 			}
 		}
 		close( F );
@@ -3300,13 +3305,13 @@ sub shutdown {
 }
 
 sub write_stats {
-    return if not defined $main::stats_dir;
-    my ($cat, $val) = @_;
-    local( *F );
+	return if not defined $main::stats_dir;
+	my ($cat, $val) = @_;
+	local( *F );
 
-    lock_file( "$main::stats_dir" );
-    open( F, ">>$main::stats_dir/$cat" );
-    print F "$val\n";
-    close( F );
-    unlock_file( "$main::stats_dir" );
+	lock_file( "$main::stats_dir" );
+	open( F, ">>$main::stats_dir/$cat" );
+	print F "$val\n";
+	close( F );
+	unlock_file( "$main::stats_dir" );
 }
