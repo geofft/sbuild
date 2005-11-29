@@ -1087,10 +1087,11 @@ sub analyze_fail_stage {
 	return if $main::pkg_status ne "failed";
 	return if !$main::auto_giveback;
 	if (isin( $main::pkg_fail_stage,
-			  qw(find-dsc fetch-src unpack-check check-space))) {
+			  qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
 		$main::pkg_status = "given-back";
 		print PLOG "Giving back package $pkgv after failure in ".
 			       "$main::pkg_fail_stage stage.\n";
+		chdir( $main::cwd );
 		my $cmd = "";
 		$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
 			if $main::auto_giveback_host;
@@ -1204,7 +1205,7 @@ sub install_deps {
 	my $install_stop_time = time;
 	write_stats( 'install-download-time',
 		$install_stop_time - $install_start_time );
-
+	
 	my $fail = check_dependencies( $dep );
 	if ($fail) {
 		print PLOG "After installing, the following source dependencies are ".
