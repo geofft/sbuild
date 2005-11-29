@@ -37,6 +37,7 @@ sbuild (0.37) unstable; urgency=low
       + Add $conf::build_env_cmnd.
       + Merge whitespace and indentation changes.
       + Fix typos.
+      + shutdown(): Don't close the package log if there is no current job.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -48,9 +49,10 @@ sbuild (0.37) unstable; urgency=low
       + Update comments.
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
+  *
   * 
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 20:29:26 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 20:39:06 +0000
 
 sbuild (0.36) unstable; urgency=low
 

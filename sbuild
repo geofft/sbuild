@@ -3296,8 +3296,10 @@ sub shutdown {
 	remove_srcdep_lock_file();
 
 	# close logs and send mails
-	fixup_pkgv( \$main::current_job );
-	close_pkg_log( $main::binNMU_name || $main::current_job );
+	if ( $main::current_job ) {
+		fixup_pkgv( \$main::current_job );
+		close_pkg_log( $main::binNMU_name || $main::current_job );
+	}
 	close_log();
 	unlink( $main::jobs_file ) if $main::batchmode;
 	$? = 0; $! = 0;
