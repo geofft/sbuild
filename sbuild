@@ -2462,7 +2462,7 @@ sub open_log {
 }
 
 sub close_log {
-	my $date = my $date = strftime("%Y%m%d-%H%M",localtime);
+	my $date = strftime("%Y%m%d-%H%M",localtime);
 
 	kill( 15, $main::tee_pid ) if $main::verbose;
 	close( LOG );
