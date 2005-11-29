@@ -40,6 +40,7 @@ sbuild (0.37) unstable; urgency=low
       + shutdown(): Don't close the package log if there is no current job.
       + read_build_essential(): Read build-essential from $main::chroot_dir
         instead of the root filesystem.
+      + Add @main::toolchain_pkgs and @toolchain_regex.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -52,7 +53,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 21:15:45 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 21:56:23 +0000
 
 sbuild (0.36) unstable; urgency=low
 

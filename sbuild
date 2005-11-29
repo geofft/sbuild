@@ -49,6 +49,7 @@ $log_dir = "$main::HOME/logs";
 $mailto = "";
 $mailfrom = "Source Builder <sbuild>";
 $purge_build_directory = "successful";
+@toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$' );
 $stalled_pkg_timeout = 90; # minutes
 $srcdep_lock_wait = 1; # minutes
 $chroot_only = 0;
@@ -116,6 +117,7 @@ $main::srcdep_lock_cnt = 0;
 $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
+@main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
 $main::new_dpkg = 0;
@@ -1700,6 +1702,9 @@ sub check_dependencies {
 			$names{$name} = 1 if $name !~ /^\*/;
 		}
 	}
+	foreach $name (@main::toolchain_pkgs) {
+		$names{$name} = 1;
+	}
 	my $status = get_dpkg_status( keys %names );
 
 	foreach $dep (@$dependencies) {
@@ -1745,6 +1750,14 @@ sub check_dependencies {
 		}
 	}
 	$fail =~ s/\s+$//;
+	if (!$fail && @main::toolchain_pkgs) {
+		print PLOG "Toolchain package versions:";
+		foreach $name (@main::toolchain_pkgs) {
+			print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
+		}
+		print PLOG "\n";
+	}
+
 	return $fail;
 }
 
@@ -2041,6 +2054,16 @@ sub merge_pkg_build_deps {
 	$exp_essential = expand_dependencies( $main::deps{'ESSENTIAL'} );
 	print "Dependency-expanded build essential packages:\n",
 		  format_deps(@$exp_essential), "\n" if $main::debug;
+
+	# populate toolchain_pkgs from toolchain_regexes and essential packages.
+	@main::toolchain_pkgs = ();
+	foreach my $tpkg (@$exp_essential) {
+		foreach my $regex (@conf::toolchain_regex) {
+			push @main::toolchain_pkgs,$tpkg->{'Package'}
+				if $tpkg->{'Package'} =~ m,^$regex,;
+		}
+	}
+	return if !@$missing;
 
 	# remove missing central deps that are essential
 	($filt_essential, $missing) = cmp_dep_lists( $missing, $exp_essential );
