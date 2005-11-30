@@ -45,7 +45,7 @@ sbuild (0.37) unstable; urgency=low
       + run_apt(): Complete support for "install-deps-env".
       + Add --use-snapshot for building with gcc-snapshot.
       + build(): Remove dpkg-buildpackage debugging statements.
-      + merge_pkg_build_deps(): Correctly separate depdendencies in $deps,
+      + merge_pkg_build_deps(): Correctly separate dependencies in $deps,
         and don't immediately return if there are missing packages.
       + Remove support for --store-built-packages.
       + get_dpkg_status(): Check $version is set and compute $result in the
