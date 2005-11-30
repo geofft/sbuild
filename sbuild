@@ -272,9 +272,6 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	elsif (/^--stats-dir=(.+)$/) {
 		$main::stats_dir = $1;
 	}
-	elsif (/^--store-built-packages=(.+)$/) {
-		$main::store_built_packages = $1;
-	}
 	elsif (/^--make-binNMU=(.+)$/) {
 		$main::binNMU = $1;
 	}
@@ -904,7 +901,6 @@ EOF
 	chdir( $main::cwd );
 
 	my @space_files = ("$dir");
-	my @checkinst_files;
 	if ($rv) {
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
@@ -919,7 +915,6 @@ EOF
 				next if $f !~ /$main::arch\.[\w\d.-]*$/;
 				push( @debs, "$main::chroot_build_dir$f" );
 				push( @space_files, $f );
-				push( @checkinst_files, $f ) if $main::store_built_packages;
 			}
 			close( F );
 			my @debs2 = @debs;
@@ -1031,8 +1026,6 @@ EOF
 		print PLOG "Purging $dir\n";
 		system "$conf::sudo rm -rf $dir";
 	}
-	check_inst_packages( @checkinst_files )
-		if $rv == 0 && $main::store_built_packages;
 	
 	print PLOG "-"x78, "\n";
 	return $rv == 0 ? 1 : 0;
@@ -1983,16 +1976,6 @@ sub read_deps {
 			}
 		}
 	}
-
-	if ($main::store_built_packages) {
-		open(F, $fname = "<$conf::source_dependencies-$main::distribution.rev")
-			or die "Cannot open $fname: $!\n";
-		$fname = substr( $fname, 1 );
-		print "Reading reverse source dependencies from $fname\n"
-			if $main::debug;
-		%main::revdeps = map { chomp; $_, 1 } <F>;
-		close( F );
-	}
 }
 
 sub copy {
@@ -2667,147 +2650,6 @@ sub add_space_entry {
 	untie %db;
 }
 
-sub check_inst_packages {
-	my @files = @_;
-	my @names = map { /^([a-zA-Z\d.+-]+)_/ } @files;
-
-	print "Checking if packages should be stored: @names\n" if $main::debug;
-	
-	# first take all packages on which a srcdep exists
-	my (@inst, %provided_by, $name);
-	foreach $name (@names) {
-		next if !exists $main::revdeps{$name};
-		push( @inst, $name );
-		print "  $name is a srcdep and will be stored\n" if $main::debug;
-		my $file = file_for_name( $name, @files );
-		chomp( my $provides = `dpkg -f '$file' provides` );
-		$provides =~ s/^\s*(.*)\s*$/$1/;
-		foreach (split( /\s*,\s*/, $provides )) {
-			$provided_by{$_} = $name;
-			print "  $name provides $_\n" if $main::debug;
-		}
-	}
-	return if !@inst;
-
-	# then check dependencies of all choosen packages; if one of the deps has
-	# just been built, too, add it also
-	my @deps_inst;
-	my @to_check = @inst;
-	while( $name = shift @to_check ) {
-		my $file = file_for_name( $name, @files );
-		chomp( my $depends = `dpkg -f '$file' depends` );
-		$depends =~ s/^\s*(.*)\s*$/$1/;
-		print "  dependency line of $name: $depends\n" if $main::debug;
-		my @d;
-		foreach (split( /\s*,\s*/, $depends )) {
-			foreach (split( /\s*\|\s*/, $_ )) {
-				if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?/) {
-					print PLOG "Cannot parse dependency from $file: $_\n";
-					next;
-				}
-				push( @d, $1 );
-			}
-		}
-		foreach (@d) {
-			print "  dependency $_: " if $main::debug;
-			if (isin( $_, @inst )) {
-				print "already on store list\n" if $main::debug;
-				next;
-			}
-			elsif (isin( $_, @names )) {
-				print "also built, adding to store list\n" if $main::debug;
-				if (!isin( $_, @inst, @deps_inst )) {
-					push( @deps_inst, $_ );
-					push( @to_check, $_ );
-				}
-			}
-			elsif (exists $provided_by{$_}) {
-				my $prov = $provided_by{$_};
-				print "provided by $prov; " if $main::debug;
-				if (isin( $prov, @inst )) {
-					print "already on store list\n" if $main::debug;
-				}
-				else {
-					print "adding to store list\n" if $main::debug;
-					if (!isin( $prov, @inst, @deps_inst )) {
-						push( @deps_inst, $prov );
-						push( @to_check, $prov );
-					}
-				}
-			}
-			else {
-				print "not built, ignoring\n" if $main::debug;
-			}
-		}
-	}
-	print "Final store list: @inst @deps_inst\n" if $main::debug;
-	my @finst = map { file_for_name( $_, @files ); } @inst, @deps_inst;
-	print PLOG "\nThe following packages are source dependencies and will ",
-			   "be stored:\n  @inst\n";
-	print PLOG "The following are dependencies of the above and will be ",
-			   "be stored, too:\n  @deps_inst\n"
-		if @deps_inst;
-
-	my @chroots;
-	if ($main::chroot_dir) {
-		foreach (keys(%main::dist_order)) {
-			push( @chroots, "--chroot=$main::dist_locations{\"$_\"}" )
-				  if !dist_gt( $_, $main::distribution ) &&
-				     -d "$main::dist_locations{\"$_\"}";
-		}
-	}
-			
-	# start program given by --store-built-packages option to make those
-	# packages available for apt
-	my $pid = fork();
-	if (!defined $pid) {
-		print PLOG "Can't spawn $main::store_built_packages: $!\n";
-		return;
-	}
-	if ($pid == 0) {
-		setpgrp( 0, $$ );
-		open( STDOUT, ">&PLOG" );
-		open( STDERR, ">&PLOG" );
-		exec $main::store_built_packages, "--dist=$main::distribution",
-			 @chroots, @finst;
-	}
-	wait;
-	if ($?) {
-		print PLOG "$main::store_built_packages returned error status $?\n";
-		return;
-	}
-
-	# if the install went ok, run apt to install the packages that are already
-	# installed.
-	if (!$main::chroot_dir && $conf::system_level &&
-		dist_gt( $main::distribution, $conf::system_level )) {
-		print PLOG "Not installing because built for a newer ",
-				   "distribution than $conf::system_level\n";
-		return;
-	}
-			
-	my $status = get_dpkg_status( @inst, @deps_inst );
-	my @to_upgrade = grep { $status->{$_}->{'Installed'} } @inst, @deps_inst;
-	if (!@to_upgrade) {
-		print PLOG "None of the packages are installed -- no upgrades.\n";
-		return;
-	}
-	my @to_upgrade2;
-	foreach (@to_upgrade) {
-		if (isin( $_, @conf::no_auto_upgrade )) {
-			print PLOG "Auto-upgrade inhibited for $_\n";
-		}
-		else {
-			push( @to_upgrade2, $_ );
-		}
-	}
-	
-	print PLOG "These packages are already installed and will be updated:\n",
-			   "  @to_upgrade2\n";
-	my (@dummy1, @dummy2);
-	run_apt( "-y", \@dummy1, \@dummy2, @to_upgrade2 );
-}
-
 sub file_for_name {
 	my $name = shift;
 	my @x = grep { /^\Q$name\E_/ } @_;
@@ -3258,13 +3100,6 @@ sub check_dpkg_version {
 
 	$main::new_dpkg = 1
 		if 0 == system "$conf::dpkg --compare-versions '$version' ge 1.4.1.18";
-}
-
-sub dist_gt {
-	my ($d1, $d2) = @_;
-	die "Unknown dist '$d1' in dist_gt\n" if !exists($main::dist_order{$d1});
-	die "Unknown dist '$d2' in dist_gt\n" if !exists($main::dist_order{$d2});
-	return $main::dist_order{$d1} > $main::dist_order{$d2};
 }
 
 sub shutdown {

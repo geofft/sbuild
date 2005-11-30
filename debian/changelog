@@ -47,6 +47,7 @@ sbuild (0.37) unstable; urgency=low
       + build(): Remove dpkg-buildpackage debugging statements.
       + merge_pkg_build_deps(): Correctly separate depdendencies in $deps,
         and don't immediately return if there are missing packages.
+      + Remove support for --store-built-packages.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -59,7 +60,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 30 Nov 2005 21:53:03 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 30 Nov 2005 21:56:38 +0000
 
 sbuild (0.36) unstable; urgency=low
 
