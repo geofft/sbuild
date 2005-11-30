@@ -1237,6 +1237,27 @@ sub install_deps {
 			}
 		}
 	}
+	
+	local (*F);
+	my $chroot_opt =
+		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
+
+	my $success;
+	if ($conf::chroot_mode eq "schroot") {
+	    $success = open( F, "| $conf::schroot -c $main::distribution -u $main::username $conf::schroot_options -- $conf::dpkg --set-selections");
+	} else {
+	    $success = open( F, "| $conf::sudo $conf::dpkg $chroot_opt --set-selections");
+	}
+
+	if ($success) {
+		foreach my $tpkg (@instd) {
+			print F $tpkg . " purge\n";
+		}
+		close( F );
+		if ($?) {
+			print PLOG "$conf::dpkg --set-selections failed";
+		}
+	}
 
 	unlock_file( "$main::ilock_file" );
 

@@ -51,6 +51,8 @@ sbuild (0.37) unstable; urgency=low
       + get_dpkg_status(): Check $version is set and compute $result in the
         same manner as upstream.
       + run_apt(): Remove '*' from $pkgs and $rpkgs.
+      + install_deps(): purge packages with "dpkg --set-selections".
+        schroot support added in addition to upstream changes.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -62,9 +64,8 @@ sbuild (0.37) unstable; urgency=low
       + Update comments.
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 30 Nov 2005 22:09:03 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 30 Nov 2005 22:21:32 +0000
 
 sbuild (0.36) unstable; urgency=low
 
