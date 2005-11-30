@@ -1226,7 +1226,7 @@ sub install_deps {
 	
 	local (*F);
 	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
+		$main::chroot_dir ? "--root=$main::chroot_dir" : "";
 
 	my $success;
 	if ($conf::chroot_mode eq "schroot") {
