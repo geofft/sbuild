@@ -1807,7 +1807,7 @@ sub get_dpkg_status {
 					 $result{$pkg}->{'Version'} eq '=*=PROVIDED=*=');
 			next;
 		}
-		if ($version eq "") {
+		if (!$version) {
 			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
 					   "no Version: field for package $pkg\n";
 			next;
@@ -1817,7 +1817,8 @@ sub get_dpkg_status {
 		if ($provides) {
 			foreach (split( /\s*,\s*/, $provides )) {
 				$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
-					if !$result{$_}{Installed} && isin( $_, @interest );					
+					if isin( $_, @interest ) and (not exists($result{$_}) or
+					($result{$_}->{'Installed'} == 0));
 			}
 		}
 	}
