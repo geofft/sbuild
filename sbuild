@@ -1565,9 +1565,11 @@ sub run_apt {
 	$pkgs = $rpkgs = "";
 	if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
 		($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
+		$pkgs =~ s/\*//g;
 	}
 	if ($msgs =~ /packages will be REMOVED:\n((^[ 	].*\n)*)/mi) {
 		($rpkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
+		$rpkgs =~ s/\*//g;
 	}
 	@$inst_ret = split( /\s+/, $pkgs );
 	@$rem_ret = split( /\s+/, $rpkgs );
