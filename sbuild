@@ -481,24 +481,10 @@ sub fetch_source_files {
 					return( "ERROR" );
 				}
 
-				# XXX: Apt-get always fetches the latest version. We
-				# need to make sure our version is the newest one and
-				# hope that apt-get supports versioned fetches one
-				# day.
-				my $newest = $version;
-				foreach my $entry (keys %entries) {
-					$newest = $entry if Sbuild::version_compare($entry, '>>', $newest);
-				}
-				if ($newest ne $version) {
-					print PLOG "Version skew. Latest version is $newest, ".
-							   "not $version.\n";
-					return ("ERROR");
-				}
-
 				print PLOG "Fetching source files...\n";
 				@made = @{$entries{$version}};
 				if (!open( PIPE, "$conf::apt_get $main::chroot_apt_options ".
-						   "--only-source -q -d source $pkg 2>&1 </dev/null |" )) {
+						   "--only-source -q -d source $pkg=$version 2>&1 </dev/null |" )) {
 					print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 					return ("ERROR", @made);
 				}
