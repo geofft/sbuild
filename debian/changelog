@@ -45,6 +45,8 @@ sbuild (0.37) unstable; urgency=low
       + run_apt(): Complete support for "install-deps-env".
       + Add --use-snapshot for building with gcc-snapshot.
       + build(): Remove dpkg-buildpackage debugging statements.
+      + merge_pkg_build_deps(): Correctly separate depdendencies in $deps,
+        and don't immediately return if there are missing packages.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -57,7 +59,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 29 Nov 2005 23:33:22 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 30 Nov 2005 21:53:03 +0000
 
 sbuild (0.36) unstable; urgency=low
 

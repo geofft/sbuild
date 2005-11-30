@@ -2058,13 +2058,12 @@ sub merge_pkg_build_deps {
 	$conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
 	
 	my $deps = $depends . ", " . $conflicts;
-	$deps .= "," . $dependsi . ", " . $conflictsi if $main::build_arch_all;
+	$deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
 	@{$main::deps{$pkg}} = @l;
 	print "Merging pkg deps: $deps\n" if $main::debug;
 	parse_one_srcdep( $pkg, $deps, \%main::deps );
 
 	my $missing = (cmp_dep_lists( $old_deps, $main::deps{$pkg} ))[1];
-	return if !@$missing;
 
 	# read list of build-essential packages (if not yet done) and expand their
 	# dependencies (those are implicitly essential)
