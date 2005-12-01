@@ -56,6 +56,7 @@ sbuild (0.37) unstable; urgency=low
       + fetch_source_files(): Support versioned fetches with apt-get.
       + Add support for auto_giveback_socket: add an extra argument to
         --auto-give-back and add an ssh '-S' option to analyze_fail_stage().
+      + Support new --make-binNMU options.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -68,7 +69,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Thu,  1 Dec 2005 22:40:32 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu,  1 Dec 2005 22:47:57 +0000
 
 sbuild (0.36) unstable; urgency=low
 

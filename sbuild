@@ -275,6 +275,10 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	}
 	elsif (/^--make-binNMU=(.+)$/) {
 		$main::binNMU = $1;
+		$main::binNMUver ||= 1;
+	}
+	elsif (/^--binNMU=(\d+)$/) {
+		$main::binNMUver = $1;
 	}
 	elsif (/^--use-snapshot$/) {
 		$main::useSNAP = 1;
