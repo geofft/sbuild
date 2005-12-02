@@ -1366,6 +1366,8 @@ sub parse_quinn_diff {
 			version_less( $pkg->{'Version'}, $version )) {
 			change_state( \$pkg, 'Dep-Wait' );
 			$pkg->{'Version'}  = $version;
+			delete $pkg->{'Binary-NMU-Version'};
+			delete $pkg->{'Binary-NMU-Changelog'};
 			log_ta( $pkg, "--merge-quinn" );
 			$change++;
 			print "$name ($version) still waiting for dependencies.\n"
