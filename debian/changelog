@@ -62,6 +62,8 @@ sbuild (0.37) unstable; urgency=low
       + cleanup_close: Set $main::current_job to "" and shutdown if
         $main::HOME/EXIT-DAEMON-PLEASE exists and we are running in
         batchmode.
+      + Move "Package claims to have built" error message to the same place
+        as upstream.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
@@ -76,7 +78,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Thu,  8 Dec 2005 22:42:37 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu,  8 Dec 2005 23:08:30 +0000
 
 sbuild (0.36) unstable; urgency=low
 
