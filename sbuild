@@ -388,8 +388,11 @@ foreach $pkgv (@ARGV) {
 	analyze_fail_stage( $pkgv );
 	write_jobs_file( $main::pkg_status );
 	close_pkg_log( $pkgv );
+	$main::current_job = "";
+	if ( $main::batchmode and (-f "$main::HOME/EXIT-DAEMON-PLEASE") ) {
+	    main::shutdown("NONE (flag file exit)");
+	}
 }
-$main::current_job = "";
 write_jobs_file();
 
 close_log();
