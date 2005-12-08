@@ -57,11 +57,15 @@ sbuild (0.37) unstable; urgency=low
       + Add support for auto_giveback_socket: add an extra argument to
         --auto-give-back and add an ssh '-S' option to analyze_fail_stage().
       + Support new --make-binNMU options.
+      + Add support for $conf::chroot_only, and default to only running in
+        a chroot for security and safety.
     - sbuild.conf:
       + Remove watches.
       + Update alternatives.
       + Comment out example %individual_stalled_pkg_timeout.
       + Empty @ignore_watches_no_build_deps.
+    - sbuild.conf.local:
+      + Add $chroot_only.
     - avg-pkg-build-space.1: Update text.
     - example.sbuildrc:
       + Remove $hack_changes_for_frozen.
@@ -69,7 +73,7 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
 
- -- Roger Leigh <rleigh@debian.org>  Thu,  1 Dec 2005 22:47:57 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu,  8 Dec 2005 22:24:18 +0000
 
 sbuild (0.36) unstable; urgency=low
 

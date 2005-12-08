@@ -52,7 +52,7 @@ $purge_build_directory = "successful";
 @toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$' );
 $stalled_pkg_timeout = 90; # minutes
 $srcdep_lock_wait = 1; # minutes
-$chroot_only = 0;
+$chroot_only = 1;
 $chroot_mode = "split";
 %individual_stalled_pkg_timeout = ();
 $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
@@ -336,8 +336,8 @@ if (-d "$main::dist_locations{\"$main::distribution\"}") {
 		}
 	}
 	$main::chroot_apt_op = '$CHROOT_OPTIONS';
-} else {
-	die "$main::distribution chroot does not exist\n";
+} elsif ($conf::chroot_only) {
+	die "$main::distribution chroot does not exist and in chroot only mode -- exiting\n";
 }
 write_jobs_file();
 
