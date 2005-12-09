@@ -77,8 +77,9 @@ sbuild (0.37) unstable; urgency=low
       + Update comments.
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
+  * Add support for building from experimental.
 
- -- Roger Leigh <rleigh@debian.org>  Thu,  8 Dec 2005 23:08:30 +0000
+ -- Roger Leigh <rleigh@debian.org>  Fri,  9 Dec 2005 09:35:40 +0000
 
 sbuild (0.36) unstable; urgency=low
 
