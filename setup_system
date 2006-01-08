@@ -6,10 +6,6 @@ sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --group
 sudo mkdir -p /var/debbuild/srcdep-lock
 sudo chown -R buildd:buildd /var/debbuild
 sudo chmod -R 2775 /var/debbuild
-sudo ln -s source-dependencies-stable /etc/source-dependencies-stable-security
-sudo ln -s source-dependencies-testing /etc/source-dependencies-stable-testing
-sudo ln -s source-dependencies-stable /etc/source-dependencies-oldstable-security
-sudo chown buildd:buildd /etc/source-dependencies-*
 # parts to be done as buildd.
 cd ~buildd
 zcat /usr/share/doc/buildd/examples/buildd.conf.gz > buildd.conf
