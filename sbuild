@@ -725,12 +725,12 @@ EOF
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			exec "$conf::sudo", "/usr/sbin/chroot", "$main::cwd/$main::chroot_dir",
-				 "$conf::su", $main::username, "-s", "/bin/sh", "-c",
+				 "$conf::su", "-s", "/bin/sh", "-c",
 				 "cd $bdir && PATH=$conf::path ". 
 				 (defined($main::ld_library_path) ?
 				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				 "$binopt -m'$conf::maintainer_name' -r$conf::fakeroot 2>&1";
+				 "$binopt -m'$conf::maintainer_name' -r$conf::fakeroot 2>&1", $main::username;
 		}
 		else {
 			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
@@ -1726,45 +1726,46 @@ sub read_deps {
 	my $fname;
 	local( *F );
 
-	open( F, $fname = "<$conf::source_dependencies-$main::distribution" )
-		or open( F, $fname = "<$conf::source_dependencies" )
-		or die "Cannot open $conf::source_dependencies: $!\n";
-	$fname = substr( $fname, 1 );
-	print "Reading source dependencies from $fname\n"
-		if $main::debug;
-	while( <F> ) {
-		chomp;
-		next if /^\s*$/ || /^\s*#/;
-		while( /\\$/ ) {
-			chop;
-			$_ .= <F>;
-			chomp;
-		}
-		if (/^(\*\*?[\w\d.+-]+):\s*$/) {
-			# is a special definition
-			my $sp = $1;
-			get_special( $fname, $sp, \*F );
-			next;
-		}
-		if (/^abbrev\s+([\w\d.+-]+)\s*=\s*(.*)\s*$/) {
-			my ($abbrev, $def) = ($1, $2);
-			parse_one_srcdep( $abbrev, $def, \%main::abbrevs );
-			next;
-		}
-		if (!/^([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-			warn "Syntax error in line $. in $fname\n";
-			next;
-		}
-		my( $pkg, $deps ) = ($1, $2);
-		if (exists $main::deps{$pkg}) {
-			warn "Ignoring double entry for package $pkg at line $. ".
-				 "in $fname\n";
-			next;
-		}
-		next if !isin( $pkg, @for_pkgs );
-		parse_one_srcdep( $pkg, $deps, \%main::deps );
+	if (open( F, $fname = "<$conf::source_dependencies-$main::distribution" )
+		or open( F, $fname = "<$conf::source_dependencies" ))
+	{
+	    $fname = substr( $fname, 1 );
+	    print "Reading source dependencies from $fname\n"
+		    if $main::debug;
+	    while( <F> ) {
+		    chomp;
+		    next if /^\s*$/ || /^\s*#/;
+		    while( /\\$/ ) {
+			    chop;
+			    $_ .= <F>;
+			    chomp;
+		    }
+		    if (/^(\*\*?[\w\d.+-]+):\s*$/) {
+			    # is a special definition
+			    my $sp = $1;
+			    get_special( $fname, $sp, \*F );
+			    next;
+		    }
+		    if (/^abbrev\s+([\w\d.+-]+)\s*=\s*(.*)\s*$/) {
+			    my ($abbrev, $def) = ($1, $2);
+			    parse_one_srcdep( $abbrev, $def, \%main::abbrevs );
+			    next;
+		    }
+		    if (!/^([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
+			    warn "Syntax error in line $. in $fname\n";
+			    next;
+		    }
+		    my( $pkg, $deps ) = ($1, $2);
+		    if (exists $main::deps{$pkg}) {
+			    warn "Ignoring double entry for package $pkg at line $. ".
+				     "in $fname\n";
+			    next;
+		    }
+		    next if !isin( $pkg, @for_pkgs );
+		    parse_one_srcdep( $pkg, $deps, \%main::deps );
+	    }
+	    close( F );
 	}
-	close( F );
 
 	foreach (@main::manual_srcdeps) {
 		if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
