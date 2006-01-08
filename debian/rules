@@ -35,7 +35,7 @@ binary-sbuild: checkroot
 	install -d debian/tmp/var/debbuild/srcdep-lock
 
 	install -d debian/tmp/usr/bin
-	install -m 755 sbuild avg-pkg-build-time update-sourcedeps \
+	install -m 755 sbuild avg-pkg-build-time \
 		debian/tmp/usr/bin/
 	cat WannaBuild.pm >> debian/tmp/usr/bin/sbuild
 
