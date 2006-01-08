@@ -7,9 +7,7 @@ if [ "$1" = "configure" ]; then
     else
 	if dpkg --compare-versions "$2" lt "20050108"; then
 	    for d in $DISTS; do
-		if [ -e "/etc/source-dependencies-$d" ]; then
-		    rm -f "/etc/source-dependencies-$d"
-		fi
+		rm -f "/etc/source-dependencies-$d"
 	    done
 	fi
     fi
