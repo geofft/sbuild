@@ -1,5 +1,5 @@
-wanna-build (2005.11.15) unstable; urgency=medium
+wanna-build (2006.01.08) stable; urgency=high
 
   * Initial non-release. [*DO NOT USE THESE DEBS*]
 
- -- Ryan Murray <rmurray@debian.org>  Tue, 15 Nov 2005 00:24:27 -0800
+ -- Ryan Murray <rmurray@debian.org>  Sun,  8 Jan 2006 15:37:11 -0800
