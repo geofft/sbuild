@@ -1,4 +1,8 @@
 #!/bin/sh
+# Needed sudoers entries:
+#buildd  ALL=NOPASSWD: ALL
+#Defaults:buildd env_keep=APT_CONFIG
+#
 # parts to be run as root.
 # ons of these, depending on whether you have a buildd group or not
 #sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --ingroup buildd --disabled-password buildd
