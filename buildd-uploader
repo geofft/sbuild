@@ -253,6 +253,7 @@ sub do_dupload {
 		else {
 			push( @log, "dupload exit status ". exitstatus($?)  );
 			$errs .= "dupload exit status ".exitstatus($?)."\n";
+			push( @failed, $current_job );
 		}
 	}
 
