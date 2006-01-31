@@ -1,8 +1,8 @@
 Source: sbuild
 Section: devel
 Priority: extra
-Maintainer: Francesco Paolo Lovergine <frankie@debian.org>
-Uploaders: Roger Leigh <rleigh@debian.org>, Michael Banck <mbanck@debian.org>
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debian.org>
+Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>
 Build-Depends-Indep: debhelper (>> 4.0.0)
 Standards-Version: 3.6.2
 
@@ -24,4 +24,4 @@ Description: Tool for building Debian binary packages from Debian sources
  versions.  And by keeping only essential and build-essential
  in the chroots, you can find the correct build dependencies for
  a package.
- 
+

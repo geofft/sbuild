@@ -899,60 +899,10 @@ EOF
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
 	else {
-		if (-r "$dir/debian/files") {
-			my @debs;
-			my @files;
-			open( F, "<$dir/debian/files" );
-			while( <F> ) {
-				my $f = (split( /\s+/, $_ ))[0];
-				push( @files, "$main::chroot_build_dir$f" );
-				next if $f !~ /$main::arch\.[\w\d.-]*$/;
-				push( @debs, "$main::chroot_build_dir$f" );
-				push( @space_files, $f );
-			}
-			close( F );
-			my @debs2 = @debs;
-			foreach (@debs) {
-				print PLOG "\n$_:\n";
-				if (!open( PIPE, "dpkg --info $_ 2>&1 |" )) {
-					print PLOG "Can't spawn dpkg: $! -- can't dump infos\n";
-				}
-				else {
-					print PLOG $_ while( <PIPE> );
-					close( PIPE );
-				}
-			}
-			foreach (@debs2) {
-				print PLOG "\n$_:\n";
-				if (!open( PIPE, "dpkg --contents $_ 2>&1 |" )) {
-					print PLOG "Can't spawn dpkg: $! -- can't dump infos\n";
-				}
-				else {
-					print PLOG $_ while( <PIPE> );
-					close( PIPE );
-				}
-			}
-			if ($main::chroot_build_dir) {
-				foreach (@files) {
-					if (! -f $_) {
-						print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
-						next;
-					}
-					if (/_all.deb$/ and not $main::build_arch_all) {
-						print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
-						unlink($_);
-						next;
-					}
-					system "mv", $_, "."
-						and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
-				}
-			}
-		}
-
 		$changes = "${pkg}_".
 			($main::binNMU ? Sbuild::binNMU_version($sversion,$main::binNMUver) : $sversion).
 			"_$main::arch.changes";
-		my @files;
+		my @cfiles;
 		if (-r "$main::chroot_build_dir$changes") {
 			my(@do_dists, @saved_dists);
 			print PLOG "\n$changes:\n";
@@ -973,7 +923,7 @@ EOF
 						}
 						print PLOG $_;
 						if (/^ [a-z0-9]{32}/) {
-						    push(@files, (split( /\s+/, $_ ))[5] );
+						    push(@cfiles, (split( /\s+/, $_ ))[5] );
 						}
 					}
 				}
@@ -1002,12 +952,47 @@ EOF
 				}
 			}
 			close( F );
-			print PLOG "\n";
 		}
 		else {
 			print PLOG "Can't find $changes -- can't dump info\n";
 		}
 
+		my @debcfiles = @cfiles;
+		foreach (@debcfiles) {
+			my $deb = "$main::chroot_build_dir$_";
+			next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
+
+			print PLOG "\n$deb:\n";
+			if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
+				print PLOG "Can't spawn dpkg: $! -- can't dump info\n";
+			}
+			else {
+				print PLOG $_ while( <PIPE> );
+				close( PIPE );
+			}
+		}
+
+		@debcfiles = @cfiles;
+		foreach (@debcfiles) {
+			my $deb = "$main::chroot_build_dir$_";
+			next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
+
+			print PLOG "\n$deb:\n";
+			if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
+				print PLOG "Can't spawn dpkg: $! -- can't dump info\n";
+			}
+			else {
+				print PLOG $_ while( <PIPE> );
+				close( PIPE );
+			}
+		}
+
+		foreach (@cfiles) {
+			push( @space_files, $_ );
+			system "mv", "$main::chroot_build_dir$_", "."
+				and print PLOG "ERROR: Could not move $_ to .\n";
+		}
+		print PLOG "\n";
 		print PLOG "*"x78, "\n";
 		print PLOG "Built successfully\n";
 	}

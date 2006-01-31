@@ -19,7 +19,8 @@ sbuild (0.37) unstable; urgency=low
       + Allow arch: all packages to be built when $main::build_arch_all
         is true.
       + Hardware DEBIAN_FRONTEND to "noninteractive" when installing and
-        purging packages.
+        purging packages.  "apt-get update" is also run when the package
+        cache is out of date (closes: 331546).
       + Fix support for '~' in version numbers.
       + Add Sbuild.pm (upstream WannaBuild.pm), and replace version_cmp()
         with Sbuild::version_compare().
@@ -31,8 +32,8 @@ sbuild (0.37) unstable; urgency=low
         build an _all.deb, but doesn't.  Instead, warn to the build log.
       + Delete binary-all packages that we didn't ask to be built.
       + By default, set APT::Get::AllowUnauthenticated to "true".
-      + Add $conf::chroot_only for compatibility with upstream, even
-        though we don't use it ourselves.
+      + Add $conf::chroot_only for compatibility with upstream
+        (closes: #302628).
       + Add $conf::dpkg_source.
       + Add $conf::build_env_cmnd.
       + Merge whitespace and indentation changes.
@@ -66,7 +67,7 @@ sbuild (0.37) unstable; urgency=low
         as upstream.
     - sbuild.conf:
       + Remove watches.
-      + Update alternatives.
+      + Update alternatives (closes: #280689).
       + Comment out example %individual_stalled_pkg_timeout.
       + Empty @ignore_watches_no_build_deps.
     - sbuild.conf.local:
@@ -78,8 +79,13 @@ sbuild (0.37) unstable; urgency=low
   * sbuild.conf.local:
     - Use FHS-compliant pathnames, as in sbuild.conf.
   * Add support for building from experimental.
+  * sbuild:
+    - Parse the .changes rather than debian/files, so that the
+      .dsc/.diff.gz/.orig.tar.gz are also copied back to ~/build.
+    - Print information and contents of arch-all packages (closes: #321640).
+  * debian/control: The maintainer field contains the list address.
 
- -- Roger Leigh <rleigh@debian.org>  Fri,  9 Dec 2005 09:35:40 +0000
+ --
 
 sbuild (0.36) unstable; urgency=low
 
