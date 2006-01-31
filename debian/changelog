@@ -85,7 +85,7 @@ sbuild (0.37) unstable; urgency=low
     - Print information and contents of arch-all packages (closes: #321640).
   * debian/control: The maintainer field contains the list address.
 
- --
+ -- Roger Leigh <rleigh@whinlatter.ukfsn.org>  Tue, 31 Jan 2006 12:58:57 +0000
 
 sbuild (0.36) unstable; urgency=low
 
