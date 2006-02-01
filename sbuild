@@ -298,37 +298,8 @@ $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
 
-if (-d "$main::dist_locations{\"$main::distribution\"}") {
-	$main::chroot_dir = "$main::dist_locations{\"$main::distribution\"}";
-	$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
-	$conf::srcdep_lock_dir = "$main::chroot_dir/$conf::srcdep_lock_dir";
-	$main::ilock_file = "$conf::srcdep_lock_dir/install";
-	$main::chroot_apt_options =
-		"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
-		" -o DPkg::Options::=--root=$main::chroot_dir".
-		" -o DPkg::Run-Directory=$main::chroot_dir";
+setup_options($main::distribution);
 
-	my $aptconf = "/var/lib/sbuild/apt.conf";
-	$ENV{'APT_CONFIG'} = $aptconf;
-	if ( ! -f $aptconf ) {
-		if (open F, ">$aptconf") {
-			print F "Dir \"$$main::chroot_dir/\";\n" .
-			        "APT::Get::AllowUnauthenticated true;\n";
-			close F;
-		} else {
-			$main::chroot_apt_options .=
-			"-o Dir::State=$main::chroot_dir/var/".
-				(-d "$main::chroot_dir/var/lib/apt" ? "lib":"state")."/apt ".
-			"-o Dir::Cache=$main::chroot_dir/var/cache/apt ".
-			"-o Dir::Etc=$main::chroot_dir/etc/apt ".
-			"-o Dir::Etc::main=$main::chroot_dir/etc/apt/apt.conf ".
-			"-o Dir::Etc::parts=$main::chroot_dir/etc/apt/apt.conf.d ";
-		}
-	}
-	$main::chroot_apt_op = '$CHROOT_OPTIONS';
-} elsif ($conf::chroot_only) {
-	die "$main::distribution chroot does not exist and in chroot only mode -- exiting\n";
-}
 write_jobs_file();
 
 my( $pkgv, $pkg );
@@ -3205,4 +3176,40 @@ sub get_schroot_info {
 		}
 	}
 	close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
+}
+
+sub setup_options {
+	my $distribution = shift;
+
+	if (-d "$main::dist_locations{\"$distribution\"}") {
+		$main::chroot_dir = "$main::dist_locations{\"$distribution\"}";
+		$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
+		$conf::srcdep_lock_dir = "$main::chroot_dir/$conf::srcdep_lock_dir";
+		$main::ilock_file = "$conf::srcdep_lock_dir/install";
+		$main::chroot_apt_options =
+			"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
+				" -o DPkg::Options::=--root=$main::chroot_dir".
+					" -o DPkg::Run-Directory=$main::chroot_dir";
+
+		my $aptconf = "/var/lib/sbuild/apt.conf";
+		$ENV{'APT_CONFIG'} = $aptconf;
+		if ( ! -f $aptconf ) {
+			if (open F, ">$aptconf") {
+				print F "Dir \"$$main::chroot_dir/\";\n" .
+					"APT::Get::AllowUnauthenticated true;\n";
+				close F;
+			} else {
+				$main::chroot_apt_options .=
+					"-o Dir::State=$main::chroot_dir/var/".
+						(-d "$main::chroot_dir/var/lib/apt" ? "lib":"state")."/apt ".
+							"-o Dir::Cache=$main::chroot_dir/var/cache/apt ".
+								"-o Dir::Etc=$main::chroot_dir/etc/apt ".
+									"-o Dir::Etc::main=$main::chroot_dir/etc/apt/apt.conf ".
+										"-o Dir::Etc::parts=$main::chroot_dir/etc/apt/apt.conf.d ";
+			}
+		}
+		$main::chroot_apt_op = '$CHROOT_OPTIONS';
+	} elsif ($conf::chroot_only) {
+		die "$distribution chroot does not exist and in chroot only mode -- exiting\n";
+	}
 }
