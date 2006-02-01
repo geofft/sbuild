@@ -1,3 +1,11 @@
+sbuild (0.38) unstable; urgency=low
+
+  * sbuild:
+    - Move schroot metadata parsing to a separate function,
+      get_schroot_info().
+
+ --
+
 sbuild (0.37) unstable; urgency=low
 
   * Sync with upstream SVN:

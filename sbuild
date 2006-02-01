@@ -137,18 +137,7 @@ if ($conf::chroot_mode eq "schroot") {
     while (<CHROOTS>) {
 	chomp;
 	my $chroot = $_;
-	$main::dist_order{$chroot} = 0; # Default if no order is defined
-	open CHROOT_DATA, '-|', $conf::schroot, '--info', '--chroot', $chroot or die "Can't run $conf::schroot to get chroot data";
-	while (<CHROOT_DATA>) {
-	    chomp;
-	    if (/^Location: (.*)$/) {
-		$main::dist_locations{$chroot} = $1;
-	    }
-	    if (/^Priority: (.*)$/) {
-		$main::dist_order{$chroot} = $1;
-	    }
-	}
-	close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
+	get_schroot_info($chroot);
     }
     close CHROOTS or die "Can't close schroot pipe";
 }
@@ -3200,4 +3189,20 @@ sub write_stats {
 	print F "$val\n";
 	close( F );
 	unlock_file( "$main::stats_dir" );
+}
+
+sub get_schroot_info {
+	my $chroot = shift;
+
+	open CHROOT_DATA, '-|', $conf::schroot, '--info', '--chroot', $chroot or die "Can't run $conf::schroot to get chroot data";
+	while (<CHROOT_DATA>) {
+		chomp;
+		if (/^\s*Location:?\s+(.*)$/) {
+			$main::dist_locations{$chroot} = $1;
+		}
+		if (/^\s*Priority:?\s+(\d+)$/) {
+			$main::dist_order{$chroot} = $1;
+		}
+	}
+	close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
 }
