@@ -3165,10 +3165,17 @@ sub write_stats {
 sub get_schroot_info {
 	my $chroot = shift;
 
+	$main::dist_locations{$chroot} = "";
+	$main::dist_order{$chroot} = 0;
 	open CHROOT_DATA, '-|', $conf::schroot, '--info', '--chroot', $chroot or die "Can't run $conf::schroot to get chroot data";
 	while (<CHROOT_DATA>) {
 		chomp;
-		if (/^\s*Location:?\s+(.*)$/) {
+		if (/^\s*Location:?\s+(.*)$/ &&
+		    $main::dist_locations{$chroot} eq "") {
+			$main::dist_locations{$chroot} = $1;
+		}
+		if (/^\s*Mount Location:?\s+(.*)$/ &&
+		    $main::dist_locations{$chroot} eq "") {
 			$main::dist_locations{$chroot} = $1;
 		}
 		if (/^\s*Priority:?\s+(\d+)$/) {
