@@ -128,8 +128,8 @@ foreach (keys(%main::dist_order)) {
 
 # Pick up available chroots and dist_order from schroot
 if ($conf::chroot_mode eq "schroot") {
-    undef %main::dist_order;
-    undef %main::dist_locations;
+    %main::dist_order = ();
+    %main::dist_locations = ();
     open CHROOTS, '-|', $conf::schroot, '--list' or die "Can't run $conf::schroot";
     while (<CHROOTS>) {
 	chomp;

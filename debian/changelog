@@ -7,6 +7,8 @@ sbuild (0.38) unstable; urgency=low
     - Move path and APT setup into a separate function, setup_options().
     - Remove check_dpkg_version().  This has not been necessary since the
       release of potato (Debian 2.2), which had a dpkg version 1.6.14.
+    - When $chroot_mode == "schroot", clear %main::dist_order and
+      %main::dist_locations using an empty array, rather than undef.
 
  --
 
