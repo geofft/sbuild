@@ -121,9 +121,6 @@ $main::chroot_apt_options = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
-$main::new_dpkg = 0;
-check_dpkg_version();
-
 %main::dist_locations;
 foreach (keys(%main::dist_order)) {
     $main::dist_locations{$_} = "$main::cwd/chroot-$_";
@@ -1422,14 +1419,14 @@ sub run_apt {
 	# EOF -- hardwire the new --force-confold option to avoid the questions.
 	if ($conf::chroot_mode eq "schroot") {
 		if (!open( PIPE, "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- $conf::apt_get --purge ".
-			   ($main::new_dpkg ? "-o DPkg::Options::=--force-confold " : "").
+			   "-o DPkg::Options::=--force-confold ".
 			   "-q $mode install @to_install 2>&1 </dev/null |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
 		}
 	} else {
 		if (!open( PIPE, "$conf::sudo $conf::apt_get --purge $main::chroot_apt_options ".
-			   ($main::new_dpkg ? "-o DPkg::Options::=--force-confold " : "").
+			   "-o DPkg::Options::=--force-confold ".
 			   "-q $mode install @to_install 2>&1 </dev/null |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
@@ -3057,14 +3054,6 @@ sub unlock_file {
 	my $lockfile = "$file.lock";
 
 	unlink( $lockfile );
-}
-
-sub check_dpkg_version {
-	my $t = `$conf::dpkg --version`;
-	my $version = ($t =~ /version\s+(\S+)/)[0];
-
-	$main::new_dpkg = 1
-		if 0 == system "$conf::dpkg --compare-versions '$version' ge 1.4.1.18";
 }
 
 sub shutdown {

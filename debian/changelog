@@ -5,6 +5,8 @@ sbuild (0.38) unstable; urgency=low
       get_schroot_info().  Parse both "Location" (for
       backwards-compatibility) and "Mount Location".
     - Move path and APT setup into a separate function, setup_options().
+    - Remove check_dpkg_version().  This has not been necessary since the
+      release of potato (Debian 2.2), which had a dpkg version 1.6.14.
 
  --
 
