@@ -1853,7 +1853,7 @@ sub run_apt_command {
 	my $aptcommand = get_apt_command($command);
 
 	my $chroot = 0;
-	if ($conf::chroot_mode ne "schroot") {
+	if ($conf::chroot_mode eq "schroot") {
 		$chroot = 1;
 	}
 
