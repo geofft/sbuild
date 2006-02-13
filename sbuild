@@ -348,18 +348,19 @@ sub fetch_source_files {
 			open( F, "<$dscfile/debian/.sbuild-build-deps" );
 			my $pkg;
 			while( <F> ) {
-				/^Package:\s*(.*)\s*$/i and $pkg = $1;
-				/^Build-Depends:\s*(.*)\s*$/i and $build_depends = $1;
-				/^Build-Depends-Indep:\s*(.*)\s*$/i and $build_depends_indep = $1;
-				/^Build-Conflicts:\s*(.*)\s*$/i and $build_conflicts = $1;
-				/^Build-Conflicts-Indep:\s*(.*)\s*$/i and $build_conflicts_indep = $1;
+				s/\s*$//;
+				/^Package:\s*(.*)/i and $pkg = $1;
+				/^Build-Depends:\s*(.*)/i and $build_depends = $1;
+				/^Build-Depends-Indep:\s*(.*)/i and $build_depends_indep = $1;
+				/^Build-Conflicts:\s*(.*)/i and $build_conflicts = $1;
+				/^Build-Conflicts-Indep:\s*(.*)/i and $build_conflicts_indep = $1;
 			}
 			close( F );
 			if ($build_depends || $build_depends_indep || $build_conflicts ||
 				$build_conflicts_indep) {
 				merge_pkg_build_deps( $pkg, $build_depends,
-									  $build_depends_indep, $build_conflicts,
-									  $build_conflicts_indep );
+				    $build_depends_indep, $build_conflicts,
+				    $build_conflicts_indep );
 			}
 		}
 		return;
