@@ -9,6 +9,10 @@ sbuild (0.38) unstable; urgency=low
       release of potato (Debian 2.2), which had a dpkg version 1.6.14.
     - When $chroot_mode == "schroot", clear %main::dist_order and
       %main::dist_locations using an empty array, rather than undef.
+    - New functions get_command(), run_command(), get_apt_command() and
+      run_apt_command() to run a command inside or outside the build
+      chroot under the specified user, or run apt inside or outside the
+      chroot (depending on the chroot_mode), respectively.
 
  --
 

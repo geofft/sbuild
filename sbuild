@@ -1787,6 +1787,79 @@ sub get_dpkg_status {
 	return \%result;
 }
 
+sub get_command {
+	my $command = shift; # Command to run
+	my $user = shift;    # User to run command under
+	if (!defined $user || $user eq "") {
+		$user = $main::username;
+	}
+	my $chroot = shift;  # Run in chroot?
+	if (!defined $chroot) {
+		$chroot = 1;
+	}
+
+	my $cmdline;
+	if ($chroot != 0) { # Run command inside chroot
+		if ($conf::chroot_mode eq "schroot") {
+			$cmdline = "$conf::schroot -c $main::schroot_session --run-session $conf::schroot_options -u $user -- ";
+		} else {
+			$cmdline = "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::sudo ";
+			if ($user ne "root") {
+				$cmdline .= "-u $main::username ";
+			}
+			$cmdline .= "-H ";
+		}
+	} else { # Run command outside chroot
+		if ($user ne $main::username) {
+			$cmdline = "$conf::sudo ";
+			if ($user ne "root") {
+				$cmdline .= "-u $main::username ";
+			}
+		}
+	}
+	$cmdline .= "/bin/sh -c '$command'";
+
+	return $cmdline;
+}
+
+sub run_command {
+	my $command = shift; # Command to run
+	my $user = shift;    # User to run command under
+	my $chroot = shift;  # Run in chroot?
+	my $cmdline = get_command($command, $user, $chroot);
+
+	# schroot prints out the command itself
+	if ($conf::chroot_mode ne "schroot") {
+		print PLOG "$cmdline\n";
+	}
+
+	return system($cmdline);
+}
+
+sub get_apt_command {
+	my $command = shift; # Command to run
+	my $aptcommand = "$conf::apt_get ";
+
+	if ($conf::chroot_mode ne "schroot") {
+		$aptcommand .= "$main::chroot_apt_options ";
+	}
+	$aptcommand .= $command;
+
+	return $aptcommand;
+}
+
+sub run_apt_command {
+	my $command = shift; # Command to run
+	my $aptcommand = get_apt_command($command);
+
+	my $chroot = 0;
+	if ($conf::chroot_mode ne "schroot") {
+		$chroot = 1;
+	}
+
+	return run_command($aptcommand, "root", $chroot);
+}
+
 sub run_script {
 	my $e_mode = shift;
 	my $x_mode = "";
