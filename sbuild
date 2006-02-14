@@ -1787,7 +1787,13 @@ sub get_dpkg_status {
 	return \%result;
 }
 
-sub get_command {
+sub log_command {
+	my $msg = shift;
+	$msg =~ s/\Q$main::chroot_apt_options\E/CHROOT_APT_OPTIONS/g;
+	print PLOG "$msg\n";
+}
+
+sub get_command_internal {
 	my $command = shift; # Command to run
 	my $user = shift;    # User to run command under
 	if (!defined $user || $user eq "") {
@@ -1822,16 +1828,26 @@ sub get_command {
 	return $cmdline;
 }
 
+sub get_command {
+	my $command = shift; # Command to run
+	my $user = shift;    # User to run command under
+	my $chroot = shift;  # Run in chroot?
+	my $cmdline = get_command_internal($command, $user, $chroot);
+
+	log_command($cmdline);
+
+	return $cmdline;
+}
+
+# Note, do not run with $user="root", and $chroot=0, because sudo
+# access to the host system is not required.
 sub run_command {
 	my $command = shift; # Command to run
 	my $user = shift;    # User to run command under
 	my $chroot = shift;  # Run in chroot?
-	my $cmdline = get_command($command, $user, $chroot);
+	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	# schroot prints out the command itself
-	if ($conf::chroot_mode ne "schroot") {
-		print PLOG "$cmdline\n";
-	}
+	log_command($cmdline);
 
 	return system($cmdline);
 }
@@ -1840,31 +1856,45 @@ sub exec_command {
 	my $command = shift; # Command to run
 	my $user = shift;    # User to run command under
 	my $chroot = shift;  # Run in chroot?
-	my $cmdline = get_command($command, $user, $chroot);
+	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	# schroot prints out the command itself
-	if ($conf::chroot_mode ne "schroot") {
-		print PLOG "$cmdline\n";
-	}
+	log_command($cmdline);
 
 	exec $cmdline;
 }
 
-sub get_apt_command {
-	my $command = shift; # Command to run
-	my $aptcommand = "$conf::apt_get ";
+sub get_apt_command_internal {
+	my $aptcommand = shift; # Command to run
+	my $options = shift; # Command options
+	$aptcommand .= " ";
 
 	if ($conf::chroot_mode ne "schroot") {
 		$aptcommand .= "$main::chroot_apt_options ";
 	}
-	$aptcommand .= $command;
+	$aptcommand .= $options;
 
 	return $aptcommand;
 }
 
+sub get_apt_command {
+	my $command = shift; # Command to run
+	my $options = shift; # Command options
+	my $aptcommand = get_apt_command_internal($command, $options);
+
+	my $chroot = 0;
+	if ($conf::chroot_mode eq "schroot") {
+		$chroot = 1;
+	}
+
+	my $cmdline = get_command($aptcommand, "root", $chroot);
+
+	return $cmdline;
+}
+
 sub run_apt_command {
 	my $command = shift; # Command to run
-	my $aptcommand = get_apt_command($command);
+	my $options = shift; # Command options
+	my $aptcommand = get_apt_command_internal($command, $options);
 
 	my $chroot = 0;
 	if ($conf::chroot_mode eq "schroot") {

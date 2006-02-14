@@ -15,6 +15,14 @@ sbuild (0.38) unstable; urgency=low
       chroot (depending on the chroot_mode), respectively.
     - New function exec_command().  This is the same as run_command(), but
       runs the command with exec rather than system().
+    - New functions log_command() to log a command being run,
+      get_command_internal() and get_apt_command_internal() to get a
+      command string without logging it; these are used by get_command(),
+      run_command, exec_command(), get_apt_command() and run_apt_command(),
+      which do log the command being run.  Commands are logged in for all
+      chroot modes.
+    - get_apt_command() and run_apt_command() take an additional parameter,
+      the command to run (apt-get or apt-cache).
 
  --
 
