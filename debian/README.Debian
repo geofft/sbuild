@@ -1,3 +1,5 @@
+sbuild for Debian
+-----------------
 
 chroots
 =======
@@ -16,8 +18,8 @@ helper scripts
 extras
 ======
 
-  avg-build-times avg-build-space
-  -------------------------------
+  avg-build-times and avg-build-space
+  -----------------------------------
   sbuild will keep databases of the time and space that builds
   require if a couple files exist:
 
@@ -40,12 +42,16 @@ extras
   If you decide to use src-deps you are responsible for keeping them
   up to date, maybe with a cron job.
 
+  On a modern Debian installation, src-deps are of limited use,
+  because Build-Depends are now required.  As a result, src-deps are
+  now optional, and in most cases may be completely ignored.
+
+
 NOTE: sbuild must be run in the directory that has the
 chroot-{stable,testing,unstable} symlink or it won't find
-the chroot and will build in base.
+the chroot and will build in base.  When using schroot,
+a chroot with the same name (or alias) as the distribution
+must be available.
 
 
-
-
-
-# vim:et
+ -- Roger Leigh <rleigh@debian.org>, Tue, 14 Feb 2006 21:46:28 +0000
