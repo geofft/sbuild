@@ -23,6 +23,16 @@ sbuild (0.38) unstable; urgency=low
       chroot modes.
     - get_apt_command() and run_apt_command() take an additional parameter,
       the command to run (apt-get or apt-cache).
+    - Use new commands for running commands inside and outside chroots:
+      + Signing options for dpkg-buildpackage are double-quoted rather than
+        single-quoted (because the main command is single-quoted).
+      + All commands run in a pipeline are obtained with get_command() or
+        get_apt_command().
+      + All other commands are run with run_command(), exec_command() or
+        run_apt_command().
+      + check_space() only requires root access in the chroot.
+  * Full sudo access is no longer mandatory when using the schroot
+    chroot_mode.
 
  --
 

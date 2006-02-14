@@ -281,9 +281,9 @@ $conf::mailto = $conf::mailto{$main::distribution}
 	if $conf::mailto{$main::distribution};
 
 # see debsign for priorities, we will follow the same order
-$main::dpkg_buildpackage_signopt="-m'".$conf::maintainer_name."'";
-$main::dpkg_buildpackage_signopt="-e'".$conf::uploader_name."'" if defined $conf::uploader_name; 
-$main::dpkg_buildpackage_signopt="-k'".$conf::key_id."'" if defined $conf::key_id; 
+$main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"";
+$main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name; 
+$main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id; 
 $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
 $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
@@ -407,8 +407,8 @@ sub fetch_source_files {
 
 			  retry:
 				print PLOG "Checking available source versions...\n";
-				if (!open( PIPE, "$conf::apt_cache $main::chroot_apt_options ".
-						   "-q showsrc $pkg 2>&1 </dev/null |" )) {
+				my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null");
+				if (!open( PIPE, "$command |" )) {
 					print PLOG "Can't open pipe to apt-cache: $!\n";
 					return ("ERROR");
 				}
@@ -429,13 +429,7 @@ sub fetch_source_files {
 				if (!defined($entries{$version})) {
 					if (!$retried) {
 						# try to update apt's cache if nothing found
-						if ($conf::chroot_mode eq "schroot") {
-							system "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- ".
-							    "$conf::apt_get update >/dev/null";
-						} else {
-							system "$conf::sudo $conf::apt_get ".
-							    "$main::chroot_apt_options update >/dev/null";
-						}
+						run_apt_command("$conf::apt_get", "update >/dev/null");
 						$retried = 1;
 						goto retry;
 					}
@@ -448,8 +442,9 @@ sub fetch_source_files {
 
 				print PLOG "Fetching source files...\n";
 				@made = @{$entries{$version}};
-				if (!open( PIPE, "$conf::apt_get $main::chroot_apt_options ".
-						   "--only-source -q -d source $pkg=$version 2>&1 </dev/null |" )) {
+
+				my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null");
+				if (!open( PIPE, "$command |" )) {
 					print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 					return ("ERROR", @made);
 				}
@@ -577,7 +572,7 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
+			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
 		}
 		$main::sub_task = "dpkg-source";
 		
@@ -677,11 +672,9 @@ sub build {
 					   "(Source needs $current_usage KB, free are $free KB.)\n";
 			print PLOG "Purging $dir\n";
 			chdir( $main::cwd );
-			if ($conf::chroot_mode eq "schroot") {
-				system "$conf::schroot -c $main::distribution -u $main::username $conf::schroot_options -- rm -rf $dir";
-			} else {
-				system "$conf::sudo rm -rf $dir";
-			}
+			my $bdir = $dir;
+			$bdir =~ s/^\Q$main::chroot_dir\E//;
+			run_command("rm -rf $bdir", "root", 1);
 			return 0;
 		}
 	}
@@ -773,38 +766,24 @@ EOF
 			$bdir =~ s/^\Q$main::chroot_dir\E//;
 			if (-f "$main::chroot_dir/etc/ld.so.conf" &&
 			    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-			    if ($conf::chroot_mode eq "schroot") {
-				    system "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- chmod a+r /etc/ld.so.conf";
-			    } else {
-				    system "$conf::sudo chmod a+r $main::chroot_dir/etc/ld.so.conf";
-			    }
+			    run_command("chmod a+r /etc/ld.so.conf", "root", 1);
 			    print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
-			if ($conf::chroot_mode eq "schroot") {
-				chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
-				exec "$conf::schroot", "-c", "$main::distribution", "-u", "$main::username", "--", "/bin/sh", "-c",
-				"cd $bdir && PATH=$conf::path ".
-				    (defined($main::ld_library_path) ?
-				     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				    "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				    "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-			} else {
-				exec "$conf::sudo", "/usr/sbin/chroot", "$main::chroot_dir",
-				"$conf::sudo", "-u", $main::username, "-H", "/bin/sh", "-c",
-				"cd $bdir && PATH=$conf::path ".
-				 (defined($main::ld_library_path) ?
+			chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
+			my $buildcmd = "cd $bdir && PATH=$conf::path ".
+				(defined($main::ld_library_path) ?
 				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				"exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				"$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-			}
+				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
+				 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+			exec_command($buildcmd, $main::username, 1);
 		}
 		else {
 			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
-				system "$conf::sudo chmod a+r /etc/ld.so.conf";
+				run_command("chmod a+r /etc/ld.so.conf", "root", 0);
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
-			exec "$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
-				"$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+			exec_command("$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
+					 "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0);
 		}
 	}
 	$main::sub_task = "dpkg-buildpackage";
@@ -820,7 +799,7 @@ EOF
 	my(@timeout_times, @timeout_sigs, $last_time);
 	$SIG{'ALRM'} = sub {
 		my $signal = ($timed_out > 0) ? 9 : 15;
-		system "$conf::sudo perl -e 'kill( -$signal, $main::sub_pid )'";
+		run_command("perl -e 'kill( -$signal, $main::sub_pid )'", $main::username, 1);
 		$timeout_times[$timed_out] = time - $last_time;
 		$timeout_sigs[$timed_out] = $signal;
 		$timed_out++;
@@ -960,7 +939,9 @@ EOF
 	if ($conf::purge_build_directory eq "always" ||
 		($conf::purge_build_directory eq "successful" && $rv == 0)) {
 		print PLOG "Purging $dir\n";
-		system "$conf::sudo rm -rf $dir";
+		my $bdir = $dir;
+		$bdir =~ s/^\Q$main::chroot_dir\E//;
+		run_command("rm -rf $bdir", "root", 1);
 	}
 	
 	print PLOG "-"x78, "\n";
@@ -1177,15 +1158,10 @@ sub install_deps {
 	}
 	
 	local (*F);
-	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::chroot_dir" : "";
 
-	my $success;
-	if ($conf::chroot_mode eq "schroot") {
-	    $success = open( F, "| $conf::schroot -c $main::distribution -u $main::username $conf::schroot_options -- $conf::dpkg --set-selections");
-	} else {
-	    $success = open( F, "| $conf::sudo $conf::dpkg $chroot_opt --set-selections");
-	}
+	my $command = get_command("$conf::dpkg --set-selections", "root", 1);
+
+	my $success = open( F, "| $command");
 
 	if ($success) {
 		foreach my $tpkg (@instd) {
@@ -1212,8 +1188,8 @@ sub unpack_special_source {
 		my $dsc;
 
 		{
-			if (!open( PIPE, "$conf::apt_get $main::chroot_apt_options ".
-                       "--only-source -q -d source $s 2>&1 </dev/null |" )) {
+			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null");
+			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-get: $!\n";
 				goto failed;
 			}
@@ -1331,26 +1307,15 @@ sub uninstall_debs {
 	
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
-	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::chroot_dir" : "";
-	if ($conf::chroot_mode eq "schroot") {
-		print PLOG "  $conf::schroot -c $main::distribution -u root $conf::schroot_options -- dpkg --$mode @_\n";
-	} else {
-		print PLOG "  $conf::sudo dpkg $chroot_opt --$mode @_\n";
-	}
+
+	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1);
   repeat:
 	my $output;
 	my $remove_start_time = time;
-	if ($conf::chroot_mode eq "schroot") {
-		if (!open( PIPE, "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- $conf::dpkg --$mode @_ 2>&1 </dev/null |")) {
-  	                 print PLOG "Can't open pipe to dpkg: $!\n";
-  	                 return 0;
-  	         }
-	} else {
-		if (!open( PIPE, "cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null |")) {
-  	                 print PLOG "Can't open pipe to dpkg: $!\n";
-  	                 return 0;
-  	         }
+
+	if (!open( PIPE, "$command |")) {
+		print PLOG "Can't open pipe to dpkg: $!\n";
+		return 0;
 	}
 	while ( <PIPE> ) {
 		$output .= $_;
@@ -1405,32 +1370,20 @@ sub run_apt {
 	@$rem_ret = ();
 	return 1 if !@to_install;
   repeat:
-	if ($conf::chroot_mode eq "schroot") {
-		print PLOG "  $conf::schroot -c $main::distribution -u root $conf::schroot_options -- $conf::apt_get --purge -q $mode install @to_install\n"
-		    if $mode ne "-s";
-	} else {
-		print PLOG "  $conf::sudo $conf::apt_get --purge $main::chroot_apt_op -q $mode install @to_install\n"
-		    if $mode ne "-s";
-	}
+
 	$msgs = "";
 	# redirection of stdin from /dev/null so that conffile question are
 	# treated as if RETURN was pressed.
 	# dpkg since 1.4.1.18 issues an error on the conffile question if it reads
 	# EOF -- hardwire the new --force-confold option to avoid the questions.
-	if ($conf::chroot_mode eq "schroot") {
-		if (!open( PIPE, "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- $conf::apt_get --purge ".
-			   "-o DPkg::Options::=--force-confold ".
-			   "-q $mode install @to_install 2>&1 </dev/null |" )) {
-			print PLOG "Can't open pipe to apt-get: $!\n";
-			return 0;
-		}
-	} else {
-		if (!open( PIPE, "$conf::sudo $conf::apt_get --purge $main::chroot_apt_options ".
-			   "-o DPkg::Options::=--force-confold ".
-			   "-q $mode install @to_install 2>&1 </dev/null |" )) {
-			print PLOG "Can't open pipe to apt-get: $!\n";
-			return 0;
-		}
+	my $command = get_apt_command("$conf::apt_get", "--purge ".
+				      "-o DPkg::Options::=--force-confold ".
+				      "-q $mode install @to_install ".
+				      "2>&1 </dev/null");
+
+	if (!open( PIPE, "$command |" )) {
+		print PLOG "Can't open pipe to apt-get: $!\n";
+		return 0;
 	}
 	while( <PIPE> ) {
 		$msgs .= $_;
@@ -1440,19 +1393,12 @@ sub run_apt {
 	$status = $?;
 
 	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-		if ($conf::chroot_mode eq "schroot") {
-			print PLOG "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- $conf::apt_get -q update\n";
-			if (!open( PIPE, "$conf::schroot -c $main::distribution -u root $conf::schroot_options -- $conf::apt_get -q update 2>&1 |" )) {
-				print PLOG "Can't open pipe to apt-get: $!\n";
-				return 0;
-			}
-		} else {
-			print PLOG "$conf::sudo $conf::apt_get $main::chroot_apt_op -q update\n";
-			if (!open( PIPE, "$conf::sudo $conf::apt_get $main::chroot_apt_options -q update 2>&1 |" )) {
-				print PLOG "Can't open pipe to apt-get: $!\n";
-				return 0;
-			}
+		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1");
+		if (!open( PIPE, "$command |" )) {
+			print PLOG "Can't open pipe to apt-get: $!\n";
+			return 0;
 		}
+
 		$msgs = "";
 		while( <PIPE> ) {
 			$msgs .= $_;
@@ -1925,19 +1871,10 @@ sub run_script {
 		setpgrp( 0, $$ );
 		open( STDOUT, ">&PLOG" );
 		open( STDERR, ">&PLOG" );
-		if ($conf::chroot_mode eq "schroot") {
-			exec "$conf::schroot", "-c", "$main::distribution",
-			"-u", $main::username, "--", "/bin/sh", "-c",
-			"cd /build/$main::username\nset $e_mode\n$x_mode$script";
+		if ($main::chroot_dir) {
+			exec_command("cd /build/$main::username && set $e_mode && $x_mode$script", $main::username, 1);
 		} else {
-			if ($main::chroot_dir) {
-				exec "$conf::sudo", "/usr/sbin/chroot", "$main::chroot_dir",
-				"$conf::sudo", "-u", $main::username, "/bin/sh", "-c",
-				"cd /build/$main::username\nset $e_mode\n$x_mode$script";
-			}
-			else {
-				exec "/bin/sh", "-c", "set $e_mode\n$x_mode$script";
-			}
+			exec_command("set $e_mode && $x_mode$script", $main::username, 0);
 		}
 		die "Can't exec /bin/sh: $!\n";
 	}
@@ -2351,8 +2288,9 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options show @_ 2>&1 |" )
-		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
+	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1");
+	open( PIPE, "$command |" )
+		or die "Cannot start $conf::apt_cache $!\n";
 	local($/) = "";
 	while( <PIPE> ) {
 		my ($name, $dep, $predep);
@@ -2373,8 +2311,9 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options showpkg @_ 2>&1 |" )
-		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
+	my $command = get_apt_command("$conf::apt_cache", "$main::chroot_apt_options showpkg @_ 2>&1");
+	open( PIPE, "$command |" )
+		or die "Cannot start $conf::apt_cache: $!\n";
 	my $name;
 	my $in_rprov = 0;
 	my %provided_by;
@@ -2681,18 +2620,30 @@ sub add_time_entry {
 
 sub check_space {
 	my @files = @_;
+	my $sum = 0;
 	local( *PIPE );
 
-	if (!open( PIPE, "sudo /usr/bin/du -s @files 2>/dev/null |" )) {
-		print PLOG "Cannot determine space needed (du failed): $!\n";
-		return;
+	foreach (@files) {
+		my $command;
+
+		if (/^\Q$main::chroot_dir\E/) {
+			$_ =~ s/^\Q$main::chroot_dir\E//;
+			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", "root", 1);
+		} else {
+			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $main::username, 0);
+		}
+
+		if (!open( PIPE, "$command |" )) {
+			print PLOG "Cannot determine space needed (du failed): $!\n";
+			return;
+		}
+		while( <PIPE> ) {
+			next if !/^(\d+)/;
+			$sum += $1;
+		}
+		close( PIPE );
 	}
-	my $sum = 0;
-	while( <PIPE> ) {
-		next if !/^(\d+)/;
-		$sum += $1;
-	}
-	close( PIPE );
+
 	$main::this_space = $sum;
 }
 
@@ -3241,7 +3192,7 @@ sub shutdown {
 	# next: kill currently running command (if one)
 	if ($main::sub_pid) {
 		print "Killing $main::sub_task subprocess $main::sub_pid\n";
-		system "$conf::sudo perl -e 'kill( -15, $main::sub_pid )'";
+		run_command("perl -e 'kill( -15, $main::sub_pid )'", $main::username, 1);
 	}
 	remove_srcdep_lock_file();
 
@@ -3321,7 +3272,6 @@ sub setup_options {
 										"-o Dir::Etc::parts=$main::chroot_dir/etc/apt/apt.conf.d ";
 			}
 		}
-		$main::chroot_apt_op = '$CHROOT_OPTIONS';
 	} elsif ($conf::chroot_only) {
 		die "$distribution chroot does not exist and in chroot only mode -- exiting\n";
 	}
