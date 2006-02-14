@@ -35,6 +35,7 @@ sbuild (0.38) unstable; urgency=low
       removed automatically.  The current session is stored in
       $main::schroot_session.  setup_options is called once per build, in
       order to set up the session options.
+    - Add missing newline to log message.
   * sbuild.conf: $schroot_options defaults to "-q" to match the built-in
     default.
   * Full sudo access is no longer mandatory when using the schroot

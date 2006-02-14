@@ -1192,7 +1192,7 @@ sub install_deps {
 		}
 		close( F );
 		if ($?) {
-			print PLOG "$conf::dpkg --set-selections failed";
+			print PLOG "$conf::dpkg --set-selections failed\n";
 		}
 	}
 
