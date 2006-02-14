@@ -13,6 +13,8 @@ sbuild (0.38) unstable; urgency=low
       run_apt_command() to run a command inside or outside the build
       chroot under the specified user, or run apt inside or outside the
       chroot (depending on the chroot_mode), respectively.
+    - New function exec_command().  This is the same as run_command(), but
+      runs the command with exec rather than system().
 
  --
 

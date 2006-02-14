@@ -1836,6 +1836,20 @@ sub run_command {
 	return system($cmdline);
 }
 
+sub exec_command {
+	my $command = shift; # Command to run
+	my $user = shift;    # User to run command under
+	my $chroot = shift;  # Run in chroot?
+	my $cmdline = get_command($command, $user, $chroot);
+
+	# schroot prints out the command itself
+	if ($conf::chroot_mode ne "schroot") {
+		print PLOG "$cmdline\n";
+	}
+
+	exec $cmdline;
+}
+
 sub get_apt_command {
 	my $command = shift; # Command to run
 	my $aptcommand = "$conf::apt_get ";
