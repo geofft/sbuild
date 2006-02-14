@@ -31,6 +31,12 @@ sbuild (0.38) unstable; urgency=low
       + All other commands are run with run_command(), exec_command() or
         run_apt_command().
       + check_space() only requires root access in the chroot.
+    - Add schroot session management.  Sessions are created, run and
+      removed automatically.  The current session is stored in
+      $main::schroot_session.  setup_options is called once per build, in
+      order to set up the session options.
+  * sbuild.conf: $schroot_options defaults to "-q" to match the built-in
+    default.
   * Full sudo access is no longer mandatory when using the schroot
     chroot_mode.
 

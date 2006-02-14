@@ -38,7 +38,7 @@ $mailprog = "/usr/sbin/sendmail";
 $dpkg = "/usr/bin/dpkg";
 $sudo = "/usr/bin/sudo";
 $schroot = "/usr/bin/schroot";
-$schroot_options = "";
+$schroot_options = "-q";
 $fakeroot = "/usr/bin/fakeroot";
 $apt_get = "/usr/bin/apt-get";
 $apt_cache = "/usr/bin/apt-cache";
@@ -118,6 +118,7 @@ $main::srcdep_lock_cnt = 0;
 $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
+$main::schroot_session = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
@@ -295,7 +296,9 @@ $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
 
-setup_options($main::distribution);
+if ($conf::chroot_mode ne "schroot") {
+	setup_options($main::distribution);
+}
 
 write_jobs_file();
 
@@ -303,10 +306,22 @@ my( $pkgv, $pkg );
 foreach $pkgv (@ARGV) {
 	my $urlbase;
 
-	
 	($urlbase, $pkgv) = ($1, $3) if $pkgv =~ m,^(\w+://(\S+/)?)([^/]+)$,;
 	$pkgv =~ s/\.dsc$//;
 	next if !open_pkg_log( $pkgv );
+
+	if ($conf::chroot_mode eq "schroot") {
+        	$main::schroot_session=`$conf::schroot -c $main::distribution --begin-session`;
+		chomp($main::schroot_session);
+		if ($?) {
+			print PLOG "Chroot setup failed; skipping $pkg\n";
+			$main::pkg_status = "skipped";
+			goto cleanup_close;
+		}
+		get_schroot_info($main::schroot_session);
+		setup_options($main::schroot_session);
+	}
+
 	(my $pkg = $pkgv) =~ s/_.*$//;
 	$main::pkg_status = "failed"; # assume for now
 	$main::current_job = $pkgv;
@@ -345,6 +360,14 @@ foreach $pkgv (@ARGV) {
   cleanup_close:
 	analyze_fail_stage( $pkgv );
 	write_jobs_file( $main::pkg_status );
+
+	if ($conf::chroot_mode eq "schroot" && $main::schroot_session ne "") {
+        	system("$conf::schroot -c $main::schroot_session --end-session");
+		if ($?) {
+			print PLOG "Chroot cleanup failed\n";
+		}
+	}
+
 	close_pkg_log( $pkgv );
 	$main::current_job = "";
 	if ( $main::batchmode and (-f "$main::HOME/EXIT-DAEMON-PLEASE") ) {
