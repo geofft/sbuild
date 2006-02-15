@@ -50,6 +50,8 @@ sbuild (0.38) unstable; urgency=low
     default.
   * example.sbuildrc: Single quote example email addresses in
     $maintainer_name, $uploader_name, and $key_id (Closes: #341327).
+  * chroot/buildd.chroot.pre-sarge: Remove.
+  * chroot/README-buildd.chroot.pre-sarge: Remove (Closes: #308065).
   * debian/control: Recommend schroot.
   * debian/README.Debian: Update information about src-deps and schroot.
 

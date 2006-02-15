@@ -53,8 +53,8 @@ binary-indep: build install
 	dh_installdocs debian/cvslogs.old
 	dh_installman
 	ln -s avg-pkg-build-time.1.gz debian/sbuild/usr/share/man/man1/avg-pkg-build-space.1.gz
-	dh_installchangelogs 
-	dh_compress -Xbuildd.chroot -XREADME-buildd.chroot -XREADME-buildd.chroot.pre-sarge -Xbuildd.chroot.pre-sarge
+	dh_installchangelogs
+	dh_compress -Xbuildd.chroot -XREADME-buildd.chroot
 	dh_fixperms
 	dh_installdeb
 	dh_perl
