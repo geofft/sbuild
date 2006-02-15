@@ -1,4 +1,4 @@
-sbuild (0.38) unstable; urgency=low
+sbuild (0.38) experimental; urgency=low
 
   * Full sudo access is no longer mandatory when using the schroot
     chroot_mode (Closes: #287669, #331506).
@@ -66,7 +66,7 @@ sbuild (0.38) unstable; urgency=low
     - Recommend cdebootstrap rather than debootstrap.
   * debian/README.Debian: Update information about src-deps and schroot.
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Wed, 15 Feb 2006 18:13:23 +0000
 
 sbuild (0.37) unstable; urgency=low
 
