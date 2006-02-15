@@ -27,6 +27,9 @@ sbuild (0.38) unstable; urgency=low
       chroot modes.
     - get_apt_command() and run_apt_command() take an additional parameter,
       the command to run (apt-get or apt-cache).
+    - get_apt_command() and run_apt_command() take an additional parameter,
+      the user to run as, because not all commands need (or should) run as
+      root.
     - Use new commands for running commands inside and outside chroots:
       + Signing options for dpkg-buildpackage are double-quoted rather than
         single-quoted (because the main command is single-quoted).

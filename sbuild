@@ -430,7 +430,7 @@ sub fetch_source_files {
 
 			  retry:
 				print PLOG "Checking available source versions...\n";
-				my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null");
+				my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username);
 				if (!open( PIPE, "$command |" )) {
 					print PLOG "Can't open pipe to apt-cache: $!\n";
 					return ("ERROR");
@@ -452,7 +452,7 @@ sub fetch_source_files {
 				if (!defined($entries{$version})) {
 					if (!$retried) {
 						# try to update apt's cache if nothing found
-						run_apt_command("$conf::apt_get", "update >/dev/null");
+						run_apt_command("$conf::apt_get", "update >/dev/null", "root");
 						$retried = 1;
 						goto retry;
 					}
@@ -466,7 +466,7 @@ sub fetch_source_files {
 				print PLOG "Fetching source files...\n";
 				@made = @{$entries{$version}};
 
-				my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null");
+				my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username);
 				if (!open( PIPE, "$command |" )) {
 					print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 					return ("ERROR", @made);
@@ -1211,7 +1211,7 @@ sub unpack_special_source {
 		my $dsc;
 
 		{
-			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null");
+			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username);
 			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-get: $!\n";
 				goto failed;
@@ -1402,7 +1402,7 @@ sub run_apt {
 	my $command = get_apt_command("$conf::apt_get", "--purge ".
 				      "-o DPkg::Options::=--force-confold ".
 				      "-q $mode install @to_install ".
-				      "2>&1 </dev/null");
+				      "2>&1 </dev/null", "root");
 
 	if (!open( PIPE, "$command |" )) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
@@ -1416,7 +1416,7 @@ sub run_apt {
 	$status = $?;
 
 	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1");
+		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1", "root");
 		if (!open( PIPE, "$command |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
@@ -1848,6 +1848,8 @@ sub get_apt_command_internal {
 sub get_apt_command {
 	my $command = shift; # Command to run
 	my $options = shift; # Command options
+	my $user = shift;    # User to run command under
+
 	my $aptcommand = get_apt_command_internal($command, $options);
 
 	my $chroot = 0;
@@ -1855,7 +1857,7 @@ sub get_apt_command {
 		$chroot = 1;
 	}
 
-	my $cmdline = get_command($aptcommand, "root", $chroot);
+	my $cmdline = get_command($aptcommand, $user, $chroot);
 
 	return $cmdline;
 }
@@ -1863,6 +1865,8 @@ sub get_apt_command {
 sub run_apt_command {
 	my $command = shift; # Command to run
 	my $options = shift; # Command options
+	my $user = shift;    # User to run command under
+
 	my $aptcommand = get_apt_command_internal($command, $options);
 
 	my $chroot = 0;
@@ -1870,7 +1874,7 @@ sub run_apt_command {
 		$chroot = 1;
 	}
 
-	return run_command($aptcommand, "root", $chroot);
+	return run_command($aptcommand, $user, $chroot);
 }
 
 sub run_script {
@@ -2311,7 +2315,7 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1");
+	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $main::username);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache $!\n";
 	local($/) = "";
@@ -2334,7 +2338,7 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "$main::chroot_apt_options showpkg @_ 2>&1");
+	my $command = get_apt_command("$conf::apt_cache", "$main::chroot_apt_options showpkg @_ 2>&1", $main::username);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache: $!\n";
 	my $name;
