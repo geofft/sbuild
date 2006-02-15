@@ -31,7 +31,7 @@ script.  See the section \[lq]\fIbuildd.chroot\fP\[rq] below.
 .SH SETUP
 This guide sets up a sarge chroot on a powerpc machine.  Adjust the
 names for other suites and architectures.
-.SS 1. Run cdebootstrap to create the chroot.
+.SS 1. Run cdebootstrap to create the chroot
 \f[CR]# \f[CB]mkdir \-p /srv/chroot/sarge\fP\fP
 .br
 .PP
@@ -46,7 +46,7 @@ Finally, run cdebootstrap to create the chroot:
 .PP
 \f[CR]# \f[CB]cdebootstrap \-a powerpc \-f build sarge /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
 .br
-.SS 2. Set up additional mounts.
+.SS 2. Set up additional mounts
 An example \fI/etc/fstab\fP:
 .PP
 .TS
