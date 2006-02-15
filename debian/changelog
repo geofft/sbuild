@@ -46,6 +46,8 @@ sbuild (0.38) unstable; urgency=low
     - Correct command-line summary (Closes: #311589).
   * sbuild-setup.7: New manpage.  This describes how to set up a chroot
     (Closes: #311363).
+  * avg-pkg-build-time.1: Clean up.
+  * update-sourcedeps.1: Clean up.
   * sbuild.conf: $schroot_options defaults to "-q" to match the built-in
     default.
   * example.sbuildrc: Single quote example email addresses in

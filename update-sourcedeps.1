@@ -1,51 +1,52 @@
+.\" Copyright © 1998  James Troup <james@nocrew.org>
+.\" Copyright © 2006  Roger Leigh <rleigh@debian.org>
 .\"
-.\" This file is part of Debian GNU/Linux's prepackaged version of wanna-build.
-.\" Copyright (C) 1998 James Troup <james@nocrew.org>.
-.\"
-.\" This program is free software; you can redistribute it and/or modify
-.\" it under the terms of the GNU General Public License as published by
+.\" sbuild is free software; you can redistribute it and/or modify it
+.\" under the terms of the GNU General Public License as published by
 .\" the Free Software Foundation; either version 2 of the License, or
 .\" (at your option) any later version.
 .\"
-.\" This program is distributed in the hope that it will be useful,
-.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
-.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-.\" GNU General Public License for more details.
+.\" sbuild is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
 .\"
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program; if not, write to the Free Software
-.\" Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-.\"
-.TH UPDATE-SOURCEDEPS 1 "NOVEMBER 2001" Linux "User Manuals"
+.\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+.\" MA  02111-1307  USA
+.TH UPDATE\-SOURCEDEPS 1 "15 Feb 2006" "Version 0.38" "Debian sbuild"
 .SH NAME
-update-sourcedeps \- update the source-dependency-* files
+update\-sourcedeps \- update the sbuild source dependency files
 .SH SYNOPSIS
-.B update-sourcedeps
+.B update\-sourcedeps
+.SH VERSION
+This man page documents the packaged version of sbuild.  This version
+is maintained by the \fBbuildd-tools\fP project developers on Alioth
+(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
 .SH DESCRIPTION
-\fBupdate-sourcedeps\fR updates the source-dependencies-*
-files from buildd.debian.org/andrea/.  These dependencies are used
-by sbuild to calculate the Build-Depends for those packages that
-don't include them -- mainly potato, and increasingly fewer woody,
-packages.  \fBupdate-sourcedeps\fR also contains arch-specific
-and package-specific patches that are applied by sbuild after
-the source is unpacked.  These patches work around
-temporary compiler bugs and other transient problems so a package
-can still be autobuilt and the change can be easily reverted without
-bothering the package maintainer.
+\fBupdate\-sourcedeps\fR updates the source\-dependencies\-* files
+from \f[CR]buildd.debian.org/andrea/\fP.  These dependencies are used
+by sbuild to calculate the Build-Depends for those packages that don't
+include them\[em]mainly potato, and increasingly fewer woody,
+packages.  \fBupdate\-sourcedeps\fR also contains arch-specific and
+package-specific patches that are applied by sbuild after the source
+is unpacked.  These patches work around temporary compiler bugs and
+other transient problems so a package can still be autobuilt and the
+change can be easily reverted without bothering the package
+maintainer.
 .PP
-\fBupdate-sourcedeps\fR is normally called by buildd.  Since
-sbuild is used by itself here, \fBupdate-sourcedeps\fR must to be
-called manually (or not).  The source-dependencies-* files aren't
-required by sbuild but are very helpful if you're autobuilding a
-lot of packages.
-.PP
-NOTE: before you file bugs for build failures be sure you understand
-the difference between src-deps and build-deps and also how the src-dep
+\fBupdate\-sourcedeps\fR is normally called by buildd.  Since sbuild
+is used by itself here, \fBupdate\-sourcedeps\fR must to be called
+manually (or not).  The source-dependencies-* files aren't required by
+sbuild but are very helpful if you're autobuilding a lot of packages.
+.SH NOTE
+Before you file bugs for build failures be sure you understand the
+difference between src-deps and build-deps and also how the src-dep
 patches work.
-.PP
-WARNING: inappropriate settings in your ~/.wgetrc file can cause problems.
-The WGETRC environment variable can be used to redirect .wgetrc.
-.PP
+.SH WARNING
+Inappropriate settings in your \fI~/.wgetrc\fP can cause problems.
+The WGETRC environment variable can be used to redirect \fI.wgetrc\fP.
 .SH AUTHORS
 .nf
 James Troup
@@ -53,4 +54,10 @@ Roman Hodek
 .fi
 .SH "SEE ALSO"
 .SP
-.BR sbuild ( 1 )
+.BR sbuild (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:

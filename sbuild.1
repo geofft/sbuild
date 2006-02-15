@@ -1,4 +1,4 @@
-.\" Copyright © 1998 James Troup <james@nocrew.org>
+.\" Copyright © 1998       James Troup <james@nocrew.org>
 .\" Copyright © 2005-2006  Roger Leigh <rleigh@debian.org>
 .\"
 .\" sbuild is free software; you can redistribute it and/or modify it
@@ -33,11 +33,12 @@ package-to-build_x.y-z(.dsc) [ ... ]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version
 is maintained by the \fBbuildd-tools\fP project developers on Alioth
-(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).  There
-is also a version maintained by Ryan Murray which is adapted to build
-daemon needs, with similar functionality.  This version should be
-equally capable of working in a buildd setup, but has a number of
-enhancements aimed at making it suitable for use by end-users.
+(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
+.PP
+There is also a version maintained by Ryan Murray which is adapted to build
+daemon needs, with similar functionality.  This version should be equally
+capable of working in a buildd setup, but has a number of enhancements aimed at
+making it suitable for use by end-users.
 .SH DESCRIPTION
 \fBsbuild\fR rebuilds Debian binary packages from the corresponding
 Debian source.  It is similar to dbuild and debbuild, but, unlike
@@ -159,10 +160,14 @@ Build statistics, source dependencies and lock files.
 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>.
 .PP
 \fBsbuild\fR is based on debbuild, written by James Troup
-<james@nocrew.org> and has been modified by Ben Collins
-<bcollins@debian.org>, Ryan Murray <rmurray@debian.org>, Francesco
-Paolo Lovergine <frankie@debian.org>, Michael Banck
-<mbanck@debian.org>, and Roger Leigh <rleigh@debian.org>
+<james@nocrew.org> and has been modified by
+.nf
+Ben Collins <bcollins@debian.org>,
+Ryan Murray <rmurray@debian.org>,
+Francesco Paolo Lovergine <frankie@debian.org>,
+Michael Banck <mbanck@debian.org>, and
+Roger Leigh <rleigh@debian.org>
+.fi
 .SH "SEE ALSO"
 .BR update-sourcedeps (1),
 .BR avg-pkg-build-time (1),
