@@ -24,6 +24,10 @@ sbuild-setup \- sbuild setup procedure
 consistent build environment.  This man page describes the procedure to create
 a chroot by hand using cdebootstrap.  These are only guidelines; depending upon
 the setup required, several of the steps may be omitted entirely.
+.PP
+A number of the steps below are automatically run by the
+.B buildd.chroot
+script.  See the section \[lq]\fIbuildd.chroot\fP\[rq] below.
 .SH SETUP
 This guide sets up a sarge chroot on a powerpc machine.  Adjust the
 names for other suites and architectures.
@@ -223,6 +227,25 @@ Follow the instructions displayed, and update ~/build etc. as shown.
 .SS 9. Finished
 Congratulations!  You should now have a fully configured and operational sbuild
 setup.
+.SH BUILDD.CHROOT
+This script, located in \fI/usr/share/sbuild\fP will automatically do a number
+of the steps described above, including:
+.IP \[bu]
+Running cdebootstrap.
+.IP \[bu]
+Setting up APT sources in \fI/etc/apt/sources.list\fP.
+.IP \[bu]
+Setting up a minimal \fI/etc/passwd\fP
+.IP \[bu]
+Setting up /build and /var/lib/sbuild with appropriate ownership and
+permissions.
+.PP
+After it has done this, you do still need to do some manual setup, completing
+the steps it missed out above, for example.
+.SH FILES
+.TP
+.I /usr/share/sbuild/buildd.chroot
+A script to automatically create and configure a chroot using cdebootstrap.
 .SH AUTHORS
 Roger Leigh.
 .SH COPYRIGHT

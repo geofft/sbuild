@@ -1,10 +1,13 @@
 #!/bin/bash
 #
-# This is the new style for buildd.chroot. 
-# It uses builtins of debootstrap and add a few other files needed to have a working sbuild.
+# This is the new style for buildd.chroot.
+# It uses builtins of debootstrap and add a few other files needed to
+# have a working sbuild.
 #
-# Copyright (C) 2004 Francesco P. Lovergine. 
+# Copyright (C) 2004 Francesco P. Lovergine.
 #
+
+set -e
 
 if [ $(id -u) != 0 ]; then
 	echo "You need to run this command as root"
@@ -21,15 +24,15 @@ SUITE=$1
 TARGET=$2
 MIRROR=$3
 
-/usr/sbin/debootstrap --variant=buildd $SUITE $TARGET $MIRROR 
+/usr/bin/cdebootstrap -a "$(dpkg-architecture -qDEB_HOST_ARCH)" -f build "$SUITE" "$TARGET" "$MIRROR"
 
-cp /etc/hosts $TARGET/etc/hosts || true
-echo "# $SUITE" > $TARGET/etc/apt/sources.list
-echo "deb $MIRROR/ $SUITE main non-free contrib" >> $TARGET/etc/apt/sources.list
-echo "deb-src $MIRROR/ $SUITE main non-free contrib" >> $TARGET/etc/apt/sources.list
-echo "" >> $TARGET/etc/apt/sources.list
+cp /etc/hosts "$TARGET/etc/hosts" || true
+echo "# $SUITE" > "$TARGET/etc/apt/sources.list"
+echo "deb $MIRROR/ $SUITE main non-free contrib" >> "$TARGET/etc/apt/sources.list"
+echo "deb-src $MIRROR/ $SUITE main non-free contrib" >> "$TARGET/etc/apt/sources.list"
+echo "" >> "$TARGET/etc/apt/sources.list"
 
-cat >$TARGET/etc/passwd <<EOF
+cat > "$TARGET/etc/passwd" <<EOF
 root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/bin/sh
 bin:x:2:2:bin:/bin:/bin/sh
@@ -52,11 +55,11 @@ gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
 EOF
 
-USER=root
-GROUP=sbuild
-mkdir -p $TARGET/var/lib/sbuild/srcdep-lock $TARGET/build
-chown -R $USER:$GROUP $TARGET/var/lib/sbuild $TARGET/build
-chmod -R 02775 $TARGET/var/lib/sbuild
+USER="root"
+GROUP="sbuild"
+mkdir -p "$TARGET/var/lib/sbuild/srcdep-lock" "$TARGET/build"
+chown -R "$USER:$GROUP" "$TARGET/var/lib/sbuild" "$TARGET/build"
+chmod -R 02775 "$TARGET/var/lib/sbuild"
 
 echo
 echo "Successfully set up chroot: $SUITE"
