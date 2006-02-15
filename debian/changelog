@@ -40,8 +40,10 @@ sbuild (0.38) unstable; urgency=low
       $main::schroot_session.  setup_options is called once per build, in
       order to set up the session options.
     - Add missing newline to log message.
-  * sbuild.1: Update outdated information.  Correct macro usage and
-    reindent.
+  * sbuild.1:
+    - Update outdated information.
+    - Correct macro usage and reindent.
+    - Correct command-line summary (Closes: #311589).
   * sbuild.conf: $schroot_options defaults to "-q" to match the built-in
     default.
   * debian/control: Recommend schroot.
