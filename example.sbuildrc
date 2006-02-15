@@ -14,14 +14,14 @@ $mailto = "";
 
 # Name to use as override in .changes files for the Maintainer: field
 # (mandatory, no default!).
-#$maintainer_name="Roman Hodek <Roman.Hodek\@informatik.uni-erlangen.de>";
+#$maintainer_name='Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>';
 
 # Name to use as override in .changes file for the Changed-By: field.
-#$uploader_name="Francesco Paolo Lovergine <frankie@debian.org>";
+#$uploader_name='Francesco Paolo Lovergine <frankie@debian.org>';
 
 # Keyid to use in .changes for the current upload.
 # It overrides both $maintainer_name and $uploader_name
-#$key_id="Francesco Paolo Lovergine <frankie@debian.org>";
+#$key_id='Francesco Paolo Lovergine <frankie@debian.org>';
 
 # When to purge the build directory afterwards; possible values are "never",
 # "successful", and "always"

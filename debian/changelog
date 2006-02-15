@@ -1,7 +1,7 @@
 sbuild (0.38) unstable; urgency=low
 
   * Full sudo access is no longer mandatory when using the schroot
-    chroot_mode (Closes: #331506).
+    chroot_mode (Closes: #287669, #331506).
   * schroot session management is now fully implemented and completely
     functional.
   * sbuild:
@@ -46,6 +46,8 @@ sbuild (0.38) unstable; urgency=low
     - Correct command-line summary (Closes: #311589).
   * sbuild.conf: $schroot_options defaults to "-q" to match the built-in
     default.
+  * example.sbuildrc: Single quote example email addresses in
+    $maintainer_name, $uploader_name, and $key_id (Closes: #341327).
   * debian/control: Recommend schroot.
   * debian/README.Debian: Update information about src-deps and schroot.
 
