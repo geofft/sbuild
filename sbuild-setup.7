@@ -1,0 +1,243 @@
+.\" t
+.\"
+.\" Copyright © 2005-2006  Roger Leigh <rleigh@debian.org>
+.\"
+.\" sbuild is free software; you can redistribute it and/or modify it
+.\" under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" sbuild is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+.\" MA  02111-1307  USA
+.TH SBUILD-SETUP 5 "15 Feb 2006" "Version 0.38" "Debian sbuild"
+.SH NAME
+sbuild-setup \- sbuild setup procedure
+.SH DESCRIPTION
+\fBsbuild\fP uses chroots to build packages within, to provide a minimal and
+consistent build environment.  This man page describes the procedure to create
+a chroot by hand using cdebootstrap.  These are only guidelines; depending upon
+the setup required, several of the steps may be omitted entirely.
+.SH SETUP
+This guide sets up a sarge chroot on a powerpc machine.  Adjust the
+names for other suites and architectures.
+.SS 1. Run cdebootstrap to create the chroot.
+\f[CR]# \f[CB]mkdir \-p /srv/chroot/sarge\fP\fP
+.br
+.PP
+The author has each chroot as a separate LVM logical volume (LV).  Create and
+mount an LV here if required:
+.PP
+\f[CR]# \f[CB]lvcreate \-L 4G \-n sarge_chroot \-Z y hda_vg\fP\fP
+.br
+.PP
+Add to /etc/fstab and mount (see next section for full fstab example).
+Finally, run cdebootstrap to create the chroot:
+.PP
+\f[CR]# \f[CB]cdebootstrap \-a powerpc \-f build sarge /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
+.br
+.SS 2. Set up additional mounts.
+An example \fI/etc/fstab\fP:
+.PP
+.TS
+lfCR s s s s s.
+/dev//hda_vg/sarge_chroot \[rs]
+.T&
+lfCR lfCR lfCR lfCR lfCR lfCR.
+	/srv/chroot/sarge	ext3	defaults	0	2
+/dev/pts	/srv/chroot/sarge/dev/pts	none	rw,bind	0	0
+tmpfs	/srv/chroot/sarge/dev/shm	tmpfs	defaults	0	0
+proc	/srv/chroot/sarge/proc	proc	defaults	0	0
+.T&
+lfCR s s s s s.
+/dev/hda_vg/home \[rs]
+.T&
+lfCR lfCR lfCR lfCR lfCR lfCR.
+	/srv/chroot/sarge/home	ext3	quota	0	0
+/tmp	/srv/chroot/sarge/tmp	none	rw,bind	0	0
+/etc/passwd	/srv/chroot/sarge/etc/passwd	none	ro,bind	0	0
+/etc/shadow	/srv/chroot/sarge/etc/shadow	none	ro,bind	0	0
+/etc/group	/srv/chroot/sarge/etc/group	none	ro,bind	0	0
+.T&
+lfCR s s s s s.
+/etc/resolv.conf \[rs]
+.T&
+lfCR lfCR s s s s.
+	/srv/chroot/sarge/etc/resolv.conf \[rs]
+.T&
+lfCR lfCR lfCR lfCR lfCR lfCR.
+		none	ro,bind	0	0
+.TE
+.PP
+If the bind mountpoints don't exist in the chroot, touch them:
+.PP
+\f[CR]# \f[CB]touch /srv/chroot/sarge/etc/resolv.conf\fP\fP
+.PP
+Next, mount them all.
+.PP
+Depending on your kernel version and security considerations, you may wish to
+do this part slightly differently.  With a Linux kernel, at least version 2.6
+is required for bind mounts, and devpts (CONFIG_UNIX98_PTYS) for
+\fI/dev/pts\fP.  Other guides recommend copying the files, but this method
+keeps them up-to-date at no cost.
+.PP
+If using sbuild with schroot, \fIpasswd\fP, \fIshadow\fP, \fIgroup\fP and
+\fIresolv.conf\fP can be updated automatically at the start of each build, so
+no action is required here.  schroot can also automatically mount all of the
+extra filesystems, so all the other mounts may be omitted.
+.PP
+To disable networking, don't bind mount \fI/etc/resolv.conf\fP.  This will
+prevent APT from working inside the chroot, but prevents package building from
+having working network access (no nameservers).
+.SS 3. Edit \fIsources.list\fP
+Create or edit \fI/srv/chroot/sarge/etc/apt/sources.list\fP, and add all the
+APT sources required to obtain binary and source packages for your chosen
+distribution:
+.PP
+\f[CR]deb http://security.debian.org/ sarge/updates main\fP
+.br
+\f[CR]deb\-src http://security.debian.org/ sarge/updates main\fP
+.br
+\f[CR]\fP
+.br
+\f[CR]deb http://ftp.uk.debian.org/debian/ sarge main\fP
+.br
+\f[CR]deb\-src http://ftp.uk.debian.org/debian/ sarge main\fP
+.br
+.SS 4. Configure dchroot or schroot
+This is entirely optional, but will make the chroot environment easier to
+access and administer.
+.PP
+For dchroot, add the following line to \fI/etc/dchroot.conf\fP:
+.PP
+\f[CR]sarge /srv/chroot/sarge\fP
+.br
+.PP
+For schroot, add the a group to \fI/etc/schroot/schroot.conf\fP, for example:
+.PP
+\f[CR][sarge]\fP
+.br
+\f[CR]type=plain\fP
+.br
+\f[CR]description=Debian sarge (stable)\fP
+.br
+\f[CR]location=/srv/chroot/sarge\fP
+.br
+\f[CR]priority=2\fP
+.br
+\f[CR]groups=root,sbuild\fP
+.br
+\f[CR]root\-groups=sbuild\fP
+.br
+\f[CR]aliases=stable\fP
+.br
+\f[CR]run\-setup\-scripts=true\fP
+.br
+\f[CR]run\-session\-scripts=true\fP
+.br
+.SS 5. Log into chroot
+\f[CR]# \f[CB]dchroot \-c sarge\fP\fP
+.br
+.PP
+or
+.PP
+\f[CR]$ \f[CB]schroot \-c sarge \-u root\fP\fP
+.br
+.SS 6. Set up packages for sbuild
+While running as root inside the chroot:
+.PP
+\f[CR]# \f[CB]apt-get update\fP\fP
+.br
+\f[CR]# \f[CB]apt-get dist-upgrade\fP\fP
+.br
+\f[CR]# \f[CB]apt-get install debconf\fP\fP
+.br
+\f[CR]# \f[CB]dpkg-reconfigure -plow debconf\fP\fP
+.br
+.PP
+Answer the debconf questions as follows:
+.IP \fBinterface\fP
+choose \fI6/Noninteractive\fP
+.IP \fBpriority\fP
+choose \fI1/Critical\fP
+.PP
+You only need to run dpkg-reconfigure if you weren't asked the questions during
+the debconf install.  Next, install the packages required for building
+packages:
+.PP
+\f[CR]# \f[CB]apt\-get install sudo debfoster fakeroot build\-essential\fP\fP
+.br
+\f[CR]# \f[CB]apt\-get install makedev\fP\fP
+.br
+\f[CR]# \f[CB]cd /dev/\fP\fP
+.br
+\f[CR]# \f[CB]/sbin/MAKEDEV generic\fP\fP
+.br
+\f[CR]# \f[CB]touch /etc/mtab\fP\fP
+.br
+.PP
+For some security, we don't bind mount /dev, so it can't access e.g. USB
+devices
+.SS 7. sbuild setup
+While running as root inside the chroot:
+.PP
+\f[CR]# \f[CB]mkdir /build\fP\fP
+.br
+\f[CR]# \f[CB]chown root:sbuild /build\fP\fP
+.br
+\f[CR]# \f[CB]mkdir \-p /var/lib/sbuild/srcdep\-lock\fP\fP
+.br
+\f[CR]# \f[CB]chown \-R root:sbuild /var/lib/sbuild\fP\fP
+.br
+\f[CR]# \f[CB]chmod \-R 02775 /var/lib/sbuild\fP\fP
+.br
+.PP
+Note that when using sbuild with schroot, this setup is done at the start of
+each build, so is not required here.
+.SS 8. user setup
+Configure the user's \fI~.sbuildrc\fP:
+.PP
+\f[CR]$ \f[CB]cp /usr/share/doc/sbuild/examples/example.sbuildrc ~/.sbuildrc\fP\fP
+.br
+.PP
+Edit to set the correct mail address to send log files to, and the correct
+maintainer name and/or uploader name.
+.PP
+Next, make the build directories:
+.PP
+\f[CR]$ \f[CB]mkdir ~/build ~/logs\fP\fP
+.br
+.PP
+As root, run:
+.PP
+\f[CR]# \f[CB]/usr/share/sbuild/add_sbuild_user /srv/chroot/sarge stable <username>\fP
+.br
+.PP
+Follow the instructions displayed, and update ~/build etc. as shown.
+.SS 9. Finished
+Congratulations!  You should now have a fully configured and operational sbuild
+setup.
+.SH AUTHORS
+Roger Leigh.
+.SH COPYRIGHT
+Copyright \(co 2005-2006  Roger Leigh <rleigh@debian.org>
+.PP
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.SH SEE ALSO
+.BR cdebootstrap (1),
+.BR sbuild (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:
