@@ -4,6 +4,7 @@ sbuild (0.39) UNRELEASED; urgency=low
     - fetch_source_files(): Merge from upstream SVN (cset 94); Strip trailing
       whitespace from each line in $dscfile/debian/.sbuild-build-deps
       early on, making all subsequent regexes simpler.
+    - Update copyright notice (add myself as a copyright holder).
 
  --
 
