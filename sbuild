@@ -179,6 +179,8 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::distribution = "unstable" if $main::distribution eq "u";
 		$main::distribution = "experimental" if $main::distribution eq "e";
 		$main::override_distribution = 1;
+		print PLOG "Selected distribution $main::distribution\n"
+			if $main::debug;
 	}
 	elsif (/^-p/ || /^--purge/) {
 		if (/^-p(.)/ || /^--purge=(.)/) {
@@ -321,6 +323,8 @@ foreach $pkgv (@ARGV) {
 			$main::pkg_status = "skipped";
 			goto cleanup_close;
 		}
+		print PLOG "Setting up chroot $main::distribtion (session id $main::scroot_session)\n"
+			if $main::debug;
 		get_schroot_info($main::schroot_session);
 		setup_options($main::schroot_session);
 	}

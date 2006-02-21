@@ -8,7 +8,10 @@ sbuild (0.39) UNRELEASED; urgency=low
     - Add %main::sessioncaps to store whether or not a chroot is
       session-capable.  Check the schroot "Session Managed" attribute to
       determine session capability.
-    - If a chroot is session-capable, skip running uninstall_deps().
+    - If a chroot is session-capable, skip running uninstall_deps() (thanks
+      to Reinhard Tartler).
+    - Add debugging messages for distribution selection and schroot
+      session creation (thanks to Reinhard Tartler).
   * debian/control:
     - Recommend schroot (>= 0.2.3-2), for its "Session Managed"
       information in --info output, used for skipping chroot cleanup.
