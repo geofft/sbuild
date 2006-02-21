@@ -5,6 +5,13 @@ sbuild (0.39) UNRELEASED; urgency=low
       whitespace from each line in $dscfile/debian/.sbuild-build-deps
       early on, making all subsequent regexes simpler.
     - Update copyright notice (add myself as a copyright holder).
+    - Add %main::sessioncaps to store whether or not a chroot is
+      session-capable.  Check the schroot "Session Managed" attribute to
+      determine session capability.
+    - If a chroot is session-capable, skip running uninstall_deps().
+  * debian/control:
+    - Recommend schroot (>= 0.2.3-2), for its "Session Managed"
+      information in --info output, used for skipping chroot cleanup.
 
  --
 

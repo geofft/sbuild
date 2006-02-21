@@ -123,9 +123,11 @@ $main::schroot_session = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
-%main::dist_locations;
+%main::dist_locations;   # Chroot locations
+%main::dist_sessioncaps; # Chroot session capabilities
 foreach (keys(%main::dist_order)) {
     $main::dist_locations{$_} = "$main::cwd/chroot-$_";
+    $main::dist_sessioncaps{$_} = 0;
 }
 
 # Pick up available chroots and dist_order from schroot
@@ -354,7 +356,13 @@ foreach $pkgv (@ARGV) {
 
   cleanup_packages:
 	undo_specials();
-	uninstall_deps();
+	if ($conf::chroot_mode eq "schroot" &&
+	    defined ($main::dist_sessioncaps{$main::distribution}) &&
+	    $main::dist_sessioncaps{$main::distribution} == 1) {
+		print PLOG "Not removing build depends: session managed chroot in use\n";
+	} else {
+		uninstall_deps();
+	}
 	remove_srcdep_lock_file();
   cleanup_symlinks:
 	remove_files( @files_to_rm );
@@ -3266,6 +3274,11 @@ sub get_schroot_info {
 		}
 		if (/^\s*Priority:?\s+(\d+)$/) {
 			$main::dist_order{$chroot} = $1;
+		}
+		if (/^\s*Session Managed\s+(.*)$/) {
+			if ($1 eq "true") {
+				$main::dist_sessioncaps{$chroot} = 1;
+			}
 		}
 	}
 	close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
