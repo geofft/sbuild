@@ -2373,7 +2373,7 @@ sub open_pkg_log {
 			$main::binNMU_name = $pkg;
 			$pkg .= $3;
 		}
-		$main::pkg_logfile = "$conf::log_dir/${pkg}_$date\n";
+		$main::pkg_logfile = "$conf::log_dir/${pkg}_$date";
 		if ($main::verbose) {
 			my $pid;
 			($pid = open( PLOG, "|-")) || exec "tee $main::pkg_logfile";
