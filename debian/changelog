@@ -7,6 +7,10 @@ sbuild (0.40) UNRELEASED; urgency=low
       (Closes: #354456).
     - get_schroot_info(): Parse schroot "--info" Path (chroot location)
       output.
+    - get_schroot_info(): Parse schroot "--info" Type (chroot type)
+      output, and if "plain", always set $main::dist_sessioncaps to 0
+      ("plain" chroots may say they are session-managed, but do not
+      support full session management, so they always need cleaning).
   * debian/control:
     - Recommend schroot (>= 0.2.5), for its "Path" information in --info
       output, used for determining the chroot location.

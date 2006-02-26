@@ -3263,11 +3263,15 @@ sub write_stats {
 sub get_schroot_info {
 	my $chroot = shift;
 
+	my $chroot_type = "";
 	$main::dist_locations{$chroot} = "";
 	$main::dist_order{$chroot} = 0;
 	open CHROOT_DATA, '-|', $conf::schroot, '--info', '--chroot', $chroot or die "Can't run $conf::schroot to get chroot data";
 	while (<CHROOT_DATA>) {
 		chomp;
+		if (/^\s*Type:?\s+(.*)$/) {
+		    $chroot_type = $1;
+		}
 		if (/^\s*Location:?\s+(.*)$/ &&
 		    $main::dist_locations{$chroot} eq "") {
 			$main::dist_locations{$chroot} = $1;
@@ -3289,7 +3293,14 @@ sub get_schroot_info {
 			}
 		}
 	}
+
 	close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
+
+	# "plain" chroots are never session-capable, even if they say
+	# they are.
+	if ($chroot_type eq "plain") {
+		$main::dist_sessioncaps{$chroot} = 0;
+	}
 }
 
 sub setup_options {
