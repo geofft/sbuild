@@ -3276,6 +3276,10 @@ sub get_schroot_info {
 		    $main::dist_locations{$chroot} eq "") {
 			$main::dist_locations{$chroot} = $1;
 		}
+		# Path takes priority over Location and Mount Location.
+		if (/^\s*Path:?\s+(.*)$/) {
+			$main::dist_locations{$chroot} = $1;
+		}
 		if (/^\s*Priority:?\s+(\d+)$/) {
 			$main::dist_order{$chroot} = $1;
 		}

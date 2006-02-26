@@ -5,6 +5,11 @@ sbuild (0.40) UNRELEASED; urgency=low
       $main::distribtion, and $main::schroot_session rather than
       $main::scroot_session).  Thanks to Adeodato Simó for this fix
       (Closes: #354456).
+    - get_schroot_info(): Parse schroot "--info" Path (chroot location)
+      output.
+  * debian/control:
+    - Recommend schroot (>= 0.2.5), for its "Path" information in --info
+      output, used for determining the chroot location.
 
  --
 
