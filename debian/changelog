@@ -1,4 +1,4 @@
-sbuild (0.40) UNRELEASED; urgency=low
+sbuild (0.40) unstable; urgency=low
 
   * sbuild:
     - Fix typos in debug statement ($main::distribution rather than
@@ -15,7 +15,7 @@ sbuild (0.40) UNRELEASED; urgency=low
     - Recommend schroot (>= 0.2.5), for its "Path" information in --info
       output, used for determining the chroot location.
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Sun, 26 Feb 2006 22:19:04 +0000
 
 sbuild (0.39) unstable; urgency=low
 
