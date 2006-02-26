@@ -323,7 +323,7 @@ foreach $pkgv (@ARGV) {
 			$main::pkg_status = "skipped";
 			goto cleanup_close;
 		}
-		print PLOG "Setting up chroot $main::distribtion (session id $main::scroot_session)\n"
+		print PLOG "Setting up chroot $main::distribution (session id $main::schroot_session)\n"
 			if $main::debug;
 		get_schroot_info($main::schroot_session);
 		setup_options($main::schroot_session);

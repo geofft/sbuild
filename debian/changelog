@@ -1,3 +1,13 @@
+sbuild (0.40) UNRELEASED; urgency=low
+
+  * sbuild:
+    - Fix typos in debug statement ($main::distribution rather than
+      $main::distribtion, and $main::schroot_session rather than
+      $main::scroot_session).  Thanks to Adeodato Simó for this fix
+      (Closes: #354456).
+
+ --
+
 sbuild (0.39) unstable; urgency=low
 
   * sbuild:
