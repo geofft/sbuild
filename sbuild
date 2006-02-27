@@ -3325,12 +3325,9 @@ sub setup_options {
 				close F;
 			} else {
 				$main::chroot_apt_options .=
-					"-o Dir::State=$main::chroot_dir/var/".
-						(-d "$main::chroot_dir/var/lib/apt" ? "lib":"state")."/apt ".
-							"-o Dir::Cache=$main::chroot_dir/var/cache/apt ".
-								"-o Dir::Etc=$main::chroot_dir/etc/apt ".
-									"-o Dir::Etc::main=$main::chroot_dir/etc/apt/apt.conf ".
-										"-o Dir::Etc::parts=$main::chroot_dir/etc/apt/apt.conf.d ";
+				" -o Dir::State=$main::chroot_dir/var/lib/apt".
+				" -o Dir::Cache=$main::chroot_dir/var/cache/apt".
+				" -o Dir::Etc=$main::chroot_dir/etc/apt";
 			}
 		}
 	} elsif ($conf::chroot_only) {

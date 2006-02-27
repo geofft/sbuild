@@ -1,3 +1,11 @@
+sbuild (0.41) UNRELEASED; urgency=low
+
+  * sbuild:
+    - setup_options(): Set $main::chroot_apt_options in the same
+      manner as upstream.
+
+ --
+
 sbuild (0.40) unstable; urgency=low
 
   * sbuild:
