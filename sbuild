@@ -3313,14 +3313,14 @@ sub setup_options {
 		$main::ilock_file = "$conf::srcdep_lock_dir/install";
 		$main::chroot_apt_options =
 			"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
-				" -o DPkg::Options::=--root=$main::chroot_dir".
-					" -o DPkg::Run-Directory=$main::chroot_dir";
+			" -o DPkg::Options::=--root=$main::chroot_dir".
+			" -o DPkg::Run-Directory=$main::chroot_dir";
 
 		my $aptconf = "/var/lib/sbuild/apt.conf";
 		$ENV{'APT_CONFIG'} = $aptconf;
 		if ( ! -f $aptconf ) {
 			if (open F, ">$aptconf") {
-				print F "Dir \"$$main::chroot_dir/\";\n" .
+				print F "Dir \"$main::chroot_dir/\";\n" .
 					"APT::Get::AllowUnauthenticated true;\n";
 				close F;
 			} else {
