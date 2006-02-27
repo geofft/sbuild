@@ -1,4 +1,4 @@
-sbuild (0.41) UNRELEASED; urgency=low
+sbuild (0.41) unstable; urgency=low
 
   * sbuild:
     - setup_options(): Set $main::chroot_apt_options in the same
@@ -6,7 +6,7 @@ sbuild (0.41) UNRELEASED; urgency=low
     - setup_options(): Correct usage of a scalar reference rather than
       the scalar $main::chroot_dir (Closes: #354520).
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Mon, 27 Feb 2006 19:07:59 +0000
 
 sbuild (0.40) unstable; urgency=low
 
