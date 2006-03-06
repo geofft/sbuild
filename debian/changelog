@@ -1,6 +1,9 @@
 sbuild (0.41) unstable; urgency=low
 
   * sbuild:
+    - get_command(), run_command() and exec_command() only log the full
+      command when debugging is enabled, otherwise only the short form is
+      logged (Closes: #355043).
     - setup_options(): Set $main::chroot_apt_options in the same
       manner as upstream.
     - setup_options(): Correct usage of a scalar reference rather than

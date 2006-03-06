@@ -1817,7 +1817,11 @@ sub get_command {
 	my $chroot = shift;  # Run in chroot?
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	log_command($cmdline);
+	if ($main::debug) {
+		log_command($cmdline);
+	} else {
+		log_command($command);
+	}
 
 	return $cmdline;
 }
@@ -1830,7 +1834,11 @@ sub run_command {
 	my $chroot = shift;  # Run in chroot?
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	log_command($cmdline);
+	if ($main::debug) {
+		log_command($cmdline);
+	} else {
+		log_command($command);
+	}
 
 	return system($cmdline);
 }
@@ -1841,7 +1849,11 @@ sub exec_command {
 	my $chroot = shift;  # Run in chroot?
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	log_command($cmdline);
+	if ($main::debug) {
+		log_command($cmdline);
+	} else {
+		log_command($command);
+	}
 
 	exec $cmdline;
 }
