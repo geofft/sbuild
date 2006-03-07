@@ -1824,6 +1824,9 @@ sub get_command {
 		log_command($command);
 	}
 
+	if ($chroot != 0) {
+		chdir($main::cwd);
+	}
 	return $cmdline;
 }
 
@@ -1841,6 +1844,9 @@ sub run_command {
 		log_command($command);
 	}
 
+	if ($chroot != 0) {
+		chdir($main::cwd);
+	}
 	return system($cmdline);
 }
 
@@ -1856,18 +1862,16 @@ sub exec_command {
 		log_command($command);
 	}
 
+	if ($chroot != 0) {
+		chdir($main::cwd);
+	}
 	exec $cmdline;
 }
 
 sub get_apt_command_internal {
 	my $aptcommand = shift; # Command to run
 	my $options = shift; # Command options
-	$aptcommand .= " ";
-
-	if ($conf::chroot_mode ne "schroot") {
-		$aptcommand .= "$main::chroot_apt_options ";
-	}
-	$aptcommand .= $options;
+	$aptcommand .= " $main::chroot_apt_options $options";
 
 	return $aptcommand;
 }
@@ -1886,6 +1890,7 @@ sub get_apt_command {
 
 	my $cmdline = get_command($aptcommand, $user, $chroot);
 
+	chdir($main::cwd);
 	return $cmdline;
 }
 
@@ -1901,6 +1906,7 @@ sub run_apt_command {
 		$chroot = 1;
 	}
 
+	chdir($main::cwd);
 	return run_command($aptcommand, $user, $chroot);
 }
 
