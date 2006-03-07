@@ -22,7 +22,6 @@
 package Sbuild;
 
 use strict;
-use IO;
 use POSIX;
 use FileHandle;
 

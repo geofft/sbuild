@@ -8,6 +8,7 @@ sbuild (0.41) unstable; urgency=low
       manner as upstream.
     - setup_options(): Correct usage of a scalar reference rather than
       the scalar $main::chroot_dir (Closes: #354520).
+  * Sbuild.pm: Remove unused module 'IO'.
 
  -- Roger Leigh <rleigh@debian.org>  Mon, 27 Feb 2006 19:07:59 +0000
 
