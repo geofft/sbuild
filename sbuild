@@ -86,6 +86,7 @@ package main;
 use strict;
 use GDBM_File;
 use POSIX;
+use File::Temp qw(:POSIX);
 use FileHandle;
 use Cwd;
 use Sbuild;
@@ -2364,7 +2365,7 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "$main::chroot_apt_options showpkg @_ 2>&1", $main::username);
+	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $main::username);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache: $!\n";
 	my $name;
@@ -3323,23 +3324,46 @@ sub setup_options {
 		$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
 		$conf::srcdep_lock_dir = "$main::chroot_dir/$conf::srcdep_lock_dir";
 		$main::ilock_file = "$conf::srcdep_lock_dir/install";
-		$main::chroot_apt_options =
-			"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
-			" -o DPkg::Options::=--root=$main::chroot_dir".
-			" -o DPkg::Run-Directory=$main::chroot_dir";
 
 		my $aptconf = "/var/lib/sbuild/apt.conf";
-		$ENV{'APT_CONFIG'} = $aptconf;
-		if ( ! -f $aptconf ) {
-			if (open F, ">$aptconf") {
-				print F "Dir \"$main::chroot_dir/\";\n" .
-					"APT::Get::AllowUnauthenticated true;\n";
-				close F;
-			} else {
+		if ($conf::chroot_mode ne "schroot") {
+			$main::chroot_apt_options =
+				"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
+				" -o DPkg::Options::=--root=$main::chroot_dir".
+				" -o DPkg::Run-Directory=$main::chroot_dir";
+		}
+
+		# schroot uses an absolute path inside the chroot,
+		# rather than on the host system.
+		my $chroot_aptconf = "$main::chroot_dir/$aptconf";
+		if ($conf::chroot_mode eq "schroot") {
+			$ENV{'APT_CONFIG'} = $aptconf;
+		} else {
+			$ENV{'APT_CONFIG'} = $chroot_aptconf;
+		}
+
+		# Always write out apt.conf, because it gets outdated
+		# if the chroot_mode is changed...
+		my($tmpfile, $tmpfilename) = tmpnam();
+		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXX",
+					    DIR => $main::chroot_dir,
+					    UNLINK => 0) ) {
+
+			if ($conf::chroot_mode ne "schroot") {
+				print $F "Dir \"$main::chroot_dir\";\n";
+			}
+			print $F "APT::Get::AllowUnauthenticated true;\n";
+
+			if (! rename $F->filename, $chroot_aptconf) {
+				die "Can't rename $F->filename to $chroot_aptconf: $!\n";
+			}
+
+		} else {
+			if ($conf::chroot_mode ne "schroot") {
 				$main::chroot_apt_options .=
-				" -o Dir::State=$main::chroot_dir/var/lib/apt".
-				" -o Dir::Cache=$main::chroot_dir/var/cache/apt".
-				" -o Dir::Etc=$main::chroot_dir/etc/apt";
+					" -o Dir::State=$main::chroot_dir/var/lib/apt".
+					" -o Dir::Cache=$main::chroot_dir/var/cache/apt".
+					" -o Dir::Etc=$main::chroot_dir/etc/apt";
 			}
 		}
 	} elsif ($conf::chroot_only) {
