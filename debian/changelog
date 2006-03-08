@@ -33,6 +33,11 @@ sbuild (0.41) unstable; urgency=low
         (because apt is run inside the chroot).
     - Remove setpgrp() calls, so that all child processes run in the same
       process group as the parent.
+    - Add a $conf::sbuild_mode, used to switch behaviour between user and
+      buildd defaults.
+    - Add a --quiet option, to opposite action to --verbose.
+  * sbuild.conf.local: Add $sbuild_mode.
+  * sbuild.1: Document --quiet.
   * Sbuild.pm: Remove unused module 'IO'.
   * debian/control: Depend on perl-modules (for File::Temp).
 

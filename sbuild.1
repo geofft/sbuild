@@ -26,7 +26,7 @@ sbuild \- build debian packages from source
 [ \-m/\-\-maintainer=<maintainer> ]
 [ \-e/\-\-uploader=<uploader> ]
 [ \-k/\-\-keyid=<key> ]
-[ \-\-purge=<mode>] [\-s/\-\-source ] [ \-v/\-\-verbose ]
+[ \-\-purge=<mode>] [\-s/\-\-source ] [ \-v/\-\-verbose ] [ \-q/\-\-quiet ]
 [ \-\-make\-binNMU=<entry> ]
 [ \-\-nolog ]
 package-to-build_x.y-z(.dsc) [ ... ]
@@ -120,6 +120,9 @@ also switches on --purge=never.
 .TP
 .IR \-v , "--verbose"
 Be verbose, i.e. all information goes to stdout as well as to the log files.
+.TP
+.IR \-q , "--quiet"
+Be quiet.  This is the opposite of --verbose.
 .TP
 .IR "--make-binNMU=<entry>"
 With this option, \fBsbuild\fR will create a new changelog entry in

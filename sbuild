@@ -55,6 +55,7 @@ $stalled_pkg_timeout = 90; # minutes
 $srcdep_lock_wait = 1; # minutes
 $chroot_only = 1;
 $chroot_mode = "split";
+$sbuild_mode = "user";
 %individual_stalled_pkg_timeout = ();
 $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
 # read conf files
@@ -131,6 +132,13 @@ foreach (keys(%main::dist_order)) {
     $main::dist_sessioncaps{$_} = 0;
 }
 
+# Change the defaults for the sbuild mode
+if ($conf::sbuild_mode eq "user") {
+    $main::verbose = 1;
+} else {
+    $main::verbose = 0;
+}
+
 # Pick up available chroots and dist_order from schroot
 if ($conf::chroot_mode eq "schroot") {
     %main::dist_order = ();
@@ -148,6 +156,12 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	$_ = shift @ARGV;
 	if (/^-v$/ || /^--verbose$/) {
 		$main::verbose++;
+	}
+	if (/^-q$/ || /^--quiet$/) {
+		$main::verbose--;
+		if ($main::verbose < 0) {
+		    $main::verbose = 0;
+		}
 	}
 	elsif (/^-D$/ || /^--debug$/) {
 		$main::debug++;
