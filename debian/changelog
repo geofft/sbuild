@@ -5,6 +5,8 @@ sbuild (0.41) unstable; urgency=low
     - log_command(): Add an additional priority argument.  If nonzero,
       the message is always logged, otherwise is only logged if debug is
       enabled.
+    - get_command_internal(): When running schroot, preserve the user
+      environment, needed for APT_CONFIG, DEBIAN_FRONTEND, etc..
     - get_command(), run_command(), exec_command(), get_apt_command(),
       run_apt_command():
       + chdir to $main::cwd to make sure the directory location also exists

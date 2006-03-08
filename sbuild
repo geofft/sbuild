@@ -1791,7 +1791,7 @@ sub get_command_internal {
 	my $cmdline;
 	if ($chroot != 0) { # Run command inside chroot
 		if ($conf::chroot_mode eq "schroot") {
-			$cmdline = "$conf::schroot -c $main::schroot_session --run-session $conf::schroot_options -u $user -- ";
+			$cmdline = "$conf::schroot -c $main::schroot_session --run-session $conf::schroot_options -u $user -p -- ";
 		} else {
 			$cmdline = "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::sudo ";
 			if ($user ne "root") {
