@@ -2,9 +2,15 @@ sbuild (0.41) unstable; urgency=low
 
   * sbuild:
     - get_apt_command_internal(): Always add $main::chroot_apt_options.
+    - log_command(): Add an additional priority argument.  If nonzero,
+      the message is always logged, otherwise is only logged if debug is
+      enabled.
     - get_command(), run_command(), exec_command(), get_apt_command(),
-      run_apt_command(): chdir to $main::cwd to make sure the directory
-      location also exists inside the chroot.
+      run_apt_command():
+      + chdir to $main::cwd to make sure the directory location also exists
+        inside the chroot.
+      + Add an additional priority argument to control the urgency of the
+        log message, and pass this to log_command().
     - get_virtuals(): Remove usage of $main::chroot_apt_options, which is
       added automatically by get_apt_command().
     - get_command(), run_command() and exec_command() only log the full

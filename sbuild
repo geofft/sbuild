@@ -445,7 +445,7 @@ sub fetch_source_files {
 
 			  retry:
 				print PLOG "Checking available source versions...\n";
-				my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username);
+				my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
 				if (!open( PIPE, "$command |" )) {
 					print PLOG "Can't open pipe to apt-cache: $!\n";
 					return ("ERROR");
@@ -467,7 +467,7 @@ sub fetch_source_files {
 				if (!defined($entries{$version})) {
 					if (!$retried) {
 						# try to update apt's cache if nothing found
-						run_apt_command("$conf::apt_get", "update >/dev/null", "root");
+						run_apt_command("$conf::apt_get", "update >/dev/null", "root", 1);
 						$retried = 1;
 						goto retry;
 					}
@@ -481,7 +481,7 @@ sub fetch_source_files {
 				print PLOG "Fetching source files...\n";
 				@made = @{$entries{$version}};
 
-				my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username);
+				my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 1);
 				if (!open( PIPE, "$command |" )) {
 					print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 					return ("ERROR", @made);
@@ -609,7 +609,7 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
+			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0, 0);
 		}
 		$main::sub_task = "dpkg-source";
 		
@@ -710,7 +710,7 @@ sub build {
 			chdir( $main::cwd );
 			my $bdir = $dir;
 			$bdir =~ s/^\Q$main::chroot_dir\E//;
-			run_command("rm -rf $bdir", "root", 1);
+			run_command("rm -rf $bdir", "root", 1, 0);
 			return 0;
 		}
 	}
@@ -802,7 +802,7 @@ EOF
 			$bdir =~ s/^\Q$main::chroot_dir\E//;
 			if (-f "$main::chroot_dir/etc/ld.so.conf" &&
 			    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-			    run_command("chmod a+r /etc/ld.so.conf", "root", 1);
+			    run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
 			    print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
@@ -811,15 +811,15 @@ EOF
 				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-			exec_command($buildcmd, $main::username, 1);
+			exec_command($buildcmd, $main::username, 1, 1);
 		}
 		else {
 			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
-				run_command("chmod a+r /etc/ld.so.conf", "root", 0);
+				run_command("chmod a+r /etc/ld.so.conf", "root", 0, 0);
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			exec_command("$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
-					 "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0);
+					 "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0, 1);
 		}
 	}
 	$main::sub_task = "dpkg-buildpackage";
@@ -835,7 +835,7 @@ EOF
 	my(@timeout_times, @timeout_sigs, $last_time);
 	$SIG{'ALRM'} = sub {
 		my $signal = ($timed_out > 0) ? 9 : 15;
-		run_command("perl -e 'kill( -$signal, $main::sub_pid )'", $main::username, 1);
+		run_command("perl -e 'kill( -$signal, $main::sub_pid )'", $main::username, 1, 0);
 		$timeout_times[$timed_out] = time - $last_time;
 		$timeout_sigs[$timed_out] = $signal;
 		$timed_out++;
@@ -977,7 +977,7 @@ EOF
 		print PLOG "Purging $dir\n";
 		my $bdir = $dir;
 		$bdir =~ s/^\Q$main::chroot_dir\E//;
-		run_command("rm -rf $bdir", "root", 1);
+		run_command("rm -rf $bdir", "root", 1, 0);
 	}
 	
 	print PLOG "-"x78, "\n";
@@ -1223,7 +1223,7 @@ sub unpack_special_source {
 		my $dsc;
 
 		{
-			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username);
+			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username, 1);
 			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-get: $!\n";
 				goto failed;
@@ -1342,7 +1342,7 @@ sub uninstall_debs {
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
 
-	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1);
+	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 1);
   repeat:
 	my $output;
 	my $remove_start_time = time;
@@ -1413,7 +1413,7 @@ sub run_apt {
 	my $command = get_apt_command("$conf::apt_get", "--purge ".
 				      "-o DPkg::Options::=--force-confold ".
 				      "-q $mode install @to_install ".
-				      "2>&1 </dev/null", "root");
+				      "2>&1 </dev/null", "root", 0);
 
 	if (!open( PIPE, "$command |" )) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
@@ -1427,7 +1427,7 @@ sub run_apt {
 	$status = $?;
 
 	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1", "root");
+		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1", "root", 1);
 		if (!open( PIPE, "$command |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
@@ -1768,9 +1768,13 @@ sub get_dpkg_status {
 }
 
 sub log_command {
-	my $msg = shift;
-	$msg =~ s/\Q$main::chroot_apt_options\E/CHROOT_APT_OPTIONS/g;
-	print PLOG "$msg\n";
+	my $msg = shift;      # Message to log
+	my $priority = shift; # Priority of log message
+
+	if ((defined($priority) && $priority >= 1) || $main::debug) {
+		$msg =~ s/\Q$main::chroot_apt_options\E/CHROOT_APT_OPTIONS/g;
+		print PLOG "$msg\n";
+	}
 }
 
 sub get_command_internal {
@@ -1809,15 +1813,16 @@ sub get_command_internal {
 }
 
 sub get_command {
-	my $command = shift; # Command to run
-	my $user = shift;    # User to run command under
-	my $chroot = shift;  # Run in chroot?
+	my $command = shift;  # Command to run
+	my $user = shift;     # User to run command under
+	my $chroot = shift;   # Run in chroot?
+	my $priority = shift; # Priority of log message
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
 	if ($main::debug) {
-		log_command($cmdline);
+		log_command($cmdline, $priority);
 	} else {
-		log_command($command);
+		log_command($command, $priority);
 	}
 
 	if ($chroot != 0) {
@@ -1829,15 +1834,16 @@ sub get_command {
 # Note, do not run with $user="root", and $chroot=0, because sudo
 # access to the host system is not required.
 sub run_command {
-	my $command = shift; # Command to run
-	my $user = shift;    # User to run command under
-	my $chroot = shift;  # Run in chroot?
+	my $command = shift;  # Command to run
+	my $user = shift;     # User to run command under
+	my $chroot = shift;   # Run in chroot?
+	my $priority = shift; # Priority of log message
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
 	if ($main::debug) {
-		log_command($cmdline);
+		log_command($cmdline, $priority);
 	} else {
-		log_command($command);
+		log_command($command, $priority);
 	}
 
 	if ($chroot != 0) {
@@ -1847,15 +1853,16 @@ sub run_command {
 }
 
 sub exec_command {
-	my $command = shift; # Command to run
-	my $user = shift;    # User to run command under
-	my $chroot = shift;  # Run in chroot?
+	my $command = shift;  # Command to run
+	my $user = shift;     # User to run command under
+	my $chroot = shift;   # Run in chroot?
+	my $priority = shift; # Priority of log message
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
 	if ($main::debug) {
-		log_command($cmdline);
+		log_command($cmdline, $priority);
 	} else {
-		log_command($command);
+		log_command($command, $priority);
 	}
 
 	if ($chroot != 0) {
@@ -1866,16 +1873,17 @@ sub exec_command {
 
 sub get_apt_command_internal {
 	my $aptcommand = shift; # Command to run
-	my $options = shift; # Command options
+	my $options = shift;    # Command options
 	$aptcommand .= " $main::chroot_apt_options $options";
 
 	return $aptcommand;
 }
 
 sub get_apt_command {
-	my $command = shift; # Command to run
-	my $options = shift; # Command options
-	my $user = shift;    # User to run command under
+	my $command = shift;  # Command to run
+	my $options = shift;  # Command options
+	my $user = shift;     # User to run command under
+	my $priority = shift; # Priority of log message
 
 	my $aptcommand = get_apt_command_internal($command, $options);
 
@@ -1884,16 +1892,17 @@ sub get_apt_command {
 		$chroot = 1;
 	}
 
-	my $cmdline = get_command($aptcommand, $user, $chroot);
+	my $cmdline = get_command($aptcommand, $user, $chroot, $priority);
 
 	chdir($main::cwd);
 	return $cmdline;
 }
 
 sub run_apt_command {
-	my $command = shift; # Command to run
-	my $options = shift; # Command options
-	my $user = shift;    # User to run command under
+	my $command = shift;  # Command to run
+	my $options = shift;  # Command options
+	my $user = shift;     # User to run command under
+	my $priority = shift; # Priority of log message
 
 	my $aptcommand = get_apt_command_internal($command, $options);
 
@@ -1903,7 +1912,7 @@ sub run_apt_command {
 	}
 
 	chdir($main::cwd);
-	return run_command($aptcommand, $user, $chroot);
+	return run_command($aptcommand, $user, $chroot, $priority);
 }
 
 sub run_script {
@@ -1927,9 +1936,9 @@ sub run_script {
 		open( STDOUT, ">&PLOG" );
 		open( STDERR, ">&PLOG" );
 		if ($main::chroot_dir) {
-			exec_command("cd /build/$main::username && set $e_mode && $x_mode$script", $main::username, 1);
+			exec_command("cd /build/$main::username && set $e_mode && $x_mode$script", $main::username, 1, 0);
 		} else {
-			exec_command("set $e_mode && $x_mode$script", $main::username, 0);
+			exec_command("set $e_mode && $x_mode$script", $main::username, 0, 0);
 		}
 		die "Can't exec /bin/sh: $!\n";
 	}
@@ -2343,7 +2352,7 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $main::username);
+	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $main::username, 0);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache $!\n";
 	local($/) = "";
@@ -2366,7 +2375,7 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $main::username);
+	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $main::username, 0);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache: $!\n";
 	my $name;
@@ -2683,9 +2692,9 @@ sub check_space {
 
 		if (/^\Q$main::chroot_dir\E/) {
 			$_ =~ s/^\Q$main::chroot_dir\E//;
-			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", "root", 1);
+			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", "root", 1, 0);
 		} else {
-			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $main::username, 0);
+			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $main::username, 0, 0);
 		}
 
 		if (!open( PIPE, "$command |" )) {
@@ -3247,7 +3256,7 @@ sub shutdown {
 	# next: kill currently running command (if one)
 	if ($main::sub_pid) {
 		print "Killing $main::sub_task subprocess $main::sub_pid\n";
-		run_command("perl -e 'kill( -15, $main::sub_pid )'", $main::username, 1);
+		run_command("perl -e 'kill( -15, $main::sub_pid )'", $main::username, 1, 0);
 	}
 	remove_srcdep_lock_file();
 
