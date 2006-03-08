@@ -2610,7 +2610,7 @@ sub open_pkg_log {
 		$pkg = basename( $pkg );
 		if ($main::binNMU) {
 			$pkg =~ /^([^_]+)_([^_]+)(.*)$/;
-			$pkg = $1."_".WannaBuild::binNMU_version($2,$main::binNMUver);
+			$pkg = $1."_".Sbuild::binNMU_version($2,$main::binNMUver);
 			$main::binNMU_name = $pkg;
 			$pkg .= $3;
 		}

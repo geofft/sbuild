@@ -33,6 +33,8 @@ sbuild (0.42) UNRELEASED; urgency=low
     - Add a $conf::sbuild_mode, used to switch behaviour between user and
       buildd defaults.
     - Add a --quiet option, to opposite action to --verbose.
+    - open_pkg_log(): Use correct Sbuild:: namespace for binNMU_version
+      (Closes: #355861).
   * sbuild.conf.local: Add $sbuild_mode.
   * sbuild.1: Document --quiet.
   * Sbuild.pm: Remove unused module 'IO'.
