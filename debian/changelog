@@ -36,7 +36,9 @@ sbuild (0.42) UNRELEASED; urgency=low
   * sbuild.conf.local: Add $sbuild_mode.
   * sbuild.1: Document --quiet.
   * Sbuild.pm: Remove unused module 'IO'.
-  * debian/control: Depend on perl-modules (for File::Temp).
+  * debian/control:
+    - Depend on perl-modules (for File::Temp).
+    - Recommend schroot 0.2.7 or later (for preserving the environment).
 
  --
 
