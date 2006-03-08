@@ -604,7 +604,6 @@ sub build {
 			return 0;
 		}
 		if ($main::sub_pid == 0) {
-			setpgrp( 0, $$ );
 			if ($main::chroot_build_dir && !chdir( $main::chroot_build_dir )) {
 				print PLOG "Couldn't cd to $main::chroot_build_dir: $!\n";
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
@@ -663,7 +662,6 @@ sub build {
 			return 0;
 		}
 		if ($main::sub_pid == 0) {
-			setpgrp( 0, $$ );
 			chdir( $dir );
 			exec "dpkg-parsechangelog 2>&1";
 		}
@@ -1011,7 +1009,6 @@ sub apply_patches {
 				return 0;
 			}
 			if ($main::sub_pid == 0) {
-				setpgrp( 0, $$ );
 				open( STDOUT, ">&PLOG" );
 				open( STDERR, ">&PLOG" );
 				exec "patch --batch --quiet -p1 -E -N --no-backup-if-mismatch";
@@ -1259,7 +1256,6 @@ sub unpack_special_source {
 			goto failed;
 		}
 		if ($pid == 0) {
-			setpgrp( 0, $$ );
 			if ($main::chroot_build_dir && !chdir( $main::chroot_build_dir )) {
 				print PLOG "Couldn't cd to $main::chroot_build_dir: $! -- special unpack failed\n";
 				exit 1;
@@ -1928,7 +1924,6 @@ sub run_script {
 		return 1;
 	}
 	if ($pid == 0) {
-		setpgrp( 0, $$ );
 		open( STDOUT, ">&PLOG" );
 		open( STDERR, ">&PLOG" );
 		if ($main::chroot_dir) {

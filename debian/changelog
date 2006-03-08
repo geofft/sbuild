@@ -23,6 +23,8 @@ sbuild (0.41) unstable; urgency=low
         will break APT unless rewritten.
       + Don't set "Dir" in $chroot_aptconf when in chroot_mode is "schroot"
         (because apt is run inside the chroot).
+    - Remove setpgrp() calls, so that all child processes run in the same
+      process group as the parent.
   * Sbuild.pm: Remove unused module 'IO'.
   * debian/control: Depend on perl-modules (for File::Temp).
 
