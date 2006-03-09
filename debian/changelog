@@ -37,7 +37,12 @@ sbuild (0.42) UNRELEASED; urgency=low
       (Closes: #355861).
   * sbuild.conf.local: Add $sbuild_mode.
   * sbuild.1: Document --quiet.
+  * sbuild-setup.5:
+    - Split chroot setup and user setup into two sections.
+    - Document sudoers env_keep setup (Closes: #355072, #355604).
   * Sbuild.pm: Remove unused module 'IO'.
+  * chroot/add_sbuild_user: Add sudoers env_keep example.
+  * debian/README.Debian: Document existence of sbuild-setup(7).
   * debian/control:
     - Depend on perl-modules (for File::Temp).
     - Recommend schroot 0.2.7 or later (for preserving the environment).

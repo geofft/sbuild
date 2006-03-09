@@ -1,6 +1,13 @@
 sbuild for Debian
 -----------------
 
+setup
+=====
+
+  The full procedure for setting up a chroot and setting up a user is
+  documented in sbuild-setup(7).  Existing users may need to review
+  their sudo setup, due to changes in sudo (User setup, part 4).
+
 chroots
 =======
 
@@ -54,4 +61,4 @@ a chroot with the same name (or alias) as the distribution
 must be available.
 
 
- -- Roger Leigh <rleigh@debian.org>, Tue, 14 Feb 2006 21:46:28 +0000
+ -- Roger Leigh <rleigh@debian.org>, Thu,  9 Mar 2006 21:23:10 +0000

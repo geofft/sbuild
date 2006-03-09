@@ -33,9 +33,10 @@ cat << EOF
 
 You must manually add $USR to /etc/sudoers:
 
-# visudo  -- run this command as root and add the following line:
+# visudo  -- run this command as root and add the following lines:
 
 $USR ALL=NOPASSWD:  ALL
+Defaults:$USR env_keep+="APT_CONFIG DEBIAN_FRONTEND"
 
 You can do this in another shell or by suspending this script with
 ^Z (fg to return when done).

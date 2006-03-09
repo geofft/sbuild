@@ -16,7 +16,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 .\" MA  02111-1307  USA
-.TH SBUILD-SETUP 5 "15 Feb 2006" "Version 0.38" "Debian sbuild"
+.TH SBUILD-SETUP 7 "9 Mar 2006" "Version 0.42" "Debian sbuild"
 .SH NAME
 sbuild-setup \- sbuild setup procedure
 .SH DESCRIPTION
@@ -28,7 +28,7 @@ the setup required, several of the steps may be omitted entirely.
 A number of the steps below are automatically run by the
 .B buildd.chroot
 script.  See the section \[lq]\fIbuildd.chroot\fP\[rq] below.
-.SH SETUP
+.SH CHROOT SETUP
 This guide sets up a sarge chroot on a powerpc machine.  Adjust the
 names for other suites and architectures.
 .SS 1. Run cdebootstrap to create the chroot
@@ -99,7 +99,7 @@ extra filesystems, so all the other mounts may be omitted.
 To disable networking, don't bind mount \fI/etc/resolv.conf\fP.  This will
 prevent APT from working inside the chroot, but prevents package building from
 having working network access (no nameservers).
-.SS 3. Edit \fIsources.list\fP
+.SS 3. Edit \f[BI]sources.list\fP
 Create or edit \fI/srv/chroot/sarge/etc/apt/sources.list\fP, and add all the
 APT sources required to obtain binary and source packages for your chosen
 distribution:
@@ -204,29 +204,9 @@ While running as root inside the chroot:
 .PP
 Note that when using sbuild with schroot, this setup is done at the start of
 each build, so is not required here.
-.SS 8. user setup
-Configure the user's \fI~.sbuildrc\fP:
-.PP
-\f[CR]$ \f[CB]cp /usr/share/doc/sbuild/examples/example.sbuildrc ~/.sbuildrc\fP\fP
-.br
-.PP
-Edit to set the correct mail address to send log files to, and the correct
-maintainer name and/or uploader name.
-.PP
-Next, make the build directories:
-.PP
-\f[CR]$ \f[CB]mkdir ~/build ~/logs\fP\fP
-.br
-.PP
-As root, run:
-.PP
-\f[CR]# \f[CB]/usr/share/sbuild/add_sbuild_user /srv/chroot/sarge stable <username>\fP
-.br
-.PP
-Follow the instructions displayed, and update ~/build etc. as shown.
-.SS 9. Finished
-Congratulations!  You should now have a fully configured and operational sbuild
-setup.
+.SS 8. Finished
+Congratulations!  You should now have a fully configured and operational
+chroot.
 .SH BUILDD.CHROOT
 This script, located in \fI/usr/share/sbuild\fP will automatically do a number
 of the steps described above, including:
@@ -242,6 +222,48 @@ permissions.
 .PP
 After it has done this, you do still need to do some manual setup, completing
 the steps it missed out above, for example.
+.SH USER SETUP
+.SS 1. \f[BI]~/.sbuildrc\fP
+Configure the user's \fI~.sbuildrc\fP:
+.PP
+\f[CR]$ \f[CB]cp /usr/share/doc/sbuild/examples/example.sbuildrc ~/.sbuildrc\fP\fP
+.br
+.PP
+Edit to set the correct mail address to send log files to, and the correct
+maintainer name and/or uploader name.
+.PP
+.SS 2. Build directories
+Create the required build directories (The .sbuildrc may have configured
+different locations; these are the defaults):
+.PP
+\f[CR]$ \f[CB]mkdir ~/build ~/logs\fP\fP
+.br
+.SS 3. Chroot setup
+As root, run:
+.PP
+\f[CR]# \f[CB]/usr/share/sbuild/add_sbuild_user /srv/chroot/sarge stable <username>\fP
+.br
+.PP
+Follow the instructions displayed, and update ~/build etc. as shown.
+.SS 4. sudo setup
+If using sbuild with sudo (chroot_mode \[lq]split\[rq]), sudo needs configuring
+to give the user permission to install and remove packages in the chroot, which
+requires root priveleges.  Add the following lines to \fI/etc/sudoers\fP
+.PP
+\f[CR]\f[CI]username\fP  ALL=NOPASSWD: ALL\fP
+.br
+\f[CR]Defaults:\f[CI]username\fP env_keep+="APT_CONFIG DEBIAN_FRONTEND"\fP
+.br
+.PP
+where \fIusername\fP is the name of the user who will run sbuild.
+\fI/etc/sudoers\fP inside the chroot also needs the same modifications.
+.SS 5. Finished
+You should now be able to run sbuild.
+.PP
+\f[CR]$ \f[CB]cd ~/build\fP\fP
+.br
+\f[CR]$ \f[CB]sbuild ...\fP\fP
+.br
 .SH FILES
 .TP
 .I /usr/share/sbuild/buildd.chroot
