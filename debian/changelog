@@ -37,6 +37,16 @@ sbuild (0.42) UNRELEASED; urgency=low
       (Closes: #355861).
     - Set the in the environment SHELL=/bin/sh, in case the user
       invoking sbuild uses a shell not available inside the chroot.
+    - Remove unused variables @dist_parts and $main::nomail.
+    - Use correct use syntax for File::Temp and Cwd, and initialise a
+      number of variables which would otherwise be undefined, in order
+      to remove run-time warnings.
+    - Add a number of checks for undefined variables to remove run-time
+      warnings.
+    - Add -w to the shebang line, so sbuild always runs with warnings
+      enabled.
+    - All exec commands other than writing logfiles now use exec_command,
+      so they get logged.
   * sbuild.conf.local: Add $sbuild_mode.
   * sbuild.1: Document --quiet.
   * sbuild-setup.5:

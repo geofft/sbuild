@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 #
 # sbuild: build packages, obeying source dependencies
 # Copyright (C) 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
@@ -33,7 +33,6 @@ chomp( $main::HOSTNAME = `hostname` );
 package conf;
 $HOME = $main::HOME;
 # defaults:
-@dist_parts = qw(main contrib non-free);
 $source_dependencies = "/etc/source-dependencies";
 $mailprog = "/usr/sbin/sendmail";
 $dpkg = "/usr/bin/dpkg";
@@ -55,6 +54,7 @@ $stalled_pkg_timeout = 90; # minutes
 $srcdep_lock_wait = 1; # minutes
 $chroot_only = 1;
 $chroot_mode = "split";
+@ignore_watches_no_build_deps = qw();
 $sbuild_mode = "user";
 %individual_stalled_pkg_timeout = ();
 $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
@@ -87,9 +87,9 @@ package main;
 use strict;
 use GDBM_File;
 use POSIX;
-use File::Temp qw(:POSIX);
+use File::Temp ();
 use FileHandle;
-use Cwd;
+use Cwd qw(cwd);
 use Sbuild;
 
 $ENV{'LC_ALL'} = "POSIX";
@@ -110,7 +110,6 @@ $main::debug = 0;
 $main::verbose = 0;
 $main::batchmode = 0;
 $main::auto_giveback = 0;
-$main::nomail = 0;
 $main::build_arch_all = 0;
 $main::build_source = 0;
 $main::jobs_file = "build-progress";
@@ -119,6 +118,10 @@ $main::lock_interval = 5;
 $main::cwd = cwd();
 $main::ilock_file = "$conf::srcdep_lock_dir/install";
 $main::srcdep_lock_cnt = 0;
+$main::pkg_status = "";
+$main::pkg_end_time = 0;
+$main::pkg_start_time = 0;
+$main::this_space = 0;
 $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
@@ -126,8 +129,8 @@ $main::schroot_session = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
-%main::dist_locations;   # Chroot locations
-%main::dist_sessioncaps; # Chroot session capabilities
+%main::dist_locations = ();   # Chroot locations
+%main::dist_sessioncaps = (); # Chroot session capabilities
 foreach (keys(%main::dist_order)) {
     $main::dist_locations{$_} = "$main::cwd/chroot-$_";
     $main::dist_sessioncaps{$_} = 0;
@@ -303,7 +306,7 @@ $conf::mailto = $conf::mailto{$main::distribution}
 	if $conf::mailto{$main::distribution};
 
 # see debsign for priorities, we will follow the same order
-$main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"";
+$main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
 $main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name; 
 $main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id; 
 $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
@@ -414,8 +417,10 @@ sub fetch_source_files {
 	my $dscfile_ref = shift;
 	my $dscfile = $$dscfile_ref;
 	my ($dir, $dscbase, $files, @other_files, $dscarchs, @made);
-	my ($build_depends, $build_depends_indep, $build_conflicts,
-		$build_conflicts_indep);
+	my $build_depends = "";
+	my $build_depends_indep = "";
+	my $build_conflicts = "";
+	my $build_conflicts_indep = "";
 	local( *F );
 
 	$dscfile =~ m,^(.*)/([^/]+)$,;
@@ -449,7 +454,7 @@ sub fetch_source_files {
 		return;
 	}
 
-	if ($dir ne ".") {
+	if (!defined($dir) || $dir ne ".") {
 		{
 			if (-f "${pkgv}.dsc") {
 				print PLOG "${pkgv}.dsc exists in cwd\n";
@@ -496,8 +501,8 @@ sub fetch_source_files {
 				print PLOG "Fetching source files...\n";
 				@made = @{$entries{$version}};
 
-				my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
-				if (!open( PIPE, "$command |" )) {
+				my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+				if (!open( PIPE, "$command2 |" )) {
 					print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 					return ("ERROR", @made);
 				}
@@ -678,7 +683,7 @@ sub build {
 		}
 		if ($main::sub_pid == 0) {
 			chdir( $dir );
-			exec "dpkg-parsechangelog 2>&1";
+			exec_command("dpkg-parsechangelog 2>&1", $main::username, 0, 0);
 		}
 		$main::sub_task = "dpkg-parsechangelog";
 
@@ -1026,7 +1031,7 @@ sub apply_patches {
 			if ($main::sub_pid == 0) {
 				open( STDOUT, ">&PLOG" );
 				open( STDERR, ">&PLOG" );
-				exec "patch --batch --quiet -p1 -E -N --no-backup-if-mismatch";
+				exec_command("patch --batch --quiet -p1 -E -N --no-backup-if-mismatch", $main::username, 0, 0);
 			}
 			$main::sub_task = "patch";
 
@@ -1275,7 +1280,7 @@ sub unpack_special_source {
 				print PLOG "Couldn't cd to $main::chroot_build_dir: $! -- special unpack failed\n";
 				exit 1;
 			}
-			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
+			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
 		}
 		my $dir;
 		while( <PIPE> ) {
@@ -2314,13 +2319,15 @@ sub expand_dependencies {
 		my @check = @to_check;
 		@to_check = ();
 		foreach $check (@check) {
-			foreach (split( /\s*,\s*/, $deps->{$check} )) {
-				foreach (split( /\s*\|\s*/, $_ )) {
-					my $pkg = (/^([^\s([]+)/)[0];
-					if (!$seen{$pkg}) {
-						push( @to_check, $pkg );
-						push( @result, { Package => $pkg, Neg => 0 } );
-						$seen{$pkg} = 1;
+			if (defined($deps->{$check})) {
+				foreach (split( /\s*,\s*/, $deps->{$check} )) {
+					foreach (split( /\s*\|\s*/, $_ )) {
+						my $pkg = (/^([^\s([]+)/)[0];
+						if (!$seen{$pkg}) {
+							push( @to_check, $pkg );
+							push( @result, { Package => $pkg, Neg => 0 } );
+							$seen{$pkg} = 1;
+						}
 					}
 				}
 			}
@@ -2377,8 +2384,8 @@ sub get_dependencies {
 		next if !$name || $deps{$name};
 		/^Depends:\s*(.*)\s*$/mi and $dep = $1;
 		/^Pre-Depends:\s*(.*)\s*$/mi and $predep = $1;
-		$dep .= ", " if $dep && $predep;
-		$dep .= $predep;
+		$dep .= ", " if defined($dep) && $dep && defined($predep) && $predep;
+		$dep .= $predep if defined($predep);
 		$deps{$name} = $dep;
 	}
 	close( PIPE );
@@ -2654,7 +2661,7 @@ sub close_pkg_log {
 	
 	$pkg = basename( $pkg );
 	$t = 0 if $t < 0;
-	if ($main::pkg_status eq "successful") {
+	if (defined($main::pkg_status) && $main::pkg_status eq "successful") {
 		add_time_entry( $pkg, $t );
 		add_space_entry( $pkg, $main::this_space );
 	}
