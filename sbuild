@@ -93,6 +93,7 @@ use Cwd;
 use Sbuild;
 
 $ENV{'LC_ALL'} = "POSIX";
+$ENV{'SHELL'} = "/bin/sh";
 
 # avoid intermixing of stdout and stderr
 $| = 1;
