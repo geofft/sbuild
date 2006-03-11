@@ -58,7 +58,7 @@ sbuild (0.42) UNRELEASED; urgency=low
     - LOG and PLOG are set to autoflush using IO::Handle.
     - $conf::build_dir defaults to $main::cwd if undefined.  It is used as
       the directory containing the build chroots, build logs, and current
-      symlinks.
+      symlinks (Closes: #183022).
   * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode, defaulting to "buildd".
   * example.sbuildrc: Add $build_dir example.
