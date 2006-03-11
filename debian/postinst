@@ -1,6 +1,6 @@
 #! /bin/sh
-# 
-# vim:et
+# postinst script for sbuild
+#
 # see: dh_installdeb(1)
 
 set -e
@@ -22,10 +22,26 @@ set -e
 #     installation fails and the `postinst' is called with `abort-upgrade',
 #     `abort-remove' or `abort-deconfigure'.
 
+# Move a conffile without triggering a dpkg question
+mv_conffile() {
+    OLDCONFFILE="$1"
+    NEWCONFFILE="$2"
+
+    if [ -e "$OLDCONFFILE" ]; then
+        echo "Preserving user changes to $NEWCONFFILE ..."
+        mv -f "$NEWCONFFILE" "$NEWCONFFILE".dpkg-new
+        mv -f "$OLDCONFFILE" "$NEWCONFFILE"
+    fi
+}
+
 case "$1" in
     configure)
 
-        if [ -z "`getent group sbuild`" ]; then                        
+	if dpkg --compare-versions "$2" le "0.42"; then
+	    mv_conffile "/etc/sbuild.conf.local" "/etc/sbuild/sbuild.conf"
+	fi
+
+        if [ -z "`getent group sbuild`" ]; then
             adduser --group --quiet sbuild
         fi
 
@@ -38,7 +54,7 @@ case "$1" in
         chown -R :sbuild /var/lib/sbuild
 
 	if dpkg --compare-versions "$2" le-nl "0.34"; then
-          ln -sf ../share/sbuild /usr/lib/sbuild
+	    ln -sf ../share/sbuild /usr/lib/sbuild
 	fi
 
         ;;
@@ -48,9 +64,11 @@ case "$1" in
         ;;
 
     *)
+
         echo "postinst called with unknown argument \`$1'" >&2
         exit 0
-    ;;
+
+	;;
 esac
 
 # dh_installdeb will replace this with shell code automatically

@@ -47,6 +47,9 @@ sbuild (0.42) UNRELEASED; urgency=low
       enabled.
     - All exec commands other than writing logfiles now use exec_command,
       so they get logged.
+    - Require /usr/share/sbuild/sbuild.conf and optionally require
+      /etc/sbuild/sbuild.conf.
+  * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode.
   * sbuild.1: Document --quiet.
   * sbuild-setup.5:
@@ -58,8 +61,22 @@ sbuild (0.42) UNRELEASED; urgency=low
   * debian/control:
     - Depend on perl-modules (for File::Temp).
     - Recommend schroot 0.2.7 or later (for preserving the environment).
-  * debian/rules: Remove "make clean" in clean target; there is no
-    Makefile, so this is redundant.
+  * debian/dirs: Add etc/sbuild.
+  * debian/rules:
+    - Remove "make clean" in clean target; there is no Makefile, so this is
+      redundant.
+    - Install sbuild.conf as /usr/share/sbuild/sbuild.conf and
+      sbuild.conf.local as /etc/sbuild/sbuild.conf.
+  * debian/preinst:
+    - New conffile.
+    - Remove /etc/sbuild.conf.local if not locally modified.
+  * debian/postinst:
+    - Move /etc/sbuild.conf.local to /etc/sbuild/sbuild.conf if needed.
+    - Reindent.
+  * debian/postrm:
+    - Unlink /etc/sbuild.conf if present.
+    - Unlink files under /var/lib/sbuild.
+    - Reindent.
 
  --
 

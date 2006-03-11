@@ -59,7 +59,8 @@ $sbuild_mode = "user";
 %individual_stalled_pkg_timeout = ();
 $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
 # read conf files
-require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
+require "/usr/share/sbuild/sbuild.conf";
+require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 # some checks
 die "mailprog binary $conf::mailprog does not exist or isn't executable\n"

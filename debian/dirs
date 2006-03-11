@@ -1,4 +1,5 @@
 etc
+etc/sbuild
 usr/bin
 usr/share/sbuild
 usr/share/doc/sbuild

@@ -1,6 +1,6 @@
 #! /bin/sh
-# 
-# vim:et
+# postrm script for sbuild
+#
 # see: dh_installdeb(1)
 
 set -e
@@ -16,6 +16,40 @@ set -e
 #        * <disappearer's-postrm> `disappear' <r>overwrit>r> <new-version>
 # for details, see /usr/share/doc/packaging-manual/
 
+PACKAGE="sbuild"
+
+# Remove a conffile which has been forgotten by dpkg
+# If the file does not exist, or is owned by any package, do not remove it.
+rm_conffile() {
+    CONFFILE="$1"
+
+    local delete="false"
+
+    if [ -f "$CONFFILE" ]; then
+	local fpkg=""
+	local pkg=""
+	if fpkg=$(dpkg -S "$CONFFILE" 2>/dev/null); then
+	    # Don't delete, but check which package it came from.
+	    pkg=$(echo $fpkg | sed -e  's/\(^[[:print:]][[:print:]]*\): .*$/\1/')
+	    if [ "$pkg" = "$PACKAGE" ]; then
+		delete="true"
+	    fi
+	else
+	    rm -f "$CONFFILE"
+	    delete="true"
+	fi
+    else
+	delete="true"
+    fi
+
+    # Remove dpkg cruft
+    if [ "$delete" = "true" ]; then
+	rm -f "${CONFFILE}.dpkg-old"
+	rm -f "${CONFFILE}.dpkg-new"
+	rm -f "${CONFFILE}.dpkg-dist"
+    fi
+}
+
 case "$1" in
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade)
@@ -24,16 +58,26 @@ case "$1" in
 
     purge|disappear)
 
-        if [ -z "`getent group sbuild`" ]; then                        
+        if [ -z "`getent group sbuild`" ]; then
             deluser --group sbuild
         fi
+
+	rm_conffile "/etc/sbuild.conf"
+	rm_conffile "/etc/sbuild.conf.local"
+
+	rm -f /var/lib/sbuild/apt.conf
+	rm -f /var/lib/sbuild/avg-build-space
+	rm -f /var/lib/sbuild/avg-build-times
+	rm -f /var/lib/sbuild/source-dependencies-*
 
         ;;
 
     *)
+
         echo "postrm called with unknown argument \`$1'" >&2
         exit 0
 
+	;;
 esac
 
 # dh_installdeb will replace this with shell code automatically
