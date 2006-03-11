@@ -31,10 +31,11 @@ sbuild (0.42) UNRELEASED; urgency=low
     - Remove setpgrp() calls, so that all child processes run in the same
       process group as the parent.
     - Add a $conf::sbuild_mode, used to switch behaviour between user and
-      buildd defaults.
+      buildd defaults.  The default is "buildd".
     - Add a --quiet option, to opposite action to --verbose.
-    - open_pkg_log(): Use correct Sbuild:: namespace for binNMU_version
-      (Closes: #355861).
+    - open_pkg_log():
+      + Use correct Sbuild:: namespace for binNMU_version (Closes: #355861).
+      + Create current-distribution symlink in addition to current.
     - Set the in the environment SHELL=/bin/sh, in case the user
       invoking sbuild uses a shell not available inside the chroot.
     - Remove unused variables @dist_parts and $main::nomail.
@@ -52,8 +53,10 @@ sbuild (0.42) UNRELEASED; urgency=low
     - Use named signals, rather than numbers, for portability.
     - close_log(), close_pkg_log: If verbose is enabled, flush the log and
       wait a second before killing tee, to prevent data loss in the pipline.
+    - $main::verbose is set by default if running on a tty.
+    - LOG and PLOG are set to autoflush using IO::Handle.
   * sbuild.conf: Don't require local config file.
-  * sbuild.conf.local: Add $sbuild_mode.
+  * sbuild.conf.local: Add $sbuild_mode, defaulting to "buildd".
   * sbuild.1: Document --quiet.
   * sbuild-setup.5:
     - Split chroot setup and user setup into two sections.

@@ -17,9 +17,10 @@
 # Name for dir for source dependency lock files
 #$srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 
-# sbuild behaviour; possible values are "user" (defaults to verbose
-# messages) and "buildd" (no verbose messages)
-#$sbuild_mode = "user";
+# sbuild behaviour; possible values are "user" (exit status reports
+# build failures) and "buildd" (exit status does not report build
+# failures).
+#$sbuild_mode = "buildd";
 
 # Chroot behaviour; possible values are "split" (apt and dpkg are run
 # from the host system) and "schroot" (all package operations are done in
