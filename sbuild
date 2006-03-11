@@ -3369,7 +3369,8 @@ sub get_schroot_info {
 sub setup_options {
 	my $distribution = shift;
 
-	if (-d "$main::dist_locations{\"$distribution\"}") {
+	if (defined($main::dist_locations{"$distribution"}) &&
+	    -d "$main::dist_locations{\"$distribution\"}") {
 		$main::chroot_dir = "$main::dist_locations{\"$distribution\"}";
 		$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
 		$conf::srcdep_lock_dir = "$main::chroot_dir/$conf::srcdep_lock_dir";
