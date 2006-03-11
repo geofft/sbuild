@@ -855,8 +855,8 @@ EOF
 	my $timed_out = 0;
 	my(@timeout_times, @timeout_sigs, $last_time);
 	$SIG{'ALRM'} = sub {
-		my $signal = ($timed_out > 0) ? 9 : 15;
-		run_command("perl -e 'kill( -$signal, $main::sub_pid )'", $main::username, 1, 0);
+		my $signal = ($timed_out > 0) ? "KILL" : "TERM";
+		run_command("perl -e 'kill( $signal, $main::sub_pid )'", $main::username, 1, 0);
 		$timeout_times[$timed_out] = time - $last_time;
 		$timeout_sigs[$timed_out] = $signal;
 		$timed_out++;
@@ -2596,7 +2596,11 @@ sub open_log {
 sub close_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 
-	kill( 15, $main::tee_pid ) if $main::verbose;
+	if ($main::verbose) {
+		LOG->flush();
+		sleep 1;
+		kill( "TERM", $main::tee_pid );
+	}
 	close( LOG );
 	if (!$main::nolog && !$main::verbose &&
 		-s $main::main_logfile && $conf::mailto) {
@@ -2669,7 +2673,11 @@ sub close_pkg_log {
 	print PLOG "*"x78, "\n";
 	printf PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
 		   int($t/3600), int(($t%3600)/60), int($t%60), $main::this_space;
-	kill( 15, $main::pkg_tee_pid ) if $main::verbose && !$main::nolog;
+	if ($main::verbose) {
+		PLOG->flush();
+		sleep 1;
+		kill( "TERM", $main::pkg_tee_pid );
+	}
 	close( PLOG );
 	open( PLOG, ">&LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $conf::mailto,
@@ -3279,7 +3287,7 @@ sub shutdown {
 	# next: kill currently running command (if one)
 	if ($main::sub_pid) {
 		print "Killing $main::sub_task subprocess $main::sub_pid\n";
-		run_command("perl -e 'kill( -15, $main::sub_pid )'", $main::username, 1, 0);
+		run_command("perl -e 'kill( \"TERM\", $main::sub_pid )'", $main::username, 1, 0);
 	}
 	remove_srcdep_lock_file();
 

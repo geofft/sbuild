@@ -49,6 +49,9 @@ sbuild (0.42) UNRELEASED; urgency=low
       so they get logged.
     - Require /usr/share/sbuild/sbuild.conf and optionally require
       /etc/sbuild/sbuild.conf.
+    - Use named signals, rather than numbers, for portability.
+    - close_log(), close_pkg_log: If verbose is enabled, flush the log and
+      wait a second before killing tee, to prevent data loss in the pipline.
   * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode.
   * sbuild.1: Document --quiet.
