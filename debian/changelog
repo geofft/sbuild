@@ -54,7 +54,7 @@ sbuild (0.42) UNRELEASED; urgency=low
     - Use named signals, rather than numbers, for portability.
     - close_log(), close_pkg_log: If verbose is enabled, flush the log and
       wait a second before killing tee, to prevent data loss in the pipline.
-    - $main::verbose is set by default if running on a tty.
+    - $main::verbose is set by default if running on a tty (Closes: #355802).
     - LOG and PLOG are set to autoflush using IO::Handle.
   * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode, defaulting to "buildd".
