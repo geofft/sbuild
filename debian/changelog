@@ -59,6 +59,10 @@ sbuild (0.42) UNRELEASED; urgency=low
     - $conf::build_dir defaults to $main::cwd if undefined.  It is used as
       the directory containing the build chroots, build logs, and current
       symlinks (Closes: #183022).
+    - Always print toolchain packages.  This is done by always calling
+      merge_pkg_build_deps(), and running all the way through
+      install_deps(), even when the package does not supply any build
+      dependencies or conflicts (Closes: #355040).
   * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode, defaulting to "buildd".
   * example.sbuildrc: Add $build_dir example.

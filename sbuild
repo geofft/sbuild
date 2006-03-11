@@ -456,12 +456,10 @@ sub fetch_source_files {
 				/^Build-Conflicts-Indep:\s*(.*)/i and $build_conflicts_indep = $1;
 			}
 			close( F );
-			if ($build_depends || $build_depends_indep || $build_conflicts ||
-				$build_conflicts_indep) {
-				merge_pkg_build_deps( $pkg, $build_depends,
-				    $build_depends_indep, $build_conflicts,
-				    $build_conflicts_indep );
-			}
+			merge_pkg_build_deps( $pkg, $build_depends,
+					      $build_depends_indep,
+					      $build_conflicts,
+					      $build_conflicts_indep );
 		}
 		return;
 	}
@@ -576,13 +574,10 @@ sub fetch_source_files {
 	print "Arch check ok ($main::arch included in $dscarchs)\n"
 		if $main::debug;
 
-	if ($build_depends || $build_depends_indep || $build_conflicts ||
-		$build_conflicts_indep) {
-		@main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
-									  $build_conflicts,$build_conflicts_indep);
-		merge_pkg_build_deps( $pkg, $build_depends, $build_depends_indep,
-							  $build_conflicts, $build_conflicts_indep );
-	}
+	@main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
+				      $build_conflicts,$build_conflicts_indep);
+	merge_pkg_build_deps( $pkg, $build_depends, $build_depends_indep,
+			      $build_conflicts, $build_conflicts_indep );
 
 	if ($main::build_source) {
 		@made = "";
@@ -1105,12 +1100,10 @@ sub install_deps {
 	my $pkg = shift;
 	my( @positive, @negative, @special, @instd, @rmvd );
 
-	if (!exists $main::deps{$pkg}) {
-		prepare_watches( [] );
-		return 1;
+	my $dep = "";
+	if (exists $main::deps{$pkg}) {
+		$dep = $main::deps{$pkg};
 	}
-	
-	my $dep = $main::deps{$pkg};
 	if ($main::debug) {
 		print "Source dependencies of $pkg: ", format_deps(@$dep), "\n";
 	}
