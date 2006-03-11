@@ -131,10 +131,18 @@ $main::schroot_session = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
+# Check build dir
+if (!defined($conf::build_dir)) {
+    $conf::build_dir = $main::cwd;
+}
+if (! -d "$conf::build_dir") {
+    die "Build directory $conf::build_dir does not exist";
+}
+
 %main::dist_locations = ();   # Chroot locations
 %main::dist_sessioncaps = (); # Chroot session capabilities
 foreach (keys(%main::dist_order)) {
-    $main::dist_locations{$_} = "$main::cwd/chroot-$_";
+    $main::dist_locations{$_} = "$conf::build_dir/chroot-$_";
     $main::dist_sessioncaps{$_} = 0;
 }
 
@@ -2574,7 +2582,7 @@ sub open_log {
 		return;
 	}
 
-	$main::main_logfile = "build-$date.log";
+	$main::main_logfile = "$conf::build_dir/build-$date.log";
 
 	if ($main::verbose) {
 		my $pid;
@@ -2632,8 +2640,8 @@ sub open_pkg_log {
 			$pkg .= $3;
 		}
 		$main::pkg_logfile = "$conf::log_dir/${pkg}_$date";
-		system "ln -sf $main::pkg_logfile current-$main::distribution";
-		system "ln -sf $main::pkg_logfile current";
+		system "ln -sf $main::pkg_logfile $conf::build_dir/current-$main::distribution";
+		system "ln -sf $main::pkg_logfile $conf::build_dir/current";
 		if ($main::verbose) {
 			my $pid;
 			($pid = open( PLOG, "|-")) || exec "tee $main::pkg_logfile";

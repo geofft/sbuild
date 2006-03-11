@@ -5,6 +5,10 @@
 # $Id$
 #
 
+# Directory for chroot symlinks and sbuild logs.  Defaults to the
+# current directory if unspecified.
+#$build_dir="$HOME/build";
+
 # Directory for writing build logs to
 #$log_dir = "$HOME/logs";
 

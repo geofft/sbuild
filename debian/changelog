@@ -56,8 +56,12 @@ sbuild (0.42) UNRELEASED; urgency=low
       wait a second before killing tee, to prevent data loss in the pipline.
     - $main::verbose is set by default if running on a tty (Closes: #355802).
     - LOG and PLOG are set to autoflush using IO::Handle.
+    - $conf::build_dir defaults to $main::cwd if undefined.  It is used as
+      the directory containing the build chroots, build logs, and current
+      symlinks.
   * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode, defaulting to "buildd".
+  * example.sbuildrc: Add $build_dir example.
   * sbuild.1: Document --quiet.
   * sbuild-setup.5:
     - Split chroot setup and user setup into two sections.
