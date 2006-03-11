@@ -206,7 +206,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::distribution = "unstable" if $main::distribution eq "u";
 		$main::distribution = "experimental" if $main::distribution eq "e";
 		$main::override_distribution = 1;
-		print PLOG "Selected distribution $main::distribution\n"
+		print "Selected distribution $main::distribution\n"
 			if $main::debug;
 	}
 	elsif (/^-p/ || /^--purge/) {
