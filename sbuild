@@ -945,16 +945,16 @@ EOF
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
 				    if (! -f $_) {
-					print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
-					next;
+					    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
+					    next;
 				    }
 				    if (/_all.deb$/ and not $main::build_arch_all) {
-					print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
-					unlink($_);
-					next;
+					    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+					    unlink($_);
+					    next;
 				    }
 				    system "mv", "$main::chroot_build_dir$changes", "."
-					and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
+					    and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 				}
 			}
 			close( F );
