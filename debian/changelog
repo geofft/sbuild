@@ -63,6 +63,12 @@ sbuild (0.42) UNRELEASED; urgency=low
       merge_pkg_build_deps(), and running all the way through
       install_deps(), even when the package does not supply any build
       dependencies or conflicts (Closes: #355040).
+    - install_deps():
+      + If there are no package dependencies, create an
+        empty anonymous array reference to hold the (nonexistent)
+        dependencies, required by filter_dependencies.
+      + Make sure %entries is initialised.
+    - fetch_source_files(): Check that the dsc specified is valid.
   * sbuild.conf: Don't require local config file.
   * sbuild.conf.local: Add $sbuild_mode, defaulting to "buildd".
   * example.sbuildrc: Add $build_dir example.

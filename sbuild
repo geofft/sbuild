@@ -443,6 +443,13 @@ sub fetch_source_files {
 	my ($pkg, $version) = split /_/, $pkgv;
 	@main::have_dsc_build_deps = ();
 
+	if (!defined($dscfile) || !defined($pkg) || !defined($version)) {
+		print PLOG "Invalid source: $dscfile\n";
+		return ("ERROR");
+	}
+
+	$dscbase = $pkg . "_" . $version if !defined($dscbase);
+
 	if (-d $dscfile) {
 		if (-f "$dscfile/debian/.sbuild-build-deps") {
 			open( F, "<$dscfile/debian/.sbuild-build-deps" );
@@ -470,7 +477,7 @@ sub fetch_source_files {
 				print PLOG "${pkgv}.dsc exists in cwd\n";
 			}
 			else {
-				my %entries;
+				my %entries = ();
 				my $retried = 0;
 
 			  retry:
@@ -1100,7 +1107,7 @@ sub install_deps {
 	my $pkg = shift;
 	my( @positive, @negative, @special, @instd, @rmvd );
 
-	my $dep = "";
+	my $dep = [];
 	if (exists $main::deps{$pkg}) {
 		$dep = $main::deps{$pkg};
 	}
