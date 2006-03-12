@@ -717,7 +717,7 @@ sub build {
 		}
 		my $tree_version = $1;
 		my $cmp_version = ($main::binNMU && -f "$dir/debian/.sbuild-binNMU-done") ?
-		    Sbuild::binNMU_version($version,$main::binNMUver) : $version;
+			Sbuild::binNMU_version($version,$main::binNMUver) : $version;
 		if ($tree_version ne $cmp_version) {
 			print PLOG "The unpacked source tree $dir is version ".
 					   "$tree_version, not wanted $cmp_version!\n";
@@ -836,8 +836,8 @@ EOF
 			$bdir =~ s/^\Q$main::chroot_dir\E//;
 			if (-f "$main::chroot_dir/etc/ld.so.conf" &&
 			    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-			    run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
-			    print PLOG "ld.so.conf was not readable! Fixed.\n";
+				run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
+				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
 			my $buildcmd = "cd $bdir && PATH=$conf::path ".
@@ -853,7 +853,7 @@ EOF
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			exec_command("$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
-					 "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0, 1);
+				     "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0, 1);
 		}
 	}
 	$main::sub_task = "dpkg-buildpackage";
