@@ -33,7 +33,7 @@ sbuild (0.42) UNRELEASED; urgency=low
     - Add a $conf::sbuild_mode, used to switch behaviour between user and
       buildd defaults.  The default is "buildd".  This allows package build
       errors to be reported (Closes: #170742).
-    - Add a --quiet option, to opposite action to --verbose.
+    - Add a --quiet option, the opposite action to --verbose.
     - open_pkg_log():
       + Use correct Sbuild:: namespace for binNMU_version (Closes: #355861).
       + Create current-distribution symlink in addition to current.
@@ -53,7 +53,7 @@ sbuild (0.42) UNRELEASED; urgency=low
       /etc/sbuild/sbuild.conf.
     - Use named signals, rather than numbers, for portability.
     - close_log(), close_pkg_log: If verbose is enabled, flush the log and
-      wait a second before killing tee, to prevent data loss in the pipline.
+      wait a second before killing tee, to prevent data loss in the pipeline.
     - $main::verbose is set by default if running on a tty (Closes: #355802).
     - LOG and PLOG are set to autoflush using IO::Handle.
     - $conf::build_dir defaults to $main::cwd if undefined.  It is used as
