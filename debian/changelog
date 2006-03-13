@@ -1,4 +1,4 @@
-sbuild (0.42) UNRELEASED; urgency=low
+sbuild (0.42) unstable; urgency=low
 
   * sbuild:
     - get_apt_command_internal(): Always add $main::chroot_apt_options.
@@ -99,7 +99,7 @@ sbuild (0.42) UNRELEASED; urgency=low
     - Unlink files under /var/lib/sbuild.
     - Reindent.
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Mon, 13 Mar 2006 00:14:00 +0000
 
 sbuild (0.41) unstable; urgency=low
 
