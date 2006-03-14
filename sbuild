@@ -473,7 +473,7 @@ sub fetch_source_files {
 
 	if (!defined($dir) || $dir ne ".") {
 		{
-			if (-f "${pkgv}.dsc") {
+			if (-f "${pkgv}.dsc" && !verify_dsc_md5sums("${pkgv}.dsc")) {
 				print PLOG "${pkgv}.dsc exists in cwd\n";
 			}
 			else {
@@ -538,6 +538,11 @@ sub fetch_source_files {
 		}
 	}
 	
+	if (verify_dsc_md5sums($dscfile)) {
+		print PLOG "FAILED [dsc verification]\n";
+		return( "ERROR", @made );
+	}
+
 	if (!open( F, "<$dscfile" )) {
 		print PLOG "Can't open $dscfile: $!\n";
 		return( "ERROR", @made );
@@ -3428,4 +3433,50 @@ sub setup_options {
 	} elsif ($conf::chroot_only) {
 		die "$distribution chroot does not exist and in chroot only mode -- exiting\n";
 	}
+}
+
+sub verify_dsc_md5sums {
+	my $dsc = shift;
+
+	my %dsc_md5 = (); # dsc MD5
+	my %obs_md5 = (); # Observed MD5
+
+	if (-r $dsc && open( DSC, "<$dsc" )) {
+		while (<DSC>) {
+			chomp;
+			if (/^ [a-z0-9]{32}/) {
+				my @fields = split( /\s+/, $_ );
+				$dsc_md5{$fields[3]} = $fields[1];
+			}
+		}
+		close( DSC ) or print PLOG "Failed to close $dsc\n" && return 1;
+
+		open(OBS, '-|', "md5sum", keys %dsc_md5) or return 1;
+		while (<OBS>) {
+			chomp;
+			if (/^[a-z0-9]{32}/) {
+				my @fields = split( /\s+/, $_ );
+				$obs_md5{$fields[1]} = $fields[0];
+			}
+		}
+		close( OBS ) or
+			print PLOG "Failed to close m5sum\n" && return 1;
+
+		foreach (sort keys %dsc_md5) {
+			if (defined $dsc_md5{$_} && defined $obs_md5{$_}) {
+				if ($dsc_md5{$_} ne $obs_md5{$_}) {
+					print PLOG "$_: MD5SUM mismatch ($dsc_md5{$_} cf $obs_md5{$_}\n";
+					return 1;
+				}
+			} else {
+				print PLOG "$_: Missing file\n";
+				return 1;
+			}
+		}
+	} else {
+		print PLOG "$dsc: Can't open to verify\n";
+		return 1;
+	}
+
+	return 0;
 }

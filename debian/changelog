@@ -1,3 +1,14 @@
+sbuild (0.43) UNRELEASED; urgency=low
+
+  * sbuild:
+    - verify_dsc_md5sums(): New function to verify the MD5SUM of files in a
+      .dsc file.
+    - fetch_source_files(): Use verify_dsc_md5sums to check for incomplete
+      downloads, and redownload sources if needed; also verify again after
+      download (Closes: #270439).
+
+ --
+
 sbuild (0.42) unstable; urgency=low
 
   * sbuild:
