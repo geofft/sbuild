@@ -874,7 +874,7 @@ EOF
 	my(@timeout_times, @timeout_sigs, $last_time);
 	$SIG{'ALRM'} = sub {
 		my $signal = ($timed_out > 0) ? "KILL" : "TERM";
-		run_command("perl -e 'kill( $signal, $main::sub_pid )'", $main::username, 1, 0);
+		run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0);
 		$timeout_times[$timed_out] = time - $last_time;
 		$timeout_sigs[$timed_out] = $signal;
 		$timed_out++;
@@ -3306,7 +3306,7 @@ sub shutdown {
 	# next: kill currently running command (if one)
 	if ($main::sub_pid) {
 		print "Killing $main::sub_task subprocess $main::sub_pid\n";
-		run_command("perl -e 'kill( \"TERM\", $main::sub_pid )'", $main::username, 1, 0);
+		run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0);
 	}
 	remove_srcdep_lock_file();
 
