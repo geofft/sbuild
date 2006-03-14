@@ -43,6 +43,7 @@ $fakeroot = "/usr/bin/fakeroot";
 $apt_get = "/usr/bin/apt-get";
 $apt_cache = "/usr/bin/apt-cache";
 $dpkg_source = "/usr/bin/dpkg-source";
+$md5sum = "/usr/bin/md5sum";
 $build_env_cmnd = "";
 $pgp_options = "-us -uc";
 $log_dir = "$main::HOME/logs";
@@ -3455,7 +3456,7 @@ sub verify_dsc_md5sums {
 		}
 		close( DSC ) or print PLOG "Failed to close $dsc\n" && return 1;
 
-		open(OBS, '-|', "md5sum", keys %dsc_md5) or return 1;
+		open(OBS, '-|', "$conf::md5sum", keys %dsc_md5) or return 1;
 		while (<OBS>) {
 			chomp;
 			if (/^[a-z0-9]{32}/) {
