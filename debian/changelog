@@ -7,6 +7,9 @@ sbuild (0.43) UNRELEASED; urgency=low
       downloads, and redownload sources if needed; also verify again after
       download (Closes: #270439).
     - build(), shutdown(): Quote kill command correctly (Closes: #356686).
+    - When using schroot, look for a distribution named
+      "$distribution-sbuild" in preference to "$distribution".
+  * sbuild.1: Document schroot chroot naming.
 
  --
 

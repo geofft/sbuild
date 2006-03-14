@@ -61,11 +61,13 @@ information on source-dependencies.  Also see README.Debian.
 You can build either using a local package with its .dsc file or a
 remote one by specifying an explicit dpkg version.
 .PP
-Note: \fBsbuild\fR must be run in the directory (~/build/ by default)
-with the chroot-{stable,testing,unstable} symlink to the chroot or it
-will do the build in the base install which is not what you want.
-When using schroot, these requirements do not apply; the chroot having
-the name (or alias) of the specified distribution will be used.
+Note: \fBsbuild\fR must be run in the directory (\fI~/build\fP by default) with
+the chroot-{stable,testing,unstable} symlink to the chroot or it will do the
+build in the base install which is not what you want.  When using schroot,
+these requirements do not apply; the chroot having the name (or alias) of the
+specified distribution will be used; schroot uses a chroot named
+\fI$distribution-sbuild\fP, or \fI$distribution\fP, in that order of
+preference.
 .SH OPTIONS
 .TP
 .IR \-a , "--add-depends=<dependency-line>"

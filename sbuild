@@ -344,14 +344,18 @@ foreach $pkgv (@ARGV) {
 	next if !open_pkg_log( $pkgv );
 
 	if ($conf::chroot_mode eq "schroot") {
-        	$main::schroot_session=`$conf::schroot -c $main::distribution --begin-session`;
+		my $distribution = $main::distribution;
+		if (defined($main::dist_locations{"${main::distribution}-sbuild"})) {
+			$distribution = "${main::distribution}-sbuild";
+		}
+        	$main::schroot_session=`$conf::schroot -c $distribution --begin-session`;
 		chomp($main::schroot_session);
 		if ($?) {
 			print PLOG "Chroot setup failed; skipping $pkg\n";
 			$main::pkg_status = "skipped";
 			goto cleanup_close;
 		}
-		print PLOG "Setting up chroot $main::distribution (session id $main::schroot_session)\n"
+		print PLOG "Setting up chroot $distribution (session id $main::schroot_session)\n"
 			if $main::debug;
 		get_schroot_info($main::schroot_session);
 		setup_options($main::schroot_session);
