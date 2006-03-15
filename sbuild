@@ -2596,12 +2596,19 @@ sub open_log {
 
 	if ($main::verbose) {
 		my $pid;
-		($pid = open( LOG, "|-")) || exec "tee $main::main_logfile";
+		($pid = open( LOG, "|-"));
 		if (!defined $pid) {
-			warn "Cannot open pipe to 'tee $main::main_logfile': $!\n";
+			warn "Cannot open pipe to '$main::main_logfile': $!\n";
 		}
-		else {
-			$main::tee_pid = $pid;
+		elsif ($pid == 0) {
+			open( CLOG, ">$main::main_logfile" ) or
+				die "Can't open logfile $main::main_logfile: $!\n";
+			while (<STDIN>) {
+				print CLOG $_;
+				print STDOUT $_;
+			}
+			close CLOG;
+			exit 0;
 		}
 	}
 	else {
@@ -2618,11 +2625,9 @@ sub open_log {
 sub close_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 
-	if ($main::verbose) {
-		LOG->flush();
-		sleep 1;
-		kill( "TERM", $main::tee_pid );
-	}
+	close( PLOG );
+	close( STDERR );
+	close( STDOUT );
 	close( LOG );
 	if (!$main::nolog && !$main::verbose &&
 		-s $main::main_logfile && $conf::mailto) {
@@ -2654,12 +2659,19 @@ sub open_pkg_log {
 		system "ln -sf $main::pkg_logfile $conf::build_dir/current";
 		if ($main::verbose) {
 			my $pid;
-			($pid = open( PLOG, "|-")) || exec "tee $main::pkg_logfile";
+			($pid = open( PLOG, "|-"));
 			if (!defined $pid) {
-				warn "Cannot open pipe to 'tee $main::pkg_logfile': $!\n";
+				warn "Cannot open pipe to '$main::pkg_logfile': $!\n";
 			}
-			else {
-				$main::pkg_tee_pid = $pid;
+			elsif ($pid == 0) {
+				open( CPLOG, ">$main::pkg_logfile" ) or
+					die "Can't open logfile $main::pkg_logfile: $!\n";
+				while (<STDIN>) {
+					print CPLOG $_;
+					print STDOUT $_;
+				}
+				close CPLOG;
+				exit 0;
 			}
 		}
 		else {
@@ -2697,11 +2709,6 @@ sub close_pkg_log {
 	print PLOG "*"x78, "\n";
 	printf PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
 		   int($t/3600), int(($t%3600)/60), int($t%60), $main::this_space;
-	if ($main::verbose) {
-		PLOG->flush();
-		sleep 1;
-		kill( "TERM", $main::pkg_tee_pid );
-	}
 	close( PLOG );
 	open( PLOG, ">&LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $conf::mailto,
