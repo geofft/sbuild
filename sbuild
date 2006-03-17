@@ -2655,8 +2655,9 @@ sub open_pkg_log {
 			$pkg .= $3;
 		}
 		$main::pkg_logfile = "$conf::log_dir/${pkg}_$date";
-		system "ln -sf $main::pkg_logfile $conf::build_dir/current-$main::distribution";
-		system "ln -sf $main::pkg_logfile $conf::build_dir/current";
+		log_symlink($main::pkg_logfile,
+			    "$conf::build_dir/current-$main::distribution");
+		log_symlink($main::pkg_logfile, "$conf::build_dir/current");
 		if ($main::verbose) {
 			my $pid;
 			($pid = open( PLOG, "|-"));
@@ -3491,4 +3492,12 @@ sub verify_dsc_md5sums {
 	}
 
 	return 0;
+}
+
+sub log_symlink {
+	my $log = shift;
+	my $dest = shift;
+
+	unlink $dest || return;
+	symlink $log, $dest || return;
 }
