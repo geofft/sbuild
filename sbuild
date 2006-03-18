@@ -3431,7 +3431,6 @@ sub setup_options {
 
 		# Always write out apt.conf, because it gets outdated
 		# if the chroot_mode is changed...
-		my($tmpfile, $tmpfilename) = tmpnam();
 		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXX",
 					    DIR => $main::chroot_dir,
 					    UNLINK => 0) ) {

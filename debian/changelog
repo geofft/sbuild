@@ -21,6 +21,7 @@ sbuild (0.43) UNRELEASED; urgency=low
       STDERR, and restore them when the log is closed.
     - open_pkg_log(): Use the saved STDOUT for verbose logging.  This
       prevents the package log being also directed to the build log.
+    - setup_options(): Remove unused call to tmpnam().
   * sbuild.1: Document schroot chroot naming.
 
  --
