@@ -17,6 +17,10 @@ sbuild (0.43) UNRELEASED; urgency=low
     - log_symlink(): New function to create a symbolic link to the current
       package log.  This replaces the use of /bin/ln, which has races if
       concurrent builds use it.
+    - open_log(), close_log(): Save a references to the initial STDOUT and
+      STDERR, and restore them when the log is closed.
+    - open_pkg_log(): Use the saved STDOUT for verbose logging.  This
+      prevents the package log being also directed to the build log.
   * sbuild.1: Document schroot chroot naming.
 
  --

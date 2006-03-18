@@ -2617,6 +2617,10 @@ sub open_log {
 	}
 	LOG->autoflush(1);
 	select(LOG);
+	if ($main::verbose) {
+		open( SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
+		open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
+	}
 	open( STDOUT, ">&LOG" ) or warn "Can't redirect stdout\n";
 	open( STDERR, ">&LOG" ) or warn "Can't redirect stderr\n";
 	open( PLOG, ">&LOG" ) or warn "Can't redirect PLOG\n";
@@ -2629,6 +2633,12 @@ sub close_log {
 	close( STDERR );
 	close( STDOUT );
 	close( LOG );
+	if ($main::verbose) {
+		open( STDOUT, ">&SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
+		open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
+		close (SAVED_STDOUT);
+		close (SAVED_STDERR);
+	}
 	if (!$main::nolog && !$main::verbose &&
 		-s $main::main_logfile && $conf::mailto) {
 		send_mail( $conf::mailto, "Log from sbuild $date",
@@ -2669,7 +2679,7 @@ sub open_pkg_log {
 					die "Can't open logfile $main::pkg_logfile: $!\n";
 				while (<STDIN>) {
 					print CPLOG $_;
-					print STDOUT $_;
+					print SAVED_STDOUT $_;
 				}
 				close CPLOG;
 				exit 0;
