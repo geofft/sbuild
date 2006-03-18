@@ -1744,6 +1744,8 @@ sub check_dependencies {
 	}
 	$fail =~ s/\s+$//;
 	if (!$fail && @main::toolchain_pkgs) {
+		my ($sysname, $nodename, $release, $version, $machine) = uname();
+		print PLOG "Kernel: $sysname $release $main::arch ($machine)\n";
 		print PLOG "Toolchain package versions:";
 		foreach $name (@main::toolchain_pkgs) {
 			print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
