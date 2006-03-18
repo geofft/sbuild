@@ -2592,7 +2592,12 @@ sub open_log {
 		return;
 	}
 
-	$main::main_logfile = "$conf::build_dir/build-$date.log";
+	my $F = new File::Temp( TEMPLATE => "build-${main::distribution}-$date.XXXXXX",
+				DIR => $conf::build_dir,
+				SUFFIX => '.log',
+				UNLINK => 0)
+		or die "Can't open logfile: $!\n";
+	$main::main_logfile = $F->filename;
 
 	if ($main::verbose) {
 		my $pid;
@@ -2601,20 +2606,19 @@ sub open_log {
 			warn "Cannot open pipe to '$main::main_logfile': $!\n";
 		}
 		elsif ($pid == 0) {
-			open( CLOG, ">$main::main_logfile" ) or
-				die "Can't open logfile $main::main_logfile: $!\n";
 			while (<STDIN>) {
-				print CLOG $_;
+				print $F $_;
 				print STDOUT $_;
 			}
-			close CLOG;
+			undef $F;
 			exit 0;
 		}
 	}
 	else {
-		open( LOG, ">$main::main_logfile" )
+		open( LOG, ">$F" )
 			or warn "Cannot open log file $main::main_logfile: $!\n";
 	}
+	undef $F;
 	LOG->autoflush(1);
 	select(LOG);
 	if ($main::verbose) {
@@ -2644,7 +2648,7 @@ sub close_log {
 		send_mail( $conf::mailto, "Log from sbuild $date",
 				   $main::main_logfile ) if $conf::mailto;
 	}
-	elsif (!$main::nolog && !$main::verbose && ! -s $main::main_logfile) {
+	elsif (!$main::nolog && ! -s $main::main_logfile) {
 		unlink( $main::main_logfile );
 	}
 }
@@ -3431,7 +3435,7 @@ sub setup_options {
 
 		# Always write out apt.conf, because it gets outdated
 		# if the chroot_mode is changed...
-		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXX",
+		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
 					    DIR => $main::chroot_dir,
 					    UNLINK => 0) ) {
 

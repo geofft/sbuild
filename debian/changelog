@@ -17,8 +17,14 @@ sbuild (0.43) UNRELEASED; urgency=low
     - log_symlink(): New function to create a symbolic link to the current
       package log.  This replaces the use of /bin/ln, which has races if
       concurrent builds use it.
-    - open_log(), close_log(): Save a references to the initial STDOUT and
-      STDERR, and restore them when the log is closed.
+    - open_log(), close_log():
+      + Save a references to the initial STDOUT and STDERR, and restore
+        them when the log is closed.
+      + Create the build log using File::Temp, in the form
+        build-distribution-date.XXXXXX.log.  This prevents races during
+        logfile creation when running concurrent builds.  If the file
+        is empty, it is unlinked on close, irrespective of whether
+        verbose mode is used or not.
     - open_pkg_log(): Use the saved STDOUT for verbose logging.  This
       prevents the package log being also directed to the build log.
     - setup_options(): Remove unused call to tmpnam().
