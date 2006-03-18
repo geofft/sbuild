@@ -34,6 +34,8 @@ sbuild (0.43) UNRELEASED; urgency=low
   * bin/common_functions: Allow any chroot name to be specified
     (Closes: #356785).
   * bin/README.bins: Document changed chroot syntax.
+  * bin/checkchroot: Set LC_COLLATE=POSIX to prevent collation issues
+    (mismatches with the reference file; Closes: #294883).
 
  --
 
