@@ -4,19 +4,21 @@ chroots.
 
 The <chroot> arg used by most scripts has two forms:
 
-  . s,stable,-t,testing,-u,unstable
+  · s,stable,-t,testing,-u,unstable
 
     - a symlink ~/build/chroot-{stable,testing,unstable} pointing
       to the chroot must exist
 
-  . an absolute path
+  · any other distribution name
 
     - in this case the argument is parsed to try and determine
-      the distribution, for those scripts that need it:
+      the distribution, for those scripts that need it, for example:
 
-      checkchroot /usr/local/chroot/unstable-security
-        - CHROOT=/usr/local/chroot/unstable
-        - DIST=unstable so it can find the ref-unstable reference file
+      # checkchroot stable-security
+
+      - CHROOT=/usr/local/chroot/chroot-stable-security
+      - DIST=stable-security so it can find the ref-stable-security
+        reference file
 
 The scripts:
 
@@ -107,12 +109,3 @@ ppack -r un -a              # shows anomalies (holds, misconfigured pkgs)
 ppack -r st -Lb pkg         # urlified a package listing -> browser
   - this is useful for browsing an installed packages contents.  Try
     "ppack -Lb sbuild" although it may be a little late for that now. :-)
-
- ------------------------------------------
-You may find other useful utilities in the wanna-build CVS,
-cvs.linux-m68k.org
-
-
-
-
- vim:et

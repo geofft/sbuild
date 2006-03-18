@@ -1,6 +1,6 @@
 usage () {
 	echo >&2 "Usage: $USAGE_STRING"
-	echo >&2 "   chroot=-u|unstable|-t|testing|-s|stable|-o|oldstable or absolute path"
+	echo >&2 "   chroot=-u|unstable|-t|testing|-s|stable|-o|oldstable|distribution"
 	exit 1
 }
 
@@ -26,8 +26,8 @@ parse_arg () {
 			CHROOT=~/build/chroot-$DIST
 			;;
 		 * )
-			DIST=unstable
-			CHROOT=$1
+			DIST=$1
+			CHROOT=~/build/chroot-$DIST
 			;;
 	esac
 
