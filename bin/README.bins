@@ -6,8 +6,8 @@ The <chroot> arg used by most scripts has two forms:
 
   · s,stable,-t,testing,-u,unstable
 
-    - a symlink ~/build/chroot-{stable,testing,unstable} pointing
-      to the chroot must exist
+    - a symlink in the current directory, chroot-{stable,testing,unstable}
+      pointing to the chroot must exist
 
   · any other distribution name
 

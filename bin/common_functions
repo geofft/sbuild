@@ -11,25 +11,21 @@ parse_arg () {
 			;;
 		-u|unstable )
 			DIST=unstable
-			CHROOT=~/build/chroot-$DIST
 			;;
 		-t|testing )
 			DIST=testing
-			CHROOT=~/build/chroot-$DIST
 			;;
 		-s|stable )
 			DIST=stable
-			CHROOT=~/build/chroot-$DIST
 			;;
 		-o|oldstable )
 			DIST=oldstable
-			CHROOT=~/build/chroot-$DIST
 			;;
 		 * )
 			DIST=$1
-			CHROOT=~/build/chroot-$DIST
 			;;
 	esac
+	CHROOT=$(pwd)/chroot-$DIST
 
 	if [ ! -d $CHROOT/etc ]; then
 		echo >&2 "..doesn't appear to be a chroot: $CHROOT"
