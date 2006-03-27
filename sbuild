@@ -2599,6 +2599,7 @@ sub open_log {
 				SUFFIX => '.log',
 				UNLINK => 0)
 		or die "Can't open logfile: $!\n";
+	$F->autoflush(1);
 	$main::main_logfile = $F->filename;
 
 	if ($main::verbose) {
@@ -2683,6 +2684,8 @@ sub open_pkg_log {
 			elsif ($pid == 0) {
 				open( CPLOG, ">$main::pkg_logfile" ) or
 					die "Can't open logfile $main::pkg_logfile: $!\n";
+				CPLOG->autoflush(1);
+
 				while (<STDIN>) {
 					print CPLOG $_;
 					print SAVED_STDOUT $_;

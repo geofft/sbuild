@@ -10,8 +10,9 @@ sbuild (0.43) UNRELEASED; urgency=low
     - build(), shutdown(): Quote kill command correctly (Closes: #356686).
     - When using schroot, look for a distribution named
       "$distribution-sbuild" in preference to "$distribution".
-    - open_log(), open_pkg_log(): Use fork() rather than tee to multiplex
-      log output.
+    - open_log(), open_pkg_log():
+      + Use fork() rather than tee to multiplex log output.
+      + Don't buffer log output (Closes: #358717).
     - close_log(), close_pkg_log(): Close all dup'd log streams, and don't
       kill the child log processes, which avoids dataloss in the pipeline.
     - log_symlink(): New function to create a symbolic link to the current
