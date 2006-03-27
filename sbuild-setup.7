@@ -22,7 +22,7 @@ sbuild-setup \- sbuild setup procedure
 .SH DESCRIPTION
 \fBsbuild\fP uses chroots to build packages within, to provide a minimal and
 consistent build environment.  This man page describes the procedure to create
-a chroot by hand using cdebootstrap.  These are only guidelines; depending upon
+a chroot by hand using debootstrap.  These are only guidelines; depending upon
 the setup required, several of the steps may be omitted entirely.
 .PP
 A number of the steps below are automatically run by the
@@ -31,7 +31,7 @@ script.  See the section \[lq]\fIbuildd.chroot\fP\[rq] below.
 .SH CHROOT SETUP
 This guide sets up a sarge chroot on a powerpc machine.  Adjust the
 names for other suites and architectures.
-.SS 1. Run cdebootstrap to create the chroot
+.SS 1. Run debootstrap to create the chroot
 \f[CR]# \f[CB]mkdir \-p /srv/chroot/sarge\fP\fP
 .br
 .PP
@@ -42,9 +42,9 @@ mount an LV here if required:
 .br
 .PP
 Add to /etc/fstab and mount (see next section for full fstab example).
-Finally, run cdebootstrap to create the chroot:
+Finally, run debootstrap to create the chroot:
 .PP
-\f[CR]# \f[CB]cdebootstrap \-a powerpc \-f build sarge /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
+\f[CR]# \f[CB]debootstrap \-\-variant=buildd /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
 .br
 .SS 2. Set up additional mounts
 An example \fI/etc/fstab\fP:
@@ -211,7 +211,7 @@ chroot.
 This script, located in \fI/usr/share/sbuild\fP will automatically do a number
 of the steps described above, including:
 .IP \[bu]
-Running cdebootstrap.
+Running debootstrap.
 .IP \[bu]
 Setting up APT sources in \fI/etc/apt/sources.list\fP.
 .IP \[bu]
@@ -267,7 +267,7 @@ You should now be able to run sbuild.
 .SH FILES
 .TP
 .I /usr/share/sbuild/buildd.chroot
-A script to automatically create and configure a chroot using cdebootstrap.
+A script to automatically create and configure a chroot using debootstrap.
 .SH AUTHORS
 Roger Leigh.
 .SH COPYRIGHT
@@ -278,7 +278,7 @@ under the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .SH SEE ALSO
-.BR cdebootstrap (1),
+.BR debootstrap (1),
 .BR sbuild (1).
 .\"#
 .\"# The following sets edit modes for GNU EMACS

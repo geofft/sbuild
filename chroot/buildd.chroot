@@ -24,7 +24,7 @@ SUITE=$1
 TARGET=$2
 MIRROR=$3
 
-/usr/bin/cdebootstrap -a "$(dpkg-architecture -qDEB_HOST_ARCH)" -f build "$SUITE" "$TARGET" "$MIRROR"
+/usr/sbin/debootstrap --variant=buildd "$SUITE" "$TARGET" "$MIRROR"
 
 cp /etc/hosts "$TARGET/etc/hosts" || true
 echo "# $SUITE" > "$TARGET/etc/apt/sources.list"

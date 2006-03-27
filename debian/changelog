@@ -33,6 +33,7 @@ sbuild (0.43) UNRELEASED; urgency=low
     - build(): Check for _all.udeb files which are built when they
       shouldn't (merge from upstream SVN cset 98).
   * sbuild.1: Document schroot chroot naming.
+  * sbuild-setup.7: Use debootstrap rather than cdebootstrap.
   * bin/common_functions: Allow any chroot name to be specified
     (Closes: #356785).
   * bin/README.bins: Document changed chroot syntax.
@@ -41,6 +42,10 @@ sbuild (0.43) UNRELEASED; urgency=low
   * bin/common_functions, bin/README.bins: Remove ~/build/ from the
     chroot path, to match sbuild behaviour of searching in the
     current directory (Closes: #355034).
+  * chroot/README-buildd.chroot: Fix typo.
+  * chroot/buildd.chroot: Use debootstrap rather than cdebootstrap
+    (Closes: #358668).
+  * debian/control: Recommend debootstrap rather than cdebootstrap.
 
  --
 

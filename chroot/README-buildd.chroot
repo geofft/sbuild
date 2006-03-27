@@ -2,7 +2,7 @@
 buildd.chroot (Sarge Edition)
 =============================
 
-This script crates the chroot environment for sbuild. It's written
+This script creates the chroot environment for sbuild. It's written
 on the basis of current debootstrap --variant=buildd option by
 adding the few other files needed for a working environment.
 The pre-sarge script is broken in sarge, please ignore it.
