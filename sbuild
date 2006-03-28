@@ -478,72 +478,70 @@ sub fetch_source_files {
 	}
 
 	if (!defined($dir) || $dir ne ".") {
-		{
-			if (-f "${pkgv}.dsc" && !verify_dsc_md5sums("${pkgv}.dsc")) {
-				print PLOG "${pkgv}.dsc exists in cwd\n";
-			}
-			else {
-				my %entries = ();
-				my $retried = 0;
+		if (-f "${pkgv}.dsc" && !verify_dsc_md5sums("${pkgv}.dsc")) {
+			print PLOG "${pkgv}.dsc exists in cwd\n";
+		}
+		else {
+			my %entries = ();
+			my $retried = 0;
 
-			  retry:
-				print PLOG "Checking available source versions...\n";
-				my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
-				if (!open( PIPE, "$command |" )) {
-					print PLOG "Can't open pipe to apt-cache: $!\n";
-					return ("ERROR");
-				}
-				{ local($/) = "";
-				  while( <PIPE> ) {
-					  my $ver = $1 if /^Version:\s+(\S+)\s*$/mi;
-					  my $tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
-					  @{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
-						  split( "\n", $tfile );
-				  }
-			    }
-				close( PIPE );
-				if ($?) {
-					print PLOG "$conf::apt_cache failed\n";
-					return ("ERROR");
-				}
+		  retry:
+			print PLOG "Checking available source versions...\n";
+			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
+			if (!open( PIPE, "$command |" )) {
+				print PLOG "Can't open pipe to apt-cache: $!\n";
+				return ("ERROR");
+			}
+			{ local($/) = "";
+			  while( <PIPE> ) {
+				  my $ver = $1 if /^Version:\s+(\S+)\s*$/mi;
+				  my $tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
+				  @{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
+					  split( "\n", $tfile );
+			  }
+		  }
+			close( PIPE );
+			if ($?) {
+				print PLOG "$conf::apt_cache failed\n";
+				return ("ERROR");
+			}
 				
-				if (!defined($entries{$version})) {
-					if (!$retried) {
-						# try to update apt's cache if nothing found
-						run_apt_command("$conf::apt_get", "update >/dev/null", "root", 1);
-						$retried = 1;
-						goto retry;
-					}
-					print PLOG "Can't find source for $pkgv\n";
-					print PLOG "(only different version(s) ",
-							   join( ", ", sort keys %entries), " found)\n"
+			if (!defined($entries{$version})) {
+				if (!$retried) {
+					# try to update apt's cache if nothing found
+					run_apt_command("$conf::apt_get", "update >/dev/null", "root", 1);
+					$retried = 1;
+					goto retry;
+				}
+				print PLOG "Can't find source for $pkgv\n";
+				print PLOG "(only different version(s) ",
+					join( ", ", sort keys %entries), " found)\n"
 						if %entries;
-					return( "ERROR" );
-				}
-
-				print PLOG "Fetching source files...\n";
-				@made = @{$entries{$version}};
-
-				my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
-				if (!open( PIPE, "$command2 |" )) {
-					print PLOG "Can't open pipe to $conf::apt_get: $!\n";
-					return ("ERROR", @made);
-				}
-				while( <PIPE> ) {
-					print PLOG $_;
-				}
-				close( PIPE );
-				if ($?) {
-					print PLOG "$conf::apt_get for sources failed\n";
-					return( "ERROR", @made );
-				}
-				# touch the downloaded files, otherwise buildd-watcher
-				# will complain that they're old :)
-				$$dscfile_ref = $dscfile = (grep { /\.dsc$/ } @made)[0];
+				return( "ERROR" );
 			}
+
+			print PLOG "Fetching source files...\n";
+			@made = @{$entries{$version}};
+
+			my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+			if (!open( PIPE, "$command2 |" )) {
+				print PLOG "Can't open pipe to $conf::apt_get: $!\n";
+				return ("ERROR", @made);
+			}
+			while( <PIPE> ) {
+				print PLOG $_;
+			}
+			close( PIPE );
+			if ($?) {
+				print PLOG "$conf::apt_get for sources failed\n";
+				return( "ERROR", @made );
+			}
+			# touch the downloaded files, otherwise buildd-watcher
+			# will complain that they're old :)
+			$$dscfile_ref = $dscfile = (grep { /\.dsc$/ } @made)[0];
 		}
 	}
-	
+
 	if (verify_dsc_md5sums($dscfile)) {
 		print PLOG "FAILED [dsc verification]\n";
 		return( "ERROR", @made );
