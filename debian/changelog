@@ -37,7 +37,11 @@ sbuild (0.43) UNRELEASED; urgency=low
       shouldn't (merge from upstream SVN cset 98).
     - Strip "./" from $pkg, so the name used for source dependencies is
       correct (Closes: #359747).
-  * sbuild.1: Document schroot chroot naming.
+    - Add --force-orig-source option to force the inclusion of the
+      .orig.tar.gz (Closes: #318030).
+  * sbuild.1:
+    + Document schroot chroot naming.
+    + Document --force-orig-source option.
   * sbuild-setup.7: Use debootstrap rather than cdebootstrap.
   * bin/common_functions: Allow any chroot name to be specified
     (Closes: #356785).

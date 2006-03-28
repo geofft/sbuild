@@ -26,8 +26,8 @@ sbuild \- build debian packages from source
 [ \-m/\-\-maintainer=<maintainer> ]
 [ \-e/\-\-uploader=<uploader> ]
 [ \-k/\-\-keyid=<key> ]
-[ \-\-purge=<mode>] [\-s/\-\-source ] [ \-v/\-\-verbose ] [ \-q/\-\-quiet ]
-[ \-\-make\-binNMU=<entry> ]
+[ \-\-purge=<mode>] [\-s/\-\-source ] [\-\-force\-orig\-source ]
+[ \-v/\-\-verbose ] [ \-q/\-\-quiet ][ \-\-make\-binNMU=<entry> ]
 [ \-\-nolog ]
 package-to-build_x.y-z(.dsc) [ ... ]
 .SH VERSION
@@ -116,9 +116,13 @@ log mails.
 \fImode\fR decides if to delete the build directory. Possible values
 are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .TP
-.IR \-s , "--source"
-Also build source package, i.e. use dpkg-buildpackage without -B. This
-also switches on --purge=never.
+.IR \-s , "\-\-source"
+Also build source package, i.e. use dpkg\-buildpackage without \-B.
+.TP
+.IR \-s , "\-\-force\-orig\-source"
+When used with in conjunction with \-s this option forces the inclusion of the
+orig.tar.gz file in the generated .changes file even in cases where it would
+not normally be included, i.e. use dpkg\-buildpackage \-sa
 .TP
 .IR \-v , "--verbose"
 Be verbose, i.e. all information goes to stdout as well as to the log files.

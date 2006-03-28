@@ -115,6 +115,7 @@ $main::batchmode = 0;
 $main::auto_giveback = 0;
 $main::build_arch_all = 0;
 $main::build_source = 0;
+$main::force_build_source = 0;
 $main::jobs_file = "build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
@@ -190,6 +191,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	}
 	elsif (/^-s$/ || /^--source$/) {
 		$main::build_source++;
+	}
+	elsif (/^--force-orig-source$/) {
+		$main::force_build_source++;
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -838,8 +842,10 @@ EOF
 	if ($main::sub_pid == 0) {
 		open( STDIN, "</dev/null" );
 		setsid;
-		my $binopt = $main::build_source ? "" :
-					 $main::build_arch_all ? "-b" : "-B";
+		my $binopt = $main::build_source ?
+			$main::force_build_source ? "-sa" : "" :
+			$main::build_arch_all ?	"-b" : "-B";
+
 		if ($main::chroot_dir) {
 			my $bdir = $dir;
 			$bdir =~ s/^\Q$main::chroot_dir\E//;
