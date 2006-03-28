@@ -33,6 +33,8 @@ sbuild (0.43) UNRELEASED; urgency=low
       toolchain package versions, in the same style as reportbug.
     - build(): Check for _all.udeb files which are built when they
       shouldn't (merge from upstream SVN cset 98).
+    - Strip "./" from $pkg, so the name used for source dependencies is
+      correct (Closes: #359747).
   * sbuild.1: Document schroot chroot naming.
   * sbuild-setup.7: Use debootstrap rather than cdebootstrap.
   * bin/common_functions: Allow any chroot name to be specified

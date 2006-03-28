@@ -342,6 +342,7 @@ foreach $pkgv (@ARGV) {
 	($urlbase, $pkgv) = ($1, $3) if $pkgv =~ m,^(\w+://(\S+/)?)([^/]+)$,;
 	$pkgv =~ s/\.dsc$//;
 	(my $pkg = $pkgv) =~ s/_.*$//;
+	$pkg =~ s/^\.\///;
 	next if !open_pkg_log( $pkgv );
 
 	if ($conf::chroot_mode eq "schroot") {
