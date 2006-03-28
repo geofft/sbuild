@@ -42,6 +42,7 @@ sbuild (0.43) UNRELEASED; urgency=low
   * sbuild.1:
     + Document schroot chroot naming.
     + Document --force-orig-source option.
+    + Correctly escape hyphens in option and file names.
   * sbuild-setup.7: Use debootstrap rather than cdebootstrap.
   * bin/common_functions: Allow any chroot name to be specified
     (Closes: #356785).

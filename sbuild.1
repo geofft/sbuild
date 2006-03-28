@@ -26,8 +26,9 @@ sbuild \- build debian packages from source
 [ \-m/\-\-maintainer=<maintainer> ]
 [ \-e/\-\-uploader=<uploader> ]
 [ \-k/\-\-keyid=<key> ]
-[ \-\-purge=<mode>] [\-s/\-\-source ] [\-\-force\-orig\-source ]
-[ \-v/\-\-verbose ] [ \-q/\-\-quiet ][ \-\-make\-binNMU=<entry> ]
+[ \-\-purge=<mode>] [ \-s/\-\-source ] [ \-\-force\-orig\-source ]
+[ \-v/\-\-verbose ] [ \-q/\-\-quiet ]
+[ \-\-make\-binNMU=<entry> ]
 [ \-\-nolog ]
 package-to-build_x.y-z(.dsc) [ ... ]
 .SH VERSION
@@ -55,92 +56,94 @@ sbuildrc is available in
 will \fBnot\fP run without a valid \fI~/.sbuildrc\fP.
 .PP
 Optionally, source dependencies are read from
-\fI/var/lib/sbuild/source-dependencies-*\fP; see that file for more
+\fI/var/lib/sbuild/source\-dependencies\-*\fP; see that file for more
 information on source-dependencies.  Also see README.Debian.
 .PP
 You can build either using a local package with its .dsc file or a
 remote one by specifying an explicit dpkg version.
 .PP
 Note: \fBsbuild\fR must be run in the directory (\fI~/build\fP by default) with
-the chroot-{stable,testing,unstable} symlink to the chroot or it will do the
+the chroot\-{stable,testing,unstable} symlink to the chroot or it will do the
 build in the base install which is not what you want.  When using schroot,
 these requirements do not apply; the chroot having the name (or alias) of the
 specified distribution will be used; schroot uses a chroot named
-\fI$distribution-sbuild\fP, or \fI$distribution\fP, in that order of
+\fI$distribution\-sbuild\fP, or \fI$distribution\fP, in that order of
 preference.
 .SH OPTIONS
 .TP
-.IR \-a , "--add-depends=<dependency-line>"
-This option adds some source dependency information for a package. It
-can be given more than one time with accumulating effect. The argument
-is a line of source dependencies in the same format as in
-\fI/var/lib/sbuild/source-dependencies\fR. The given dependencies are appended to
-the src-deps from source-dependencies-* files or package src-deps, resp.
+.IR \-a , "\-\-add\-depends=<dependency-line>"
+This option adds some source dependency information for a package. It can be
+given more than one time with accumulating effect. The argument is a line of
+source dependencies in the same format as in
+\fI/var/lib/sbuild/source\-dependencies\fR. The given dependencies are appended
+to the src-deps from source\-dependencies\-* files or package src-deps, resp.
 .TP
-.IR \-A , "--arch-all"
-Also build Architecture: all packages, i.e. use dpkg-buildpackage -b
-instead of -B.
+.IR \-A , "\-\-arch\-all"
+Also build Architecture: all packages, i.e. use dpkg\-buildpackage \-b
+instead of \-B.
 .TP
-.IR \-b , "--batch"
+.IR \-b , "\-\-batch"
 Operate in batchmode, i.e. write a build-progress file during execution
 and files on shutdown to facilitate a clean restart.
 .TP
-.IR \-d , "--distribution=<distribution>"
+.IR \-d , "\-\-distribution=<distribution>"
 Fetch source packages from specified distribution.
 .TP
-.IR \-f , "--force-depends=<dependency-line>"
+.IR \-f , "\-\-force\-depends=<dependency-line>"
 This option overrides source dependency information for a package. It
 can be given more than one time with accumulating effect. The argument
 is a line of source dependencies in the same format as in
-\fI/var/lib/sbuild/source-dependencies\fR.
+\fI/var/lib/sbuild/source\-dependencies\fR.
 .TP
-.IR \-D , "--debug"
+.IR \-D , "\-\-debug"
 Enable debug output.
 .TP
-.IR \-m , "--maintainer=<maintainer>"
-Passed to dpkg-genchanges and is used to set the Maintainer: field in the .changes file(s).
+.IR \-m , "\-\-maintainer=<maintainer>"
+Passed to dpkg\-genchanges and is used to set the Maintainer: field in
+the .changes file(s).
 .TP
-.IR \-e , "--uploader=<maintainer>"
-Passed to dpkg-genchanges and is used to set the Changed-by: field in the .changes file(s).
+.IR \-e , "\-\-uploader=<maintainer>"
+Passed to dpkg\-genchanges and is used to set the Changed\-by: field in
+the .changes file(s).
 .TP
-.IR \-k , "--keyid=<maintainer>"
-Passed to dpkg-genchanges and is used to set the key to sign the .changes file(s).
-Default is not using any key.
+.IR \-k , "\-\-keyid=<maintainer>"
+Passed to dpkg\-genchanges and is used to set the key to sign the .changes
+file(s).  Default is not using any key.
 .TP
-.IR \-n , "--nolog"
+.IR \-n , "\-\-nolog"
 Do not create a package log file in the $log_dir directory and no
 build log file, but print everything to stdout. Also do not send any
 log mails.
 .TP
-.IR \-p , "--purge=<mode>"
+.IR \-p , "\-\-purge=<mode>"
 \fImode\fR decides if to delete the build directory. Possible values
 are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .TP
 .IR \-s , "\-\-source"
 Also build source package, i.e. use dpkg\-buildpackage without \-B.
 .TP
-.IR \-s , "\-\-force\-orig\-source"
-When used with in conjunction with \-s this option forces the inclusion of the
-orig.tar.gz file in the generated .changes file even in cases where it would
-not normally be included, i.e. use dpkg\-buildpackage \-sa
+.IR "\-\-force\-orig\-source"
+When used with in conjunction with \-s, this option forces the inclusion of the
+orig.tar.gz file in the generated .changes file, even in cases where it would
+not normally be included, i.e. use dpkg\-buildpackage \-sa.
 .TP
-.IR \-v , "--verbose"
+.IR \-v , "\-\-verbose"
 Be verbose, i.e. all information goes to stdout as well as to the log files.
 .TP
-.IR \-q , "--quiet"
-Be quiet.  This is the opposite of --verbose.
+.IR \-q , "\-\-quiet"
+Be quiet.  This is the opposite of \-\-verbose.
 .TP
-.IR "--make-binNMU=<entry>"
+.IR "\-\-make\-binNMU=<entry>"
 With this option, \fBsbuild\fR will create a new changelog entry in
-debian/changelog of every package built. The version number will be in
-the format for binary-only NMUs (three dotted parts in the Debian
-revision); the maintainer is set to the maintainer name configured for
-\fBsbuild\fR. The \fIentry\fR parameter will be used as a changelog
-entry after a fixed one "Binary-only non-maintainer upload for ARCH --
-no source changes". Please note that the versions in the
-\fIpackage-to-build\fR arguments still have to be the unmodified
-(non-NMU ones) so that sources can be found. The version number in log
-files and mails will be modified by \fBsbuild\fR automatically.
+debian/changelog of every package built. The version number will be in the
+format for binary-only NMUs (three dotted parts in the Debian revision); the
+maintainer is set to the maintainer name configured for \fBsbuild\fR. The
+\fIentry\fR parameter will be used as a changelog entry after a fixed one
+\[lq]Binary-only non-maintainer upload for ARCH -- no source
+changes\[rq]. Please note that the versions in the \fIpackage-to-build\fR
+arguments still have to be the unmodified (non-NMU ones) so that sources can be
+found. The version number in log files and mails will be modified by
+\fBsbuild\fR automatically.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
 .IP "HOME"
@@ -148,9 +151,11 @@ The home directory of the user.
 .IP "LOGNAME"
 Used in lockfiles.
 .IP "sourcebase"
-A URL for a Debian source distribution; generated by sbuild for scripts in source-dependencies.
+A URL for a Debian source distribution; generated by sbuild for scripts in
+source-dependencies.
 .IP "binarybase"
-A URL for a Debian binary distribution; generated by sbuild for scripts in source-dependencies.
+A URL for a Debian binary distribution; generated by sbuild for scripts in
+source-dependencies.
 .SH FILES
 .TP
 .I /etc/sbuild.conf
@@ -166,7 +171,7 @@ User specific configuration
 .I /var/lib/sbuild
 Build statistics, source dependencies and lock files.
 .SH AUTHORS
-Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>.
+Roman Hodek <Roman.Hodek@informatik.uni\-erlangen.de>.
 .PP
 \fBsbuild\fR is based on debbuild, written by James Troup
 <james@nocrew.org> and has been modified by
@@ -178,10 +183,10 @@ Michael Banck <mbanck@debian.org>, and
 Roger Leigh <rleigh@debian.org>
 .fi
 .SH "SEE ALSO"
-.BR update-sourcedeps (1),
-.BR avg-pkg-build-time (1),
+.BR update\-sourcedeps (1),
+.BR avg\-pkg\-build\-time (1),
 .BR schroot (1),
-.BR sbuild-setup(7).
+.BR sbuild\-setup(7).
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:
