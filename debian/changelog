@@ -60,7 +60,7 @@ sbuild (0.43) unstable; urgency=low
   * debian/control: Recommend debootstrap rather than cdebootstrap.
   * example.sbuildrc: Add example $force_orig_source, with documentation.
 
-  -- Roger Leigh <rleigh@debian.org>  Tue, 28 Mar 2006 23:18:06 +0100
+ -- Roger Leigh <rleigh@debian.org>  Wed, 29 Mar 2006 14:58:32 +0100
 
 sbuild (0.42) unstable; urgency=low
 
