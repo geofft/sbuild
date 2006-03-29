@@ -1,4 +1,4 @@
-sbuild (0.43) UNRELEASED; urgency=low
+sbuild (0.43) unstable; urgency=low
 
   * sbuild:
     - verify_dsc_md5sums(): New function to verify the MD5SUM of files in a
@@ -39,6 +39,8 @@ sbuild (0.43) UNRELEASED; urgency=low
       correct (Closes: #359747).
     - Add --force-orig-source option to force the inclusion of the
       .orig.tar.gz (Closes: #318030).
+    - Add $conf::force_orig_source to allow --force-orig-source to be
+      specified in a .sbuildrc.
   * sbuild.1:
     + Document schroot chroot naming.
     + Document --force-orig-source option.
@@ -56,8 +58,9 @@ sbuild (0.43) UNRELEASED; urgency=low
   * chroot/buildd.chroot: Use debootstrap rather than cdebootstrap
     (Closes: #358668).
   * debian/control: Recommend debootstrap rather than cdebootstrap.
+  * example.sbuildrc: Add example $force_orig_source, with documentation.
 
- --
+  -- Roger Leigh <rleigh@debian.org>  Tue, 28 Mar 2006 23:18:06 +0100
 
 sbuild (0.42) unstable; urgency=low
 

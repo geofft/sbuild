@@ -57,6 +57,7 @@ $chroot_only = 1;
 $chroot_mode = "split";
 @ignore_watches_no_build_deps = qw();
 $sbuild_mode = "buildd";
+$force_orig_source = 0;
 %individual_stalled_pkg_timeout = ();
 $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
 # read conf files
@@ -115,7 +116,6 @@ $main::batchmode = 0;
 $main::auto_giveback = 0;
 $main::build_arch_all = 0;
 $main::build_source = 0;
-$main::force_build_source = 0;
 $main::jobs_file = "build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
@@ -193,7 +193,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::build_source++;
 	}
 	elsif (/^--force-orig-source$/) {
-		$main::force_build_source++;
+		$conf::force_orig_source++;
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -843,7 +843,7 @@ EOF
 		open( STDIN, "</dev/null" );
 		setsid;
 		my $binopt = $main::build_source ?
-			$main::force_build_source ? "-sa" : "" :
+			$conf::force_orig_source ? "-sa" : "" :
 			$main::build_arch_all ?	"-b" : "-B";
 
 		if ($main::chroot_dir) {
