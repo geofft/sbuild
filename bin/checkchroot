@@ -13,20 +13,20 @@ USAGE_STRING="${0##*/} <chroot>"
 . /usr/share/sbuild/common_functions
 parse_arg $1
 
-tfile=$(tempfile)
+tfile1="$(tempfile)"
+tfile2="$(tempfile)"
 
-# NOTE: v. 1.10.x "dpkg --root" is broken, so use grep-status
-#COLUMNS=200 dpkg 2>/dev/null --list | grep ^ii | awk '{print $2}' >$tfile
+grep-status -F Status -s Package ' installed' "$CHROOT/var/lib/dpkg/status" | awk '{print $2}' | sort >"$tfile1"
 
-grep-status -F Status -s Package ' installed' $CHROOT/var/lib/dpkg/status | awk '{print $2}' | sort >$tfile
+sort "$CHROOT/../ref-$DIST" >"$tfile2"
 
 echo "DELETE             ADD"
 echo "============================"
-diff -u $tfile $CHROOT/../ref-$DIST |
+diff -u "$tfile1" "$tfile2" |
 	tail -n +3 |
 	grep ^[+-] |
 	sed -e 's/^-//' -e "s/^+/                   /" |
 	sort
 
-rm -f $tfile
+rm -f "$tfile1" "$tfile2"
 

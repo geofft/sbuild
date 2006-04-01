@@ -3,6 +3,9 @@ sbuild (0.44) UNRELEASED; urgency=low
   * sbuild:
     - Treat schroot chroots with a "-sbuild" suffix in the same way as
       chroots without a suffix (Closes: #360124).
+  * bin/checkchroot:
+    - Quote all variables.
+    - Sort ref-chroot file before diffing (Closes: 360058).
 
  --
 
