@@ -1,3 +1,11 @@
+sbuild (0.44) UNRELEASED; urgency=low
+
+  * sbuild:
+    - Treat schroot chroots with a "-sbuild" suffix in the same way as
+      chroots without a suffix (Closes: #360124).
+
+ --
+
 sbuild (0.43) unstable; urgency=low
 
   * sbuild:
