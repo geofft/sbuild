@@ -6,6 +6,12 @@ sbuild (0.44) UNRELEASED; urgency=low
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).
+  * debian/control: Update uploaders.
+  * debian/copyright:
+    - Update with new subversion repository locations for upstream and
+      Debian.
+    - Add Roger Leigh as a copyright holder.
+    - Add a reference to /usr/share/common-licenses/GPL.
 
  --
 
