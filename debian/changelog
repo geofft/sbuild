@@ -41,9 +41,11 @@ sbuild (0.44) UNRELEASED; urgency=low
       and user configuration.
     - Add $debug.
     - Add $username.
-  * Sbuild/Log.pm: New perl module for logging.  It contains the functions
-    open_log, close_log, open_pkg_log, close_pkg_log, add_time_entry,
-    add_space_entry, send_mail and log_symlink.
+  * Sbuild/Log.pm:
+    - New perl module for logging.  It contains the functions open_log,
+      close_log, open_pkg_log, close_pkg_log, add_time_entry,
+      add_space_entry, send_mail and log_symlink.
+    - $main::main_logfile and $main::pkg_logfile are package variables.
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).

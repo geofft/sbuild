@@ -41,6 +41,9 @@ BEGIN {
 		 open_pkg_log close_pkg_log);
 }
 
+my $main_logfile;
+my $pkg_logfile;
+
 sub open_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 
@@ -57,13 +60,13 @@ sub open_log {
 				UNLINK => 0)
 		or die "Can't open logfile: $!\n";
 	$F->autoflush(1);
-	$main::main_logfile = $F->filename;
+	$main_logfile = $F->filename;
 
 	if ($main::verbose) {
 		my $pid;
 		($pid = open( main::LOG, "|-"));
 		if (!defined $pid) {
-			warn "Cannot open pipe to '$main::main_logfile': $!\n";
+			warn "Cannot open pipe to '$main_logfile': $!\n";
 		}
 		elsif ($pid == 0) {
 			while (<STDIN>) {
@@ -76,7 +79,7 @@ sub open_log {
 	}
 	else {
 		open( main::LOG, ">$F" )
-			or warn "Cannot open log file $main::main_logfile: $!\n";
+			or warn "Cannot open log file $main_logfile: $!\n";
 	}
 	undef $F;
 	main::LOG->autoflush(1);
@@ -104,12 +107,12 @@ sub close_log {
 		close (SAVED_STDERR);
 	}
 	if (!$main::nolog && !$main::verbose &&
-		-s $main::main_logfile && $Sbuild::Conf::mailto) {
+		-s $main_logfile && $Sbuild::Conf::mailto) {
 		send_mail( $Sbuild::Conf::mailto, "Log from sbuild $date",
-				   $main::main_logfile ) if $Sbuild::Conf::mailto;
+				   $main_logfile ) if $Sbuild::Conf::mailto;
 	}
-	elsif (!$main::nolog && ! -s $main::main_logfile) {
-		unlink( $main::main_logfile );
+	elsif (!$main::nolog && ! -s $main_logfile) {
+		unlink( $main_logfile );
 	}
 }
 
@@ -128,19 +131,19 @@ sub open_pkg_log {
 			$main::binNMU_name = $pkg;
 			$pkg .= $3;
 		}
-		$main::pkg_logfile = "$Sbuild::Conf::log_dir/${pkg}_$date";
-		log_symlink($main::pkg_logfile,
+		$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg}_$date";
+		log_symlink($pkg_logfile,
 			    "$Sbuild::Conf::build_dir/current-$main::distribution");
-		log_symlink($main::pkg_logfile, "$Sbuild::Conf::build_dir/current");
+		log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
 		if ($main::verbose) {
 			my $pid;
 			($pid = open( main::PLOG, "|-"));
 			if (!defined $pid) {
-				warn "Cannot open pipe to '$main::pkg_logfile': $!\n";
+				warn "Cannot open pipe to '$pkg_logfile': $!\n";
 			}
 			elsif ($pid == 0) {
-				open( CPLOG, ">$main::pkg_logfile" ) or
-					die "Can't open logfile $main::pkg_logfile: $!\n";
+				open( CPLOG, ">$pkg_logfile" ) or
+					die "Can't open logfile $pkg_logfile: $!\n";
 				CPLOG->autoflush(1);
 
 				while (<STDIN>) {
@@ -152,8 +155,8 @@ sub open_pkg_log {
 			}
 		}
 		else {
-			if (!open( main::PLOG, ">$main::pkg_logfile" )) {
-				warn "Can't open logfile $main::pkg_logfile: $!\n";
+			if (!open( main::PLOG, ">$pkg_logfile" )) {
+				warn "Can't open logfile $pkg_logfile: $!\n";
 				return 0;
 			}
 		}
@@ -185,9 +188,9 @@ sub close_pkg_log {
 	close( main::PLOG );
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $Sbuild::Conf::mailto,
-			   "Log for $main::pkg_status build of ".
-			   ($main::binNMU_name || $pkg)." (dist=$main::distribution)",
-			   $main::pkg_logfile ) if !$main::nolog && $Sbuild::Conf::mailto;
+		   "Log for $main::pkg_status build of ".
+		   ($main::binNMU_name || $pkg)." (dist=$main::distribution)",
+		   $pkg_logfile ) if !$main::nolog && $Sbuild::Conf::mailto;
 	undef $main::binNMU_name;
 }
 
