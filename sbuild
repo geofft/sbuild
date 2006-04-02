@@ -57,7 +57,6 @@ chomp( $main::HOSTNAME = `hostname` );
 $main::distribution = "unstable";
 
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
-$main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::verbose = 0;
 $main::batchmode = 0;
 $main::auto_giveback = 0;
@@ -397,7 +396,7 @@ sub fetch_source_files {
 
 		  retry:
 			print PLOG "Checking available source versions...\n";
-			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
+			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $conf::username, 0);
 			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-cache: $!\n";
 				return ("ERROR");
@@ -433,7 +432,7 @@ sub fetch_source_files {
 			print PLOG "Fetching source files...\n";
 			@made = @{$entries{$version}};
 
-			my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+			my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $conf::username, 0);
 			if (!open( PIPE, "$command2 |" )) {
 				print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 				return ("ERROR", @made);
@@ -562,7 +561,7 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0, 0);
+			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $conf::username, 0, 0);
 		}
 		$main::sub_task = "dpkg-source";
 		
@@ -616,7 +615,7 @@ sub build {
 		}
 		if ($main::sub_pid == 0) {
 			chdir( $dir );
-			exec_command("dpkg-parsechangelog 2>&1", $main::username, 0, 0);
+			exec_command("dpkg-parsechangelog 2>&1", $conf::username, 0, 0);
 		}
 		$main::sub_task = "dpkg-parsechangelog";
 
@@ -766,7 +765,7 @@ EOF
 				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-			exec_command($buildcmd, $main::username, 1, 1);
+			exec_command($buildcmd, $conf::username, 1, 1);
 		}
 		else {
 			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
@@ -774,7 +773,7 @@ EOF
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			exec_command("$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
-				     "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0, 1);
+				     "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $conf::username, 0, 1);
 		}
 	}
 	$main::sub_task = "dpkg-buildpackage";
@@ -966,7 +965,7 @@ sub apply_patches {
 			if ($main::sub_pid == 0) {
 				open( STDOUT, ">&PLOG" );
 				open( STDERR, ">&PLOG" );
-				exec_command("patch --batch --quiet -p1 -E -N --no-backup-if-mismatch", $main::username, 0, 0);
+				exec_command("patch --batch --quiet -p1 -E -N --no-backup-if-mismatch", $conf::username, 0, 0);
 			}
 			$main::sub_task = "patch";
 
@@ -1176,7 +1175,7 @@ sub unpack_special_source {
 		my $dsc;
 
 		{
-			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username, 0);
+			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $conf::username, 0);
 			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-get: $!\n";
 				goto failed;
@@ -1213,7 +1212,7 @@ sub unpack_special_source {
 				print PLOG "Couldn't cd to $main::chroot_build_dir: $! -- special unpack failed\n";
 				exit 1;
 			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
+			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $conf::username, 0);
 		}
 		my $dir;
 		while( <PIPE> ) {
@@ -1743,9 +1742,9 @@ sub run_script {
 		open( STDOUT, ">&PLOG" );
 		open( STDERR, ">&PLOG" );
 		if ($main::chroot_dir) {
-			exec_command("cd /build/$main::username && set $e_mode && $x_mode$script", $main::username, 1, 0);
+			exec_command("cd /build/$conf::username && set $e_mode && $x_mode$script", $conf::username, 1, 0);
 		} else {
-			exec_command("set $e_mode && $x_mode$script", $main::username, 0, 0);
+			exec_command("set $e_mode && $x_mode$script", $conf::username, 0, 0);
 		}
 		die "Can't exec /bin/sh: $!\n";
 	}
@@ -2161,7 +2160,7 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $main::username, 0);
+	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $conf::username, 0);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache $!\n";
 	local($/) = "";
@@ -2184,7 +2183,7 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $main::username, 0);
+	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $conf::username, 0);
 	open( PIPE, "$command |" )
 		or die "Cannot start $conf::apt_cache: $!\n";
 	my $name;
@@ -2358,7 +2357,7 @@ sub check_space {
 			$_ =~ s/^\Q$main::chroot_dir\E//;
 			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", "root", 1, 0);
 		} else {
-			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $main::username, 0, 0);
+			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $conf::username, 0, 0);
 		}
 
 		if (!open( PIPE, "$command |" )) {

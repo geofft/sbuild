@@ -31,7 +31,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME $source_dependencies $mailprog $dpkg $sudo
+    @EXPORT = qw($HOME $username $source_dependencies $mailprog $dpkg $sudo
 		 $schroot $schroot_options $fakeroot $apt_get
 		 $apt_cache $dpkg_source $md5sum $build_env_cmnd
 		 $pgp_options $log_dir $mailto $mailfrom
@@ -45,6 +45,7 @@ BEGIN {
 
 (our $HOME = $ENV{'HOME'})
 	or die "HOME not defined in environment!\n";
+our $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 # defaults:
 our $source_dependencies = "/etc/source-dependencies";
 our $mailprog = "/usr/sbin/sendmail";

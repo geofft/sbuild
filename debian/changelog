@@ -12,6 +12,7 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Import Sbuild::Conf into package "conf".  This allows the package
       name used by upstream to be used for backward compatibility.
     - Use $conf::HOME instead of $main::HOME.
+    - Move $main::username to Sbuild::Conf.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -25,10 +26,12 @@ sbuild (0.44) UNRELEASED; urgency=low
       $main::chroot_apt_options.
     - Use STDERR instead of PLOG (which may not be available).
     - Replace $main::debug with $Sbuild::Conf::debug.
+    - Replace $main::username with $Sbuild::Conf::username.
   * Sbuild/Conf.pm:
     - New perl module for configuration variables.  It reads the system
       and user configuration.
     - Add $debug.
+    - Add $username.
   * Sbuild/Log.pm: New perl module for logging.  It contains the functions
     open_log, close_log, open_pkg_log, close_pkg_log, add_time_entry,
     add_space_entry, send_mail and log_symlink.

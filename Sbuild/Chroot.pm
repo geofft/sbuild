@@ -113,8 +113,7 @@ sub init {
 
 	# Pick up available chroots and dist_order from schroot
 	if ($Sbuild::Conf::chroot_mode eq "schroot") {
-		%main::dist_order = ();
-		%main::dist_locations = ();
+		%chroots = ();
 		open CHROOTS, '-|', $Sbuild::Conf::schroot, '--list' or die "Can't run $Sbuild::Conf::schroot";
 		while (<CHROOTS>) {
 			chomp;
@@ -133,7 +132,7 @@ sub _setup_options {
 	if (defined($chroots{$distribution}) &&
 	    -d $chroots{"$distribution"}->{'Location'}) {
 		$main::chroot_dir = $chroots{"$distribution"}->{'Location'};
-		$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
+		$main::chroot_build_dir = "$main::chroot_dir/build/$Sbuild::Conf::username/";
 		$Sbuild::Conf::srcdep_lock_dir = "$main::chroot_dir/$Sbuild::Conf::srcdep_lock_dir";
 		$main::ilock_file = "$Sbuild::Conf::srcdep_lock_dir/install";
 
@@ -232,7 +231,7 @@ sub get_command_internal {
 	my $command = shift; # Command to run
 	my $user = shift;    # User to run command under
 	if (!defined $user || $user eq "") {
-		$user = $main::username;
+		$user = $Sbuild::Conf::username;
 	}
 	my $chroot = shift;  # Run in chroot?
 	if (!defined $chroot) {
@@ -246,15 +245,15 @@ sub get_command_internal {
 		} else {
 			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $main::chroot_dir $Sbuild::Conf::sudo ";
 			if ($user ne "root") {
-				$cmdline .= "-u $main::username ";
+				$cmdline .= "-u $Sbuild::Conf::username ";
 			}
 			$cmdline .= "-H ";
 		}
 	} else { # Run command outside chroot
-		if ($user ne $main::username) {
+		if ($user ne $Sbuild::Conf::username) {
 			$cmdline = "$Sbuild::Conf::sudo ";
 			if ($user ne "root") {
-				$cmdline .= "-u $main::username ";
+				$cmdline .= "-u $Sbuild::Conf::username ";
 			}
 		}
 	}
