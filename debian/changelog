@@ -3,6 +3,18 @@ sbuild (0.44) UNRELEASED; urgency=low
   * sbuild:
     - Treat schroot chroots with a "-sbuild" suffix in the same way as
       chroots without a suffix (Closes: #360124).
+    - Use the new modules Sbuild::Chroot, Sbuild::Conf and Sbuild::Log.
+      The functions moved into the modules have been removed.
+  * Sbuild.pm: Add basename function.
+  * Sbuild/Chroot.pm: New perl module for chroot operations.  It contains
+    the functions begin_session, end_session, log_command,
+    get_command_internal, get_command, run_command, exec_command,
+    get_apt_command_internal, get_apt_command and run_apt_command.
+  * Sbuild/Conf.pm: New perl module for configuration variables.  It reads
+    the system and user configuration.
+  * Sbuild/Log.pm: New perl module for logging.  It contains the functions
+    open_log, close_log, open_pkg_log, close_pkg_log, add_time_entry,
+    add_space_entry, send_mail and log_symlink.
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).
@@ -12,6 +24,9 @@ sbuild (0.44) UNRELEASED; urgency=low
       Debian.
     - Add Roger Leigh as a copyright holder.
     - Add a reference to /usr/share/common-licenses/GPL.
+  * debian/dirs: Add usr/share/perl5/Sbuild.
+  * debian/rules: Install Sbuild/Chroot.pm, Sbuild/Conf.pm and
+    Sbuild/Log.pm into /usr/share/perl5/Sbuild.
 
  --
 

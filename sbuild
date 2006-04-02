@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#! /usr/bin/perl
 #
 # sbuild: build packages, obeying source dependencies
 # Copyright (C) 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
@@ -22,79 +22,21 @@
 # $Id$
 #
 
-BEGIN {
-        ($main::HOME = $ENV{'HOME'})
-                or die "HOME not defined in environment!\n";
-        push( @INC, "$main::HOME/lib" );
-}
-
-chomp( $main::HOSTNAME = `hostname` );
-
-package conf;
-$HOME = $main::HOME;
-# defaults:
-$source_dependencies = "/etc/source-dependencies";
-$mailprog = "/usr/sbin/sendmail";
-$dpkg = "/usr/bin/dpkg";
-$sudo = "/usr/bin/sudo";
-$schroot = "/usr/bin/schroot";
-$schroot_options = "-q";
-$fakeroot = "/usr/bin/fakeroot";
-$apt_get = "/usr/bin/apt-get";
-$apt_cache = "/usr/bin/apt-cache";
-$dpkg_source = "/usr/bin/dpkg-source";
-$md5sum = "/usr/bin/md5sum";
-$build_env_cmnd = "";
-$pgp_options = "-us -uc";
-$log_dir = "$main::HOME/logs";
-$mailto = "";
-$mailfrom = "Source Builder <sbuild>";
-$purge_build_directory = "successful";
-@toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$' );
-$stalled_pkg_timeout = 90; # minutes
-$srcdep_lock_wait = 1; # minutes
-$chroot_only = 1;
-$chroot_mode = "split";
-@ignore_watches_no_build_deps = qw();
-$sbuild_mode = "buildd";
-$force_orig_source = 0;
-%individual_stalled_pkg_timeout = ();
-$path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
-# read conf files
-require "/usr/share/sbuild/sbuild.conf";
-require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
-require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
-# some checks
-die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
-	if !-x $conf::mailprog;
-if ($conf::chroot_mode eq "split") {
-	die "sudo binary $conf::sudo does not exist or isn't executable\n"
-	    if !-x $conf::sudo;
-} elsif ($conf::chroot_mode eq "schroot") {
-	die "sudo binary $conf::schroot does not exist or isn't executable\n"
-	    if !-x $conf::sudo;
-} else {
-    die "Invalid chroot mode: $conf::chroot_mode\n";
-}
-die "apt-get binary $conf::apt_get does not exist or isn't executable\n"
-	if !-x $conf::apt_get;
-die "apt-cache binary $conf::apt_cache does not exist or isn't executable\n"
-	if !-x $conf::apt_cache;
-die "dpkg-source binary $conf::dpkg_source does not exist or isn't executable\n"
-	if !-x $conf::dpkg_source;
-die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
-die "$conf::srcdep_lock_dir is not a directory\n" if ! -d $conf::srcdep_lock_dir;
-die "conf::mailto not set\n" if !$conf::mailto;
 package main;
 
 use strict;
-use GDBM_File;
+use warnings;
 use POSIX;
 use IO::Handle;
 use File::Temp ();
 use FileHandle;
 use Cwd qw(cwd);
 use Sbuild;
+use Sbuild::Conf;
+use Sbuild::Chroot;
+use Sbuild::Log;
+
+Sbuild::Conf::init();
 
 $ENV{'LC_ALL'} = "POSIX";
 $ENV{'SHELL'} = "/bin/sh";
@@ -104,11 +46,11 @@ $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
 
+chomp( $main::HOSTNAME = `hostname` );
+
 $main::distribution = "unstable";
 
-%main::dist_order = ( 'oldstable' => 0, 'oldstable-security' => 0, 'stable' => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, 'unstable' => 3, 'experimental' => 4 );
-
-chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
+chomp( $main::arch = `$Sbuild::Conf::dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
 $main::verbose = 0;
@@ -120,7 +62,7 @@ $main::jobs_file = "build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
 $main::cwd = cwd();
-$main::ilock_file = "$conf::srcdep_lock_dir/install";
+$main::ilock_file = "$Sbuild::Conf::srcdep_lock_dir/install";
 $main::srcdep_lock_cnt = 0;
 $main::pkg_status = "";
 $main::pkg_end_time = 0;
@@ -129,23 +71,14 @@ $main::this_space = 0;
 $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
-$main::schroot_session = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 
-# Check build dir
-if (!defined($conf::build_dir)) {
-    $conf::build_dir = $main::cwd;
+if (!defined($Sbuild::Conf::build_dir)) {
+    $Sbuild::Conf::build_dir = $main::cwd;
 }
-if (! -d "$conf::build_dir") {
-    die "Build directory $conf::build_dir does not exist";
-}
-
-%main::dist_locations = ();   # Chroot locations
-%main::dist_sessioncaps = (); # Chroot session capabilities
-foreach (keys(%main::dist_order)) {
-    $main::dist_locations{$_} = "$conf::build_dir/chroot-$_";
-    $main::dist_sessioncaps{$_} = 0;
+if (! -d "$Sbuild::Conf::build_dir") {
+    die "Build directory $Sbuild::Conf::build_dir does not exist";
 }
 
 # Be verbose by default if on a tty
@@ -153,18 +86,8 @@ if (-t STDIN && -t STDOUT && $main::verbose == 0) {
     $main::verbose = 1;
 }
 
-# Pick up available chroots and dist_order from schroot
-if ($conf::chroot_mode eq "schroot") {
-    %main::dist_order = ();
-    %main::dist_locations = ();
-    open CHROOTS, '-|', $conf::schroot, '--list' or die "Can't run $conf::schroot";
-    while (<CHROOTS>) {
-	chomp;
-	my $chroot = $_;
-	get_schroot_info($chroot);
-    }
-    close CHROOTS or die "Can't close schroot pipe";
-}
+# Find chroots
+Sbuild::Chroot::init();
 
 while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	$_ = shift @ARGV;
@@ -193,7 +116,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::build_source++;
 	}
 	elsif (/^--force-orig-source$/) {
-		$conf::force_orig_source++;
+		$Sbuild::Conf::force_orig_source++;
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -216,48 +139,48 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	}
 	elsif (/^-p/ || /^--purge/) {
 		if (/^-p(.)/ || /^--purge=(.)/) {
-			$conf::purge_build_directory = $1.$';
+			$Sbuild::Conf::purge_build_directory = $1.$';
 		}
 		elsif (!@ARGV) {
 			die "$_ option missing argument\n";
 		}
 		else {
-			$conf::purge_build_directory = shift @ARGV;
+			$Sbuild::Conf::purge_build_directory = shift @ARGV;
 		}
 		die "Bad purge mode\n"
-			if !isin($conf::purge_build_directory, qw(always successful never));
+			if !isin($Sbuild::Conf::purge_build_directory, qw(always successful never));
 	}
 	elsif (/^-m/ || /^--maintainer/) {
 		if (/^-m(.)/ || /^--maintainer=(.)/) {
-			$conf::maintainer_name = $1.$';
+			$Sbuild::Conf::maintainer_name = $1.$';
 		}
 		elsif (!@ARGV) {
 			die "$_ option missing argument\n";
 		}
 		else {
-			$conf::maintainer_name = shift @ARGV;
+			$Sbuild::Conf::maintainer_name = shift @ARGV;
 		}
 	}
 	elsif (/^-k/ || /^--keyid/) {
 		if (/^-k(.)/ || /^--keyid=(.)/) {
-			$conf::key_id = $1.$';
+			$Sbuild::Conf::key_id = $1.$';
 		}
 		elsif (!@ARGV) {
 			die "$_ option missing argument\n";
 		}
 		else {
-			$conf::key_id = shift @ARGV;
+			$Sbuild::Conf::key_id = shift @ARGV;
 		}
 	}
 	elsif (/^-e/ || /^--uploader/) {
 		if (/^-e(.)/ || /^--uploader=(.)/) {
-			$conf::uploader_name = $1.$';
+			$Sbuild::Conf::uploader_name = $1.$';
 		}
 		elsif (!@ARGV) {
 			die "$_ option missing argument\n";
 		}
 		else {
-			$conf::uploader_name = shift @ARGV;
+			$Sbuild::Conf::uploader_name = shift @ARGV;
 		}
 	}
 	elsif (/^-f/ || /^--force-depends/) {
@@ -308,34 +231,30 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	elsif (/^--use-snapshot$/) {
 		$main::useSNAP = 1;
 		$main::ld_library_path = "/usr/lib/gcc-snapshot/lib";
-		$conf::path = "/usr/lib/gcc-snapshot/bin:$conf::path";
+		$Sbuild::Conf::path = "/usr/lib/gcc-snapshot/bin:$Sbuild::Conf::path";
 	}
 	else {
 		die "Unknown option: $_\n";
 	}
 }
 
-$conf::mailto = $conf::mailto{$main::distribution}
-	if $conf::mailto{$main::distribution};
+$Sbuild::Conf::mailto = $Sbuild::Conf::mailto{$main::distribution}
+	if $Sbuild::Conf::mailto{$main::distribution};
 
 # see debsign for priorities, we will follow the same order
-$main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
-$main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name; 
-$main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id; 
-$conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
-$conf::maintainer_name=$conf::key_id if defined $conf::key_id;
+$main::dpkg_buildpackage_signopt="-m\"".$Sbuild::Conf::maintainer_name."\"" if defined $Sbuild::Conf::maintainer_name;
+$main::dpkg_buildpackage_signopt="-e\"".$Sbuild::Conf::uploader_name."\"" if defined $Sbuild::Conf::uploader_name; 
+$main::dpkg_buildpackage_signopt="-k\"".$Sbuild::Conf::key_id."\"" if defined $Sbuild::Conf::key_id; 
+$Sbuild::Conf::maintainer_name=$Sbuild::Conf::uploader_name if defined $Sbuild::Conf::uploader_name;
+$Sbuild::Conf::maintainer_name=$Sbuild::Conf::key_id if defined $Sbuild::Conf::key_id;
 
 # variables for scripts:
-open_log();
+Sbuild::Log::open_log();
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
-
-if ($conf::chroot_mode ne "schroot") {
-	setup_options($main::distribution);
-}
 
 write_jobs_file();
 
@@ -347,25 +266,12 @@ foreach $pkgv (@ARGV) {
 	$pkgv =~ s/\.dsc$//;
 	(my $pkg = $pkgv) =~ s/_.*$//;
 	$pkg =~ s/^\.\///;
-	next if !open_pkg_log( $pkgv );
+	next if !Sbuild::Log::open_pkg_log( $pkgv );
 
-	my $schroot_distribution;
-	if ($conf::chroot_mode eq "schroot") {
-		$schroot_distribution = $main::distribution;
-		if (defined($main::dist_locations{"${main::distribution}-sbuild"})) {
-			$schroot_distribution = "${main::distribution}-sbuild";
-		}
-        	$main::schroot_session=`$conf::schroot -c $schroot_distribution --begin-session`;
-		chomp($main::schroot_session);
-		if ($?) {
-			print PLOG "Chroot setup failed; skipping $pkg\n";
-			$main::pkg_status = "skipped";
-			goto cleanup_close;
-		}
-		print PLOG "Setting up chroot $schroot_distribution (session id $main::schroot_session)\n"
-			if $main::debug;
-		get_schroot_info($main::schroot_session);
-		setup_options($main::schroot_session);
+	if (!Sbuild::Chroot::begin_session()) {
+		print PLOG "Skipping $pkg\n";
+		$main::pkg_status = "skipped";
+		goto cleanup_close;
 	}
 
 	$main::pkg_status = "failed"; # assume for now
@@ -390,7 +296,7 @@ foreach $pkgv (@ARGV) {
 		goto cleanup_packages;
 	}
 
-	my $dscbase = basename( $dscfile );
+	my $dscbase = Sbuild::basename( $dscfile );
 	$main::pkg_status = "successful" if build( $dscbase, $pkgv );
 	chdir( $main::cwd );
 	write_jobs_file( $main::pkg_status );
@@ -398,9 +304,9 @@ foreach $pkgv (@ARGV) {
 
   cleanup_packages:
 	undo_specials();
-	if ($conf::chroot_mode eq "schroot" &&
-	    defined ($main::dist_sessioncaps{$schroot_distribution}) &&
-	    $main::dist_sessioncaps{$schroot_distribution} == 1) {
+	if ($Sbuild::Conf::chroot_mode eq "schroot" &&
+	    defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
+	    $$Sbuild::Chroot::current{'Session Managed'} == 1) {
 		print PLOG "Not removing build depends: session managed chroot in use\n";
 	} else {
 		uninstall_deps();
@@ -412,14 +318,9 @@ foreach $pkgv (@ARGV) {
 	analyze_fail_stage( $pkgv );
 	write_jobs_file( $main::pkg_status );
 
-	if ($conf::chroot_mode eq "schroot" && $main::schroot_session ne "") {
-        	system("$conf::schroot -c $main::schroot_session --end-session");
-		if ($?) {
-			print PLOG "Chroot cleanup failed\n";
-		}
-	}
+	Sbuild::Chroot::end_session();
 
-	close_pkg_log( $pkgv );
+	Sbuild::Log::close_pkg_log( $pkgv );
 	$main::current_job = "";
 	if ( $main::batchmode and (-f "$main::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
@@ -427,10 +328,10 @@ foreach $pkgv (@ARGV) {
 }
 write_jobs_file();
 
-close_log();
+Sbuild::Log::close_log();
 unlink( $main::jobs_file ) if $main::batchmode;
 unlink( "SBUILD-FINISHED" ) if $main::batchmode;
-if ($conf::sbuild_mode eq "user") {
+if ($Sbuild::Conf::sbuild_mode eq "user") {
 	exit ($main::pkg_status ne "successful") ? 1 : 0;
 }
 exit 0;
@@ -492,7 +393,7 @@ sub fetch_source_files {
 
 		  retry:
 			print PLOG "Checking available source versions...\n";
-			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
+			my $command = get_apt_command("$Sbuild::Conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
 			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-cache: $!\n";
 				return ("ERROR");
@@ -507,14 +408,14 @@ sub fetch_source_files {
 		  }
 			close( PIPE );
 			if ($?) {
-				print PLOG "$conf::apt_cache failed\n";
+				print PLOG "$Sbuild::Conf::apt_cache failed\n";
 				return ("ERROR");
 			}
 				
 			if (!defined($entries{$version})) {
 				if (!$retried) {
 					# try to update apt's cache if nothing found
-					run_apt_command("$conf::apt_get", "update >/dev/null", "root", 1);
+					run_apt_command("$Sbuild::Conf::apt_get", "update >/dev/null", "root", 1);
 					$retried = 1;
 					goto retry;
 				}
@@ -528,9 +429,9 @@ sub fetch_source_files {
 			print PLOG "Fetching source files...\n";
 			@made = @{$entries{$version}};
 
-			my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+			my $command2 = get_apt_command("$Sbuild::Conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
 			if (!open( PIPE, "$command2 |" )) {
-				print PLOG "Can't open pipe to $conf::apt_get: $!\n";
+				print PLOG "Can't open pipe to $Sbuild::Conf::apt_get: $!\n";
 				return ("ERROR", @made);
 			}
 			while( <PIPE> ) {
@@ -538,7 +439,7 @@ sub fetch_source_files {
 			}
 			close( PIPE );
 			if ($?) {
-				print PLOG "$conf::apt_get for sources failed\n";
+				print PLOG "$Sbuild::Conf::apt_get for sources failed\n";
 				return( "ERROR", @made );
 			}
 			# touch the downloaded files, otherwise buildd-watcher
@@ -657,7 +558,7 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0, 0);
+			exec_command("$Sbuild::Conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0, 0);
 		}
 		$main::sub_task = "dpkg-source";
 		
@@ -784,7 +685,7 @@ sub build {
 			print F "  * Binary-only non-maintainer upload for $main::arch; ",
 					"no source changes.\n";
 			print F "  * ", join( "    ", split( "\n", $main::binNMU )), "\n\n";
-			print F " -- $conf::maintainer_name  $date\n\n";
+			print F " -- $Sbuild::Conf::maintainer_name  $date\n\n";
 
 			print F $firstline, $text;
 			close( F );
@@ -844,7 +745,7 @@ EOF
 		open( STDIN, "</dev/null" );
 		setsid;
 		my $binopt = $main::build_source ?
-			$conf::force_orig_source ? "-sa" : "" :
+			$Sbuild::Conf::force_orig_source ? "-sa" : "" :
 			$main::build_arch_all ?	"-b" : "-B";
 
 		if ($main::chroot_dir) {
@@ -856,11 +757,11 @@ EOF
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
-			my $buildcmd = "cd $bdir && PATH=$conf::path ".
+			my $buildcmd = "cd $bdir && PATH=$Sbuild::Conf::path ".
 				(defined($main::ld_library_path) ?
 				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+				 "exec $Sbuild::Conf::build_env_cmnd dpkg-buildpackage $Sbuild::Conf::pgp_options ".
+				 "$binopt $main::dpkg_buildpackage_signopt -r$Sbuild::Conf::fakeroot 2>&1";
 			exec_command($buildcmd, $main::username, 1, 1);
 		}
 		else {
@@ -868,8 +769,8 @@ EOF
 				run_command("chmod a+r /etc/ld.so.conf", "root", 0, 0);
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
-			exec_command("$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
-				     "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0, 1);
+			exec_command("$Sbuild::Conf::build_env_cmnd dpkg-buildpackage $Sbuild::Conf::pgp_options $binopt ".
+				     "$main::dpkg_buildpackage_signopt -r$Sbuild::Conf::fakeroot 2>&1", $main::username, 0, 1);
 		}
 	}
 	$main::sub_task = "dpkg-buildpackage";
@@ -878,8 +779,8 @@ EOF
 	# dpkg-buildpackage could run as root. So we have to use a shell
 	# command to send the signal... but /bin/kill can't send to
 	# process groups :-( So start another Perl :-)
-	my $timeout = $conf::individual_stalled_pkg_timeout{$pkg} ||
-				  $conf::stalled_pkg_timeout;
+	my $timeout = $Sbuild::Conf::individual_stalled_pkg_timeout{$pkg} ||
+				  $Sbuild::Conf::stalled_pkg_timeout;
 	$timeout *= 60;
 	my $timed_out = 0;
 	my(@timeout_times, @timeout_sigs, $last_time);
@@ -961,16 +862,16 @@ EOF
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
 				    if (! -f $_) {
-					    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
+					    print PLOG "ERROR: Package claims to have built ".Sbuild::basename($_).", but did not.  This is a bug in the packaging.\n";
 					    next;
 				    }
 				    if (/_all.u?deb$/ and not $main::build_arch_all) {
-					    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+					    print PLOG "ERROR: Package builds ".Sbuild::basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
 					    unlink($_);
 					    next;
 				    }
 				    system "mv", "$main::chroot_build_dir$changes", "."
-					    and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
+					    and print PLOG "ERROR: Could not move ".Sbuild::basename($_)." to .\n";
 				}
 			}
 			close( F );
@@ -1022,8 +923,8 @@ EOF
 	check_watches();
 	check_space( @space_files );
 
-	if ($conf::purge_build_directory eq "always" ||
-		($conf::purge_build_directory eq "successful" && $rv == 0)) {
+	if ($Sbuild::Conf::purge_build_directory eq "always" ||
+		($Sbuild::Conf::purge_build_directory eq "successful" && $rv == 0)) {
 		print PLOG "Purging $dir\n";
 		my $bdir = $dir;
 		$bdir =~ s/^\Q$main::chroot_dir\E//;
@@ -1242,7 +1143,7 @@ sub install_deps {
 	
 	local (*F);
 
-	my $command = get_command("$conf::dpkg --set-selections", "root", 1);
+	my $command = get_command("$Sbuild::Conf::dpkg --set-selections", "root", 1);
 
 	my $success = open( F, "| $command");
 
@@ -1252,7 +1153,7 @@ sub install_deps {
 		}
 		close( F );
 		if ($?) {
-			print PLOG "$conf::dpkg --set-selections failed\n";
+			print PLOG "$Sbuild::Conf::dpkg --set-selections failed\n";
 		}
 	}
 
@@ -1271,7 +1172,7 @@ sub unpack_special_source {
 		my $dsc;
 
 		{
-			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username, 0);
+			my $command = get_apt_command("$Sbuild::Conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username, 0);
 			if (!open( PIPE, "$command |" )) {
 				print PLOG "Can't open pipe to apt-get: $!\n";
 				goto failed;
@@ -1308,7 +1209,7 @@ sub unpack_special_source {
 				print PLOG "Couldn't cd to $main::chroot_build_dir: $! -- special unpack failed\n";
 				exit 1;
 			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
+			exec_command("$Sbuild::Conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
 		}
 		my $dir;
 		while( <PIPE> ) {
@@ -1336,16 +1237,16 @@ sub wait_for_srcdep_conflicts {
 	my @confl = @_;
 	
 	for(;;) {
-		sleep( $conf::srcdep_lock_wait*60 );
+		sleep( $Sbuild::Conf::srcdep_lock_wait*60 );
 		my $allgone = 1;
 		for (@confl) {
 			/^(\d+)-(\d+)$/;
 			my $pid = $1;
-			if (-f "$conf::srcdep_lock_dir/$_") {
+			if (-f "$Sbuild::Conf::srcdep_lock_dir/$_") {
 				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
 					print PLOG "Ignoring stale src-dep lock $_\n";
-					unlink( "$conf::srcdep_lock_dir/$_" ) or
-						print PLOG "Cannot remove $conf::srcdep_lock_dir/$_: $!\n";
+					unlink( "$Sbuild::Conf::srcdep_lock_dir/$_" ) or
+						print PLOG "Cannot remove $Sbuild::Conf::srcdep_lock_dir/$_: $!\n";
 				}
 				else {
 					$allgone = 0;
@@ -1390,7 +1291,7 @@ sub uninstall_debs {
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
 
-	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 1);
+	my $command = get_command("$Sbuild::Conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 1);
   repeat:
 	my $output;
 	my $remove_start_time = time;
@@ -1458,7 +1359,7 @@ sub run_apt {
 	# treated as if RETURN was pressed.
 	# dpkg since 1.4.1.18 issues an error on the conffile question if it reads
 	# EOF -- hardwire the new --force-confold option to avoid the questions.
-	my $command = get_apt_command("$conf::apt_get", "--purge ".
+	my $command = get_apt_command("$Sbuild::Conf::apt_get", "--purge ".
 				      "-o DPkg::Options::=--force-confold ".
 				      "-q $mode install @to_install ".
 				      "2>&1 </dev/null", "root", 0);
@@ -1475,7 +1376,7 @@ sub run_apt {
 	$status = $?;
 
 	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1", "root", 1);
+		my $command = get_apt_command("$Sbuild::Conf::apt_get", "-q update 2>&1", "root", 1);
 		if (!open( PIPE, "$command |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
@@ -1505,8 +1406,8 @@ sub run_apt {
 			$selected = $providers[0];
 			print PLOG "Using $selected (only possibility)\n";
 		}
-		elsif (exists $conf::alternatives{$to_replace}) {
-			$selected = $conf::alternatives{$to_replace};
+		elsif (exists $Sbuild::Conf::alternatives{$to_replace}) {
+			$selected = $Sbuild::Conf::alternatives{$to_replace};
 			print PLOG "Using $selected (selected in sbuildrc)\n";
 		}
 		else {
@@ -1817,154 +1718,6 @@ sub get_dpkg_status {
 	return \%result;
 }
 
-sub log_command {
-	my $msg = shift;      # Message to log
-	my $priority = shift; # Priority of log message
-
-	if ((defined($priority) && $priority >= 1) || $main::debug) {
-		$msg =~ s/\Q$main::chroot_apt_options\E/CHROOT_APT_OPTIONS/g;
-		print PLOG "$msg\n";
-	}
-}
-
-sub get_command_internal {
-	my $command = shift; # Command to run
-	my $user = shift;    # User to run command under
-	if (!defined $user || $user eq "") {
-		$user = $main::username;
-	}
-	my $chroot = shift;  # Run in chroot?
-	if (!defined $chroot) {
-		$chroot = 1;
-	}
-
-	my $cmdline;
-	if ($chroot != 0) { # Run command inside chroot
-		if ($conf::chroot_mode eq "schroot") {
-			$cmdline = "$conf::schroot -c $main::schroot_session --run-session $conf::schroot_options -u $user -p -- ";
-		} else {
-			$cmdline = "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::sudo ";
-			if ($user ne "root") {
-				$cmdline .= "-u $main::username ";
-			}
-			$cmdline .= "-H ";
-		}
-	} else { # Run command outside chroot
-		if ($user ne $main::username) {
-			$cmdline = "$conf::sudo ";
-			if ($user ne "root") {
-				$cmdline .= "-u $main::username ";
-			}
-		}
-	}
-	$cmdline .= "/bin/sh -c '$command'";
-
-	return $cmdline;
-}
-
-sub get_command {
-	my $command = shift;  # Command to run
-	my $user = shift;     # User to run command under
-	my $chroot = shift;   # Run in chroot?
-	my $priority = shift; # Priority of log message
-	my $cmdline = get_command_internal($command, $user, $chroot);
-
-	if ($main::debug) {
-		log_command($cmdline, $priority);
-	} else {
-		log_command($command, $priority);
-	}
-
-	if ($chroot != 0) {
-		chdir($main::cwd);
-	}
-	return $cmdline;
-}
-
-# Note, do not run with $user="root", and $chroot=0, because sudo
-# access to the host system is not required.
-sub run_command {
-	my $command = shift;  # Command to run
-	my $user = shift;     # User to run command under
-	my $chroot = shift;   # Run in chroot?
-	my $priority = shift; # Priority of log message
-	my $cmdline = get_command_internal($command, $user, $chroot);
-
-	if ($main::debug) {
-		log_command($cmdline, $priority);
-	} else {
-		log_command($command, $priority);
-	}
-
-	if ($chroot != 0) {
-		chdir($main::cwd);
-	}
-	return system($cmdline);
-}
-
-sub exec_command {
-	my $command = shift;  # Command to run
-	my $user = shift;     # User to run command under
-	my $chroot = shift;   # Run in chroot?
-	my $priority = shift; # Priority of log message
-	my $cmdline = get_command_internal($command, $user, $chroot);
-
-	if ($main::debug) {
-		log_command($cmdline, $priority);
-	} else {
-		log_command($command, $priority);
-	}
-
-	if ($chroot != 0) {
-		chdir($main::cwd);
-	}
-	exec $cmdline;
-}
-
-sub get_apt_command_internal {
-	my $aptcommand = shift; # Command to run
-	my $options = shift;    # Command options
-	$aptcommand .= " $main::chroot_apt_options $options";
-
-	return $aptcommand;
-}
-
-sub get_apt_command {
-	my $command = shift;  # Command to run
-	my $options = shift;  # Command options
-	my $user = shift;     # User to run command under
-	my $priority = shift; # Priority of log message
-
-	my $aptcommand = get_apt_command_internal($command, $options);
-
-	my $chroot = 0;
-	if ($conf::chroot_mode eq "schroot") {
-		$chroot = 1;
-	}
-
-	my $cmdline = get_command($aptcommand, $user, $chroot, $priority);
-
-	chdir($main::cwd);
-	return $cmdline;
-}
-
-sub run_apt_command {
-	my $command = shift;  # Command to run
-	my $options = shift;  # Command options
-	my $user = shift;     # User to run command under
-	my $priority = shift; # Priority of log message
-
-	my $aptcommand = get_apt_command_internal($command, $options);
-
-	my $chroot = 0;
-	if ($conf::chroot_mode eq "schroot") {
-		$chroot = 1;
-	}
-
-	chdir($main::cwd);
-	return run_command($aptcommand, $user, $chroot, $priority);
-}
-
 sub run_script {
 	my $e_mode = shift;
 	my $x_mode = "";
@@ -2003,8 +1756,8 @@ sub read_deps {
 	my $fname;
 	local( *F );
 
-	open( F, $fname = "<$conf::source_dependencies-$main::distribution" )
-		or open( F, $fname = "<$conf::source_dependencies" )
+	open( F, $fname = "<$Sbuild::Conf::source_dependencies-$main::distribution" )
+		or open( F, $fname = "<$Sbuild::Conf::source_dependencies" )
 		or return;
 	$fname = substr( $fname, 1 );
 	print "Reading source dependencies from $fname\n"
@@ -2192,7 +1945,7 @@ sub merge_pkg_build_deps {
 	# populate toolchain_pkgs from toolchain_regexes and essential packages.
 	@main::toolchain_pkgs = ();
 	foreach my $tpkg (@$exp_essential) {
-		foreach my $regex (@conf::toolchain_regex) {
+		foreach my $regex (@Sbuild::Conf::toolchain_regex) {
 			push @main::toolchain_pkgs,$tpkg->{'Package'}
 				if $tpkg->{'Package'} =~ m,^$regex,;
 		}
@@ -2404,9 +2157,9 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $main::username, 0);
+	my $command = get_apt_command("$Sbuild::Conf::apt_cache", "show @_ 2>&1", $main::username, 0);
 	open( PIPE, "$command |" )
-		or die "Cannot start $conf::apt_cache $!\n";
+		or die "Cannot start $Sbuild::Conf::apt_cache $!\n";
 	local($/) = "";
 	while( <PIPE> ) {
 		my ($name, $dep, $predep);
@@ -2419,7 +2172,7 @@ sub get_dependencies {
 		$deps{$name} = $dep;
 	}
 	close( PIPE );
-	die "$conf::apt_cache exit status $?\n" if $?;
+	die "$Sbuild::Conf::apt_cache exit status $?\n" if $?;
 
 	return \%deps;
 }
@@ -2427,9 +2180,9 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $main::username, 0);
+	my $command = get_apt_command("$Sbuild::Conf::apt_cache", "showpkg @_ 2>&1", $main::username, 0);
 	open( PIPE, "$command |" )
-		or die "Cannot start $conf::apt_cache: $!\n";
+		or die "Cannot start $Sbuild::Conf::apt_cache: $!\n";
 	my $name;
 	my $in_rprov = 0;
 	my %provided_by;
@@ -2448,7 +2201,7 @@ sub get_virtuals {
 		}
 	}
 	close( PIPE );
-	die "$conf::apt_cache exit status $?\n" if $?;
+	die "$Sbuild::Conf::apt_cache exit status $?\n" if $?;
 
 	return \%provided_by;
 }
@@ -2507,18 +2260,18 @@ sub parse_one_srcdep {
 				$neg = 1;
 				$neg_seen = 1;
 			}
-			if ($conf::srcdep_over{$dep}) {
+			if ($Sbuild::Conf::srcdep_over{$dep}) {
 				if ($main::verbose) {
 					print PLOG "Replacing source dep $dep";
 					print PLOG " ($rel $relv)" if $relv;
-					print PLOG " with $conf::srcdep_over{$dep}[0]";
-					print PLOG " ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])"
-					  if $conf::srcdep_over{$dep}[1];
+					print PLOG " with $Sbuild::Conf::srcdep_over{$dep}[0]";
+					print PLOG " ($Sbuild::Conf::srcdep_over{$dep}[1] $Sbuild::Conf::srcdep_over{$dep}[2])"
+					  if $Sbuild::Conf::srcdep_over{$dep}[1];
 					print PLOG ".\n";
 				}
-				$dep = $conf::srcdep_over{$dep}[0];
-				$rel = $conf::srcdep_over{$dep}[1];
-				$relv = $conf::srcdep_over{$dep}[2];
+				$dep = $Sbuild::Conf::srcdep_over{$dep}[0];
+				$rel = $Sbuild::Conf::srcdep_over{$dep}[1];
+				$relv = $Sbuild::Conf::srcdep_over{$dep}[2];
 			}
 			my $h = { Package => $dep, Neg => $neg };
 			if ($rel && $relv) {
@@ -2589,187 +2342,6 @@ sub get_special {
 	push( @main::global_patches, $sp ) if $sp =~ /^\*\*/;
 }
 
-
-sub open_log {
-	my $date = strftime("%Y%m%d-%H%M",localtime);
-
-	if ($main::nolog) {
-		open( LOG, ">&STDOUT" );
-		open( PLOG, ">&LOG" ) or warn "Can't redirect PLOG\n";
-		select( LOG );
-		return;
-	}
-
-	my $F = new File::Temp( TEMPLATE => "build-${main::distribution}-$date.XXXXXX",
-				DIR => $conf::build_dir,
-				SUFFIX => '.log',
-				UNLINK => 0)
-		or die "Can't open logfile: $!\n";
-	$F->autoflush(1);
-	$main::main_logfile = $F->filename;
-
-	if ($main::verbose) {
-		my $pid;
-		($pid = open( LOG, "|-"));
-		if (!defined $pid) {
-			warn "Cannot open pipe to '$main::main_logfile': $!\n";
-		}
-		elsif ($pid == 0) {
-			while (<STDIN>) {
-				print $F $_;
-				print STDOUT $_;
-			}
-			undef $F;
-			exit 0;
-		}
-	}
-	else {
-		open( LOG, ">$F" )
-			or warn "Cannot open log file $main::main_logfile: $!\n";
-	}
-	undef $F;
-	LOG->autoflush(1);
-	select(LOG);
-	if ($main::verbose) {
-		open( SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
-		open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
-	}
-	open( STDOUT, ">&LOG" ) or warn "Can't redirect stdout\n";
-	open( STDERR, ">&LOG" ) or warn "Can't redirect stderr\n";
-	open( PLOG, ">&LOG" ) or warn "Can't redirect PLOG\n";
-}
-
-sub close_log {
-	my $date = strftime("%Y%m%d-%H%M",localtime);
-
-	close( PLOG );
-	close( STDERR );
-	close( STDOUT );
-	close( LOG );
-	if ($main::verbose) {
-		open( STDOUT, ">&SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
-		open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
-		close (SAVED_STDOUT);
-		close (SAVED_STDERR);
-	}
-	if (!$main::nolog && !$main::verbose &&
-		-s $main::main_logfile && $conf::mailto) {
-		send_mail( $conf::mailto, "Log from sbuild $date",
-				   $main::main_logfile ) if $conf::mailto;
-	}
-	elsif (!$main::nolog && ! -s $main::main_logfile) {
-		unlink( $main::main_logfile );
-	}
-}
-
-sub open_pkg_log {
-	my $date = strftime("%Y%m%d-%H%M",localtime);
-	my $pkg = shift;
-
-	if ($main::nolog) {
-		open( PLOG, ">&STDOUT" );
-	}
-	else {
-		$pkg = basename( $pkg );
-		if ($main::binNMU) {
-			$pkg =~ /^([^_]+)_([^_]+)(.*)$/;
-			$pkg = $1."_".Sbuild::binNMU_version($2,$main::binNMUver);
-			$main::binNMU_name = $pkg;
-			$pkg .= $3;
-		}
-		$main::pkg_logfile = "$conf::log_dir/${pkg}_$date";
-		log_symlink($main::pkg_logfile,
-			    "$conf::build_dir/current-$main::distribution");
-		log_symlink($main::pkg_logfile, "$conf::build_dir/current");
-		if ($main::verbose) {
-			my $pid;
-			($pid = open( PLOG, "|-"));
-			if (!defined $pid) {
-				warn "Cannot open pipe to '$main::pkg_logfile': $!\n";
-			}
-			elsif ($pid == 0) {
-				open( CPLOG, ">$main::pkg_logfile" ) or
-					die "Can't open logfile $main::pkg_logfile: $!\n";
-				CPLOG->autoflush(1);
-
-				while (<STDIN>) {
-					print CPLOG $_;
-					print SAVED_STDOUT $_;
-				}
-				close CPLOG;
-				exit 0;
-			}
-		}
-		else {
-			if (!open( PLOG, ">$main::pkg_logfile" )) {
-				warn "Can't open logfile $main::pkg_logfile: $!\n";
-				return 0;
-			}
-		}
-	}
-	PLOG->autoflush(1);
-	select(PLOG);
-
-	my $revision = '$Revision$';
-	$revision =~ /([\d.]+)/;
-	$revision = $1;
-
-	print PLOG "Automatic build of $pkg on $main::HOSTNAME by ".
-			   "sbuild/$main::arch $revision\n";
-	print PLOG "Build started at $date\n";
-	print PLOG "*"x78, "\n";
-	return 1;
-}
-
-sub close_pkg_log {
-	my $date = strftime("%Y%m%d-%H%M",localtime);
-	my $pkg = shift;
-	my $t = $main::pkg_end_time - $main::pkg_start_time;
-	
-	$pkg = basename( $pkg );
-	$t = 0 if $t < 0;
-	if (defined($main::pkg_status) && $main::pkg_status eq "successful") {
-		add_time_entry( $pkg, $t );
-		add_space_entry( $pkg, $main::this_space );
-	}
-	print PLOG "*"x78, "\n";
-	printf PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
-		   int($t/3600), int(($t%3600)/60), int($t%60), $main::this_space;
-	close( PLOG );
-	open( PLOG, ">&LOG" ) or warn "Can't redirect PLOG\n";
-	send_mail( $conf::mailto,
-			   "Log for $main::pkg_status build of ".
-			   ($main::binNMU_name || $pkg)." (dist=$main::distribution)",
-			   $main::pkg_logfile ) if !$main::nolog && $conf::mailto;
-	undef $main::binNMU_name;
-}
-
-sub add_time_entry {
-	my $pkg = shift;
-	my $t = shift;
-
-	return if !$conf::avg_time_db;
-	my %db;
-	if (!tie %db, 'GDBM_File',$conf::avg_time_db,GDBM_WRCREAT,0664) {
-		print "Can't open average time db $conf::avg_time_db\n";
-		return;
-	}
-	$pkg =~ s/_.*//;
-		
-	if (exists $db{$pkg}) {
-		my @times = split( /\s+/, $db{$pkg} );
-		push( @times, $t );
-		my $sum = 0;
-		foreach (@times[1..$#times]) { $sum += $_; }
-		$times[0] = $sum / (@times-1);
-		$db{$pkg} = join( ' ', @times );
-	}
-	else {
-		$db{$pkg} = "$t $t";
-	}
-	untie %db;
-}
-
 sub check_space {
 	my @files = @_;
 	my $sum = 0;
@@ -2797,39 +2369,6 @@ sub check_space {
 	}
 
 	$main::this_space = $sum;
-}
-
-sub add_space_entry {
-	my $pkg = shift;
-	my $t = shift;
-
-	my $keepvals = 4;
-	
-	return if !$conf::avg_space_db || $main::this_space == 0;
-	my %db;
-	if (!tie %db, 'GDBM_File',$conf::avg_space_db,GDBM_WRCREAT,0664) {
-		print "Can't open average space db $conf::avg_space_db\n";
-		return;
-	}
-	$pkg =~ s/_.*//;
-		
-	if (exists $db{$pkg}) {
-		my @values = split( /\s+/, $db{$pkg} );
-		shift @values;
-		unshift( @values, $t );
-		pop @values if @values > $keepvals;
-		my ($sum, $n, $weight, $i) = (0, 0, scalar(@values));
-		for( $i = 0; $i < @values; ++$i) {
-			$sum += $values[$i] * $weight;
-			$n += $weight;
-		}
-		unshift( @values, $sum/$n );
-		$db{$pkg} = join( ' ', @values );
-	}
-	else {
-		$db{$pkg} = "$t $t";
-	}
-	untie %db;
 }
 
 sub file_for_name {
@@ -2882,7 +2421,7 @@ sub write_srcdep_lock_file {
 	local( *F );
 
 	++$main::srcdep_lock_cnt;
-	my $f = "$conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+	my $f = "$Sbuild::Conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 	if (!open( F, ">$f" )) {
 		print "Warning: cannot create srcdep lock file $f: $!\n";
 		return;
@@ -2912,8 +2451,8 @@ sub check_srcdep_conflicts {
 	my $mypid = $$;
 	my %conflict_builds;
 
-	if (!opendir( DIR, $conf::srcdep_lock_dir )) {
-		print PLOG "Cannot opendir $conf::srcdep_lock_dir: $!\n";
+	if (!opendir( DIR, $Sbuild::Conf::srcdep_lock_dir )) {
+		print PLOG "Cannot opendir $Sbuild::Conf::srcdep_lock_dir: $!\n";
 		return 1;
 	}
 	my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
@@ -2922,8 +2461,8 @@ sub check_srcdep_conflicts {
 
 	my $file;
 	foreach $file (@files) {
-		if (!open( F, "<$conf::srcdep_lock_dir/$file" )) {
-			print PLOG "Cannot open $conf::srcdep_lock_dir/$file: $!\n";
+		if (!open( F, "<$Sbuild::Conf::srcdep_lock_dir/$file" )) {
+			print PLOG "Cannot open $Sbuild::Conf::srcdep_lock_dir/$file: $!\n";
 			next;
 		}
 		<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
@@ -2935,7 +2474,7 @@ sub check_srcdep_conflicts {
 			close( F );
 			print PLOG "Found stale srcdep lock file $file -- removing it\n";
 			print PLOG "Cannot remove: $!\n"
-				if !unlink( "$conf::srcdep_lock_dir/$file" );
+				if !unlink( "$Sbuild::Conf::srcdep_lock_dir/$file" );
 			next;
 		}
 
@@ -2990,7 +2529,7 @@ sub check_srcdep_conflicts {
 }
 
 sub remove_srcdep_lock_file {
-	my $f = "$conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+	my $f = "$Sbuild::Conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 
 	print "Removing srcdep lock file $f\n" if $main::debug;
 	if (!unlink( $f )) {
@@ -3018,12 +2557,12 @@ sub prepare_watches {
 	# init %this_watches to names of packages which have not been installed as
 	# source dependencies
 	undef %main::this_watches;
-	foreach $pkg (keys %conf::watches) {
+	foreach $pkg (keys %Sbuild::Conf::watches) {
 		if (isin( $pkg, @dep_on )) {
 			print "Excluding from watch: $pkg\n" if $main::debug;
 			next;
 		}
-		foreach $prg (@{$conf::watches{$pkg}}) {
+		foreach $prg (@{$Sbuild::Conf::watches{$pkg}}) {
 			$prg = "/usr/bin/$prg" if $prg !~ m,^/,;
 			$main::this_watches{"$main::chroot_dir$prg"} = $pkg;
 			print "Will watch for $prg ($pkg)\n" if $main::debug;
@@ -3045,7 +2584,7 @@ sub check_watches {
 			$prg2 =~ s/^\Q$main::chroot_dir\E// if $main::chroot_dir;
 			push( @{$used{$pkg}}, $prg2 )
 				if @main::have_dsc_build_deps ||
-				   !isin( $pkg, @conf::ignore_watches_no_build_deps );
+				   !isin( $pkg, @Sbuild::Conf::ignore_watches_no_build_deps );
 		}
 		else {
 			print "Watch: $prg: untouched\n" if $main::debug;
@@ -3113,41 +2652,6 @@ sub add_givenback {
 	unlock_file( "SBUILD-GIVEN-BACK" );
 }
 
-sub send_mail {
-	my $to = shift;
-	my $subject = shift;
-	my $file = shift;
-	local( *MAIL, *F );
-
-	if (!open( F, "<$file" )) {
-		warn "Cannot open $file for mailing: $!\n";
-		return 0;
-	}
-	local $SIG{'PIPE'} = 'IGNORE';
-	
-	if (!open( MAIL, "|$conf::mailprog -oem $to" )) {
-		warn "Could not open pipe to $conf::mailprog: $!\n";
-		close( F );
-		return 0;
-	}
-
-	print MAIL "From: $conf::mailfrom\n";
-	print MAIL "To: $to\n";
-	print MAIL "Subject: $subject\n\n";
-	while( <F> ) {
-		print MAIL "." if $_ eq ".\n";
-		print MAIL $_;
-	}
-	
-	close( F );
-	if (!close( MAIL )) {
-		warn "$conf::mailprog failed (exit status $?)\n";
-		return 0;
-	}
-	return 1;
-}
-
-
 sub set_installed {
 	foreach (@_) {
 		$main::changes->{'installed'}->{$_} = 1;
@@ -3184,12 +2688,6 @@ sub unset_removed {
 		}
 	}
 	print "Removed from removed list: @_\n" if $main::debug;
-}
-
-sub basename {
-	my $b = $_[0];
-	$b =~ s,^.*/,,;
-	return $b;
 }
 
 sub df {
@@ -3351,12 +2849,12 @@ sub shutdown {
 	# close logs and send mails
 	if ( $main::current_job ) {
 		fixup_pkgv( \$main::current_job );
-		close_pkg_log( $main::binNMU_name || $main::current_job );
+		Sbuild::Log::close_pkg_log( $main::binNMU_name || $main::current_job );
 	}
-	close_log();
+	Sbuild::Log::close_log();
 	unlink( $main::jobs_file ) if $main::batchmode;
 	$? = 0; $! = 0;
-	if ($conf::sbuild_mode eq "user") {
+	if ($Sbuild::Conf::sbuild_mode eq "user") {
 		exit 1;
 	}
 	exit 0;
@@ -3372,104 +2870,6 @@ sub write_stats {
 	print F "$val\n";
 	close( F );
 	unlock_file( "$main::stats_dir" );
-}
-
-sub get_schroot_info {
-	my $chroot = shift;
-
-	my $chroot_type = "";
-	$main::dist_locations{$chroot} = "";
-	$main::dist_order{$chroot} = 0;
-	open CHROOT_DATA, '-|', $conf::schroot, '--info', '--chroot', $chroot or die "Can't run $conf::schroot to get chroot data";
-	while (<CHROOT_DATA>) {
-		chomp;
-		if (/^\s*Type:?\s+(.*)$/) {
-		    $chroot_type = $1;
-		}
-		if (/^\s*Location:?\s+(.*)$/ &&
-		    $main::dist_locations{$chroot} eq "") {
-			$main::dist_locations{$chroot} = $1;
-		}
-		if (/^\s*Mount Location:?\s+(.*)$/ &&
-		    $main::dist_locations{$chroot} eq "") {
-			$main::dist_locations{$chroot} = $1;
-		}
-		# Path takes priority over Location and Mount Location.
-		if (/^\s*Path:?\s+(.*)$/) {
-			$main::dist_locations{$chroot} = $1;
-		}
-		if (/^\s*Priority:?\s+(\d+)$/) {
-			$main::dist_order{$chroot} = $1;
-		}
-		if (/^\s*Session Managed\s+(.*)$/) {
-			if ($1 eq "true") {
-				$main::dist_sessioncaps{$chroot} = 1;
-			}
-		}
-	}
-
-	close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
-
-	# "plain" chroots are never session-capable, even if they say
-	# they are.
-	if ($chroot_type eq "plain") {
-		$main::dist_sessioncaps{$chroot} = 0;
-	}
-}
-
-sub setup_options {
-	my $distribution = shift;
-
-	if (defined($main::dist_locations{"$distribution"}) &&
-	    -d "$main::dist_locations{\"$distribution\"}") {
-		$main::chroot_dir = "$main::dist_locations{\"$distribution\"}";
-		$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
-		$conf::srcdep_lock_dir = "$main::chroot_dir/$conf::srcdep_lock_dir";
-		$main::ilock_file = "$conf::srcdep_lock_dir/install";
-
-		my $aptconf = "/var/lib/sbuild/apt.conf";
-		if ($conf::chroot_mode ne "schroot") {
-			$main::chroot_apt_options =
-				"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
-				" -o DPkg::Options::=--root=$main::chroot_dir".
-				" -o DPkg::Run-Directory=$main::chroot_dir";
-		}
-
-		# schroot uses an absolute path inside the chroot,
-		# rather than on the host system.
-		my $chroot_aptconf = "$main::chroot_dir/$aptconf";
-		if ($conf::chroot_mode eq "schroot") {
-			$ENV{'APT_CONFIG'} = $aptconf;
-		} else {
-			$ENV{'APT_CONFIG'} = $chroot_aptconf;
-		}
-
-		# Always write out apt.conf, because it gets outdated
-		# if the chroot_mode is changed...
-		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
-					    DIR => $main::chroot_dir,
-					    UNLINK => 0) ) {
-
-			if ($conf::chroot_mode ne "schroot") {
-				print $F "Dir \"$main::chroot_dir\";\n";
-			}
-			print $F "APT::Get::AllowUnauthenticated true;\n";
-
-			if (! rename $F->filename, $chroot_aptconf) {
-				die "Can't rename $F->filename to $chroot_aptconf: $!\n";
-			}
-
-		} else {
-			if ($conf::chroot_mode ne "schroot") {
-				$main::chroot_apt_options .=
-					" -o Dir::State=$main::chroot_dir/var/lib/apt".
-					" -o Dir::Cache=$main::chroot_dir/var/cache/apt".
-					" -o Dir::Etc=$main::chroot_dir/etc/apt";
-			}
-		}
-	} elsif ($conf::chroot_only) {
-		die "$distribution chroot does not exist and in chroot only mode -- exiting\n";
-	}
 }
 
 sub verify_dsc_md5sums {
@@ -3488,7 +2888,7 @@ sub verify_dsc_md5sums {
 		}
 		close( DSC ) or print PLOG "Failed to close $dsc\n" && return 1;
 
-		open(OBS, '-|', "$conf::md5sum", keys %dsc_md5) or return 1;
+		open(OBS, '-|', "$Sbuild::Conf::md5sum", keys %dsc_md5) or return 1;
 		while (<OBS>) {
 			chomp;
 			if (/^[a-z0-9]{32}/) {
@@ -3516,12 +2916,4 @@ sub verify_dsc_md5sums {
 	}
 
 	return 0;
-}
-
-sub log_symlink {
-	my $log = shift;
-	my $dest = shift;
-
-	unlink $dest || return;
-	symlink $log, $dest || return;
 }
