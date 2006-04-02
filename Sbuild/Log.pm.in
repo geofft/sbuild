@@ -161,12 +161,8 @@ sub open_pkg_log {
 	main::PLOG->autoflush(1);
 	select(main::PLOG);
 
-	my $revision = '$Revision: 1.107 $';
-	$revision =~ /([\d.]+)/;
-	$revision = $1;
-
 	print main::PLOG "Automatic build of $pkg on $main::HOSTNAME by ".
-			   "sbuild/$main::arch $revision\n";
+			   "sbuild/$main::arch @VERSION@\n";
 	print main::PLOG "Build started at $date\n";
 	print main::PLOG "*"x78, "\n";
 	return 1;

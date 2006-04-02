@@ -15,7 +15,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 .\" MA  02111-1307  USA
-.TH UPDATE\-SOURCEDEPS 1 "15 Feb 2006" "Version 0.38" "Debian sbuild"
+.TH UPDATE\-SOURCEDEPS 1 "@DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
 update\-sourcedeps \- update the sbuild source dependency files
 .SH SYNOPSIS

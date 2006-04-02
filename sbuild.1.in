@@ -15,7 +15,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 .\" MA  02111-1307  USA
-.TH SBUILD 1 "9 Mar 2006" "Version 0.42" "Debian sbuild"
+.TH SBUILD 1 "@DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
 sbuild \- build debian packages from source
 .SH SYNOPSIS

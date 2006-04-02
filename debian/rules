@@ -3,6 +3,21 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+VERSION = $(shell dpkg-parsechangelog | grep ^Version: | sed "s/.* //" | sed "s/-[^-]*$$//")
+DATE = $(shell date -d "$$(dpkg-parsechangelog | grep ^Date: | sed -n '/^Date: /s///p')" "+%d %b %Y")
+
+GENFILES =			\
+	avg-pkg-build-time.1	\
+	sbuild.1		\
+	sbuild-setup.7		\
+	update-sourcedeps.1	\
+	Sbuild/Log.pm
+
+%: %.in
+	sed -e 's/\$$Revision: [0-9.]* \$$/$(VERSION)/g' \
+	    -e 's/@VERSION@/$(VERSION)/g' \
+	    -e 's/@DATE@/$(DATE)/g' <$< >$@
+
 INSTALL=/usr/bin/install
 DESTDIR=$(CURDIR)/debian/sbuild
 
@@ -15,13 +30,15 @@ configure-stamp:
 	touch configure-stamp
 
 build: configure-stamp build-stamp
-build-stamp:
+build-stamp: $(GENFILES)
 	dh_testdir
 	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
+
+	rm -f $(GENFILES)
 	rm -f build-stamp configure-stamp
 
 	dh_clean

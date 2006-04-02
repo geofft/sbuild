@@ -18,6 +18,9 @@ sbuild (0.44) UNRELEASED; urgency=low
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).
+  * avg-pkg-build-time.1.in, sbuild.1.in, sbuild-setup.7.in,
+    update-sourcedeps.1.in, Sbuild/Log.pm.in: Rename and embed version and
+    date tags for substitution.
   * COPYING: New file (GPL licence text).
   * debian/control: Update uploaders.
   * debian/copyright:
@@ -26,8 +29,11 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Add Roger Leigh as a copyright holder.
     - Add a reference to /usr/share/common-licenses/GPL.
   * debian/dirs: Add usr/share/perl5/Sbuild.
-  * debian/rules: Install Sbuild/Chroot.pm, Sbuild/Conf.pm and
-    Sbuild/Log.pm into /usr/share/perl5/Sbuild.
+  * debian/rules:
+    - Install Sbuild/Chroot.pm, Sbuild/Conf.pm and Sbuild/Log.pm into
+      /usr/share/perl5/Sbuild.
+    - Generate all manual pages and Log.pm in the build rule, and remove
+      them in the clean rule.
 
  --
 
