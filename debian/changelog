@@ -14,6 +14,8 @@ sbuild (0.44) UNRELEASED; urgency=low
       get_command, run_command, exec_command, get_apt_command_internal,
       get_apt_command and run_apt_command.
     - Don't export init and log_command.
+    - Don't hardcode a list of chroots; use a glob to search for chroot-*
+      instead.  This allows any distribution name to be specified with -d.
   * Sbuild/Conf.pm: New perl module for configuration variables.  It reads
     the system and user configuration.
   * Sbuild/Log.pm: New perl module for logging.  It contains the functions

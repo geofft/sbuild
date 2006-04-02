@@ -98,23 +98,15 @@ sub _get_schroot_info {
 }
 
 sub init {
-
-	# TODO: Replace with directory scan...
-	my %default_dist_order = ( 'oldstable' => 0,
-				   'oldstable-security' => 0,
-				   'stable' => 1,
-				   'stable-security' => 1,
-				   'testing' => 2,
-				   'testing-security' => 2,
-				   'unstable' => 3,
-				   'experimental' => 4 );
-
-	foreach (keys(%default_dist_order)) {
-		my %tmp = ('Priority' => $default_dist_order{$_},
-			   'Location' => "${Sbuild::Conf::build_dir}/chroot-$_",
+	foreach (glob("${Sbuild::Conf::build_dir}/chroot-*")) {
+		my %tmp = ('Priority' => 0,
+			   'Location' => $_,
 			   'Session Managed' => 0);
 		if (-d $tmp{'Location'}) {
-			$chroots{$_} = \%tmp;
+			my $name = $_;
+			$name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;
+			print STDERR "Found chroot $name\n";# if $main::debug;
+			$chroots{$name} = \%tmp;
 		}
 	}
 
