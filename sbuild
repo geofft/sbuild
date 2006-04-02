@@ -326,7 +326,7 @@ foreach $pkgv (@ARGV) {
 
 	close_pkg_log( $pkgv );
 	$main::current_job = "";
-	if ( $main::batchmode and (-f "$main::HOME/EXIT-DAEMON-PLEASE") ) {
+	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
 }
