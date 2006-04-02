@@ -22,6 +22,8 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Remove $main::cwd, $main::nolog and $main::verbose, now provided by
       Sbuild::Conf.  They are imported from Sbuild::Conf for backward
       compatibility.
+    - Remove unused $main::HOSTNAME.
+    - Add build statistics to close_pkg_log.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -54,6 +56,11 @@ sbuild (0.44) UNRELEASED; urgency=low
     - $main::main_logfile and $main::pkg_logfile are package variables.
     - Removed use of $main::distribution.  The distribution name must be
       passed to open_log or open_pkg_log.
+    - Don't use $main::HOSTNAME or $main::arch.  Get the values directly.
+    - close_pkg_log: Obtain $main::pkg_status, $main::pkg_start_time,
+      $main::pkg_end_time and $main::this_space from the function arguments.
+    - add_space_entry: Use $space rather than $t, and don't use
+      $main::this_space.
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).

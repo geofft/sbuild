@@ -168,8 +168,10 @@ sub open_pkg_log {
 	main::PLOG->autoflush(1);
 	select(main::PLOG);
 
-	print main::PLOG "Automatic build of $pkg on $main::HOSTNAME by ".
-			   "sbuild/$main::arch @VERSION@\n";
+	chomp( my $HOSTNAME = `hostname` );
+	chomp( my $arch = `$conf::dpkg --print-installation-architecture` );
+	print main::PLOG "Automatic build of $pkg on $HOSTNAME by ".
+		"sbuild/$arch @VERSION@\n";
 	print main::PLOG "Build started at $date\n";
 	print main::PLOG "*"x78, "\n";
 	return 1;
@@ -178,21 +180,26 @@ sub open_pkg_log {
 sub close_pkg_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 	my $pkg = shift;
-	my $t = $main::pkg_end_time - $main::pkg_start_time;
-	
+	my $status = shift;
+	my $pkg_start_time = shift;
+	my $pkg_end_time = shift;
+	my $space = shift;
+
+	my $time = $pkg_end_time - $pkg_start_time;
+
 	$pkg = Sbuild::basename( $pkg );
-	$t = 0 if $t < 0;
-	if (defined($main::pkg_status) && $main::pkg_status eq "successful") {
-		add_time_entry( $pkg, $t );
-		add_space_entry( $pkg, $main::this_space );
+	$time = 0 if $time < 0;
+	if (defined($status) && $status eq "successful") {
+		add_time_entry( $pkg, $time );
+		add_space_entry( $pkg, $space );
 	}
 	print main::PLOG "*"x78, "\n";
 	printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
-		   int($t/3600), int(($t%3600)/60), int($t%60), $main::this_space;
+		int($time/3600), int(($time%3600)/60), int($time%60), $space;
 	close( main::PLOG );
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $Sbuild::Conf::mailto,
-		   "Log for $main::pkg_status build of ".
+		   "Log for $status build of ".
 		   ($main::binNMU_name || $pkg)." (dist=$pkg_distribution)",
 		   $pkg_logfile ) if !$Sbuild::Conf::nolog && $Sbuild::Conf::mailto;
 	undef $main::binNMU_name;
@@ -226,11 +233,11 @@ sub add_time_entry {
 
 sub add_space_entry {
 	my $pkg = shift;
-	my $t = shift;
+	my $space = shift;
 
 	my $keepvals = 4;
 	
-	return if !$Sbuild::Conf::avg_space_db || $main::this_space == 0;
+	return if !$Sbuild::Conf::avg_space_db || $space == 0;
 	my %db;
 	if (!tie %db, 'GDBM_File',$Sbuild::Conf::avg_space_db,GDBM_WRCREAT,0664) {
 		print "Can't open average space db $Sbuild::Conf::avg_space_db\n";
@@ -241,7 +248,7 @@ sub add_space_entry {
 	if (exists $db{$pkg}) {
 		my @values = split( /\s+/, $db{$pkg} );
 		shift @values;
-		unshift( @values, $t );
+		unshift( @values, $space );
 		pop @values if @values > $keepvals;
 		my ($sum, $n, $weight, $i) = (0, 0, scalar(@values));
 		for( $i = 0; $i < @values; ++$i) {
@@ -252,7 +259,7 @@ sub add_space_entry {
 		$db{$pkg} = join( ' ', @values );
 	}
 	else {
-		$db{$pkg} = "$t $t";
+		$db{$pkg} = "$space $space";
 	}
 	untie %db;
 }

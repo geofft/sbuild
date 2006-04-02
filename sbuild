@@ -52,8 +52,6 @@ $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
 
-chomp( $main::HOSTNAME = `hostname` );
-
 $main::distribution = "unstable";
 
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
@@ -326,7 +324,9 @@ foreach $pkgv (@ARGV) {
 
 	end_session();
 
-	close_pkg_log( $pkgv );
+	close_pkg_log( $pkgv, $main::pkg_status,
+		       $main::pkg_start_time, $main::pkg_end_time,
+		       $main::this_space );
 	$main::current_job = "";
 	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
@@ -2855,7 +2855,10 @@ sub shutdown {
 	# close logs and send mails
 	if ( $main::current_job ) {
 		fixup_pkgv( \$main::current_job );
-		close_pkg_log( $main::binNMU_name || $main::current_job );
+		close_pkg_log( $main::binNMU_name || $main::current_job,
+			       $main::pkg_status,
+			       $main::pkg_start_time, $main::pkg_end_time,
+			       $main::this_space );
 	}
 	close_log();
 	unlink( $main::jobs_file ) if $main::batchmode;
