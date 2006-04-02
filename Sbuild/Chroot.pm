@@ -105,7 +105,7 @@ sub init {
 		if (-d $tmp{'Location'}) {
 			my $name = $_;
 			$name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;
-			print STDERR "Found chroot $name\n";# if $main::debug;
+			print STDERR "Found chroot $name\n" if $main::debug;
 			$chroots{$name} = \%tmp;
 		}
 	}
@@ -209,7 +209,7 @@ sub end_session {
 	if ($Sbuild::Conf::chroot_mode eq "schroot" && $schroot_session ne "") {
         	system("$Sbuild::Conf::schroot -c $schroot_session --end-session");
 		if ($?) {
-			print PLOG "Chroot cleanup failed\n";
+			print STDERR "Chroot cleanup failed\n";
 			return 0;
 		}
 	}
@@ -222,7 +222,7 @@ sub log_command {
 
 	if ((defined($priority) && $priority >= 1) || $main::debug) {
 		$msg =~ s/\Q$$current{'APT Options'}\E/CHROOT_APT_OPTIONS/g;
-		print PLOG "$msg\n";
+		print STDERR "$msg\n";
 	}
 }
 

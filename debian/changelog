@@ -19,6 +19,7 @@ sbuild (0.44) UNRELEASED; urgency=low
       instead.  This allows any distribution name to be specified with -d.
     - Add an "APT Options" attribute to the chroot hash, to replace
       $main::chroot_apt_options.
+    - Use STDERR instead of PLOG (which may not be available).
   * Sbuild/Conf.pm: New perl module for configuration variables.  It reads
     the system and user configuration.
   * Sbuild/Log.pm: New perl module for logging.  It contains the functions
