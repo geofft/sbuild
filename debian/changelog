@@ -13,6 +13,11 @@ sbuild (0.44) UNRELEASED; urgency=low
       name used by upstream to be used for backward compatibility.
     - Use $conf::HOME instead of $main::HOME.
     - Move $main::username to Sbuild::Conf.
+    - Set $main::chroot_dir, $main::chroot_build_dir,
+      $main::srcdep_lock_dir and $main::ilock_file from the current
+      chroot $Sbuild::Chroot::current.  $main::srcdep_lock_dir replaces
+      $conf::srcdep_lock_dir (which is still used to set when the chroot
+      is set up).
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -29,6 +34,8 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Replace $main::username with $Sbuild::Conf::username.
     - begin_session takes the distribution as its first argument, rather
       than using $main::distribution.
+    - Don't use $main::chroot_dir.  Add the build paths as 'Build Location',
+      'Srcdep Lock Dir' and 'Install Lock' to the chroot metadata.
   * Sbuild/Conf.pm:
     - New perl module for configuration variables.  It reads the system
       and user configuration.

@@ -66,7 +66,8 @@ $main::jobs_file = "build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
 $main::cwd = cwd();
-$main::ilock_file = "$conf::srcdep_lock_dir/install";
+$main::srcdep_lock_dir = "";
+$main::ilock_file = "";
 $main::srcdep_lock_cnt = 0;
 $main::pkg_status = "";
 $main::pkg_end_time = 0;
@@ -276,6 +277,10 @@ foreach $pkgv (@ARGV) {
 		$main::pkg_status = "skipped";
 		goto cleanup_close;
 	}
+	$main::chroot_dir = $$Sbuild::Chroot::current{'Location'};
+	$main::chroot_build_dir = $$Sbuild::Chroot::current{'Build Location'};
+	$main::srcdep_lock_dir = $$Sbuild::Chroot::current{'Srcdep Lock Dir'};
+	$main::ilock_file = $$Sbuild::Chroot::current{'Install Lock'};
 
 	$main::pkg_status = "failed"; # assume for now
 	$main::current_job = $pkgv;
@@ -1245,11 +1250,11 @@ sub wait_for_srcdep_conflicts {
 		for (@confl) {
 			/^(\d+)-(\d+)$/;
 			my $pid = $1;
-			if (-f "$conf::srcdep_lock_dir/$_") {
+			if (-f "$main::srcdep_lock_dir/$_") {
 				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
 					print PLOG "Ignoring stale src-dep lock $_\n";
-					unlink( "$conf::srcdep_lock_dir/$_" ) or
-						print PLOG "Cannot remove $conf::srcdep_lock_dir/$_: $!\n";
+					unlink( "$main::srcdep_lock_dir/$_" ) or
+						print PLOG "Cannot remove $main::srcdep_lock_dir/$_: $!\n";
 				}
 				else {
 					$allgone = 0;
@@ -2424,7 +2429,7 @@ sub write_srcdep_lock_file {
 	local( *F );
 
 	++$main::srcdep_lock_cnt;
-	my $f = "$conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+	my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 	if (!open( F, ">$f" )) {
 		print "Warning: cannot create srcdep lock file $f: $!\n";
 		return;
@@ -2454,8 +2459,8 @@ sub check_srcdep_conflicts {
 	my $mypid = $$;
 	my %conflict_builds;
 
-	if (!opendir( DIR, $conf::srcdep_lock_dir )) {
-		print PLOG "Cannot opendir $conf::srcdep_lock_dir: $!\n";
+	if (!opendir( DIR, $main::srcdep_lock_dir )) {
+		print PLOG "Cannot opendir $main::srcdep_lock_dir: $!\n";
 		return 1;
 	}
 	my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
@@ -2464,8 +2469,8 @@ sub check_srcdep_conflicts {
 
 	my $file;
 	foreach $file (@files) {
-		if (!open( F, "<$conf::srcdep_lock_dir/$file" )) {
-			print PLOG "Cannot open $conf::srcdep_lock_dir/$file: $!\n";
+		if (!open( F, "<$main::srcdep_lock_dir/$file" )) {
+			print PLOG "Cannot open $main::srcdep_lock_dir/$file: $!\n";
 			next;
 		}
 		<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
@@ -2477,7 +2482,7 @@ sub check_srcdep_conflicts {
 			close( F );
 			print PLOG "Found stale srcdep lock file $file -- removing it\n";
 			print PLOG "Cannot remove: $!\n"
-				if !unlink( "$conf::srcdep_lock_dir/$file" );
+				if !unlink( "$main::srcdep_lock_dir/$file" );
 			next;
 		}
 
@@ -2532,7 +2537,7 @@ sub check_srcdep_conflicts {
 }
 
 sub remove_srcdep_lock_file {
-	my $f = "$conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+	my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 
 	print "Removing srcdep lock file $f\n" if $conf::debug;
 	if (!unlink( $f )) {

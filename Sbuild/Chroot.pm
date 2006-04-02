@@ -131,22 +131,23 @@ sub _setup_options {
 
 	if (defined($chroots{$distribution}) &&
 	    -d $chroots{"$distribution"}->{'Location'}) {
-		$main::chroot_dir = $chroots{"$distribution"}->{'Location'};
-		$main::chroot_build_dir = "$main::chroot_dir/build/$Sbuild::Conf::username/";
-		$Sbuild::Conf::srcdep_lock_dir = "$main::chroot_dir/$Sbuild::Conf::srcdep_lock_dir";
-		$main::ilock_file = "$Sbuild::Conf::srcdep_lock_dir/install";
+		my $chroot_dir = $chroots{"$distribution"}->{'Location'};
+		$chroots{"$distribution"}->{'Build Location'} = "$chroot_dir/build/$Sbuild::Conf::username/";
+		my $srcdep_lock_dir = "$chroot_dir/$Sbuild::Conf::srcdep_lock_dir";
+		$chroots{"$distribution"}->{'Srcdep Lock Dir'} = $srcdep_lock_dir;
+		$chroots{"$distribution"}->{'Install Lock'} = "$srcdep_lock_dir/install";
 
 		my $aptconf = "/var/lib/sbuild/apt.conf";
 		if ($Sbuild::Conf::chroot_mode ne "schroot") {
 			$chroots{"$distribution"}->{'APT Options'} =
-				"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
-				" -o DPkg::Options::=--root=$main::chroot_dir".
-				" -o DPkg::Run-Directory=$main::chroot_dir";
+				"-o Dir::State::status=$chroot_dir/var/lib/dpkg/status".
+				" -o DPkg::Options::=--root=$chroot_dir".
+				" -o DPkg::Run-Directory=$chroot_dir";
 		}
 
 		# schroot uses an absolute path inside the chroot,
 		# rather than on the host system.
-		my $chroot_aptconf = "$main::chroot_dir/$aptconf";
+		my $chroot_aptconf = "$chroot_dir/$aptconf";
 		if ($Sbuild::Conf::chroot_mode eq "schroot") {
 			$ENV{'APT_CONFIG'} = $aptconf;
 		} else {
@@ -156,11 +157,11 @@ sub _setup_options {
 		# Always write out apt.conf, because it gets outdated
 		# if the chroot_mode is changed...
 		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
-					    DIR => $main::chroot_dir,
+					    DIR => $chroot_dir,
 					    UNLINK => 0) ) {
 
 			if ($Sbuild::Conf::chroot_mode ne "schroot") {
-				print $F "Dir \"$main::chroot_dir\";\n";
+				print $F "Dir \"$chroot_dir\";\n";
 			}
 			print $F "APT::Get::AllowUnauthenticated true;\n";
 
@@ -171,9 +172,9 @@ sub _setup_options {
 		} else {
 			if ($Sbuild::Conf::chroot_mode ne "schroot") {
 				$chroots{"$distribution"}->{'APT Options'} =
-					" -o Dir::State=$main::chroot_dir/var/lib/apt".
-					" -o Dir::Cache=$main::chroot_dir/var/cache/apt".
-					" -o Dir::Etc=$main::chroot_dir/etc/apt";
+					" -o Dir::State=$chroot_dir/var/lib/apt".
+					" -o Dir::Cache=$chroot_dir/var/cache/apt".
+					" -o Dir::Etc=$chroot_dir/etc/apt";
 			}
 		}
 	} elsif ($Sbuild::Conf::chroot_only) {
@@ -244,7 +245,7 @@ sub get_command_internal {
 		if ($Sbuild::Conf::chroot_mode eq "schroot") {
 			$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- ";
 		} else {
-			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $main::chroot_dir $Sbuild::Conf::sudo ";
+			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $$current{'Location'} $Sbuild::Conf::sudo ";
 			if ($user ne "root") {
 				$cmdline .= "-u $Sbuild::Conf::username ";
 			}
