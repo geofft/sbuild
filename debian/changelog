@@ -18,6 +18,7 @@ sbuild (0.44) UNRELEASED; urgency=low
       chroot $Sbuild::Chroot::current.  $main::srcdep_lock_dir replaces
       $conf::srcdep_lock_dir (which is still used to set when the chroot
       is set up).
+    - Pass $main::distribution to open_log and open_pkg_log.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -46,6 +47,8 @@ sbuild (0.44) UNRELEASED; urgency=low
       close_log, open_pkg_log, close_pkg_log, add_time_entry,
       add_space_entry, send_mail and log_symlink.
     - $main::main_logfile and $main::pkg_logfile are package variables.
+    - Removed use of $main::distribution.  The distribution name must be
+      passed to open_log or open_pkg_log.
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).

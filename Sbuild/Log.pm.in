@@ -43,8 +43,11 @@ BEGIN {
 
 my $main_logfile;
 my $pkg_logfile;
+my $pkg_distribution;
 
 sub open_log {
+	my $main_distribution = shift;
+
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 
 	if ($main::nolog) {
@@ -54,7 +57,7 @@ sub open_log {
 		return;
 	}
 
-	my $F = new File::Temp( TEMPLATE => "build-${main::distribution}-$date.XXXXXX",
+	my $F = new File::Temp( TEMPLATE => "build-${main_distribution}-$date.XXXXXX",
 				DIR => $Sbuild::Conf::build_dir,
 				SUFFIX => '.log',
 				UNLINK => 0)
@@ -119,6 +122,7 @@ sub close_log {
 sub open_pkg_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 	my $pkg = shift;
+	$pkg_distribution = shift;
 
 	if ($main::nolog) {
 		open( main::PLOG, ">&STDOUT" );
@@ -133,7 +137,7 @@ sub open_pkg_log {
 		}
 		$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg}_$date";
 		log_symlink($pkg_logfile,
-			    "$Sbuild::Conf::build_dir/current-$main::distribution");
+			    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
 		log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
 		if ($main::verbose) {
 			my $pid;
@@ -189,7 +193,7 @@ sub close_pkg_log {
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $Sbuild::Conf::mailto,
 		   "Log for $main::pkg_status build of ".
-		   ($main::binNMU_name || $pkg)." (dist=$main::distribution)",
+		   ($main::binNMU_name || $pkg)." (dist=$pkg_distribution)",
 		   $pkg_logfile ) if !$main::nolog && $Sbuild::Conf::mailto;
 	undef $main::binNMU_name;
 }

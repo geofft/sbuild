@@ -253,7 +253,7 @@ $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
 $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
 # variables for scripts:
-open_log();
+open_log($main::distribution);
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
@@ -270,7 +270,7 @@ foreach $pkgv (@ARGV) {
 	$pkgv =~ s/\.dsc$//;
 	(my $pkg = $pkgv) =~ s/_.*$//;
 	$pkg =~ s/^\.\///;
-	next if !open_pkg_log( $pkgv );
+	next if !open_pkg_log( $pkgv, $main::distribution );
 
 	if (!begin_session($main::distribution)) {
 		print PLOG "Skipping $pkg\n";
