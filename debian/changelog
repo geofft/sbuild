@@ -5,11 +5,15 @@ sbuild (0.44) UNRELEASED; urgency=low
       chroots without a suffix (Closes: #360124).
     - Use the new modules Sbuild::Chroot, Sbuild::Conf and Sbuild::Log.
       The functions moved into the modules have been removed.
+    - Import needed module functions into the local namespace, to avoid
+      long namespace prefixes on functions.
   * Sbuild.pm: Add basename function.
-  * Sbuild/Chroot.pm: New perl module for chroot operations.  It contains
-    the functions begin_session, end_session, log_command,
-    get_command_internal, get_command, run_command, exec_command,
-    get_apt_command_internal, get_apt_command and run_apt_command.
+  * Sbuild/Chroot.pm:
+    - New perl module for chroot operations.  It contains the functions
+      begin_session, end_session, log_command, get_command_internal,
+      get_command, run_command, exec_command, get_apt_command_internal,
+      get_apt_command and run_apt_command.
+    - Don't export init and log_command.
   * Sbuild/Conf.pm: New perl module for configuration variables.  It reads
     the system and user configuration.
   * Sbuild/Log.pm: New perl module for logging.  It contains the functions

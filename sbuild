@@ -31,10 +31,13 @@ use IO::Handle;
 use File::Temp ();
 use FileHandle;
 use Cwd qw(cwd);
-use Sbuild;
-use Sbuild::Conf;
-use Sbuild::Chroot;
-use Sbuild::Log;
+use Sbuild qw(basename binNMU_version version_compare);
+use Sbuild::Conf ();
+use Sbuild::Chroot qw(begin_session end_session log_command
+                      get_command_internal get_command run_command
+                      exec_command get_apt_command_internal
+                      get_apt_command run_apt_command);
+use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 
 Sbuild::Conf::init();
 
@@ -249,7 +252,7 @@ $Sbuild::Conf::maintainer_name=$Sbuild::Conf::uploader_name if defined $Sbuild::
 $Sbuild::Conf::maintainer_name=$Sbuild::Conf::key_id if defined $Sbuild::Conf::key_id;
 
 # variables for scripts:
-Sbuild::Log::open_log();
+open_log();
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
@@ -266,9 +269,9 @@ foreach $pkgv (@ARGV) {
 	$pkgv =~ s/\.dsc$//;
 	(my $pkg = $pkgv) =~ s/_.*$//;
 	$pkg =~ s/^\.\///;
-	next if !Sbuild::Log::open_pkg_log( $pkgv );
+	next if !open_pkg_log( $pkgv );
 
-	if (!Sbuild::Chroot::begin_session()) {
+	if (!begin_session()) {
 		print PLOG "Skipping $pkg\n";
 		$main::pkg_status = "skipped";
 		goto cleanup_close;
@@ -296,7 +299,7 @@ foreach $pkgv (@ARGV) {
 		goto cleanup_packages;
 	}
 
-	my $dscbase = Sbuild::basename( $dscfile );
+	my $dscbase = basename( $dscfile );
 	$main::pkg_status = "successful" if build( $dscbase, $pkgv );
 	chdir( $main::cwd );
 	write_jobs_file( $main::pkg_status );
@@ -318,9 +321,9 @@ foreach $pkgv (@ARGV) {
 	analyze_fail_stage( $pkgv );
 	write_jobs_file( $main::pkg_status );
 
-	Sbuild::Chroot::end_session();
+	end_session();
 
-	Sbuild::Log::close_pkg_log( $pkgv );
+	close_pkg_log( $pkgv );
 	$main::current_job = "";
 	if ( $main::batchmode and (-f "$main::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
@@ -328,7 +331,7 @@ foreach $pkgv (@ARGV) {
 }
 write_jobs_file();
 
-Sbuild::Log::close_log();
+close_log();
 unlink( $main::jobs_file ) if $main::batchmode;
 unlink( "SBUILD-FINISHED" ) if $main::batchmode;
 if ($Sbuild::Conf::sbuild_mode eq "user") {
@@ -632,7 +635,7 @@ sub build {
 		}
 		my $tree_version = $1;
 		my $cmp_version = ($main::binNMU && -f "$dir/debian/.sbuild-binNMU-done") ?
-			Sbuild::binNMU_version($version,$main::binNMUver) : $version;
+			binNMU_version($version,$main::binNMUver) : $version;
 		if ($tree_version ne $cmp_version) {
 			print PLOG "The unpacked source tree $dir is version ".
 					   "$tree_version, not wanted $cmp_version!\n";
@@ -673,7 +676,7 @@ sub build {
 			close( F );
 			$firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 			my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-			my $NMUversion = Sbuild::binNMU_version($version,$main::binNMUver);
+			my $NMUversion = binNMU_version($version,$main::binNMUver);
 			chomp( my $date = `822-date` );
 			if (!open( F, ">debian/changelog" )) {
 				print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
@@ -823,7 +826,7 @@ EOF
 	}
 	else {
 		$changes = "${pkg}_".
-			($main::binNMU ? Sbuild::binNMU_version($sversion,$main::binNMUver) : $sversion).
+			($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
 			"_$main::arch.changes";
 		my @cfiles;
 		if (-r "$main::chroot_build_dir$changes") {
@@ -862,16 +865,16 @@ EOF
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
 				    if (! -f $_) {
-					    print PLOG "ERROR: Package claims to have built ".Sbuild::basename($_).", but did not.  This is a bug in the packaging.\n";
+					    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
 					    next;
 				    }
 				    if (/_all.u?deb$/ and not $main::build_arch_all) {
-					    print PLOG "ERROR: Package builds ".Sbuild::basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+					    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
 					    unlink($_);
 					    next;
 				    }
 				    system "mv", "$main::chroot_build_dir$changes", "."
-					    and print PLOG "ERROR: Could not move ".Sbuild::basename($_)." to .\n";
+					    and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 				}
 			}
 			close( F );
@@ -1508,7 +1511,7 @@ sub filter_dependencies {
 			if ($stat->{'Installed'}) {
 				my ($rel, $vers) = ($dep->{'Rel'}, $dep->{'Version'});
 				my $ivers = $stat->{'Version'};
-				if (!$rel || Sbuild::version_compare( $ivers, $rel, $vers )){
+				if (!$rel || version_compare( $ivers, $rel, $vers )){
 					print "$name: neg dep, installed, not versioned or ",
 						  "version relation satisfied --> remove\n" if $main::debug;
 					print PLOG "$name: installed (negative dependency)";
@@ -1543,7 +1546,7 @@ sub filter_dependencies {
 				next;
 			}
 			my $ivers = $stat->{'Version'};
-			if (!$rel || Sbuild::version_compare( $ivers, $rel, $vers )) {
+			if (!$rel || version_compare( $ivers, $rel, $vers )) {
 				print "$name: pos dep, installed, no versioned dep or ",
 					  "version ok\n" if $main::debug;
 				print PLOG "$name: already installed ($ivers";
@@ -1558,7 +1561,7 @@ sub filter_dependencies {
 			print PLOG "$name: non-matching version installed ",
 				  "($ivers ! $rel $vers)\n";
 			if ($rel =~ /^</ ||
-				($rel eq '=' && Sbuild::version_compare($ivers, '>>', $vers))) {
+				($rel eq '=' && version_compare($ivers, '>>', $vers))) {
 				print "$name: would be a downgrade!\n" if $main::debug;
 				print PLOG "$name: would have to downgrade!\n";
 			}
@@ -1616,8 +1619,8 @@ sub check_dependencies {
 				if (!$dep->{'Rel'}) {
 					$fail .= "$name(still installed) ";
 				}
-				elsif (Sbuild::version_compare($stat->{'Version'}, $dep->{'Rel'},
-								   $dep->{'Version'})) {
+				elsif (version_compare($stat->{'Version'}, $dep->{'Rel'},
+						       $dep->{'Version'})) {
 					$fail .= "$name(inst $stat->{'Version'} $dep->{'Rel'} ".
 							 "conflicted $dep->{'Version'})\n";
 				}
@@ -1634,8 +1637,8 @@ sub check_dependencies {
 					$f .= "$name(missing) ";
 				}
 				elsif ($d->{'Rel'} &&
-					   !Sbuild::version_compare( $stat->{'Version'}, $d->{'Rel'},
-									 $d->{'Version'} )) {
+					   !version_compare( $stat->{'Version'}, $d->{'Rel'},
+							     $d->{'Version'} )) {
 					$f =~ s/ $/\|/ if $f;
 					$f .= "$name(inst $stat->{'Version'} ! $d->{'Rel'} ".
 						  "wanted $d->{'Version'}) ";
@@ -2849,9 +2852,9 @@ sub shutdown {
 	# close logs and send mails
 	if ( $main::current_job ) {
 		fixup_pkgv( \$main::current_job );
-		Sbuild::Log::close_pkg_log( $main::binNMU_name || $main::current_job );
+		close_pkg_log( $main::binNMU_name || $main::current_job );
 	}
-	Sbuild::Log::close_log();
+	close_log();
 	unlink( $main::jobs_file ) if $main::batchmode;
 	$? = 0; $! = 0;
 	if ($Sbuild::Conf::sbuild_mode eq "user") {

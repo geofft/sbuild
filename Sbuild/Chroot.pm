@@ -34,9 +34,9 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(init begin_session end_session log_command
-		 get_command_internal get_command run_command
-		 exec_command get_apt_command_internal get_apt_command
+    @EXPORT = qw(begin_session end_session get_command_internal
+		 get_command run_command exec_command
+		 get_apt_command_internal get_apt_command
 		 run_apt_command current);
 }
 
