@@ -24,6 +24,7 @@ package Sbuild::Conf;
 
 use strict;
 use warnings;
+use Cwd qw(cwd);
 
 BEGIN {
     use Exporter ();
@@ -31,22 +32,27 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME $username $source_dependencies $mailprog $dpkg $sudo
-		 $schroot $schroot_options $fakeroot $apt_get
-		 $apt_cache $dpkg_source $md5sum $build_env_cmnd
-		 $pgp_options $log_dir $mailto $mailfrom
-		 $purge_build_directory @toolchain_regex
-		 $stalled_pkg_timeout $srcdep_lock_dir
-		 $srcdep_lock_wait $chroot_only $chroot_mode
-		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
-		 $debug $force_orig_source
+    @EXPORT = qw($HOME $cwd $username $verbose $nolog
+		 $source_dependencies $mailprog $dpkg $sudo $schroot
+		 $schroot_options $fakeroot $apt_get $apt_cache
+		 $dpkg_source $md5sum $build_env_cmnd $pgp_options
+		 $log_dir $mailto $mailfrom $purge_build_directory
+		 @toolchain_regex $stalled_pkg_timeout
+		 $srcdep_lock_dir $srcdep_lock_wait $chroot_only
+		 $chroot_mode @ignore_watches_no_build_deps $build_dir
+		 $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path);
 }
 
+# Originally from the main namespace.
 (our $HOME = $ENV{'HOME'})
 	or die "HOME not defined in environment!\n";
 our $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
-# defaults:
+our $cwd = cwd();
+our $verbose = 0;
+our $nolog = 0;
+
+# Defaults.
 our $source_dependencies = "/etc/source-dependencies";
 our $mailprog = "/usr/sbin/sendmail";
 our $dpkg = "/usr/bin/dpkg";

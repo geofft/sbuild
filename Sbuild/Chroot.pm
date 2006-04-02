@@ -278,7 +278,7 @@ sub get_command {
 	}
 
 	if ($chroot != 0) {
-		chdir($main::cwd);
+		chdir($Sbuild::Conf::cwd);
 	}
 	return $cmdline;
 }
@@ -299,7 +299,7 @@ sub run_command {
 	}
 
 	if ($chroot != 0) {
-		chdir($main::cwd);
+		chdir($Sbuild::Conf::cwd);
 	}
 	return system($cmdline);
 }
@@ -318,7 +318,7 @@ sub exec_command {
 	}
 
 	if ($chroot != 0) {
-		chdir($main::cwd);
+		chdir($Sbuild::Conf::cwd);
 	}
 	exec $cmdline;
 }
@@ -346,7 +346,7 @@ sub get_apt_command {
 
 	my $cmdline = get_command($aptcommand, $user, $chroot, $priority);
 
-	chdir($main::cwd);
+	chdir($Sbuild::Conf::cwd);
 	return $cmdline;
 }
 
@@ -363,7 +363,7 @@ sub run_apt_command {
 		$chroot = 1;
 	}
 
-	chdir($main::cwd);
+	chdir($Sbuild::Conf::cwd);
 	return run_command($aptcommand, $user, $chroot, $priority);
 }
 

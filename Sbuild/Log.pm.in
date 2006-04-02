@@ -50,7 +50,7 @@ sub open_log {
 
 	my $date = strftime("%Y%m%d-%H%M",localtime);
 
-	if ($main::nolog) {
+	if ($Sbuild::Conf::nolog) {
 		open( main::LOG, ">&STDOUT" );
 		open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 		select( main::LOG );
@@ -65,7 +65,7 @@ sub open_log {
 	$F->autoflush(1);
 	$main_logfile = $F->filename;
 
-	if ($main::verbose) {
+	if ($Sbuild::Conf::verbose) {
 		my $pid;
 		($pid = open( main::LOG, "|-"));
 		if (!defined $pid) {
@@ -87,7 +87,7 @@ sub open_log {
 	undef $F;
 	main::LOG->autoflush(1);
 	select(main::LOG);
-	if ($main::verbose) {
+	if ($Sbuild::Conf::verbose) {
 		open( SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
 		open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
 	}
@@ -103,18 +103,18 @@ sub close_log {
 	close( STDERR );
 	close( STDOUT );
 	close( main::LOG );
-	if ($main::verbose) {
+	if ($Sbuild::Conf::verbose) {
 		open( STDOUT, ">&SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
 		open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
 		close (SAVED_STDOUT);
 		close (SAVED_STDERR);
 	}
-	if (!$main::nolog && !$main::verbose &&
+	if (!$Sbuild::Conf::nolog && !$Sbuild::Conf::verbose &&
 		-s $main_logfile && $Sbuild::Conf::mailto) {
 		send_mail( $Sbuild::Conf::mailto, "Log from sbuild $date",
 				   $main_logfile ) if $Sbuild::Conf::mailto;
 	}
-	elsif (!$main::nolog && ! -s $main_logfile) {
+	elsif (!$Sbuild::Conf::nolog && ! -s $main_logfile) {
 		unlink( $main_logfile );
 	}
 }
@@ -124,7 +124,7 @@ sub open_pkg_log {
 	my $pkg = shift;
 	$pkg_distribution = shift;
 
-	if ($main::nolog) {
+	if ($Sbuild::Conf::nolog) {
 		open( main::PLOG, ">&STDOUT" );
 	}
 	else {
@@ -139,7 +139,7 @@ sub open_pkg_log {
 		log_symlink($pkg_logfile,
 			    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
 		log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
-		if ($main::verbose) {
+		if ($Sbuild::Conf::verbose) {
 			my $pid;
 			($pid = open( main::PLOG, "|-"));
 			if (!defined $pid) {
@@ -194,7 +194,7 @@ sub close_pkg_log {
 	send_mail( $Sbuild::Conf::mailto,
 		   "Log for $main::pkg_status build of ".
 		   ($main::binNMU_name || $pkg)." (dist=$pkg_distribution)",
-		   $pkg_logfile ) if !$main::nolog && $Sbuild::Conf::mailto;
+		   $pkg_logfile ) if !$Sbuild::Conf::nolog && $Sbuild::Conf::mailto;
 	undef $main::binNMU_name;
 }
 

@@ -19,6 +19,9 @@ sbuild (0.44) UNRELEASED; urgency=low
       $conf::srcdep_lock_dir (which is still used to set when the chroot
       is set up).
     - Pass $main::distribution to open_log and open_pkg_log.
+    - Remove $main::cwd, $main::nolog and $main::verbose, now provided by
+      Sbuild::Conf.  They are imported from Sbuild::Conf for backward
+      compatibility.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -42,6 +45,8 @@ sbuild (0.44) UNRELEASED; urgency=low
       and user configuration.
     - Add $debug.
     - Add $username.
+    - Add $cwd, $nolog and $verbose.  They exported and used by the other
+      modules in place of the variables in the main package.
   * Sbuild/Log.pm:
     - New perl module for logging.  It contains the functions open_log,
       close_log, open_pkg_log, close_pkg_log, add_time_entry,
