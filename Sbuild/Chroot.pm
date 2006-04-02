@@ -87,7 +87,7 @@ sub _get_schroot_info {
 		$tmp{'Session Managed'} = 0;
 	}
 
-	if ($main::debug) {
+	if ($Sbuild::Conf::debug) {
 		print STDERR "Found schroot chroot: $chroot\n";
 		foreach (sort keys %tmp) {
 			print STDERR "  $_ $tmp{$_}\n";
@@ -105,7 +105,8 @@ sub init {
 		if (-d $tmp{'Location'}) {
 			my $name = $_;
 			$name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;
-			print STDERR "Found chroot $name\n" if $main::debug;
+			print STDERR "Found chroot $name\n"
+				if $Sbuild::Conf::debug;
 			$chroots{$name} = \%tmp;
 		}
 	}
@@ -118,7 +119,8 @@ sub init {
 		while (<CHROOTS>) {
 			chomp;
 			my $chroot = $_;
-			print STDERR "Getting info for $chroot chroot" if $main::debug;
+			print STDERR "Getting info for $chroot chroot"
+				if $Sbuild::Conf::debug;
 			_get_schroot_info($chroot);
 		}
 		close CHROOTS or die "Can't close schroot pipe";
@@ -193,7 +195,7 @@ sub begin_session {
 			return 0;
 		}
 		print STDERR "Setting up chroot $distribution (session id $schroot_session)\n"
-			if $main::debug;
+			if $Sbuild::Conf::debug;
 		_get_schroot_info($schroot_session);
 		_setup_options($schroot_session);
 		$current = $chroots{"$schroot_session"};
@@ -220,7 +222,7 @@ sub log_command {
 	my $msg = shift;      # Message to log
 	my $priority = shift; # Priority of log message
 
-	if ((defined($priority) && $priority >= 1) || $main::debug) {
+	if ((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) {
 		$msg =~ s/\Q$$current{'APT Options'}\E/CHROOT_APT_OPTIONS/g;
 		print STDERR "$msg\n";
 	}
@@ -268,7 +270,7 @@ sub get_command {
 	my $priority = shift; # Priority of log message
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	if ($main::debug) {
+	if ($Sbuild::Conf::debug) {
 		log_command($cmdline, $priority);
 	} else {
 		log_command($command, $priority);
@@ -289,7 +291,7 @@ sub run_command {
 	my $priority = shift; # Priority of log message
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	if ($main::debug) {
+	if ($Sbuild::Conf::debug) {
 		log_command($cmdline, $priority);
 	} else {
 		log_command($command, $priority);
@@ -308,7 +310,7 @@ sub exec_command {
 	my $priority = shift; # Priority of log message
 	my $cmdline = get_command_internal($command, $user, $chroot);
 
-	if ($main::debug) {
+	if ($Sbuild::Conf::debug) {
 		log_command($cmdline, $priority);
 	} else {
 		log_command($command, $priority);

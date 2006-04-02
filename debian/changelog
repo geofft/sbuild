@@ -8,6 +8,7 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Import needed module functions into the local namespace, to avoid
       long namespace prefixes on functions.
     - Remove $main::chroot_apt_options.
+    - Move $main::debug to Sbuild::Conf.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -20,8 +21,11 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Add an "APT Options" attribute to the chroot hash, to replace
       $main::chroot_apt_options.
     - Use STDERR instead of PLOG (which may not be available).
-  * Sbuild/Conf.pm: New perl module for configuration variables.  It reads
-    the system and user configuration.
+    - Replace $main::debug with $Sbuild::Conf::debug.
+  * Sbuild/Conf.pm:
+    - New perl module for configuration variables.  It reads the system
+      and user configuration.
+    - Add $debug.
   * Sbuild/Log.pm: New perl module for logging.  It contains the functions
     open_log, close_log, open_pkg_log, close_pkg_log, add_time_entry,
     add_space_entry, send_mail and log_symlink.

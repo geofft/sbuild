@@ -39,8 +39,8 @@ BEGIN {
 		 $stalled_pkg_timeout $srcdep_lock_dir
 		 $srcdep_lock_wait $chroot_only $chroot_mode
 		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
-		 $force_orig_source %individual_stalled_pkg_timeout
-		 $path);
+		 $debug $force_orig_source
+		 %individual_stalled_pkg_timeout $path);
 }
 
 (our $HOME = $ENV{'HOME'})
@@ -72,6 +72,7 @@ our $chroot_mode = "split";
 our @ignore_watches_no_build_deps = qw();
 our $build_dir = undef;
 our $sbuild_mode = "buildd";
+our $debug = 0;
 our $force_orig_source = 0;
 our %individual_stalled_pkg_timeout = ();
 our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";

@@ -55,7 +55,6 @@ $main::distribution = "unstable";
 
 chomp( $main::arch = `$Sbuild::Conf::dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
-$main::debug = 0;
 $main::verbose = 0;
 $main::batchmode = 0;
 $main::auto_giveback = 0;
@@ -103,7 +102,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		}
 	}
 	elsif (/^-D$/ || /^--debug$/) {
-		$main::debug++;
+		$Sbuild::Conf::debug++;
 	}
 	elsif (/^-b$/ || /^--batch$/) {
 		$main::batchmode = 1;
@@ -137,7 +136,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::distribution = "experimental" if $main::distribution eq "e";
 		$main::override_distribution = 1;
 		print "Selected distribution $main::distribution\n"
-			if $main::debug;
+			if $Sbuild::Conf::debug;
 	}
 	elsif (/^-p/ || /^--purge/) {
 		if (/^-p(.)/ || /^--purge=(.)/) {
@@ -496,7 +495,7 @@ sub fetch_source_files {
 		}
 	}
 	print "Arch check ok ($main::arch included in $dscarchs)\n"
-		if $main::debug;
+		if $Sbuild::Conf::debug;
 
 	@main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
 				      $build_conflicts,$build_conflicts_indep);
@@ -947,7 +946,7 @@ sub apply_patches {
 		if ($name =~ /^\*/ && exists $main::specials{$name}->{'patch'}) {
 			if (exists $main::specials{$name}->{'patchcond'}) {
 				print "Testing condition for $name patch:\n"
-					if $main::debug;
+					if $Sbuild::Conf::debug;
 				if (run_script("+e",$main::specials{$name}->{'patchcond'})!=0){
 					print PLOG "Condition for $name patch not true -- ",
 								"not applying\n" if $name !~ /^\*\*/;
@@ -1017,7 +1016,7 @@ sub remove_files {
 
 	foreach (@_) {
 		unlink $_;
-		print "Removed $_\n" if $main::debug;
+		print "Removed $_\n" if $Sbuild::Conf::debug;
 	}
 }
 
@@ -1030,14 +1029,14 @@ sub install_deps {
 	if (exists $main::deps{$pkg}) {
 		$dep = $main::deps{$pkg};
 	}
-	if ($main::debug) {
+	if ($Sbuild::Conf::debug) {
 		print "Source dependencies of $pkg: ", format_deps(@$dep), "\n";
 	}
 
   repeat:
 	lock_file( "$main::ilock_file", 1 );
 	
-	print "Filtering dependencies\n" if $main::debug;
+	print "Filtering dependencies\n" if $Sbuild::Conf::debug;
 	if (!filter_dependencies( $dep, \@positive, \@negative, \@special )) {
 		print PLOG "Package installation not possible\n";
 		unlock_file( "$main::ilock_file" );
@@ -1074,17 +1073,17 @@ sub install_deps {
 	}
 
 	my $install_start_time = time;
-	print "Installing positive dependencies: @positive\n" if $main::debug;
+	print "Installing positive dependencies: @positive\n" if $Sbuild::Conf::debug;
 	if (!run_apt( "-y", \@instd, \@rmvd, @positive )) {
 		print PLOG "Package installation failed\n";
 		# try to reinstall removed packages
 		print PLOG "Trying to reinstall removed packages:\n";
-		print "Reinstalling removed packages: @rmvd\n" if $main::debug;
+		print "Reinstalling removed packages: @rmvd\n" if $Sbuild::Conf::debug;
 		my (@instd2, @rmvd2);
 		print PLOG "Failed to reinstall removed packages!\n"
 			if !run_apt( "-y", \@instd2, \@rmvd2, @rmvd );
-		print "Installed were: @instd2\n" if $main::debug;
-		print "Removed were: @rmvd2\n" if $main::debug;
+		print "Installed were: @instd2\n" if $Sbuild::Conf::debug;
+		print "Removed were: @rmvd2\n" if $Sbuild::Conf::debug;
 		# remove additional packages
 		print PLOG "Trying to uninstall newly installed packages:\n";
 		uninstall_debs( $main::chroot_dir ? "purge" : "remove", @instd );
@@ -1094,7 +1093,7 @@ sub install_deps {
 	set_installed( @instd );
 	set_removed( @rmvd );
 	
-	print "Removing negative dependencies: @negative\n" if $main::debug;
+	print "Removing negative dependencies: @negative\n" if $Sbuild::Conf::debug;
 	if (!uninstall_debs( $main::chroot_dir ? "purge" : "remove", @negative )) {
 		print PLOG "Removal of packages failed\n";
 		unlock_file( "$main::ilock_file" );
@@ -1266,16 +1265,16 @@ sub uninstall_deps {
 	lock_file( "$main::ilock_file", 1 );
 
 	@pkgs = keys %{$main::changes->{'removed'}};
-	print "Reinstalling removed packages: @pkgs\n" if $main::debug;
+	print "Reinstalling removed packages: @pkgs\n" if $Sbuild::Conf::debug;
 	print PLOG "Failed to reinstall removed packages!\n"
 		if !run_apt( "-y", \@instd, \@rmvd, @pkgs );
-	print "Installed were: @instd\n" if $main::debug;
-	print "Removed were: @rmvd\n" if $main::debug;
+	print "Installed were: @instd\n" if $Sbuild::Conf::debug;
+	print "Removed were: @rmvd\n" if $Sbuild::Conf::debug;
 	unset_removed( @instd );
 	unset_installed( @rmvd );
 
 	@pkgs = keys %{$main::changes->{'installed'}};
-	print "Removing installed packages: @pkgs\n" if $main::debug;
+	print "Removing installed packages: @pkgs\n" if $Sbuild::Conf::debug;
 	print PLOG "Failed to remove installed packages!\n"
 		if !uninstall_debs( "purge", @pkgs );
 	unset_installed( @pkgs );
@@ -1291,7 +1290,7 @@ sub uninstall_debs {
 	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 	
 	return 1 if !@_;
-	print "Uninstalling packages: @_\n" if $main::debug;
+	print "Uninstalling packages: @_\n" if $Sbuild::Conf::debug;
 
 	my $command = get_command("$Sbuild::Conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 1);
   repeat:
@@ -1323,7 +1322,7 @@ sub uninstall_debs {
 sub undo_specials {
 	my $sp;
 
-	print "Running post scripts of special dependencies:\n" if $main::debug;
+	print "Running post scripts of special dependencies:\n" if $Sbuild::Conf::debug;
 	foreach $sp (keys %{$main::changes->{'specials'}}) {
 		print PLOG "Running post script for $sp\n";
 		if (run_script( "-e", $main::specials{$sp}->{'post'} ) != 0) {
@@ -1372,7 +1371,7 @@ sub run_apt {
 	}
 	while( <PIPE> ) {
 		$msgs .= $_;
-		print PLOG $_ if $mode ne "-s" || $main::debug;
+		print PLOG $_ if $mode ne "-s" || $Sbuild::Conf::debug;
 	}
 	close( PIPE );
 	$status = $?;
@@ -1495,10 +1494,10 @@ sub filter_dependencies {
 			my $doit = 1;
 			if (exists $main::specials{$name}->{'condition'}) {
 				print "Testing condition for special dependency $name:\n"
-					if $main::debug;
+					if $Sbuild::Conf::debug;
 				if (run_script("+e",$main::specials{$name}->{'condition'})!=0){
 					print "Condition false -> not running scripts\n"
-						if $main::debug;
+						if $Sbuild::Conf::debug;
 					$doit = 0;
 				}
 			}
@@ -1512,7 +1511,7 @@ sub filter_dependencies {
 				my $ivers = $stat->{'Version'};
 				if (!$rel || version_compare( $ivers, $rel, $vers )){
 					print "$name: neg dep, installed, not versioned or ",
-						  "version relation satisfied --> remove\n" if $main::debug;
+						  "version relation satisfied --> remove\n" if $Sbuild::Conf::debug;
 					print PLOG "$name: installed (negative dependency)";
 					print PLOG " (bad version $ivers $rel $vers)"
 						if $rel;
@@ -1525,7 +1524,7 @@ sub filter_dependencies {
 				}
 			}
 			else {
-				print "$name: neg dep, not installed\n" if $main::debug;
+				print "$name: neg dep, not installed\n" if $Sbuild::Conf::debug;
 				print PLOG "$name: already deinstalled\n";
 			}
 			next;
@@ -1539,7 +1538,7 @@ sub filter_dependencies {
 				($d->{'Package'}, $d->{'Rel'}, $d->{'Version'});
 			my $stat = $status->{$name};
 			if (!$stat->{'Installed'}) {
-				print "$name: pos dep, not installed\n" if $main::debug;
+				print "$name: pos dep, not installed\n" if $Sbuild::Conf::debug;
 				print PLOG "$name: missing\n";
 				$installable = $name if !$installable;
 				next;
@@ -1547,7 +1546,7 @@ sub filter_dependencies {
 			my $ivers = $stat->{'Version'};
 			if (!$rel || version_compare( $ivers, $rel, $vers )) {
 				print "$name: pos dep, installed, no versioned dep or ",
-					  "version ok\n" if $main::debug;
+					  "version ok\n" if $Sbuild::Conf::debug;
 				print PLOG "$name: already installed ($ivers";
 				print PLOG " $rel $vers is satisfied"
 					if $rel;
@@ -1556,12 +1555,12 @@ sub filter_dependencies {
 				last;
 			}
 			print "$name: vers dep, installed $ivers ! $rel $vers\n"
-				if $main::debug;
+				if $Sbuild::Conf::debug;
 			print PLOG "$name: non-matching version installed ",
 				  "($ivers ! $rel $vers)\n";
 			if ($rel =~ /^</ ||
 				($rel eq '=' && version_compare($ivers, '>>', $vers))) {
-				print "$name: would be a downgrade!\n" if $main::debug;
+				print "$name: would be a downgrade!\n" if $Sbuild::Conf::debug;
 				print PLOG "$name: would have to downgrade!\n";
 			}
 			else {
@@ -1570,11 +1569,11 @@ sub filter_dependencies {
 		}
 		if (!$is_satisfied) {
 			if ($upgradeable) {
-				print "using $upgradeable for upgrade\n" if $main::debug;
+				print "using $upgradeable for upgrade\n" if $Sbuild::Conf::debug;
 				push( @$pos_list, $upgradeable );
 			}
 			elsif ($installable) {
-				print "using $installable for install\n" if $main::debug;
+				print "using $installable for install\n" if $Sbuild::Conf::debug;
 				push( @$pos_list, $installable );
 			}
 			else {
@@ -1672,7 +1671,7 @@ sub get_dpkg_status {
 
 	return () if !@_;
 	print "Requesting dpkg status for packages: @interest\n"
-		if $main::debug;
+		if $Sbuild::Conf::debug;
 	if (!open( STATUS, "<$main::chroot_dir/var/lib/dpkg/status" )) {
 		print PLOG "Can't open $main::chroot_dir/var/lib/dpkg/status: $!\n";
 		return ();
@@ -1689,7 +1688,7 @@ sub get_dpkg_status {
 					   "no Package: field\n";
 			next;
 		}
-		print "$pkg ($version) status: $status\n" if $main::debug >= 2;
+		print "$pkg ($version) status: $status\n" if $Sbuild::Conf::debug >= 2;
 		if (!$status) {
 			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
 					   "no Status: field for package $pkg\n";
@@ -1725,10 +1724,10 @@ sub run_script {
 	my $x_mode = "";
 	my $script = shift;
 
-	if ($main::debug >= 2) {
+	if ($Sbuild::Conf::debug >= 2) {
 		$x_mode = "set -x -v\n";
 	}
-	elsif ($main::debug)  {
+	elsif ($Sbuild::Conf::debug)  {
 		print "Running script:\n  ",
 		join( "\n  ", split( "\n", "set $e_mode\n$script" )), "\n";
 	}
@@ -1748,7 +1747,7 @@ sub run_script {
 		die "Can't exec /bin/sh: $!\n";
 	}
 	wait;
-	print "Script return value: $?\n" if $main::debug;
+	print "Script return value: $?\n" if $Sbuild::Conf::debug;
 	return $?
 }
 
@@ -1763,7 +1762,7 @@ sub read_deps {
 		or return;
 	$fname = substr( $fname, 1 );
 	print "Reading source dependencies from $fname\n"
-		if $main::debug;
+		if $Sbuild::Conf::debug;
 	while( <F> ) {
 		chomp;
 		next if /^\s*$/ || /^\s*#/;
@@ -1928,7 +1927,7 @@ sub merge_pkg_build_deps {
 	my $deps = $depends . ", " . $conflicts;
 	$deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
 	@{$main::deps{$pkg}} = @l;
-	print "Merging pkg deps: $deps\n" if $main::debug;
+	print "Merging pkg deps: $deps\n" if $Sbuild::Conf::debug;
 	parse_one_srcdep( $pkg, $deps, \%main::deps );
 
 	my $missing = (cmp_dep_lists( $old_deps, $main::deps{$pkg} ))[1];
@@ -1942,7 +1941,7 @@ sub merge_pkg_build_deps {
 	my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
 	$exp_essential = expand_dependencies( $main::deps{'ESSENTIAL'} );
 	print "Dependency-expanded build essential packages:\n",
-		  format_deps(@$exp_essential), "\n" if $main::debug;
+		  format_deps(@$exp_essential), "\n" if $Sbuild::Conf::debug;
 
 	# populate toolchain_pkgs from toolchain_regexes and essential packages.
 	@main::toolchain_pkgs = ();
@@ -1964,12 +1963,12 @@ sub merge_pkg_build_deps {
 	# over all providing packages
 	$exp_pkgdeps = expand_virtuals( $main::deps{$pkg} );
 	print "Provided-expanded build deps:\n",
-		  format_deps(@$exp_pkgdeps), "\n" if $main::debug;
+		  format_deps(@$exp_pkgdeps), "\n" if $Sbuild::Conf::debug;
 
 	# now expand dependencies of package build deps
 	$exp_pkgdeps = expand_dependencies( $exp_pkgdeps );
 	print "Dependency-expanded build deps:\n",
-		  format_deps(@$exp_pkgdeps), "\n" if $main::debug;
+		  format_deps(@$exp_pkgdeps), "\n" if $Sbuild::Conf::debug;
 	$main::additional_deps = $exp_pkgdeps;
 
 	# remove missing central deps that are dependencies of build deps
@@ -2428,11 +2427,11 @@ sub write_srcdep_lock_file {
 		print "Warning: cannot create srcdep lock file $f: $!\n";
 		return;
 	}
-	print "Writing srcdep lock file $f:\n" if $main::debug;
+	print "Writing srcdep lock file $f:\n" if $Sbuild::Conf::debug;
 
 	my $user = getpwuid($<);
 	print F "$main::current_job $$ $user\n";
-	print "Job $main::current_job pid $$ user $user\n" if $main::debug;
+	print "Job $main::current_job pid $$ user $user\n" if $Sbuild::Conf::debug;
 	foreach (@$deps) {
 		my $name = $_->{'Package'};
 		# add special deps only if they affect global state ("global" sub)
@@ -2440,7 +2439,7 @@ sub write_srcdep_lock_file {
 			    (!isin( $name, @$specials ) ||
 				 $main::specials{$name}->{'global'} !~ /yes/m);
 		print F ($_->{'Neg'} ? "!" : ""), "$name\n";
-		print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $main::debug;
+		print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $Sbuild::Conf::debug;
 	}
 	close( F );
 }
@@ -2481,12 +2480,12 @@ sub check_srcdep_conflicts {
 		}
 
 		print "Reading srclock file $file by job $job user $user\n"
-			if $main::debug;
+			if $Sbuild::Conf::debug;
 
 		while( <F> ) {
 			my ($neg, $pkg) = /^(!?)(\S+)/;
 			print "Found ", ($neg ? "neg " : ""), "entry $pkg\n"
-				if $main::debug;
+				if $Sbuild::Conf::debug;
 
 			if ($pkg =~ /^\*/) {
 				print PLOG "Build of $job by $user (pid $pid) has ",
@@ -2522,10 +2521,10 @@ sub check_srcdep_conflicts {
 
 	my @conflict_builds = keys %conflict_builds;
 	if (@conflict_builds) {
-		print "Srcdep conflicts with: @conflict_builds\n" if $main::debug;
+		print "Srcdep conflicts with: @conflict_builds\n" if $Sbuild::Conf::debug;
 	}
 	else {
-		print "No srcdep conflicts\n" if $main::debug;
+		print "No srcdep conflicts\n" if $Sbuild::Conf::debug;
 	}
 	return @conflict_builds;
 }
@@ -2533,7 +2532,7 @@ sub check_srcdep_conflicts {
 sub remove_srcdep_lock_file {
 	my $f = "$Sbuild::Conf::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 
-	print "Removing srcdep lock file $f\n" if $main::debug;
+	print "Removing srcdep lock file $f\n" if $Sbuild::Conf::debug;
 	if (!unlink( $f )) {
 		print "Warning: cannot remove srcdep lock file $f: $!\n"
 			if $! != ENOENT;
@@ -2561,13 +2560,13 @@ sub prepare_watches {
 	undef %main::this_watches;
 	foreach $pkg (keys %Sbuild::Conf::watches) {
 		if (isin( $pkg, @dep_on )) {
-			print "Excluding from watch: $pkg\n" if $main::debug;
+			print "Excluding from watch: $pkg\n" if $Sbuild::Conf::debug;
 			next;
 		}
 		foreach $prg (@{$Sbuild::Conf::watches{$pkg}}) {
 			$prg = "/usr/bin/$prg" if $prg !~ m,^/,;
 			$main::this_watches{"$main::chroot_dir$prg"} = $pkg;
-			print "Will watch for $prg ($pkg)\n" if $main::debug;
+			print "Will watch for $prg ($pkg)\n" if $Sbuild::Conf::debug;
 		}
 	}
 }
@@ -2577,7 +2576,7 @@ sub check_watches {
 
 	foreach $prg (keys %main::this_watches) {
 		if (!(@st = stat( $prg ))) {
-			print "Watch: $prg: stat failed\n" if $main::debug;
+			print "Watch: $prg: stat failed\n" if $Sbuild::Conf::debug;
 			next;
 		}
 		if ($st[8] > $main::build_start_time) {
@@ -2589,7 +2588,7 @@ sub check_watches {
 				   !isin( $pkg, @Sbuild::Conf::ignore_watches_no_build_deps );
 		}
 		else {
-			print "Watch: $prg: untouched\n" if $main::debug;
+			print "Watch: $prg: untouched\n" if $Sbuild::Conf::debug;
 		}
 	}
 	return if !%used;
@@ -2658,7 +2657,7 @@ sub set_installed {
 	foreach (@_) {
 		$main::changes->{'installed'}->{$_} = 1;
 	}
-	print "Added to installed list: @_\n" if $main::debug;
+	print "Added to installed list: @_\n" if $Sbuild::Conf::debug;
 }
 
 sub set_removed {
@@ -2667,17 +2666,17 @@ sub set_removed {
 		if (exists $main::changes->{'installed'}->{$_}) {
 			delete $main::changes->{'installed'}->{$_};
 			$main::changes->{'auto-removed'}->{$_} = 1;
-			print "Note: $_ was installed\n" if $main::debug;
+			print "Note: $_ was installed\n" if $Sbuild::Conf::debug;
 		}
 	}
-	print "Added to removed list: @_\n" if $main::debug;
+	print "Added to removed list: @_\n" if $Sbuild::Conf::debug;
 }
 
 sub unset_installed {
 	foreach (@_) {
 		delete $main::changes->{'installed'}->{$_};
 	}
-	print "Removed from installed list: @_\n" if $main::debug;
+	print "Removed from installed list: @_\n" if $Sbuild::Conf::debug;
 }
 
 sub unset_removed {
@@ -2686,10 +2685,10 @@ sub unset_removed {
 		if (exists $main::changes->{'auto-removed'}->{$_}) {
 			delete $main::changes->{'auto-removed'}->{$_};
 			$main::changes->{'installed'}->{$_} = 1;
-			print "Note: revived $_ to installed list\n" if $main::debug;
+			print "Note: revived $_ to installed list\n" if $Sbuild::Conf::debug;
 		}
 	}
-	print "Removed from removed list: @_\n" if $main::debug;
+	print "Removed from removed list: @_\n" if $Sbuild::Conf::debug;
 }
 
 sub df {
