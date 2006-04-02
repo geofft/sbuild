@@ -9,6 +9,8 @@ sbuild (0.44) UNRELEASED; urgency=low
       long namespace prefixes on functions.
     - Remove $main::chroot_apt_options.
     - Move $main::debug to Sbuild::Conf.
+    - Import Sbuild::Conf into package "conf".  This allows the package
+      name used by upstream to be used for backward compatibility.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
