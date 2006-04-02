@@ -27,6 +27,8 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Use STDERR instead of PLOG (which may not be available).
     - Replace $main::debug with $Sbuild::Conf::debug.
     - Replace $main::username with $Sbuild::Conf::username.
+    - begin_session takes the distribution as its first argument, rather
+      than using $main::distribution.
   * Sbuild/Conf.pm:
     - New perl module for configuration variables.  It reads the system
       and user configuration.

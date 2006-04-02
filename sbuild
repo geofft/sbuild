@@ -271,7 +271,7 @@ foreach $pkgv (@ARGV) {
 	$pkg =~ s/^\.\///;
 	next if !open_pkg_log( $pkgv );
 
-	if (!begin_session()) {
+	if (!begin_session($main::distribution)) {
 		print PLOG "Skipping $pkg\n";
 		$main::pkg_status = "skipped";
 		goto cleanup_close;

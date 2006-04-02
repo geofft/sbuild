@@ -182,10 +182,11 @@ sub _setup_options {
 }
 
 sub begin_session {
+	my $distribution = shift;
+
 	if ($Sbuild::Conf::chroot_mode eq "schroot") {
-		my $distribution = $main::distribution;
-		if (defined($chroots{"${main::distribution}-sbuild"})) {
-			$distribution = "${main::distribution}-sbuild";
+		if (defined($chroots{"${distribution}-sbuild"})) {
+			$distribution = "${distribution}-sbuild";
 		}
         	$schroot_session=`$Sbuild::Conf::schroot -c $distribution --begin-session`;
 		chomp($schroot_session);
@@ -197,10 +198,10 @@ sub begin_session {
 			if $Sbuild::Conf::debug;
 		_get_schroot_info($schroot_session);
 		_setup_options($schroot_session);
-		$current = $chroots{"$schroot_session"};
+		$current = $chroots{$schroot_session};
 	} else {
-		_setup_options($main::distribution);
-		$current = $chroots{"$main::distribution"};
+		_setup_options($distribution);
+		$current = $chroots{$distribution};
 	}
 	return 1;
 }
