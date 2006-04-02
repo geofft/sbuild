@@ -18,6 +18,7 @@ sbuild (0.44) UNRELEASED; urgency=low
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).
+  * COPYING: New file (GPL licence text).
   * debian/control: Update uploaders.
   * debian/copyright:
     - Update with new subversion repository locations for upstream and
