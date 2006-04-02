@@ -73,7 +73,6 @@ $main::pkg_start_time = 0;
 $main::this_space = 0;
 $main::chroot_dir = "";
 $main::chroot_build_dir = "";
-$main::chroot_apt_options = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 

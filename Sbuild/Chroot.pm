@@ -137,7 +137,7 @@ sub _setup_options {
 
 		my $aptconf = "/var/lib/sbuild/apt.conf";
 		if ($Sbuild::Conf::chroot_mode ne "schroot") {
-			$main::chroot_apt_options =
+			$chroots{"$distribution"}->{'APT Options'} =
 				"-o Dir::State::status=$main::chroot_dir/var/lib/dpkg/status".
 				" -o DPkg::Options::=--root=$main::chroot_dir".
 				" -o DPkg::Run-Directory=$main::chroot_dir";
@@ -169,7 +169,7 @@ sub _setup_options {
 
 		} else {
 			if ($Sbuild::Conf::chroot_mode ne "schroot") {
-				$main::chroot_apt_options .=
+				$chroots{"$distribution"}->{'APT Options'} =
 					" -o Dir::State=$main::chroot_dir/var/lib/apt".
 					" -o Dir::Cache=$main::chroot_dir/var/cache/apt".
 					" -o Dir::Etc=$main::chroot_dir/etc/apt";
@@ -221,7 +221,7 @@ sub log_command {
 	my $priority = shift; # Priority of log message
 
 	if ((defined($priority) && $priority >= 1) || $main::debug) {
-		$msg =~ s/\Q$main::chroot_apt_options\E/CHROOT_APT_OPTIONS/g;
+		$msg =~ s/\Q$$current{'APT Options'}\E/CHROOT_APT_OPTIONS/g;
 		print PLOG "$msg\n";
 	}
 }
@@ -323,7 +323,7 @@ sub exec_command {
 sub get_apt_command_internal {
 	my $aptcommand = shift; # Command to run
 	my $options = shift;    # Command options
-	$aptcommand .= " $main::chroot_apt_options $options";
+	$aptcommand .= " $$current{'APT Options'} $options";
 
 	return $aptcommand;
 }
