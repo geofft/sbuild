@@ -20,12 +20,8 @@
 # $Id$
 #
 
-($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
 package conf;
-$HOME = $main::HOME;
-require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
-require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
+use Sbuild::Conf;
 package main;
 
 die "No avg-time database defined\n" if !$conf::avg_time_db;

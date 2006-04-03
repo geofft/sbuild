@@ -1,5 +1,6 @@
 sbuild (0.44) UNRELEASED; urgency=low
 
+  * avg-pkg-build-time: Use Sbuild::Conf.
   * sbuild:
     - Treat schroot chroots with a "-sbuild" suffix in the same way as
       chroots without a suffix (Closes: #360124).
