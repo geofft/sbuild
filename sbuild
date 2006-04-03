@@ -248,6 +248,12 @@ $main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key
 $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
 $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
+if (!defined($conf::maintainer_name) &&
+    !defined($conf::uploader_name) &&
+    !defined($conf::key_id) ) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k\n";
+}
+
 # variables for scripts:
 open_log($main::distribution);
 $SIG{'INT'} = \&shutdown;
@@ -266,7 +272,19 @@ foreach $pkgv (@ARGV) {
 	$pkgv =~ s/\.dsc$//;
 	(my $pkg = $pkgv) =~ s/_.*$//;
 	$pkg =~ s/^\.\///;
-	next if !open_pkg_log( $pkgv, $main::distribution );
+
+	{
+		my $tpkg = basename($pkgv);
+
+		if ($main::binNMU) {
+			$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
+			$tpkg = $1 . "_" . binNMU_version($2,$main::binNMUver);
+			$main::binNMU_name = $tpkg;
+			$tpkg .= $3;
+		}
+
+		next if !open_pkg_log( $tpkg, $main::distribution );
+	}
 
 	if (!begin_session($main::distribution)) {
 		print PLOG "Skipping $pkg\n";
@@ -324,9 +342,10 @@ foreach $pkgv (@ARGV) {
 
 	end_session();
 
-	close_pkg_log( $pkgv, $main::pkg_status,
+	close_pkg_log( $main::pkg_status,
 		       $main::pkg_start_time, $main::pkg_end_time,
 		       $main::this_space );
+	undef $main::binNMU_name;
 	$main::current_job = "";
 	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
@@ -674,6 +693,7 @@ sub build {
 	if ($main::binNMU && ! -f "debian/.sbuild-binNMU-done") {
 		if (open( F, "<debian/changelog" )) {
 			my($firstline, $text);
+			$firstline = "";
 			$firstline = <F> while $firstline =~ /^$/;
 			{ local($/); undef $/; $text = <F>; }
 			close( F );
@@ -2855,10 +2875,10 @@ sub shutdown {
 	# close logs and send mails
 	if ( $main::current_job ) {
 		fixup_pkgv( \$main::current_job );
-		close_pkg_log( $main::binNMU_name || $main::current_job,
-			       $main::pkg_status,
+		close_pkg_log( $main::pkg_status,
 			       $main::pkg_start_time, $main::pkg_end_time,
 			       $main::this_space );
+		undef $main::binNMU_name;
 	}
 	close_log();
 	unlink( $main::jobs_file ) if $main::batchmode;

@@ -44,6 +44,7 @@ BEGIN {
 my $main_logfile;
 my $pkg_logfile;
 my $pkg_distribution;
+my $pkg_name;
 
 sub open_log {
 	my $main_distribution = shift;
@@ -121,21 +122,14 @@ sub close_log {
 
 sub open_pkg_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
-	my $pkg = shift;
+	$pkg_name = shift;
 	$pkg_distribution = shift;
 
 	if ($Sbuild::Conf::nolog) {
 		open( main::PLOG, ">&STDOUT" );
 	}
 	else {
-		$pkg = Sbuild::basename( $pkg );
-		if ($main::binNMU) {
-			$pkg =~ /^([^_]+)_([^_]+)(.*)$/;
-			$pkg = $1."_".Sbuild::binNMU_version($2,$main::binNMUver);
-			$main::binNMU_name = $pkg;
-			$pkg .= $3;
-		}
-		$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg}_$date";
+		$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg_name}_$date";
 		log_symlink($pkg_logfile,
 			    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
 		log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
@@ -170,7 +164,7 @@ sub open_pkg_log {
 
 	chomp( my $HOSTNAME = `hostname` );
 	chomp( my $arch = `$conf::dpkg --print-installation-architecture` );
-	print main::PLOG "Automatic build of $pkg on $HOSTNAME by ".
+	print main::PLOG "Automatic build of $pkg_name on $HOSTNAME by ".
 		"sbuild/$arch @VERSION@\n";
 	print main::PLOG "Build started at $date\n";
 	print main::PLOG "*"x78, "\n";
@@ -179,7 +173,6 @@ sub open_pkg_log {
 
 sub close_pkg_log {
 	my $date = strftime("%Y%m%d-%H%M",localtime);
-	my $pkg = shift;
 	my $status = shift;
 	my $pkg_start_time = shift;
 	my $pkg_end_time = shift;
@@ -187,11 +180,10 @@ sub close_pkg_log {
 
 	my $time = $pkg_end_time - $pkg_start_time;
 
-	$pkg = Sbuild::basename( $pkg );
 	$time = 0 if $time < 0;
 	if (defined($status) && $status eq "successful") {
-		add_time_entry( $pkg, $time );
-		add_space_entry( $pkg, $space );
+		add_time_entry( $pkg_name, $time );
+		add_space_entry( $pkg_name, $space );
 	}
 	print main::PLOG "*"x78, "\n";
 	printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
@@ -199,10 +191,8 @@ sub close_pkg_log {
 	close( main::PLOG );
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $Sbuild::Conf::mailto,
-		   "Log for $status build of ".
-		   ($main::binNMU_name || $pkg)." (dist=$pkg_distribution)",
+		   "Log for $status build of $pkg_name (dist=$pkg_distribution)",
 		   $pkg_logfile ) if !$Sbuild::Conf::nolog && $Sbuild::Conf::mailto;
-	undef $main::binNMU_name;
 }
 
 sub add_time_entry {

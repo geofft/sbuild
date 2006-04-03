@@ -24,6 +24,12 @@ sbuild (0.44) UNRELEASED; urgency=low
       compatibility.
     - Remove unused $main::HOSTNAME.
     - Add build statistics to close_pkg_log.
+    - Die if no maintainer_name, uploader_name or key_id is specified.
+    - Set and unset $main::binNMU_name in the main loop, rather than when
+      opening and closing the package log.  In consequence, open_pkg_log
+      now needs the package name only, and close_pkg_log does not need
+      the package name passing.
+    - build: Set $firstline to "" to quell a warning.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -49,6 +55,8 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Add $username.
     - Add $cwd, $nolog and $verbose.  They exported and used by the other
       modules in place of the variables in the main package.
+    - Add and export $avg_time_db, $avg_space_db, $maintainer_name,
+      $uploader_name and $key_id.
   * Sbuild/Log.pm:
     - New perl module for logging.  It contains the functions open_log,
       close_log, open_pkg_log, close_pkg_log, add_time_entry,
@@ -57,8 +65,13 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Removed use of $main::distribution.  The distribution name must be
       passed to open_log or open_pkg_log.
     - Don't use $main::HOSTNAME or $main::arch.  Get the values directly.
-    - close_pkg_log: Obtain $main::pkg_status, $main::pkg_start_time,
-      $main::pkg_end_time and $main::this_space from the function arguments.
+    - open_pkg_log: Save the package name for future use; the binNMU name
+      (if any) is passed, so this no longer needs computing.
+    - close_pkg_log:
+      + Obtain $main::pkg_status, $main::pkg_start_time,
+        $main::pkg_end_time and $main::this_space from the function
+        arguments.
+      + Don't pass the package name, which was saved in open_pkg_log.
     - add_space_entry: Use $space rather than $t, and don't use
       $main::this_space.
   * bin/checkchroot:

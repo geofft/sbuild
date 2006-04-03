@@ -35,13 +35,15 @@ BEGIN {
     @EXPORT = qw($HOME $cwd $username $verbose $nolog
 		 $source_dependencies $mailprog $dpkg $sudo $schroot
 		 $schroot_options $fakeroot $apt_get $apt_cache
-		 $dpkg_source $md5sum $build_env_cmnd $pgp_options
-		 $log_dir $mailto $mailfrom $purge_build_directory
-		 @toolchain_regex $stalled_pkg_timeout
-		 $srcdep_lock_dir $srcdep_lock_wait $chroot_only
-		 $chroot_mode @ignore_watches_no_build_deps $build_dir
-		 $sbuild_mode $debug $force_orig_source
-		 %individual_stalled_pkg_timeout $path);
+		 $dpkg_source $md5sum $avg_time_db $avg_space_db
+		 $build_env_cmnd $pgp_options $log_dir $mailto
+		 $mailfrom $purge_build_directory @toolchain_regex
+		 $stalled_pkg_timeout $srcdep_lock_dir
+		 $srcdep_lock_wait $chroot_only $chroot_mode
+		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
+		 $debug $force_orig_source
+		 %individual_stalled_pkg_timeout $path
+		 $maintainer_name $uploader_name $key_id);
 }
 
 # Originally from the main namespace.
@@ -64,6 +66,8 @@ our $apt_get = "/usr/bin/apt-get";
 our $apt_cache = "/usr/bin/apt-cache";
 our $dpkg_source = "/usr/bin/dpkg-source";
 our $md5sum = "/usr/bin/md5sum";
+our $avg_time_db;
+our $avg_space_db;
 our $build_env_cmnd = "";
 our $pgp_options = "-us -uc";
 our $log_dir = "$HOME/logs";
@@ -83,6 +87,9 @@ our $debug = 0;
 our $force_orig_source = 0;
 our %individual_stalled_pkg_timeout = ();
 our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
+our $maintainer_name;
+our $uploader_name;
+our $key_id;
 
 # read conf files
 require "/usr/share/sbuild/sbuild.conf";
