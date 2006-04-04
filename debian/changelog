@@ -31,6 +31,8 @@ sbuild (0.44) UNRELEASED; urgency=low
       now needs the package name only, and close_pkg_log does not need
       the package name passing.
     - build: Set $firstline to "" to quell a warning.
+    - Don't use File::Temp (only needed by modules).
+    - Remove build directory check.
   * Sbuild.pm: Add basename function.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
@@ -49,6 +51,11 @@ sbuild (0.44) UNRELEASED; urgency=low
       than using $main::distribution.
     - Don't use $main::chroot_dir.  Add the build paths as 'Build Location',
       'Srcdep Lock Dir' and 'Install Lock' to the chroot metadata.
+    - Use File::Temp.
+    - Don't export "internal" functions.
+    - _setup_options: Set "APT Options" for schroot chroots.
+    - log_command: Don't substitute CHROOT_APT_OPTIONS when no APT options
+      are in use.
   * Sbuild/Conf.pm:
     - New perl module for configuration variables.  It reads the system
       and user configuration.
@@ -58,6 +65,7 @@ sbuild (0.44) UNRELEASED; urgency=low
       modules in place of the variables in the main package.
     - Add and export $avg_time_db, $avg_space_db, $maintainer_name,
       $uploader_name and $key_id.
+    - Add build directory check (moved from sbuild).
   * Sbuild/Log.pm:
     - New perl module for logging.  It contains the functions open_log,
       close_log, open_pkg_log, close_pkg_log, add_time_entry,
@@ -75,6 +83,7 @@ sbuild (0.44) UNRELEASED; urgency=low
       + Don't pass the package name, which was saved in open_pkg_log.
     - add_space_entry: Use $space rather than $t, and don't use
       $main::this_space.
+    - Use File::Temp.
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).

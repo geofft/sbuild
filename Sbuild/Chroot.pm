@@ -27,6 +27,7 @@ use Sbuild::Conf;
 use strict;
 use POSIX;
 use FileHandle;
+use File::Temp ();
 
 BEGIN {
     use Exporter ();
@@ -34,10 +35,9 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(begin_session end_session get_command_internal
-		 get_command run_command exec_command
-		 get_apt_command_internal get_apt_command
-		 run_apt_command current);
+    @EXPORT = qw(begin_session end_session get_command run_command
+		 exec_command get_apt_command run_apt_command
+		 current);
 }
 
 my %chroots = ();
@@ -143,6 +143,8 @@ sub _setup_options {
 				"-o Dir::State::status=$chroot_dir/var/lib/dpkg/status".
 				" -o DPkg::Options::=--root=$chroot_dir".
 				" -o DPkg::Run-Directory=$chroot_dir";
+		} else {
+			$chroots{"$distribution"}->{'APT Options'} = ""
 		}
 
 		# schroot uses an absolute path inside the chroot,
@@ -223,7 +225,8 @@ sub log_command {
 	my $msg = shift;      # Message to log
 	my $priority = shift; # Priority of log message
 
-	if ((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) {
+	if (((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) &&
+	    $$current{'APT Options'} ne "") {
 		$msg =~ s/\Q$$current{'APT Options'}\E/CHROOT_APT_OPTIONS/g;
 		print STDERR "$msg\n";
 	}

@@ -28,7 +28,6 @@ use strict;
 use warnings;
 use POSIX;
 use IO::Handle;
-use File::Temp ();
 use FileHandle;
 use Sbuild qw(basename binNMU_version version_compare);
 
@@ -73,13 +72,6 @@ $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
-
-if (!defined($conf::build_dir)) {
-    $conf::build_dir = $main::cwd;
-}
-if (! -d "$conf::build_dir") {
-    die "Build directory $conf::build_dir does not exist";
-}
 
 # Be verbose by default if on a tty
 if (-t STDIN && -t STDOUT && $main::verbose == 0) {

@@ -26,6 +26,7 @@ use Sbuild::Conf;
 
 use strict;
 use warnings;
+use File::Temp ();
 use GDBM_File;
 use POSIX;
 use FileHandle;
