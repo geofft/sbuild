@@ -1,6 +1,19 @@
 sbuild (0.44) UNRELEASED; urgency=low
 
   * avg-pkg-build-time: Use Sbuild::Conf.
+  * bin/checkchroot: Convert to Perl, using Sbuild::Utility.
+  * bin/chrapt: Convert to Perl, using Sbuild::Utility.
+  * bin/chr-hold: Convert to Perl, using Sbuild::Utility.
+  * bin/chr-unhold: Convert to Perl, using Sbuild::Utility.
+  * bin/gochroot: Convert to Perl, using Sbuild::Utility.
+  * bin/updatechroot:
+    - Convert to Perl, using Sbuild::Utility.
+    - chrapt is no longer used (Closes: #355035).
+    - Sbuild::Chroot is used for chroot access:
+      + Suite names are no longer hardcoded (Closes: #355037).
+      + APT Options are set correctly (Closes: #355038).
+  * bin/upgradechroot: Convert to Perl, using Sbuild::Utility.
+  * bin/common_functions: Remove; this is no longer used.
   * sbuild:
     - Treat schroot chroots with a "-sbuild" suffix in the same way as
       chroots without a suffix (Closes: #360124).
@@ -84,6 +97,8 @@ sbuild (0.44) UNRELEASED; urgency=low
     - add_space_entry: Use $space rather than $t, and don't use
       $main::this_space.
     - Use File::Temp.
+  * Sbuild/Utility.pm: New perl module for utility programs.  This is a
+    perl replacement for bin/common_functions.
   * bin/checkchroot:
     - Quote all variables.
     - Sort ref-chroot file before diffing (Closes: 360058).
@@ -99,8 +114,8 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Add a reference to /usr/share/common-licenses/GPL.
   * debian/dirs: Add usr/share/perl5/Sbuild.
   * debian/rules:
-    - Install Sbuild/Chroot.pm, Sbuild/Conf.pm and Sbuild/Log.pm into
-      /usr/share/perl5/Sbuild.
+    - Install Sbuild/Chroot.pm, Sbuild/Conf.pm, Sbuild/Log.pm and
+      Sbuild/Utility.pm into /usr/share/perl5/Sbuild.
     - Generate all manual pages and Log.pm in the build rule, and remove
       them in the clean rule.
 

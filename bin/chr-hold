@@ -1,15 +1,63 @@
-#!/bin/bash
-
+#!/usr/bin/perl -w
 # changes the dpkg status of a package in a chroot to "hold"
+#
+# Copyright (C) 2006 Roger Leigh <rleigh@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
-USAGE_STRING="${0##*/} <chroot> pkg1 [pkg2..]"
-. /usr/share/sbuild/common_functions
-parse_arg $1
-shift
+use strict;
+use warnings;
+use Sbuild::Utility qw(setup cleanup shutdown);
 
-for i in "$@" ; do
-	echo "$i        hold"
-done | sudo dpkg --root=$CHROOT --set-selections
+package main;
 
-dpkg --root=$CHROOT --list "$@"
+sub usage {
+	print STDERR "Usage: $0 <chroot> package [package ...]\n";
+	exit 1;
+}
 
+usage() if (@ARGV < 2);
+
+my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
+
+!setup($ARGV[0]) or die "Chroot setup failed for $chroot chroot";
+
+print STDOUT "Holding packages in $chroot chroot:";
+
+my $command = get_command("$Sbuild::Conf::dpkg --set-selections", "root", 1);
+if (!open(SELECTIONS, "| $command")) {
+	print STDERR "Can't run dpkg --set-selections in chroot\n";
+	main::shutdown;
+}
+
+shift @ARGV;
+foreach (@ARGV) {
+	print SELECTIONS "$_        hold\n";
+	print STDOUT " $_";
+}
+
+if (!close SELECTIONS) {
+	print STDERR "Can't run dpkg --set-selections in chroot\n";
+	main::shutdown();
+}
+
+print STDOUT ".\n";
+
+my $packages = join(" ", @ARGV);
+my $status = run_command("$Sbuild::Conf::dpkg --list $packages", "root", 1, 0);
+
+cleanup();
+
+exit $status;

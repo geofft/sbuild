@@ -1,11 +1,38 @@
-#!/bin/bash
+#!/usr/bin/perl
+# check the package list in a chroot against a reference list.
+#
+# Copyright (C) 2006 Roger Leigh <rleigh@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
-USAGE_STRING="${0##*/} <chroot>"
-. /usr/share/sbuild/common_functions
-parse_arg $1
+use strict;
+use warnings;
+use Sbuild::Utility qw(setup cleanup);
 
-# chroot procs should be mounted with an /etc/fstab entry instead
-#sudo mount proc -t proc $CHROOT/proc
-sudo chroot $CHROOT bin/sh
-#sudo umount $CHROOT/proc
+package main;
 
+sub usage {
+	print STDERR "Usage: $0 <chroot>\n";
+	exit 1;
+}
+
+usage() if (@ARGV != 1);
+
+!setup($ARGV[0]) or die "Chroot setup failed";
+
+my $status = run_command("/bin/sh", $Sbuild::Conf::username, 1);
+
+cleanup();
+exit $status;
