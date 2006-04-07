@@ -1,4 +1,4 @@
-sbuild (0.44) UNRELEASED; urgency=low
+sbuild (0.44) unstable; urgency=low
 
   * avg-pkg-build-time: Use Sbuild::Conf.
   * bin/checkchroot: Convert to Perl, using Sbuild::Utility.
@@ -128,7 +128,7 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Generate all manual pages and Log.pm in the build rule, and remove
       them in the clean rule.
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Fri,  7 Apr 2006 09:47:00 +0100
 
 sbuild (0.43) unstable; urgency=low
 
