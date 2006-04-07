@@ -27,9 +27,10 @@ package main;
 use strict;
 use warnings;
 use POSIX;
+use File::Basename qw(basename dirname);
 use IO::Handle;
 use FileHandle;
-use Sbuild qw(basename binNMU_version version_compare);
+use Sbuild qw(binNMU_version version_compare);
 
 package conf;
 use Sbuild::Conf;

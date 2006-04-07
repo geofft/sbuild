@@ -30,7 +30,7 @@ use FileHandle;
 require Exporter;
 @Sbuild::ISA = qw(Exporter);
 @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
-		     version_compare binNMU_version basename);
+		     version_compare binNMU_version);
 
 my $opt_correct_version_cmp;
 
@@ -182,12 +182,6 @@ sub binNMU_version {
 	else {
 		return "$v.0.$binNMUver";
 	}
-}
-
-sub basename {
-	my $b = $_[0];
-	$b =~ s,^.*/,,;
-	return $b;
 }
 
 1;

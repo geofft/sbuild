@@ -46,7 +46,7 @@ sbuild (0.44) UNRELEASED; urgency=low
     - build: Set $firstline to "" to quell a warning.
     - Don't use File::Temp (only needed by modules).
     - Remove build directory check.
-  * Sbuild.pm: Add basename function.
+    - Use File::Basename::basename instead of Sbuild::basename.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
       begin_session, end_session, log_command, get_command_internal,
@@ -97,6 +97,7 @@ sbuild (0.44) UNRELEASED; urgency=low
     - add_space_entry: Use $space rather than $t, and don't use
       $main::this_space.
     - Use File::Temp.
+    - Use File::Basename::basename instead of Sbuild::basename.
   * Sbuild/Utility.pm: New perl module for utility programs.  This is a
     perl replacement for bin/common_functions.
   * bin/checkchroot:

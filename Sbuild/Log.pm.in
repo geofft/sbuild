@@ -30,7 +30,7 @@ use File::Temp ();
 use GDBM_File;
 use POSIX;
 use FileHandle;
-use Sbuild qw(basename);
+use File::Basename qw(basename);
 
 BEGIN {
     use Exporter ();
