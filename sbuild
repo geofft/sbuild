@@ -840,6 +840,22 @@ EOF
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
 	else {
+		if (-r "$dir/debian/files" && $main::chroot_build_dir) {
+			my @files = debian_files_list("$dir/debian/files");
+
+			foreach (@files) {
+				if (! -f "$main::chroot_build_dir$_") {
+					print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
+					next;
+				}
+				if (/_all.u?deb$/ and not $main::build_arch_all) {
+					print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+					unlink("$main::chroot_build_dir$_");
+					next;
+				}
+			}
+		}
+
 		$changes = "${pkg}_".
 			($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
 			"_$main::arch.changes";
@@ -879,17 +895,8 @@ EOF
 				print PLOG "Cannot create $changes.new: $!\n";
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
-				    if (! -f $_) {
-					    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
-					    next;
-				    }
-				    if (/_all.u?deb$/ and not $main::build_arch_all) {
-					    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
-					    unlink($_);
-					    next;
-				    }
-				    system "mv", "$main::chroot_build_dir$changes", "."
-					    and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
+					system "mv", "$main::chroot_build_dir$changes", "."
+						and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 				}
 			}
 			close( F );
@@ -2891,6 +2898,26 @@ sub write_stats {
 	print F "$val\n";
 	close( F );
 	unlock_file( "$main::stats_dir" );
+}
+
+sub debian_files_list {
+	my $files = shift;
+
+	my @list;
+
+	print STDERR "Parsing $files\n" if $conf::debug;
+
+	if (-r $files && open( FILES, "<$files" )) {
+		while (<FILES>) {
+			chomp;
+			my $f = (split( /\s+/, $_ ))[0];
+			push( @list, "$f" );
+			print STDERR "  $f\n" if $conf::debug;
+		}
+		close( FILES ) or print PLOG "Failed to close $files\n" && return 1;
+	}
+
+	return @list;
 }
 
 sub dsc_md5sums {

@@ -43,13 +43,17 @@ sbuild (0.44) UNRELEASED; urgency=low
       opening and closing the package log.  In consequence, open_pkg_log
       now needs the package name only, and close_pkg_log does not need
       the package name passing.
-    - build: Set $firstline to "" to quell a warning.
+    - build:
+      + Set $firstline to "" to quell a warning.
+      + Use debian_files_list to check for missing or extra packages, and
+        warn appropriately.
     - Don't use File::Temp (only needed by modules).
     - Remove build directory check.
     - Use File::Basename::basename instead of Sbuild::basename.
     - Don't import internal Sbuild::Chroot functions.
     - Split verify_dsc_md5sums into two parts: dsc_md5sums and
       verify_md5sums.
+    - debian_files_list: New function to parse debian/files.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
       begin_session, end_session, log_command, get_command_internal,
