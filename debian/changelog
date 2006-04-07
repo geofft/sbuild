@@ -47,6 +47,7 @@ sbuild (0.44) UNRELEASED; urgency=low
     - Don't use File::Temp (only needed by modules).
     - Remove build directory check.
     - Use File::Basename::basename instead of Sbuild::basename.
+    - Don't import internal Sbuild::Chroot functions.
   * Sbuild/Chroot.pm:
     - New perl module for chroot operations.  It contains the functions
       begin_session, end_session, log_command, get_command_internal,
