@@ -47,6 +47,7 @@ sbuild (0.44) UNRELEASED; urgency=low
       + Set $firstline to "" to quell a warning.
       + Use debian_files_list to check for missing or extra packages, and
         warn appropriately.
+      + Delete erroneous _all.deb files (Closes: #357042).
     - Don't use File::Temp (only needed by modules).
     - Remove build directory check.
     - Use File::Basename::basename instead of Sbuild::basename.
