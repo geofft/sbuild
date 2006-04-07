@@ -36,9 +36,8 @@ package conf;
 use Sbuild::Conf;
 package main;
 use Sbuild::Conf qw($cwd $nolog $username $verbose); # For backward compatibility.
-use Sbuild::Chroot qw(begin_session end_session get_command_internal
-                      get_command run_command exec_command
-                      get_apt_command_internal get_apt_command
+use Sbuild::Chroot qw(begin_session end_session get_command
+                      run_command exec_command get_apt_command
                       run_apt_command);
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 
