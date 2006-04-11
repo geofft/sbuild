@@ -780,7 +780,7 @@ EOF
 				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 				 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-			exec_command($buildcmd, $main::username, 1, 1);
+			exec_command($buildcmd, $main::username, 1, 0);
 		}
 		else {
 			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
@@ -1316,7 +1316,7 @@ sub uninstall_debs {
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $conf::debug;
 
-	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 1);
+	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0);
   repeat:
 	my $output;
 	my $remove_start_time = time;
