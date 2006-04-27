@@ -21,7 +21,7 @@ use strict;
 use warnings;
 use locale;
 use POSIX qw(locale_h);
-use Sbuild::Utility qw(setup cleanup);
+use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
@@ -41,7 +41,7 @@ my (@status, @ref, @install, @remove);
 
 if (! open STATUS, "grep-status -F Status -s Package ' installed' '$chroot_dir/var/lib/dpkg/status' | awk '{print \$2}' |" ) {
 	print STDERR "Can't read dpkg status file in chroot: $!\n";
-	main::shutdown();
+	shutdown();
 }
 while (<STATUS>) {
 	chomp;
@@ -49,14 +49,14 @@ while (<STATUS>) {
 }
 if (! close STATUS) {
 	print STDERR "Error reading dpkg status file in chroot: $!\n";
-	main::shutdown();
+	shutdown();
 }
 
 my $dist = Sbuild::Utility::get_dist($ARGV[0]);
 
 if (! open REF, "< $chroot_dir/../ref-$dist") {
 	print STDERR "Can't read reference status file $chroot_dir/../ref-$dist: $!\n";
-	main::shutdown();
+	shutdown();
 }
 while (<REF>) {
 	chomp;
@@ -64,11 +64,20 @@ while (<REF>) {
 }
 if (! close REF) {
 	print STDERR "Error reading reference status file: $!\n";
-	main::shutdown();
+	shutdown();
 }
 
 @status = sort @status;
 @ref = sort @ref;
+
+if (!@status) {
+    print STDERR "dpkg status file is empty\n";
+    shutdown();
+}
+if (!@ref) {
+    print STDERR "Reference status file is empty\n";
+    shutdown();
+}
 
 print "DELETE             ADD\n";
 print "======================================\n";
