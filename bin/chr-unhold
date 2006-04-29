@@ -39,7 +39,7 @@ print STDOUT "Unholding packages in $chroot chroot:";
 my $command = get_command("$Sbuild::Conf::dpkg --set-selections", "root", 1);
 if (!open(SELECTIONS, "| $command")) {
 	print STDERR "Can't run dpkg --set-selections in chroot\n";
-	main::shutdown;
+	shutdown();
 }
 
 shift @ARGV;
@@ -50,7 +50,7 @@ foreach (@ARGV) {
 
 if (!close SELECTIONS) {
 	print STDERR "Can't run dpkg --set-selections in chroot\n";
-	main::shutdown();
+	shutdown();
 }
 
 print STDOUT ".\n";

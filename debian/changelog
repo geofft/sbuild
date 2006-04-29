@@ -7,6 +7,8 @@ sbuild (0.45) UNRELEASED; urgency=low
     - Check if the dpkg and reference files contained any data, and exit
       with an error if either were empty (Closes: #363351).
     - On error, use Sbuild::Utility::shutdown to clean up.
+  * bin/chr-hold, bin/chr-unhold: On error, use Sbuild::Utility::shutdown
+    to clean up.
 
  --
 
