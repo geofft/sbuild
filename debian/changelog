@@ -1,4 +1,4 @@
-sbuild (0.45) UNRELEASED; urgency=low
+sbuild (0.45) unstable; urgency=low
 
   * bin/checkchroot:
     - Check if the dpkg and reference files contained any data, and exit
@@ -11,7 +11,7 @@ sbuild (0.45) UNRELEASED; urgency=low
     - uninstall_debs: Only print dpkg invocation in debug mode.
   * debian/control: Update to Standards-Version 3.7.0.
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Mon,  1 May 2006 09:48:20 +0100
 
 sbuild (0.44) unstable; urgency=low
 
