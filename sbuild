@@ -432,7 +432,7 @@ sub fetch_source_files {
 			if (!defined($entries{$version})) {
 				if (!$retried) {
 					# try to update apt's cache if nothing found
-					run_apt_command("$conf::apt_get", "update >/dev/null", "root", 1);
+					run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
 					$retried = 1;
 					goto retry;
 				}

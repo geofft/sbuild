@@ -1,3 +1,11 @@
+sbuild (0.46) UNRELEASED; urgency=low
+
+  * sbuild:
+    - fetch_source_files: Only print "apt-get update" invocation in debug
+      mode.
+
+ --
+
 sbuild (0.45) unstable; urgency=low
 
   * bin/checkchroot:
