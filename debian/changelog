@@ -3,6 +3,9 @@ sbuild (0.46) UNRELEASED; urgency=low
   * sbuild:
     - fetch_source_files: Only print "apt-get update" invocation in debug
       mode.
+    - get_dpkg_status: Make sure $version is defined before checking its
+      value, to ensure the Debian version can have a value of 0.  Thanks
+      to Santiago Vila for this fix (Closes: #368066).
   * Update svn::ignore properties to ignore generated files.
 
  --
