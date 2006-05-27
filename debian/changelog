@@ -3,6 +3,7 @@ sbuild (0.46) UNRELEASED; urgency=low
   * sbuild:
     - fetch_source_files: Only print "apt-get update" invocation in debug
       mode.
+  * Update svn::ignore properties to ignore generated files.
 
  --
 
