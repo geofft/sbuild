@@ -24,46 +24,6 @@ clean:
 	-rm -f build buildd-mail-wrapper wanna-build-mail *~
 	-rm -rf debian/tmp/ debian/*~ debian/files debian/substvars
 
-binary-indep: binary-sbuild
-
-binary-sbuild: checkroot
-	$(checkdir)
-	-rm -rf debian/tmp/	
-	install -d debian/tmp/DEBIAN
-	install -m 755 debian/sbuild.postinst debian/tmp/DEBIAN/postinst
-
-	install -d debian/tmp/var/debbuild/srcdep-lock
-
-	install -d debian/tmp/usr/bin
-	install -m 755 sbuild avg-pkg-build-time \
-		debian/tmp/usr/bin/
-	cat WannaBuild.pm >> debian/tmp/usr/bin/sbuild
-
-	install -d debian/tmp/usr/sbin
-	install -m 755 buildd-make-chroot \
-		debian/tmp/usr/sbin/
-
-	install -d debian/tmp/etc
-	install -m 644 sbuild.conf debian/tmp/etc
-
-	install -d debian/tmp/usr/share/man/man1
-	install -m 644 sbuild.1 avg-pkg-build-time.1 debian/tmp/usr/share/man/man1/
-	gzip -9v debian/tmp/usr/share/man/man1/*
-
-	install -d debian/tmp/usr/share/doc/sbuild/examples
-	install -m 644 NEWS debian/tmp/usr/share/doc/sbuild/changelog
-	install -m 644 README.chroot-building debian/tmp/usr/share/doc/sbuild/
-	install -m 644 sbuild.conf.local debian/tmp/usr/share/doc/sbuild/examples
-	install -m 644 example.sbuildrc debian/tmp/usr/share/doc/sbuild/examples/sbuildrc
-	install -m 644 debian/changelog debian/tmp/usr/share/doc/sbuild/changelog.Debian
-	find debian/tmp/usr/share/doc/sbuild/ -type f | xargs gzip -9v
-	install -m 644 debian/copyright debian/tmp/usr/share/doc/sbuild/
-
-	dpkg-gencontrol -psbuild -isp
-	chown -R root.root debian/tmp
-	chmod -R go=rX debian/tmp
-	dpkg --build debian/tmp ..
-
 binary-arch: binary-buildd binary-wanna-build
 
 binary-buildd: checkroot build

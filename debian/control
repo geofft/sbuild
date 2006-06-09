@@ -1,23 +1,11 @@
-Source: wanna-build
+Source: buildd
 Section: devel
 Priority: extra
-Maintainer: Ryan Murray <rmurray@debian.org>
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debi
+an.org>
+Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, F
+rancesco Paolo Lovergine <frankie@debian.org>
 Standards-Version: 3.6.2
-
-Package: sbuild
-Architecture: all
-Priority: optional
-Depends: perl5, dpkg-dev, apt (>= 0.5), exim | mail-transport-agent
-Recommends: sudo | super, lftp, wget, fakeroot, debootstrap
-Conflicts: buildd (<< 2005.09.26)
-Suggests: build-essential
-Description: Tool for building Debian binary packages from Debian sources
- sbuild will take one or more Debian source packages and build the 
- corresponding binary packages.  Unlike dbuild or debbuild, it knows 
- about source dependencies.
- .
- sbuild is used by the build daemon (buildd).  The package contains
- the sbuild tool itself.
 
 Package: wanna-build
 Architecture: any
