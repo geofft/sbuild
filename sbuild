@@ -416,11 +416,19 @@ sub fetch_source_files {
 				return ("ERROR");
 			}
 			{ local($/) = "";
+			  my $ver;
+			  my $tfile;
 			  while( <PIPE> ) {
-				  my $ver = $1 if /^Version:\s+(\S+)\s*$/mi;
-				  my $tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
+				  $ver = $1 if /^Version:\s+(\S+)\s*$/mi;
+				  $tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
+			  }
+			  if (defined $ver && defined $tfile) {
 				  @{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
 					  split( "\n", $tfile );
+			  } else {
+				  print PLOG "apt-cache returned no information about $pkg source\n";
+				  print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
+				  return ("ERROR");
 			  }
 		  }
 			close( PIPE );

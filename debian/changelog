@@ -1,3 +1,13 @@
+sbuild (0.47) UNRELEASED; urgency=low
+
+  * sbuild:
+    - fetch_source_files: When running apt-cache, check if we got valid
+      output, and warn appropriately if the output is invalid
+      (Closes: #369707).  Output may be invalid if there are no deb-src
+      lines in /etc/apt/sources.list in the chroot.
+
+ --
+
 sbuild (0.46) unstable; urgency=low
 
   * sbuild:
