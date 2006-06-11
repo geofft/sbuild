@@ -84,7 +84,7 @@ print "======================================\n";
 my $i = 0;
 my $j = 0;
 
-while ($i < scalar @status || $j < scalar @ref) {
+while ($i < scalar @status && $j < scalar @ref) {
 
 	my $c = $status[$i] cmp $ref[$j];
 	if ($c < 0) {
@@ -101,7 +101,16 @@ while ($i < scalar @status || $j < scalar @ref) {
 	}
 }
 
-#ystem ("diff -u '$F1' '$F2' | tail -n +3 | grep ^[+-] | sed -e 's/^-//' -e 's/^+/                   /' | sort");
+# Print any remaining elements
+while ($i < scalar @status) {
+	print "$status[$i]\n";
+	$i++;
+}
+while ($j < scalar @ref) {
+	print "                   $ref[$j]\n";
+	$j++;
+}
+
 
 cleanup();
 exit 0;

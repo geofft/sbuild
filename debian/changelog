@@ -1,5 +1,7 @@
 sbuild (0.47) UNRELEASED; urgency=low
 
+  * bin/checkchroot: Correct uninitialised value warnings due to using an
+    undefined variable (Closes: #369709).
   * sbuild:
     - fetch_source_files: When running apt-cache, check if we got valid
       output, and warn appropriately if the output is invalid
