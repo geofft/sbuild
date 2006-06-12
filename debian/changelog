@@ -2,6 +2,9 @@ sbuild (0.47) UNRELEASED; urgency=low
 
   * bin/checkchroot: Correct uninitialised value warnings due to using an
     undefined variable (Closes: #369709).
+  * bin/chrapt, bin/updatechroot, bin/upgradechroot: When chroot_mode is
+    "schroot", chdir to / to ensure the CWD exists inside the chroot.
+    Thanks for Clint Adams for finding this (Closes: #372806).
   * sbuild:
     - fetch_source_files: When running apt-cache, check if we got valid
       output, and warn appropriately if the output is invalid
