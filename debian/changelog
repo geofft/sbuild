@@ -10,11 +10,13 @@ sbuild (0.47) UNRELEASED; urgency=low
       output, and warn appropriately if the output is invalid
       (Closes: #369707).  Output may be invalid if there are no deb-src
       lines in /etc/apt/sources.list in the chroot.
-  * Sbuild/Conf.pm: If $Sbuild::Conf::log_dir or
-    $Sbuild::Conf::srcdep_lock_dir do not exist, try to create them before
-    bailing out (Closes: #369718).
+  * Sbuild/Conf.pm:
+    - Remove $Sbuild::Conf::log_dir checks.
+  * Sbuild/Log.pm.in: If $Sbuild::Conf::log_dir does not exist, try to
+    create it, and if this fails, warn and log to stdout
+    (Closes: #369718).
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Sat, 17 Jun 2006 11:04:54 +0100
 
 sbuild (0.46) unstable; urgency=low
 

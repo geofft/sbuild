@@ -46,6 +46,7 @@ my $main_logfile;
 my $pkg_logfile;
 my $pkg_distribution;
 my $pkg_name;
+my $log_dir_available;
 
 sub open_log {
 	my $main_distribution = shift;
@@ -126,7 +127,17 @@ sub open_pkg_log {
 	$pkg_name = shift;
 	$pkg_distribution = shift;
 
-	if ($Sbuild::Conf::nolog) {
+	if (!defined $log_dir_available) {
+		if (! -d $Sbuild::Conf::log_dir &&
+		    !mkdir $Sbuild::Conf::log_dir) {
+			warn "Could not create $Sbuild::Conf::log_dir: $!\n";
+			$log_dir_available = 0;
+		} else {
+			$log_dir_available = 1;
+		}
+	}
+
+	if ($Sbuild::Conf::nolog || !$log_dir_available) {
 		open( main::PLOG, ">&STDOUT" );
 	}
 	else {
@@ -193,7 +204,7 @@ sub close_pkg_log {
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	send_mail( $Sbuild::Conf::mailto,
 		   "Log for $status build of $pkg_name (dist=$pkg_distribution)",
-		   $pkg_logfile ) if !$Sbuild::Conf::nolog && $Sbuild::Conf::mailto;
+		   $pkg_logfile ) if !$Sbuild::Conf::nolog && $log_dir_available && $Sbuild::Conf::mailto;
 }
 
 sub add_time_entry {
