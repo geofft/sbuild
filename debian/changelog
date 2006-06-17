@@ -1,22 +1,20 @@
-sbuild (0.47) UNRELEASED; urgency=low
+sbuild (0.47) unstable; urgency=low
 
   * bin/checkchroot: Correct uninitialised value warnings due to using an
     undefined variable (Closes: #369709).
   * bin/chrapt, bin/updatechroot, bin/upgradechroot: When chroot_mode is
     "schroot", chdir to / to ensure the CWD exists inside the chroot.
     Thanks for Clint Adams for finding this (Closes: #372806).
-  * sbuild:
-    - fetch_source_files: When running apt-cache, check if we got valid
-      output, and warn appropriately if the output is invalid
-      (Closes: #369707).  Output may be invalid if there are no deb-src
-      lines in /etc/apt/sources.list in the chroot.
-  * Sbuild/Conf.pm:
-    - Remove $Sbuild::Conf::log_dir checks.
+  * sbuild: fetch_source_files: When running apt-cache, check if we got
+    valid output, and warn appropriately if the output is invalid
+    (Closes: #369707).  Output may be invalid if there are no deb-src
+    lines in /etc/apt/sources.list in the chroot.
+  * Sbuild/Conf.pm: Remove $Sbuild::Conf::log_dir checks.
   * Sbuild/Log.pm.in: If $Sbuild::Conf::log_dir does not exist, try to
     create it, and if this fails, warn and log to stdout
     (Closes: #369718).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 17 Jun 2006 11:04:54 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 17 Jun 2006 12:04:36 +0100
 
 sbuild (0.46) unstable; urgency=low
 
