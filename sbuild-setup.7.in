@@ -175,7 +175,7 @@ You only need to run dpkg-reconfigure if you weren't asked the questions during
 the debconf install.  Next, install the packages required for building
 packages:
 .PP
-\f[CR]# \f[CB]apt\-get install sudo debfoster fakeroot build\-essential\fP\fP
+\f[CR]# \f[CB]apt\-get install debfoster fakeroot build\-essential\fP\fP
 .br
 \f[CR]# \f[CB]apt\-get install makedev\fP\fP
 .br
@@ -256,7 +256,6 @@ requires root priveleges.  Add the following lines to \fI/etc/sudoers\fP
 .br
 .PP
 where \fIusername\fP is the name of the user who will run sbuild.
-\fI/etc/sudoers\fP inside the chroot also needs the same modifications.
 .SS 5. Finished
 You should now be able to run sbuild.
 .PP

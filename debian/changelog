@@ -1,3 +1,14 @@
+sbuild (0.48) unstable; urgency=low
+
+  * Sbuild/Chroot.pm: Use su, rather than sudo, inside the chroot.  This
+    prevents the APT_CONFIG and DEBCONF_FRONTEND environment variables
+    from being removed (Closes: #376020).
+  * Sbuild/Conf.pm: Add $Sbuild::Conf::su.
+  * sbuild-setup.7.in: Remove sudo configuration inside the chroot, now
+    this is no longer required.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun,  9 Jul 2006 18:18:33 +0100
+
 sbuild (0.47) unstable; urgency=low
 
   * bin/checkchroot: Correct uninitialised value warnings due to using an

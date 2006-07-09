@@ -246,13 +246,9 @@ sub get_command_internal {
 	my $cmdline;
 	if ($chroot != 0) { # Run command inside chroot
 		if ($Sbuild::Conf::chroot_mode eq "schroot") {
-			$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- ";
+			$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
 		} else {
-			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $$current{'Location'} $Sbuild::Conf::sudo ";
-			if ($user ne "root") {
-				$cmdline .= "-u $Sbuild::Conf::username ";
-			}
-			$cmdline .= "-H ";
+			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $$current{'Location'} $Sbuild::Conf::su -p $user -c '$command'";
 		}
 	} else { # Run command outside chroot
 		if ($user ne $Sbuild::Conf::username) {
@@ -261,8 +257,8 @@ sub get_command_internal {
 				$cmdline .= "-u $Sbuild::Conf::username ";
 			}
 		}
+		$cmdline .= "/bin/sh -c '$command'";
 	}
-	$cmdline .= "/bin/sh -c '$command'";
 
 	return $cmdline;
 }

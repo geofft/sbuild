@@ -33,15 +33,15 @@ BEGIN {
     @ISA = qw(Exporter);
 
     @EXPORT = qw($HOME $cwd $username $verbose $nolog
-		 $source_dependencies $mailprog $dpkg $sudo $schroot
-		 $schroot_options $fakeroot $apt_get $apt_cache
-		 $dpkg_source $md5sum $avg_time_db $avg_space_db
-		 $build_env_cmnd $pgp_options $log_dir $mailto
-		 $mailfrom $purge_build_directory @toolchain_regex
-		 $stalled_pkg_timeout $srcdep_lock_dir
-		 $srcdep_lock_wait $chroot_only $chroot_mode
-		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
-		 $debug $force_orig_source
+		 $source_dependencies $mailprog $dpkg $sudo $su
+		 $schroot $schroot_options $fakeroot $apt_get
+		 $apt_cache $dpkg_source $md5sum $avg_time_db
+		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
+		 $mailto $mailfrom $purge_build_directory
+		 @toolchain_regex $stalled_pkg_timeout
+		 $srcdep_lock_dir $srcdep_lock_wait $chroot_only
+		 $chroot_mode @ignore_watches_no_build_deps $build_dir
+		 $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name $key_id);
 }
@@ -59,6 +59,7 @@ our $source_dependencies = "/etc/source-dependencies";
 our $mailprog = "/usr/sbin/sendmail";
 our $dpkg = "/usr/bin/dpkg";
 our $sudo = "/usr/bin/sudo";
+our $su = "/bin/su";
 our $schroot = "/usr/bin/schroot";
 our $schroot_options = "-q";
 our $fakeroot = "/usr/bin/fakeroot";
