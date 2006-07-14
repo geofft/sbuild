@@ -1,3 +1,13 @@
+sbuild (0.49) UNRELEASED; urgency=low
+
+  * Sbuild/Conf.pm: init checks if APT_CONFIG and DEBIAN_FRONTEND are
+    being stripped from the environment by sudo (when running in split
+    mode), and aborts with instructions for correctly configuring sudo.
+    This prevents apt-get silently using the configuration from the host
+    system instead of the chroot.
+
+ -- Roger Leigh <rleigh@debian.org>  Fri, 14 Jul 2006 21:30:52 +0100
+
 sbuild (0.48) unstable; urgency=low
 
   * Sbuild/Chroot.pm: Use su, rather than sudo, inside the chroot.  This

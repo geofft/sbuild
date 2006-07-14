@@ -104,6 +104,21 @@ sub init {
 	if ($Sbuild::Conf::chroot_mode eq "split") {
 		die "sudo binary $Sbuild::Conf::sudo does not exist or isn't executable\n"
 			if !-x $Sbuild::Conf::sudo;
+
+		local (%ENV) = %ENV; # make local environment
+		$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+		$ENV{'APT_CONFIG'} = "test_apt_config";
+
+		chomp( my $test_df = `$Sbuild::Conf::sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
+		chomp( my $test_ac = `$Sbuild::Conf::sudo sh -c 'echo \$APT_CONFIG'` );
+
+		if ($test_df ne "noninteractive" ||
+		    $test_ac ne "test_apt_config") {
+			print STDERR "$Sbuild::Conf::sudo is stripping APT_CONFIG and/or DEBIAN_FRONTEND from the environment\n";
+			print STDERR "'Defaults:$username env_keep+=\"APT_CONFIG DEBIAN_FRONTEND\"' is not set in /etc/sudoers\n";
+			die "$Sbuild::Conf::sudo is incorrectly configured"
+
+		}
 	} elsif ($Sbuild::Conf::chroot_mode eq "schroot") {
 		die "sudo binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
 			if !-x $Sbuild::Conf::sudo;
