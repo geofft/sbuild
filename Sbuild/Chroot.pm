@@ -248,7 +248,7 @@ sub get_command_internal {
 		if ($Sbuild::Conf::chroot_mode eq "schroot") {
 			$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
 		} else {
-			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $$current{'Location'} $Sbuild::Conf::su -p $user -c '$command'";
+			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $$current{'Location'} $Sbuild::Conf::su -p $user -s /bin/sh -c '$command'";
 		}
 	} else { # Run command outside chroot
 		if ($user ne $Sbuild::Conf::username) {

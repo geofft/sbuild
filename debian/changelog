@@ -5,11 +5,15 @@ sbuild (0.49) UNRELEASED; urgency=low
     mode), and aborts with instructions for correctly configuring sudo.
     This prevents apt-get silently using the configuration from the host
     system instead of the chroot.
+  * Sbuild/Chroot.pm: When running in split mode, use the -s option of
+    su to set the shell used inside the chroot to /bin/sh.  This
+    ensures that a valid shell is always used when the $SHELL is not
+    available inside the chroot (Closes: 378283).
   * sbuild.conf, sbuild.conf.local, update-sourcedeps, sbuild.1.in,
     avg-pkg-build-time.1.in: Update to use the new configuration file
     locations.
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 14 Jul 2006 21:30:52 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 15 Jul 2006 23:38:28 +0100
 
 sbuild (0.48) unstable; urgency=low
 
