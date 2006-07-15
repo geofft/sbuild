@@ -60,9 +60,8 @@ The following environment variables are used by \fBavg\-pkg\-build\-time\fR:
 The home directory of the user.
 .SH FILES
 \fBavg\-pkg\-build\-time\fR reads the sbuild configuration files
-(\fI/etc/sbuild.conf\fP, \fI/etc/sbuild.conf.local\fP and
-\fI~/.sbuildrc\fP (if it exists)) to discover the location of the
-database.
+(\fI/usr/share/sbuild/sbuild.conf\fP, \fI/etc/sbuild/sbuild.conf\fP and
+\fI~/.sbuildrc\fP (if it exists)) to discover the location of the database.
 .SH DIAGNOSTICS
 None.
 .SH AUTHOR

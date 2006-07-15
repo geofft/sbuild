@@ -1,11 +1,11 @@
 #
-# /etc/sbuild.conf.local: global sbuild settings that will survive
-# an upgrade.  This makes it easier to drop this sbuild version into
-# a buildd setting.  (Also see example.sbuildrc)
-# Note: these are common buildd settings, not defaults for this package
+# sbuild.conf: global sbuild settings that will survive an upgrade.
+# This makes it easier to drop this sbuild version into a buildd
+# setting.  (Also see example.sbuildrc) Note: these are common buildd
+# settings, not defaults for this package
 
 # File with the source dependencies (also used by update-sourcedeps)
-#$source_dependencies = "/etc/source-dependencies";
+#$source_dependencies = "/var/lib/sbuild/source-dependencies";
 
 # Name of a database for logging package build times (optional, no database
 # is written if empty)

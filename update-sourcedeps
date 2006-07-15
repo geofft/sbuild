@@ -20,7 +20,7 @@
 set -e
 
 set +e	# don't die if .sbuildrc is missing
-dbfull=$(cat /etc/sbuild.conf /etc/sbuild.conf.local ~/.sbuildrc 2>/dev/null | \
+dbfull=$(cat /usr/share/sbuild/sbuild.conf /etc/sbuild/sbuild.conf ~/.sbuildrc 2>/dev/null | \
 	sed -n '/^\$source_dependencies\>/s/.*"\(.*\)".*/\1/p' | tail -n 1)
 set -e
 

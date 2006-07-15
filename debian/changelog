@@ -5,6 +5,9 @@ sbuild (0.49) UNRELEASED; urgency=low
     mode), and aborts with instructions for correctly configuring sudo.
     This prevents apt-get silently using the configuration from the host
     system instead of the chroot.
+  * sbuild.conf, sbuild.conf.local, update-sourcedeps, sbuild.1.in,
+    avg-pkg-build-time.1.in: Update to use the new configuration file
+    locations.
 
  -- Roger Leigh <rleigh@debian.org>  Fri, 14 Jul 2006 21:30:52 +0100
 
