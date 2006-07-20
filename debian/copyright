@@ -2,7 +2,9 @@ sbuild was originally packaged for Debian by Rick Younie <younie@debian.org>.
 
 sbuild is currently maintained by the Debian buildd-tools project.  It
 was downloaded from
-svn://svn.debian.org/svn/buildd-tools/trunk/sbuild
+  svn://svn.debian.org/svn/buildd-tools/trunk/sbuild
+and
+  https://alioth.debian.org/project/showfiles.php?group_id=30471
 
 The upstream source was originally downloaded from
 :pserver:anon@cvs.linux-m68k.org:/CVS (module: wanna-build)
