@@ -1,8 +1,10 @@
 sbuild (0.50) UNRELEASED; urgency=low
 
   * debian/copyright: Add Alioth file download location.
+  * chroot/add_sbuild_user: Fix chrapt command examples in output to use
+    correct option syntax, thanks to Matthias Julius (Closes: #381186).
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 20 Jul 2006 19:16:33 +0100
+ -- Roger Leigh <rleigh@debian.org>  Thu,  3 Aug 2006 18:38:02 +0100
 
 sbuild (0.49) unstable; urgency=low
 
