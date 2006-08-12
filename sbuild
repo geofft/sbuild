@@ -2947,7 +2947,7 @@ sub dsc_md5sums {
 				print STDERR "  $dir$fields[3]: $fields[1]\n" if $conf::debug;
 			}
 		}
-		close( DSC ) or print PLOG "Failed to close $dsc\n" && return 1;
+		close( DSC ) or print PLOG "Failed to close $dsc\n";
 	}
 
 	return \%dsc_md5;
@@ -2957,27 +2957,35 @@ sub verify_md5sums {
 	my $exp_md5 = shift; # Hashref of filenames and expected MD5sums.
 	my %obs_md5 = (); # Observed MD5sums.
 
-	open(OBS, '-|', "$conf::md5sum", keys %$exp_md5) or return 1;
-	while (<OBS>) {
-		chomp;
-		if (/^[a-z0-9]{32}/) {
-			my @fields = split( /\s+/, $_ );
-			$obs_md5{$fields[1]} = $fields[0];
-		}
-	}
-	close( OBS ) or
-		print PLOG "Failed to close m5sum\n" && return 1;
+	if (scalar keys %$exp_md5 > 0) {
 
-	foreach (sort keys %$exp_md5) {
-		if (defined $exp_md5->{$_} && defined $obs_md5{$_}) {
-			if ($exp_md5->{$_} ne $obs_md5{$_}) {
-				print PLOG "$_: MD5SUM mismatch ($exp_md5->{$_} cf $obs_md5{$_}\n";
+		my @files = keys %$exp_md5;
+		my $command = get_command("$conf::md5sum @files </dev/null", $main::username, 1, 0);
+
+		open(OBS, "$command |") or return 1;
+		while (<OBS>) {
+			chomp;
+			if (/^[a-z0-9]{32}/) {
+				my @fields = split( /\s+/, $_ );
+				$obs_md5{$fields[1]} = $fields[0];
+			}
+		}
+		close( OBS ) or
+			print PLOG "Failed to close m5sum\n" && return 1;
+
+		foreach (sort keys %$exp_md5) {
+			if (defined $exp_md5->{$_} && defined $obs_md5{$_}) {
+				if ($exp_md5->{$_} ne $obs_md5{$_}) {
+					print PLOG "$_: MD5SUM mismatch ($exp_md5->{$_} cf $obs_md5{$_}\n";
+					return 1;
+				}
+			} else {
+				print PLOG "$_: Missing file\n";
 				return 1;
 			}
-		} else {
-			print PLOG "$_: Missing file\n";
-			return 1;
 		}
+	} else {
+		return 1; # No MD5SUMs to check
 	}
 
 	return 0;
