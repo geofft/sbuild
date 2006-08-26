@@ -12,13 +12,12 @@ Architecture: any
 Depends: ${shlibs:Depends}, perl5, libmldbm-perl
 Recommends: exim | mail-transport-agent, cron, wget
 Suggests: gnupg
-Description: Database for packages needed recompiled
- wanna-build maintains a database of packages which need (re-)compiled.
+Description: Database for Debian source packages needing to be compiled.
+ wanna-build maintains a database of packages which need to be compiled.
 
 Package: buildd
 Architecture: any
-Depends: ${shlibs:Depends}, perl5, sbuild (>= 2005.09.26), dupload, cron, exim | mail-transport-agent
+Depends: ${shlibs:Depends}, perl5, sbuild (>= 0.49), dupload, cron, exim | mail-transport-agent
 Description: Build daemon for automatically compiling Debian packages
- buildd is a build daemon which will recompile Debian packages
- automatically
+ buildd is a build daemon which will compile Debian packages automatically.
 

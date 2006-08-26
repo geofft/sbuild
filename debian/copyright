@@ -1,28 +1,38 @@
-This is Debian's prepackaged version of the build daemon and
-associated tools.
+This package was debianized by Roger Leigh <rleigh@debian.org> on
+Sat, 26 Aug 2006 11:44:34 +0100
 
-The build daemon is maintained as a Debian package by me, Ryan Murray
-<rmurray@debian.org>, from the SVN repository,
- http://svn.cyberhqz.com/svn/wanna-build
+buildd is currently maintained by the Debian buildd-tools project.  It
+was downloaded from
+  svn://svn.debian.org/svn/buildd-tools/trunk/buildd
+and
+  https://alioth.debian.org/project/showfiles.php?group_id=30471
 
-Most things were originally written by Roman Hodek.
+The upstream source was originally downloaded from
+http://svn.cyberhqz.com/svn/wanna-build
 
-Program Copyright (C) 2002-2005           Ryan Murray <rmurray@debian.org>
-                      1998-2002           Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
-                                          James Troup <james@nocrew.org>
+Authors:
+Roman Hodek - wanna-build and buildd
+Ryan Murray - modifications for security building, maintenance
+James Troup - maintenance
+Roger Leigh - maintenance
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; version 2 dated June, 1991.
+License: GPL
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
-On Debian GNU systems, the complete text of the GNU General
-Public License can be found in `/usr/share/common-licenses/GPL'.
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+
+On Debian systems, the complete text of the GNU General Public
+License can be found in /usr/share/common-licenses/GPL file.

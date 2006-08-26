@@ -1,3 +1,14 @@
+2006-08-26  Roger Leigh  <rleigh@debian.org>
+
+	* debian/changelog: Initial version.
+
+	* debian/control: Update package descriptions.
+
+	* debian/copyright: Update with new download location and
+	maintainers.
+
+	* debian/sbuild.postinst: Remove.
+
 2006-08-01  Roger Leigh  <rleigh@debian.org>
 
 	* ChangeLog: New file.  Generate from subversion history.

@@ -1,5 +1,5 @@
-wanna-build (2006.01.08) stable; urgency=high
+buildd (0.10) UNRELEASED; urgency=low
 
-  * Initial non-release. [*DO NOT USE THESE DEBS*]
+  * Initial buildd packaging.
 
- -- Ryan Murray <rmurray@debian.org>  Sun,  8 Jan 2006 15:37:11 -0800
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Aug 2006 11:33:02 +0100
