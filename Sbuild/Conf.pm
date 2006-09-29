@@ -32,7 +32,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME $cwd $username $verbose $nolog
+    @EXPORT = qw($HOME $apt_policy $cwd $username $verbose $nolog
 		 $source_dependencies $mailprog $dpkg $sudo $su
 		 $schroot $schroot_options $fakeroot $apt_get
 		 $apt_cache $dpkg_source $md5sum $avg_time_db
@@ -81,6 +81,7 @@ our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 our $srcdep_lock_wait = 1; # minutes
 our $chroot_only = 1;
 our $chroot_mode = "split";
+our $apt_policy = 1;
 our @ignore_watches_no_build_deps = qw();
 our $build_dir = undef;
 our $sbuild_mode = "buildd";

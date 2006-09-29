@@ -139,8 +139,14 @@ sub version_cmp_single {
 		$versb =~ /^(\d*)(.*)/; $b = $1; $b ||= 0; $versb = $2;
 		return $a - $b if $a != $b;
 		return 0 if !$versa && !$versb;
-		return -1 if !$versa;
-		return +1 if !$versb;
+		if (!$versa) {
+			return +1 if order(substr( $versb, 0, 1 ) ) < 0;
+			return -1;
+		}
+		if (!$versb) {
+			return -1 if order(substr( $versa, 0, 1 ) ) < 0;
+			return +1;
+		}
 	}
 }
 

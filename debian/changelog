@@ -1,3 +1,10 @@
+sbuild (0.51) unstable; urgency=low
+
+  * Sbuild.pm: Fix handling of ~ in versions (merge from upstream SVN cset
+    100).
+
+ --
+
 sbuild (0.50) unstable; urgency=low
 
   * debian/copyright: Add Alioth file download location.
