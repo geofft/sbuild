@@ -30,12 +30,5 @@
 # Require chrooted building?
 #$chroot_only=1;
 
-# APT policy.  1 to enable additional checking of package versions
-# available in the APT cache, or 0 to disable.  0 is the traditional
-# sbuild behaviour; 1 is needed to build from additional repositories
-# such as sarge-backports or experimental, and has a small performance
-# cost.
-#$apt_policy = 1;
-
 # don't remove this, Perl needs it:
 1;

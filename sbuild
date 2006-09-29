@@ -1519,11 +1519,6 @@ sub filter_dependencies {
 	}
 	my $status = get_dpkg_status( keys %names );
 
-	my %policy;
-	if ($conf::apt_policy) {
-		%policy = get_apt_policy( keys %names );
-	}
-
 	foreach $dep (@$dependencies) {
 		$name = $dep->{'Package'};
 		next if !$name;
@@ -1577,23 +1572,6 @@ sub filter_dependencies {
 			if (!$stat->{'Installed'}) {
 				print "$name: pos dep, not installed\n" if $conf::debug;
 				print PLOG "$name: missing\n";
-				if ($conf::apt_policy && $rel) {
-					if (!WannaBuild::version_compare($policy{$name}->{defversion}, $rel, $vers)) {
-						print PLOG "Default version of $name not sufficient, ";
-						foreach my $cvers (@{$policy{$name}->{versions}}) {
-							if (WannaBuild::version_compare($cvers, $rel, $vers)) {
-								print PLOG "using version $cvers\n";
-								$installable = $name . "=" . $cvers if !$installable;
-								last;
-							}
-						}
-						if(!$installable) {
-							print PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n" if !$installable;
-						}
-					} else {
-						print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
-					}
-				}
 				$installable = $name if !$installable;
 				next;
 			}
@@ -1618,20 +1596,6 @@ sub filter_dependencies {
 				print PLOG "$name: would have to downgrade!\n";
 			}
 			else {
-				if ($conf::apt_policy && !WannaBuild::version_compare($policy{$name}->{defversion}, $rel, $vers)) {
-					print PLOG "Default version of $name not sufficient, ";
-					foreach my $cvers (@{$policy{$name}->{versions}}) {
-						if(WannaBuild::version_compare($cvers, $rel, $vers)) {
-							print PLOG "using version $cvers\n";
-							$upgradeable = $name if ! $upgradeable;
-							last;
-						}
-					}
-					print PLOG "no suitable alternative found. I probably should dep-wait this one.\n" if !$upgradeable;
-					return 0;
-				} else {
-					print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
-				}
 				$upgradeable = $name if !$upgradeable;
 			}
 		}
@@ -1645,9 +1609,9 @@ sub filter_dependencies {
 				push( @$pos_list, $installable );
 			}
 			else {
-				print PLOG "This dependency could not be satisfied. Possible reasons:\n";
-				print PLOG "* The package has a versioned dependency that is not yet available.\n";
-				print PLOG "* The package has a versioned dependency on a package version that is\n  older than the currently-installed package. Downgrades are not implemented.\n";
+				print PLOG "To satisfy this dependency the package(s) would ",
+						   "have\n",
+						   "to be downgraded; this is not implemented.\n";
 				return 0;
 			}
 		}
@@ -1730,28 +1694,6 @@ sub check_dependencies {
 	}
 
 	return $fail;
-}
-
-sub get_apt_policy {
-	my @interest = @_;
-	my $package;
-	my %packages;
-
-	$ENV{LC_ALL}='C';
-
-	my $command = get_apt_command("$conf::apt_cache", "policy @interest", $main::username, 0);
-
-	open(APTCACHE, "$command |" )
-		or die "Cannot start $conf::apt_cache $!\n";
-	while(<APTCACHE>) {
-		$package=$1 if /^([0-9a-z+.-]+):$/;
-		$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:+]*)$/;
-		$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:+]*)$/;
-		push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:+]*) 0$/;
-	}
-	die "$conf::apt_cache exit status $?\n" if $?;
-
-	return %packages;
 }
 
 sub get_dpkg_status {
