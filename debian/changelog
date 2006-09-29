@@ -1,9 +1,9 @@
-sbuild (0.51) unstable; urgency=low
+sbuild (0.51) UNRELEASED; urgency=low
 
   * Sbuild.pm: Fix handling of ~ in versions (merge from upstream SVN cset
     100).
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Fri, 29 Sep 2006 23:04:22 +0100
 
 sbuild (0.50) unstable; urgency=low
 
