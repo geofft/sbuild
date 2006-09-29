@@ -1,4 +1,4 @@
-sbuild (0.50) UNRELEASED; urgency=low
+sbuild (0.50) unstable; urgency=low
 
   * debian/copyright: Add Alioth file download location.
   * chroot/add_sbuild_user:
@@ -16,7 +16,7 @@ sbuild (0.50) UNRELEASED; urgency=low
   * sbuild-setup.7.in: Document needed addition of SHELL to sudoers
     env_keep (Closes: #389815).
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 28 Sep 2006 11:26:41 +0100
+ -- Roger Leigh <rleigh@debian.org>  Fri, 29 Sep 2006 14:08:11 +0100
 
 sbuild (0.49) unstable; urgency=low
 
