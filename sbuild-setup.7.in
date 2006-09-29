@@ -252,7 +252,7 @@ requires root priveleges.  Add the following lines to \fI/etc/sudoers\fP
 .PP
 \f[CR]\f[CI]username\fP  ALL=NOPASSWD: ALL\fP
 .br
-\f[CR]Defaults:\f[CI]username\fP env_keep+="APT_CONFIG DEBIAN_FRONTEND"\fP
+\f[CR]Defaults:\f[CI]username\fP env_keep+="APT_CONFIG DEBIAN_FRONTEND SHELL"\fP
 .br
 .PP
 where \fIusername\fP is the name of the user who will run sbuild.

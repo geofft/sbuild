@@ -108,14 +108,17 @@ sub init {
 		local (%ENV) = %ENV; # make local environment
 		$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 		$ENV{'APT_CONFIG'} = "test_apt_config";
+		$ENV{'SHELL'} = "/bin/sh";
 
 		chomp( my $test_df = `$Sbuild::Conf::sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
 		chomp( my $test_ac = `$Sbuild::Conf::sudo sh -c 'echo \$APT_CONFIG'` );
+		chomp( my $test_sh = `$Sbuild::Conf::sudo sh -c 'echo \$SHELL'` );
 
 		if ($test_df ne "noninteractive" ||
-		    $test_ac ne "test_apt_config") {
-			print STDERR "$Sbuild::Conf::sudo is stripping APT_CONFIG and/or DEBIAN_FRONTEND from the environment\n";
-			print STDERR "'Defaults:$username env_keep+=\"APT_CONFIG DEBIAN_FRONTEND\"' is not set in /etc/sudoers\n";
+		    $test_ac ne "test_apt_config" ||
+		    $test_sh ne "/bin/sh") {
+			print STDERR "$Sbuild::Conf::sudo is stripping APT_CONFIG, DEBIAN_FRONTEND and/or SHELL from the environment\n";
+			print STDERR "'Defaults:$username env_keep+=\"APT_CONFIG DEBIAN_FRONTEND SHELL\"' is not set in /etc/sudoers\n";
 			die "$Sbuild::Conf::sudo is incorrectly configured"
 
 		}
