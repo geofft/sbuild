@@ -2960,7 +2960,7 @@ sub verify_md5sums {
 	if (scalar keys %$exp_md5 > 0) {
 
 		my @files = keys %$exp_md5;
-		my $command = get_command("$conf::md5sum @files </dev/null", $main::username, 1, 0);
+		my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 1, 0);
 
 		open(OBS, "$command |") or return 1;
 		while (<OBS>) {
