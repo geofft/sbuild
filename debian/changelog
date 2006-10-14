@@ -1,7 +1,7 @@
 sbuild (0.51) UNRELEASED; urgency=low
 
   * Sbuild.pm: Fix handling of ~ in versions (merge from upstream SVN cset
-    100).
+    100; Closes: 392752).
   * sbuild, Sbuild/Conf.pm, sbuild.conf.local: Add support for setting APT
     policy, to allow building from experimental and sarge-backports.
     Thanks to Wouter Verhelst for this patch, which has been slightly
@@ -11,7 +11,7 @@ sbuild (0.51) UNRELEASED; urgency=low
   * Sbuild/Conf.pm: Fix check for schroot.  Thanks to Julien Danjou for
     finding this (Closes: #392751).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 14 Oct 2006 22:30:40 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 14 Oct 2006 22:35:26 +0100
 
 sbuild (0.50) unstable; urgency=low
 
