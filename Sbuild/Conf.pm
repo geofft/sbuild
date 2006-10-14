@@ -125,7 +125,7 @@ sub init {
 		}
 	} elsif ($Sbuild::Conf::chroot_mode eq "schroot") {
 		die "sudo binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
-			if !-x $Sbuild::Conf::sudo;
+			if !-x $Sbuild::Conf::schroot;
 	} else {
 		die "Invalid chroot mode: $Sbuild::Conf::chroot_mode\n";
 	}

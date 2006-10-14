@@ -8,8 +8,10 @@ sbuild (0.51) UNRELEASED; urgency=low
     modified to add configurability and adapt to this version of sbuild.
   * sbuild: Don't run md5sum inside the chroot.  Thanks to Michael Banck
     (Closes: #392323).
+  * Sbuild/Conf.pm: Fix check for schroot.  Thanks to Julien Danjou for
+    finding this (Closes: #392751).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 14 Oct 2006 21:58:43 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 14 Oct 2006 22:30:40 +0100
 
 sbuild (0.50) unstable; urgency=low
 
