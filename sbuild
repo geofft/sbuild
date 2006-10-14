@@ -3018,7 +3018,11 @@ sub verify_md5sums {
 	if (scalar keys %$exp_md5 > 0) {
 
 		my @files = keys %$exp_md5;
-		my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 1, 0);
+		# NOTE this is run outside the chroot, but in schroot
+		# mode the files are downloaded inside the chroot, and
+		# so this will break if the build directory is not
+		# bind mounted inside the chroot.
+		my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 0, 0);
 
 		open(OBS, "$command |") or return 1;
 		while (<OBS>) {

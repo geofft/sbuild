@@ -6,6 +6,8 @@ sbuild (0.51) UNRELEASED; urgency=low
     policy, to allow building from experimental and sarge-backports.
     Thanks to Wouter Verhelst for this patch, which has been slightly
     modified to add configurability and adapt to this version of sbuild.
+  * sbuild: Don't run md5sum inside the chroot.  Thanks to Michael Banck
+    (Closes: #392323).
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 14 Oct 2006 21:58:43 +0100
 
