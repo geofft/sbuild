@@ -1,5 +1,6 @@
-sbuild (0.51) UNRELEASED; urgency=low
+sbuild (0.51) unstable; urgency=high
 
+  * Urgency is high because this version fixes an RC bug in testing.
   * Sbuild.pm: Fix handling of ~ in versions (merge from upstream SVN cset
     100; Closes: 392752).
   * sbuild, Sbuild/Conf.pm, sbuild.conf.local: Add support for setting APT
@@ -16,7 +17,7 @@ sbuild (0.51) UNRELEASED; urgency=low
   * sbuild-setup.7.in: Correct example commandline for debootstrap.
     Thanks to Alex Pennace (Closes: #391277).
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 20 Oct 2006 23:09:09 +0100
+ -- Roger Leigh <rleigh@debian.org>  Fri, 20 Oct 2006 23:31:47 +0100
 
 sbuild (0.50) unstable; urgency=low
 
