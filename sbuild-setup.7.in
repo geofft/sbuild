@@ -44,7 +44,7 @@ mount an LV here if required:
 Add to /etc/fstab and mount (see next section for full fstab example).
 Finally, run debootstrap to create the chroot:
 .PP
-\f[CR]# \f[CB]debootstrap \-\-variant=buildd /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
+\f[CR]# \f[CB]debootstrap \-\-variant=buildd sarge /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
 .br
 .SS 2. Set up additional mounts
 An example \fI/etc/fstab\fP:

@@ -10,8 +10,10 @@ sbuild (0.51) UNRELEASED; urgency=low
     (Closes: #392323).
   * Sbuild/Conf.pm: Fix check for schroot.  Thanks to Julien Danjou for
     finding this (Closes: #392751).
+  * sbuild-setup.7.in: Correct example commandline for debootstrap.
+    Thanks to Alex Pennace (Closes: #391277).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 14 Oct 2006 22:35:26 +0100
+ -- Roger Leigh <rleigh@debian.org>  Fri, 20 Oct 2006 23:09:09 +0100
 
 sbuild (0.50) unstable; urgency=low
 
