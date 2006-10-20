@@ -6,8 +6,11 @@ sbuild (0.51) UNRELEASED; urgency=low
     policy, to allow building from experimental and sarge-backports.
     Thanks to Wouter Verhelst for this patch, which has been slightly
     modified to add configurability and adapt to this version of sbuild.
-  * sbuild: Don't run md5sum inside the chroot.  Thanks to Michael Banck
-    (Closes: #392323).
+  * sbuild:
+    - Don't run md5sum inside the chroot.  Thanks to Michael Banck
+      (Closes: #392323).
+    - chroot_arch():  New function to detect build architecture from
+      within the chroot.  Thanks to Kees Cook (Closes: #392992).
   * Sbuild/Conf.pm: Fix check for schroot.  Thanks to Julien Danjou for
     finding this (Closes: #392751).
   * sbuild-setup.7.in: Correct example commandline for debootstrap.

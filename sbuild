@@ -288,6 +288,8 @@ foreach $pkgv (@ARGV) {
 	$main::srcdep_lock_dir = $$Sbuild::Chroot::current{'Srcdep Lock Dir'};
 	$main::ilock_file = $$Sbuild::Chroot::current{'Install Lock'};
 
+	$main::arch = chroot_arch();
+
 	$main::pkg_status = "failed"; # assume for now
 	$main::current_job = $pkgv;
 	$main::additional_deps = [];
@@ -3051,4 +3053,24 @@ sub verify_md5sums {
 	}
 
 	return 0;
+}
+
+# Figure out chroot architecture
+sub chroot_arch {
+	$main::sub_pid = open( PIPE, "-|" );
+	if (!defined $main::sub_pid) {
+		print PLOG "Can't spawn dpkg: $!\n";
+		return 0;
+	}
+	if ($main::sub_pid == 0) {
+		exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0);
+	}
+	chomp( my $chroot_arch = <PIPE> );
+	close( PIPE );
+	undef $main::sub_pid;
+
+	die "Can't determine architecture of chroot: $!\n"
+		if ($? || !defined($chroot_arch));
+
+	return $chroot_arch;
 }
