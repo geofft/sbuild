@@ -1580,10 +1580,10 @@ sub filter_dependencies {
 				print "$name: pos dep, not installed\n" if $conf::debug;
 				print PLOG "$name: missing\n";
 				if ($conf::apt_policy && $rel) {
-					if (!WannaBuild::version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+					if (!version_compare($policy{$name}->{defversion}, $rel, $vers)) {
 						print PLOG "Default version of $name not sufficient, ";
 						foreach my $cvers (@{$policy{$name}->{versions}}) {
-							if (WannaBuild::version_compare($cvers, $rel, $vers)) {
+							if (version_compare($cvers, $rel, $vers)) {
 								print PLOG "using version $cvers\n";
 								$installable = $name . "=" . $cvers if !$installable;
 								last;
@@ -1620,10 +1620,10 @@ sub filter_dependencies {
 				print PLOG "$name: would have to downgrade!\n";
 			}
 			else {
-				if ($conf::apt_policy && !WannaBuild::version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+				if ($conf::apt_policy && !version_compare($policy{$name}->{defversion}, $rel, $vers)) {
 					print PLOG "Default version of $name not sufficient, ";
 					foreach my $cvers (@{$policy{$name}->{versions}}) {
-						if(WannaBuild::version_compare($cvers, $rel, $vers)) {
+						if(version_compare($cvers, $rel, $vers)) {
 							print PLOG "using version $cvers\n";
 							$upgradeable = $name if ! $upgradeable;
 							last;
