@@ -17,7 +17,7 @@ sbuild (0.51) unstable; urgency=high
   * sbuild-setup.7.in: Correct example commandline for debootstrap.
     Thanks to Alex Pennace (Closes: #391277).
 
- -- Roger Leigh <rleigh@whinlatter.ukfsn.org>  Sat, 21 Oct 2006 10:06:24 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 21 Oct 2006 10:13:00 +0100
 
 sbuild (0.50) unstable; urgency=low
 
