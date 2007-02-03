@@ -173,7 +173,7 @@ sub upload {
 			if ($text =~ /^Version:\s*(\S+)\s*$/m) {
 				$version = $1;
 			}
-			if ($text =~ /^Source:\s*(\S+)\s*$/m) {
+			if ($text =~ /^Source:\s*(\S+)(?:\s+\(\S+\))?\s*$/m) {
 				$source = $1;
 			}
 			if (defined($version) and defined($source)) {
