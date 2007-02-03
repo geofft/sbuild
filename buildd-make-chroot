@@ -1,5 +1,5 @@
-#!/bin/sh -ex
-# Script that uses debootstrap 0.2.45 to build a build-essential
+#!/bin/sh -e
+# Script that uses debootstrap 0.3.2+ to build a build-essential
 # chroot for buildd use
 
 # user suite target <mirror>
@@ -20,7 +20,12 @@ if echo "$3" | grep -Eq '^/'; then
 else
 	TARGET="`pwd`/$3"
 fi
-debootstrap --variant=buildd --include=sudo,fakeroot,build-essential $SUITE $TARGET $4
+if [ "$#" -gt "3" ]; then
+	MIRROR=$4
+else
+	MIRROR=http://incoming.debian.org/debian
+fi
+debootstrap --variant=buildd --include=sudo,fakeroot,build-essential $SUITE $TARGET $MIRROR
 hostname=`hostname`
 echo 127.0.0.1 $hostname localhost > $TARGET/etc/hosts
 echo "# put any local/close mirrors at the top of the file" > $TARGET/etc/apt/sources.list
@@ -61,12 +66,15 @@ case "$2" in
 	    echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
 	;;
 esac
-getent passwd $USER | sed -re 's/^([^:]+):x/\1:*/' -e 's/:[^:]+:([^:]+)$/:\/nonexistant:\1/' >> $TARGET/etc/passwd
+getent passwd $USER | sed -re 's/^([^:]+):x/\1:*/' -e 's/:[^:]+:([^:]+)$/:\/nonexistent:\1/' >> $TARGET/etc/passwd
 getent group $USER | sed -re 's/^([^:]+):x/\1:*/' >> $TARGET/etc/group
 echo $USER  ALL=NOPASSWD:  ALL >> $TARGET/etc/sudoers
 mkdir -p $TARGET/var/debbuild/srcdep-lock $TARGET/build/$USER
 chown -R $USER:$USER $TARGET/var/debbuild $TARGET/build/$USER
 chmod -R 02775 $TARGET/var/debbuild
+echo include /etc/ld.so.conf.d/*.conf >> $TARGET/etc/ld.so.conf
+(cd $TARGET/dev ; ./MAKEDEV fd)
+sudo chroot $TARGET dpkg -P debconf-i18n debconf liblocale-gettext-perl libtext-charwidth-perl libtext-iconv-perl libtext-wrapi18n-perl procps makedev
 echo "Successfully setup chroot for a buildd"
 echo Possible commands to append to fstab:
 echo echo $SUITE-proc $TARGET/proc proc defaults 0 0 \>\> /etc/fstab
