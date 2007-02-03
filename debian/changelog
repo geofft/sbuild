@@ -2,6 +2,8 @@ sbuild (0.53) unstable; urgency=low
 
   * Sbuild/Conf.pm: Add and export check_watches configuration variable.
   * sbuild:
+    - Set umask to 022 so that dpkg-buildpackage always runs with a sane
+      umask (Closes: #405836).
     - check_watches: Don't check watches if check_watches configuration
       variable isn't set (Closes: #397123).
   * sbuild.conf.local:

@@ -51,6 +51,8 @@ $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
 
+umask(022);
+
 $main::distribution = "unstable";
 
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
