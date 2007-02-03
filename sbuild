@@ -2666,6 +2666,8 @@ sub prepare_watches {
 sub check_watches {
 	my($prg, @st, %used);
 
+	return if (!$conf::check_watches);
+
 	foreach $prg (keys %main::this_watches) {
 		if (!(@st = stat( $prg ))) {
 			print "Watch: $prg: stat failed\n" if $conf::debug;

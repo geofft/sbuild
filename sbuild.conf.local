@@ -17,6 +17,10 @@
 # Name for dir for source dependency lock files
 #$srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 
+# PGP-related option to pass to dpkg-buildpackage. Usually neither .dsc
+# nor .changes files shall be signed automatically.
+#$pgp_options = "-us -uc";
+
 # sbuild behaviour; possible values are "user" (exit status reports
 # build failures) and "buildd" (exit status does not report build
 # failures).
@@ -28,7 +32,7 @@
 #$chroot_mode = "split";
 
 # Require chrooted building?
-#$chroot_only=1;
+#$chroot_only = 1;
 
 # APT policy.  1 to enable additional checking of package versions
 # available in the APT cache, or 0 to disable.  0 is the traditional
@@ -36,6 +40,10 @@
 # such as sarge-backports or experimental, and has a small performance
 # cost.
 #$apt_policy = 1;
+
+# Check watched packages to discover missing build dependencies.  This
+# can be disabled to increase the speed of builds
+#$check_watches = 1;
 
 # don't remove this, Perl needs it:
 1;

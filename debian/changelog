@@ -1,3 +1,15 @@
+sbuild (0.53) unstable; urgency=low
+
+  * Sbuild/Conf.pm: Add and export check_watches configuration variable.
+  * sbuild:
+    - check_watches: Don't check watches if check_watches configuration
+      variable isn't set (Closes: #397123).
+  * sbuild.conf.local:
+    - Add pgp_options from sbuild.conf (Closes: 398128).
+    - Add check_watches.
+
+ --
+
 sbuild (0.52) unstable; urgency=low
 
   * New upstream release.
