@@ -5,7 +5,7 @@ sbuild (0.53) unstable; urgency=low
     - check_watches: Don't check watches if check_watches configuration
       variable isn't set (Closes: #397123).
   * sbuild.conf.local:
-    - Add pgp_options from sbuild.conf (Closes: 398128).
+    - Add pgp_options from sbuild.conf (Closes: #398128).
     - Add check_watches.
 
  --
