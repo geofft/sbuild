@@ -1,5 +1,11 @@
 2007-02-03  Roger Leigh  <rleigh@debian.org>
 
+	* README.chroot-building: Refer to modern buildd chroot creation
+	script in README.chroot-building.  Merge from upstream SVN cset
+	106.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
 	* wb-ssh-wrapper: New file.  Merge from upstream SVN cset 105.
 
 2007-02-03  Roger Leigh  <rleigh@debian.org>

@@ -46,88 +46,14 @@ It works like in the following outline:
 Ok, now a bit more slowly:
 
 Best you prepare your chroot environments with the script
-buildd-setup-chroot. It does lots of things automatically. However,
-manual fixes may be required. buildd-setup-chroot is usually called
+buildd-make-chroot. It does lots of things automatically. However,
+manual fixes may be required. buildd-make-chroot is usually called
 as:
 
-  sudo buildd-setup-chroot -a /my/debian/archive -d DIST /usr/local/chroot/DIST
+  sudo buildd-make-chroot buildd DIST chroot-DIST http://optional.nearby.mirror/debian
 
-A path to the Debian archive has to be passed with -a. The -d option
-for the distribution is also required. The parameter is the name of
-the chroot dir; it is created if necessary. Another option is -u
-(--user) to select the login name of the build daemon user. The
-default 'buildd' should be correct in most cases. The option -f
-(--force) removes the whole chroot directory before doing anything
-else and so starts from the beginning.
-
-buildd-setup-chroot should be idempotent, i.e. most steps aren't
-repeated if they're already done. If some are repeated, the effect
-should be the same as before. This way, you can call the script as
-often as you like and fix errors in between and repeat until
-everything works.
-
-buildd-setup-chroot now does the following:
-
- - It unpacks the base filesystem (base*.tgz) from the install disks
-   of the distribution. (The base*.tgz from frozen is used if none for
-   unstable is available.)
- - It creates some dirs in the chroot env. (/build/USER, /AddPkg/DIST,
-   /var/debbuild/srcdep-lock)
- - It copies some config files from the host filesystem, mostly
-   network related to make FTP/HTTP connections possible for apt.
- - /proc is mounted inside the chroot environment.
- - The apt configuration (apt.conf and sources.list) from the host are
-   copied and modified as needed. The most important modification is
-   to list correct distributions in sources.list, as appropriate for
-   the target dist of the chroot env. This means: From the source.list
-   of the host system, deb lines of source.list are deleted or copied
-   so that in the end all distributions from stable up to and
-   including DIST are contained. Also, the /AddPkg/DIST directories
-   are added to sources.list for access to freshly built libraries.
-   Another modification is that --force-conf* is deleted from apt.conf
-   in Dpkg::Options if dpkg is older than 1.4.1.18.
- - If deb lines have file:/ URIs, they refer to local files that
-   aren't available in the chroot environment. Therefore, the script
-   adds NFS mounts from localhost for such dirs. See below for more
-   details.
- - The directories /usr/src/kernel-headers-2.[1234] are NFS-mounted
-   inside the chroot env. Those dirs are needed by some special
-   dependencies (e.g. *KERNEL-HEADERS-2.1).
- - Some packages not needed in a chroot environment are removed from the
-   installation (lilo kbd kbd-data ...).
- - The installation is upgraded from base disk level to current with an
-   apt-get dist-upgrade.
- - Now build-essential packages and those often needed for building
-   (automake, zlib1g-dev, ..._) are installed.
- - Finally, a symlink ~buildd/build/chroot-DIST ->
-   /usr/local/chroot/DIST is created that is later used by sbuild.
-
-To the NFS mounts: I found no better way for making global files
-shareable between the different chroot environments... If someone has
-a better idea, please tell me :-) Those files needed to be shared are
-any Debian archives (if you have a local mirror) and the packages
-under ~buildd/AddPkg.
-
-Paths that should be shared with chroot environments are automatically
-added to /etc/exports. After /etc/exports changes are complete, the
-NFS server is reloaded and the paths are mounted. Finally, the NFS
-mounts just done are also put into /etc/fstab so they're reestablished
-after a reboot.
-
-buildd-setup-chroot does some things automatically, but it might be
-wise to check /etc/{fstab,export} afterwards for correctness :-)
-
-Attention is required if the shared paths are NFS-mounted
-themselves... An example could be a home directory or the Debian
-archive. To be able to re-export such paths, you have to start
-rpc.mountd with the -r option ("allow recursive NFS mounts"),
-otherwise you'll experience strange "permission denied" errors. But
-even with that my experiments failed because only the top-level
-directory was visible and nothing under it. I don't know if that's
-intentional or a bug somewhere. In most cases it will be more
-convenient to avoid the re-export introduced by buildd-setup-chroot
-and modify /etc/fstab to mount the original source directly multiple
-times.
+This will call debootstrap 0.3.2 or higher to create a new chroot, and then set
+it up for the buildd user specified.
 
 Ok, after the chroot environments for all the distributions you want
 are set up, you can start building in them. sbuild recognizes the
