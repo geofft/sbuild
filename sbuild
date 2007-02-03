@@ -1749,9 +1749,9 @@ sub get_apt_policy {
 		or die "Cannot start $conf::apt_cache $!\n";
 	while(<APTCACHE>) {
 		$package=$1 if /^([0-9a-z+.-]+):$/;
-		$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:+]*)$/;
-		$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:+]*)$/;
-		push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:+]*) 0$/;
+		$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
+		$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
+		push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/;
 	}
 	die "$conf::apt_cache exit status $?\n" if $?;
 
