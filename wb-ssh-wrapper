@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# A wrapper script to point ssh at in an authorized_keys file to only allow
+# access to wanna-build
+#
+bin=/usr/bin/wanna-build
+
+[ -n "$SSH_ORIGINAL_COMMAND" ] || exit 1
+
+set -- $SSH_ORIGINAL_COMMAND
+
+bn=$(basename "$1")
+if [ "$bn" != "wanna-build" ]; then
+	exit 1
+fi
+
+shift
+
+[ -f "$bin" -a -x "$bin" ] || exit 1
+
+exec $bin $@
