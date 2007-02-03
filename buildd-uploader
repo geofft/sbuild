@@ -170,10 +170,10 @@ sub upload {
 			}
 			my @dists = split( /\s+/, $1 );
 			my ($version,$source,$pkg);
-			if ($text =~ /^Version:\s*(.*)\s*$/m) {
+			if ($text =~ /^Version:\s*(\S+)\s*$/m) {
 				$version = $1;
 			}
-			if ($text =~ /^Source:\s*(.*)\s*$/m) {
+			if ($text =~ /^Source:\s*(\S+)\s*$/m) {
 				$source = $1;
 			}
 			if (defined($version) and defined($source)) {

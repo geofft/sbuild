@@ -1,5 +1,18 @@
 2007-02-03  Roger Leigh  <rleigh@debian.org>
 
+	* buildd-uploader: Update version regexes for new dpkg.  Merge
+	from upstream SVN cset 102.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* wanna-build-catdb: Rename from catdb.
+
+	* buildd-vlog: Rename from vlog.
+
+	* buildd-update-chroots: Rename from update_chroot.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
 	* buildd-make-chroot: Merge from upstream SVN cset 101.
 
 2006-08-26  Roger Leigh  <rleigh@debian.org>
