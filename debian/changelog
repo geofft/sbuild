@@ -16,9 +16,16 @@ sbuild (0.53) unstable; urgency=low
       + Add package information into the key of the %entries hash, in
         order to cope with multiple packages being returned by apt-cache.
         Based on a patch by Goswin von Brederlow for Bug #408091.
+  * sbuild.conf: Obsolete $source_dependencies.
   * sbuild.conf.local:
     - Add pgp_options from sbuild.conf (Closes: #398128).
     - Add check_watches.
+    - Obsolete $source_dependencies.
+  * update-sourcedeps, update-sourcedeps.1.in: Remove (Closes: 409642).
+    Thanks to Kenshi Muto for reporting that it no longer works.
+  * debian/rules, debian/manpages, debian/README.Debian: Remove support
+    for update-sourcedeps, and note that sourcedeps support is obsoleted
+    and will be removed in Lenny.
 
  --
 

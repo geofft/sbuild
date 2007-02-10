@@ -39,19 +39,13 @@ extras
 
   src-deps
   --------
-  src-deps are useful for building packages that don't have a
-  Build-Depends line.  See http://buildd.debian.org/andrea and the
-  update-sourcedeps man page for more information.
-
-  The update-sourcedeps script will fetch the source-dependencies-*
-  files and put them in place.
-
-  If you decide to use src-deps you are responsible for keeping them
-  up to date, maybe with a cron job.
-
-  On a modern Debian installation, src-deps are of limited use,
-  because Build-Depends are now required.  As a result, src-deps are
-  now optional, and in most cases may be completely ignored.
+  Manual source dependencies are obsolete.  While sbuild will
+  continue to support source-dependencies files for Etch,
+  update-sourcedeps no longer works and has been removed.
+  This is because the source-dependencies files are no longer
+  generated for download.  All support for source-dependencies
+  files will be removed in Lenny.  All packages must now
+  provide Source-Depends[-Indep] in their debian/control file.
 
 
 NOTE: sbuild must be run in the directory that has the
@@ -61,4 +55,4 @@ a chroot with the same name (or alias) as the distribution
 must be available.
 
 
- -- Roger Leigh <rleigh@debian.org>, Thu,  9 Mar 2006 21:23:10 +0000
+ -- Roger Leigh <rleigh@debian.org>, Sat, 10 Feb 2007 20:11:53 +0000
