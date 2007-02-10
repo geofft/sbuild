@@ -427,19 +427,27 @@ sub fetch_source_files {
 			}
 			{
 				local($/) = "";
+				my $package;
 				my $ver;
 				my $tfile;
 				while( <PIPE> ) {
+					$package = $1 if /^Package:\s+(\S+)\s*$/mi;
 					$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
 					$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
-					if (defined $ver && defined $tfile) {
-						@{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
+					if (defined $package && defined $ver && defined $tfile) {
+						@{$entries{"$package $ver"}} = map { (split( /\s+/, $_ ))[3] }
 							split( "\n", $tfile );
-					} else {
-						print PLOG "$conf::apt_cache returned no information about $pkg source\n";
-						print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
-						return ("ERROR");
+						undef($package);
+						undef($ver);
+						undef($tfile);
 					}
+				}
+
+				if (! scalar keys %entries) {
+					print PLOG "$conf::apt_cache returned no information about $pkg source\n";
+					print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
+					return ("ERROR");
+
 				}
 			}
 			close(PIPE);
@@ -449,7 +457,7 @@ sub fetch_source_files {
 				return ("ERROR");
 			}
 				
-			if (!defined($entries{$version})) {
+			if (!defined($entries{"$pkg $version"})) {
 				if (!$retried) {
 					# try to update apt's cache if nothing found
 					run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
@@ -464,7 +472,7 @@ sub fetch_source_files {
 			}
 
 			print PLOG "Fetching source files...\n";
-			@made = @{$entries{$version}};
+			@made = @{$entries{"$pkg $version"}};
 
 			my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
 			if (!open( PIPE, "$command2 |" )) {
