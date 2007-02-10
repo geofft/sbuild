@@ -8,6 +8,8 @@ sbuild (0.53) unstable; urgency=low
       variable isn't set (Closes: #397123).
     - get_apt_policy: Allow ~ in version numbers.  Thanks to Frank
       Lichtenheld for this patch (Closes: #407293).
+    - When running apt-cache, divert STDOUT to the package log, so that
+      warnings do not get mailed separately (Closes: #399178).
   * sbuild.conf.local:
     - Add pgp_options from sbuild.conf (Closes: #398128).
     - Add check_watches.

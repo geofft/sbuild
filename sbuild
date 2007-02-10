@@ -29,6 +29,7 @@ use warnings;
 use POSIX;
 use File::Basename qw(basename dirname);
 use IO::Handle;
+use IPC::Open3;
 use FileHandle;
 use Sbuild qw(binNMU_version version_compare);
 
@@ -50,6 +51,10 @@ $ENV{'SHELL'} = "/bin/sh";
 $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
+
+if (!open(main::DEVNULL, '+<', '/dev/null')) {
+	die "Cannot open /dev/null: $!\n";;
+}
 
 umask(022);
 
@@ -414,9 +419,10 @@ sub fetch_source_files {
 
 		  retry:
 			print PLOG "Checking available source versions...\n";
-			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg 2>&1 </dev/null", $main::username, 0);
-			if (!open( PIPE, "$command |" )) {
-				print PLOG "Can't open pipe to apt-cache: $!\n";
+			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);
+			my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+			if (!$pid) {
+				print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
 				return ("ERROR");
 			}
 			{ local($/) = "";
@@ -430,12 +436,13 @@ sub fetch_source_files {
 				  @{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
 					  split( "\n", $tfile );
 			  } else {
-				  print PLOG "apt-cache returned no information about $pkg source\n";
+				  print PLOG "$conf::apt_cache returned no information about $pkg source\n";
 				  print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
 				  return ("ERROR");
 			  }
 		  }
-			close( PIPE );
+			close(PIPE);
+			waitpid $pid, 0;
 			if ($?) {
 				print PLOG "$conf::apt_cache failed\n";
 				return ("ERROR");
@@ -1745,14 +1752,18 @@ sub get_apt_policy {
 
 	my $command = get_apt_command("$conf::apt_cache", "policy @interest", $main::username, 0);
 
-	open(APTCACHE, "$command |" )
-		or die "Cannot start $conf::apt_cache $!\n";
+	my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&PLOG', "$command" );
+	if (!$pid) {
+		die "Cannot start $conf::apt_cache $!\n";
+	}
 	while(<APTCACHE>) {
 		$package=$1 if /^([0-9a-z+.-]+):$/;
 		$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
 		$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
 		push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/;
 	}
+	close(APTCACHE);
+	waitpid $pid, 0;
 	die "$conf::apt_cache exit status $?\n" if $?;
 
 	return %packages;
@@ -2252,9 +2263,11 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	my $command = get_apt_command("$conf::apt_cache", "show @_ 2>&1", $main::username, 0);
-	open( PIPE, "$command |" )
-		or die "Cannot start $conf::apt_cache $!\n";
+	my $command = get_apt_command("$conf::apt_cache", "show @_", $main::username, 0);
+	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+	if (!$pid) {
+		die "Cannot start $conf::apt_cache $!\n";
+	}
 	local($/) = "";
 	while( <PIPE> ) {
 		my ($name, $dep, $predep);
@@ -2267,6 +2280,7 @@ sub get_dependencies {
 		$deps{$name} = $dep;
 	}
 	close( PIPE );
+	waitpid $pid, 0;
 	die "$conf::apt_cache exit status $?\n" if $?;
 
 	return \%deps;
@@ -2275,9 +2289,11 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "showpkg @_ 2>&1", $main::username, 0);
-	open( PIPE, "$command |" )
-		or die "Cannot start $conf::apt_cache: $!\n";
+	my $command = get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0);
+	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+	if (!$pid) {
+		die "Cannot start $conf::apt_cache $!\n";
+	}
 	my $name;
 	my $in_rprov = 0;
 	my %provided_by;
@@ -2296,6 +2312,7 @@ sub get_virtuals {
 		}
 	}
 	close( PIPE );
+	waitpid $pid, 0;
 	die "$conf::apt_cache exit status $?\n" if $?;
 
 	return \%provided_by;
