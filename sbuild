@@ -425,22 +425,23 @@ sub fetch_source_files {
 				print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
 				return ("ERROR");
 			}
-			{ local($/) = "";
-			  my $ver;
-			  my $tfile;
-			  while( <PIPE> ) {
-				  $ver = $1 if /^Version:\s+(\S+)\s*$/mi;
-				  $tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
-			  }
-			  if (defined $ver && defined $tfile) {
-				  @{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
-					  split( "\n", $tfile );
-			  } else {
-				  print PLOG "$conf::apt_cache returned no information about $pkg source\n";
-				  print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
-				  return ("ERROR");
-			  }
-		  }
+			{
+				local($/) = "";
+				my $ver;
+				my $tfile;
+				while( <PIPE> ) {
+					$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
+					$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
+					if (defined $ver && defined $tfile) {
+						@{$entries{$ver}} = map { (split( /\s+/, $_ ))[3] }
+							split( "\n", $tfile );
+					} else {
+						print PLOG "$conf::apt_cache returned no information about $pkg source\n";
+						print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
+						return ("ERROR");
+					}
+				}
+			}
 			close(PIPE);
 			waitpid $pid, 0;
 			if ($?) {

@@ -10,6 +10,8 @@ sbuild (0.53) unstable; urgency=low
       Lichtenheld for this patch (Closes: #407293).
     - When running apt-cache, divert STDOUT to the package log, so that
       warnings do not get mailed separately (Closes: #399178).
+    - fetch_source_files: Correct indentation, and error with brace
+      placement which caused apt-cache output to not be used.
   * sbuild.conf.local:
     - Add pgp_options from sbuild.conf (Closes: #398128).
     - Add check_watches.
