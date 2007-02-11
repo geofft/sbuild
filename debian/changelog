@@ -27,7 +27,7 @@ sbuild (0.53) unstable; urgency=low
     for update-sourcedeps, and note that sourcedeps support is obsoleted
     and will be removed in Lenny.
 
- --
+ -- Roger Leigh <rleigh@debian.org>  Sun, 11 Feb 2007 10:18:12 +0000
 
 sbuild (0.52) unstable; urgency=low
 
