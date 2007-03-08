@@ -39,12 +39,8 @@ extras
 
   src-deps
   --------
-  Manual source dependencies are obsolete.  While sbuild will
-  continue to support source-dependencies files for Etch,
-  update-sourcedeps no longer works and has been removed.
-  This is because the source-dependencies files are no longer
-  generated for download.  All support for source-dependencies
-  files will be removed in Lenny.  All packages must now
+  Manual source dependencies are obsolete and support has been
+  removed in Lenny.  All packages must now
   provide Source-Depends[-Indep] in their debian/control file.
 
 
@@ -55,4 +51,4 @@ a chroot with the same name (or alias) as the distribution
 must be available.
 
 
- -- Roger Leigh <rleigh@debian.org>, Sat, 10 Feb 2007 20:11:53 +0000
+ -- Roger Leigh <rleigh@debian.org>, Thu,  8 Mar 2007 23:46:38 +0000

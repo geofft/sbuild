@@ -1,3 +1,17 @@
+sbuild (0.54) unstable; urgency=low
+
+  * debian/README.Debian: Document removal of manual src-deps.
+  * sbuild: Remove read_deps, so manual src-deps are no longer read.  The
+    remainder of the manual src-deps support remains to be removed.
+  * Sbuild/Conf.pm:
+    - Don't export $source_dependencies.
+    - Don't define $source_dependencies.
+    - Abort with an error if $source_dependencies is defined.
+  * sbuild.conf: Remove $source_dependencies.
+  * sbuild.conf.local: Remove $source_dependencies.
+
+ -- Roger Leigh <rleigh@debian.org>  Thu,  8 Mar 2007 23:49:52 +0000
+
 sbuild (0.53) unstable; urgency=low
 
   * Sbuild/Conf.pm: Add and export check_watches configuration variable.

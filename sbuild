@@ -259,7 +259,6 @@ $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
-read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
 
 write_jobs_file();
 
@@ -1863,117 +1862,6 @@ sub run_script {
 	wait;
 	print "Script return value: $?\n" if $conf::debug;
 	return $?
-}
-
-
-sub read_deps {
-	my @for_pkgs = @_;
-	my $fname;
-	local( *F );
-
-	open( F, $fname = "<$conf::source_dependencies-$main::distribution" )
-		or open( F, $fname = "<$conf::source_dependencies" )
-		or return;
-	$fname = substr( $fname, 1 );
-	print "Reading source dependencies from $fname\n"
-		if $conf::debug;
-	while( <F> ) {
-		chomp;
-		next if /^\s*$/ || /^\s*#/;
-		while( /\\$/ ) {
-			chop;
-			$_ .= <F>;
-			chomp;
-		}
-		if (/^(\*\*?[\w\d.+-]+):\s*$/) {
-			# is a special definition
-			my $sp = $1;
-			get_special( $fname, $sp, \*F );
-			next;
-		}
-		if (/^abbrev\s+([\w\d.+-]+)\s*=\s*(.*)\s*$/) {
-			my ($abbrev, $def) = ($1, $2);
-			parse_one_srcdep( $abbrev, $def, \%main::abbrevs );
-			next;
-		}
-		if (!/^([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-			warn "Syntax error in line $. in $fname\n";
-			next;
-		}
-		my( $pkg, $deps ) = ($1, $2);
-		if (exists $main::deps{$pkg}) {
-			warn "Ignoring double entry for package $pkg at line $. ".
-				 "in $fname\n";
-			next;
-		}
-		next if !isin( $pkg, @for_pkgs );
-		parse_one_srcdep( $pkg, $deps, \%main::deps );
-	}
-	close( F );
-
-	foreach (@main::manual_srcdeps) {
-		if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-			warn "Syntax error in manual source dependency: ",
-				 substr( $_, 1 ), "\n";
-			next;
-		}
-		my ($mode, $pkg, $deps) = ($1, $2, $3);
-		next if !isin( $pkg, @for_pkgs );
-		@{$main::deps{$pkg}} = () if $mode eq 'f';
-		parse_one_srcdep( $pkg, $deps, \%main::deps );
-	}
-
-	# substitute abbrevs and warn about undefined special deps
-	my( $pkg, $i, %warned );
-	foreach $pkg (keys %main::deps) {
-	  repeat:
-		my $dl = $main::deps{$pkg};
-		for( $i = 0; $i < @$dl; ++$i ) {
-			my $dep = $dl->[$i];
-			my $name = $dep->{'Package'};
-			if ($name =~ /^\*/) {
-				if (!$warned{$name} && !exists $main::specials{$name}) {
-					warn "Warning: $pkg: No definition for special ",
-						 "dependency $name!\n";
-					$warned{$name}++;
-				}
-			}
-			elsif (defined $main::abbrevs{$name}) {
-				my @l = @{$main::abbrevs{$name}};
-				if (defined $dep->{'Alternatives'}) {
-					warn "Warning: $pkg: abbrev $name not allowed ",
-						 "in alternative\n";
-					@l = ();
-				}
-				if ($dep->{'Neg'}) {
-					warn "Warning: $pkg: Negation of abbrev $name ",
-						 "not allowed\n";
-					@l = ();
-				}
-				if ($dep->{'Rel'}) {
-					warn "Warning: $pkg: No relation with abbrev $name ",
-						 "allowed\n";
-					@l = ();
-				}
-				if (my $ov = $dep->{'Override'}) {
-					@l = map { my $x = copy($_);
-							   $x->{'Override'} = $ov; $x } @l;
-				}
-				splice @$dl, $i, 1, @l;
-				goto repeat;
-			}
-			elsif (defined $dep->{'Alternatives'}) {
-				my $alt;
-				foreach $alt (@{$dep->{'Alternatives'}}) {
-					if (defined $main::abbrevs{$alt->{'Package'}}) {
-						warn "Warning: $pkg: abbrev $alt->{'Package'} not ",
-							 "allowed in alternative\n";
-						splice @$dl, $i, 1;
-					}
-				}
-			}
-		}
-	}
 }
 
 sub copy {

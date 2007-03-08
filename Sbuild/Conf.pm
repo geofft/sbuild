@@ -33,7 +33,7 @@ BEGIN {
     @ISA = qw(Exporter);
 
     @EXPORT = qw($HOME $apt_policy $check_watches $cwd $username
-		 $verbose $nolog $source_dependencies $mailprog $dpkg
+		 $verbose $nolog $mailprog $dpkg
 		 $sudo $su $schroot $schroot_options $fakeroot
 		 $apt_get $apt_cache $dpkg_source $md5sum $avg_time_db
 		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
@@ -55,7 +55,7 @@ our $verbose = 0;
 our $nolog = 0;
 
 # Defaults.
-our $source_dependencies = "/etc/source-dependencies";
+our $source_dependencies;
 our $mailprog = "/usr/sbin/sendmail";
 our $dpkg = "/usr/bin/dpkg";
 our $sudo = "/usr/bin/sudo";
@@ -145,6 +145,10 @@ sub init {
 	}
 	if (! -d "$Sbuild::Conf::build_dir") {
 	    die "Build directory $Sbuild::Conf::build_dir does not exist";
+	}
+
+	if (defined($source_dependencies)) {
+	    die "Source dependencies are obsolete";
 	}
 
 }

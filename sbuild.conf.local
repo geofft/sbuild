@@ -4,11 +4,6 @@
 # setting.  (Also see example.sbuildrc) Note: these are common buildd
 # settings, not defaults for this package
 
-# File with the source dependencies (also used by update-sourcedeps)
-# Note that source dependencies are obsolete, and support will be removed
-# in Lenny.
-#$source_dependencies = "/var/lib/sbuild/source-dependencies";
-
 # Name of a database for logging package build times (optional, no database
 # is written if empty)
 #$avg_time_db = "/var/lib/sbuild/avg-build-times";
