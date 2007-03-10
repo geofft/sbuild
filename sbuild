@@ -561,7 +561,6 @@ sub build {
 	my $dsc = shift;
 	my $pkgv = shift;
 	my( $dir, $rv, $changes );
-	my $do_apply_patches = 1;
 	local( *PIPE, *F, *F2 );
 
 	fixup_pkgv( \$pkgv );
@@ -644,7 +643,6 @@ sub build {
 	}
 	else {
 		$dir = "$main::chroot_build_dir$dsc";
-		$do_apply_patches = 0;
 
 		$main::pkg_fail_stage = "check-unpacked-version";
 		# check if the unpacked tree is really the version we need
@@ -740,14 +738,7 @@ sub build {
 			print PLOG "Can't open debian/changelog -- no binNMU hack!\n";
 		}
 	}
-	
-	if ($do_apply_patches) {
-		if (!apply_patches( $pkg )) {
-			chdir( $main::cwd );
-			return 0;
-		}
-	}
-	
+
 	if (-f "debian/files") {
 		local( *FILES );
 		my @lines;
@@ -984,49 +975,6 @@ EOF
 	
 	print PLOG "-"x78, "\n";
 	return $rv == 0 ? 1 : 0;
-}
-
-sub apply_patches {
-	my $pkg = shift;
-	my $name;
-	
-	$main::pkg_fail_stage = "apply-patch";
-	foreach $name ((map { $_->{'Package'} } @{$main::deps{$pkg}}),
-				   @main::global_patches) {
-		if ($name =~ /^\*/ && exists $main::specials{$name}->{'patch'}) {
-			if (exists $main::specials{$name}->{'patchcond'}) {
-				print "Testing condition for $name patch:\n"
-					if $conf::debug;
-				if (run_script("+e",$main::specials{$name}->{'patchcond'})!=0){
-					print PLOG "Condition for $name patch not true -- ",
-								"not applying\n" if $name !~ /^\*\*/;
-					next;
-				}
-				print PLOG "Condition for $name patch ok\n";
-			}
-			print PLOG "Applying $name patch\n";
-			$main::sub_pid = open( PIPE, "|-" );
-			if (!defined $main::sub_pid) {
-				print PLOG "Can't spawn patch: $! -- can't patch\n";
-				return 0;
-			}
-			if ($main::sub_pid == 0) {
-				open( STDOUT, ">&PLOG" );
-				open( STDERR, ">&PLOG" );
-				exec_command("patch --batch --quiet -p1 -E -N --no-backup-if-mismatch", $main::username, 0, 0);
-			}
-			$main::sub_task = "patch";
-
-			print PIPE $main::specials{$name}->{'patch'};
-			close( PIPE );
-			undef $main::sub_pid;
-			if ($name !~ /^\*\*/ && $?) {
-				print PLOG "FAILED [patch died]\n";
-				return 0;
-			}
-		}
-	}
-	return 1;
 }
 
 sub analyze_fail_stage {
@@ -2346,8 +2294,6 @@ sub get_special {
 		warn "Syntax error in line $. in $fname:\n";
 		warn "  Subsection not finished with }\n";
 	}
-
-	push( @main::global_patches, $sp ) if $sp =~ /^\*\*/;
 }
 
 sub check_space {
