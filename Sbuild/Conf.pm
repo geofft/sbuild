@@ -39,7 +39,7 @@ BEGIN {
 		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
 		 $mailto $mailfrom $purge_build_directory
 		 @toolchain_regex $stalled_pkg_timeout
-		 $srcdep_lock_dir $srcdep_lock_wait $chroot_only
+		 $srcdep_lock_dir $srcdep_lock_wait
 		 @ignore_watches_no_build_deps $build_dir
 		 $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
@@ -79,7 +79,7 @@ our @toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+
 our $stalled_pkg_timeout = 90; # minutes
 our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 our $srcdep_lock_wait = 1; # minutes
-our $chroot_only = 1;
+our $chroot_only;
 our $chroot_mode;
 our $apt_policy = 1;
 our $check_watches = 1;
@@ -124,6 +124,10 @@ sub init {
 
 	if (defined($chroot_mode)) {
 	    die "chroot_mode is obsolete";
+	}
+
+	if (defined($chroot_only)) {
+	    die "chroot_only is obsolete";
 	}
 
 	if (defined($sudo)) {

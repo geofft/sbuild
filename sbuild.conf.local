@@ -23,9 +23,6 @@
 # failures).
 #$sbuild_mode = "buildd";
 
-# Require chrooted building?
-#$chroot_only = 1;
-
 # APT policy.  1 to enable additional checking of package versions
 # available in the APT cache, or 0 to disable.  0 is the traditional
 # sbuild behaviour; 1 is needed to build from additional repositories

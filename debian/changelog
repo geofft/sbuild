@@ -17,6 +17,7 @@ sbuild (0.54) unstable; urgency=low
       only supported method of accessing chroots.
     - end_session: Only attempt to end a session when $schroot_session is
       non-empty.
+    - _setup_options: Remove use of $chroot_only.
   * Sbuild/Conf.pm:
     - Don't export $source_dependencies.
     - Don't define $source_dependencies.
@@ -25,9 +26,13 @@ sbuild (0.54) unstable; urgency=low
     - Don't define $sudo or $chroot_mode.
     - Remove sudo sanity checks.
     - Abort with an error if $sudo or $chroot_mode are defined.
+    - Don't export $chroot_only.
+    - Don't define $chroot_only.
+    - Abort with an error if $chroot_only is defined.
   * sbuild.conf:
     - Remove $source_dependencies.
     - Remove $sudo.
+    - Remove $chroot_only.
   * sbuild.conf.local: Remove $source_dependencies.
   * sbuild-setup.7.in: Remove sudo setup.
   * bin/README.bins: Remove sudo from extra package list.
@@ -35,7 +40,7 @@ sbuild (0.54) unstable; urgency=low
     /etc/sudoers to the chroot.
   * TODO: New file.  Document needed changes.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 10 Mar 2007 10:53:46 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 10 Mar 2007 11:06:31 +0000
 
 sbuild (0.53) unstable; urgency=low
 

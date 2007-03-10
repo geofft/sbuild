@@ -152,8 +152,8 @@ sub _setup_options {
 				die "Can't rename $F->filename to $chroot_aptconf: $!\n";
 			}
 		}
-	} elsif ($Sbuild::Conf::chroot_only) {
-		die "$distribution chroot does not exist and in chroot only mode -- exiting\n";
+	} else {
+		die "$distribution chroot does not exist\n";
 	}
 }
 
