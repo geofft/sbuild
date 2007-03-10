@@ -40,7 +40,7 @@ chroot root:
 
 The chroots should only include essential & build-essential
 packages and the extra packages that sbuild needs: apt, fakeroot,
-ssmtp, sudo.  Please check that the references are accurate for
+ssmtp.  Please check that the references are accurate for
 your arch.
 
  ------------------------------------------

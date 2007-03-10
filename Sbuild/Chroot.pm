@@ -112,18 +112,16 @@ sub init {
 	}
 
 	# Pick up available chroots and dist_order from schroot
-	if ($Sbuild::Conf::chroot_mode eq "schroot") {
-		%chroots = ();
-		open CHROOTS, '-|', $Sbuild::Conf::schroot, '--list' or die "Can't run $Sbuild::Conf::schroot";
-		while (<CHROOTS>) {
-			chomp;
-			my $chroot = $_;
-			print STDERR "Getting info for $chroot chroot"
-				if $Sbuild::Conf::debug;
-			_get_schroot_info($chroot);
-		}
-		close CHROOTS or die "Can't close schroot pipe";
+	%chroots = ();
+	open CHROOTS, '-|', $Sbuild::Conf::schroot, '--list' or die "Can't run $Sbuild::Conf::schroot";
+	while (<CHROOTS>) {
+		chomp;
+		my $chroot = $_;
+		print STDERR "Getting info for $chroot chroot"
+			if $Sbuild::Conf::debug;
+		_get_schroot_info($chroot);
 	}
+	close CHROOTS or die "Can't close schroot pipe";
 }
 
 sub _setup_options {
@@ -138,45 +136,20 @@ sub _setup_options {
 		$chroots{"$distribution"}->{'Install Lock'} = "$srcdep_lock_dir/install";
 
 		my $aptconf = "/var/lib/sbuild/apt.conf";
-		if ($Sbuild::Conf::chroot_mode ne "schroot") {
-			$chroots{"$distribution"}->{'APT Options'} =
-				"-o Dir::State::status=$chroot_dir/var/lib/dpkg/status".
-				" -o DPkg::Options::=--root=$chroot_dir".
-				" -o DPkg::Run-Directory=$chroot_dir";
-		} else {
-			$chroots{"$distribution"}->{'APT Options'} = ""
-		}
+		$chroots{"$distribution"}->{'APT Options'} = "";
 
-		# schroot uses an absolute path inside the chroot,
-		# rather than on the host system.
 		my $chroot_aptconf = "$chroot_dir/$aptconf";
-		if ($Sbuild::Conf::chroot_mode eq "schroot") {
-			$ENV{'APT_CONFIG'} = $aptconf;
-		} else {
-			$ENV{'APT_CONFIG'} = $chroot_aptconf;
-		}
+		$ENV{'APT_CONFIG'} = $aptconf;
 
-		# Always write out apt.conf, because it gets outdated
-		# if the chroot_mode is changed...
+		# Always write out apt.conf, because it may become outdated.
 		if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
 					    DIR => $chroot_dir,
 					    UNLINK => 0) ) {
 
-			if ($Sbuild::Conf::chroot_mode ne "schroot") {
-				print $F "Dir \"$chroot_dir\";\n";
-			}
 			print $F "APT::Get::AllowUnauthenticated true;\n";
 
 			if (! rename $F->filename, $chroot_aptconf) {
 				die "Can't rename $F->filename to $chroot_aptconf: $!\n";
-			}
-
-		} else {
-			if ($Sbuild::Conf::chroot_mode ne "schroot") {
-				$chroots{"$distribution"}->{'APT Options'} =
-					" -o Dir::State=$chroot_dir/var/lib/apt".
-					" -o Dir::Cache=$chroot_dir/var/cache/apt".
-					" -o Dir::Etc=$chroot_dir/etc/apt";
 			}
 		}
 	} elsif ($Sbuild::Conf::chroot_only) {
@@ -187,36 +160,48 @@ sub _setup_options {
 sub begin_session {
 	my $distribution = shift;
 
-	if ($Sbuild::Conf::chroot_mode eq "schroot") {
-		if (defined($chroots{"${distribution}-sbuild"})) {
-			$distribution = "${distribution}-sbuild";
-		}
-        	$schroot_session=`$Sbuild::Conf::schroot -c $distribution --begin-session`;
-		chomp($schroot_session);
-		if ($?) {
-			print STDERR "Chroot setup failed\n";
-			return 0;
-		}
-		print STDERR "Setting up chroot $distribution (session id $schroot_session)\n"
-			if $Sbuild::Conf::debug;
-		_get_schroot_info($schroot_session);
-		_setup_options($schroot_session);
-		$current = $chroots{$schroot_session};
-	} else {
-		_setup_options($distribution);
-		$current = $chroots{$distribution};
+	if (defined($chroots{"${distribution}-sbuild"})) {
+		$distribution = "${distribution}-sbuild";
 	}
+	$schroot_session=`$Sbuild::Conf::schroot -c $distribution --begin-session`;
+	chomp($schroot_session);
+	if ($?) {
+		print STDERR "Chroot setup failed\n";
+
+		if (-d "chroot-$distribution" || -l "chroot-$distribution") {
+		    print STDERR "\nFound obsolete chroot: ${Sbuild::Conf::build_dir}/chroot-$distribution\n";
+		    print STDERR "Chroot access via sudo has been replaced with schroot chroot management.\n";
+		    print STDERR "To upgrade to schroot, add the following lines to /etc/schroot/schroot.conf:\n\n";
+
+		    print STDERR "[$distribution]\n";
+		    print STDERR "type=directory\n";
+		    print STDERR "description=Debian $distribution autobuilder\n";
+		    print STDERR "location=${Sbuild::Conf::build_dir}/chroot-$distribution\n";
+		    print STDERR "priority=3\n";
+		    print STDERR "groups=root,sbuild\n";
+		    print STDERR "root-groups=root,sbuild\n";
+		    print STDERR "aliases=$distribution-sbuild\n";
+		    print STDERR "run-setup-scripts=true\n";
+		    print STDERR "run-exec-scripts=true\n\n";
+print STDERR "It is preferable to specify location as a directory, not a symbolic link\n\n"
+		}
+		return 0;
+	}
+	print STDERR "Setting up chroot $distribution (session id $schroot_session)\n"
+		if $Sbuild::Conf::debug;
+	_get_schroot_info($schroot_session);
+	_setup_options($schroot_session);
+	$current = $chroots{$schroot_session};
 	return 1;
 }
 
 sub end_session {
 	$current = undef;
-	if ($Sbuild::Conf::chroot_mode eq "schroot" && $schroot_session ne "") {
-        	system("$Sbuild::Conf::schroot -c $schroot_session --end-session");
-		if ($?) {
-			print STDERR "Chroot cleanup failed\n";
-			return 0;
-		}
+	return if $schroot_session eq "";
+	system("$Sbuild::Conf::schroot -c $schroot_session --end-session");
+	if ($?) {
+		print STDERR "Chroot cleanup failed\n";
+		return 0;
 	}
 	return 1;
 }
@@ -245,17 +230,10 @@ sub get_command_internal {
 
 	my $cmdline;
 	if ($chroot != 0) { # Run command inside chroot
-		if ($Sbuild::Conf::chroot_mode eq "schroot") {
-			$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
-		} else {
-			$cmdline = "$Sbuild::Conf::sudo /usr/sbin/chroot $$current{'Location'} $Sbuild::Conf::su -p $user -s /bin/sh -c '$command'";
-		}
+		$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
 	} else { # Run command outside chroot
 		if ($user ne $Sbuild::Conf::username) {
-			$cmdline = "$Sbuild::Conf::sudo ";
-			if ($user ne "root") {
-				$cmdline .= "-u $Sbuild::Conf::username ";
-			}
+			print LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
 		}
 		$cmdline .= "/bin/sh -c '$command'";
 	}
@@ -282,8 +260,8 @@ sub get_command {
 	return $cmdline;
 }
 
-# Note, do not run with $user="root", and $chroot=0, because sudo
-# access to the host system is not required.
+# Note, do not run with $user="root", and $chroot=0, because root
+# access to the host system is not allowed.
 sub run_command {
 	my $command = shift;  # Command to run
 	my $user = shift;     # User to run command under
@@ -338,12 +316,7 @@ sub get_apt_command {
 
 	my $aptcommand = get_apt_command_internal($command, $options);
 
-	my $chroot = 0;
-	if ($Sbuild::Conf::chroot_mode eq "schroot") {
-		$chroot = 1;
-	}
-
-	my $cmdline = get_command($aptcommand, $user, $chroot, $priority);
+	my $cmdline = get_command($aptcommand, $user, 1, $priority);
 
 	chdir($Sbuild::Conf::cwd);
 	return $cmdline;
@@ -357,13 +330,8 @@ sub run_apt_command {
 
 	my $aptcommand = get_apt_command_internal($command, $options);
 
-	my $chroot = 0;
-	if ($Sbuild::Conf::chroot_mode eq "schroot") {
-		$chroot = 1;
-	}
-
 	chdir($Sbuild::Conf::cwd);
-	return run_command($aptcommand, $user, $chroot, $priority);
+	return run_command($aptcommand, $user, 1, $priority);
 }
 
 1;

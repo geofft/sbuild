@@ -326,8 +326,7 @@ foreach $pkgv (@ARGV) {
 
   cleanup_packages:
 	undo_specials();
-	if ($conf::chroot_mode eq "schroot" &&
-	    defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
+	if (defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
 	    $$Sbuild::Chroot::current{'Session Managed'} == 1) {
 		print PLOG "Not removing build depends: session managed chroot in use\n";
 	} else {

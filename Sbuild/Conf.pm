@@ -34,13 +34,13 @@ BEGIN {
 
     @EXPORT = qw($HOME $apt_policy $check_watches $cwd $username
 		 $verbose $nolog $mailprog $dpkg
-		 $sudo $su $schroot $schroot_options $fakeroot
+		 $su $schroot $schroot_options $fakeroot
 		 $apt_get $apt_cache $dpkg_source $md5sum $avg_time_db
 		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
 		 $mailto $mailfrom $purge_build_directory
 		 @toolchain_regex $stalled_pkg_timeout
 		 $srcdep_lock_dir $srcdep_lock_wait $chroot_only
-		 $chroot_mode @ignore_watches_no_build_deps $build_dir
+		 @ignore_watches_no_build_deps $build_dir
 		 $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name $key_id);
@@ -58,7 +58,7 @@ our $nolog = 0;
 our $source_dependencies;
 our $mailprog = "/usr/sbin/sendmail";
 our $dpkg = "/usr/bin/dpkg";
-our $sudo = "/usr/bin/sudo";
+our $sudo;
 our $su = "/bin/su";
 our $schroot = "/usr/bin/schroot";
 our $schroot_options = "-q";
@@ -80,7 +80,7 @@ our $stalled_pkg_timeout = 90; # minutes
 our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 our $srcdep_lock_wait = 1; # minutes
 our $chroot_only = 1;
-our $chroot_mode = "split";
+our $chroot_mode;
 our $apt_policy = 1;
 our $check_watches = 1;
 our @ignore_watches_no_build_deps = qw();
@@ -103,33 +103,8 @@ sub init {
 	# some checks
 	die "mailprog binary $Sbuild::Conf::mailprog does not exist or isn't executable\n"
 		if !-x $Sbuild::Conf::mailprog;
-	if ($Sbuild::Conf::chroot_mode eq "split") {
-		die "sudo binary $Sbuild::Conf::sudo does not exist or isn't executable\n"
-			if !-x $Sbuild::Conf::sudo;
-
-		local (%ENV) = %ENV; # make local environment
-		$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-		$ENV{'APT_CONFIG'} = "test_apt_config";
-		$ENV{'SHELL'} = "/bin/sh";
-
-		chomp( my $test_df = `$Sbuild::Conf::sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
-		chomp( my $test_ac = `$Sbuild::Conf::sudo sh -c 'echo \$APT_CONFIG'` );
-		chomp( my $test_sh = `$Sbuild::Conf::sudo sh -c 'echo \$SHELL'` );
-
-		if ($test_df ne "noninteractive" ||
-		    $test_ac ne "test_apt_config" ||
-		    $test_sh ne "/bin/sh") {
-			print STDERR "$Sbuild::Conf::sudo is stripping APT_CONFIG, DEBIAN_FRONTEND and/or SHELL from the environment\n";
-			print STDERR "'Defaults:$username env_keep+=\"APT_CONFIG DEBIAN_FRONTEND SHELL\"' is not set in /etc/sudoers\n";
-			die "$Sbuild::Conf::sudo is incorrectly configured"
-
-		}
-	} elsif ($Sbuild::Conf::chroot_mode eq "schroot") {
-		die "sudo binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
-			if !-x $Sbuild::Conf::schroot;
-	} else {
-		die "Invalid chroot mode: $Sbuild::Conf::chroot_mode\n";
-	}
+	die "schroot binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
+	    if !-x $Sbuild::Conf::schroot;
 	die "apt-get binary $Sbuild::Conf::apt_get does not exist or isn't executable\n"
 		if !-x $Sbuild::Conf::apt_get;
 	die "apt-cache binary $Sbuild::Conf::apt_cache does not exist or isn't executable\n"
@@ -145,6 +120,14 @@ sub init {
 	}
 	if (! -d "$Sbuild::Conf::build_dir") {
 	    die "Build directory $Sbuild::Conf::build_dir does not exist";
+	}
+
+	if (defined($chroot_mode)) {
+	    die "chroot_mode is obsolete";
+	}
+
+	if (defined($sudo)) {
+	    die "sudo is obsolete";
 	}
 
 	if (defined($source_dependencies)) {

@@ -29,19 +29,6 @@ if ! getent passwd $USR >/dev/null; then
 	exit 1
 fi
 
-cat << EOF
-
-You must manually add $USR to /etc/sudoers:
-
-# visudo  -- run this command as root and add the following lines:
-
-$USR ALL=NOPASSWD:  ALL
-Defaults:$USR env_keep+="APT_CONFIG DEBIAN_FRONTEND SHELL"
-
-You can do this in another shell or by suspending this script with
-^Z (fg to return when done).
-
-EOF
 echo -n "Continue? (Y/n) "
 
 read ANS
@@ -51,9 +38,6 @@ fi
 
 echo ..adding $USR to sbuild group
 adduser $USR sbuild
-
-echo ..copy sudoers to chroot
-cp /etc/sudoers $CHROOT/etc/sudoers
 
 echo ..add $USR to chroot /etc/passwd file
 grep -v ^$USR: $CHROOT/etc/passwd >$CHROOT/etc/passwd.NEW

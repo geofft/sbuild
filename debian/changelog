@@ -1,16 +1,41 @@
 sbuild (0.54) unstable; urgency=low
 
+  * debian/control:
+    - Remove sudo from Depends.
+    - Add schroot to Depends.
+    - Remove schroot from Recommends.
+  * debian/NEWS.Debian: New file.  Document removal of manual source
+    dependencies and sudo.
   * debian/README.Debian: Document removal of manual src-deps.
-  * sbuild: Remove read_deps, so manual src-deps are no longer read.  The
-    remainder of the manual src-deps support remains to be removed.
+  * sbuild:
+    - Remove read_deps, so manual src-deps are no longer read.  The
+      remainder of the manual src-deps support remains to be removed.
+    - cleanup_packages: Remove check for schroot when removing build
+      dependencies, since schroot is the default.
+  * Sbuild/Chroot.pm:
+    - Remove all special casing for sudo and schroot.  schroot is now the
+      only supported method of accessing chroots.
+    - end_session: Only attempt to end a session when $schroot_session is
+      non-empty.
   * Sbuild/Conf.pm:
     - Don't export $source_dependencies.
     - Don't define $source_dependencies.
     - Abort with an error if $source_dependencies is defined.
-  * sbuild.conf: Remove $source_dependencies.
+    - Don't export $sudo or $chroot_mode.
+    - Don't define $sudo or $chroot_mode.
+    - Remove sudo sanity checks.
+    - Abort with an error if $sudo or $chroot_mode are defined.
+  * sbuild.conf:
+    - Remove $source_dependencies.
+    - Remove $sudo.
   * sbuild.conf.local: Remove $source_dependencies.
+  * sbuild-setup.7.in: Remove sudo setup.
+  * bin/README.bins: Remove sudo from extra package list.
+  * chroot/add_sbuild_user: Remove sudo setup instructions and copying of
+    /etc/sudoers to the chroot.
+  * TODO: New file.  Document needed changes.
 
- -- Roger Leigh <rleigh@debian.org>  Thu,  8 Mar 2007 23:49:52 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 10 Mar 2007 10:53:46 +0000
 
 sbuild (0.53) unstable; urgency=low
 

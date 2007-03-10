@@ -1,0 +1,17 @@
+sbuild (0.54) unstable; urgency=low
+
+  * Support for manual source dependencies has been removed.  Packages
+    must now supply all their build dependencies in the debian/control
+    file in the source package.
+
+  * Support for sudo has been removed.  schroot is now required to access
+    build chroots.  This change has been effected in order to improve the
+    safety and security of sbuild, which no longer requires unrestricted
+    sudo access to the host system.
+
+  * Several configuration options have been removed.  sbuild will print a
+    diagnistic error message and exit with an error when obsolete options
+    are used.
+
+ -- Roger Leigh <rleigh@debian.org>  Fri,  9 Mar 2007 23:12:55 +0000
+

@@ -23,11 +23,6 @@
 # failures).
 #$sbuild_mode = "buildd";
 
-# Chroot behaviour; possible values are "split" (apt and dpkg are run
-# from the host system) and "schroot" (all package operations are done in
-# the chroot with schroot, but the chroot must allow networking)
-#$chroot_mode = "split";
-
 # Require chrooted building?
 #$chroot_only = 1;
 
