@@ -325,7 +325,6 @@ foreach $pkgv (@ARGV) {
 	append_to_FINISHED( $pkgv );
 
   cleanup_packages:
-	undo_specials();
 	if (defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
 	    $$Sbuild::Chroot::current{'Session Managed'} == 1) {
 		print PLOG "Not removing build depends: session managed chroot in use\n";
@@ -1021,7 +1020,7 @@ sub remove_files {
 
 sub install_deps {
 	my $pkg = shift;
-	my( @positive, @negative, @special, @instd, @rmvd );
+	my( @positive, @negative, @instd, @rmvd );
 
 	my $dep = [];
 	if (exists $main::deps{$pkg}) {
@@ -1035,7 +1034,7 @@ sub install_deps {
 	lock_file( "$main::ilock_file", 1 );
 	
 	print "Filtering dependencies\n" if $conf::debug;
-	if (!filter_dependencies( $dep, \@positive, \@negative, \@special )) {
+	if (!filter_dependencies( $dep, \@positive, \@negative )) {
 		print PLOG "Package installation not possible\n";
 		unlock_file( "$main::ilock_file" );
 		return 0;
@@ -1050,7 +1049,7 @@ sub install_deps {
 	# add negative deps as to be removed for checking srcdep conflicts
 	push( @rmvd, @negative );
 	my @confl;
-	if (@confl = check_srcdep_conflicts( \@instd, \@rmvd, \@special )) {
+	if (@confl = check_srcdep_conflicts( \@instd, \@rmvd )) {
 		print PLOG "Waiting for job(s) @confl to finish\n";
 
 		unlock_file( "$main::ilock_file" );
@@ -1058,17 +1057,7 @@ sub install_deps {
 		goto repeat;
 	}
 	
-	write_srcdep_lock_file( $dep, \@special );
-	
-	foreach my $sp (@special) {
-		next if $sp !~ /^\*/ || !exists $main::specials{$sp}->{'prepre'};
-		print PLOG "Running prepre script for $sp\n";
-		if (run_script( "-e", $main::specials{$sp}->{'prepre'} ) != 0) {
-			print PLOG "prepre script of special dependency $sp failed\n";
-			unlock_file( "$main::ilock_file" );
-			return 0;
-		}
-	}
+	write_srcdep_lock_file( $dep );
 
 	my $install_start_time = time;
 	print "Installing positive dependencies: @positive\n" if $conf::debug;
@@ -1110,36 +1099,6 @@ sub install_deps {
 		return 0;
 	}
 
-	foreach my $sp (@special) {
-		next if $sp !~ /^\*/ ||
-			    (!exists $main::specials{$sp}->{'pre'} &&
-			     !exists $main::specials{$sp}->{'post'} &&
-			     !exists $main::specials{$sp}->{'unpack'});
-		if (exists $main::specials{$sp}->{'unpack'}) {
-			my $s = $main::specials{$sp}->{'unpack'};
-			$s =~ s/^\s+//mg;
-			$s =~ s/\s+$//mg;
-			my @s = split( /\s+/, $s );
-			my @rem;
-			print PLOG "Unpacking special sources $sp: @s\n";
-			if (!(@rem = unpack_special_source( @s ))) {
-				print PLOG "unpacking of special dependency sources for $sp failed\n";
-				unlock_file( "$main::ilock_file" );
-				return 0;
-			}
-			$main::changes->{'unpacked'}->{$sp} = \@rem;
-		}
-		if (exists $main::specials{$sp}->{'pre'}) {
-			print PLOG "Running pre script for $sp\n";
-			$main::changes->{'specials'}->{$sp} = 1;
-			if (run_script( "-e", $main::specials{$sp}->{'pre'} ) != 0) {
-				print PLOG "pre script of special dependency $sp failed\n";
-				unlock_file( "$main::ilock_file" );
-				return 0;
-			}
-		}
-	}
-	
 	local (*F);
 
 	my $command = get_command("$conf::dpkg --set-selections", "root", 1);
@@ -1162,76 +1121,6 @@ sub install_deps {
 	return 1;
 }
 
-sub unpack_special_source {
-	my @s = @_;
-	my (@files, @dirs);
-	local (*PIPE);
-
-	foreach my $s (@s) {
-		my $dsc;
-
-		{
-			my $command = get_apt_command("$conf::apt_get", "--only-source -q -d source $s 2>&1 </dev/null", $main::username, 0);
-			if (!open( PIPE, "$command |" )) {
-				print PLOG "Can't open pipe to apt-get: $!\n";
-				goto failed;
-			}
-			while( <PIPE> ) {
-				$dsc = "$1_$2.dsc" if /(\S+) (?:[^:]+:)?(\S+) \(dsc\)/;
-				print PLOG $_;
-			}
-			close( PIPE );
-			if ($?) {
-				print PLOG "Apt-get of special unpack sources failed\n";
-				goto failed;
-			}
-			push( @files, $dsc );
-			if (!open( F, "<$dsc" )) {
-				print PLOG "Can't open $dsc: $!\n";
-				goto failed;
-			}
-			my $dsctext;
-			{ local($/); $dsctext = <F>; }
-			close( F );
-			my $files;
-			$dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
-			push(@files, map { (split( /\s+/, $_ ))[3] } split( "\n", $files ));
-		}
-
-		my $pid = open( PIPE, "-|" );
-		if (!defined $pid) {
-			print PLOG "Can't spawn dpkg-source: $! -- special unpack failed\n";
-			goto failed;
-		}
-		if ($pid == 0) {
-			if ($main::chroot_build_dir && !chdir( $main::chroot_build_dir )) {
-				print PLOG "Couldn't cd to $main::chroot_build_dir: $! -- special unpack failed\n";
-				exit 1;
-			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0);
-		}
-		my $dir;
-		while( <PIPE> ) {
-			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
-		}
-		close( PIPE );
-		if ($?) {
-			print PLOG "dpkg-source failure -- special unpack failed\n";
-			goto failed;
-		}
-		push( @dirs, "$main::chroot_build_dir$dir" );
-		unlink( @files );
-	}
-
-	return @dirs;
-	
-  failed:
-	unlink( @files );
-	system( "rm", "-rf", @dirs );
-	return ();
-}
-	
 sub wait_for_srcdep_conflicts {
 	my @confl = @_;
 	
@@ -1316,26 +1205,6 @@ sub uninstall_debs {
 	print PLOG "dpkg run to remove packages (@_) failed!\n" if $?;
 	return $? == 0;
 }
-
-sub undo_specials {
-	my $sp;
-
-	print "Running post scripts of special dependencies:\n" if $conf::debug;
-	foreach $sp (keys %{$main::changes->{'specials'}}) {
-		print PLOG "Running post script for $sp\n";
-		if (run_script( "-e", $main::specials{$sp}->{'post'} ) != 0) {
-			print PLOG "post script of special dependency $sp failed\n";
-		}
-		delete $main::changes->{'specials'}->{$sp};
-	}
-	foreach $sp (keys %{$main::changes->{'unpacked'}}) {
-		my @dirs = @{$main::changes->{'unpacked'}->{$sp}};
-		print PLOG "Removing special unpacked sources for $sp: @dirs\n";
-		system "rm", "-rf", @dirs;
-		delete $main::changes->{'unpacked'}->{$sp};
-	}
-}
-
 
 sub run_apt {
 	my $mode = shift;
@@ -1469,12 +1338,11 @@ sub filter_dependencies {
 	my $dependencies = shift;
 	my $pos_list = shift;
 	my $neg_list = shift;
-	my $special_list = shift;
 	my($dep, $d, $name, %names);
 
 	print PLOG "Checking for already installed source dependencies...\n";
 	
-	@$pos_list = @$neg_list = @$special_list = ();
+	@$pos_list = @$neg_list = ();
 	foreach $d (@$dependencies) {
 		my $name = $d->{'Package'};
 		$names{$name} = 1 if $name !~ /^\*/;
@@ -1493,20 +1361,7 @@ sub filter_dependencies {
 	foreach $dep (@$dependencies) {
 		$name = $dep->{'Package'};
 		next if !$name;
-		if ($name =~ /^\*/) {
-			my $doit = 1;
-			if (exists $main::specials{$name}->{'condition'}) {
-				print "Testing condition for special dependency $name:\n"
-					if $conf::debug;
-				if (run_script("+e",$main::specials{$name}->{'condition'})!=0){
-					print "Condition false -> not running scripts\n"
-						if $conf::debug;
-					$doit = 0;
-				}
-			}
-			push( @$special_list, $name ) if $doit;
-			next;
-		}
+
 		my $stat = $status->{$name};
 		if ($dep->{'Neg'}) {
 			if ($stat->{'Installed'}) {
@@ -1777,38 +1632,6 @@ sub get_dpkg_status {
 	}
 	close( STATUS );
 	return \%result;
-}
-
-sub run_script {
-	my $e_mode = shift;
-	my $x_mode = "";
-	my $script = shift;
-
-	if ($conf::debug >= 2) {
-		$x_mode = "set -x -v\n";
-	}
-	elsif ($conf::debug)  {
-		print "Running script:\n  ",
-		join( "\n  ", split( "\n", "set $e_mode\n$script" )), "\n";
-	}
-	my $pid = fork();
-	if (!defined $pid) {
-		print PLOG "Can't fork: $! -- can't execute script\n";
-		return 1;
-	}
-	if ($pid == 0) {
-		open( STDOUT, ">&PLOG" );
-		open( STDERR, ">&PLOG" );
-		if ($main::chroot_dir) {
-			exec_command("cd /build/$main::username && set $e_mode && $x_mode$script", $main::username, 1, 0);
-		} else {
-			exec_command("set $e_mode && $x_mode$script", $main::username, 0, 0);
-		}
-		die "Can't exec /bin/sh: $!\n";
-	}
-	wait;
-	print "Script return value: $?\n" if $conf::debug;
-	return $?
 }
 
 sub copy {
@@ -2176,7 +1999,6 @@ sub parse_one_srcdep {
 			s/^\&\s+//;
 		}
 		my @alts = split( /\s*\|\s*/, $_ );
-		my $special_seen = 0;
 		my $neg_seen = 0;
 		foreach (@alts) {
 			if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
@@ -2201,14 +2023,6 @@ sub parse_one_srcdep {
 					 "$pkg: $dep depedency\n"
 						 if $ignore_it && $use_it;
 				next if $ignore_it || ($include && !$use_it);
-			}
-			if ($dep =~ /^\*/) {
-				warn "Warning: $pkg: ignoring version relation on ".
-					 "special dependency $dep\n"
-						 if $rel || $relv;
-				push( @l, { Package => $dep, Override => 1 } );
-				$special_seen = 1;
-				next;
 			}
 			my $neg = 0;
 			if ($dep =~ /^!/) {
@@ -2237,11 +2051,7 @@ sub parse_one_srcdep {
 			$h->{'Override'} = $override if $override;
 			push( @l, $h );
 		}
-		if (@alts > 1 && $special_seen) {
-			warn "Warning: $pkg: alternatives with special dependencies ",
-				 "forbidden -- skipped\n";
-		}
-		elsif (@alts > 1 && $neg_seen) {
+		if (@alts > 1 && $neg_seen) {
 			warn "Warning: $pkg: alternatives with negative dependencies ",
 				 "forbidden -- skipped\n";
 		}
@@ -2252,47 +2062,6 @@ sub parse_one_srcdep {
 			}
 			push( @{$hash->{$pkg}}, $l );
 		}
-	}
-}
-
-sub get_special {
-	my $fname = shift;
-	my $sp = shift;
-	my $sub = "";
-	
-	while( <F> ) {
-		last if /^$/;
-		if (/^\s*(\w+)\s*\{\s*$/) {
-			if ($sub) {
-				warn "Syntax error in line $. in $fname:\n";
-				warn "  Start of special subsection inside ".
-					"another one.\n";
-			}
-			else {
-				$sub = $1;
-				$main::specials{$sp}->{$sub} = "";
-			}
-		}
-		elsif (/^\s*\}\s*$/) {
-			if (!$sub) {
-				warn "Syntax error in line $. in $fname:\n";
-				warn "  }  outside of special subsection\n";
-			}
-			else {
-				$sub = "";
-			}
-		}
-		elsif ($sub) {
-			$main::specials{$sp}->{$sub} .= $_;
-		}
-		else {
-			warn "Syntax error in line $. in $fname:\n";
-			warn "  Subsection start expected\n";
-		}
-	}
-	if ($sub) {
-		warn "Syntax error in line $. in $fname:\n";
-		warn "  Subsection not finished with }\n";
 	}
 }
 
@@ -2371,7 +2140,6 @@ sub append_to_FINISHED {
 
 sub write_srcdep_lock_file {
 	my $deps = shift;
-	my $specials = shift;
 	local( *F );
 
 	++$main::srcdep_lock_cnt;
@@ -2387,10 +2155,6 @@ sub write_srcdep_lock_file {
 	print "Job $main::current_job pid $$ user $user\n" if $conf::debug;
 	foreach (@$deps) {
 		my $name = $_->{'Package'};
-		# add special deps only if they affect global state ("global" sub)
-		next if $name =~ /^\*/ &&
-			    (!isin( $name, @$specials ) ||
-				 $main::specials{$name}->{'global'} !~ /yes/m);
 		print F ($_->{'Neg'} ? "!" : ""), "$name\n";
 		print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $conf::debug;
 	}
@@ -2400,7 +2164,6 @@ sub write_srcdep_lock_file {
 sub check_srcdep_conflicts {
 	my $to_inst = shift;
 	my $to_remove = shift;
-	my $special = shift;
 	local( *F, *DIR );
 	my $mypid = $$;
 	my %conflict_builds;
@@ -2440,36 +2203,18 @@ sub check_srcdep_conflicts {
 			print "Found ", ($neg ? "neg " : ""), "entry $pkg\n"
 				if $conf::debug;
 
-			if ($pkg =~ /^\*/) {
-				print PLOG "Build of $job by $user (pid $pid) has ",
-						   "installed the global special dependency $pkg.\n";
+			if (isin( $pkg, @$to_inst, @$to_remove )) {
+				print PLOG "Source dependency conflict with build of ",
+					"$job by $user (pid $pid):\n";
+				print PLOG "  $job ", ($neg ? "conflicts with" : "needs"),
+					" $pkg\n";
+				print PLOG "  $main::current_job wants to ",
+					(isin( $pkg, @$to_inst ) ? "update" : "remove"),
+						" $pkg\n";
 				$conflict_builds{$file} = 1;
-			}
-			else {
-				if (isin( $pkg, @$to_inst, @$to_remove )) {
-					print PLOG "Source dependency conflict with build of ",
-							   "$job by $user (pid $pid):\n";
-					print PLOG "  $job ", ($neg ? "conflicts with" : "needs"),
-							   " $pkg\n";
-					print PLOG "  $main::current_job wants to ",
-							   (isin( $pkg, @$to_inst ) ? "update" : "remove"),
-							   " $pkg\n";
-					$conflict_builds{$file} = 1;
-				}
 			}
 		}
 		close( F );
-	}
-
-	foreach (@$special) {
-		if ($main::specials{$_}->{'global'} =~ /yes/m) {
-			print PLOG "$main::current_job wants to apply global ",
-					   "special dependency $_\n",
-					   "Must wait for other builds to finish\n";
-			foreach (@files) {
-				$conflict_builds{$_} = 1;
-			}
-		}
 	}
 
 	my @conflict_builds = keys %conflict_builds;

@@ -10,12 +10,23 @@ sbuild (0.54) unstable; urgency=low
   * sbuild:
     - Remove read_deps, so manual src-deps are no longer read.  The
       remainder of the manual src-deps support remains to be removed.
-    - cleanup_packages: Remove check for schroot when removing build
-      dependencies, since schroot is the default.
+    - cleanup_packages:
+      + Remove check for schroot when removing build dependencies, since
+        schroot is the default.
+      + Remove undo_specials().
     - build: Remove do_apply_patches.
     - apply_patches: Remove.
     - get_special: Remove use of @main::global_patches.
     - Remove SVN Id:.
+    - install_deps: Remove @special use.
+    - unpack_special_source: Remove.
+    - undo_specials: Remove.
+    - filter_dependencies: Remove @special use.
+    - run_script: Remove.
+    - parse_one_srcdep: Remove @special use.
+    - get_special: Remove.
+    - write_srcdep_lock_file: Remove @special use.
+    - check_srcdep_conflicts: Remove @special use.
   * Sbuild/Chroot.pm:
     - Remove all special casing for sudo and schroot.  schroot is now the
       only supported method of accessing chroots.
