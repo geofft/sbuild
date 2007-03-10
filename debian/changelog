@@ -15,6 +15,7 @@ sbuild (0.54) unstable; urgency=low
     - build: Remove do_apply_patches.
     - apply_patches: Remove.
     - get_special: Remove use of @main::global_patches.
+    - Remove SVN Id:.
   * Sbuild/Chroot.pm:
     - Remove all special casing for sudo and schroot.  schroot is now the
       only supported method of accessing chroots.
