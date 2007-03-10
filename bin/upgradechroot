@@ -29,7 +29,7 @@ sub usage {
 
 usage() if (@ARGV < 1);
 
-$Sbuild::Conf::cwd = "/" if $Sbuild::Conf::chroot_mode eq "schroot";
+$Sbuild::Conf::cwd = "/";
 
 foreach (@ARGV) {
 

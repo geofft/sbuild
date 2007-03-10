@@ -43,6 +43,7 @@ sbuild (0.54) unstable; urgency=low
       add_sbuild_user.  Remove chroot setup, which is now handled by
       schroot.
   * bin/README.bins: Remove sudo from extra package list.
+  * bin/updatechroot, bin/upgradechroot, bin/chrapt: Remove chroot_mode.
   * chroot/add_sbuild_user:
     - Remove sudo setup instructions and copying of /etc/sudoers to the
       chroot.
