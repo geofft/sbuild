@@ -5,8 +5,3 @@ chroot/README-buildd.chroot:
   Update add_sbuild_user sudo references
   Update chroot update description
 
-add_sbuild_user:
-  Don't copy passwd/group to the chroot; this is handled by schroot
-  Don't create chroot work/home directory; have schroot setup script do this, or have sbuild do it at runtime.
-
-Remove chroot_only option, requiring the presence of a chroot.

@@ -1,92 +1,70 @@
-#!/bin/bash 
+#!/usr/bin/perl -w
 #
-# add (already existing) user to sudoers and create passwd/group
-# entries and a work directory for the user in the chroot
+# Copyright (C) 2006-2007 Roger Leigh <rleigh@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
-usage () {
-	echo >&2 "Usage: add_sbuild_user </path/to/chroot> <dist> <user>"
-	echo >&2 "  <dist> is one of stable, testing, unstable"
-	exit 1
+use strict;
+use warnings;
+
+package main;
+
+sub usage {
+	print STDERR "Usage: $0 <username>\n";
+	exit 1;
 }
 
-if [ $# -ne 3 ]; then usage; fi
-CHROOT=$1
-DIST=$2
-USR=$3
+usage() if (@ARGV < 1);
 
-if [ ! -d $CHROOT/etc ]; then
-	echo >&2 "..$CHROOT doesn't appear to be a chroot"
-	exit 1
-fi
+my $status = 0;
 
-if [ $DIST != stable -a $DIST != testing -a $DIST != unstable ]; then
-	echo >&2 "..\"$DIST\" not an allowed distribution"
-	usage
-fi
+foreach (@ARGV) {
+	my $user = getpwnam($_);
 
-if ! getent passwd $USR >/dev/null; then
-	echo >&2 "..no such user: $USR"
-	exit 1
-fi
+	if (defined $user) {
+		$status += system("/usr/sbin/adduser", "$_", "sbuild");
+	} else {
+		print STDERR "W: User \"$_\" does not exist\n";
+		$status++;
+	}
+}
 
-echo -n "Continue? (Y/n) "
+if ($status == 0) {
+	print STDOUT <<EOF;
 
-read ANS
-if [ x$ANS != xY -a x$ANS != xy -a x$ANS != x ]; then
-	exit
-fi
+Next, copy the example sbuildrc file to the user's home directory and
+set the variables for your system:
 
-echo ..adding $USR to sbuild group
-adduser $USR sbuild
+EOF
 
-echo ..add $USR to chroot /etc/passwd file
-grep -v ^$USR: $CHROOT/etc/passwd >$CHROOT/etc/passwd.NEW
-getent passwd $USR >> $CHROOT/etc/passwd.NEW
-mv $CHROOT/etc/passwd.NEW $CHROOT/etc/passwd
-
-echo ..add $USR to chroot /etc/group
-grep -v ^sbuild: $CHROOT/etc/group >$CHROOT/etc/group.NEW
-getent group sbuild >> $CHROOT/etc/group.NEW
-mv $CHROOT/etc/group.NEW $CHROOT/etc/group
-
-echo ..create chroot work directory for $USR
-mkdir -p $CHROOT/build/$USR
-chown $USR:sbuild $CHROOT/build/$USR
-
-echo ..create chroot home directory for $USR
-HOMEDIR="$CHROOT$(getent passwd $USR | awk -v FS=":" '{ print $6 }')"
-mkdir -p $HOMEDIR
-chown $USR:sbuild $HOMEDIR
-
-cat << EOF
-Successfully set up $CHROOT for ${USR}.
-------------------------------------------------------------------------
-You must create a symlink in base so that sbuild can find the
-chroot, else sbuild will build in the base install.  Remember to
-always run sbuild from that directory.
-
-  mkdir ~$USR/build
-  ln -s $CHROOT ~$USR/build/chroot-$DIST
-
-You may also want to add this symlink to more easily find your
-chroot work directory:
-
-  ln -s $HOMEDIR ~$USR/build/chbuild
-
-Copy the example sbuildrc file to your home directory and set
-the variables for your system.
-
-  cp /usr/share/doc/sbuild/examples/example.sbuildrc ~/.sbuildrc
+	foreach (@ARGV) {
+		my $home = (getpwnam($_))[7];
+		print STDERR "  cp /usr/share/doc/sbuild/examples/example.sbuildrc $home/.sbuildrc\n";
+	}
+	print STDOUT <<EOF;
 
 Now try a build:
 
-  cd ~/build
-  /usr/share/sbuild/chrapt $DIST apt-get update
-  /usr/share/sbuild/chrapt $DIST apt-get upgrade
-     - or "/usr/share/sbuild/chrapt $DIST apt-get -f install"
-       first if the chroot is broken
-  sbuild -v -d $DIST -p successful ed_0.2-20
-
-------------------------------------------------------------------------
+  cd /path/to/source
+  /usr/share/sbuild/chrapt <distribution> apt-get update
+  /usr/share/sbuild/chrapt <distribution> apt-get upgrade
+  (or "/usr/share/sbuild/chrapt <distribution> apt-get -f install"
+       first if the chroot is broken)
+  sbuild -d <distribution> <package>_<version>
 EOF
+}
+
+exit ($status ? 1:0);
 

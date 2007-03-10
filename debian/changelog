@@ -36,8 +36,11 @@ sbuild (0.54) unstable; urgency=low
   * sbuild.conf.local: Remove $source_dependencies.
   * sbuild-setup.7.in: Remove sudo setup.
   * bin/README.bins: Remove sudo from extra package list.
-  * chroot/add_sbuild_user: Remove sudo setup instructions and copying of
-    /etc/sudoers to the chroot.
+  * chroot/add_sbuild_user:
+    - Remove sudo setup instructions and copying of /etc/sudoers to the
+      chroot.
+    - Rewrite in perl.  Only call adduser; all other chroot setup is
+      taken care of by the 50sbuild schroot chroot setup script.
   * TODO: New file.  Document needed changes.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 10 Mar 2007 11:06:31 +0000
