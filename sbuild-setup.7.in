@@ -223,36 +223,45 @@ permissions.
 After it has done this, you do still need to do some manual setup, completing
 the steps it missed out above, for example.
 .SH USER SETUP
-.SS 1. \f[BI]~/.sbuildrc\fP
-Configure the user's \fI~.sbuildrc\fP:
+.SS 1. Group membership
+As root, run:
 .PP
-\f[CR]$ \f[CB]cp /usr/share/doc/sbuild/examples/example.sbuildrc ~/.sbuildrc\fP\fP
+\f[CR]# \f[CB]/usr/share/sbuild/add_sbuild_user \f[CBI]user\fP\fP
+.br
+.PP
+Alternatively, add the user to the \fIsbuild\fP group by hand:
+.PP
+\f[CR]# \f[CB]adduser \f[CBI]user\fP sbuild\fP\fP
+.SS 2. \f[BI]~/.sbuildrc\fP
+.br
+Configure the user's \fI~/.sbuildrc\fP:
+.PP
+\f[CR]$ \f[CB]cp /usr/share/doc/sbuild/examples/example.sbuildrc ~\f[CBI]user\fP/.sbuildrc\fP\fP
 .br
 .PP
 Edit to set the correct mail address to send log files to, and the correct
 maintainer name and/or uploader name.
 .PP
-.SS 2. Build directories
-Create the required build directories (The .sbuildrc may have configured
-different locations; these are the defaults):
+.SS 3. Build directories
+Create directories to contain packages and log files.  (.sbuildrc may have
+configured different locations; the default $build_dir is the current
+directory, and the default $log_dir is ~/logs):
 .PP
 \f[CR]$ \f[CB]mkdir ~/build ~/logs\fP\fP
 .br
-.SS 3. Chroot setup
-As root, run:
-.PP
-\f[CR]# \f[CB]/usr/share/sbuild/add_sbuild_user /srv/chroot/sarge stable <username>\fP
-.br
-.PP
-Follow the instructions displayed, and update ~/build etc. as shown.
-.SS 4. Finished
-You should now be able to run sbuild.
+.SS 4. Chroot setup
+Chroot setup is handled automatically by schroot.
+.SS 5. Finished
+The user should now be able to run sbuild.
 .PP
 \f[CR]$ \f[CB]cd ~/build\fP\fP
 .br
 \f[CR]$ \f[CB]sbuild ...\fP\fP
 .br
 .SH FILES
+.TP
+.I /usr/share/sbuild/add_sbuild_user
+A script to allow a user to run sbuild by adding them to the sbuild group.
 .TP
 .I /usr/share/sbuild/buildd.chroot
 A script to automatically create and configure a chroot using debootstrap.
