@@ -32,6 +32,7 @@ use IO::Handle;
 use IPC::Open3;
 use FileHandle;
 use Sbuild qw(binNMU_version version_compare);
+use Data::Dumper;
 
 package conf;
 use Sbuild::Conf;
@@ -52,6 +53,7 @@ $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
 
+# A file representing /dev/null
 if (!open(main::DEVNULL, '+<', '/dev/null')) {
 	die "Cannot open /dev/null: $!\n";;
 }
@@ -348,6 +350,7 @@ foreach $pkgv (@ARGV) {
 	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
+	dump_main_state() if $conf::debug;
 }
 write_jobs_file();
 
@@ -2681,4 +2684,104 @@ sub chroot_arch {
 		if ($? || !defined($chroot_arch));
 
 	return $chroot_arch;
+}
+
+sub dump_main_state {
+	print STDERR Data::Dumper->Dump([\@main::additional_deps,
+					 $main::arch,
+					 $main::auto_giveback,
+					 $main::auto_giveback_host,
+					 $main::auto_giveback_socket,
+					 $main::auto_giveback_user,
+					 $main::auto_giveback_wb_user,
+					 $main::batchmode,
+					 $main::binNMU,
+					 $main::binNMU_name,
+					 $main::binNMUver,
+					 $main::build_arch_all,
+					 $main::build_source,
+					 $main::build_start_time,
+					 $main::changes,
+					 $main::chroot_build_dir,
+					 $main::chroot_dir,
+					 $main::current_job,
+					 $main::cwd,
+					 $main::database,
+					 \%main::deps,
+					 $main::DEVNULL,
+					 $main::distribution,
+					 $main::dpkg_buildpackage_signopt,
+					 \@main::have_dsc_build_deps,
+					 $main::ilock_file,
+					 $main::jobs_file,
+					 \%main::job_state,
+					 $main::ld_library_path,
+					 $main::lock_interval,
+					 \@main::manual_srcdeps,
+					 $main::max_lock_trys,
+					 $main::override_distribution,
+					 $main::pkg_end_time,
+					 $main::pkg_fail_stage,
+					 $main::pkg_start_time,
+					 $main::pkg_status,
+					 $main::shutdown,
+					 $main::srcdep_lock_cnt,
+					 $main::srcdep_lock_dir,
+					 $main::stats_dir,
+					 $main::sub_pid,
+					 $main::sub_task,
+					 $main::this_space,
+					 \%main::this_watches,
+					 \@main::toolchain_pkgs,
+					 $main::username,
+					 $main::useSNAP,
+					 $main::verbose],
+					 [qw(@main::additional_deps
+					 $main::arch
+					 $main::auto_giveback
+					 $main::auto_giveback_host
+					 $main::auto_giveback_socket
+					 $main::auto_giveback_user
+					 $main::auto_giveback_wb_user
+					 $main::batchmode
+					 $main::binNMU
+					 $main::binNMU_name
+					 $main::binNMUver
+					 $main::build_arch_all
+					 $main::build_source
+					 $main::build_start_time
+					 $main::changes
+					 $main::chroot_build_dir
+					 $main::chroot_dir
+					 $main::current_job $main::cwd
+					 $main::database %main::deps
+					 $main::DEVNULL
+					 $main::distribution
+					 $main::dpkg_buildpackage_signopt
+					 @main::have_dsc_build_deps
+					 $main::ilock_file
+					 $main::jobs_file
+					 %main::job_state
+					 $main::ld_library_path
+					 $main::lock_interval
+					 @main::manual_srcdeps
+					 $main::max_lock_trys
+					 $main::override_distribution
+					 $main::pkg_end_time
+					 $main::pkg_fail_stage
+					 $main::pkg_start_time
+					 $main::pkg_status
+					 $main::shutdown
+					 $main::srcdep_lock_cnt
+					 $main::srcdep_lock_dir
+					 $main::stats_dir
+					 $main::sub_pid
+					 $main::sub_task
+					 $main::this_space
+					 %main::this_watches
+					 @main::toolchain_pkgs
+					 $main::username
+					 $main::useSNAP
+					 $main::verbose)]
+				       );
 }

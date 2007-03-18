@@ -27,6 +27,8 @@ sbuild (0.54) unstable; urgency=low
     - get_special: Remove.
     - write_srcdep_lock_file: Remove @special use.
     - check_srcdep_conflicts: Remove @special use.
+    - dump_main_state: New function to dump the program state using
+      Data::Dumper.  Use to dump the state after each build.
   * Sbuild/Chroot.pm:
     - Remove all special casing for sudo and schroot.  schroot is now the
       only supported method of accessing chroots.
