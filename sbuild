@@ -718,7 +718,7 @@ sub build {
 			$firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 			my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
 			my $NMUversion = binNMU_version($version,$main::binNMUver);
-			chomp( my $date = `822-date` );
+			chomp( my $date = `date -R` );
 			if (!open( F, ">debian/changelog" )) {
 				print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
 				chdir( $main::cwd );
