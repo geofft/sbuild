@@ -23,7 +23,12 @@ sbuild (0.54) unstable; urgency=low
       + Replace "822-date" with "date -R".  Thanks to Guillem Jover for
         this patch (Closes: #415798).
       + Remove support for building from a directory.
-    - fetch_source_files: Remove support for building from a directory.
+      + Run dpkg-source from within the chroot.
+    - fetch_source_files:
+      + Remove support for building from a directory.
+      + Download sources directly into the chroot build directory.  For
+        sources already existing outside the chroot, copy them into the
+        chroot build directory.
     - apply_patches: Remove.
     - get_special: Remove use of @main::global_patches.
     - Remove SVN Id:.
@@ -41,6 +46,9 @@ sbuild (0.54) unstable; urgency=low
     - Add / separators to all users of $main::chroot_build_dir in paths.
     - Replace all users of regular expressions to strip the chroot dir
       from paths with strip_chroot_path.
+    - get_dpkg_status: Print debugging messages with defined variables
+      only, to avoid Perl warning.
+    - verify_md5sums: Remove obsolete comment regarding chroots.
   * Sbuild/Chroot.pm:
     - Remove all special casing for sudo and schroot.  schroot is now the
       only supported method of accessing chroots.

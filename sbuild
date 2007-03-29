@@ -38,8 +38,8 @@ package conf;
 use Sbuild::Conf;
 package main;
 use Sbuild::Conf qw($cwd $nolog $username $verbose); # For backward compatibility.
-use Sbuild::Chroot qw(begin_session end_session get_command
-                      strip_chroot_path run_command exec_command
+use Sbuild::Chroot qw(begin_session end_session strip_chroot_path
+                      get_command run_command exec_command
                       get_apt_command run_apt_command);
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 
@@ -306,7 +306,7 @@ foreach $pkgv (@ARGV) {
 		$main::pkg_status = "skipped";
 		goto cleanup_close;
 	}
-	my $dscfile = $pkgv.".dsc";
+	my $dscfile = "${pkgv}.dsc";
 	$main::pkg_fail_stage = "fetch-src";
 	my @files_to_rm = fetch_source_files( \$dscfile );
 	if (@files_to_rm && $files_to_rm[0] eq "ERROR") {
@@ -373,112 +373,130 @@ sub fetch_source_files {
 	my $build_conflicts_indep = "";
 	local( *F );
 
-	$dscfile =~ m,^(.*)/([^/]+)$,;
-	($dir, $dscbase) = ($1, $2);
+	$dir = dirname($dscfile);
+	$dscbase = basename($dscfile);
+
 	my $urlbase;
 	$urlbase = $1 if $dscfile =~ m,^(\w+://(\S+/)?)([^/]+)$,;
 	(my $pkgv = $dscfile) =~ s,^(.*/)?([^/]+)\.dsc$,$2,;
 	my ($pkg, $version) = split /_/, $pkgv;
 	@main::have_dsc_build_deps = ();
 
-	if (!defined($dscfile) || !defined($pkg) || !defined($version)) {
-		print PLOG "Invalid source: $dscfile\n";
+	my $download = 0;
+	$download = 1 if ($dir eq "." && $$dscfile_ref !~ /^\./);
+	$dir = $main::cwd if !defined($dir);
+
+	if (!defined($dscfile) || !defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
+		print PLOG "Invalid source: $$dscfile_ref\n";
 		return ("ERROR");
 	}
 
-	$dscbase = $pkg . "_" . $version if !defined($dscbase);
-
-	if (!defined($dir) || $dir ne ".") {
-		if (-f "${pkgv}.dsc" && !verify_md5sums(dsc_md5sums("${pkgv}.dsc"))) {
-			print PLOG "${pkgv}.dsc exists in cwd\n";
-		}
-		else {
-			my %entries = ();
-			my $retried = 0;
-
-		  retry:
-			print PLOG "Checking available source versions...\n";
-			my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);
-			my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
-			if (!$pid) {
-				print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
-				return ("ERROR");
-			}
-			{
-				local($/) = "";
-				my $package;
-				my $ver;
-				my $tfile;
-				while( <PIPE> ) {
-					$package = $1 if /^Package:\s+(\S+)\s*$/mi;
-					$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
-					$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
-					if (defined $package && defined $ver && defined $tfile) {
-						@{$entries{"$package $ver"}} = map { (split( /\s+/, $_ ))[3] }
-							split( "\n", $tfile );
-						undef($package);
-						undef($ver);
-						undef($tfile);
-					}
-				}
-
-				if (! scalar keys %entries) {
-					print PLOG "$conf::apt_cache returned no information about $pkg source\n";
-					print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
-					return ("ERROR");
-
-				}
-			}
-			close(PIPE);
-			waitpid $pid, 0;
-			if ($?) {
-				print PLOG "$conf::apt_cache failed\n";
-				return ("ERROR");
-			}
-				
-			if (!defined($entries{"$pkg $version"})) {
-				if (!$retried) {
-					# try to update apt's cache if nothing found
-					run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
-					$retried = 1;
-					goto retry;
-				}
-				print PLOG "Can't find source for $pkgv\n";
-				print PLOG "(only different version(s) ",
-					join( ", ", sort keys %entries), " found)\n"
-						if %entries;
-				return( "ERROR" );
-			}
-
-			print PLOG "Fetching source files...\n";
-			@made = @{$entries{"$pkg $version"}};
-
-			my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
-			if (!open( PIPE, "$command2 |" )) {
-				print PLOG "Can't open pipe to $conf::apt_get: $!\n";
+	# Filenames specified with a path and a filename.  Note that
+	# the filename only means download the source, because it's
+	# not possible to tell from $$dscfile_ref whether there was a
+	# .dsc extension.  TODO: Fix by passing more data,
+	# e.g. separate path, package, version and whether to
+	# download.
+	# TODO: Only call dsc_md5sums once.
+	if (-f "${dir}/${dscbase}" && !$download && !verify_md5sums(dsc_md5sums("${dir}/${dscbase}"))) {
+		print PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
+		my @cwd_files = ("${dir}/${dscbase}");
+		my $md5 = dsc_md5sums("${dir}/${dscbase}");
+		push @cwd_files, keys %$md5;
+		foreach (@cwd_files) {
+			if (system ("cp '$_' '$main::chroot_build_dir'")) {
+				print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
 				return ("ERROR", @made);
 			}
-			while( <PIPE> ) {
-				print PLOG $_;
-			}
-			close( PIPE );
-			if ($?) {
-				print PLOG "$conf::apt_get for sources failed\n";
-				return( "ERROR", @made );
-			}
-			# touch the downloaded files, otherwise buildd-watcher
-			# will complain that they're old :)
-			$$dscfile_ref = $dscfile = (grep { /\.dsc$/ } @made)[0];
+			push(@made, "${main::chroot_build_dir}/" . basename($_));
 		}
+	} else {
+		my %entries = ();
+		my $retried = 0;
+	  retry:
+		print PLOG "Checking available source versions...\n";
+		my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);
+		my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+		if (!$pid) {
+			print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
+			return ("ERROR");
+		}
+		{
+			local($/) = "";
+			my $package;
+			my $ver;
+			my $tfile;
+			while( <PIPE> ) {
+				$package = $1 if /^Package:\s+(\S+)\s*$/mi;
+				$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
+				$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
+				if (defined $package && defined $ver && defined $tfile) {
+					@{$entries{"$package $ver"}} = map { (split( /\s+/, $_ ))[3] }
+						split( "\n", $tfile );
+					undef($package);
+					undef($ver);
+					undef($tfile);
+				}
+			}
+
+			if (! scalar keys %entries) {
+				print PLOG "$conf::apt_cache returned no information about $pkg source\n";
+				print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
+				return ("ERROR");
+
+			}
+		}
+		close(PIPE);
+		waitpid $pid, 0;
+		if ($?) {
+			print PLOG "$conf::apt_cache failed\n";
+			return ("ERROR");
+		}
+
+		if (!defined($entries{"$pkg $version"})) {
+			if (!$retried) {
+				# try to update apt's cache if nothing found
+				run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
+				$retried = 1;
+				goto retry;
+			}
+			print PLOG "Can't find source for $pkgv\n";
+			print PLOG "(only different version(s) ",
+				join( ", ", sort keys %entries), " found)\n"
+					if %entries;
+			return( "ERROR" );
+		}
+
+		print PLOG "Fetching source files...\n";
+		foreach (@{$entries{"$pkg $version"}}) {
+			push(@made, "$main::chroot_build_dir/$_");
+		}
+
+		my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+		if (!open( PIPE, "$command2 |" )) {
+			print PLOG "Can't open pipe to $conf::apt_get: $!\n";
+			return ("ERROR", @made);
+		}
+		while( <PIPE> ) {
+			print PLOG $_;
+		}
+		close( PIPE );
+		if ($?) {
+			print PLOG "$conf::apt_get for sources failed\n";
+			return( "ERROR", @made );
+		}
+		# touch the downloaded files, otherwise buildd-watcher
+		# will complain that they're old :)
+		$$dscfile_ref = $dscfile = (grep { /\.dsc$/ } @made)[0];
 	}
 
-	if (verify_md5sums(dsc_md5sums($dscfile))) {
+	if (verify_md5sums(dsc_md5sums("${main::chroot_build_dir}/${dscbase}"))) {
 		print PLOG "FAILED [dsc verification]\n";
 		return( "ERROR", @made );
 	}
 
-	if (!open( F, "<$dscfile" )) {
-		print PLOG "Can't open $dscfile: $!\n";
+	if (!open( F, "<${main::chroot_build_dir}/${dscbase}" )) {
+		print PLOG "Can't open ${main::chroot_build_dir}/${dscbase}: $!\n";
 		return( "ERROR", @made );
 	}
 	my $dsctext;
@@ -524,16 +542,6 @@ sub fetch_source_files {
 				      $build_conflicts,$build_conflicts_indep);
 	merge_pkg_build_deps( $pkg, $build_depends, $build_depends_indep,
 			      $build_conflicts, $build_conflicts_indep );
-
-	if ($main::build_source) {
-		@made = "";
-		if ($orig && $main::chroot_build_dir) {
-			system ("cp $orig $main::chroot_build_dir") 
-				and print PLOG "ERROR: Could not copy $orig to $main::chroot_build_dir \n";
-			push(@made, "$main::chroot_build_dir/$orig");
-		}
-	}
-
 
 	return @made;
 }
@@ -581,7 +589,7 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec_command("$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1", $main::username, 0, 0);
+			exec_command("$conf::dpkg_source -sn -x $dsc 2>&1", $main::username, 1, 0);
 		}
 		$main::sub_task = "dpkg-source";
 		
@@ -1571,7 +1579,11 @@ sub get_dpkg_status {
 					   "no Package: field\n";
 			next;
 		}
-		print "$pkg ($version) status: $status\n" if $conf::debug >= 2;
+		if (defined($version)) {
+			print "$pkg ($version) status: $status\n" if $conf::debug >= 2;
+		} else {
+			print "$pkg status: $status\n" if $conf::debug >= 2;
+		}
 		if (!$status) {
 			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
 					   "no Status: field for package $pkg\n";
@@ -2595,12 +2607,8 @@ sub verify_md5sums {
 	if (scalar keys %$exp_md5 > 0) {
 
 		my @files = keys %$exp_md5;
-		# NOTE this is run outside the chroot, but in schroot
-		# mode the files are downloaded inside the chroot, and
-		# so this will break if the build directory is not
-		# bind mounted inside the chroot.
-		my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 0, 0);
 
+		my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 0, 0);
 		open(OBS, "$command |") or return 1;
 		while (<OBS>) {
 			chomp;
