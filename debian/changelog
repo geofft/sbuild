@@ -8,7 +8,9 @@ sbuild (0.54) unstable; urgency=low
     - New file.
     - Document removal of manual source dependencies and sudo.
     - Document removal of support for building from a directory.
-  * debian/README.Debian: Document removal of manual src-deps.
+  * debian/README.Debian:
+    - Document removal of manual src-deps.
+    - Remove requirements for chroot symlinks in working directory.
   * sbuild:
     - Remove read_deps, so manual src-deps are no longer read.  The
       remainder of the manual src-deps support remains to be removed.

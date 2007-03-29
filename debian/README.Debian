@@ -6,7 +6,8 @@ setup
 
   The full procedure for setting up a chroot and setting up a user is
   documented in sbuild-setup(7).  Existing users may need to review
-  their sudo setup, due to changes in sudo (User setup, part 4).
+  their setup, due to the removal of sudo support. (User setup, part 4).
+
 
 chroots
 =======
@@ -44,11 +45,10 @@ extras
   provide Source-Depends[-Indep] in their debian/control file.
 
 
-NOTE: sbuild must be run in the directory that has the
-chroot-{stable,testing,unstable} symlink or it won't find
-the chroot and will build in base.  When using schroot,
-a chroot with the same name (or alias) as the distribution
-must be available.
+An schroot chroot with the same name (or alias) as the distribution
+must be available.  For example, to build in an unstable chroot, the
+chroot must be named "sbuild-unstable" or "unstable" (in order of
+preference).
 
 
- -- Roger Leigh <rleigh@debian.org>, Thu,  8 Mar 2007 23:46:38 +0000
+ -- Roger Leigh <rleigh@debian.org>, Thu, 29 Mar 2007 13:17:25 +0100
