@@ -4,8 +4,10 @@ sbuild (0.54) unstable; urgency=low
     - Remove sudo from Depends.
     - Add schroot to Depends.
     - Remove schroot from Recommends.
-  * debian/NEWS.Debian: New file.  Document removal of manual source
-    dependencies and sudo.
+  * debian/NEWS.Debian:
+    - New file.
+    - Document removal of manual source dependencies and sudo.
+    - Document removal of support for building from a directory.
   * debian/README.Debian: Document removal of manual src-deps.
   * sbuild:
     - Remove read_deps, so manual src-deps are no longer read.  The
@@ -18,6 +20,8 @@ sbuild (0.54) unstable; urgency=low
       + Remove do_apply_patches.
       + Replace "822-date" with "date -R".  Thanks to Guillem Jover for
         this patch (Closes: #415798).
+      + Remove support for building from a directory.
+    - fetch_source_files: Remove support for building from a directory.
     - apply_patches: Remove.
     - get_special: Remove use of @main::global_patches.
     - Remove SVN Id:.

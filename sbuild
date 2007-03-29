@@ -388,27 +388,6 @@ sub fetch_source_files {
 
 	$dscbase = $pkg . "_" . $version if !defined($dscbase);
 
-	if (-d $dscfile) {
-		if (-f "$dscfile/debian/.sbuild-build-deps") {
-			open( F, "<$dscfile/debian/.sbuild-build-deps" );
-			my $pkg;
-			while( <F> ) {
-				s/\s*$//;
-				/^Package:\s*(.*)/i and $pkg = $1;
-				/^Build-Depends:\s*(.*)/i and $build_depends = $1;
-				/^Build-Depends-Indep:\s*(.*)/i and $build_depends_indep = $1;
-				/^Build-Conflicts:\s*(.*)/i and $build_conflicts = $1;
-				/^Build-Conflicts-Indep:\s*(.*)/i and $build_conflicts_indep = $1;
-			}
-			close( F );
-			merge_pkg_build_deps( $pkg, $build_depends,
-					      $build_depends_indep,
-					      $build_conflicts,
-					      $build_conflicts_indep );
-		}
-		return;
-	}
-
 	if (!defined($dir) || $dir ne ".") {
 		if (-f "${pkgv}.dsc" && !verify_md5sums(dsc_md5sums("${pkgv}.dsc"))) {
 			print PLOG "${pkgv}.dsc exists in cwd\n";
@@ -630,17 +609,6 @@ sub build {
 		if (system( "chmod -R g-s,go+rX $dir" ) != 0) {
 			print PLOG "chmod -R g-s,go+rX $dir failed.\n";
 			return 0;
-		}
-		
-		if (@main::have_dsc_build_deps && !defined $main::build_source) {
-			my ($d, $di, $c, $ci) = @main::have_dsc_build_deps;
-			open( F, ">$dir/debian/.sbuild-build-deps" );
-			print F "Package: $pkg\n";
-			print F "Build-Depends: $d\n" if $d;
-			print F "Build-Depends-Indep: $di\n" if $di;
-			print F "Build-Conflicts: $c\n" if $c;
-			print F "Build-Conflicts-Indep: $ci\n" if $ci;
-			close( F );
 		}
 	}
 	else {

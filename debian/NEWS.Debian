@@ -9,6 +9,10 @@ sbuild (0.54) unstable; urgency=low
     safety and security of sbuild, which no longer requires unrestricted
     sudo access to the host system.
 
+  * Support for building an unpacked source directory has been removed,
+    because the .dsc needs to be available in the current working
+    directory and copied into the chroot, or downloaded inside the chroot.
+
   * Several configuration options have been removed.  sbuild will print a
     diagnistic error message and exit with an error when obsolete options
     are used.
