@@ -42,6 +42,7 @@ sbuild (0.54) unstable; urgency=low
     - end_session: Only attempt to end a session when $schroot_session is
       non-empty.
     - _setup_options: Remove use of $chroot_only.
+    - init: Add newline to debugging message.
   * Sbuild/Conf.pm:
     - Don't export $source_dependencies.
     - Don't define $source_dependencies.

@@ -117,7 +117,7 @@ sub init {
 	while (<CHROOTS>) {
 		chomp;
 		my $chroot = $_;
-		print STDERR "Getting info for $chroot chroot"
+		print STDERR "Getting info for $chroot chroot\n"
 			if $Sbuild::Conf::debug;
 		_get_schroot_info($chroot);
 	}
