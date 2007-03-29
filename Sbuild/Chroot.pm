@@ -35,10 +35,9 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(begin_session end_session get_command run_command
-		 exec_command get_apt_command run_apt_command
-		 current);
-}
+    @EXPORT = qw(begin_session end_session strip_chroot_path
+		 get_command run_command exec_command get_apt_command
+		 run_apt_command current); }
 
 my %chroots = ();
 my $schroot_session = "";
@@ -130,7 +129,7 @@ sub _setup_options {
 	if (defined($chroots{$distribution}) &&
 	    -d $chroots{"$distribution"}->{'Location'}) {
 		my $chroot_dir = $chroots{"$distribution"}->{'Location'};
-		$chroots{"$distribution"}->{'Build Location'} = "$chroot_dir/build/$Sbuild::Conf::username/";
+		$chroots{"$distribution"}->{'Build Location'} = "$chroot_dir/build/$Sbuild::Conf::username";
 		my $srcdep_lock_dir = "$chroot_dir/$Sbuild::Conf::srcdep_lock_dir";
 		$chroots{"$distribution"}->{'Srcdep Lock Dir'} = $srcdep_lock_dir;
 		$chroots{"$distribution"}->{'Install Lock'} = "$srcdep_lock_dir/install";
@@ -206,13 +205,22 @@ sub end_session {
 	return 1;
 }
 
+sub strip_chroot_path {
+	my $path = shift;
+
+	$path =~ s/^\Q$$current{'Location'}\E//;
+
+	return $path;
+}
+
 sub log_command {
 	my $msg = shift;      # Message to log
 	my $priority = shift; # Priority of log message
 
-	if (((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) &&
-	    $$current{'APT Options'} ne "") {
-		$msg =~ s/\Q$$current{'APT Options'}\E/CHROOT_APT_OPTIONS/g;
+	if ((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) {
+		if ($$current{'APT Options'} ne "") {
+			$msg =~ s/\Q$$current{'APT Options'}\E/CHROOT_APT_OPTIONS/g;
+		}
 		print STDERR "$msg\n";
 	}
 }
@@ -230,7 +238,8 @@ sub get_command_internal {
 
 	my $cmdline;
 	if ($chroot != 0) { # Run command inside chroot
-		$cmdline = "$Sbuild::Conf::schroot -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
+		my $dir = strip_chroot_path($$current{'Build Location'});
+		$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
 	} else { # Run command outside chroot
 		if ($user ne $Sbuild::Conf::username) {
 			print LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
@@ -257,6 +266,7 @@ sub get_command {
 	if ($chroot != 0) {
 		chdir($Sbuild::Conf::cwd);
 	}
+
 	return $cmdline;
 }
 

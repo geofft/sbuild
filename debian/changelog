@@ -36,13 +36,24 @@ sbuild (0.54) unstable; urgency=low
     - check_srcdep_conflicts: Remove @special use.
     - dump_main_state: New function to dump the program state using
       Data::Dumper.  Use to dump the state after each build.
+    - Add / separators to all users of $main::chroot_build_dir in paths.
+    - Replace all users of regular expressions to strip the chroot dir
+      from paths with strip_chroot_path.
   * Sbuild/Chroot.pm:
     - Remove all special casing for sudo and schroot.  schroot is now the
       only supported method of accessing chroots.
     - end_session: Only attempt to end a session when $schroot_session is
       non-empty.
-    - _setup_options: Remove use of $chroot_only.
+    - _setup_options:
+      + Remove use of $chroot_only.
+      + Remove trailing / from 'Build Location'.
     - init: Add newline to debugging message.
+    - strip_chroot_path: New function to strip the chroot location from a
+      path.
+    - log_command: Correctly log commands when no APT Options stripping is
+      needed.
+    - get_command_internal: Set the working directory inside the chroot to
+      the build location.
   * Sbuild/Conf.pm:
     - Don't export $source_dependencies.
     - Don't define $source_dependencies.

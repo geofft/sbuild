@@ -39,8 +39,8 @@ use Sbuild::Conf;
 package main;
 use Sbuild::Conf qw($cwd $nolog $username $verbose); # For backward compatibility.
 use Sbuild::Chroot qw(begin_session end_session get_command
-                      run_command exec_command get_apt_command
-                      run_apt_command);
+                      strip_chroot_path run_command exec_command
+                      get_apt_command run_apt_command);
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 
 Sbuild::Conf::init();
@@ -530,7 +530,7 @@ sub fetch_source_files {
 		if ($orig && $main::chroot_build_dir) {
 			system ("cp $orig $main::chroot_build_dir") 
 				and print PLOG "ERROR: Could not copy $orig to $main::chroot_build_dir \n";
-			push(@made, "$main::chroot_build_dir$orig");
+			push(@made, "$main::chroot_build_dir/$orig");
 		}
 	}
 
@@ -555,15 +555,15 @@ sub build {
 	my $tmpunpackdir = $dsc;
 	$tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
 	$tmpunpackdir =~ s/_/-/;
-	$tmpunpackdir = "$main::chroot_build_dir$tmpunpackdir";
+	$tmpunpackdir = "$main::chroot_build_dir/$tmpunpackdir";
 	
-	if (-d "$main::chroot_build_dir$dsc" && -l "$main::chroot_build_dir$dsc") {
+	if (-d "$main::chroot_build_dir/$dsc" && -l "$main::chroot_build_dir/$dsc") {
 		# if the package dir already exists but is a symlink, complain
 		print PLOG "Cannot unpack source: a symlink to a directory with the\n",
 				   "same name already exists.\n";
 		return 0;
 	}
-	if (! -d "$main::chroot_build_dir$dsc") {
+	if (! -d "$main::chroot_build_dir/$dsc") {
 		$main::pkg_fail_stage = "unpack";
 		# dpkg-source refuses to remove the remanants of an
 		# aborted dpkg-source extraction, so we will if necessary.
@@ -604,7 +604,7 @@ sub build {
 		    system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 			return 0;
 		}
-		$dir = "$main::chroot_build_dir$dir";
+		$dir = "$main::chroot_build_dir/$dir";
 
 		if (system( "chmod -R g-s,go+rX $dir" ) != 0) {
 			print PLOG "chmod -R g-s,go+rX $dir failed.\n";
@@ -612,7 +612,7 @@ sub build {
 		}
 	}
 	else {
-		$dir = "$main::chroot_build_dir$dsc";
+		$dir = "$main::chroot_build_dir/$dsc";
 
 		$main::pkg_fail_stage = "check-unpacked-version";
 		# check if the unpacked tree is really the version we need
@@ -668,8 +668,7 @@ sub build {
 					   "(Source needs $current_usage KB, free are $free KB.)\n";
 			print PLOG "Purging $dir\n";
 			chdir( $main::cwd );
-			my $bdir = $dir;
-			$bdir =~ s/^\Q$main::chroot_dir\E//;
+			my $bdir = strip_chroot_path($dir);
 			run_command("rm -rf $bdir", "root", 1, 0);
 			return 0;
 		}
@@ -754,8 +753,7 @@ EOF
 			$main::build_arch_all ?	"-b" : "-B";
 
 		if ($main::chroot_dir) {
-			my $bdir = $dir;
-			$bdir =~ s/^\Q$main::chroot_dir\E//;
+			my $bdir = strip_chroot_path($dir);
 			if (-f "$main::chroot_dir/etc/ld.so.conf" &&
 			    ! -r "$main::chroot_dir/etc/ld.so.conf") {
 				run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
@@ -831,13 +829,13 @@ EOF
 			my @files = debian_files_list("$dir/debian/files");
 
 			foreach (@files) {
-				if (! -f "$main::chroot_build_dir$_") {
+				if (! -f "$main::chroot_build_dir/$_") {
 					print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
 					next;
 				}
 				if (/_all.u?deb$/ and not $main::build_arch_all) {
 					print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
-					unlink("$main::chroot_build_dir$_");
+					unlink("$main::chroot_build_dir/$_");
 					next;
 				}
 			}
@@ -847,10 +845,10 @@ EOF
 			($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
 			"_$main::arch.changes";
 		my @cfiles;
-		if (-r "$main::chroot_build_dir$changes") {
+		if (-r "$main::chroot_build_dir/$changes") {
 			my(@do_dists, @saved_dists);
 			print PLOG "\n$changes:\n";
-			open( F, "<$main::chroot_build_dir$changes" );
+			open( F, "<$main::chroot_build_dir/$changes" );
 			if (open( F2, ">$changes.new" )) {
 				while( <F> ) {
 					if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
@@ -875,14 +873,14 @@ EOF
 				rename( "$changes.new", "$changes" )
 					or print PLOG "$changes.new could not be renamed ".
 								  "to $changes: $!\n";
-				unlink( "$main::chroot_build_dir$changes" )
+				unlink( "$main::chroot_build_dir/$changes" )
 					if $main::chroot_build_dir;
 			}
 			else {
 				print PLOG "Cannot create $changes.new: $!\n";
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
-					system "mv", "$main::chroot_build_dir$changes", "."
+					system "mv", "$main::chroot_build_dir/$changes", "."
 						and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 				}
 			}
@@ -894,7 +892,7 @@ EOF
 
 		my @debcfiles = @cfiles;
 		foreach (@debcfiles) {
-			my $deb = "$main::chroot_build_dir$_";
+			my $deb = "$main::chroot_build_dir/$_";
 			next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
 
 			print PLOG "\n$deb:\n";
@@ -909,7 +907,7 @@ EOF
 
 		@debcfiles = @cfiles;
 		foreach (@debcfiles) {
-			my $deb = "$main::chroot_build_dir$_";
+			my $deb = "$main::chroot_build_dir/$_";
 			next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
 
 			print PLOG "\n$deb:\n";
@@ -924,7 +922,7 @@ EOF
 
 		foreach (@cfiles) {
 			push( @space_files, $_ );
-			system "mv", "$main::chroot_build_dir$_", "."
+			system "mv", "$main::chroot_build_dir/$_", "."
 				and print PLOG "ERROR: Could not move $_ to .\n";
 		}
 		print PLOG "\n";
@@ -938,8 +936,7 @@ EOF
 	if ($conf::purge_build_directory eq "always" ||
 		($conf::purge_build_directory eq "successful" && $rv == 0)) {
 		print PLOG "Purging $dir\n";
-		my $bdir = $dir;
-		$bdir =~ s/^\Q$main::chroot_dir\E//;
+		my $bdir = strip_chroot_path($dir);
 		run_command("rm -rf $bdir", "root", 1, 0);
 	}
 	
@@ -2045,7 +2042,7 @@ sub check_space {
 		my $command;
 
 		if (/^\Q$main::chroot_dir\E/) {
-			$_ =~ s/^\Q$main::chroot_dir\E//;
+			$_ = strip_chroot_path($_);
 			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", "root", 1, 0);
 		} else {
 			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $main::username, 0, 0);
@@ -2252,8 +2249,7 @@ sub check_watches {
 		}
 		if ($st[8] > $main::build_start_time) {
 			my $pkg = $main::this_watches{$prg};
-			my $prg2 = $prg;
-			$prg2 =~ s/^\Q$main::chroot_dir\E// if $main::chroot_dir;
+			my $prg2 = strip_chroot_path($prg);
 			push( @{$used{$pkg}}, $prg2 )
 				if @main::have_dsc_build_deps ||
 				   !isin( $pkg, @conf::ignore_watches_no_build_deps );
