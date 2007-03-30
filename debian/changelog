@@ -40,6 +40,7 @@ sbuild (0.54) unstable; urgency=low
         sources already existing outside the chroot, copy them into the
         chroot build directory.
       + Add extra directory, package, version and download arguments.
+      + Only call dsc_md5sums once, rather than twice.
     - apply_patches: Remove.
     - get_special: Remove use of @main::global_patches.
     - Remove SVN Id:.

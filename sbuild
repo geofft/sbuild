@@ -411,11 +411,11 @@ sub fetch_source_files {
 	}
 
 	# TODO: Only call dsc_md5sums once.
-	if (-f "${dir}/${dscbase}" && !$download && !verify_md5sums(dsc_md5sums("${dir}/${dscbase}"))) {
+	my $md5sums = dsc_md5sums("${dir}/${dscbase}");
+	if (-f "${dir}/${dscbase}" && !$download && !verify_md5sums($md5sums)) {
 		print PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
 		my @cwd_files = ("${dir}/${dscbase}");
-		my $md5 = dsc_md5sums("${dir}/${dscbase}");
-		push @cwd_files, keys %$md5;
+		push @cwd_files, keys %$md5sums;
 		foreach (@cwd_files) {
 			if (system ("cp '$_' '$main::chroot_build_dir'")) {
 				print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
