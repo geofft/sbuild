@@ -57,6 +57,8 @@ if (!open(main::DEVNULL, '+<', '/dev/null')) {
 	die "Cannot open /dev/null: $!\n";;
 }
 
+check_group_membership();
+
 umask(022);
 
 $main::distribution = "unstable";
@@ -2640,6 +2642,28 @@ sub chroot_arch {
 		if ($? || !defined($chroot_arch));
 
 	return $chroot_arch;
+}
+
+sub check_group_membership {
+	my $user = getpwuid($<);
+	my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
+
+	if (!$gid) {
+		die "Group sbuild does not exist";
+	}
+
+	my $in_group = 0;
+	foreach (split(' ', $members)) {
+		$in_group = 1 if $_ eq $main::username;
+	}
+
+	if (!$in_group) {
+		print STDERR "User $user is not a member of group $name\n";
+		print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
+		exit(1);
+	}
+
+	return;
 }
 
 sub dump_main_state {

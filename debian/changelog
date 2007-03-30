@@ -56,6 +56,8 @@ sbuild (0.54) unstable; urgency=low
     - get_dpkg_status: Print debugging messages with defined variables
       only, to avoid Perl warning.
     - verify_md5sums: Remove obsolete comment regarding chroots.
+    - check_group_membership: New function to check the user is a member
+      of the sbuild group (Closes: #414064).
   * Sbuild/Chroot.pm:
     - Remove all special casing for sudo and schroot.  schroot is now the
       only supported method of accessing chroots.
