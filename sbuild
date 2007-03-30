@@ -265,14 +265,36 @@ $SIG{'PIPE'} = \&shutdown;
 
 write_jobs_file();
 
-my( $pkgv, $pkg );
-foreach $pkgv (@ARGV) {
-	my $urlbase;
+my $dscfile;
+foreach $dscfile (@ARGV) {
 
-	($urlbase, $pkgv) = ($1, $3) if $pkgv =~ m,^(\w+://(\S+/)?)([^/]+)$,;
+	my $dir = dirname($dscfile);
+	my $dscbase = basename($dscfile);
+	my $pkgv = basename($dscfile);
 	$pkgv =~ s/\.dsc$//;
-	(my $pkg = $pkgv) =~ s/_.*$//;
-	$pkg =~ s/^\.\///;
+	my ($pkg, $version) = split /_/, $pkgv;
+
+	# Download if package does not have a .dsc extension and no
+	# directory was specified.
+	my $download = 1;
+ 	if ($dscbase =~ m/\.dsc$/) {
+		$download = 0;
+	}
+
+	print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
+	print STDERR "D: dir = $dir\n" if $conf::debug;
+	print STDERR "D: dscbase = $dscbase\n" if $conf::debug;
+	print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
+	print STDERR "D: pkg = $pkg\n" if $conf::debug;
+	print STDERR "D: version = $version\n" if $conf::debug;
+	print STDERR "D: download = $download\n" if $conf::debug;
+
+	if ($download && $dscfile ne $pkgv) {
+		print PLOG "Invalid source: $dscfile\n";
+		print PLOG "Skipping $pkg\n";
+		$main::pkg_status = "skipped";
+		goto cleanup_close;
+	}
 
 	{
 		my $tpkg = basename($pkgv);
@@ -307,9 +329,10 @@ foreach $pkgv (@ARGV) {
 		$main::pkg_status = "skipped";
 		goto cleanup_close;
 	}
-	my $dscfile = "${pkgv}.dsc";
+
 	$main::pkg_fail_stage = "fetch-src";
-	my @files_to_rm = fetch_source_files( \$dscfile );
+	my @files_to_rm = fetch_source_files( \$dscfile,
+					      $dir, $pkg, $version, $download);
 	if (@files_to_rm && $files_to_rm[0] eq "ERROR") {
 		shift @files_to_rm;
 		goto cleanup_symlinks;
@@ -321,8 +344,7 @@ foreach $pkgv (@ARGV) {
 		goto cleanup_packages;
 	}
 
-	my $dscbase = basename( $dscfile );
-	$main::pkg_status = "successful" if build( $dscbase, $pkgv );
+	$main::pkg_status = "successful" if build( basename($dscfile), $pkgv );
 	chdir( $main::cwd );
 	write_jobs_file( $main::pkg_status );
 	append_to_FINISHED( $pkgv );
@@ -366,38 +388,28 @@ exit 0;
 
 sub fetch_source_files {
 	my $dscfile_ref = shift;
-	my $dscfile = $$dscfile_ref;
-	my ($dir, $dscbase, $files, @other_files, $dscarchs, @made);
+	my $dir = shift;
+	my $pkg = shift;
+	my $version = shift;
+	my $download = shift;
+
+	my ($dscbase, $files, @other_files, $dscarchs, @made);
+
+	$dscbase = "${pkg}_${version}.dsc";
+
 	my $build_depends = "";
 	my $build_depends_indep = "";
 	my $build_conflicts = "";
 	my $build_conflicts_indep = "";
 	local( *F );
 
-	$dir = dirname($dscfile);
-	$dscbase = basename($dscfile);
-
-	my $urlbase;
-	$urlbase = $1 if $dscfile =~ m,^(\w+://(\S+/)?)([^/]+)$,;
-	(my $pkgv = $dscfile) =~ s,^(.*/)?([^/]+)\.dsc$,$2,;
-	my ($pkg, $version) = split /_/, $pkgv;
 	@main::have_dsc_build_deps = ();
 
-	my $download = 0;
-	$download = 1 if ($dir eq "." && $$dscfile_ref !~ /^\./);
-	$dir = $main::cwd if !defined($dir);
-
-	if (!defined($dscfile) || !defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
+	if (!defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
 		print PLOG "Invalid source: $$dscfile_ref\n";
 		return ("ERROR");
 	}
 
-	# Filenames specified with a path and a filename.  Note that
-	# the filename only means download the source, because it's
-	# not possible to tell from $$dscfile_ref whether there was a
-	# .dsc extension.  TODO: Fix by passing more data,
-	# e.g. separate path, package, version and whether to
-	# download.
 	# TODO: Only call dsc_md5sums once.
 	if (-f "${dir}/${dscbase}" && !$download && !verify_md5sums(dsc_md5sums("${dir}/${dscbase}"))) {
 		print PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
@@ -461,7 +473,7 @@ sub fetch_source_files {
 				$retried = 1;
 				goto retry;
 			}
-			print PLOG "Can't find source for $pkgv\n";
+			print PLOG "Can't find source for ${pkg}_${version}\n";
 			print PLOG "(only different version(s) ",
 				join( ", ", sort keys %entries), " found)\n"
 					if %entries;
@@ -488,7 +500,7 @@ sub fetch_source_files {
 		}
 		# touch the downloaded files, otherwise buildd-watcher
 		# will complain that they're old :)
-		$$dscfile_ref = $dscfile = (grep { /\.dsc$/ } @made)[0];
+		$$dscfile_ref = (grep { /\.dsc$/ } @made)[0];
 	}
 
 	if (verify_md5sums(dsc_md5sums("${main::chroot_build_dir}/${dscbase}"))) {

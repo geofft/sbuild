@@ -17,6 +17,9 @@ sbuild (0.54) unstable; urgency=low
     - Quote all arguments to system commands such as "rm -rf", to prevent
       potential disasters.
     - Update copyrights, and encode in UTF-8.
+    - Compute package, version, directory and whether to download sources
+      before calling fetch_source_files, because all the needed information
+      is available at this point.
     - cleanup_packages:
       + Remove check for schroot when removing build dependencies, since
         schroot is the default.
@@ -36,6 +39,7 @@ sbuild (0.54) unstable; urgency=low
       + Download sources directly into the chroot build directory.  For
         sources already existing outside the chroot, copy them into the
         chroot build directory.
+      + Add extra directory, package, version and download arguments.
     - apply_patches: Remove.
     - get_special: Remove use of @main::global_patches.
     - Remove SVN Id:.
