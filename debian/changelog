@@ -16,6 +16,7 @@ sbuild (0.54) unstable; urgency=low
       remainder of the manual src-deps support remains to be removed.
     - Quote all arguments to system commands such as "rm -rf", to prevent
       potential disasters.
+    - Update copyrights, and encode in UTF-8.
     - cleanup_packages:
       + Remove check for schroot when removing build dependencies, since
         schroot is the default.
