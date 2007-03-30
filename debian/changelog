@@ -14,6 +14,8 @@ sbuild (0.54) unstable; urgency=low
   * sbuild:
     - Remove read_deps, so manual src-deps are no longer read.  The
       remainder of the manual src-deps support remains to be removed.
+    - Quote all arguments to system commands such as "rm -rf", to prevent
+      potential disasters.
     - cleanup_packages:
       + Remove check for schroot when removing build dependencies, since
         schroot is the default.
@@ -24,6 +26,9 @@ sbuild (0.54) unstable; urgency=low
         this patch (Closes: #415798).
       + Remove support for building from a directory.
       + Run dpkg-source from within the chroot.
+      + Don't chdir before running dpkg-source.
+      + Don't chdir before running dpkg-parsechangelog (do it in the
+        schroot child process).
     - fetch_source_files:
       + Remove support for building from a directory.
       + Download sources directly into the chroot build directory.  For

@@ -576,7 +576,7 @@ sub build {
 		# dpkg-source refuses to remove the remanants of an
 		# aborted dpkg-source extraction, so we will if necessary.
 		if (-d $tmpunpackdir) {
-		    system ("rm -fr $tmpunpackdir");
+		    system ("rm -fr '$tmpunpackdir'");
 		}
 		$main::sub_pid = open( PIPE, "-|" );
 		if (!defined $main::sub_pid) {
@@ -584,11 +584,6 @@ sub build {
 			return 0;
 		}
 		if ($main::sub_pid == 0) {
-			if ($main::chroot_build_dir && !chdir( $main::chroot_build_dir )) {
-				print PLOG "Couldn't cd to $main::chroot_build_dir: $!\n";
-				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
-				exit 1;
-			}
 			exec_command("$conf::dpkg_source -sn -x $dsc 2>&1", $main::username, 1, 0);
 		}
 		$main::sub_task = "dpkg-source";
@@ -604,12 +599,12 @@ sub build {
 		if ($?) {
 			print PLOG "FAILED [dpkg-source died]\n";
 		
-		    system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
+		    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 			return 0;
 		}
 		if (!$dir) {
 			print PLOG "Couldn't find directory of $dsc in dpkg-source output\n";
-		    system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
+		    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 			return 0;
 		}
 		$dir = "$main::chroot_build_dir/$dir";
@@ -630,8 +625,8 @@ sub build {
 			return 0;
 		}
 		if ($main::sub_pid == 0) {
-			chdir( $dir );
-			exec_command("dpkg-parsechangelog 2>&1", $main::username, 0, 0);
+			$dir = strip_chroot_path($dir);
+			exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0);
 		}
 		$main::sub_task = "dpkg-parsechangelog";
 
@@ -661,7 +656,7 @@ sub build {
 
 	if (!chdir( $dir )) {
 		print PLOG "Couldn't cd to $dir: $!\n";
-		system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
+		system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 		return 0;
 	}
 
@@ -677,7 +672,7 @@ sub build {
 			print PLOG "Purging $dir\n";
 			chdir( $main::cwd );
 			my $bdir = strip_chroot_path($dir);
-			run_command("rm -rf $bdir", "root", 1, 0);
+			run_command("rm -rf '$bdir'", "root", 1, 0);
 			return 0;
 		}
 	}
@@ -708,7 +703,7 @@ sub build {
 
 			print F $firstline, $text;
 			close( F );
-			system "touch debian/.sbuild-binNMU-done";
+			system "touch 'debian/.sbuild-binNMU-done'";
 			print PLOG "*** Created changelog entry for bin-NMU version $NMUversion\n";
 		}
 		else {
@@ -945,7 +940,7 @@ EOF
 		($conf::purge_build_directory eq "successful" && $rv == 0)) {
 		print PLOG "Purging $dir\n";
 		my $bdir = strip_chroot_path($dir);
-		run_command("rm -rf $bdir", "root", 1, 0);
+		run_command("rm -rf '$bdir'", "root", 1, 0);
 	}
 	
 	print PLOG "-"x78, "\n";
