@@ -30,6 +30,7 @@ sbuild (0.54) unstable; urgency=low
       + Don't chdir before running dpkg-source.
       + Don't chdir before running dpkg-parsechangelog (do it in the
         schroot child process).
+      + Remove obsolete code for running dpkg-buildpackage outside a chroot.
     - fetch_source_files:
       + Remove support for building from a directory.
       + Download sources directly into the chroot build directory.  For

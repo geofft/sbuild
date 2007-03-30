@@ -752,31 +752,21 @@ EOF
 		setsid;
 		my $binopt = $main::build_source ?
 			$conf::force_orig_source ? "-sa" : "" :
-			$main::build_arch_all ?	"-b" : "-B";
+				$main::build_arch_all ?	"-b" : "-B";
 
-		if ($main::chroot_dir) {
-			my $bdir = strip_chroot_path($dir);
-			if (-f "$main::chroot_dir/etc/ld.so.conf" &&
-			    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-				run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
-				print PLOG "ld.so.conf was not readable! Fixed.\n";
-			}
-			chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
-			my $buildcmd = "cd $bdir && PATH=$conf::path ".
-				(defined($main::ld_library_path) ?
-				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
+		my $bdir = strip_chroot_path($dir);
+		if (-f "$main::chroot_dir/etc/ld.so.conf" &&
+		    ! -r "$main::chroot_dir/etc/ld.so.conf") {
+			run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
+			print PLOG "ld.so.conf was not readable! Fixed.\n";
+		}
+		chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
+		my $buildcmd = "cd $bdir && PATH=$conf::path ".
+			(defined($main::ld_library_path) ?
+			 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-			exec_command($buildcmd, $main::username, 1, 0);
-		}
-		else {
-			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
-				run_command("chmod a+r /etc/ld.so.conf", "root", 0, 0);
-				print PLOG "ld.so.conf was not readable! Fixed.\n";
-			}
-			exec_command("$conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options $binopt ".
-				     "$main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1", $main::username, 0, 1);
-		}
+					 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+		exec_command($buildcmd, $main::username, 1, 0);
 	}
 	$main::sub_task = "dpkg-buildpackage";
 
