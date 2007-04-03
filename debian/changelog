@@ -4,6 +4,9 @@ sbuild (0.54) unstable; urgency=low
     - Remove sudo from Depends.
     - Add schroot to Depends.
     - Remove schroot from Recommends.
+    - Depend on dctrl-tools rather than the transitional grep-dctrl package.
+      Thanks to Jonh Wendell (Closes: #417573).
+
   * debian/NEWS.Debian:
     - New file.
     - Document removal of manual source dependencies and sudo.
