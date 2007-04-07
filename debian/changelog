@@ -10,6 +10,8 @@ sbuild (0.54) unstable; urgency=low
     - New file.
     - Document removal of manual source dependencies and sudo.
     - Document removal of support for building from a directory.
+    - Document removal of building on the host system.
+    - Document sudo->schroot migration.
   * debian/README.Debian:
     - Document removal of manual src-deps.
     - Remove requirements for chroot symlinks in working directory.
