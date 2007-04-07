@@ -32,16 +32,16 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME $apt_policy $check_watches $cwd $username
-		 $verbose $nolog $mailprog $dpkg
-		 $su $schroot $schroot_options $fakeroot
-		 $apt_get $apt_cache $dpkg_source $md5sum $avg_time_db
+    @EXPORT = qw($HOME %alternatives $apt_policy $check_watches $cwd
+		 $username $verbose $nolog $mailprog $dpkg $su
+		 $schroot $schroot_options $fakeroot $apt_get
+		 $apt_cache $dpkg_source $md5sum $avg_time_db
 		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
 		 $mailto $mailfrom $purge_build_directory
 		 @toolchain_regex $stalled_pkg_timeout
 		 $srcdep_lock_dir $srcdep_lock_wait
-		 @ignore_watches_no_build_deps $build_dir
-		 $sbuild_mode $debug $force_orig_source
+		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
+		 $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name $key_id);
 }
@@ -93,6 +93,7 @@ our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X
 our $maintainer_name;
 our $uploader_name;
 our $key_id;
+our %alternatives;
 
 # read conf files
 require "/usr/share/sbuild/sbuild.conf";

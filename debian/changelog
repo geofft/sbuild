@@ -92,6 +92,8 @@ sbuild (0.54) unstable; urgency=low
     - Don't export $chroot_only.
     - Don't define $chroot_only.
     - Abort with an error if $chroot_only is defined.
+    - Define and export %alternatives.  Thanks to Martin Koeppe
+      (Closes: #418060).
   * sbuild.conf:
     - Remove $source_dependencies.
     - Remove $sudo.
