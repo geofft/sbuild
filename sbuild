@@ -674,7 +674,7 @@ sub build {
 	}
 
 	$main::pkg_fail_stage = "check-space";
-	my $current_usage = `/usr/bin/du -s .`;
+	my $current_usage = `/usr/bin/du -k -s .`;
 	$current_usage =~ /^(\d+)/;
 	$current_usage = $1;
 	if ($current_usage) {
@@ -2053,9 +2053,9 @@ sub check_space {
 
 		if (/^\Q$main::chroot_dir\E/) {
 			$_ = strip_chroot_path($_);
-			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", "root", 1, 0);
+			$command = get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
 		} else {
-			$command = get_command("/usr/bin/du -s $_ 2>/dev/null", $main::username, 0, 0);
+			$command = get_command("/usr/bin/du -k -s $_ 2>/dev/null", $main::username, 0, 0);
 		}
 
 		if (!open( PIPE, "$command |" )) {

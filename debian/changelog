@@ -6,7 +6,6 @@ sbuild (0.54) unstable; urgency=low
     - Remove schroot from Recommends.
     - Depend on dctrl-tools rather than the transitional grep-dctrl package.
       Thanks to Jonh Wendell (Closes: #417573).
-
   * debian/NEWS.Debian:
     - New file.
     - Document removal of manual source dependencies and sudo.
@@ -20,6 +19,8 @@ sbuild (0.54) unstable; urgency=low
     - Quote all arguments to system commands such as "rm -rf", to prevent
       potential disasters.
     - Update copyrights, and encode in UTF-8.
+    - Use "du -k -s" instead of "du -s" to increase portability.  Thanks to
+      Martin Koeppe (Closes: #418061).
     - Compute package, version, directory and whether to download sources
       before calling fetch_source_files, because all the needed information
       is available at this point.
