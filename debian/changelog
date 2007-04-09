@@ -6,6 +6,9 @@ sbuild (0.54) unstable; urgency=low
     - Remove schroot from Recommends.
     - Depend on dctrl-tools rather than the transitional grep-dctrl package.
       Thanks to Jonh Wendell (Closes: #417573).
+  * debian/rules:
+    - Don't install sbuild.conf.local.
+    - Install sbuild.conf into /etc/sbuild.
   * debian/NEWS.Debian:
     - New file.
     - Document removal of manual source dependencies and sudo.
@@ -101,11 +104,24 @@ sbuild (0.54) unstable; urgency=low
     - Abort with an error if $chroot_only is defined.
     - Define and export %alternatives.  Thanks to Martin Koeppe
       (Closes: #418060).
+    - Define and export @no_auto_upgrade and %watches.
+    - Remove the requirement for /usr/share/sbuild/sbuild.conf.
+    - Mark deprecated/obsolete variables for removal post-Lenny.
+    - Set defaults from global sbuild.conf.
   * sbuild.conf:
     - Remove $source_dependencies.
     - Remove $sudo.
     - Remove $chroot_only.
-  * sbuild.conf.local: Remove $source_dependencies.
+    - Add and document all options from Sbuild/Conf.pm.
+    - Reorder into sections.
+    - Merge with sbuild.conf.local, and install into /etc/sbuild.
+  * sbuild.conf.local:
+    - Remove $source_dependencies.
+    - Remove.
+  * example.sbuildrc:
+    - Replace all options with documented options from sbuild.conf.
+    - Add additional user-centric options from sbuild.conf.
+    - Reorder into sections.
   * sbuild.1.in: Document --arch and chroot search order.
   * sbuild-setup.7.in:
     - Remove sudo setup.
