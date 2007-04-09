@@ -26,5 +26,9 @@ sbuild (0.54) unstable; urgency=low
     diagnostic error message and exit with an error when obsolete options
     are used.
 
- -- Roger Leigh <rleigh@debian.org>  Fri,  9 Mar 2007 23:12:55 +0000
+  * The default for $build_mode has been changed from "buildd" to "user".
+    The means that sbuild will return a nonzero exit status on build
+    failure.
+
+ -- Roger Leigh <rleigh@debian.org>  Tue, 10 Apr 2007 00:01:32 +0100
 
