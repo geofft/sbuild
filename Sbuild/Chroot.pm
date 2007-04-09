@@ -158,10 +158,29 @@ sub _setup_options {
 
 sub begin_session {
 	my $distribution = shift;
+	my $arch = shift;
 
-	if (defined($chroots{"${distribution}-sbuild"})) {
+	my $arch_found = 0;
+
+	if ($arch ne "" &&
+	    defined($chroots{"${distribution}-${arch}-sbuild"})) {
+		$distribution = "${distribution}-${arch}-sbuild";
+		$arch_found = 1;
+	}
+	elsif (defined($chroots{"${distribution}-sbuild"})) {
 		$distribution = "${distribution}-sbuild";
 	}
+	elsif ($arch ne "" &&
+	       defined($chroots{"${distribution}-${arch}"})) {
+		$distribution = "${distribution}-${arch}";
+		$arch_found = 1;
+	}
+
+	if (!$arch_found) {
+		print STDERR "Chroot for architecture $arch not found\n";
+		return 0;
+	}
+
 	$schroot_session=`$Sbuild::Conf::schroot -c $distribution --begin-session`;
 	chomp($schroot_session);
 	if ($?) {

@@ -64,6 +64,7 @@ umask(022);
 $main::distribution = "unstable";
 
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
+$main::user_arch = "";
 $main::batchmode = 0;
 $main::auto_giveback = 0;
 $main::build_arch_all = 0;
@@ -123,6 +124,13 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
 			$main::distribution = $1.$';
+		}
+	}
+	elsif (/^--arch/) {
+		if (/^--arch=(.)/) {
+			$main::user_arch = $1.$';
+			print "Selected architecture $main::user_arch\n"
+				if $conf::debug;
 		}
 		elsif (!@ARGV) {
 			die "$_ option missing argument\n";
@@ -309,7 +317,7 @@ foreach $dscfile (@ARGV) {
 		next if !open_pkg_log( $tpkg, $main::distribution );
 	}
 
-	if (!begin_session($main::distribution)) {
+	if (!begin_session($main::distribution, $main::user_arch)) {
 		print PLOG "Skipping $pkg\n";
 		$main::pkg_status = "skipped";
 		goto cleanup_close;

@@ -21,7 +21,8 @@ sbuild \- build debian packages from source
 .SH SYNOPSIS
 .B sbuild
 [ \-a/\-\-add-depends=<dependency-line> ] [ \-A/\-\-arch\-all ]
-[ \-b/\-\-batch] [\-d/\-\-dist=<distribution> ] [ \-D/\-\-debug ]
+[ \-b/\-\-batch] [\-d/\-\-dist=<distribution> ] [\-\-arch=<architecture> ]
+[ \-D/\-\-debug ]
 [ \-f/\-\-force-depends=<dependency-line> ]
 [ \-m/\-\-maintainer=<maintainer> ]
 [ \-e/\-\-uploader=<uploader> ]
@@ -67,8 +68,8 @@ the chroot\-{stable,testing,unstable} symlink to the chroot or it will do the
 build in the base install which is not what you want.  When using schroot,
 these requirements do not apply; the chroot having the name (or alias) of the
 specified distribution will be used; schroot uses a chroot named
-\fI$distribution\-sbuild\fP, or \fI$distribution\fP, in that order of
-preference.
+\fI$distribution\-$arch-sbuild\fP, \fI$distribution\-sbuild\fP,
+\fI$distribution\-arch\fP or \fI$distribution\fP, in that order of preference.
 .SH OPTIONS
 .TP
 .IR \-a , "\-\-add\-depends=<dependency-line>"
@@ -77,6 +78,13 @@ given more than one time with accumulating effect. The argument is a line of
 source dependencies in the same format as in
 \fI/var/lib/sbuild/source\-dependencies\fR. The given dependencies are appended
 to the src-deps from source\-dependencies\-* files or package src-deps, resp.
+.TP
+.IR "\-\-arch=<architecture>"
+Build using the architecture specified.  A chroot named
+\fI$distribution\-$arch-sbuild\fP or \fI$distribution\-arch\fP is searched for,
+in that order of preference.  The chroot must be installed and configured
+appropriately to build as that architecture, e.g. using
+\fIpersonality=linux32\fP to build i386 packages on an amd64 system.
 .TP
 .IR \-A , "\-\-arch\-all"
 Also build Architecture: all packages, i.e. use dpkg\-buildpackage \-b
