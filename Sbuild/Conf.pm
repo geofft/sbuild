@@ -129,7 +129,6 @@ our %alternatives = ("info-browser"		=> "info",
 our @no_auto_upgrade = qw(dpkg apt bash libc6 libc6-dev dpkg-dev);
 
 # read conf files
-require "/usr/share/sbuild/sbuild.conf";
 require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
