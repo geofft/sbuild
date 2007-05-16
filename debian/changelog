@@ -139,7 +139,7 @@ sbuild (0.54) unstable; urgency=low
       (Closes: #413908).
   * TODO: New file.  Document needed changes.
 
- -- Roger Leigh <rleigh@debian.org>  Mon,  9 Apr 2007 15:08:33 +0100
+ -- Roger Leigh <rleigh@debian.org>  Wed, 16 May 2007 22:12:50 +0100
 
 sbuild (0.53) unstable; urgency=low
 

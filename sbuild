@@ -125,13 +125,6 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
 			$main::distribution = $1.$';
 		}
-	}
-	elsif (/^--arch/) {
-		if (/^--arch=(.)/) {
-			$main::user_arch = $1.$';
-			print "Selected architecture $main::user_arch\n"
-				if $conf::debug;
-		}
 		elsif (!@ARGV) {
 			die "$_ option missing argument\n";
 		}
@@ -145,6 +138,19 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::distribution = "experimental" if $main::distribution eq "e";
 		$main::override_distribution = 1;
 		print "Selected distribution $main::distribution\n"
+			if $conf::debug;
+	}
+	elsif (/^--arch/) {
+		if (/^--arch=(.)/) {
+			$main::user_arch = $1.$';
+		}
+		elsif (!@ARGV) {
+			die "$_ option missing argument\n";
+		}
+		else {
+			$main::user_arch = shift @ARGV;
+		}
+		print "Selected architecture $main::user_arch\n"
 			if $conf::debug;
 	}
 	elsif (/^-p/ || /^--purge/) {

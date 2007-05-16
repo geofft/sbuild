@@ -176,7 +176,7 @@ sub begin_session {
 		$arch_found = 1;
 	}
 
-	if (!$arch_found) {
+	if (!$arch_found && $arch ne "") {
 		print STDERR "Chroot for architecture $arch not found\n";
 		return 0;
 	}
