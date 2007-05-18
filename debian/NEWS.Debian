@@ -30,5 +30,5 @@ sbuild (0.54) unstable; urgency=low
     The means that sbuild will return a nonzero exit status on build
     failure.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 10 Apr 2007 00:01:32 +0100
+ -- Roger Leigh <rleigh@debian.org>  Fri, 18 May 2007 17:46:17 +0100
 
