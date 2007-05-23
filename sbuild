@@ -409,7 +409,8 @@ sub fetch_source_files {
 
 	my ($dscbase, $files, @other_files, $dscarchs, @made);
 
-	$dscbase = "${pkg}_${version}.dsc";
+	(my $sversion = $version) =~ s/^\d+://; # Strip epoch
+	$dscbase = "${pkg}_${sversion}.dsc";
 
 	my $build_depends = "";
 	my $build_depends_indep = "";
@@ -586,7 +587,7 @@ sub build {
 	$main::this_space = 0;
 	$pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
 	my ($pkg, $version) = ($1,$2);
-	(my $sversion = $version) =~ s/^\d+://;
+	(my $sversion = $version) =~ s/^\d+://; # Strip epoch
 	my $tmpunpackdir = $dsc;
 	$tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
 	$tmpunpackdir =~ s/_/-/;
@@ -2607,6 +2608,8 @@ sub dsc_md5sums {
 			}
 		}
 		close( DSC ) or print PLOG "Failed to close $dsc\n";
+	} else {
+		print PLOG "Failed to open $dsc\n";
 	}
 
 	return \%dsc_md5;
