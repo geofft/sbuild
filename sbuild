@@ -1671,12 +1671,14 @@ sub merge_pkg_build_deps {
 	print PLOG "Build-Conflicts-Indep: $conflictsi\n" if $conflictsi;
 
 	my $old_deps = copy($main::deps{$pkg});
-	# keep deps from the central file marked as overrides (& prefix)
+
+	# Add gcc-snapshot as an override.
 	if ( $main::useSNAP ) {
 	    $dep->{'Package'} = "gcc-snapshot";
 	    $dep->{'Override'} = 1;
 	    push( @{$main::deps{$pkg}}, $dep );
 	}
+
 	foreach $dep (@{$main::deps{$pkg}}) {
 		if ($dep->{'Override'}) {
 			print PLOG "Added override: ",
@@ -1699,8 +1701,8 @@ sub merge_pkg_build_deps {
 
 	my $missing = (cmp_dep_lists( $old_deps, $main::deps{$pkg} ))[1];
 
-	# read list of build-essential packages (if not yet done) and expand their
-	# dependencies (those are implicitly essential)
+	# read list of build-essential packages (if not yet done) and
+	# expand their dependencies (those are implicitly essential)
 	if (!defined($main::deps{'ESSENTIAL'})) {
 		my $ess = read_build_essential();
 		parse_one_srcdep( 'ESSENTIAL', $ess, \%main::deps );
@@ -1710,7 +1712,8 @@ sub merge_pkg_build_deps {
 	print "Dependency-expanded build essential packages:\n",
 		  format_deps(@$exp_essential), "\n" if $conf::debug;
 
-	# populate toolchain_pkgs from toolchain_regexes and essential packages.
+	# populate toolchain_pkgs from toolchain_regexes and
+	# build-essential packages.
 	@main::toolchain_pkgs = ();
 	foreach my $tpkg (@$exp_essential) {
 		foreach my $regex (@conf::toolchain_regex) {
@@ -1718,11 +1721,12 @@ sub merge_pkg_build_deps {
 				if $tpkg->{'Package'} =~ m,^$regex,;
 		}
 	}
+
 	return if !@$missing;
 
-	# remove missing central deps that are essential
+	# remove missing essential deps
 	($filt_essential, $missing) = cmp_dep_lists( $missing, $exp_essential );
-	print PLOG "** Filtered missing central deps that are build-essential:\n",
+	print PLOG "** Filtered missing build-essential deps:\n",
 			   format_deps(@$filt_essential), "\n"
 				   if @$filt_essential;
 
@@ -1738,9 +1742,9 @@ sub merge_pkg_build_deps {
 		  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
 	$main::additional_deps = $exp_pkgdeps;
 
-	# remove missing central deps that are dependencies of build deps
+	# remove missing essential deps that are dependencies of build deps
 	($filt_pkgdeps, $missing) = cmp_dep_lists( $missing, $exp_pkgdeps );
-	print PLOG "** Filtered missing central deps that are dependencies of ",
+	print PLOG "** Filtered missing build-essential deps that are dependencies of ",
 			   "or provide build-deps:\n",
 			   format_deps(@$filt_pkgdeps), "\n"
 				   if @$filt_pkgdeps;
@@ -1753,7 +1757,7 @@ sub merge_pkg_build_deps {
 						   $_->{'Package'} =~ /^needs-no-/)) } @$missing ];
 
 	print PLOG "**** Warning:\n",
-			   "**** The following central src deps are ",
+			   "**** The following src deps are ",
 			   "(probably) missing:\n  ", format_deps(@$missing), "\n"
 				   if @$missing;
 }

@@ -3,11 +3,17 @@ sbuild (0.55) unstable; urgency=low
   * sbuild:
     - fetch_source_files: Strip the epoch of the version number, so that
       $dscbase matches the .dsc filename in the filesystem (Closes: #425715).
+      Thanks to Lucas Nussbaum.
     - build: Document the regex which strips the epoch from the version
       number.
     - dsc_md5sums: Log failure to open the .dsc.
     - parse_manual_srcdeps: New function, to replace the addition of manual
       source dependencies from the removed read_deps() function.
+    - merge_pkg_build_deps: Replace references to "central" src deps with
+      build-essential deps.
+  * Sbuild/Conf.pm: Add linux-libc-dev, gnumach-dev, hurd-dev and
+    kfreebsd-kernel-headers to @toolchain_regex.  Thanks to Clint Adams
+    (Closes: #425855).
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 26 May 2007 11:04:08 +0100
 
