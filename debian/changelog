@@ -19,7 +19,8 @@ sbuild (0.55) unstable; urgency=low
     kfreebsd-kernel-headers to @toolchain_regex.  Thanks to Clint Adams
     (Closes: #425855).
   * Sbuild/Log.pm.in: Remove trailing whitespace.
-  * debian/NEWS: Renamed from debian/NEWS.Debian.
+  * debian/NEWS: Renamed from debian/NEWS.Debian (Closes: #425370).
+    Thanks to Lucas Nussbaum for spotting this.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 26 May 2007 13:52:48 +0100
 
