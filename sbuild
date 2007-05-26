@@ -1450,7 +1450,12 @@ sub check_dependencies {
 		print PLOG "Kernel: $sysname $release $main::arch ($machine)\n";
 		print PLOG "Toolchain package versions:";
 		foreach $name (@main::toolchain_pkgs) {
-			print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
+			if (defined($status->{$name}->{'Version'})) {
+				print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
+			} else {
+				print PLOG ' ' . $name . '_' . ' =*=NOT INSTALLED=*=';
+
+			}
 		}
 		print PLOG "\n";
 	}
