@@ -14,11 +14,13 @@ sbuild (0.55) unstable; urgency=low
     - parse options with Getopt::Long.
     - check_dependencies: If a toolchain package is missing, print a
       "not installed" message, rather than a blank version.
+    - Remove trailing whitespace.
   * Sbuild/Conf.pm: Add linux-libc-dev, gnumach-dev, hurd-dev and
     kfreebsd-kernel-headers to @toolchain_regex.  Thanks to Clint Adams
     (Closes: #425855).
+  * Sbuild/Log.pm.in: Remove trailing whitespace.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 May 2007 13:42:54 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 May 2007 13:52:48 +0100
 
 sbuild (0.54) unstable; urgency=low
 

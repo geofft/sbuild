@@ -173,8 +173,8 @@ $conf::mailto = $conf::mailto{$main::distribution}
 
 # see debsign for priorities, we will follow the same order
 $main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
-$main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name; 
-$main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id; 
+$main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name;
+$main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id;
 $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
 $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
@@ -267,7 +267,7 @@ foreach $dscfile (@ARGV) {
 		shift @files_to_rm;
 		goto cleanup_symlinks;
 	}
-		
+
 	$main::pkg_fail_stage = "install-deps";
 	if (!install_deps( $pkg )) {
 		print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
@@ -508,7 +508,7 @@ sub build {
 	$tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
 	$tmpunpackdir =~ s/_/-/;
 	$tmpunpackdir = "$main::chroot_build_dir/$tmpunpackdir";
-	
+
 	if (-d "$main::chroot_build_dir/$dsc" && -l "$main::chroot_build_dir/$dsc") {
 		# if the package dir already exists but is a symlink, complain
 		print PLOG "Cannot unpack source: a symlink to a directory with the\n",
@@ -531,7 +531,7 @@ sub build {
 			exec_command("$conf::dpkg_source -sn -x $dsc 2>&1", $main::username, 1, 0);
 		}
 		$main::sub_task = "dpkg-source";
-		
+
 		while( <PIPE> ) {
 			print PLOG $_;
 			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
@@ -542,7 +542,7 @@ sub build {
 		undef $main::sub_pid;
 		if ($?) {
 			print PLOG "FAILED [dpkg-source died]\n";
-		
+
 		    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 			return 0;
 		}
@@ -664,7 +664,7 @@ sub build {
 		@lines = map { my $ind = 68-length($_);
 					   $ind = 0 if $ind < 0;
 					   "| $_".(" " x $ind)." |\n"; } @lines;
-		
+
 		print PLOG <<"EOF";
 
 +----------------------------------------------------------------------+
@@ -876,14 +876,14 @@ EOF
 		my $bdir = strip_chroot_path($dir);
 		run_command("rm -rf '$bdir'", "root", 1, 0);
 	}
-	
+
 	print PLOG "-"x78, "\n";
 	return $rv == 0 ? 1 : 0;
 }
 
 sub analyze_fail_stage {
 	my $pkgv = shift;
-	
+
 	return if $main::pkg_status ne "failed";
 	return if !$main::auto_giveback;
 	if (isin( $main::pkg_fail_stage,
@@ -937,7 +937,7 @@ sub install_deps {
 
   repeat:
 	lock_file( "$main::ilock_file", 1 );
-	
+
 	print "Filtering dependencies\n" if $conf::debug;
 	if (!filter_dependencies( $dep, \@positive, \@negative )) {
 		print PLOG "Package installation not possible\n";
@@ -961,7 +961,7 @@ sub install_deps {
 		wait_for_srcdep_conflicts( @confl );
 		goto repeat;
 	}
-	
+
 	write_srcdep_lock_file( $dep );
 
 	my $install_start_time = time;
@@ -984,7 +984,7 @@ sub install_deps {
 	}
 	set_installed( @instd );
 	set_removed( @rmvd );
-	
+
 	print "Removing negative dependencies: @negative\n" if $conf::debug;
 	if (!uninstall_debs( $main::chroot_dir ? "purge" : "remove", @negative )) {
 		print PLOG "Removal of packages failed\n";
@@ -995,7 +995,7 @@ sub install_deps {
 	my $install_stop_time = time;
 	write_stats( 'install-download-time',
 		$install_stop_time - $install_start_time );
-	
+
 	my $fail = check_dependencies( $dep );
 	if ($fail) {
 		print PLOG "After installing, the following source dependencies are ".
@@ -1028,7 +1028,7 @@ sub install_deps {
 
 sub wait_for_srcdep_conflicts {
 	my @confl = @_;
-	
+
 	for(;;) {
 		sleep( $conf::srcdep_lock_wait*60 );
 		my $allgone = 1;
@@ -1080,7 +1080,7 @@ sub uninstall_debs {
 	local (%ENV) = %ENV; # make local environment
 	# hardwire frontend for debconf to non-interactive
 	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-	
+
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $conf::debug;
 
@@ -1187,13 +1187,13 @@ sub run_apt {
 			$selected = $providers[0];
 			print PLOG "Using $selected (no default, using first one)\n";
 		}
-		
+
 		@to_install = grep { $_ ne $to_replace } @to_install;
 		push( @to_install, $selected );
-		
+
 		goto repeat;
 	}
-	
+
 	if ($status != 0 && ($msgs =~ /^E: Could( not get lock|n.t lock)/mi ||
 						 $msgs =~ /^dpkg: status database area is locked/mi)) {
 		print PLOG "Another apt-get or dpkg is running -- retrying later\n";
@@ -1216,13 +1216,13 @@ sub run_apt {
 		print PLOG "Unable to fetch build-depends\n";
 		$main::pkg_fail_stage = "install-deps-env";
 	}
-	
+
 	if ($status != 0 && $mode ne "-s" &&
 		(($msgs =~ /^W: Couldn't stat source package list /mi))) {
 		print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
 		$main::pkg_fail_stage = "install-deps-env";
 	}
-	
+
 	$pkgs = $rpkgs = "";
 	if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
 		($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
@@ -1246,7 +1246,7 @@ sub filter_dependencies {
 	my($dep, $d, $name, %names);
 
 	print PLOG "Checking for already installed source dependencies...\n";
-	
+
 	@$pos_list = @$neg_list = ();
 	foreach $d (@$dependencies) {
 		my $name = $d->{'Package'};
@@ -1292,7 +1292,7 @@ sub filter_dependencies {
 			}
 			next;
 		}
-		
+
 		my $is_satisfied = 0;
 		my $installable = "";
 		my $upgradeable = "";
@@ -1388,7 +1388,7 @@ sub check_dependencies {
 	my($dep, $d, $name, %names);
 
 	print PLOG "Checking correctness of source dependencies...\n";
-	
+
 	foreach $d (@$dependencies) {
 		my $name = $d->{'Package'};
 		$names{$name} = 1 if $name !~ /^\*/;
@@ -1571,7 +1571,7 @@ sub copy {
 	else {
 		die "unknown ref type in copy\n";
 	}
-	
+
 	return $new;
 }
 
@@ -1611,7 +1611,7 @@ sub merge_pkg_build_deps {
 
 	$conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflicts ));
 	$conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
-	
+
 	my $deps = $depends . ", " . $conflicts;
 	$deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
 	@{$main::deps{$pkg}} = @l;
@@ -1807,7 +1807,7 @@ sub expand_dependencies {
 			}
 		}
 	}
-	
+
 	return \@result;
 }
 
@@ -1843,11 +1843,11 @@ sub expand_virtuals {
 
 	return \@new_dlist;
 }
-		
+
 sub get_dependencies {
 	local(*PIPE);
 	my %deps;
-	
+
 	my $command = get_apt_command("$conf::apt_cache", "show @_", $main::username, 0);
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
 	if (!$pid) {
@@ -1870,7 +1870,7 @@ sub get_dependencies {
 
 	return \%deps;
 }
-		
+
 sub get_virtuals {
 	local(*PIPE);
 
@@ -1907,7 +1907,7 @@ sub parse_one_srcdep {
 	my $pkg = shift;
 	my $deps = shift;
 	my $hash = shift;
-	
+
 	$deps =~ s/^\s*(.*)\s*$/$1/;
 	foreach (split( /\s*,\s*/, $deps )) {
 		my @l;
@@ -2033,17 +2033,17 @@ sub file_for_name {
 	my @x = grep { /^\Q$name\E_/ } @_;
 	return $x[0];
 }
-				
+
 sub write_jobs_file {
 	my $news = shift;
 	my $job;
 	local( *F );
-	
+
 	$main::job_state{$main::current_job} = $news
 		if $news && $main::current_job;
 
 	return if !$main::batchmode;
-	
+
 	return if !open( F, ">$main::jobs_file" );
 	foreach $job (@ARGV) {
 		my $jobname;
@@ -2066,7 +2066,7 @@ sub append_to_FINISHED {
 	local( *F );
 
 	return if !$main::batchmode;
-	
+
 	open( F, ">>SBUILD-FINISHED" );
 	print F "$pkg\n";
 	close( F );
@@ -2339,7 +2339,7 @@ sub isin {
 
 sub fixup_pkgv {
 	my $pkgv = shift;
-	
+
 	$$pkgv =~ s,^.*/,,; # strip path
 	$$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
 	$$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
@@ -2359,7 +2359,7 @@ sub lock_file {
 	my $for_srcdep = shift;
 	my $lockfile = "$file.lock";
 	my $try = 0;
-	
+
   repeat:
 	if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
 		if ($! == EEXIST) {
@@ -2422,7 +2422,7 @@ sub shutdown {
 	chdir( $main::cwd );
 
 	goto not_ni_shutdown if !$main::batchmode;
-	
+
 	# most important: dump out names of unfinished jobs to REDO
 	foreach $job (@ARGV) {
 		my $job2 = $job;
@@ -2446,9 +2446,9 @@ sub shutdown {
 		foreach $job (@npkgs) {
 			next if grep( /^\Q$job\E\s/, @pkgs );
 			if (not defined $main::binNMUver) {
-				print F "$job $main::distribution\n"; 
+				print F "$job $main::distribution\n";
 			} else {
-				print F "$job $main::distribution $main::binNMUver $main::binNMU\n"; 
+				print F "$job $main::distribution $main::binNMUver $main::binNMU\n";
 			}
 		}
 		close( F );
@@ -2471,7 +2471,7 @@ sub shutdown {
 		print "The following packages still need to be uninstalled ",
 			  "(--purge):\n@pkgs\n";
 	}
-	
+
   not_ni_shutdown:
 	# next: kill currently running command (if one)
 	if ($main::sub_pid) {

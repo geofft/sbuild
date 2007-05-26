@@ -218,7 +218,7 @@ sub add_time_entry {
 		return;
 	}
 	$pkg =~ s/_.*//;
-		
+
 	if (exists $db{$pkg}) {
 		my @times = split( /\s+/, $db{$pkg} );
 		push( @times, $t );
@@ -238,7 +238,7 @@ sub add_space_entry {
 	my $space = shift;
 
 	my $keepvals = 4;
-	
+
 	return if !$Sbuild::Conf::avg_space_db || $space == 0;
 	my %db;
 	if (!tie %db, 'GDBM_File',$Sbuild::Conf::avg_space_db,GDBM_WRCREAT,0664) {
@@ -246,7 +246,7 @@ sub add_space_entry {
 		return;
 	}
 	$pkg =~ s/_.*//;
-		
+
 	if (exists $db{$pkg}) {
 		my @values = split( /\s+/, $db{$pkg} );
 		shift @values;
@@ -277,7 +277,7 @@ sub send_mail {
 		return 0;
 	}
 	local $SIG{'PIPE'} = 'IGNORE';
-	
+
 	if (!open( MAIL, "|$Sbuild::Conf::mailprog -oem $to" )) {
 		warn "Could not open pipe to $Sbuild::Conf::mailprog: $!\n";
 		close( F );
@@ -291,7 +291,7 @@ sub send_mail {
 		print MAIL "." if $_ eq ".\n";
 		print MAIL $_;
 	}
-	
+
 	close( F );
 	if (!close( MAIL )) {
 		warn "$Sbuild::Conf::mailprog failed (exit status $?)\n";
