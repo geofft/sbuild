@@ -277,6 +277,8 @@ $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 
+parse_manual_srcdeps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
+
 write_jobs_file();
 
 my $dscfile;
@@ -2055,6 +2057,22 @@ sub parse_one_srcdep {
 			}
 			push( @{$hash->{$pkg}}, $l );
 		}
+	}
+}
+
+sub parse_manual_srcdeps {
+	my @for_pkgs = @_;
+
+	foreach (@main::manual_srcdeps) {
+		if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
+			warn "Syntax error in manual source dependency: ",
+				substr( $_, 1 ), "\n";
+			next;
+	}
+		my ($mode, $pkg, $deps) = ($1, $2, $3);
+		next if !isin( $pkg, @for_pkgs );
+		@{$main::deps{$pkg}} = () if $mode eq 'f';
+		parse_one_srcdep( $pkg, $deps, \%main::deps );
 	}
 }
 

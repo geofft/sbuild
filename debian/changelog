@@ -6,8 +6,10 @@ sbuild (0.55) unstable; urgency=low
     - build: Document the regex which strips the epoch from the version
       number.
     - dsc_md5sums: Log failure to open the .dsc.
+    - parse_manual_srcdeps: New function, to replace the addition of manual
+      source dependencies from the removed read_deps() function.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 23 May 2007 22:05:43 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 May 2007 11:04:08 +0100
 
 sbuild (0.54) unstable; urgency=low
 
