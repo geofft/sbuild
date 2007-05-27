@@ -14,6 +14,8 @@ sbuild (0.55) unstable; urgency=low
       + When handling the timeout for dpkg-buildpackage, make the $SIG{'ALRM'}
         handler local, so that it is restored to the default once the build
         has finished.
+      + When calling mv to move files, use -f to make sure it doesn't run
+        interactively.
     - dsc_md5sums: Log failure to open the .dsc.
     - parse_manual_srcdeps: New function, to replace the addition of manual
       source dependencies from the removed read_deps() function.

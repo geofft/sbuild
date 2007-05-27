@@ -819,7 +819,7 @@ EOF
 				print PLOG "Cannot create $changes.new: $!\n";
 				print PLOG "Distribution field may be wrong!!!\n";
 				if ($main::chroot_build_dir) {
-					system "mv", "$main::chroot_build_dir/$changes", "."
+					system "mv", "-f", "$main::chroot_build_dir/$changes", "."
 						and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 				}
 			}
@@ -861,7 +861,7 @@ EOF
 
 		foreach (@cfiles) {
 			push( @space_files, $_ );
-			system "mv", "$main::chroot_build_dir/$_", "."
+			system "mv", "-f", "$main::chroot_build_dir/$_", "."
 				and print PLOG "ERROR: Could not move $_ to .\n";
 		}
 		print PLOG "\n";
