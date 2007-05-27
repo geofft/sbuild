@@ -75,6 +75,10 @@ sub open_log {
 			warn "Cannot open pipe to '$main_logfile': $!\n";
 		}
 		elsif ($pid == 0) {
+			$SIG{'INT'} = 'IGNORE';
+			$SIG{'QUIT'} = 'IGNORE';
+			$SIG{'TERM'} = 'IGNORE';
+			$SIG{'PIPE'} = 'IGNORE';
 			while (<STDIN>) {
 				print $F $_;
 				print STDOUT $_;
@@ -152,6 +156,11 @@ sub open_pkg_log {
 				warn "Cannot open pipe to '$pkg_logfile': $!\n";
 			}
 			elsif ($pid == 0) {
+				$SIG{'INT'} = 'IGNORE';
+				$SIG{'QUIT'} = 'IGNORE';
+				$SIG{'TERM'} = 'IGNORE';
+				$SIG{'PIPE'} = 'IGNORE';
+
 				open( CPLOG, ">$pkg_logfile" ) or
 					die "Can't open logfile $pkg_logfile: $!\n";
 				CPLOG->autoflush(1);

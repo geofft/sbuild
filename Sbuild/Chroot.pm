@@ -216,7 +216,10 @@ print STDERR "It is preferable to specify location as a directory, not a symboli
 sub end_session {
 	$current = undef;
 	return if $schroot_session eq "";
+	print STDERR "Cleaning up chroot (session id $schroot_session)\n"
+		if $Sbuild::Conf::debug;
 	system("$Sbuild::Conf::schroot -c $schroot_session --end-session");
+	$schroot_session = "";
 	if ($?) {
 		print STDERR "Chroot cleanup failed\n";
 		return 0;
