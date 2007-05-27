@@ -28,6 +28,10 @@ sbuild (0.55) unstable; urgency=low
     - Change to position of begin_session, so that it matches the cleanup
       order on shutdown.
     - shutdown: Call end_session to clean up the chroot.
+  * Sbuild/Chroot.pm:
+    - end_session:
+      + Add a debugging message.
+      + Clear $schroot_session.
   * Sbuild/Conf.pm: Add linux-libc-dev, gnumach-dev, hurd-dev and
     kfreebsd-kernel-headers to @toolchain_regex.  Thanks to Clint Adams
     (Closes: #425855).
