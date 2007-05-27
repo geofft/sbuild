@@ -1,9 +1,12 @@
 sbuild (0.55) unstable; urgency=low
 
   * sbuild:
-    - fetch_source_files: Strip the epoch of the version number, so that
-      $dscbase matches the .dsc filename in the filesystem (Closes: #425715).
-      Thanks to Lucas Nussbaum.
+    - Parse options with Getopt::Long.
+    - Remove trailing whitespace.
+    - Initialise $main::sub_task with a value, in case the build gets
+      terminated prior to it being used.
+    - Change the position of begin_session, so that it matches the cleanup
+      order on shutdown.
     - build:
       + Document the regex which strips the epoch from the version
         number.
@@ -16,19 +19,16 @@ sbuild (0.55) unstable; urgency=low
         has finished.
       + When calling mv to move files, use -f to make sure it doesn't run
         interactively.
-    - dsc_md5sums: Log failure to open the .dsc.
-    - parse_manual_srcdeps: New function, to replace the addition of manual
-      source dependencies from the removed read_deps() function.
-    - merge_pkg_build_deps: Replace references to "central" src deps with
-      build-essential deps.
-    - parse options with Getopt::Long.
     - check_dependencies: If a toolchain package is missing, print a
       "not installed" message, rather than a blank version.
-    - Remove trailing whitespace.
-    - Initialise $main::sub_task with a value, in case the build gets
-      terminated prior to it being used.
-    - Change to position of begin_session, so that it matches the cleanup
-      order on shutdown.
+    - dsc_md5sums: Log failure to open the .dsc.
+    - fetch_source_files: Strip the epoch of the version number, so that
+      $dscbase matches the .dsc filename in the filesystem (Closes: #425715).
+      Thanks to Lucas Nussbaum.
+    - merge_pkg_build_deps: Replace references to "central" src deps with
+      build-essential deps.
+    - parse_manual_srcdeps: New function, to replace the addition of manual
+      source dependencies from the removed read_deps() function.
     - shutdown: Call end_session to clean up the chroot.
   * Sbuild/Chroot.pm:
     - end_session:
@@ -46,7 +46,7 @@ sbuild (0.55) unstable; urgency=low
   * debian/NEWS: Renamed from debian/NEWS.Debian (Closes: #425370).
     Thanks to Lucas Nussbaum for spotting this.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 May 2007 13:52:48 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 May 2007 23:38:12 +0100
 
 sbuild (0.54) unstable; urgency=low
 
