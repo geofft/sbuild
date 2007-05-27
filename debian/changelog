@@ -4,8 +4,16 @@ sbuild (0.55) unstable; urgency=low
     - fetch_source_files: Strip the epoch of the version number, so that
       $dscbase matches the .dsc filename in the filesystem (Closes: #425715).
       Thanks to Lucas Nussbaum.
-    - build: Document the regex which strips the epoch from the version
-      number.
+    - build:
+      + Document the regex which strips the epoch from the version
+        number.
+      + Remove the call to setsid when forking dpkg-buildpackage, because
+        this broke shell job control.  Some packages might possibly hang
+        while building if they detect they have a controlling terminal, but
+        IMO this is a bug in the package.
+      + When handling the timeout for dpkg-buildpackage, make the $SIG{'ALRM'}
+        handler local, so that it is restored to the default once the build
+        has finished.
     - dsc_md5sums: Log failure to open the .dsc.
     - parse_manual_srcdeps: New function, to replace the addition of manual
       source dependencies from the removed read_deps() function.
@@ -15,6 +23,11 @@ sbuild (0.55) unstable; urgency=low
     - check_dependencies: If a toolchain package is missing, print a
       "not installed" message, rather than a blank version.
     - Remove trailing whitespace.
+    - Initialise $main::sub_task with a value, in case the build gets
+      terminated prior to it being used.
+    - Change to position of begin_session, so that it matches the cleanup
+      order on shutdown.
+    - shutdown: Call end_session to clean up the chroot.
   * Sbuild/Conf.pm: Add linux-libc-dev, gnumach-dev, hurd-dev and
     kfreebsd-kernel-headers to @toolchain_regex.  Thanks to Clint Adams
     (Closes: #425855).

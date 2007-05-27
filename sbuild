@@ -84,6 +84,7 @@ $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
+$main::sub_task = "initialisation";
 
 # Be verbose by default if on a tty
 if (-t STDIN && -t STDOUT && $main::verbose == 0) {
@@ -239,6 +240,15 @@ foreach $dscfile (@ARGV) {
 		next if !open_pkg_log( $tpkg, $main::distribution );
 	}
 
+	$main::pkg_status = "failed"; # assume for now
+	$main::current_job = $pkgv;
+	$main::additional_deps = [];
+	write_jobs_file( "currently building" );
+	if (should_skip( $pkgv )) {
+		$main::pkg_status = "skipped";
+		goto cleanup_close;
+	}
+
 	if (!begin_session($main::distribution, $main::user_arch)) {
 		print PLOG "Skipping $pkg\n";
 		$main::pkg_status = "skipped";
@@ -251,14 +261,6 @@ foreach $dscfile (@ARGV) {
 
 	$main::arch = chroot_arch();
 
-	$main::pkg_status = "failed"; # assume for now
-	$main::current_job = $pkgv;
-	$main::additional_deps = [];
-	write_jobs_file( "currently building" );
-	if (should_skip( $pkgv )) {
-		$main::pkg_status = "skipped";
-		goto cleanup_close;
-	}
 
 	$main::pkg_fail_stage = "fetch-src";
 	my @files_to_rm = fetch_source_files( \$dscfile,
@@ -694,7 +696,6 @@ EOF
 	}
 	if ($main::sub_pid == 0) {
 		open( STDIN, "</dev/null" );
-		setsid;
 		my $binopt = $main::build_source ?
 			$conf::force_orig_source ? "-sa" : "" :
 				$main::build_arch_all ?	"-b" : "-B";
@@ -724,7 +725,8 @@ EOF
 	$timeout *= 60;
 	my $timed_out = 0;
 	my(@timeout_times, @timeout_sigs, $last_time);
-	$SIG{'ALRM'} = sub {
+
+	local $SIG{'ALRM'} = sub {
 		my $signal = ($timed_out > 0) ? "KILL" : "TERM";
 		run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0);
 		$timeout_times[$timed_out] = time - $last_time;
@@ -2483,6 +2485,7 @@ sub shutdown {
 	# close logs and send mails
 	if ( $main::current_job ) {
 		fixup_pkgv( \$main::current_job );
+		end_session();
 		close_pkg_log( $main::pkg_status,
 			       $main::pkg_start_time, $main::pkg_end_time,
 			       $main::this_space );
