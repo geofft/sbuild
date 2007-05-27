@@ -43,12 +43,13 @@ sbuild (0.55) unstable; urgency=low
       in the logger processes, so that logging continues if the process
       group is signalled to terminate.  They will exit when the group leader
       exits or closes the pipe.
+  * debian/changelog: Fix missing colon in bug closure for revision 0.2.4.
   * debian/compat: New file.  Set to debhelper compatibility level 5.
   * debian/NEWS: Renamed from debian/NEWS.Debian (Closes: #425370).
     Thanks to Lucas Nussbaum for spotting this.
   * debian/rules: Remove DH_COMPAT.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 May 2007 23:38:12 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 28 May 2007 00:38:46 +0100
 
 sbuild (0.54) unstable; urgency=low
 
@@ -1176,7 +1177,7 @@ sbuild (0.2.5) unstable; urgency=low
 
 sbuild (0.2.4) unstable; urgency=low
 
-  * Closes #120309 (the ITP)
+  * Closes: #120309 (the ITP)
   * the sbuildrc:$source_dependencies config item got lost
   * removed Phil Blundell's apt "Replaces:" patch.  This is a
     workaround for an apt weakness that shouldn't be depended on.
