@@ -45,6 +45,7 @@ sbuild (0.55) unstable; urgency=low
       exits or closes the pipe.
   * debian/changelog: Fix missing colon in bug closure for revision 0.2.4.
   * debian/compat: New file.  Set to debhelper compatibility level 5.
+  * debian/control: Depend on debhelper v5.
   * debian/NEWS: Renamed from debian/NEWS.Debian (Closes: #425370).
     Thanks to Lucas Nussbaum for spotting this.
   * debian/rules: Remove DH_COMPAT.
