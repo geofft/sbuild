@@ -20,9 +20,6 @@ GENFILES =			\
 INSTALL=/usr/bin/install
 DESTDIR=$(CURDIR)/debian/sbuild
 
-# This is the debhelper compatability version to use.
-export DH_COMPAT=4
-
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
