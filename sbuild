@@ -138,7 +138,7 @@ exit 1 if !GetOptions ("arch" => \$main::user_arch,
 				       if $main::distribution eq "e";
 			       $main::override_distribution = 1;
 		       },
-		       "force_orig_source" => \$conf::force_orig_source,
+		       "force-orig-source" => \$conf::force_orig_source,
 		       "m|maintainer" => \$conf::maintainer_name,
 		       "k|keyid" => \$conf::key_id,
 		       "e|uploader" => \$conf::uploader_name,

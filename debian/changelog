@@ -1,3 +1,13 @@
+sbuild (0.56) UNRELEASED; urgency=low
+
+  * sbuild
+    - Fix --force-orig-source option which was renamed to
+      --force_orig_source while rewriting the options parsing logic to use
+      Getopt::Long (Closes: #428205).  Thanks to Alec Berryman for
+      reporting this regression.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 10 Jun 2007 11:26:28 +0100
+
 sbuild (0.55) unstable; urgency=low
 
   * sbuild:
