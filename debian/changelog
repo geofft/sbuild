@@ -7,8 +7,9 @@ sbuild (0.56) unstable; urgency=low
       reporting this regression.
     - Accept arguments for options requiring a string (Closes: #431216).
       Thanks to Anders Kaseorg for the patch for this regression.
+  * debian/preinst: Use dpkg-query in place of /var/lib/dpkg/status.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 07 Jul 2007 18:45:33 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 07 Jul 2007 20:36:35 +0100
 
 sbuild (0.55) unstable; urgency=low
 
