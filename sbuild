@@ -94,7 +94,7 @@ if (-t STDIN && -t STDOUT && $main::verbose == 0) {
 # Find chroots
 Sbuild::Chroot::init();
 
-exit 1 if !GetOptions ("arch" => \$main::user_arch,
+exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "A|arch-all" => \$main::build_arch_all,
 		       "auto-give-back=s" => sub {
 			       $main::auto_giveback = 1;
@@ -121,8 +121,8 @@ exit 1 if !GetOptions ("arch" => \$main::user_arch,
 			       $main::binNMU = $_[1];
 			       $main::binNMUver ||= 1;
 		       },
-		       "binNMU" => \$main::binNMUver,
-		       "database" => \$main::database,
+		       "binNMU=i" => \$main::binNMUver,
+		       "database=s" => \$main::database,
 		       "D|debug+" => \$conf::debug,
 		       "d|dist=s" => sub {
 			       $main::distribution = $_[1];
@@ -139,18 +139,18 @@ exit 1 if !GetOptions ("arch" => \$main::user_arch,
 			       $main::override_distribution = 1;
 		       },
 		       "force-orig-source" => \$conf::force_orig_source,
-		       "m|maintainer" => \$conf::maintainer_name,
-		       "k|keyid" => \$conf::key_id,
-		       "e|uploader" => \$conf::uploader_name,
+		       "m|maintainer=s" => \$conf::maintainer_name,
+		       "k|keyid=s" => \$conf::key_id,
+		       "e|uploader=s" => \$conf::uploader_name,
 		       "n|nolog" => \$conf::nolog,
-		       "purge" => sub {
+		       "purge=s" => sub {
 			       $conf::purge_build_directory = $_[1];
 			       die "Bad purge mode\n"
 				       if !isin($conf::purge_build_directory,
 						qw(always successful never));
 		       },
 		       "s|source" => \$main::build_source,
-		       "stats-dir" => \$main::stats_dir,
+		       "stats-dir=s" => \$main::stats_dir,
 		       "use-snapshot" => sub {
 			       $main::useSNAP = 1;
 			       $main::ld_library_path =
