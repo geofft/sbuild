@@ -1,3 +1,10 @@
+sbuild (0.57) unstable; urgency=low
+
+  * Sbuild/Chroot.pm: set APT::Install-Recommends to false inside the
+    chroot (Closes: #449253).
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
+
 sbuild (0.56) unstable; urgency=low
 
   * sbuild

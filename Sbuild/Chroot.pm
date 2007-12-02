@@ -146,6 +146,7 @@ sub _setup_options {
 					    UNLINK => 0) ) {
 
 			print $F "APT::Get::AllowUnauthenticated true;\n";
+			print $F "APT::Install-Recommends false;\n";
 
 			if (! rename $F->filename, $chroot_aptconf) {
 				die "Can't rename $F->filename to $chroot_aptconf: $!\n";
