@@ -474,6 +474,10 @@ sub do_build {
 		$sbuild_gb .= "$conf::wanna_build_user\@" if $conf::wanna_build_user;
 		$sbuild_gb .= "$main::sshuser\@" if $main::sshuser;
 		$sbuild_gb .= "$main::sshhost";
+	} else {
+		# Otherwise newer sbuild will take the package name as an --auto-give-back
+		# parameter (changed from regexp to GetOpt::Long parsing)
+		$sbuild_gb .= "=yes"
 	}
 	push ( @sbuild_args, $sbuild_gb );
 	push ( @sbuild_args, "--database=$conf::wanna_build_dbbase" )
