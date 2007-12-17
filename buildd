@@ -484,6 +484,7 @@ sub do_build {
 
 		push ( @sbuild_args, "--binNMU=$binNMUver", "--make-binNMU=" . $binNMUlog->{$_[0]});
 	}
+	logger( "command line: @sbuild_args @_\n" );
 
 	if (($main::sbuild_pid = fork) == 0) {
 		{ exec (@sbuild_args, @_) };
