@@ -36,9 +36,9 @@ binary-buildd: checkroot build
 	install -m 755 buildd buildd-mail buildd-mail-wrapper buildd-uploader \
 		buildd-watcher debian/tmp/usr/bin
 	$(STRIP) debian/tmp/usr/bin/buildd-mail-wrapper
-	install -m 755 vlog debian/tmp/usr/bin/buildd-vlog
-	install -m 755 abort-current-build debian/tmp/usr/bin/buildd-abort
-	install -m 755 update_chroot debian/tmp/usr/bin/buildd-update-chroots
+	install -m 755 buildd-vlog debian/tmp/usr/bin/buildd-vlog
+	install -m 755 buildd-abort debian/tmp/usr/bin/buildd-abort
+	install -m 755 buildd-update-chroots debian/tmp/usr/bin/buildd-update-chroots
 
 	install -d debian/tmp/etc/cron.d
 	install -m 644 buildd.conf.global debian/tmp/etc
@@ -81,7 +81,7 @@ binary-wanna-build: checkroot
 		wanna-build-statistics check-old-builds do-merge-packages \
 		do-merge-quinn debian/tmp/usr/bin 
 	$(STRIP) debian/tmp/usr/bin/wanna-build-mail
-	install -m 755 catdb debian/tmp/usr/bin/wanna-build-catdb
+	install -m 755 wanna-build-catdb debian/tmp/usr/bin/wanna-build-catdb
 	ln -s wanna-build-catdb debian/tmp/usr/bin/wanna-build-catgdbm
 	set -e; for link in dep-wait-build failed-build forget-build \
 	                    give-back-build merge-packages merge-quinn \

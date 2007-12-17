@@ -1,10 +1,8 @@
 Source: buildd
 Section: devel
 Priority: extra
-Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debi
-an.org>
-Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, F
-rancesco Paolo Lovergine <frankie@debian.org>
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debian.org>
+Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, Francesco Paolo Lovergine <frankie@debian.org>
 Standards-Version: 3.6.2
 
 Package: wanna-build

@@ -1,5 +1,10 @@
 buildd (0.10) UNRELEASED; urgency=low
 
   * Initial buildd packaging.
+  * debian/control:
+    - Fix line wrapping.
+  * debian/rules:
+    - Use prefixed binary names for installation.
+  * abort-current-build: Re-add.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Aug 2006 11:33:02 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 17 Dec 2007 07:53:02 +0000
