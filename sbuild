@@ -204,12 +204,19 @@ foreach $dscfile (@ARGV) {
 	my $pkgv = basename($dscfile);
 	$pkgv =~ s/\.dsc$//;
 	my ($pkg, $version) = split /_/, $pkgv;
+	my $invalid = 0;
 
 	# Download if package does not have a .dsc extension and no
 	# directory was specified.
 	my $download = 1;
  	if ($dscbase =~ m/\.dsc$/) {
 		$download = 0;
+		if( ! -f $dscfile ) {
+			$invalid = 1;
+		}
+	}
+	elsif( ! defined $version ) {
+		$invalid = 1;
 	}
 
 	print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
@@ -220,7 +227,7 @@ foreach $dscfile (@ARGV) {
 	print STDERR "D: version = $version\n" if $conf::debug;
 	print STDERR "D: download = $download\n" if $conf::debug;
 
-	if ($download && $dscfile ne $pkgv) {
+	if ($invalid || ($download && $dscfile ne $pkgv)) {
 		print PLOG "Invalid source: $dscfile\n";
 		print PLOG "Skipping $pkg\n";
 		$main::pkg_status = "skipped";
@@ -1316,7 +1323,7 @@ sub filter_dependencies {
 							}
 						}
 						if(!$installable) {
-							print PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n" if !$installable;
+							print PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n";
 						}
 					} else {
 						print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
