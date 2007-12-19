@@ -674,23 +674,23 @@ sub build {
 	close( FILES );
 	@lines = map { my $ind = 68-length($_);
 		       $ind = 0 if $ind < 0;
-		       "| $_".(" " x $ind)." |\n"; } @lines;
+		       "│ $_".(" " x $ind)." │\n"; } @lines;
 
 	print PLOG <<"EOF";
 
-+----------------------------------------------------------------------+
-| sbuild Warning:                                                      |
-| ---------------                                                      |
-| After unpacking, there exists a file debian/files with the contents: |
-|                                                                      |
+┌──────────────────────────────────────────────────────────────────────┐
+│ sbuild Warning:                                                      │
+│ ---------------                                                      │
+│ After unpacking, there exists a file debian/files with the contents: │
+│                                                                      │
 EOF
 
 	print PLOG @lines;
 	print PLOG <<"EOF";
-|                                                                      |
-| This should be reported as a bug.                                    |
-| The file has been removed to avoid dpkg-genchanges errors.           |
-+----------------------------------------------------------------------+
+│                                                                      │
+│ This should be reported as a bug.                                    │
+│ The file has been removed to avoid dpkg-genchanges errors.           │
+└──────────────────────────────────────────────────────────────────────┘
 
 EOF
 

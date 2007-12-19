@@ -5,6 +5,7 @@ sbuild (0.57) unstable; urgency=low
   * sbuild:
     - Reindent to increase readability.
     - Add additional syntax checks.  Thanks to Jan-Marek Glogowski.
+    - build: Use unicode line drawing characters instead of ASCII.
     - filter_dependencies: Remove redundant conditional.  Thanks to
       Jan-Marek Glogowski.
 
