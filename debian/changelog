@@ -3,6 +3,7 @@ sbuild (0.57) unstable; urgency=low
   * Sbuild/Chroot.pm: set APT::Install-Recommends to false inside the
     chroot (Closes: #449253).
   * sbuild:
+    - Reindent to increase readability.
     - Add additional syntax checks.  Thanks to Jan-Marek Glogowski.
     - filter_dependencies: Remove redundant conditional.  Thanks to
       Jan-Marek Glogowski.

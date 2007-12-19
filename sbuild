@@ -37,7 +37,8 @@ use Data::Dumper;
 package conf;
 use Sbuild::Conf;
 package main;
-use Sbuild::Conf qw($cwd $nolog $username $verbose); # For backward compatibility.
+use Sbuild::Conf qw($cwd $nolog $username $verbose); # For backward
+						     # compatibility.
 use Sbuild::Chroot qw(begin_session end_session strip_chroot_path
                       get_command run_command exec_command
                       get_apt_command run_apt_command);
@@ -55,7 +56,7 @@ $SIG{'HUP'} = 'IGNORE';
 
 # A file representing /dev/null
 if (!open(main::DEVNULL, '+<', '/dev/null')) {
-	die "Cannot open /dev/null: $!\n";;
+    die "Cannot open /dev/null: $!\n";;
 }
 
 check_group_membership();
@@ -97,46 +98,46 @@ Sbuild::Chroot::init();
 exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "A|arch-all" => \$main::build_arch_all,
 		       "auto-give-back=s" => sub {
-			       $main::auto_giveback = 1;
-			       if ($_[1]) {
-				       my @parts = split( '@', $_[1] );
-				       $main::auto_giveback_socket =
-					       $parts[$#parts-3] if @parts > 3;
-				       $main::auto_giveback_wb_user =
-					       $parts[$#parts-2] if @parts > 2;
-				       $main::auto_giveback_user =
-					       $parts[$#parts-1] if @parts > 1;
-				       $main::auto_giveback_host =
-					       $parts[$#parts];
-			       }
+			   $main::auto_giveback = 1;
+			   if ($_[1]) {
+			       my @parts = split( '@', $_[1] );
+			       $main::auto_giveback_socket =
+				   $parts[$#parts-3] if @parts > 3;
+			       $main::auto_giveback_wb_user =
+				   $parts[$#parts-2] if @parts > 2;
+			       $main::auto_giveback_user =
+				   $parts[$#parts-1] if @parts > 1;
+			       $main::auto_giveback_host =
+				   $parts[$#parts];
+			   }
 		       },
 		       "f|force-depends=s" => sub {
-			       push( @main::manual_srcdeps, "f".$_[1] );
+			   push( @main::manual_srcdeps, "f".$_[1] );
 		       },
 		       "a|add-depends=s" => sub {
-			       push( @main::manual_srcdeps, "a".$_[1] );
+			   push( @main::manual_srcdeps, "a".$_[1] );
 		       },
 		       "b|batch" => \$main::batchmode,
 		       "make-binNMU=s" => sub {
-			       $main::binNMU = $_[1];
-			       $main::binNMUver ||= 1;
+			   $main::binNMU = $_[1];
+			   $main::binNMUver ||= 1;
 		       },
 		       "binNMU=i" => \$main::binNMUver,
 		       "database=s" => \$main::database,
 		       "D|debug+" => \$conf::debug,
 		       "d|dist=s" => sub {
-			       $main::distribution = $_[1];
-			       $main::distribution = "oldstable"
-				       if $main::distribution eq "o";
-			       $main::distribution = "stable"
-				       if $main::distribution eq "s";
-			       $main::distribution = "testing"
-				       if $main::distribution eq "t";
-			       $main::distribution = "unstable"
-				       if $main::distribution eq "u";
-			       $main::distribution = "experimental"
-				       if $main::distribution eq "e";
-			       $main::override_distribution = 1;
+			   $main::distribution = $_[1];
+			   $main::distribution = "oldstable"
+			       if $main::distribution eq "o";
+			   $main::distribution = "stable"
+			       if $main::distribution eq "s";
+			   $main::distribution = "testing"
+			       if $main::distribution eq "t";
+			   $main::distribution = "unstable"
+			       if $main::distribution eq "u";
+			   $main::distribution = "experimental"
+			       if $main::distribution eq "e";
+			   $main::override_distribution = 1;
 		       },
 		       "force-orig-source" => \$conf::force_orig_source,
 		       "m|maintainer=s" => \$conf::maintainer_name,
@@ -144,33 +145,33 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "e|uploader=s" => \$conf::uploader_name,
 		       "n|nolog" => \$conf::nolog,
 		       "purge=s" => sub {
-			       $conf::purge_build_directory = $_[1];
-			       die "Bad purge mode\n"
-				       if !isin($conf::purge_build_directory,
-						qw(always successful never));
+			   $conf::purge_build_directory = $_[1];
+			   die "Bad purge mode\n"
+			       if !isin($conf::purge_build_directory,
+					qw(always successful never));
 		       },
 		       "s|source" => \$main::build_source,
 		       "stats-dir=s" => \$main::stats_dir,
 		       "use-snapshot" => sub {
-			       $main::useSNAP = 1;
-			       $main::ld_library_path =
-				       "/usr/lib/gcc-snapshot/lib";
-			       $conf::path =
-				       "/usr/lib/gcc-snapshot/bin:$conf::path";
+			   $main::useSNAP = 1;
+			   $main::ld_library_path =
+			       "/usr/lib/gcc-snapshot/lib";
+			   $conf::path =
+			       "/usr/lib/gcc-snapshot/bin:$conf::path";
 		       },
 		       "v|verbose+" => \$main::verbose,
 		       "q|quiet" => sub {
-			       $main::verbose-- if $conf::verbose;
+			   $main::verbose-- if $conf::verbose;
 		       },
-		       );
+    );
 
 print "Selected distribution $main::distribution\n"
-	if $conf::debug;
+    if $conf::debug;
 print "Selected architecture $main::user_arch\n"
-	if $conf::debug;
+    if $conf::debug;
 
 $conf::mailto = $conf::mailto{$main::distribution}
-	if $conf::mailto{$main::distribution};
+    if $conf::mailto{$main::distribution};
 
 # see debsign for priorities, we will follow the same order
 $main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
@@ -182,7 +183,7 @@ $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 if (!defined($conf::maintainer_name) &&
     !defined($conf::uploader_name) &&
     !defined($conf::key_id) ) {
-	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k\n";
+    die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k\n";
 }
 
 # variables for scripts:
@@ -199,120 +200,120 @@ write_jobs_file();
 my $dscfile;
 foreach $dscfile (@ARGV) {
 
-	my $dir = dirname($dscfile);
-	my $dscbase = basename($dscfile);
-	my $pkgv = basename($dscfile);
-	$pkgv =~ s/\.dsc$//;
-	my ($pkg, $version) = split /_/, $pkgv;
-	my $invalid = 0;
+    my $dir = dirname($dscfile);
+    my $dscbase = basename($dscfile);
+    my $pkgv = basename($dscfile);
+    $pkgv =~ s/\.dsc$//;
+    my ($pkg, $version) = split /_/, $pkgv;
+    my $invalid = 0;
 
-	# Download if package does not have a .dsc extension and no
-	# directory was specified.
-	my $download = 1;
- 	if ($dscbase =~ m/\.dsc$/) {
-		$download = 0;
-		if( ! -f $dscfile ) {
-			$invalid = 1;
-		}
+    # Download if package does not have a .dsc extension and no
+    # directory was specified.
+    my $download = 1;
+    if ($dscbase =~ m/\.dsc$/) {
+	$download = 0;
+	if( ! -f $dscfile ) {
+	    $invalid = 1;
 	}
-	elsif( ! defined $version ) {
-		$invalid = 1;
-	}
+    }
+    elsif( ! defined $version ) {
+	$invalid = 1;
+    }
 
-	print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
-	print STDERR "D: dir = $dir\n" if $conf::debug;
-	print STDERR "D: dscbase = $dscbase\n" if $conf::debug;
-	print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
-	print STDERR "D: pkg = $pkg\n" if $conf::debug;
-	print STDERR "D: version = $version\n" if $conf::debug;
-	print STDERR "D: download = $download\n" if $conf::debug;
+    print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
+    print STDERR "D: dir = $dir\n" if $conf::debug;
+    print STDERR "D: dscbase = $dscbase\n" if $conf::debug;
+    print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
+    print STDERR "D: pkg = $pkg\n" if $conf::debug;
+    print STDERR "D: version = $version\n" if $conf::debug;
+    print STDERR "D: download = $download\n" if $conf::debug;
 
-	if ($invalid || ($download && $dscfile ne $pkgv)) {
-		print PLOG "Invalid source: $dscfile\n";
-		print PLOG "Skipping $pkg\n";
-		$main::pkg_status = "skipped";
-		goto cleanup_close;
-	}
+    if ($invalid || ($download && $dscfile ne $pkgv)) {
+	print PLOG "Invalid source: $dscfile\n";
+	print PLOG "Skipping $pkg\n";
+	$main::pkg_status = "skipped";
+	goto cleanup_close;
+    }
 
-	{
-		my $tpkg = basename($pkgv);
+    {
+	my $tpkg = basename($pkgv);
 
-		if ($main::binNMU) {
-			$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-			$tpkg = $1 . "_" . binNMU_version($2,$main::binNMUver);
-			$main::binNMU_name = $tpkg;
-			$tpkg .= $3;
-		}
-
-		next if !open_pkg_log( $tpkg, $main::distribution );
+	if ($main::binNMU) {
+	    $tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
+	    $tpkg = $1 . "_" . binNMU_version($2,$main::binNMUver);
+	    $main::binNMU_name = $tpkg;
+	    $tpkg .= $3;
 	}
 
-	$main::pkg_status = "failed"; # assume for now
-	$main::current_job = $pkgv;
-	$main::additional_deps = [];
-	write_jobs_file( "currently building" );
-	if (should_skip( $pkgv )) {
-		$main::pkg_status = "skipped";
-		goto cleanup_close;
-	}
+	next if !open_pkg_log( $tpkg, $main::distribution );
+    }
 
-	if (!begin_session($main::distribution, $main::user_arch)) {
-		print PLOG "Skipping $pkg\n";
-		$main::pkg_status = "skipped";
-		goto cleanup_close;
-	}
-	$main::chroot_dir = $$Sbuild::Chroot::current{'Location'};
-	$main::chroot_build_dir = $$Sbuild::Chroot::current{'Build Location'};
-	$main::srcdep_lock_dir = $$Sbuild::Chroot::current{'Srcdep Lock Dir'};
-	$main::ilock_file = $$Sbuild::Chroot::current{'Install Lock'};
+    $main::pkg_status = "failed"; # assume for now
+    $main::current_job = $pkgv;
+    $main::additional_deps = [];
+    write_jobs_file( "currently building" );
+    if (should_skip( $pkgv )) {
+	$main::pkg_status = "skipped";
+	goto cleanup_close;
+    }
 
-	$main::arch = chroot_arch();
+    if (!begin_session($main::distribution, $main::user_arch)) {
+	print PLOG "Skipping $pkg\n";
+	$main::pkg_status = "skipped";
+	goto cleanup_close;
+    }
+    $main::chroot_dir = $$Sbuild::Chroot::current{'Location'};
+    $main::chroot_build_dir = $$Sbuild::Chroot::current{'Build Location'};
+    $main::srcdep_lock_dir = $$Sbuild::Chroot::current{'Srcdep Lock Dir'};
+    $main::ilock_file = $$Sbuild::Chroot::current{'Install Lock'};
+
+    $main::arch = chroot_arch();
 
 
-	$main::pkg_fail_stage = "fetch-src";
-	my @files_to_rm = fetch_source_files( \$dscfile,
-					      $dir, $pkg, $version, $download);
-	if (@files_to_rm && $files_to_rm[0] eq "ERROR") {
-		shift @files_to_rm;
-		goto cleanup_symlinks;
-	}
+    $main::pkg_fail_stage = "fetch-src";
+    my @files_to_rm = fetch_source_files( \$dscfile,
+					  $dir, $pkg, $version, $download);
+    if (@files_to_rm && $files_to_rm[0] eq "ERROR") {
+	shift @files_to_rm;
+	goto cleanup_symlinks;
+    }
 
-	$main::pkg_fail_stage = "install-deps";
-	if (!install_deps( $pkg )) {
-		print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
-		goto cleanup_packages;
-	}
+    $main::pkg_fail_stage = "install-deps";
+    if (!install_deps( $pkg )) {
+	print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
+	goto cleanup_packages;
+    }
 
-	$main::pkg_status = "successful" if build( basename($dscfile), $pkgv );
-	chdir( $main::cwd );
-	write_jobs_file( $main::pkg_status );
-	append_to_FINISHED( $pkgv );
+    $main::pkg_status = "successful" if build( basename($dscfile), $pkgv );
+    chdir( $main::cwd );
+    write_jobs_file( $main::pkg_status );
+    append_to_FINISHED( $pkgv );
 
   cleanup_packages:
-	if (defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
-	    $$Sbuild::Chroot::current{'Session Managed'} == 1) {
-		print PLOG "Not removing build depends: session managed chroot in use\n";
-	} else {
-		uninstall_deps();
-	}
-	remove_srcdep_lock_file();
+    if (defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
+	$$Sbuild::Chroot::current{'Session Managed'} == 1) {
+	print PLOG "Not removing build depends: session managed chroot in use\n";
+    } else {
+	uninstall_deps();
+    }
+    remove_srcdep_lock_file();
   cleanup_symlinks:
-	remove_files( @files_to_rm );
+    remove_files( @files_to_rm );
   cleanup_close:
-	analyze_fail_stage( $pkgv );
-	write_jobs_file( $main::pkg_status );
+    analyze_fail_stage( $pkgv );
+    write_jobs_file( $main::pkg_status );
 
-	end_session();
+    end_session();
 
-	close_pkg_log( $main::pkg_status,
-		       $main::pkg_start_time, $main::pkg_end_time,
-		       $main::this_space );
-	undef $main::binNMU_name;
-	$main::current_job = "";
-	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
-	    main::shutdown("NONE (flag file exit)");
-	}
-	dump_main_state() if $conf::debug;
+    close_pkg_log( $main::pkg_status,
+		   $main::pkg_start_time, $main::pkg_end_time,
+		   $main::this_space );
+    undef $main::binNMU_name;
+    $main::current_job = "";
+    if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
+	main::shutdown("NONE (flag file exit)");
+    }
+    dump_main_state() if $conf::debug;
 }
 write_jobs_file();
 
@@ -320,361 +321,362 @@ close_log();
 unlink( $main::jobs_file ) if $main::batchmode;
 unlink( "SBUILD-FINISHED" ) if $main::batchmode;
 if ($conf::sbuild_mode eq "user") {
-	exit ($main::pkg_status ne "successful") ? 1 : 0;
+    exit ($main::pkg_status ne "successful") ? 1 : 0;
 }
 exit 0;
 
 
 sub fetch_source_files {
-	my $dscfile_ref = shift;
-	my $dir = shift;
-	my $pkg = shift;
-	my $version = shift;
-	my $download = shift;
+    my $dscfile_ref = shift;
+    my $dir = shift;
+    my $pkg = shift;
+    my $version = shift;
+    my $download = shift;
 
-	my ($dscbase, $files, @other_files, $dscarchs, @made);
+    my ($dscbase, $files, @other_files, $dscarchs, @made);
 
-	(my $sversion = $version) =~ s/^\d+://; # Strip epoch
-	$dscbase = "${pkg}_${sversion}.dsc";
+    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+    $dscbase = "${pkg}_${sversion}.dsc";
 
-	my $build_depends = "";
-	my $build_depends_indep = "";
-	my $build_conflicts = "";
-	my $build_conflicts_indep = "";
-	local( *F );
+    my $build_depends = "";
+    my $build_depends_indep = "";
+    my $build_conflicts = "";
+    my $build_conflicts_indep = "";
+    local( *F );
 
-	@main::have_dsc_build_deps = ();
+    @main::have_dsc_build_deps = ();
 
-	if (!defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
-		print PLOG "Invalid source: $$dscfile_ref\n";
+    if (!defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
+	print PLOG "Invalid source: $$dscfile_ref\n";
+	return ("ERROR");
+    }
+
+    # TODO: Only call dsc_md5sums once.
+    my $md5sums = dsc_md5sums("${dir}/${dscbase}");
+    if (-f "${dir}/${dscbase}" && !$download && !verify_md5sums($md5sums)) {
+	print PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
+	my @cwd_files = ("${dir}/${dscbase}");
+	push @cwd_files, keys %$md5sums;
+	foreach (@cwd_files) {
+	    if (system ("cp '$_' '$main::chroot_build_dir'")) {
+		print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
+		return ("ERROR", @made);
+	    }
+	    push(@made, "${main::chroot_build_dir}/" . basename($_));
+	}
+    } else {
+	my %entries = ();
+	my $retried = 0;
+      retry:
+	print PLOG "Checking available source versions...\n";
+	my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);
+	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+	if (!$pid) {
+	    print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
+	    return ("ERROR");
+	}
+	{
+	    local($/) = "";
+	    my $package;
+	    my $ver;
+	    my $tfile;
+	    while( <PIPE> ) {
+		$package = $1 if /^Package:\s+(\S+)\s*$/mi;
+		$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
+		$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
+		if (defined $package && defined $ver && defined $tfile) {
+		    @{$entries{"$package $ver"}} = map { (split( /\s+/, $_ ))[3] }
+		    split( "\n", $tfile );
+		    undef($package);
+		    undef($ver);
+		    undef($tfile);
+		}
+	    }
+
+	    if (! scalar keys %entries) {
+		print PLOG "$conf::apt_cache returned no information about $pkg source\n";
+		print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
 		return ("ERROR");
+
+	    }
+	}
+	close(PIPE);
+	waitpid $pid, 0;
+	if ($?) {
+	    print PLOG "$conf::apt_cache failed\n";
+	    return ("ERROR");
 	}
 
-	# TODO: Only call dsc_md5sums once.
-	my $md5sums = dsc_md5sums("${dir}/${dscbase}");
-	if (-f "${dir}/${dscbase}" && !$download && !verify_md5sums($md5sums)) {
-		print PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
-		my @cwd_files = ("${dir}/${dscbase}");
-		push @cwd_files, keys %$md5sums;
-		foreach (@cwd_files) {
-			if (system ("cp '$_' '$main::chroot_build_dir'")) {
-				print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
-				return ("ERROR", @made);
-			}
-			push(@made, "${main::chroot_build_dir}/" . basename($_));
-		}
-	} else {
-		my %entries = ();
-		my $retried = 0;
-	  retry:
-		print PLOG "Checking available source versions...\n";
-		my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);
-		my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
-		if (!$pid) {
-			print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
-			return ("ERROR");
-		}
-		{
-			local($/) = "";
-			my $package;
-			my $ver;
-			my $tfile;
-			while( <PIPE> ) {
-				$package = $1 if /^Package:\s+(\S+)\s*$/mi;
-				$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
-				$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
-				if (defined $package && defined $ver && defined $tfile) {
-					@{$entries{"$package $ver"}} = map { (split( /\s+/, $_ ))[3] }
-						split( "\n", $tfile );
-					undef($package);
-					undef($ver);
-					undef($tfile);
-				}
-			}
-
-			if (! scalar keys %entries) {
-				print PLOG "$conf::apt_cache returned no information about $pkg source\n";
-				print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
-				return ("ERROR");
-
-			}
-		}
-		close(PIPE);
-		waitpid $pid, 0;
-		if ($?) {
-			print PLOG "$conf::apt_cache failed\n";
-			return ("ERROR");
-		}
-
-		if (!defined($entries{"$pkg $version"})) {
-			if (!$retried) {
-				# try to update apt's cache if nothing found
-				run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
-				$retried = 1;
-				goto retry;
-			}
-			print PLOG "Can't find source for ${pkg}_${version}\n";
-			print PLOG "(only different version(s) ",
-				join( ", ", sort keys %entries), " found)\n"
-					if %entries;
-			return( "ERROR" );
-		}
-
-		print PLOG "Fetching source files...\n";
-		foreach (@{$entries{"$pkg $version"}}) {
-			push(@made, "$main::chroot_build_dir/$_");
-		}
-
-		my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
-		if (!open( PIPE, "$command2 |" )) {
-			print PLOG "Can't open pipe to $conf::apt_get: $!\n";
-			return ("ERROR", @made);
-		}
-		while( <PIPE> ) {
-			print PLOG $_;
-		}
-		close( PIPE );
-		if ($?) {
-			print PLOG "$conf::apt_get for sources failed\n";
-			return( "ERROR", @made );
-		}
-		# touch the downloaded files, otherwise buildd-watcher
-		# will complain that they're old :)
-		$$dscfile_ref = (grep { /\.dsc$/ } @made)[0];
+	if (!defined($entries{"$pkg $version"})) {
+	    if (!$retried) {
+		# try to update apt's cache if nothing found
+		run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
+		$retried = 1;
+		goto retry;
+	    }
+	    print PLOG "Can't find source for ${pkg}_${version}\n";
+	    print PLOG "(only different version(s) ",
+	    join( ", ", sort keys %entries), " found)\n"
+		if %entries;
+	    return( "ERROR" );
 	}
 
-	if (verify_md5sums(dsc_md5sums("${main::chroot_build_dir}/${dscbase}"))) {
-		print PLOG "FAILED [dsc verification]\n";
-		return( "ERROR", @made );
+	print PLOG "Fetching source files...\n";
+	foreach (@{$entries{"$pkg $version"}}) {
+	    push(@made, "$main::chroot_build_dir/$_");
 	}
 
-	if (!open( F, "<${main::chroot_build_dir}/${dscbase}" )) {
-		print PLOG "Can't open ${main::chroot_build_dir}/${dscbase}: $!\n";
-		return( "ERROR", @made );
+	my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+	if (!open( PIPE, "$command2 |" )) {
+	    print PLOG "Can't open pipe to $conf::apt_get: $!\n";
+	    return ("ERROR", @made);
 	}
-	my $dsctext;
-	my $orig;
-	{ local($/); $dsctext = <F>; }
-	close( F );
-
-	$dsctext =~ /^Build-Depends:\s*((.|\n\s+)*)\s*$/mi
-		and $build_depends = $1;
-	$dsctext =~ /^Build-Depends-Indep:\s*((.|\n\s+)*)\s*$/mi
-		and $build_depends_indep = $1;
-	$dsctext =~ /^Build-Conflicts:\s*((.|\n\s+)*)\s*$/mi
-		and $build_conflicts = $1;
-	$dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
-		and $build_conflicts_indep = $1;
-	$build_depends =~ s/\n\s+/ /g if defined $build_depends;
-	$build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;
-	$build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
-	$build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
-
-	$dsctext =~ /^Architecture:\s*(.*)$/mi and $dscarchs = $1;
-
-	$dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
-	@other_files = map { (split( /\s+/, $_ ))[3] } split( "\n", $files );
-	$files =~ /(\Q$pkg\E.*orig.tar.gz)/mi and $orig = $1;
-
-	if (!$dscarchs) {
-		print PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
+	while( <PIPE> ) {
+	    print PLOG $_;
 	}
-	else {
-		if ($dscarchs ne "any" && $dscarchs !~ /\b$main::arch\b/ &&
-		    !($dscarchs eq "all" && $main::build_arch_all) )  {
-			print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
-				 "skipping\n";
-			$main::pkg_fail_stage = "arch-check";
-			return( "ERROR", @made );
-		}
+	close( PIPE );
+	if ($?) {
+	    print PLOG "$conf::apt_get for sources failed\n";
+	    return( "ERROR", @made );
 	}
-	print "Arch check ok ($main::arch included in $dscarchs)\n"
-		if $conf::debug;
+	# touch the downloaded files, otherwise buildd-watcher will
+	# complain that they're old :)
+	$$dscfile_ref = (grep { /\.dsc$/ } @made)[0];
+    }
 
-	@main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
-				      $build_conflicts,$build_conflicts_indep);
-	merge_pkg_build_deps( $pkg, $build_depends, $build_depends_indep,
-			      $build_conflicts, $build_conflicts_indep );
+    if (verify_md5sums(dsc_md5sums("${main::chroot_build_dir}/${dscbase}"))) {
+	print PLOG "FAILED [dsc verification]\n";
+	return( "ERROR", @made );
+    }
 
-	return @made;
+    if (!open( F, "<${main::chroot_build_dir}/${dscbase}" )) {
+	print PLOG "Can't open ${main::chroot_build_dir}/${dscbase}: $!\n";
+	return( "ERROR", @made );
+    }
+    my $dsctext;
+    my $orig;
+    { local($/); $dsctext = <F>; }
+    close( F );
+
+    $dsctext =~ /^Build-Depends:\s*((.|\n\s+)*)\s*$/mi
+	and $build_depends = $1;
+    $dsctext =~ /^Build-Depends-Indep:\s*((.|\n\s+)*)\s*$/mi
+	and $build_depends_indep = $1;
+    $dsctext =~ /^Build-Conflicts:\s*((.|\n\s+)*)\s*$/mi
+	and $build_conflicts = $1;
+    $dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
+	and $build_conflicts_indep = $1;
+    $build_depends =~ s/\n\s+/ /g if defined $build_depends;
+    $build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;
+    $build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
+    $build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
+
+    $dsctext =~ /^Architecture:\s*(.*)$/mi and $dscarchs = $1;
+
+    $dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
+    @other_files = map { (split( /\s+/, $_ ))[3] } split( "\n", $files );
+    $files =~ /(\Q$pkg\E.*orig.tar.gz)/mi and $orig = $1;
+
+    if (!$dscarchs) {
+	print PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
+    }
+    else {
+	if ($dscarchs ne "any" && $dscarchs !~ /\b$main::arch\b/ &&
+	    !($dscarchs eq "all" && $main::build_arch_all) )  {
+	    print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
+		"skipping\n";
+	    $main::pkg_fail_stage = "arch-check";
+	    return( "ERROR", @made );
+	}
+    }
+    print "Arch check ok ($main::arch included in $dscarchs)\n"
+	if $conf::debug;
+
+    @main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
+				  $build_conflicts,$build_conflicts_indep);
+    merge_pkg_build_deps( $pkg, $build_depends, $build_depends_indep,
+			  $build_conflicts, $build_conflicts_indep );
+
+    return @made;
 }
 
 sub build {
-	my $dsc = shift;
-	my $pkgv = shift;
-	my( $dir, $rv, $changes );
-	local( *PIPE, *F, *F2 );
+    my $dsc = shift;
+    my $pkgv = shift;
+    my( $dir, $rv, $changes );
+    local( *PIPE, *F, *F2 );
 
-	fixup_pkgv( \$pkgv );
-	print PLOG "-"x78, "\n";
-	# count build time from now, ignoring the installation of source deps
-	$main::pkg_start_time = time;
-	$main::this_space = 0;
-	$pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
-	my ($pkg, $version) = ($1,$2);
-	(my $sversion = $version) =~ s/^\d+://; # Strip epoch
-	my $tmpunpackdir = $dsc;
-	$tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
-	$tmpunpackdir =~ s/_/-/;
-	$tmpunpackdir = "$main::chroot_build_dir/$tmpunpackdir";
+    fixup_pkgv( \$pkgv );
+    print PLOG "-"x78, "\n";
+    # count build time from now, ignoring the installation of source
+    # deps
+    $main::pkg_start_time = time;
+    $main::this_space = 0;
+    $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
+    my ($pkg, $version) = ($1,$2);
+    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+    my $tmpunpackdir = $dsc;
+    $tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
+    $tmpunpackdir =~ s/_/-/;
+    $tmpunpackdir = "$main::chroot_build_dir/$tmpunpackdir";
 
-	if (-d "$main::chroot_build_dir/$dsc" && -l "$main::chroot_build_dir/$dsc") {
-		# if the package dir already exists but is a symlink, complain
-		print PLOG "Cannot unpack source: a symlink to a directory with the\n",
-				   "same name already exists.\n";
-		return 0;
+    if (-d "$main::chroot_build_dir/$dsc" && -l "$main::chroot_build_dir/$dsc") {
+	# if the package dir already exists but is a symlink, complain
+	print PLOG "Cannot unpack source: a symlink to a directory with the\n",
+	"same name already exists.\n";
+	return 0;
+    }
+    if (! -d "$main::chroot_build_dir/$dsc") {
+	$main::pkg_fail_stage = "unpack";
+	# dpkg-source refuses to remove the remanants of an aborted
+	# dpkg-source extraction, so we will if necessary.
+	if (-d $tmpunpackdir) {
+	    system ("rm -fr '$tmpunpackdir'");
 	}
-	if (! -d "$main::chroot_build_dir/$dsc") {
-		$main::pkg_fail_stage = "unpack";
-		# dpkg-source refuses to remove the remanants of an
-		# aborted dpkg-source extraction, so we will if necessary.
-		if (-d $tmpunpackdir) {
-		    system ("rm -fr '$tmpunpackdir'");
-		}
-		$main::sub_pid = open( PIPE, "-|" );
-		if (!defined $main::sub_pid) {
-			print PLOG "Can't spawn dpkg-source: $!\n";
-			return 0;
-		}
-		if ($main::sub_pid == 0) {
-			exec_command("$conf::dpkg_source -sn -x $dsc 2>&1", $main::username, 1, 0);
-		}
-		$main::sub_task = "dpkg-source";
+	$main::sub_pid = open( PIPE, "-|" );
+	if (!defined $main::sub_pid) {
+	    print PLOG "Can't spawn dpkg-source: $!\n";
+	    return 0;
+	}
+	if ($main::sub_pid == 0) {
+	    exec_command("$conf::dpkg_source -sn -x $dsc 2>&1", $main::username, 1, 0);
+	}
+	$main::sub_task = "dpkg-source";
 
-		while( <PIPE> ) {
-			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
-			$main::pkg_fail_stage = "unpack-check"
-				if /^dpkg-source: error: file.*instead of expected/;
-		}
-		close( PIPE );
-		undef $main::sub_pid;
-		if ($?) {
-			print PLOG "FAILED [dpkg-source died]\n";
+	while( <PIPE> ) {
+	    print PLOG $_;
+	    $dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+	    $main::pkg_fail_stage = "unpack-check"
+		if /^dpkg-source: error: file.*instead of expected/;
+	}
+	close( PIPE );
+	undef $main::sub_pid;
+	if ($?) {
+	    print PLOG "FAILED [dpkg-source died]\n";
 
-		    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
-			return 0;
-		}
-		if (!$dir) {
-			print PLOG "Couldn't find directory of $dsc in dpkg-source output\n";
-		    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
-			return 0;
-		}
-		$dir = "$main::chroot_build_dir/$dir";
+	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
+	    return 0;
+	}
+	if (!$dir) {
+	    print PLOG "Couldn't find directory of $dsc in dpkg-source output\n";
+	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
+	    return 0;
+	}
+	$dir = "$main::chroot_build_dir/$dir";
 
-		if (system( "chmod -R g-s,go+rX $dir" ) != 0) {
-			print PLOG "chmod -R g-s,go+rX $dir failed.\n";
-			return 0;
-		}
+	if (system( "chmod -R g-s,go+rX $dir" ) != 0) {
+	    print PLOG "chmod -R g-s,go+rX $dir failed.\n";
+	    return 0;
+	}
+    }
+    else {
+	$dir = "$main::chroot_build_dir/$dsc";
+
+	$main::pkg_fail_stage = "check-unpacked-version";
+	# check if the unpacked tree is really the version we need
+	$main::sub_pid = open( PIPE, "-|" );
+	if (!defined $main::sub_pid) {
+	    print PLOG "Can't spawn dpkg-parsechangelog: $!\n";
+	    return 0;
+	}
+	if ($main::sub_pid == 0) {
+	    $dir = strip_chroot_path($dir);
+	    exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0);
+	}
+	$main::sub_task = "dpkg-parsechangelog";
+
+	my $clog = "";
+	while( <PIPE> ) {
+	    $clog .= $_;
+	}
+	close( PIPE );
+	undef $main::sub_pid;
+	if ($?) {
+	    print PLOG "FAILED [dpkg-parsechangelog died]\n";
+	    return 0;
+	}
+	if ($clog !~ /^Version:\s*(.+)\s*$/mi) {
+	    print PLOG "dpkg-parsechangelog didn't print Version:\n";
+	    return 0;
+	}
+	my $tree_version = $1;
+	my $cmp_version = ($main::binNMU && -f "$dir/debian/.sbuild-binNMU-done") ?
+	    binNMU_version($version,$main::binNMUver) : $version;
+	if ($tree_version ne $cmp_version) {
+	    print PLOG "The unpacked source tree $dir is version ".
+		"$tree_version, not wanted $cmp_version!\n";
+	    return 0;
+	}
+    }
+
+    if (!chdir( $dir )) {
+	print PLOG "Couldn't cd to $dir: $!\n";
+	system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
+	return 0;
+    }
+
+    $main::pkg_fail_stage = "check-space";
+    my $current_usage = `/usr/bin/du -k -s .`;
+    $current_usage =~ /^(\d+)/;
+    $current_usage = $1;
+    if ($current_usage) {
+	my $free = df( "." );
+	if ($free < 2*$current_usage) {
+	    print PLOG "Disk space is propably not enough for building.\n".
+		"(Source needs $current_usage KB, free are $free KB.)\n";
+	    print PLOG "Purging $dir\n";
+	    chdir( $main::cwd );
+	    my $bdir = strip_chroot_path($dir);
+	    run_command("rm -rf '$bdir'", "root", 1, 0);
+	    return 0;
+	}
+    }
+
+    $main::pkg_fail_stage = "hack-binNMU";
+    if ($main::binNMU && ! -f "debian/.sbuild-binNMU-done") {
+	if (open( F, "<debian/changelog" )) {
+	    my($firstline, $text);
+	    $firstline = "";
+	    $firstline = <F> while $firstline =~ /^$/;
+	    { local($/); undef $/; $text = <F>; }
+	    close( F );
+	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
+	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
+	    my $NMUversion = binNMU_version($version,$main::binNMUver);
+	    chomp( my $date = `date -R` );
+	    if (!open( F, ">debian/changelog" )) {
+		print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
+		chdir( $main::cwd );
+		return 0;
+	    }
+	    $dists = $main::distribution;
+	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
+	    print F "  * Binary-only non-maintainer upload for $main::arch; ",
+	    "no source changes.\n";
+	    print F "  * ", join( "    ", split( "\n", $main::binNMU )), "\n\n";
+	    print F " -- $conf::maintainer_name  $date\n\n";
+
+	    print F $firstline, $text;
+	    close( F );
+	    system "touch 'debian/.sbuild-binNMU-done'";
+	    print PLOG "*** Created changelog entry for bin-NMU version $NMUversion\n";
 	}
 	else {
-		$dir = "$main::chroot_build_dir/$dsc";
-
-		$main::pkg_fail_stage = "check-unpacked-version";
-		# check if the unpacked tree is really the version we need
-		$main::sub_pid = open( PIPE, "-|" );
-		if (!defined $main::sub_pid) {
-			print PLOG "Can't spawn dpkg-parsechangelog: $!\n";
-			return 0;
-		}
-		if ($main::sub_pid == 0) {
-			$dir = strip_chroot_path($dir);
-			exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0);
-		}
-		$main::sub_task = "dpkg-parsechangelog";
-
-		my $clog = "";
-		while( <PIPE> ) {
-			$clog .= $_;
-		}
-		close( PIPE );
-		undef $main::sub_pid;
-		if ($?) {
-			print PLOG "FAILED [dpkg-parsechangelog died]\n";
-			return 0;
-		}
-		if ($clog !~ /^Version:\s*(.+)\s*$/mi) {
-			print PLOG "dpkg-parsechangelog didn't print Version:\n";
-			return 0;
-		}
-		my $tree_version = $1;
-		my $cmp_version = ($main::binNMU && -f "$dir/debian/.sbuild-binNMU-done") ?
-			binNMU_version($version,$main::binNMUver) : $version;
-		if ($tree_version ne $cmp_version) {
-			print PLOG "The unpacked source tree $dir is version ".
-					   "$tree_version, not wanted $cmp_version!\n";
-			return 0;
-		}
+	    print PLOG "Can't open debian/changelog -- no binNMU hack!\n";
 	}
+    }
 
-	if (!chdir( $dir )) {
-		print PLOG "Couldn't cd to $dir: $!\n";
-		system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
-		return 0;
-	}
+    if (-f "debian/files") {
+	local( *FILES );
+	my @lines;
+	open( FILES, "<debian/files" );
+	chomp( @lines = <FILES> );
+	close( FILES );
+	@lines = map { my $ind = 68-length($_);
+		       $ind = 0 if $ind < 0;
+		       "| $_".(" " x $ind)." |\n"; } @lines;
 
-	$main::pkg_fail_stage = "check-space";
-	my $current_usage = `/usr/bin/du -k -s .`;
-	$current_usage =~ /^(\d+)/;
-	$current_usage = $1;
-	if ($current_usage) {
-		my $free = df( "." );
-		if ($free < 2*$current_usage) {
-			print PLOG "Disk space is propably not enough for building.\n".
-					   "(Source needs $current_usage KB, free are $free KB.)\n";
-			print PLOG "Purging $dir\n";
-			chdir( $main::cwd );
-			my $bdir = strip_chroot_path($dir);
-			run_command("rm -rf '$bdir'", "root", 1, 0);
-			return 0;
-		}
-	}
-
-	$main::pkg_fail_stage = "hack-binNMU";
-	if ($main::binNMU && ! -f "debian/.sbuild-binNMU-done") {
-		if (open( F, "<debian/changelog" )) {
-			my($firstline, $text);
-			$firstline = "";
-			$firstline = <F> while $firstline =~ /^$/;
-			{ local($/); undef $/; $text = <F>; }
-			close( F );
-			$firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
-			my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-			my $NMUversion = binNMU_version($version,$main::binNMUver);
-			chomp( my $date = `date -R` );
-			if (!open( F, ">debian/changelog" )) {
-				print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
-				chdir( $main::cwd );
-				return 0;
-			}
-			$dists = $main::distribution;
-			print F "$name ($NMUversion) $dists; urgency=low\n\n";
-			print F "  * Binary-only non-maintainer upload for $main::arch; ",
-					"no source changes.\n";
-			print F "  * ", join( "    ", split( "\n", $main::binNMU )), "\n\n";
-			print F " -- $conf::maintainer_name  $date\n\n";
-
-			print F $firstline, $text;
-			close( F );
-			system "touch 'debian/.sbuild-binNMU-done'";
-			print PLOG "*** Created changelog entry for bin-NMU version $NMUversion\n";
-		}
-		else {
-			print PLOG "Can't open debian/changelog -- no binNMU hack!\n";
-		}
-	}
-
-	if (-f "debian/files") {
-		local( *FILES );
-		my @lines;
-		open( FILES, "<debian/files" );
-		chomp( @lines = <FILES> );
-		close( FILES );
-		@lines = map { my $ind = 68-length($_);
-					   $ind = 0 if $ind < 0;
-					   "| $_".(" " x $ind)." |\n"; } @lines;
-
-		print PLOG <<"EOF";
+	print PLOG <<"EOF";
 
 +----------------------------------------------------------------------+
 | sbuild Warning:                                                      |
@@ -682,2066 +684,2073 @@ sub build {
 | After unpacking, there exists a file debian/files with the contents: |
 |                                                                      |
 EOF
-		print PLOG @lines;
-		print PLOG <<"EOF";
+
+	print PLOG @lines;
+	print PLOG <<"EOF";
 |                                                                      |
 | This should be reported as a bug.                                    |
 | The file has been removed to avoid dpkg-genchanges errors.           |
 +----------------------------------------------------------------------+
 
 EOF
-		unlink "debian/files";
-	}
 
-	$main::build_start_time = time;
-	$main::pkg_fail_stage = "build";
-	$main::sub_pid = open( PIPE, "-|" );
-	if (!defined $main::sub_pid) {
-		print PLOG "Can't spawn dpkg-buildpackage: $!\n";
-		chdir( $main::cwd );
-		return 0;
-	}
-	if ($main::sub_pid == 0) {
-		open( STDIN, "</dev/null" );
-		my $binopt = $main::build_source ?
-			$conf::force_orig_source ? "-sa" : "" :
-				$main::build_arch_all ?	"-b" : "-B";
+	unlink "debian/files";
+    }
 
-		my $bdir = strip_chroot_path($dir);
-		if (-f "$main::chroot_dir/etc/ld.so.conf" &&
-		    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-			run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
-			print PLOG "ld.so.conf was not readable! Fixed.\n";
-		}
-		chdir( $main::cwd ); # schroot doesn't need to be in $dir, and this quells a harmless warning
-		my $buildcmd = "cd $bdir && PATH=$conf::path ".
-			(defined($main::ld_library_path) ?
-			 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				 "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-					 "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-		exec_command($buildcmd, $main::username, 1, 0);
-	}
-	$main::sub_task = "dpkg-buildpackage";
-
-	# We must send the signal as root, because some subprocesses of
-	# dpkg-buildpackage could run as root. So we have to use a shell
-	# command to send the signal... but /bin/kill can't send to
-	# process groups :-( So start another Perl :-)
-	my $timeout = $conf::individual_stalled_pkg_timeout{$pkg} ||
-				  $conf::stalled_pkg_timeout;
-	$timeout *= 60;
-	my $timed_out = 0;
-	my(@timeout_times, @timeout_sigs, $last_time);
-
-	local $SIG{'ALRM'} = sub {
-		my $signal = ($timed_out > 0) ? "KILL" : "TERM";
-		run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0);
-		$timeout_times[$timed_out] = time - $last_time;
-		$timeout_sigs[$timed_out] = $signal;
-		$timed_out++;
-		$timeout = 5*60; # only wait 5 minutes until next signal
-	};
-
-	alarm( $timeout );
-	while( <PIPE> ) {
-		alarm( $timeout );
-		$last_time = time;
-		print PLOG $_;
-	}
-	close( PIPE );
-	undef $main::sub_pid;
-	alarm( 0 );
-	$rv = $?;
-
-	my $i;
-	for( $i = 0; $i < $timed_out; ++$i ) {
-		print PLOG "Build killed with signal ", $timeout_sigs[$i],
-				   " after ", int($timeout_times[$i]/60),
-				   " minutes of inactivity\n";
-	}
-	$main::pkg_end_time = time;
-	write_stats('build-time',$main::pkg_end_time-$main::build_start_time);
-	my $date = strftime("%Y%m%d-%H%M",localtime($main::pkg_end_time));
-	print PLOG "*"x78, "\n";
-	print PLOG "Build finished at $date\n";
+    $main::build_start_time = time;
+    $main::pkg_fail_stage = "build";
+    $main::sub_pid = open( PIPE, "-|" );
+    if (!defined $main::sub_pid) {
+	print PLOG "Can't spawn dpkg-buildpackage: $!\n";
 	chdir( $main::cwd );
+	return 0;
+    }
+    if ($main::sub_pid == 0) {
+	open( STDIN, "</dev/null" );
+	my $binopt = $main::build_source ?
+	    $conf::force_orig_source ? "-sa" : "" :
+	    $main::build_arch_all ?	"-b" : "-B";
 
-	my @space_files = ("$dir");
-	if ($rv) {
-		print PLOG "FAILED [dpkg-buildpackage died]\n";
+	my $bdir = strip_chroot_path($dir);
+	if (-f "$main::chroot_dir/etc/ld.so.conf" &&
+	    ! -r "$main::chroot_dir/etc/ld.so.conf") {
+	    run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
+	    print PLOG "ld.so.conf was not readable! Fixed.\n";
+	}
+	chdir( $main::cwd ); # schroot doesn't need to be in $dir, and
+			     # this quells a harmless warning
+	my $buildcmd = "cd $bdir && PATH=$conf::path ".
+	    (defined($main::ld_library_path) ?
+	     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
+	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
+	     "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+	exec_command($buildcmd, $main::username, 1, 0);
+    }
+    $main::sub_task = "dpkg-buildpackage";
+
+    # We must send the signal as root, because some subprocesses of
+    # dpkg-buildpackage could run as root. So we have to use a shell
+    # command to send the signal... but /bin/kill can't send to
+    # process groups :-( So start another Perl :-)
+    my $timeout = $conf::individual_stalled_pkg_timeout{$pkg} ||
+	$conf::stalled_pkg_timeout;
+    $timeout *= 60;
+    my $timed_out = 0;
+    my(@timeout_times, @timeout_sigs, $last_time);
+
+    local $SIG{'ALRM'} = sub {
+	my $signal = ($timed_out > 0) ? "KILL" : "TERM";
+	run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0);
+	$timeout_times[$timed_out] = time - $last_time;
+	$timeout_sigs[$timed_out] = $signal;
+	$timed_out++;
+	$timeout = 5*60; # only wait 5 minutes until next signal
+    };
+
+    alarm( $timeout );
+    while( <PIPE> ) {
+	alarm( $timeout );
+	$last_time = time;
+	print PLOG $_;
+    }
+    close( PIPE );
+    undef $main::sub_pid;
+    alarm( 0 );
+    $rv = $?;
+
+    my $i;
+    for( $i = 0; $i < $timed_out; ++$i ) {
+	print PLOG "Build killed with signal ", $timeout_sigs[$i],
+	           " after ", int($timeout_times[$i]/60),
+	           " minutes of inactivity\n";
+    }
+    $main::pkg_end_time = time;
+    write_stats('build-time',$main::pkg_end_time-$main::build_start_time);
+    my $date = strftime("%Y%m%d-%H%M",localtime($main::pkg_end_time));
+    print PLOG "*"x78, "\n";
+    print PLOG "Build finished at $date\n";
+    chdir( $main::cwd );
+
+    my @space_files = ("$dir");
+    if ($rv) {
+	print PLOG "FAILED [dpkg-buildpackage died]\n";
+    }
+    else {
+	if (-r "$dir/debian/files" && $main::chroot_build_dir) {
+	    my @files = debian_files_list("$dir/debian/files");
+
+	    foreach (@files) {
+		if (! -f "$main::chroot_build_dir/$_") {
+		    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
+		    next;
+		}
+		if (/_all.u?deb$/ and not $main::build_arch_all) {
+		    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
+		    unlink("$main::chroot_build_dir/$_");
+		    next;
+		}
+	    }
+	}
+
+	$changes = "${pkg}_".
+	    ($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
+	    "_$main::arch.changes";
+	my @cfiles;
+	if (-r "$main::chroot_build_dir/$changes") {
+	    my(@do_dists, @saved_dists);
+	    print PLOG "\n$changes:\n";
+	    open( F, "<$main::chroot_build_dir/$changes" );
+	    if (open( F2, ">$changes.new" )) {
+		while( <F> ) {
+		    if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
+			print PLOG "Distribution: $main::distribution\n";
+			print F2 "Distribution: $main::distribution\n";
+		    }
+		    else {
+			print F2 $_;
+			while (length $_ > 989)
+			{
+			    my $index = rindex($_,' ',989);
+			    print PLOG substr ($_,0,$index) . "\n";
+			    $_ = '        ' . substr ($_,$index+1);
+			}
+			print PLOG $_;
+			if (/^ [a-z0-9]{32}/) {
+			    push(@cfiles, (split( /\s+/, $_ ))[5] );
+			}
+		    }
+		}
+		close( F2 );
+		rename( "$changes.new", "$changes" )
+		    or print PLOG "$changes.new could not be renamed ".
+		    "to $changes: $!\n";
+		unlink( "$main::chroot_build_dir/$changes" )
+		    if $main::chroot_build_dir;
+	    }
+	    else {
+		print PLOG "Cannot create $changes.new: $!\n";
+		print PLOG "Distribution field may be wrong!!!\n";
+		if ($main::chroot_build_dir) {
+		    system "mv", "-f", "$main::chroot_build_dir/$changes", "."
+			and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
+		}
+	    }
+	    close( F );
 	}
 	else {
-		if (-r "$dir/debian/files" && $main::chroot_build_dir) {
-			my @files = debian_files_list("$dir/debian/files");
-
-			foreach (@files) {
-				if (! -f "$main::chroot_build_dir/$_") {
-					print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
-					next;
-				}
-				if (/_all.u?deb$/ and not $main::build_arch_all) {
-					print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
-					unlink("$main::chroot_build_dir/$_");
-					next;
-				}
-			}
-		}
-
-		$changes = "${pkg}_".
-			($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
-			"_$main::arch.changes";
-		my @cfiles;
-		if (-r "$main::chroot_build_dir/$changes") {
-			my(@do_dists, @saved_dists);
-			print PLOG "\n$changes:\n";
-			open( F, "<$main::chroot_build_dir/$changes" );
-			if (open( F2, ">$changes.new" )) {
-				while( <F> ) {
-					if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
-						print PLOG "Distribution: $main::distribution\n";
-						print F2 "Distribution: $main::distribution\n";
-					}
-					else {
-						print F2 $_;
-						while (length $_ > 989)
-						{
-							my $index = rindex($_,' ',989);
-							print PLOG substr ($_,0,$index) . "\n";
-							$_ = '        ' . substr ($_,$index+1);
-						}
-						print PLOG $_;
-						if (/^ [a-z0-9]{32}/) {
-						    push(@cfiles, (split( /\s+/, $_ ))[5] );
-						}
-					}
-				}
-				close( F2 );
-				rename( "$changes.new", "$changes" )
-					or print PLOG "$changes.new could not be renamed ".
-								  "to $changes: $!\n";
-				unlink( "$main::chroot_build_dir/$changes" )
-					if $main::chroot_build_dir;
-			}
-			else {
-				print PLOG "Cannot create $changes.new: $!\n";
-				print PLOG "Distribution field may be wrong!!!\n";
-				if ($main::chroot_build_dir) {
-					system "mv", "-f", "$main::chroot_build_dir/$changes", "."
-						and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
-				}
-			}
-			close( F );
-		}
-		else {
-			print PLOG "Can't find $changes -- can't dump info\n";
-		}
-
-		my @debcfiles = @cfiles;
-		foreach (@debcfiles) {
-			my $deb = "$main::chroot_build_dir/$_";
-			next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
-
-			print PLOG "\n$deb:\n";
-			if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
-				print PLOG "Can't spawn dpkg: $! -- can't dump info\n";
-			}
-			else {
-				print PLOG $_ while( <PIPE> );
-				close( PIPE );
-			}
-		}
-
-		@debcfiles = @cfiles;
-		foreach (@debcfiles) {
-			my $deb = "$main::chroot_build_dir/$_";
-			next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
-
-			print PLOG "\n$deb:\n";
-			if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
-				print PLOG "Can't spawn dpkg: $! -- can't dump info\n";
-			}
-			else {
-				print PLOG $_ while( <PIPE> );
-				close( PIPE );
-			}
-		}
-
-		foreach (@cfiles) {
-			push( @space_files, $_ );
-			system "mv", "-f", "$main::chroot_build_dir/$_", "."
-				and print PLOG "ERROR: Could not move $_ to .\n";
-		}
-		print PLOG "\n";
-		print PLOG "*"x78, "\n";
-		print PLOG "Built successfully\n";
+	    print PLOG "Can't find $changes -- can't dump info\n";
 	}
 
-	check_watches();
-	check_space( @space_files );
+	my @debcfiles = @cfiles;
+	foreach (@debcfiles) {
+	    my $deb = "$main::chroot_build_dir/$_";
+	    next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
 
-	if ($conf::purge_build_directory eq "always" ||
-		($conf::purge_build_directory eq "successful" && $rv == 0)) {
-		print PLOG "Purging $dir\n";
-		my $bdir = strip_chroot_path($dir);
-		run_command("rm -rf '$bdir'", "root", 1, 0);
+	    print PLOG "\n$deb:\n";
+	    if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
+		print PLOG "Can't spawn dpkg: $! -- can't dump info\n";
+	    }
+	    else {
+		print PLOG $_ while( <PIPE> );
+		close( PIPE );
+	    }
 	}
 
-	print PLOG "-"x78, "\n";
-	return $rv == 0 ? 1 : 0;
+	@debcfiles = @cfiles;
+	foreach (@debcfiles) {
+	    my $deb = "$main::chroot_build_dir/$_";
+	    next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
+
+	    print PLOG "\n$deb:\n";
+	    if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
+		print PLOG "Can't spawn dpkg: $! -- can't dump info\n";
+	    }
+	    else {
+		print PLOG $_ while( <PIPE> );
+		close( PIPE );
+	    }
+	}
+
+	foreach (@cfiles) {
+	    push( @space_files, $_ );
+	    system "mv", "-f", "$main::chroot_build_dir/$_", "."
+		and print PLOG "ERROR: Could not move $_ to .\n";
+	}
+	print PLOG "\n";
+	print PLOG "*"x78, "\n";
+	print PLOG "Built successfully\n";
+    }
+
+    check_watches();
+    check_space( @space_files );
+
+    if ($conf::purge_build_directory eq "always" ||
+	($conf::purge_build_directory eq "successful" && $rv == 0)) {
+	print PLOG "Purging $dir\n";
+	my $bdir = strip_chroot_path($dir);
+	run_command("rm -rf '$bdir'", "root", 1, 0);
+    }
+
+    print PLOG "-"x78, "\n";
+    return $rv == 0 ? 1 : 0;
 }
 
 sub analyze_fail_stage {
-	my $pkgv = shift;
+    my $pkgv = shift;
 
-	return if $main::pkg_status ne "failed";
-	return if !$main::auto_giveback;
-	if (isin( $main::pkg_fail_stage,
-			  qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
-		$main::pkg_status = "given-back";
-		print PLOG "Giving back package $pkgv after failure in ".
-			       "$main::pkg_fail_stage stage.\n";
-		chdir( $main::cwd );
-		my $cmd = "";
-		$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
-			if $main::auto_giveback_host;
-		$cmd .= "-S $main::auto_giveback_socket "
-			if $main::auto_giveback_socket;
-		$cmd .= "wanna-build --give-back --no-down-propagation ".
-			    "--dist=$main::distribution";
-		$cmd .= " --database=$main::database" if $main::database;
-		$cmd .= " --user=$main::auto_giveback_wb_user "
-			if $main::auto_giveback_wb_user;
-		$cmd .= " $pkgv";
-		system $cmd;
-		if ($?) {
-			print PLOG "wanna-build failed with status $?\n";
-		}
-		else {
-			add_givenback( $pkgv, time );
-			write_stats('give-back',1);
-		}
+    return if $main::pkg_status ne "failed";
+    return if !$main::auto_giveback;
+    if (isin( $main::pkg_fail_stage,
+	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
+	$main::pkg_status = "given-back";
+	print PLOG "Giving back package $pkgv after failure in ".
+	    "$main::pkg_fail_stage stage.\n";
+	chdir( $main::cwd );
+	my $cmd = "";
+	$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
+	    if $main::auto_giveback_host;
+	$cmd .= "-S $main::auto_giveback_socket "
+	    if $main::auto_giveback_socket;
+	$cmd .= "wanna-build --give-back --no-down-propagation ".
+	    "--dist=$main::distribution";
+	$cmd .= " --database=$main::database" if $main::database;
+	$cmd .= " --user=$main::auto_giveback_wb_user "
+	    if $main::auto_giveback_wb_user;
+	$cmd .= " $pkgv";
+	system $cmd;
+	if ($?) {
+	    print PLOG "wanna-build failed with status $?\n";
 	}
+	else {
+	    add_givenback( $pkgv, time );
+	    write_stats('give-back',1);
+	}
+    }
 }
 
 sub remove_files {
 
-	foreach (@_) {
-		unlink $_;
-		print "Removed $_\n" if $conf::debug;
-	}
+    foreach (@_) {
+	unlink $_;
+	print "Removed $_\n" if $conf::debug;
+    }
 }
 
 
 sub install_deps {
-	my $pkg = shift;
-	my( @positive, @negative, @instd, @rmvd );
+    my $pkg = shift;
+    my( @positive, @negative, @instd, @rmvd );
 
-	my $dep = [];
-	if (exists $main::deps{$pkg}) {
-		$dep = $main::deps{$pkg};
-	}
-	if ($conf::debug) {
-		print "Source dependencies of $pkg: ", format_deps(@$dep), "\n";
-	}
+    my $dep = [];
+    if (exists $main::deps{$pkg}) {
+	$dep = $main::deps{$pkg};
+    }
+    if ($conf::debug) {
+	print "Source dependencies of $pkg: ", format_deps(@$dep), "\n";
+    }
 
   repeat:
-	lock_file( "$main::ilock_file", 1 );
+    lock_file( "$main::ilock_file", 1 );
 
-	print "Filtering dependencies\n" if $conf::debug;
-	if (!filter_dependencies( $dep, \@positive, \@negative )) {
-		print PLOG "Package installation not possible\n";
-		unlock_file( "$main::ilock_file" );
-		return 0;
-	}
+    print "Filtering dependencies\n" if $conf::debug;
+    if (!filter_dependencies( $dep, \@positive, \@negative )) {
+	print PLOG "Package installation not possible\n";
+	unlock_file( "$main::ilock_file" );
+	return 0;
+    }
 
-	print PLOG "Checking for source dependency conflicts...\n";
-	if (!run_apt( "-s", \@instd, \@rmvd, @positive )) {
-		print PLOG "Test what should be installed failed.\n";
-		unlock_file( "$main::ilock_file" );
-		return 0;
-	}
-	# add negative deps as to be removed for checking srcdep conflicts
-	push( @rmvd, @negative );
-	my @confl;
-	if (@confl = check_srcdep_conflicts( \@instd, \@rmvd )) {
-		print PLOG "Waiting for job(s) @confl to finish\n";
-
-		unlock_file( "$main::ilock_file" );
-		wait_for_srcdep_conflicts( @confl );
-		goto repeat;
-	}
-
-	write_srcdep_lock_file( $dep );
-
-	my $install_start_time = time;
-	print "Installing positive dependencies: @positive\n" if $conf::debug;
-	if (!run_apt( "-y", \@instd, \@rmvd, @positive )) {
-		print PLOG "Package installation failed\n";
-		# try to reinstall removed packages
-		print PLOG "Trying to reinstall removed packages:\n";
-		print "Reinstalling removed packages: @rmvd\n" if $conf::debug;
-		my (@instd2, @rmvd2);
-		print PLOG "Failed to reinstall removed packages!\n"
-			if !run_apt( "-y", \@instd2, \@rmvd2, @rmvd );
-		print "Installed were: @instd2\n" if $conf::debug;
-		print "Removed were: @rmvd2\n" if $conf::debug;
-		# remove additional packages
-		print PLOG "Trying to uninstall newly installed packages:\n";
-		uninstall_debs( $main::chroot_dir ? "purge" : "remove", @instd );
-		unlock_file( "$main::ilock_file" );
-		return 0;
-	}
-	set_installed( @instd );
-	set_removed( @rmvd );
-
-	print "Removing negative dependencies: @negative\n" if $conf::debug;
-	if (!uninstall_debs( $main::chroot_dir ? "purge" : "remove", @negative )) {
-		print PLOG "Removal of packages failed\n";
-		unlock_file( "$main::ilock_file" );
-		return 0;
-	}
-	set_removed( @negative );
-	my $install_stop_time = time;
-	write_stats( 'install-download-time',
-		$install_stop_time - $install_start_time );
-
-	my $fail = check_dependencies( $dep );
-	if ($fail) {
-		print PLOG "After installing, the following source dependencies are ".
-			 "still unsatisfied:\n$fail\n";
-		unlock_file( "$main::ilock_file" );
-		return 0;
-	}
-
-	local (*F);
-
-	my $command = get_command("$conf::dpkg --set-selections", "root", 1);
-
-	my $success = open( F, "| $command");
-
-	if ($success) {
-		foreach my $tpkg (@instd) {
-			print F $tpkg . " purge\n";
-		}
-		close( F );
-		if ($?) {
-			print PLOG "$conf::dpkg --set-selections failed\n";
-		}
-	}
+    print PLOG "Checking for source dependency conflicts...\n";
+    if (!run_apt( "-s", \@instd, \@rmvd, @positive )) {
+	print PLOG "Test what should be installed failed.\n";
+	unlock_file( "$main::ilock_file" );
+	return 0;
+    }
+    # add negative deps as to be removed for checking srcdep conflicts
+    push( @rmvd, @negative );
+    my @confl;
+    if (@confl = check_srcdep_conflicts( \@instd, \@rmvd )) {
+	print PLOG "Waiting for job(s) @confl to finish\n";
 
 	unlock_file( "$main::ilock_file" );
+	wait_for_srcdep_conflicts( @confl );
+	goto repeat;
+    }
 
-	prepare_watches( $dep, @instd );
-	return 1;
+    write_srcdep_lock_file( $dep );
+
+    my $install_start_time = time;
+    print "Installing positive dependencies: @positive\n" if $conf::debug;
+    if (!run_apt( "-y", \@instd, \@rmvd, @positive )) {
+	print PLOG "Package installation failed\n";
+	# try to reinstall removed packages
+	print PLOG "Trying to reinstall removed packages:\n";
+	print "Reinstalling removed packages: @rmvd\n" if $conf::debug;
+	my (@instd2, @rmvd2);
+	print PLOG "Failed to reinstall removed packages!\n"
+	    if !run_apt( "-y", \@instd2, \@rmvd2, @rmvd );
+	print "Installed were: @instd2\n" if $conf::debug;
+	print "Removed were: @rmvd2\n" if $conf::debug;
+	# remove additional packages
+	print PLOG "Trying to uninstall newly installed packages:\n";
+	uninstall_debs( $main::chroot_dir ? "purge" : "remove", @instd );
+	unlock_file( "$main::ilock_file" );
+	return 0;
+    }
+    set_installed( @instd );
+    set_removed( @rmvd );
+
+    print "Removing negative dependencies: @negative\n" if $conf::debug;
+    if (!uninstall_debs( $main::chroot_dir ? "purge" : "remove", @negative )) {
+	print PLOG "Removal of packages failed\n";
+	unlock_file( "$main::ilock_file" );
+	return 0;
+    }
+    set_removed( @negative );
+    my $install_stop_time = time;
+    write_stats( 'install-download-time',
+		 $install_stop_time - $install_start_time );
+
+    my $fail = check_dependencies( $dep );
+    if ($fail) {
+	print PLOG "After installing, the following source dependencies are ".
+	    "still unsatisfied:\n$fail\n";
+	unlock_file( "$main::ilock_file" );
+	return 0;
+    }
+
+    local (*F);
+
+    my $command = get_command("$conf::dpkg --set-selections", "root", 1);
+
+    my $success = open( F, "| $command");
+
+    if ($success) {
+	foreach my $tpkg (@instd) {
+	    print F $tpkg . " purge\n";
+	}
+	close( F );
+	if ($?) {
+	    print PLOG "$conf::dpkg --set-selections failed\n";
+	}
+    }
+
+    unlock_file( "$main::ilock_file" );
+
+    prepare_watches( $dep, @instd );
+    return 1;
 }
 
 sub wait_for_srcdep_conflicts {
-	my @confl = @_;
+    my @confl = @_;
 
-	for(;;) {
-		sleep( $conf::srcdep_lock_wait*60 );
-		my $allgone = 1;
-		for (@confl) {
-			/^(\d+)-(\d+)$/;
-			my $pid = $1;
-			if (-f "$main::srcdep_lock_dir/$_") {
-				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-					print PLOG "Ignoring stale src-dep lock $_\n";
-					unlink( "$main::srcdep_lock_dir/$_" ) or
-						print PLOG "Cannot remove $main::srcdep_lock_dir/$_: $!\n";
-				}
-				else {
-					$allgone = 0;
-					last;
-				}
-			}
+    for(;;) {
+	sleep( $conf::srcdep_lock_wait*60 );
+	my $allgone = 1;
+	for (@confl) {
+	    /^(\d+)-(\d+)$/;
+	    my $pid = $1;
+	    if (-f "$main::srcdep_lock_dir/$_") {
+		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+		    print PLOG "Ignoring stale src-dep lock $_\n";
+		    unlink( "$main::srcdep_lock_dir/$_" ) or
+			print PLOG "Cannot remove $main::srcdep_lock_dir/$_: $!\n";
 		}
-		last if $allgone;
+		else {
+		    $allgone = 0;
+		    last;
+		}
+	    }
 	}
+	last if $allgone;
+    }
 }
 
 sub uninstall_deps {
-	my( @pkgs, @instd, @rmvd );
+    my( @pkgs, @instd, @rmvd );
 
-	lock_file( "$main::ilock_file", 1 );
+    lock_file( "$main::ilock_file", 1 );
 
-	@pkgs = keys %{$main::changes->{'removed'}};
-	print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
-	print PLOG "Failed to reinstall removed packages!\n"
-		if !run_apt( "-y", \@instd, \@rmvd, @pkgs );
-	print "Installed were: @instd\n" if $conf::debug;
-	print "Removed were: @rmvd\n" if $conf::debug;
-	unset_removed( @instd );
-	unset_installed( @rmvd );
+    @pkgs = keys %{$main::changes->{'removed'}};
+    print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
+    print PLOG "Failed to reinstall removed packages!\n"
+	if !run_apt( "-y", \@instd, \@rmvd, @pkgs );
+    print "Installed were: @instd\n" if $conf::debug;
+    print "Removed were: @rmvd\n" if $conf::debug;
+    unset_removed( @instd );
+    unset_installed( @rmvd );
 
-	@pkgs = keys %{$main::changes->{'installed'}};
-	print "Removing installed packages: @pkgs\n" if $conf::debug;
-	print PLOG "Failed to remove installed packages!\n"
-		if !uninstall_debs( "purge", @pkgs );
-	unset_installed( @pkgs );
+    @pkgs = keys %{$main::changes->{'installed'}};
+    print "Removing installed packages: @pkgs\n" if $conf::debug;
+    print PLOG "Failed to remove installed packages!\n"
+	if !uninstall_debs( "purge", @pkgs );
+    unset_installed( @pkgs );
 
-	unlock_file( "$main::ilock_file" );
+    unlock_file( "$main::ilock_file" );
 }
 
 sub uninstall_debs {
-	my $mode = shift;
-	local (*PIPE);
-	local (%ENV) = %ENV; # make local environment
-	# hardwire frontend for debconf to non-interactive
-	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+    my $mode = shift;
+    local (*PIPE);
+    local (%ENV) = %ENV; # make local environment hardwire frontend
+			 # for debconf to non-interactive
+    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 
-	return 1 if !@_;
-	print "Uninstalling packages: @_\n" if $conf::debug;
+    return 1 if !@_;
+    print "Uninstalling packages: @_\n" if $conf::debug;
 
-	my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0);
+    my $command = get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0);
   repeat:
-	my $output;
-	my $remove_start_time = time;
+    my $output;
+    my $remove_start_time = time;
 
-	if (!open( PIPE, "$command |")) {
-		print PLOG "Can't open pipe to dpkg: $!\n";
-		return 0;
-	}
-	while ( <PIPE> ) {
-		$output .= $_;
-		print PLOG $_;
-	}
-	close( PIPE );
+    if (!open( PIPE, "$command |")) {
+	print PLOG "Can't open pipe to dpkg: $!\n";
+	return 0;
+    }
+    while ( <PIPE> ) {
+	$output .= $_;
+	print PLOG $_;
+    }
+    close( PIPE );
 
-	if ($output =~ /status database area is locked/mi) {
-		print PLOG "Another dpkg is running -- retrying later\n";
-		$output = "";
-		sleep( 2*60 );
-		goto repeat;
-	}
-	my $remove_end_time = time;
-	write_stats( "remove-time", $remove_end_time - $remove_start_time );
-	print PLOG "dpkg run to remove packages (@_) failed!\n" if $?;
-	return $? == 0;
+    if ($output =~ /status database area is locked/mi) {
+	print PLOG "Another dpkg is running -- retrying later\n";
+	$output = "";
+	sleep( 2*60 );
+	goto repeat;
+    }
+    my $remove_end_time = time;
+    write_stats( "remove-time", $remove_end_time - $remove_start_time );
+    print PLOG "dpkg run to remove packages (@_) failed!\n" if $?;
+    return $? == 0;
 }
 
 sub run_apt {
-	my $mode = shift;
-	my $inst_ret = shift;
-	my $rem_ret = shift;
-	my @to_install = @_;
-	my( $msgs, $status, $pkgs, $rpkgs );
-	local (*PIPE);
-	local (%ENV) = %ENV; # make local environment
-	# hardwire frontend for debconf to non-interactive
-	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+    my $mode = shift;
+    my $inst_ret = shift;
+    my $rem_ret = shift;
+    my @to_install = @_;
+    my( $msgs, $status, $pkgs, $rpkgs );
+    local (*PIPE);
+    local (%ENV) = %ENV; # make local environment hardwire frontend
+			 # for debconf to non-interactive
+    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 
-	@$inst_ret = ();
-	@$rem_ret = ();
-	return 1 if !@to_install;
+    @$inst_ret = ();
+    @$rem_ret = ();
+    return 1 if !@to_install;
   repeat:
 
-	$msgs = "";
-	# redirection of stdin from /dev/null so that conffile question are
-	# treated as if RETURN was pressed.
-	# dpkg since 1.4.1.18 issues an error on the conffile question if it reads
-	# EOF -- hardwire the new --force-confold option to avoid the questions.
-	my $command = get_apt_command("$conf::apt_get", "--purge ".
-				      "-o DPkg::Options::=--force-confold ".
-				      "-q $mode install @to_install ".
-				      "2>&1 </dev/null", "root", 0);
+    $msgs = "";
+    # redirection of stdin from /dev/null so that conffile question
+    # are treated as if RETURN was pressed.
+    # dpkg since 1.4.1.18 issues an error on the conffile question if
+    # it reads EOF -- hardwire the new --force-confold option to avoid
+    # the questions.
+    my $command = get_apt_command("$conf::apt_get", "--purge ".
+				  "-o DPkg::Options::=--force-confold ".
+				  "-q $mode install @to_install ".
+				  "2>&1 </dev/null", "root", 0);
 
+    if (!open( PIPE, "$command |" )) {
+	print PLOG "Can't open pipe to apt-get: $!\n";
+	return 0;
+    }
+    while( <PIPE> ) {
+	$msgs .= $_;
+	print PLOG $_ if $mode ne "-s" || $conf::debug;
+    }
+    close( PIPE );
+    $status = $?;
+
+    if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
+	my $command = get_apt_command("$conf::apt_get", "-q update 2>&1", "root", 1);
 	if (!open( PIPE, "$command |" )) {
-		print PLOG "Can't open pipe to apt-get: $!\n";
-		return 0;
+	    print PLOG "Can't open pipe to apt-get: $!\n";
+	    return 0;
 	}
+
+	$msgs = "";
 	while( <PIPE> ) {
-		$msgs .= $_;
-		print PLOG $_ if $mode ne "-s" || $conf::debug;
+	    $msgs .= $_;
+	    print PLOG $_;
 	}
 	close( PIPE );
-	$status = $?;
+	print PLOG "apt-get update failed\n" if $?;
+	$msgs = "";
+	goto repeat;
+    }
 
-	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-		my $command = get_apt_command("$conf::apt_get", "-q update 2>&1", "root", 1);
-		if (!open( PIPE, "$command |" )) {
-			print PLOG "Can't open pipe to apt-get: $!\n";
-			return 0;
-		}
-
-		$msgs = "";
-		while( <PIPE> ) {
-			$msgs .= $_;
-			print PLOG $_;
-		}
-		close( PIPE );
-		print PLOG "apt-get update failed\n" if $?;
-		$msgs = "";
-		goto repeat;
+    if ($status != 0 && $msgs =~ /^Package (\S+) is a virtual package provided by:\n((^\s.*\n)*)/mi) {
+	my $to_replace = $1;
+	my @providers;
+	foreach (split( "\n", $2 )) {
+	    s/^\s*//;
+	    push( @providers, (split( /\s+/, $_ ))[0] );
+	}
+	print PLOG "$to_replace is a virtual package provided by: @providers\n";
+	my $selected;
+	if (@providers == 1) {
+	    $selected = $providers[0];
+	    print PLOG "Using $selected (only possibility)\n";
+	}
+	elsif (exists $conf::alternatives{$to_replace}) {
+	    $selected = $conf::alternatives{$to_replace};
+	    print PLOG "Using $selected (selected in sbuildrc)\n";
+	}
+	else {
+	    $selected = $providers[0];
+	    print PLOG "Using $selected (no default, using first one)\n";
 	}
 
-	if ($status != 0 && $msgs =~ /^Package (\S+) is a virtual package provided by:\n((^\s.*\n)*)/mi) {
-		my $to_replace = $1;
-		my @providers;
-		foreach (split( "\n", $2 )) {
-			s/^\s*//;
-			push( @providers, (split( /\s+/, $_ ))[0] );
-		}
-		print PLOG "$to_replace is a virtual package provided by: @providers\n";
-		my $selected;
-		if (@providers == 1) {
-			$selected = $providers[0];
-			print PLOG "Using $selected (only possibility)\n";
-		}
-		elsif (exists $conf::alternatives{$to_replace}) {
-			$selected = $conf::alternatives{$to_replace};
-			print PLOG "Using $selected (selected in sbuildrc)\n";
-		}
-		else {
-			$selected = $providers[0];
-			print PLOG "Using $selected (no default, using first one)\n";
-		}
+	@to_install = grep { $_ ne $to_replace } @to_install;
+	push( @to_install, $selected );
 
-		@to_install = grep { $_ ne $to_replace } @to_install;
-		push( @to_install, $selected );
+	goto repeat;
+    }
 
-		goto repeat;
-	}
+    if ($status != 0 && ($msgs =~ /^E: Could( not get lock|n.t lock)/mi ||
+			 $msgs =~ /^dpkg: status database area is locked/mi)) {
+	print PLOG "Another apt-get or dpkg is running -- retrying later\n";
+	sleep( 2*60 );
+	goto repeat;
+    }
 
-	if ($status != 0 && ($msgs =~ /^E: Could( not get lock|n.t lock)/mi ||
-						 $msgs =~ /^dpkg: status database area is locked/mi)) {
-		print PLOG "Another apt-get or dpkg is running -- retrying later\n";
-		sleep( 2*60 );
-		goto repeat;
-	}
+    # check for errors that are probably caused by something broken in
+    # the build environment, and give back the packages.
+    if ($status != 0 && $mode ne "-s" &&
+	(($msgs =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
+	 ($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
+	 ($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
+	print PLOG "Build environment unusable, giving back\n";
+	$main::pkg_fail_stage = "install-deps-env";
+    }
 
-	# check for errors that are probably caused by something broken in
-	# the build environment, and give back the packages.
-	if ($status != 0 && $mode ne "-s" &&
-		(($msgs =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
-		($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
-		($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
-		print PLOG "Build environment unusable, giving back\n";
-		$main::pkg_fail_stage = "install-deps-env";
-	}
+    if ($status != 0 && $mode ne "-s" &&
+	(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
+	print PLOG "Unable to fetch build-depends\n";
+	$main::pkg_fail_stage = "install-deps-env";
+    }
 
-	if ($status != 0 && $mode ne "-s" &&
-		(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
-		print PLOG "Unable to fetch build-depends\n";
-		$main::pkg_fail_stage = "install-deps-env";
-	}
+    if ($status != 0 && $mode ne "-s" &&
+	(($msgs =~ /^W: Couldn't stat source package list /mi))) {
+	print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
+	$main::pkg_fail_stage = "install-deps-env";
+    }
 
-	if ($status != 0 && $mode ne "-s" &&
-		(($msgs =~ /^W: Couldn't stat source package list /mi))) {
-		print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
-		$main::pkg_fail_stage = "install-deps-env";
-	}
+    $pkgs = $rpkgs = "";
+    if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
+	($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
+	$pkgs =~ s/\*//g;
+    }
+    if ($msgs =~ /packages will be REMOVED:\n((^[ 	].*\n)*)/mi) {
+	($rpkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
+	$rpkgs =~ s/\*//g;
+    }
+    @$inst_ret = split( /\s+/, $pkgs );
+    @$rem_ret = split( /\s+/, $rpkgs );
 
-	$pkgs = $rpkgs = "";
-	if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
-		($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
-		$pkgs =~ s/\*//g;
-	}
-	if ($msgs =~ /packages will be REMOVED:\n((^[ 	].*\n)*)/mi) {
-		($rpkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
-		$rpkgs =~ s/\*//g;
-	}
-	@$inst_ret = split( /\s+/, $pkgs );
-	@$rem_ret = split( /\s+/, $rpkgs );
-
-	print PLOG "apt-get failed.\n" if $status && $mode ne "-s";
-	return $mode eq "-s" || $status == 0;
+    print PLOG "apt-get failed.\n" if $status && $mode ne "-s";
+    return $mode eq "-s" || $status == 0;
 }
 
 sub filter_dependencies {
-	my $dependencies = shift;
-	my $pos_list = shift;
-	my $neg_list = shift;
-	my($dep, $d, $name, %names);
+    my $dependencies = shift;
+    my $pos_list = shift;
+    my $neg_list = shift;
+    my($dep, $d, $name, %names);
 
-	print PLOG "Checking for already installed source dependencies...\n";
+    print PLOG "Checking for already installed source dependencies...\n";
 
-	@$pos_list = @$neg_list = ();
-	foreach $d (@$dependencies) {
-		my $name = $d->{'Package'};
-		$names{$name} = 1 if $name !~ /^\*/;
-		foreach (@{$d->{'Alternatives'}}) {
-			my $name = $_->{'Package'};
-			$names{$name} = 1 if $name !~ /^\*/;
-		}
+    @$pos_list = @$neg_list = ();
+    foreach $d (@$dependencies) {
+	my $name = $d->{'Package'};
+	$names{$name} = 1 if $name !~ /^\*/;
+	foreach (@{$d->{'Alternatives'}}) {
+	    my $name = $_->{'Package'};
+	    $names{$name} = 1 if $name !~ /^\*/;
 	}
-	my $status = get_dpkg_status( keys %names );
+    }
+    my $status = get_dpkg_status( keys %names );
 
-	my %policy;
-	if ($conf::apt_policy) {
-		%policy = get_apt_policy( keys %names );
+    my %policy;
+    if ($conf::apt_policy) {
+	%policy = get_apt_policy( keys %names );
+    }
+
+    foreach $dep (@$dependencies) {
+	$name = $dep->{'Package'};
+	next if !$name;
+
+	my $stat = $status->{$name};
+	if ($dep->{'Neg'}) {
+	    if ($stat->{'Installed'}) {
+		my ($rel, $vers) = ($dep->{'Rel'}, $dep->{'Version'});
+		my $ivers = $stat->{'Version'};
+		if (!$rel || version_compare( $ivers, $rel, $vers )){
+		    print "$name: neg dep, installed, not versioned or ",
+		          "version relation satisfied --> remove\n"
+			      if $conf::debug;
+		    print PLOG "$name: installed (negative dependency)";
+		    print PLOG " (bad version $ivers $rel $vers)"
+			if $rel;
+		    print PLOG "\n";
+		    push( @$neg_list, $name );
+		}
+		else {
+		    print PLOG "$name: installed (negative dependency)",
+		    "(but version ok $ivers $rel $vers)\n";
+		}
+	    }
+	    else {
+		print "$name: neg dep, not installed\n" if $conf::debug;
+		print PLOG "$name: already deinstalled\n";
+	    }
+	    next;
 	}
 
-	foreach $dep (@$dependencies) {
-		$name = $dep->{'Package'};
-		next if !$name;
-
-		my $stat = $status->{$name};
-		if ($dep->{'Neg'}) {
-			if ($stat->{'Installed'}) {
-				my ($rel, $vers) = ($dep->{'Rel'}, $dep->{'Version'});
-				my $ivers = $stat->{'Version'};
-				if (!$rel || version_compare( $ivers, $rel, $vers )){
-					print "$name: neg dep, installed, not versioned or ",
-						  "version relation satisfied --> remove\n" if $conf::debug;
-					print PLOG "$name: installed (negative dependency)";
-					print PLOG " (bad version $ivers $rel $vers)"
-						if $rel;
-					print PLOG "\n";
-					push( @$neg_list, $name );
-				}
-				else {
-					print PLOG "$name: installed (negative dependency)",
-							   "(but version ok $ivers $rel $vers)\n";
-				}
-			}
-			else {
-				print "$name: neg dep, not installed\n" if $conf::debug;
-				print PLOG "$name: already deinstalled\n";
-			}
-			next;
-		}
-
-		my $is_satisfied = 0;
-		my $installable = "";
-		my $upgradeable = "";
-		foreach $d ($dep, @{$dep->{'Alternatives'}}) {
-			my ($name, $rel, $vers) =
-				($d->{'Package'}, $d->{'Rel'}, $d->{'Version'});
-			my $stat = $status->{$name};
-			if (!$stat->{'Installed'}) {
-				print "$name: pos dep, not installed\n" if $conf::debug;
-				print PLOG "$name: missing\n";
-				if ($conf::apt_policy && $rel) {
-					if (!version_compare($policy{$name}->{defversion}, $rel, $vers)) {
-						print PLOG "Default version of $name not sufficient, ";
-						foreach my $cvers (@{$policy{$name}->{versions}}) {
-							if (version_compare($cvers, $rel, $vers)) {
-								print PLOG "using version $cvers\n";
-								$installable = $name . "=" . $cvers if !$installable;
-								last;
-							}
-						}
-						if(!$installable) {
-							print PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n";
-						}
-					} else {
-						print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
-					}
-				}
-				$installable = $name if !$installable;
-				next;
-			}
-			my $ivers = $stat->{'Version'};
-			if (!$rel || version_compare( $ivers, $rel, $vers )) {
-				print "$name: pos dep, installed, no versioned dep or ",
-					  "version ok\n" if $conf::debug;
-				print PLOG "$name: already installed ($ivers";
-				print PLOG " $rel $vers is satisfied"
-					if $rel;
-				print PLOG ")\n";
-				$is_satisfied = 1;
+	my $is_satisfied = 0;
+	my $installable = "";
+	my $upgradeable = "";
+	foreach $d ($dep, @{$dep->{'Alternatives'}}) {
+	    my ($name, $rel, $vers) =
+		($d->{'Package'}, $d->{'Rel'}, $d->{'Version'});
+	    my $stat = $status->{$name};
+	    if (!$stat->{'Installed'}) {
+		print "$name: pos dep, not installed\n" if $conf::debug;
+		print PLOG "$name: missing\n";
+		if ($conf::apt_policy && $rel) {
+		    if (!version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+			print PLOG "Default version of $name not sufficient, ";
+			foreach my $cvers (@{$policy{$name}->{versions}}) {
+			    if (version_compare($cvers, $rel, $vers)) {
+				print PLOG "using version $cvers\n";
+				$installable = $name . "=" . $cvers if !$installable;
 				last;
+			    }
 			}
-			print "$name: vers dep, installed $ivers ! $rel $vers\n"
-				if $conf::debug;
-			print PLOG "$name: non-matching version installed ",
-				  "($ivers ! $rel $vers)\n";
-			if ($rel =~ /^</ ||
-				($rel eq '=' && version_compare($ivers, '>>', $vers))) {
-				print "$name: would be a downgrade!\n" if $conf::debug;
-				print PLOG "$name: would have to downgrade!\n";
+			if(!$installable) {
+			    print PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n";
 			}
-			else {
-				if ($conf::apt_policy && !version_compare($policy{$name}->{defversion}, $rel, $vers)) {
-					print PLOG "Default version of $name not sufficient, ";
-					foreach my $cvers (@{$policy{$name}->{versions}}) {
-						if(version_compare($cvers, $rel, $vers)) {
-							print PLOG "using version $cvers\n";
-							$upgradeable = $name if ! $upgradeable;
-							last;
-						}
-					}
-					print PLOG "no suitable alternative found. I probably should dep-wait this one.\n" if !$upgradeable;
-					return 0;
-				} else {
-					print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
-				}
-				$upgradeable = $name if !$upgradeable;
-			}
+		    } else {
+			print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
+		    }
 		}
-		if (!$is_satisfied) {
-			if ($upgradeable) {
-				print "using $upgradeable for upgrade\n" if $conf::debug;
-				push( @$pos_list, $upgradeable );
+		$installable = $name if !$installable;
+		next;
+	    }
+	    my $ivers = $stat->{'Version'};
+	    if (!$rel || version_compare( $ivers, $rel, $vers )) {
+		print "$name: pos dep, installed, no versioned dep or ",
+		"version ok\n" if $conf::debug;
+		print PLOG "$name: already installed ($ivers";
+		print PLOG " $rel $vers is satisfied"
+		    if $rel;
+		print PLOG ")\n";
+		$is_satisfied = 1;
+		last;
+	    }
+	    print "$name: vers dep, installed $ivers ! $rel $vers\n"
+		if $conf::debug;
+	    print PLOG "$name: non-matching version installed ",
+	    "($ivers ! $rel $vers)\n";
+	    if ($rel =~ /^</ ||
+		($rel eq '=' && version_compare($ivers, '>>', $vers))) {
+		print "$name: would be a downgrade!\n" if $conf::debug;
+		print PLOG "$name: would have to downgrade!\n";
+	    }
+	    else {
+		if ($conf::apt_policy && !version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+		    print PLOG "Default version of $name not sufficient, ";
+		    foreach my $cvers (@{$policy{$name}->{versions}}) {
+			if(version_compare($cvers, $rel, $vers)) {
+			    print PLOG "using version $cvers\n";
+			    $upgradeable = $name if ! $upgradeable;
+			    last;
 			}
-			elsif ($installable) {
-				print "using $installable for install\n" if $conf::debug;
-				push( @$pos_list, $installable );
-			}
-			else {
-				print PLOG "This dependency could not be satisfied. Possible reasons:\n";
-				print PLOG "* The package has a versioned dependency that is not yet available.\n";
-				print PLOG "* The package has a versioned dependency on a package version that is\n  older than the currently-installed package. Downgrades are not implemented.\n";
-				return 0;
-			}
+		    }
+		    print PLOG "no suitable alternative found. I probably should dep-wait this one.\n" if !$upgradeable;
+		    return 0;
+		} else {
+		    print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";
 		}
+		$upgradeable = $name if !$upgradeable;
+	    }
 	}
+	if (!$is_satisfied) {
+	    if ($upgradeable) {
+		print "using $upgradeable for upgrade\n" if $conf::debug;
+		push( @$pos_list, $upgradeable );
+	    }
+	    elsif ($installable) {
+		print "using $installable for install\n" if $conf::debug;
+		push( @$pos_list, $installable );
+	    }
+	    else {
+		print PLOG "This dependency could not be satisfied. Possible reasons:\n";
+		print PLOG "* The package has a versioned dependency that is not yet available.\n";
+		print PLOG "* The package has a versioned dependency on a package version that is\n  older than the currently-installed package. Downgrades are not implemented.\n";
+		return 0;
+	    }
+	}
+    }
 
-	return 1;
+    return 1;
 }
 
 sub check_dependencies {
-	my $dependencies = shift;
-	my $fail = "";
-	my($dep, $d, $name, %names);
+    my $dependencies = shift;
+    my $fail = "";
+    my($dep, $d, $name, %names);
 
-	print PLOG "Checking correctness of source dependencies...\n";
+    print PLOG "Checking correctness of source dependencies...\n";
 
-	foreach $d (@$dependencies) {
-		my $name = $d->{'Package'};
-		$names{$name} = 1 if $name !~ /^\*/;
-		foreach (@{$d->{'Alternatives'}}) {
-			my $name = $_->{'Package'};
-			$names{$name} = 1 if $name !~ /^\*/;
+    foreach $d (@$dependencies) {
+	my $name = $d->{'Package'};
+	$names{$name} = 1 if $name !~ /^\*/;
+	foreach (@{$d->{'Alternatives'}}) {
+	    my $name = $_->{'Package'};
+	    $names{$name} = 1 if $name !~ /^\*/;
+	}
+    }
+    foreach $name (@main::toolchain_pkgs) {
+	$names{$name} = 1;
+    }
+    my $status = get_dpkg_status( keys %names );
+
+    foreach $dep (@$dependencies) {
+	$name = $dep->{'Package'};
+	next if $name =~ /^\*/;
+	my $stat = $status->{$name};
+	if ($dep->{'Neg'}) {
+	    if ($stat->{'Installed'}) {
+		if (!$dep->{'Rel'}) {
+		    $fail .= "$name(still installed) ";
 		}
+		elsif (version_compare($stat->{'Version'}, $dep->{'Rel'},
+				       $dep->{'Version'})) {
+		    $fail .= "$name(inst $stat->{'Version'} $dep->{'Rel'} ".
+			"conflicted $dep->{'Version'})\n";
+		}
+	    }
 	}
-	foreach $name (@main::toolchain_pkgs) {
-		$names{$name} = 1;
-	}
-	my $status = get_dpkg_status( keys %names );
-
-	foreach $dep (@$dependencies) {
-		$name = $dep->{'Package'};
-		next if $name =~ /^\*/;
+	else {
+	    my $is_satisfied = 0;
+	    my $f = "";
+	    foreach $d ($dep, @{$dep->{'Alternatives'}}) {
+		my $name = $d->{'Package'};
 		my $stat = $status->{$name};
-		if ($dep->{'Neg'}) {
-		    if ($stat->{'Installed'}) {
-				if (!$dep->{'Rel'}) {
-					$fail .= "$name(still installed) ";
-				}
-				elsif (version_compare($stat->{'Version'}, $dep->{'Rel'},
-						       $dep->{'Version'})) {
-					$fail .= "$name(inst $stat->{'Version'} $dep->{'Rel'} ".
-							 "conflicted $dep->{'Version'})\n";
-				}
-			}
+		if (!$stat->{'Installed'}) {
+		    $f =~ s/ $/\|/ if $f;
+		    $f .= "$name(missing) ";
+		}
+		elsif ($d->{'Rel'} &&
+		       !version_compare( $stat->{'Version'}, $d->{'Rel'},
+					 $d->{'Version'} )) {
+		    $f =~ s/ $/\|/ if $f;
+		    $f .= "$name(inst $stat->{'Version'} ! $d->{'Rel'} ".
+			"wanted $d->{'Version'}) ";
 		}
 		else {
-			my $is_satisfied = 0;
-			my $f = "";
-			foreach $d ($dep, @{$dep->{'Alternatives'}}) {
-				my $name = $d->{'Package'};
-				my $stat = $status->{$name};
-				if (!$stat->{'Installed'}) {
-					$f =~ s/ $/\|/ if $f;
-					$f .= "$name(missing) ";
-				}
-				elsif ($d->{'Rel'} &&
-					   !version_compare( $stat->{'Version'}, $d->{'Rel'},
-							     $d->{'Version'} )) {
-					$f =~ s/ $/\|/ if $f;
-					$f .= "$name(inst $stat->{'Version'} ! $d->{'Rel'} ".
-						  "wanted $d->{'Version'}) ";
-				}
-				else {
-					$is_satisfied = 1;
-				}
-			}
-			if (!$is_satisfied) {
-				$fail .= $f;
-			}
+		    $is_satisfied = 1;
 		}
+	    }
+	    if (!$is_satisfied) {
+		$fail .= $f;
+	    }
 	}
-	$fail =~ s/\s+$//;
-	if (!$fail && @main::toolchain_pkgs) {
-		my ($sysname, $nodename, $release, $version, $machine) = uname();
-		print PLOG "Kernel: $sysname $release $main::arch ($machine)\n";
-		print PLOG "Toolchain package versions:";
-		foreach $name (@main::toolchain_pkgs) {
-			if (defined($status->{$name}->{'Version'})) {
-				print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
-			} else {
-				print PLOG ' ' . $name . '_' . ' =*=NOT INSTALLED=*=';
+    }
+    $fail =~ s/\s+$//;
+    if (!$fail && @main::toolchain_pkgs) {
+	my ($sysname, $nodename, $release, $version, $machine) = uname();
+	print PLOG "Kernel: $sysname $release $main::arch ($machine)\n";
+	print PLOG "Toolchain package versions:";
+	foreach $name (@main::toolchain_pkgs) {
+	    if (defined($status->{$name}->{'Version'})) {
+		print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
+	    } else {
+		print PLOG ' ' . $name . '_' . ' =*=NOT INSTALLED=*=';
 
-			}
-		}
-		print PLOG "\n";
+	    }
 	}
+	print PLOG "\n";
+    }
 
-	return $fail;
+    return $fail;
 }
 
 sub get_apt_policy {
-	my @interest = @_;
-	my $package;
-	my %packages;
+    my @interest = @_;
+    my $package;
+    my %packages;
 
-	$ENV{LC_ALL}='C';
+    $ENV{LC_ALL}='C';
 
-	my $command = get_apt_command("$conf::apt_cache", "policy @interest", $main::username, 0);
+    my $command = get_apt_command("$conf::apt_cache", "policy @interest", $main::username, 0);
 
-	my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&PLOG', "$command" );
-	if (!$pid) {
-		die "Cannot start $conf::apt_cache $!\n";
-	}
-	while(<APTCACHE>) {
-		$package=$1 if /^([0-9a-z+.-]+):$/;
-		$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
-		$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
-		push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/;
-	}
-	close(APTCACHE);
-	waitpid $pid, 0;
-	die "$conf::apt_cache exit status $?\n" if $?;
+    my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&PLOG', "$command" );
+    if (!$pid) {
+	die "Cannot start $conf::apt_cache $!\n";
+    }
+    while(<APTCACHE>) {
+	$package=$1 if /^([0-9a-z+.-]+):$/;
+	$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
+	$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
+	push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/;
+    }
+    close(APTCACHE);
+    waitpid $pid, 0;
+    die "$conf::apt_cache exit status $?\n" if $?;
 
-	return %packages;
+    return %packages;
 }
 
 sub get_dpkg_status {
-	my @interest = @_;
-	my %result;
-	local( *STATUS );
+    my @interest = @_;
+    my %result;
+    local( *STATUS );
 
-	return () if !@_;
-	print "Requesting dpkg status for packages: @interest\n"
-		if $conf::debug;
-	if (!open( STATUS, "<$main::chroot_dir/var/lib/dpkg/status" )) {
-		print PLOG "Can't open $main::chroot_dir/var/lib/dpkg/status: $!\n";
-		return ();
+    return () if !@_;
+    print "Requesting dpkg status for packages: @interest\n"
+	if $conf::debug;
+    if (!open( STATUS, "<$main::chroot_dir/var/lib/dpkg/status" )) {
+	print PLOG "Can't open $main::chroot_dir/var/lib/dpkg/status: $!\n";
+	return ();
+    }
+    local( $/ ) = "";
+    while( <STATUS> ) {
+	my( $pkg, $status, $version, $provides );
+	/^Package:\s*(.*)\s*$/mi and $pkg = $1;
+	/^Status:\s*(.*)\s*$/mi and $status = $1;
+	/^Version:\s*(.*)\s*$/mi and $version = $1;
+	/^Provides:\s*(.*)\s*$/mi and $provides = $1;
+	if (!$pkg) {
+	    print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
+	    "no Package: field\n";
+	    next;
 	}
-	local( $/ ) = "";
-	while( <STATUS> ) {
-		my( $pkg, $status, $version, $provides );
-		/^Package:\s*(.*)\s*$/mi and $pkg = $1;
-		/^Status:\s*(.*)\s*$/mi and $status = $1;
-		/^Version:\s*(.*)\s*$/mi and $version = $1;
-		/^Provides:\s*(.*)\s*$/mi and $provides = $1;
-		if (!$pkg) {
-			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
-					   "no Package: field\n";
-			next;
-		}
-		if (defined($version)) {
-			print "$pkg ($version) status: $status\n" if $conf::debug >= 2;
-		} else {
-			print "$pkg status: $status\n" if $conf::debug >= 2;
-		}
-		if (!$status) {
-			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
-					   "no Status: field for package $pkg\n";
-			next;
-		}
-		if ($status !~ /\sinstalled$/) {
-			$result{$pkg}->{'Installed'} = 0
-				if !(exists($result{$pkg}) &&
-					 $result{$pkg}->{'Version'} eq '=*=PROVIDED=*=');
-			next;
-		}
-		if (!defined $version || $version eq "") {
-			print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
-					   "no Version: field for package $pkg\n";
-			next;
-		}
-		$result{$pkg} = { Installed => 1, Version => $version }
-			if isin( $pkg, @interest );
-		if ($provides) {
-			foreach (split( /\s*,\s*/, $provides )) {
-				$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
-					if isin( $_, @interest ) and (not exists($result{$_}) or
-					($result{$_}->{'Installed'} == 0));
-			}
-		}
+	if (defined($version)) {
+	    print "$pkg ($version) status: $status\n" if $conf::debug >= 2;
+	} else {
+	    print "$pkg status: $status\n" if $conf::debug >= 2;
 	}
-	close( STATUS );
-	return \%result;
+	if (!$status) {
+	    print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
+	    "no Status: field for package $pkg\n";
+	    next;
+	}
+	if ($status !~ /\sinstalled$/) {
+	    $result{$pkg}->{'Installed'} = 0
+		if !(exists($result{$pkg}) &&
+		     $result{$pkg}->{'Version'} eq '=*=PROVIDED=*=');
+	    next;
+	}
+	if (!defined $version || $version eq "") {
+	    print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
+	    "no Version: field for package $pkg\n";
+	    next;
+	}
+	$result{$pkg} = { Installed => 1, Version => $version }
+	if isin( $pkg, @interest );
+	if ($provides) {
+	    foreach (split( /\s*,\s*/, $provides )) {
+		$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
+		if isin( $_, @interest ) and (not exists($result{$_}) or
+					      ($result{$_}->{'Installed'} == 0));
+	    }
+	}
+    }
+    close( STATUS );
+    return \%result;
 }
 
 sub copy {
-	my $r = shift;
-	my $new;
+    my $r = shift;
+    my $new;
 
-	if (ref($r) eq "HASH") {
-		$new = { };
-		foreach (keys %$r) {
-			$new->{$_} = copy($r->{$_});
-		}
+    if (ref($r) eq "HASH") {
+	$new = { };
+	foreach (keys %$r) {
+	    $new->{$_} = copy($r->{$_});
 	}
-	elsif (ref($r) eq "ARRAY") {
-		my $i;
-		$new = [ ];
-		for( $i = 0; $i < @$r; ++$i ) {
-			$new->[$i] = copy($r->[$i]);
-		}
+    }
+    elsif (ref($r) eq "ARRAY") {
+	my $i;
+	$new = [ ];
+	for( $i = 0; $i < @$r; ++$i ) {
+	    $new->[$i] = copy($r->[$i]);
 	}
-	elsif (!ref($r)) {
-		$new = $r;
-	}
-	else {
-		die "unknown ref type in copy\n";
-	}
+    }
+    elsif (!ref($r)) {
+	$new = $r;
+    }
+    else {
+	die "unknown ref type in copy\n";
+    }
 
-	return $new;
+    return $new;
 }
 
 sub merge_pkg_build_deps {
-	my $pkg = shift;
-	my $depends = shift;
-	my $dependsi = shift;
-	my $conflicts = shift;
-	my $conflictsi = shift;
-	my (@l, $dep);
+    my $pkg = shift;
+    my $depends = shift;
+    my $dependsi = shift;
+    my $conflicts = shift;
+    my $conflictsi = shift;
+    my (@l, $dep);
 
-	print PLOG "** Using build dependencies supplied by package:\n";
-	print PLOG "Build-Depends: $depends\n" if $depends;
-	print PLOG "Build-Depends-Indep: $dependsi\n" if $dependsi;
-	print PLOG "Build-Conflicts: $conflicts\n" if $conflicts;
-	print PLOG "Build-Conflicts-Indep: $conflictsi\n" if $conflictsi;
+    print PLOG "** Using build dependencies supplied by package:\n";
+    print PLOG "Build-Depends: $depends\n" if $depends;
+    print PLOG "Build-Depends-Indep: $dependsi\n" if $dependsi;
+    print PLOG "Build-Conflicts: $conflicts\n" if $conflicts;
+    print PLOG "Build-Conflicts-Indep: $conflictsi\n" if $conflictsi;
 
-	my $old_deps = copy($main::deps{$pkg});
+    my $old_deps = copy($main::deps{$pkg});
 
-	# Add gcc-snapshot as an override.
-	if ( $main::useSNAP ) {
-	    $dep->{'Package'} = "gcc-snapshot";
-	    $dep->{'Override'} = 1;
-	    push( @{$main::deps{$pkg}}, $dep );
+    # Add gcc-snapshot as an override.
+    if ( $main::useSNAP ) {
+	$dep->{'Package'} = "gcc-snapshot";
+	$dep->{'Override'} = 1;
+	push( @{$main::deps{$pkg}}, $dep );
+    }
+
+    foreach $dep (@{$main::deps{$pkg}}) {
+	if ($dep->{'Override'}) {
+	    print PLOG "Added override: ",
+	    (map { ($_->{'Neg'} ? "!" : "") .
+		       $_->{'Package'} .
+		       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"") }
+	     scalar($dep), @{$dep->{'Alternatives'}}), "\n";
+	    push( @l, $dep );
 	}
+    }
 
-	foreach $dep (@{$main::deps{$pkg}}) {
-		if ($dep->{'Override'}) {
-			print PLOG "Added override: ",
-				  (map { ($_->{'Neg'} ? "!" : "") .
-					     $_->{'Package'} .
-						 ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"") }
-				   	scalar($dep), @{$dep->{'Alternatives'}}), "\n";
-			push( @l, $dep );
-		}
+    $conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflicts ));
+    $conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
+
+    my $deps = $depends . ", " . $conflicts;
+    $deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
+    @{$main::deps{$pkg}} = @l;
+    print "Merging pkg deps: $deps\n" if $conf::debug;
+    parse_one_srcdep( $pkg, $deps, \%main::deps );
+
+    my $missing = (cmp_dep_lists( $old_deps, $main::deps{$pkg} ))[1];
+
+    # read list of build-essential packages (if not yet done) and
+    # expand their dependencies (those are implicitly essential)
+    if (!defined($main::deps{'ESSENTIAL'})) {
+	my $ess = read_build_essential();
+	parse_one_srcdep( 'ESSENTIAL', $ess, \%main::deps );
+    }
+    my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
+    $exp_essential = expand_dependencies( $main::deps{'ESSENTIAL'} );
+    print "Dependency-expanded build essential packages:\n",
+    format_deps(@$exp_essential), "\n" if $conf::debug;
+
+    # populate toolchain_pkgs from toolchain_regexes and
+    # build-essential packages.
+    @main::toolchain_pkgs = ();
+    foreach my $tpkg (@$exp_essential) {
+        foreach my $regex (@conf::toolchain_regex) {
+	    push @main::toolchain_pkgs,$tpkg->{'Package'}
+	        if $tpkg->{'Package'} =~ m,^$regex,;
 	}
+    }
 
-	$conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflicts ));
-	$conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
+    return if !@$missing;
 
-	my $deps = $depends . ", " . $conflicts;
-	$deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
-	@{$main::deps{$pkg}} = @l;
-	print "Merging pkg deps: $deps\n" if $conf::debug;
-	parse_one_srcdep( $pkg, $deps, \%main::deps );
+    # remove missing essential deps
+    ($filt_essential, $missing) = cmp_dep_lists( $missing, $exp_essential );
+    print PLOG "** Filtered missing build-essential deps:\n",
+	       format_deps(@$filt_essential), "\n"
+	           if @$filt_essential;
 
-	my $missing = (cmp_dep_lists( $old_deps, $main::deps{$pkg} ))[1];
+    # if some build deps are virtual packages, replace them by an
+    # alternative over all providing packages
+    $exp_pkgdeps = expand_virtuals( $main::deps{$pkg} );
+    print "Provided-expanded build deps:\n",
+	  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
 
-	# read list of build-essential packages (if not yet done) and
-	# expand their dependencies (those are implicitly essential)
-	if (!defined($main::deps{'ESSENTIAL'})) {
-		my $ess = read_build_essential();
-		parse_one_srcdep( 'ESSENTIAL', $ess, \%main::deps );
-	}
-	my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-	$exp_essential = expand_dependencies( $main::deps{'ESSENTIAL'} );
-	print "Dependency-expanded build essential packages:\n",
-		  format_deps(@$exp_essential), "\n" if $conf::debug;
+    # now expand dependencies of package build deps
+    $exp_pkgdeps = expand_dependencies( $exp_pkgdeps );
+    print "Dependency-expanded build deps:\n",
+	  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
+    $main::additional_deps = $exp_pkgdeps;
 
-	# populate toolchain_pkgs from toolchain_regexes and
-	# build-essential packages.
-	@main::toolchain_pkgs = ();
-	foreach my $tpkg (@$exp_essential) {
-		foreach my $regex (@conf::toolchain_regex) {
-			push @main::toolchain_pkgs,$tpkg->{'Package'}
-				if $tpkg->{'Package'} =~ m,^$regex,;
-		}
-	}
+    # remove missing essential deps that are dependencies of build
+    # deps
+    ($filt_pkgdeps, $missing) = cmp_dep_lists( $missing, $exp_pkgdeps );
+    print PLOG "** Filtered missing build-essential deps that are dependencies of ",
+	       "or provide build-deps:\n",
+	       format_deps(@$filt_pkgdeps), "\n"
+	           if @$filt_pkgdeps;
 
-	return if !@$missing;
+    # remove comment package names
+    push( @$main::additional_deps,
+	  grep { $_->{'Neg'} && $_->{'Package'} =~ /^needs-no-/ } @$missing );
+    $missing = [ grep { !($_->{'Neg'} &&
+	                ($_->{'Package'} =~ /^this-package-does-not-exist/ ||
+	                 $_->{'Package'} =~ /^needs-no-/)) } @$missing ];
 
-	# remove missing essential deps
-	($filt_essential, $missing) = cmp_dep_lists( $missing, $exp_essential );
-	print PLOG "** Filtered missing build-essential deps:\n",
-			   format_deps(@$filt_essential), "\n"
-				   if @$filt_essential;
-
-	# if some build deps are virtual packages, replace them by an alternative
-	# over all providing packages
-	$exp_pkgdeps = expand_virtuals( $main::deps{$pkg} );
-	print "Provided-expanded build deps:\n",
-		  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
-
-	# now expand dependencies of package build deps
-	$exp_pkgdeps = expand_dependencies( $exp_pkgdeps );
-	print "Dependency-expanded build deps:\n",
-		  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
-	$main::additional_deps = $exp_pkgdeps;
-
-	# remove missing essential deps that are dependencies of build deps
-	($filt_pkgdeps, $missing) = cmp_dep_lists( $missing, $exp_pkgdeps );
-	print PLOG "** Filtered missing build-essential deps that are dependencies of ",
-			   "or provide build-deps:\n",
-			   format_deps(@$filt_pkgdeps), "\n"
-				   if @$filt_pkgdeps;
-
-	# remove comment package names
-	push( @$main::additional_deps,
-		  grep { $_->{'Neg'} && $_->{'Package'} =~ /^needs-no-/ } @$missing );
-	$missing = [ grep { !($_->{'Neg'} &&
-					      ($_->{'Package'} =~ /^this-package-does-not-exist/ ||
-						   $_->{'Package'} =~ /^needs-no-/)) } @$missing ];
-
-	print PLOG "**** Warning:\n",
-			   "**** The following src deps are ",
-			   "(probably) missing:\n  ", format_deps(@$missing), "\n"
-				   if @$missing;
+    print PLOG "**** Warning:\n",
+	       "**** The following src deps are ",
+	       "(probably) missing:\n  ", format_deps(@$missing), "\n"
+	           if @$missing;
 }
 
 sub cmp_dep_lists {
-	my $list1 = shift;
-	my $list2 = shift;
-	my ($dep, @common, @missing);
+    my $list1 = shift;
+    my $list2 = shift;
+    my ($dep, @common, @missing);
 
-	foreach $dep (@$list1) {
-		my $found = 0;
+    foreach $dep (@$list1) {
+	my $found = 0;
 
-		if ($dep->{'Neg'}) {
-			foreach (@$list2) {
-				if ($dep->{'Package'} eq $_->{'Package'} && $_->{'Neg'}) {
-					$found = 1;
-					last;
-				}
-			}
+	if ($dep->{'Neg'}) {
+	    foreach (@$list2) {
+		if ($dep->{'Package'} eq $_->{'Package'} && $_->{'Neg'}) {
+		    $found = 1;
+		    last;
 		}
-		else {
-			my $al = get_altlist($dep);
-			foreach (@$list2) {
-				if (is_superset( get_altlist($_), $al )) {
-					$found = 1;
-					last;
-				}
-			}
-		}
-
-		if ($found) {
-			push( @common, $dep );
-		}
-		else {
-			push( @missing, $dep );
-		}
+	    }
 	}
-	return (\@common, \@missing);
+	else {
+	    my $al = get_altlist($dep);
+	    foreach (@$list2) {
+		if (is_superset( get_altlist($_), $al )) {
+		    $found = 1;
+		    last;
+		}
+	    }
+	}
+
+	if ($found) {
+	    push( @common, $dep );
+	}
+	else {
+	    push( @missing, $dep );
+	}
+    }
+    return (\@common, \@missing);
 }
 
 sub get_altlist {
-	my $dep = shift;
-	my %l;
+    my $dep = shift;
+    my %l;
 
-	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-		$l{$_->{'Package'}} = 1 if !$_->{'Neg'};
-	}
-	return \%l;
+    foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
+	$l{$_->{'Package'}} = 1 if !$_->{'Neg'};
+    }
+    return \%l;
 }
 
 sub is_superset {
-	my $l1 = shift;
-	my $l2 = shift;
+    my $l1 = shift;
+    my $l2 = shift;
 
-	foreach (keys %$l2) {
-		return 0 if !exists $l1->{$_};
-	}
-	return 1;
+    foreach (keys %$l2) {
+	return 0 if !exists $l1->{$_};
+    }
+    return 1;
 }
 
 sub read_build_essential {
-	my @essential;
-	local (*F);
+    my @essential;
+    local (*F);
 
-	if (open( F, "$main::chroot_dir/usr/share/doc/build-essential/essential-packages-list" )) {
-		while( <F> ) {
-			last if $_ eq "\n";
-		}
-		while( <F> ) {
-			chomp;
-			push( @essential, $_ ) if $_ !~ /^\s*$/;
-		}
-		close( F );
+    if (open( F, "$main::chroot_dir/usr/share/doc/build-essential/essential-packages-list" )) {
+	while( <F> ) {
+	    last if $_ eq "\n";
 	}
-	else {
-		warn "Cannot open $main::chroot_dir/usr/share/doc/build-essential/essential-packages-list: $!\n";
+	while( <F> ) {
+	    chomp;
+	    push( @essential, $_ ) if $_ !~ /^\s*$/;
 	}
+	close( F );
+    }
+    else {
+	warn "Cannot open $main::chroot_dir/usr/share/doc/build-essential/essential-packages-list: $!\n";
+    }
 
-	if (open( F, "$main::chroot_dir/usr/share/doc/build-essential/list" )) {
-		while( <F> ) {
-			last if $_ eq "BEGIN LIST OF PACKAGES\n";
-		}
-		while( <F> ) {
-			chomp;
-			last if $_ eq "END LIST OF PACKAGES";
-			next if /^\s/ || /^$/;
-			push( @essential, $_ );
-		}
-		close( F );
+    if (open( F, "$main::chroot_dir/usr/share/doc/build-essential/list" )) {
+	while( <F> ) {
+	    last if $_ eq "BEGIN LIST OF PACKAGES\n";
 	}
-	else {
-		warn "Cannot open $main::chroot_dir/usr/share/doc/build-essential/list: $!\n";
+	while( <F> ) {
+	    chomp;
+	    last if $_ eq "END LIST OF PACKAGES";
+	    next if /^\s/ || /^$/;
+	    push( @essential, $_ );
 	}
+	close( F );
+    }
+    else {
+	warn "Cannot open $main::chroot_dir/usr/share/doc/build-essential/list: $!\n";
+    }
 
-	return join( ", ", @essential );
+    return join( ", ", @essential );
 }
 
 sub expand_dependencies {
-	my $dlist = shift;
-	my (@to_check, @result, %seen, $check, $dep);
+    my $dlist = shift;
+    my (@to_check, @result, %seen, $check, $dep);
 
-	foreach $dep (@$dlist) {
-		next if $dep->{'Neg'} || $dep->{'Package'} =~ /^\*/;
-		foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-			my $name = $_->{'Package'};
-			push( @to_check, $name );
-			$seen{$name} = 1;
-		}
-		push( @result, copy($dep) );
+    foreach $dep (@$dlist) {
+	next if $dep->{'Neg'} || $dep->{'Package'} =~ /^\*/;
+	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
+	    my $name = $_->{'Package'};
+	    push( @to_check, $name );
+	    $seen{$name} = 1;
 	}
+	push( @result, copy($dep) );
+    }
 
-	while( @to_check ) {
-		my $deps = get_dependencies( @to_check );
-		my @check = @to_check;
-		@to_check = ();
-		foreach $check (@check) {
-			if (defined($deps->{$check})) {
-				foreach (split( /\s*,\s*/, $deps->{$check} )) {
-					foreach (split( /\s*\|\s*/, $_ )) {
-						my $pkg = (/^([^\s([]+)/)[0];
-						if (!$seen{$pkg}) {
-							push( @to_check, $pkg );
-							push( @result, { Package => $pkg, Neg => 0 } );
-							$seen{$pkg} = 1;
-						}
-					}
-				}
+    while( @to_check ) {
+	my $deps = get_dependencies( @to_check );
+	my @check = @to_check;
+	@to_check = ();
+	foreach $check (@check) {
+	    if (defined($deps->{$check})) {
+		foreach (split( /\s*,\s*/, $deps->{$check} )) {
+		    foreach (split( /\s*\|\s*/, $_ )) {
+			my $pkg = (/^([^\s([]+)/)[0];
+			if (!$seen{$pkg}) {
+			    push( @to_check, $pkg );
+			    push( @result, { Package => $pkg, Neg => 0 } );
+			    $seen{$pkg} = 1;
 			}
+		    }
 		}
+	    }
 	}
+    }
 
-	return \@result;
+    return \@result;
 }
 
 sub expand_virtuals {
-	my $dlist = shift;
-	my ($dep, %names, @new_dlist);
+    my $dlist = shift;
+    my ($dep, %names, @new_dlist);
 
-	foreach $dep (@$dlist) {
-		foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-			$names{$_->{'Package'}} = 1;
-		}
+    foreach $dep (@$dlist) {
+	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
+	    $names{$_->{'Package'}} = 1;
 	}
-	my $provided_by = get_virtuals( keys %names );
+    }
+    my $provided_by = get_virtuals( keys %names );
 
-	foreach $dep (@$dlist) {
-		my %seen;
-		foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-			my $name = $_->{'Package'};
-			$seen{$name} = 1;
-			if (exists $provided_by->{$name}) {
-				foreach( keys %{$provided_by->{$name}} ) {
-					$seen{$_} = 1;
-				}
-			}
+    foreach $dep (@$dlist) {
+	my %seen;
+	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
+	    my $name = $_->{'Package'};
+	    $seen{$name} = 1;
+	    if (exists $provided_by->{$name}) {
+		foreach( keys %{$provided_by->{$name}} ) {
+		    $seen{$_} = 1;
 		}
-		my @l = map { { Package => $_, Neg => 0 } } keys %seen;
-		my $l = shift @l;
-		foreach (@l) {
-			push( @{$l->{'Alternatives'}}, $_ );
-		}
-		push( @new_dlist, $l );
+	    }
 	}
+	my @l = map { { Package => $_, Neg => 0 } } keys %seen;
+	my $l = shift @l;
+	foreach (@l) {
+	    push( @{$l->{'Alternatives'}}, $_ );
+	}
+	push( @new_dlist, $l );
+    }
 
-	return \@new_dlist;
+    return \@new_dlist;
 }
 
 sub get_dependencies {
-	local(*PIPE);
-	my %deps;
+    local(*PIPE);
+    my %deps;
 
-	my $command = get_apt_command("$conf::apt_cache", "show @_", $main::username, 0);
-	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
-	if (!$pid) {
-		die "Cannot start $conf::apt_cache $!\n";
-	}
-	local($/) = "";
-	while( <PIPE> ) {
-		my ($name, $dep, $predep);
-		/^Package:\s*(.*)\s*$/mi and $name = $1;
-		next if !$name || $deps{$name};
-		/^Depends:\s*(.*)\s*$/mi and $dep = $1;
-		/^Pre-Depends:\s*(.*)\s*$/mi and $predep = $1;
-		$dep .= ", " if defined($dep) && $dep && defined($predep) && $predep;
-		$dep .= $predep if defined($predep);
-		$deps{$name} = $dep;
-	}
-	close( PIPE );
-	waitpid $pid, 0;
-	die "$conf::apt_cache exit status $?\n" if $?;
+    my $command = get_apt_command("$conf::apt_cache", "show @_", $main::username, 0);
+    my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+    if (!$pid) {
+	die "Cannot start $conf::apt_cache $!\n";
+    }
+    local($/) = "";
+    while( <PIPE> ) {
+	my ($name, $dep, $predep);
+	/^Package:\s*(.*)\s*$/mi and $name = $1;
+	next if !$name || $deps{$name};
+	/^Depends:\s*(.*)\s*$/mi and $dep = $1;
+	/^Pre-Depends:\s*(.*)\s*$/mi and $predep = $1;
+	$dep .= ", " if defined($dep) && $dep && defined($predep) && $predep;
+	$dep .= $predep if defined($predep);
+	$deps{$name} = $dep;
+    }
+    close( PIPE );
+    waitpid $pid, 0;
+    die "$conf::apt_cache exit status $?\n" if $?;
 
-	return \%deps;
+    return \%deps;
 }
 
 sub get_virtuals {
-	local(*PIPE);
+    local(*PIPE);
 
-	my $command = get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0);
-	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
-	if (!$pid) {
-		die "Cannot start $conf::apt_cache $!\n";
+    my $command = get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0);
+    my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
+    if (!$pid) {
+	die "Cannot start $conf::apt_cache $!\n";
+    }
+    my $name;
+    my $in_rprov = 0;
+    my %provided_by;
+    while( <PIPE> ) {
+	if (/^Package:\s*(\S+)\s*$/) {
+	    $name = $1;
 	}
-	my $name;
-	my $in_rprov = 0;
-	my %provided_by;
-	while( <PIPE> ) {
-		if (/^Package:\s*(\S+)\s*$/) {
-			$name = $1;
-		}
-		elsif (/^Reverse Provides: $/) {
-			$in_rprov = 1;
-		}
-		elsif ($in_rprov && /^(\w+):\s/) {
-			$in_rprov = 0;
-		}
-		elsif ($in_rprov && /^(\S+)\s*\S+\s*$/) {
-			$provided_by{$name}->{$1} = 1;
-		}
+	elsif (/^Reverse Provides: $/) {
+	    $in_rprov = 1;
 	}
-	close( PIPE );
-	waitpid $pid, 0;
-	die "$conf::apt_cache exit status $?\n" if $?;
+	elsif ($in_rprov && /^(\w+):\s/) {
+	    $in_rprov = 0;
+	}
+	elsif ($in_rprov && /^(\S+)\s*\S+\s*$/) {
+	    $provided_by{$name}->{$1} = 1;
+	}
+    }
+    close( PIPE );
+    waitpid $pid, 0;
+    die "$conf::apt_cache exit status $?\n" if $?;
 
-	return \%provided_by;
+    return \%provided_by;
 }
 
 sub parse_one_srcdep {
-	my $pkg = shift;
-	my $deps = shift;
-	my $hash = shift;
+    my $pkg = shift;
+    my $deps = shift;
+    my $hash = shift;
 
-	$deps =~ s/^\s*(.*)\s*$/$1/;
-	foreach (split( /\s*,\s*/, $deps )) {
-		my @l;
-		my $override;
-		if (/^\&/) {
-			$override = 1;
-			s/^\&\s+//;
-		}
-		my @alts = split( /\s*\|\s*/, $_ );
-		my $neg_seen = 0;
-		foreach (@alts) {
-			if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
-				warn "Warning: syntax error in dependency '$_' of $pkg\n";
-				next;
-			}
-			my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
-			if ($archlist) {
-				$archlist =~ s/^\s*(.*)\s*$/$1/;
-				my @archs = split( /\s+/, $archlist );
-				my ($use_it, $ignore_it, $include) = (0, 0, 0);
-				foreach (@archs) {
-					if (/^!/) {
-						$ignore_it = 1 if substr($_, 1) eq $main::arch;
-					}
-					else {
-						$use_it = 1 if $_ eq $main::arch;
-						$include = 1;
-					}
-				}
-				warn "Warning: inconsistent arch restriction on ",
-					 "$pkg: $dep depedency\n"
-						 if $ignore_it && $use_it;
-				next if $ignore_it || ($include && !$use_it);
-			}
-			my $neg = 0;
-			if ($dep =~ /^!/) {
-				$dep =~ s/^!\s*//;
-				$neg = 1;
-				$neg_seen = 1;
-			}
-			if ($conf::srcdep_over{$dep}) {
-				if ($main::verbose) {
-					print PLOG "Replacing source dep $dep";
-					print PLOG " ($rel $relv)" if $relv;
-					print PLOG " with $conf::srcdep_over{$dep}[0]";
-					print PLOG " ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])"
-					  if $conf::srcdep_over{$dep}[1];
-					print PLOG ".\n";
-				}
-				$dep = $conf::srcdep_over{$dep}[0];
-				$rel = $conf::srcdep_over{$dep}[1];
-				$relv = $conf::srcdep_over{$dep}[2];
-			}
-			my $h = { Package => $dep, Neg => $neg };
-			if ($rel && $relv) {
-				$h->{'Rel'} = $rel;
-				$h->{'Version'} = $relv;
-			}
-			$h->{'Override'} = $override if $override;
-			push( @l, $h );
-		}
-		if (@alts > 1 && $neg_seen) {
-			warn "Warning: $pkg: alternatives with negative dependencies ",
-				 "forbidden -- skipped\n";
-		}
-		elsif (@l) {
-			my $l = shift @l;
-			foreach (@l) {
-				push( @{$l->{'Alternatives'}}, $_ );
-			}
-			push( @{$hash->{$pkg}}, $l );
-		}
+    $deps =~ s/^\s*(.*)\s*$/$1/;
+    foreach (split( /\s*,\s*/, $deps )) {
+	my @l;
+	my $override;
+	if (/^\&/) {
+	    $override = 1;
+	    s/^\&\s+//;
 	}
+	my @alts = split( /\s*\|\s*/, $_ );
+	my $neg_seen = 0;
+	foreach (@alts) {
+	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+		warn "Warning: syntax error in dependency '$_' of $pkg\n";
+		next;
+	    }
+	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
+	    if ($archlist) {
+		$archlist =~ s/^\s*(.*)\s*$/$1/;
+		my @archs = split( /\s+/, $archlist );
+		my ($use_it, $ignore_it, $include) = (0, 0, 0);
+		foreach (@archs) {
+		    if (/^!/) {
+			$ignore_it = 1 if substr($_, 1) eq $main::arch;
+		    }
+		    else {
+			$use_it = 1 if $_ eq $main::arch;
+			$include = 1;
+		    }
+		}
+		warn "Warning: inconsistent arch restriction on ",
+		"$pkg: $dep depedency\n"
+		    if $ignore_it && $use_it;
+		next if $ignore_it || ($include && !$use_it);
+	    }
+	    my $neg = 0;
+	    if ($dep =~ /^!/) {
+		$dep =~ s/^!\s*//;
+		$neg = 1;
+		$neg_seen = 1;
+	    }
+	    if ($conf::srcdep_over{$dep}) {
+		if ($main::verbose) {
+		    print PLOG "Replacing source dep $dep";
+		    print PLOG " ($rel $relv)" if $relv;
+		    print PLOG " with $conf::srcdep_over{$dep}[0]";
+		    print PLOG " ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])"
+			if $conf::srcdep_over{$dep}[1];
+		    print PLOG ".\n";
+		}
+		$dep = $conf::srcdep_over{$dep}[0];
+		$rel = $conf::srcdep_over{$dep}[1];
+		$relv = $conf::srcdep_over{$dep}[2];
+	    }
+	    my $h = { Package => $dep, Neg => $neg };
+	    if ($rel && $relv) {
+		$h->{'Rel'} = $rel;
+		$h->{'Version'} = $relv;
+	    }
+	    $h->{'Override'} = $override if $override;
+	    push( @l, $h );
+	}
+	if (@alts > 1 && $neg_seen) {
+	    warn "Warning: $pkg: alternatives with negative dependencies ",
+	    "forbidden -- skipped\n";
+	}
+	elsif (@l) {
+	    my $l = shift @l;
+	    foreach (@l) {
+		push( @{$l->{'Alternatives'}}, $_ );
+	    }
+	    push( @{$hash->{$pkg}}, $l );
+	}
+    }
 }
 
 sub parse_manual_srcdeps {
-	my @for_pkgs = @_;
+    my @for_pkgs = @_;
 
-	foreach (@main::manual_srcdeps) {
-		if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-			warn "Syntax error in manual source dependency: ",
-				substr( $_, 1 ), "\n";
-			next;
+    foreach (@main::manual_srcdeps) {
+	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
+	    warn "Syntax error in manual source dependency: ",
+	    substr( $_, 1 ), "\n";
+	    next;
 	}
-		my ($mode, $pkg, $deps) = ($1, $2, $3);
-		next if !isin( $pkg, @for_pkgs );
-		@{$main::deps{$pkg}} = () if $mode eq 'f';
-		parse_one_srcdep( $pkg, $deps, \%main::deps );
-	}
+	my ($mode, $pkg, $deps) = ($1, $2, $3);
+	next if !isin( $pkg, @for_pkgs );
+	@{$main::deps{$pkg}} = () if $mode eq 'f';
+	parse_one_srcdep( $pkg, $deps, \%main::deps );
+    }
 }
 
 sub check_space {
-	my @files = @_;
-	my $sum = 0;
-	local( *PIPE );
+    my @files = @_;
+    my $sum = 0;
+    local( *PIPE );
 
-	foreach (@files) {
-		my $command;
+    foreach (@files) {
+	my $command;
 
-		if (/^\Q$main::chroot_dir\E/) {
-			$_ = strip_chroot_path($_);
-			$command = get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
-		} else {
-			$command = get_command("/usr/bin/du -k -s $_ 2>/dev/null", $main::username, 0, 0);
-		}
-
-		if (!open( PIPE, "$command |" )) {
-			print PLOG "Cannot determine space needed (du failed): $!\n";
-			return;
-		}
-		while( <PIPE> ) {
-			next if !/^(\d+)/;
-			$sum += $1;
-		}
-		close( PIPE );
+	if (/^\Q$main::chroot_dir\E/) {
+	    $_ = strip_chroot_path($_);
+	    $command = get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
+	} else {
+	    $command = get_command("/usr/bin/du -k -s $_ 2>/dev/null", $main::username, 0, 0);
 	}
 
-	$main::this_space = $sum;
+	if (!open( PIPE, "$command |" )) {
+	    print PLOG "Cannot determine space needed (du failed): $!\n";
+	    return;
+	}
+	while( <PIPE> ) {
+	    next if !/^(\d+)/;
+	    $sum += $1;
+	}
+	close( PIPE );
+    }
+
+    $main::this_space = $sum;
 }
 
 sub file_for_name {
-	my $name = shift;
-	my @x = grep { /^\Q$name\E_/ } @_;
-	return $x[0];
+    my $name = shift;
+    my @x = grep { /^\Q$name\E_/ } @_;
+    return $x[0];
 }
 
 sub write_jobs_file {
-	my $news = shift;
-	my $job;
-	local( *F );
+    my $news = shift;
+    my $job;
+    local( *F );
 
-	$main::job_state{$main::current_job} = $news
-		if $news && $main::current_job;
+    $main::job_state{$main::current_job} = $news
+	if $news && $main::current_job;
 
-	return if !$main::batchmode;
+    return if !$main::batchmode;
 
-	return if !open( F, ">$main::jobs_file" );
-	foreach $job (@ARGV) {
-		my $jobname;
+    return if !open( F, ">$main::jobs_file" );
+    foreach $job (@ARGV) {
+	my $jobname;
 
-		if ($job eq $main::current_job and $main::binNMU_name) {
-			$jobname = $main::binNMU_name;
-		} else {
-			$jobname = $job;
-		}
-		print F ($job eq $main::current_job) ? "" : "  ",
-				$jobname,
-				($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
-				"\n";
+	if ($job eq $main::current_job and $main::binNMU_name) {
+	    $jobname = $main::binNMU_name;
+	} else {
+	    $jobname = $job;
 	}
-	close( F );
+	print F ($job eq $main::current_job) ? "" : "  ",
+	        $jobname,
+	        ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
+	        "\n";
+    }
+    close( F );
 }
 
 sub append_to_FINISHED {
-	my $pkg = shift;
-	local( *F );
+    my $pkg = shift;
+    local( *F );
 
-	return if !$main::batchmode;
+    return if !$main::batchmode;
 
-	open( F, ">>SBUILD-FINISHED" );
-	print F "$pkg\n";
-	close( F );
+    open( F, ">>SBUILD-FINISHED" );
+    print F "$pkg\n";
+    close( F );
 }
 
 sub write_srcdep_lock_file {
-	my $deps = shift;
-	local( *F );
+    my $deps = shift;
+    local( *F );
 
-	++$main::srcdep_lock_cnt;
-	my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
-	if (!open( F, ">$f" )) {
-		print "Warning: cannot create srcdep lock file $f: $!\n";
-		return;
-	}
-	print "Writing srcdep lock file $f:\n" if $conf::debug;
+    ++$main::srcdep_lock_cnt;
+    my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+    if (!open( F, ">$f" )) {
+	print "Warning: cannot create srcdep lock file $f: $!\n";
+	return;
+    }
+    print "Writing srcdep lock file $f:\n" if $conf::debug;
 
-	my $user = getpwuid($<);
-	print F "$main::current_job $$ $user\n";
-	print "Job $main::current_job pid $$ user $user\n" if $conf::debug;
-	foreach (@$deps) {
-		my $name = $_->{'Package'};
-		print F ($_->{'Neg'} ? "!" : ""), "$name\n";
-		print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $conf::debug;
-	}
-	close( F );
+    my $user = getpwuid($<);
+    print F "$main::current_job $$ $user\n";
+    print "Job $main::current_job pid $$ user $user\n" if $conf::debug;
+    foreach (@$deps) {
+	my $name = $_->{'Package'};
+	print F ($_->{'Neg'} ? "!" : ""), "$name\n";
+	print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $conf::debug;
+    }
+    close( F );
 }
 
 sub check_srcdep_conflicts {
-	my $to_inst = shift;
-	my $to_remove = shift;
-	local( *F, *DIR );
-	my $mypid = $$;
-	my %conflict_builds;
+    my $to_inst = shift;
+    my $to_remove = shift;
+    local( *F, *DIR );
+    my $mypid = $$;
+    my %conflict_builds;
 
-	if (!opendir( DIR, $main::srcdep_lock_dir )) {
-		print PLOG "Cannot opendir $main::srcdep_lock_dir: $!\n";
-		return 1;
+    if (!opendir( DIR, $main::srcdep_lock_dir )) {
+	print PLOG "Cannot opendir $main::srcdep_lock_dir: $!\n";
+	return 1;
+    }
+    my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
+    readdir(DIR);
+    closedir(DIR);
+
+    my $file;
+    foreach $file (@files) {
+	if (!open( F, "<$main::srcdep_lock_dir/$file" )) {
+	    print PLOG "Cannot open $main::srcdep_lock_dir/$file: $!\n";
+	    next;
 	}
-	my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
-					 readdir(DIR);
-	closedir(DIR);
+	<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
+	my ($job, $pid, $user) = ($1, $2, $3);
 
-	my $file;
-	foreach $file (@files) {
-		if (!open( F, "<$main::srcdep_lock_dir/$file" )) {
-			print PLOG "Cannot open $main::srcdep_lock_dir/$file: $!\n";
-			next;
-		}
-		<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
-		my ($job, $pid, $user) = ($1, $2, $3);
-
-		# ignore (and remove) a lock file if associated process doesn't exist
-		# anymore
-		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-			close( F );
-			print PLOG "Found stale srcdep lock file $file -- removing it\n";
-			print PLOG "Cannot remove: $!\n"
-				if !unlink( "$main::srcdep_lock_dir/$file" );
-			next;
-		}
-
-		print "Reading srclock file $file by job $job user $user\n"
-			if $conf::debug;
-
-		while( <F> ) {
-			my ($neg, $pkg) = /^(!?)(\S+)/;
-			print "Found ", ($neg ? "neg " : ""), "entry $pkg\n"
-				if $conf::debug;
-
-			if (isin( $pkg, @$to_inst, @$to_remove )) {
-				print PLOG "Source dependency conflict with build of ",
-					"$job by $user (pid $pid):\n";
-				print PLOG "  $job ", ($neg ? "conflicts with" : "needs"),
-					" $pkg\n";
-				print PLOG "  $main::current_job wants to ",
-					(isin( $pkg, @$to_inst ) ? "update" : "remove"),
-						" $pkg\n";
-				$conflict_builds{$file} = 1;
-			}
-		}
-		close( F );
+	# ignore (and remove) a lock file if associated process
+	# doesn't exist anymore
+	if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+	    close( F );
+	    print PLOG "Found stale srcdep lock file $file -- removing it\n";
+	    print PLOG "Cannot remove: $!\n"
+		if !unlink( "$main::srcdep_lock_dir/$file" );
+	    next;
 	}
 
-	my @conflict_builds = keys %conflict_builds;
-	if (@conflict_builds) {
-		print "Srcdep conflicts with: @conflict_builds\n" if $conf::debug;
+	print "Reading srclock file $file by job $job user $user\n"
+	    if $conf::debug;
+
+	while( <F> ) {
+	    my ($neg, $pkg) = /^(!?)(\S+)/;
+	    print "Found ", ($neg ? "neg " : ""), "entry $pkg\n"
+		if $conf::debug;
+
+	    if (isin( $pkg, @$to_inst, @$to_remove )) {
+		print PLOG "Source dependency conflict with build of ",
+		           "$job by $user (pid $pid):\n";
+		print PLOG "  $job ", ($neg ? "conflicts with" : "needs"),
+		           " $pkg\n";
+		print PLOG "  $main::current_job wants to ",
+		           (isin( $pkg, @$to_inst ) ? "update" : "remove"),
+		           " $pkg\n";
+		$conflict_builds{$file} = 1;
+	    }
 	}
-	else {
-		print "No srcdep conflicts\n" if $conf::debug;
-	}
-	return @conflict_builds;
+	close( F );
+    }
+
+    my @conflict_builds = keys %conflict_builds;
+    if (@conflict_builds) {
+	print "Srcdep conflicts with: @conflict_builds\n" if $conf::debug;
+    }
+    else {
+	print "No srcdep conflicts\n" if $conf::debug;
+    }
+    return @conflict_builds;
 }
 
 sub remove_srcdep_lock_file {
-	my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+    my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 
-	print "Removing srcdep lock file $f\n" if $conf::debug;
-	if (!unlink( $f )) {
-		print "Warning: cannot remove srcdep lock file $f: $!\n"
-			if $! != ENOENT;
-	}
+    print "Removing srcdep lock file $f\n" if $conf::debug;
+    if (!unlink( $f )) {
+	print "Warning: cannot remove srcdep lock file $f: $!\n"
+	    if $! != ENOENT;
+    }
 }
 
 sub prepare_watches {
-	my $dependencies = shift;
-	my @instd = @_;
-	my(@dep_on, $dep, $pkg, $prg);
+    my $dependencies = shift;
+    my @instd = @_;
+    my(@dep_on, $dep, $pkg, $prg);
 
-	@dep_on = @instd;
-	foreach $dep (@$dependencies, @$main::additional_deps) {
-		if ($dep->{'Neg'} && $dep->{'Package'} =~ /^needs-no-(\S+)/) {
-			push( @dep_on, $1 );
-		}
-		elsif ($dep->{'Package'} !~ /^\*/ && !$dep->{'Neg'}) {
-			foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-				push( @dep_on, $_->{'Package'} );
-			}
-		}
+    @dep_on = @instd;
+    foreach $dep (@$dependencies, @$main::additional_deps) {
+	if ($dep->{'Neg'} && $dep->{'Package'} =~ /^needs-no-(\S+)/) {
+	    push( @dep_on, $1 );
 	}
-	# init %this_watches to names of packages which have not been installed as
-	# source dependencies
-	undef %main::this_watches;
-	foreach $pkg (keys %conf::watches) {
-		if (isin( $pkg, @dep_on )) {
-			print "Excluding from watch: $pkg\n" if $conf::debug;
-			next;
-		}
-		foreach $prg (@{$conf::watches{$pkg}}) {
-			$prg = "/usr/bin/$prg" if $prg !~ m,^/,;
-			$main::this_watches{"$main::chroot_dir$prg"} = $pkg;
-			print "Will watch for $prg ($pkg)\n" if $conf::debug;
-		}
+	elsif ($dep->{'Package'} !~ /^\*/ && !$dep->{'Neg'}) {
+	    foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
+		push( @dep_on, $_->{'Package'} );
+	    }
 	}
+    }
+    # init %this_watches to names of packages which have not been
+    # installed as source dependencies
+    undef %main::this_watches;
+    foreach $pkg (keys %conf::watches) {
+	if (isin( $pkg, @dep_on )) {
+	    print "Excluding from watch: $pkg\n" if $conf::debug;
+	    next;
+	}
+	foreach $prg (@{$conf::watches{$pkg}}) {
+	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
+	    $main::this_watches{"$main::chroot_dir$prg"} = $pkg;
+	    print "Will watch for $prg ($pkg)\n" if $conf::debug;
+	}
+    }
 }
 
 sub check_watches {
-	my($prg, @st, %used);
+    my($prg, @st, %used);
 
-	return if (!$conf::check_watches);
+    return if (!$conf::check_watches);
 
-	foreach $prg (keys %main::this_watches) {
-		if (!(@st = stat( $prg ))) {
-			print "Watch: $prg: stat failed\n" if $conf::debug;
-			next;
-		}
-		if ($st[8] > $main::build_start_time) {
-			my $pkg = $main::this_watches{$prg};
-			my $prg2 = strip_chroot_path($prg);
-			push( @{$used{$pkg}}, $prg2 )
-				if @main::have_dsc_build_deps ||
-				   !isin( $pkg, @conf::ignore_watches_no_build_deps );
-		}
-		else {
-			print "Watch: $prg: untouched\n" if $conf::debug;
-		}
+    foreach $prg (keys %main::this_watches) {
+	if (!(@st = stat( $prg ))) {
+	    print "Watch: $prg: stat failed\n" if $conf::debug;
+	    next;
 	}
-	return if !%used;
+	if ($st[8] > $main::build_start_time) {
+	    my $pkg = $main::this_watches{$prg};
+	    my $prg2 = strip_chroot_path($prg);
+	    push( @{$used{$pkg}}, $prg2 )
+		if @main::have_dsc_build_deps ||
+		!isin( $pkg, @conf::ignore_watches_no_build_deps );
+	}
+	else {
+	    print "Watch: $prg: untouched\n" if $conf::debug;
+	}
+    }
+    return if !%used;
 
-	print PLOG <<EOF;
+    print PLOG <<EOF;
 
 NOTE: The package could have used binaries from the following packages
 (access time changed) without a source dependency:
 EOF
-	foreach (keys %used) {
-		print PLOG "  $_: @{$used{$_}}\n";
-	}
-	print PLOG "\n";
+
+    foreach (keys %used) {
+	print PLOG "  $_: @{$used{$_}}\n";
+    }
+    print PLOG "\n";
 }
 
 sub should_skip {
-	my $pkgv = shift;
+    my $pkgv = shift;
 
-	fixup_pkgv( \$pkgv );
-	lock_file( "SKIP" );
-	goto unlock if !open( F, "SKIP" );
-	my @pkgs = <F>;
-	close( F );
+    fixup_pkgv( \$pkgv );
+    lock_file( "SKIP" );
+    goto unlock if !open( F, "SKIP" );
+    my @pkgs = <F>;
+    close( F );
 
-	if (!open( F, ">SKIP" )) {
-		print "Can't open SKIP for writing: $!\n",
-			  "Would write: @pkgs\nminus $pkgv\n";
-		goto unlock;
+    if (!open( F, ">SKIP" )) {
+	print "Can't open SKIP for writing: $!\n",
+	"Would write: @pkgs\nminus $pkgv\n";
+	goto unlock;
+    }
+    my $found = 0;
+    foreach (@pkgs) {
+	if (/^\Q$pkgv\E$/) {
+	    ++$found;
+	    print PLOG "$pkgv found in SKIP file -- skipping building it\n";
 	}
-	my $found = 0;
-	foreach (@pkgs) {
-		if (/^\Q$pkgv\E$/) {
-			++$found;
-			print PLOG "$pkgv found in SKIP file -- skipping building it\n";
-		}
-		else {
-			print F $_;
-		}
+	else {
+	    print F $_;
 	}
-	close( F );
+    }
+    close( F );
   unlock:
-	unlock_file( "SKIP" );
-	return $found;
+    unlock_file( "SKIP" );
+    return $found;
 }
 
 sub add_givenback {
-	my $pkgv = shift;
-	my $time = shift;
-	local( *F );
+    my $pkgv = shift;
+    my $time = shift;
+    local( *F );
 
-	lock_file( "SBUILD-GIVEN-BACK" );
+    lock_file( "SBUILD-GIVEN-BACK" );
 
-	if (open( F, ">>SBUILD-GIVEN-BACK" )) {
-		print F "$pkgv $time\n";
-		close( F );
-	}
-	else {
-		print PLOG "Can't open SBUILD-GIVEN-BACK: $!\n";
-	}
+    if (open( F, ">>SBUILD-GIVEN-BACK" )) {
+	print F "$pkgv $time\n";
+	close( F );
+    }
+    else {
+	print PLOG "Can't open SBUILD-GIVEN-BACK: $!\n";
+    }
 
   unlock:
-	unlock_file( "SBUILD-GIVEN-BACK" );
+    unlock_file( "SBUILD-GIVEN-BACK" );
 }
 
 sub set_installed {
-	foreach (@_) {
-		$main::changes->{'installed'}->{$_} = 1;
-	}
-	print "Added to installed list: @_\n" if $conf::debug;
+    foreach (@_) {
+	$main::changes->{'installed'}->{$_} = 1;
+    }
+    print "Added to installed list: @_\n" if $conf::debug;
 }
 
 sub set_removed {
-	foreach (@_) {
-		$main::changes->{'removed'}->{$_} = 1;
-		if (exists $main::changes->{'installed'}->{$_}) {
-			delete $main::changes->{'installed'}->{$_};
-			$main::changes->{'auto-removed'}->{$_} = 1;
-			print "Note: $_ was installed\n" if $conf::debug;
-		}
+    foreach (@_) {
+	$main::changes->{'removed'}->{$_} = 1;
+	if (exists $main::changes->{'installed'}->{$_}) {
+	    delete $main::changes->{'installed'}->{$_};
+	    $main::changes->{'auto-removed'}->{$_} = 1;
+	    print "Note: $_ was installed\n" if $conf::debug;
 	}
-	print "Added to removed list: @_\n" if $conf::debug;
+    }
+    print "Added to removed list: @_\n" if $conf::debug;
 }
 
 sub unset_installed {
-	foreach (@_) {
-		delete $main::changes->{'installed'}->{$_};
-	}
-	print "Removed from installed list: @_\n" if $conf::debug;
+    foreach (@_) {
+	delete $main::changes->{'installed'}->{$_};
+    }
+    print "Removed from installed list: @_\n" if $conf::debug;
 }
 
 sub unset_removed {
-	foreach (@_) {
-		delete $main::changes->{'removed'}->{$_};
-		if (exists $main::changes->{'auto-removed'}->{$_}) {
-			delete $main::changes->{'auto-removed'}->{$_};
-			$main::changes->{'installed'}->{$_} = 1;
-			print "Note: revived $_ to installed list\n" if $conf::debug;
-		}
+    foreach (@_) {
+	delete $main::changes->{'removed'}->{$_};
+	if (exists $main::changes->{'auto-removed'}->{$_}) {
+	    delete $main::changes->{'auto-removed'}->{$_};
+	    $main::changes->{'installed'}->{$_} = 1;
+	    print "Note: revived $_ to installed list\n" if $conf::debug;
 	}
-	print "Removed from removed list: @_\n" if $conf::debug;
+    }
+    print "Removed from removed list: @_\n" if $conf::debug;
 }
 
 sub df {
-	my $dir = shift;
+    my $dir = shift;
 
-	my $free = `/bin/df $dir | tail -n 1`;
-	my @free = split( /\s+/, $free );
-	return $free[3];
+    my $free = `/bin/df $dir | tail -n 1`;
+    my @free = split( /\s+/, $free );
+    return $free[3];
 }
 
 sub isin {
-	my $val = shift;
-	return grep( $_ eq $val, @_ );
+    my $val = shift;
+    return grep( $_ eq $val, @_ );
 }
 
 sub fixup_pkgv {
-	my $pkgv = shift;
+    my $pkgv = shift;
 
-	$$pkgv =~ s,^.*/,,; # strip path
-	$$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
-	$$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
+    $$pkgv =~ s,^.*/,,; # strip path
+    $$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
+    $$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
 }
 
 sub format_deps {
-	return join( ", ",
-		   map { join( "|",
-				 map { ($_->{'Neg'} ? "!" : "") .
-					   $_->{'Package'} .
-					   ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"")}
-				 scalar($_), @{$_->{'Alternatives'}}) } @_ );
+    return join( ", ",
+		 map { join( "|",
+			     map { ($_->{'Neg'} ? "!" : "") .
+				       $_->{'Package'} .
+				       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"")}
+			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
 sub lock_file {
-	my $file = shift;
-	my $for_srcdep = shift;
-	my $lockfile = "$file.lock";
-	my $try = 0;
+    my $file = shift;
+    my $for_srcdep = shift;
+    my $lockfile = "$file.lock";
+    my $try = 0;
 
   repeat:
-	if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
-		if ($! == EEXIST) {
-			# lock file exists, wait
-			goto repeat if !open( F, "<$lockfile" );
-			my $line = <F>;
-			my ($pid, $user);
-			close( F );
-			if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
-				warn "Bad lock file contents ($lockfile) -- still trying\n";
-			}
-			else {
-				($pid, $user) = ($1, $2);
-				if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-					# process doesn't exist anymore, remove stale lock
-					warn "Removing stale lock file $lockfile ".
-						 " (pid $pid, user $user)\n";
-					unlink( $lockfile );
-					goto repeat;
-				}
-			}
-			++$try;
-			if (!$for_srcdep && $try > $main::max_lock_trys) {
-				warn "Lockfile $lockfile still present after ".
-				     $main::max_lock_trys*$main::lock_interval.
-					 " seconds -- giving up\n";
-				return;
-			}
-			print PLOG "Another sbuild process ($pid by $user) is currently ",
-					   "installing or\n",
-					   "removing packages -- waiting...\n"
-						   if $for_srcdep && $try == 1;
-			sleep $main::lock_interval;
-			goto repeat;
+    if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+	if ($! == EEXIST) {
+	    # lock file exists, wait
+	    goto repeat if !open( F, "<$lockfile" );
+	    my $line = <F>;
+	    my ($pid, $user);
+	    close( F );
+	    if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
+		warn "Bad lock file contents ($lockfile) -- still trying\n";
+	    }
+	    else {
+		($pid, $user) = ($1, $2);
+		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+		    # process doesn't exist anymore, remove stale lock
+		    warn "Removing stale lock file $lockfile ".
+			" (pid $pid, user $user)\n";
+		    unlink( $lockfile );
+		    goto repeat;
 		}
-		warn "Can't create lock file $lockfile: $!\n";
+	    }
+	    ++$try;
+	    if (!$for_srcdep && $try > $main::max_lock_trys) {
+		warn "Lockfile $lockfile still present after ".
+		    $main::max_lock_trys*$main::lock_interval.
+		    " seconds -- giving up\n";
+		return;
+	    }
+	    print PLOG "Another sbuild process ($pid by $user) is currently ",
+	    "installing or\n",
+	    "removing packages -- waiting...\n"
+		if $for_srcdep && $try == 1;
+	    sleep $main::lock_interval;
+	    goto repeat;
 	}
-	F->print("$$ $ENV{'LOGNAME'}\n");
-	F->close();
+	warn "Can't create lock file $lockfile: $!\n";
+    }
+    F->print("$$ $ENV{'LOGNAME'}\n");
+    F->close();
 }
 
 sub unlock_file {
-	my $file = shift;
-	my $lockfile = "$file.lock";
+    my $file = shift;
+    my $lockfile = "$file.lock";
 
-	unlink( $lockfile );
+    unlink( $lockfile );
 }
 
 sub shutdown {
-	my $signame = shift;
-	my($job,@npkgs,@pkgs);
-	local( *F );
+    my $signame = shift;
+    my($job,@npkgs,@pkgs);
+    local( *F );
 
-	$SIG{'INT'} = 'IGNORE';
-	$SIG{'QUIT'} = 'IGNORE';
-	$SIG{'TERM'} = 'IGNORE';
-	$SIG{'ALRM'} = 'IGNORE';
-	$SIG{'PIPE'} = 'IGNORE';
-	print PLOG "sbuild received SIG$signame -- shutting down\n";
-	chdir( $main::cwd );
+    $SIG{'INT'} = 'IGNORE';
+    $SIG{'QUIT'} = 'IGNORE';
+    $SIG{'TERM'} = 'IGNORE';
+    $SIG{'ALRM'} = 'IGNORE';
+    $SIG{'PIPE'} = 'IGNORE';
+    print PLOG "sbuild received SIG$signame -- shutting down\n";
+    chdir( $main::cwd );
 
-	goto not_ni_shutdown if !$main::batchmode;
+    goto not_ni_shutdown if !$main::batchmode;
 
-	# most important: dump out names of unfinished jobs to REDO
-	foreach $job (@ARGV) {
-		my $job2 = $job;
-		fixup_pkgv( \$job2 );
-		push( @npkgs, $job2 )
-			if !$main::job_state{$job} || $job eq $main::current_job;
-	}
-	print LOG "The following jobs were not finished: @npkgs\n";
+    # most important: dump out names of unfinished jobs to REDO
+    foreach $job (@ARGV) {
+	my $job2 = $job;
+	fixup_pkgv( \$job2 );
+	push( @npkgs, $job2 )
+	    if !$main::job_state{$job} || $job eq $main::current_job;
+    }
+    print LOG "The following jobs were not finished: @npkgs\n";
 
-	my $f = "REDO";
-	if (-f "REDO.lock") {
-		# if lock file exists, write to a different file -- timing may
-		# be critical
-		$f = "REDO2";
-	}
-	if (open( F, "<$f" )) {
-		@pkgs = <F>;
-		close( F );
-	}
-	if (open( F, ">>$f" )) {
-		foreach $job (@npkgs) {
-			next if grep( /^\Q$job\E\s/, @pkgs );
-			if (not defined $main::binNMUver) {
-				print F "$job $main::distribution\n";
-			} else {
-				print F "$job $main::distribution $main::binNMUver $main::binNMU\n";
-			}
-		}
-		close( F );
-	}
-	else {
-		print "Cannot open $f: $!\n";
-	}
-	open( F, ">SBUILD-REDO-DUMPED" );
+    my $f = "REDO";
+    if (-f "REDO.lock") {
+	# if lock file exists, write to a different file -- timing may
+	# be critical
+	$f = "REDO2";
+    }
+    if (open( F, "<$f" )) {
+	@pkgs = <F>;
 	close( F );
-	print LOG "SBUILD-REDO-DUMPED created\n";
-	unlink( "SBUILD-FINISHED" );
-
-	# next: say which packages should be uninstalled
-	@pkgs = keys %{$main::changes->{'installed'}};
-	if (@pkgs) {
-		if (open( F, ">>NEED-TO-UNINSTALL" )) {
-			print F "@pkgs\n";
-			close( F );
-		}
-		print "The following packages still need to be uninstalled ",
-			  "(--purge):\n@pkgs\n";
+    }
+    if (open( F, ">>$f" )) {
+	foreach $job (@npkgs) {
+	    next if grep( /^\Q$job\E\s/, @pkgs );
+	    if (not defined $main::binNMUver) {
+		print F "$job $main::distribution\n";
+	    } else {
+		print F "$job $main::distribution $main::binNMUver $main::binNMU\n";
+	    }
 	}
+	close( F );
+    }
+    else {
+	print "Cannot open $f: $!\n";
+    }
+    open( F, ">SBUILD-REDO-DUMPED" );
+    close( F );
+    print LOG "SBUILD-REDO-DUMPED created\n";
+    unlink( "SBUILD-FINISHED" );
+
+    # next: say which packages should be uninstalled
+    @pkgs = keys %{$main::changes->{'installed'}};
+    if (@pkgs) {
+	if (open( F, ">>NEED-TO-UNINSTALL" )) {
+	    print F "@pkgs\n";
+	    close( F );
+	}
+	print "The following packages still need to be uninstalled ",
+	"(--purge):\n@pkgs\n";
+    }
 
   not_ni_shutdown:
-	# next: kill currently running command (if one)
-	if ($main::sub_pid) {
-		print "Killing $main::sub_task subprocess $main::sub_pid\n";
-		run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0);
-	}
-	remove_srcdep_lock_file();
+    # next: kill currently running command (if one)
+    if ($main::sub_pid) {
+	print "Killing $main::sub_task subprocess $main::sub_pid\n";
+	run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0);
+    }
+    remove_srcdep_lock_file();
 
-	# close logs and send mails
-	if ( $main::current_job ) {
-		fixup_pkgv( \$main::current_job );
-		end_session();
-		close_pkg_log( $main::pkg_status,
-			       $main::pkg_start_time, $main::pkg_end_time,
-			       $main::this_space );
-		undef $main::binNMU_name;
-	}
-	close_log();
-	unlink( $main::jobs_file ) if $main::batchmode;
-	$? = 0; $! = 0;
-	if ($conf::sbuild_mode eq "user") {
-		exit 1;
-	}
-	exit 0;
+    # close logs and send mails
+    if ( $main::current_job ) {
+	fixup_pkgv( \$main::current_job );
+	end_session();
+	close_pkg_log( $main::pkg_status,
+		       $main::pkg_start_time, $main::pkg_end_time,
+		       $main::this_space );
+	undef $main::binNMU_name;
+    }
+    close_log();
+    unlink( $main::jobs_file ) if $main::batchmode;
+    $? = 0; $! = 0;
+    if ($conf::sbuild_mode eq "user") {
+	exit 1;
+    }
+    exit 0;
 }
 
 sub write_stats {
-	return if not defined $main::stats_dir;
-	my ($cat, $val) = @_;
-	local( *F );
+    return if not defined $main::stats_dir;
+    my ($cat, $val) = @_;
+    local( *F );
 
-	lock_file( "$main::stats_dir" );
-	open( F, ">>$main::stats_dir/$cat" );
-	print F "$val\n";
-	close( F );
-	unlock_file( "$main::stats_dir" );
+    lock_file( "$main::stats_dir" );
+    open( F, ">>$main::stats_dir/$cat" );
+    print F "$val\n";
+    close( F );
+    unlock_file( "$main::stats_dir" );
 }
 
 sub debian_files_list {
-	my $files = shift;
+    my $files = shift;
 
-	my @list;
+    my @list;
 
-	print STDERR "Parsing $files\n" if $conf::debug;
+    print STDERR "Parsing $files\n" if $conf::debug;
 
-	if (-r $files && open( FILES, "<$files" )) {
-		while (<FILES>) {
-			chomp;
-			my $f = (split( /\s+/, $_ ))[0];
-			push( @list, "$f" );
-			print STDERR "  $f\n" if $conf::debug;
-		}
-		close( FILES ) or print PLOG "Failed to close $files\n" && return 1;
+    if (-r $files && open( FILES, "<$files" )) {
+	while (<FILES>) {
+	    chomp;
+	    my $f = (split( /\s+/, $_ ))[0];
+	    push( @list, "$f" );
+	    print STDERR "  $f\n" if $conf::debug;
 	}
+	close( FILES ) or print PLOG "Failed to close $files\n" && return 1;
+    }
 
-	return @list;
+    return @list;
 }
 
 sub dsc_md5sums {
-	my $dsc = shift;
-	my $dir = dirname($dsc);
-	$dir .= "/" if $dir !~ /\/$/;
+    my $dsc = shift;
+    my $dir = dirname($dsc);
+    $dir .= "/" if $dir !~ /\/$/;
 
-	my %dsc_md5 = (); # dsc MD5
+    my %dsc_md5 = (); # dsc MD5
 
-	print STDERR "Parsing $dsc\n" if $conf::debug;
+    print STDERR "Parsing $dsc\n" if $conf::debug;
 
-	if (-r $dsc && open( DSC, "<$dsc" )) {
-		while (<DSC>) {
-			chomp;
-			if (/^ [a-z0-9]{32}/) {
-				my @fields = split( /\s+/, $_ );
-				$dsc_md5{"$dir$fields[3]"} = $fields[1];
+    if (-r $dsc && open( DSC, "<$dsc" )) {
+	while (<DSC>) {
+	    chomp;
+	    if (/^ [a-z0-9]{32}/) {
+		my @fields = split( /\s+/, $_ );
+		$dsc_md5{"$dir$fields[3]"} = $fields[1];
 
-				print STDERR "  $dir$fields[3]: $fields[1]\n" if $conf::debug;
-			}
-		}
-		close( DSC ) or print PLOG "Failed to close $dsc\n";
-	} else {
-		print PLOG "Failed to open $dsc\n";
+		print STDERR "  $dir$fields[3]: $fields[1]\n" if $conf::debug;
+	    }
 	}
+	close( DSC ) or print PLOG "Failed to close $dsc\n";
+    } else {
+	print PLOG "Failed to open $dsc\n";
+    }
 
-	return \%dsc_md5;
+    return \%dsc_md5;
 }
 
 sub verify_md5sums {
-	my $exp_md5 = shift; # Hashref of filenames and expected MD5sums.
-	my %obs_md5 = (); # Observed MD5sums.
+    my $exp_md5 = shift; # Hashref of filenames and expected MD5sums.
+    my %obs_md5 = (); # Observed MD5sums.
 
-	if (scalar keys %$exp_md5 > 0) {
+    if (scalar keys %$exp_md5 > 0) {
 
-		my @files = keys %$exp_md5;
+	my @files = keys %$exp_md5;
 
-		my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 0, 0);
-		open(OBS, "$command |") or return 1;
-		while (<OBS>) {
-			chomp;
-			if (/^[a-z0-9]{32}/) {
-				my @fields = split( /\s+/, $_ );
-				$obs_md5{$fields[1]} = $fields[0];
-			}
-		}
-		close( OBS ) or
-			print PLOG "Failed to close m5sum\n" && return 1;
-
-		foreach (sort keys %$exp_md5) {
-			if (defined $exp_md5->{$_} && defined $obs_md5{$_}) {
-				if ($exp_md5->{$_} ne $obs_md5{$_}) {
-					print PLOG "$_: MD5SUM mismatch ($exp_md5->{$_} cf $obs_md5{$_}\n";
-					return 1;
-				}
-			} else {
-				print PLOG "$_: Missing file\n";
-				return 1;
-			}
-		}
-	} else {
-		return 1; # No MD5SUMs to check
+	my $command = get_command("cd $main::cwd && $conf::md5sum @files </dev/null", $main::username, 0, 0);
+	open(OBS, "$command |") or return 1;
+	while (<OBS>) {
+	    chomp;
+	    if (/^[a-z0-9]{32}/) {
+		my @fields = split( /\s+/, $_ );
+		$obs_md5{$fields[1]} = $fields[0];
+	    }
 	}
+	close( OBS ) or
+	    print PLOG "Failed to close m5sum\n" && return 1;
 
-	return 0;
+	foreach (sort keys %$exp_md5) {
+	    if (defined $exp_md5->{$_} && defined $obs_md5{$_}) {
+		if ($exp_md5->{$_} ne $obs_md5{$_}) {
+		    print PLOG "$_: MD5SUM mismatch ($exp_md5->{$_} cf $obs_md5{$_}\n";
+		    return 1;
+		}
+	    } else {
+		print PLOG "$_: Missing file\n";
+		return 1;
+	    }
+	}
+    } else {
+	return 1; # No MD5SUMs to check
+    }
+
+    return 0;
 }
 
 # Figure out chroot architecture
 sub chroot_arch {
-	$main::sub_pid = open( PIPE, "-|" );
-	if (!defined $main::sub_pid) {
-		print PLOG "Can't spawn dpkg: $!\n";
-		return 0;
-	}
-	if ($main::sub_pid == 0) {
-		exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0);
-	}
-	chomp( my $chroot_arch = <PIPE> );
-	close( PIPE );
-	undef $main::sub_pid;
+    $main::sub_pid = open( PIPE, "-|" );
+    if (!defined $main::sub_pid) {
+	print PLOG "Can't spawn dpkg: $!\n";
+	return 0;
+    }
+    if ($main::sub_pid == 0) {
+	exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0);
+    }
+    chomp( my $chroot_arch = <PIPE> );
+    close( PIPE );
+    undef $main::sub_pid;
 
-	die "Can't determine architecture of chroot: $!\n"
-		if ($? || !defined($chroot_arch));
+    die "Can't determine architecture of chroot: $!\n"
+	if ($? || !defined($chroot_arch));
 
-	return $chroot_arch;
+    return $chroot_arch;
 }
 
 sub check_group_membership {
-	my $user = getpwuid($<);
-	my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
+    my $user = getpwuid($<);
+    my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
 
-	if (!$gid) {
-		die "Group sbuild does not exist";
-	}
+    if (!$gid) {
+	die "Group sbuild does not exist";
+    }
 
-	my $in_group = 0;
-	foreach (split(' ', $members)) {
-		$in_group = 1 if $_ eq $main::username;
-	}
+    my $in_group = 0;
+    foreach (split(' ', $members)) {
+	$in_group = 1 if $_ eq $main::username;
+    }
 
-	if (!$in_group) {
-		print STDERR "User $user is not a member of group $name\n";
-		print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
-		exit(1);
-	}
+    if (!$in_group) {
+	print STDERR "User $user is not a member of group $name\n";
+	print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
+	exit(1);
+    }
 
-	return;
+    return;
 }
 
 sub dump_main_state {
-	print STDERR Data::Dumper->Dump([\@main::additional_deps,
-					 $main::arch,
-					 $main::auto_giveback,
-					 $main::auto_giveback_host,
-					 $main::auto_giveback_socket,
-					 $main::auto_giveback_user,
-					 $main::auto_giveback_wb_user,
-					 $main::batchmode,
-					 $main::binNMU,
-					 $main::binNMU_name,
-					 $main::binNMUver,
-					 $main::build_arch_all,
-					 $main::build_source,
-					 $main::build_start_time,
-					 $main::changes,
-					 $main::chroot_build_dir,
-					 $main::chroot_dir,
-					 $main::current_job,
-					 $main::cwd,
-					 $main::database,
-					 \%main::deps,
-					 $main::DEVNULL,
-					 $main::distribution,
-					 $main::dpkg_buildpackage_signopt,
-					 \@main::have_dsc_build_deps,
-					 $main::ilock_file,
-					 $main::jobs_file,
-					 \%main::job_state,
-					 $main::ld_library_path,
-					 $main::lock_interval,
-					 \@main::manual_srcdeps,
-					 $main::max_lock_trys,
-					 $main::override_distribution,
-					 $main::pkg_end_time,
-					 $main::pkg_fail_stage,
-					 $main::pkg_start_time,
-					 $main::pkg_status,
-					 $main::shutdown,
-					 $main::srcdep_lock_cnt,
-					 $main::srcdep_lock_dir,
-					 $main::stats_dir,
-					 $main::sub_pid,
-					 $main::sub_task,
-					 $main::this_space,
-					 \%main::this_watches,
-					 \@main::toolchain_pkgs,
-					 $main::username,
-					 $main::useSNAP,
-					 $main::verbose],
-					 [qw(@main::additional_deps
-					 $main::arch
-					 $main::auto_giveback
-					 $main::auto_giveback_host
-					 $main::auto_giveback_socket
-					 $main::auto_giveback_user
-					 $main::auto_giveback_wb_user
-					 $main::batchmode
-					 $main::binNMU
-					 $main::binNMU_name
-					 $main::binNMUver
-					 $main::build_arch_all
-					 $main::build_source
-					 $main::build_start_time
-					 $main::changes
-					 $main::chroot_build_dir
-					 $main::chroot_dir
-					 $main::current_job $main::cwd
-					 $main::database %main::deps
-					 $main::DEVNULL
-					 $main::distribution
-					 $main::dpkg_buildpackage_signopt
-					 @main::have_dsc_build_deps
-					 $main::ilock_file
-					 $main::jobs_file
-					 %main::job_state
-					 $main::ld_library_path
-					 $main::lock_interval
-					 @main::manual_srcdeps
-					 $main::max_lock_trys
-					 $main::override_distribution
-					 $main::pkg_end_time
-					 $main::pkg_fail_stage
-					 $main::pkg_start_time
-					 $main::pkg_status
-					 $main::shutdown
-					 $main::srcdep_lock_cnt
-					 $main::srcdep_lock_dir
-					 $main::stats_dir
-					 $main::sub_pid
-					 $main::sub_task
-					 $main::this_space
-					 %main::this_watches
-					 @main::toolchain_pkgs
-					 $main::username
-					 $main::useSNAP
-					 $main::verbose)]
-				       );
+    print STDERR Data::Dumper->Dump([\@main::additional_deps,
+				     $main::arch,
+				     $main::auto_giveback,
+				     $main::auto_giveback_host,
+				     $main::auto_giveback_socket,
+				     $main::auto_giveback_user,
+				     $main::auto_giveback_wb_user,
+				     $main::batchmode,
+				     $main::binNMU,
+				     $main::binNMU_name,
+				     $main::binNMUver,
+				     $main::build_arch_all,
+				     $main::build_source,
+				     $main::build_start_time,
+				     $main::changes,
+				     $main::chroot_build_dir,
+				     $main::chroot_dir,
+				     $main::current_job,
+				     $main::cwd,
+				     $main::database,
+				     \%main::deps,
+				     $main::DEVNULL,
+				     $main::distribution,
+				     $main::dpkg_buildpackage_signopt,
+				     \@main::have_dsc_build_deps,
+				     $main::ilock_file,
+				     $main::jobs_file,
+				     \%main::job_state,
+				     $main::ld_library_path,
+				     $main::lock_interval,
+				     \@main::manual_srcdeps,
+				     $main::max_lock_trys,
+				     $main::override_distribution,
+				     $main::pkg_end_time,
+				     $main::pkg_fail_stage,
+				     $main::pkg_start_time,
+				     $main::pkg_status,
+				     $main::shutdown,
+				     $main::srcdep_lock_cnt,
+				     $main::srcdep_lock_dir,
+				     $main::stats_dir,
+				     $main::sub_pid,
+				     $main::sub_task,
+				     $main::this_space,
+				     \%main::this_watches,
+				     \@main::toolchain_pkgs,
+				     $main::username,
+				     $main::useSNAP,
+				     $main::verbose],
+				    [qw(@main::additional_deps
+					$main::arch
+					$main::auto_giveback
+					$main::auto_giveback_host
+					$main::auto_giveback_socket
+					$main::auto_giveback_user
+					$main::auto_giveback_wb_user
+					$main::batchmode
+					$main::binNMU
+					$main::binNMU_name
+					$main::binNMUver
+					$main::build_arch_all
+					$main::build_source
+					$main::build_start_time
+					$main::changes
+					$main::chroot_build_dir
+					$main::chroot_dir
+					$main::current_job $main::cwd
+					$main::database %main::deps
+					$main::DEVNULL
+					$main::distribution
+					$main::dpkg_buildpackage_signopt
+					@main::have_dsc_build_deps
+					$main::ilock_file
+					$main::jobs_file
+					%main::job_state
+					$main::ld_library_path
+					$main::lock_interval
+					@main::manual_srcdeps
+					$main::max_lock_trys
+					$main::override_distribution
+					$main::pkg_end_time
+					$main::pkg_fail_stage
+					$main::pkg_start_time
+					$main::pkg_status
+					$main::shutdown
+					$main::srcdep_lock_cnt
+					$main::srcdep_lock_dir
+					$main::stats_dir
+					$main::sub_pid
+					$main::sub_task
+					$main::this_space
+					%main::this_watches
+					@main::toolchain_pkgs
+					$main::username
+					$main::useSNAP
+					$main::verbose)]
+	);
 }
