@@ -11,7 +11,12 @@ sbuild (0.57) unstable; urgency=low
   * Sbuild/*.pm: Reindent to increase readability.
   * bin/*: Reindent to increase readability.
   * chroot/*: Reindent to increase readability.
-  * chroot/buildd.chroot: Add GPL boilerplate.
+  * chroot/buildd.chroot:
+    - Add GPL boilerplate.
+    - Remove /etc/passwd creation (already done by debootstrap).
+    - Remove sbuild directory creation (already done by schroot).
+    - Use here doc to set up /etc/apt/sources.list.
+    - List sources.list.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 

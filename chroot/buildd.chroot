@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Run debootstrap and add a few other files needed to create a working
 # sbuild chroot.
-#
-# Copyright © 2004 Francesco P. Lovergine.
+# Copyright © 2004 Francesco P. Lovergine <frankie@debian.org>.
+# Copyright © 2007 Roger Leigh <rleigh@debian.org>.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ if [ $(id -u) != 0 ]; then
     exit 2
 fi
 
-if [ $# -lt 3 ]; then
+if [ $# -ne 3 ]; then
     echo "$0 <suite> <target-dir> <debian-mirror-url>"
     echo "	E.g. $0 sarge /path/to/chroot http://http.us.debian.org/debian"
     exit 1
@@ -40,61 +40,34 @@ MIRROR=$3
 
 /usr/sbin/debootstrap --variant=buildd "$SUITE" "$TARGET" "$MIRROR"
 
-cp /etc/hosts "$TARGET/etc/hosts" || true
-echo "# $SUITE" > "$TARGET/etc/apt/sources.list"
-echo "deb $MIRROR/ $SUITE main non-free contrib" >> "$TARGET/etc/apt/sources.list"
-echo "deb-src $MIRROR/ $SUITE main non-free contrib" >> "$TARGET/etc/apt/sources.list"
-echo "" >> "$TARGET/etc/apt/sources.list"
+cat <<EOF >"$TARGET/etc/apt/sources.list"
+# $SUITE
+deb $MIRROR/ $SUITE main contrib non-free
+deb-src $MIRROR/ $SUITE main contrib non-free
 
-cat > "$TARGET/etc/passwd" <<EOF
-root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/bin/sh
-bin:x:2:2:bin:/bin:/bin/sh
-sys:x:3:3:sys:/dev:/bin/sh
-sync:x:4:65534:sync:/bin:/bin/sync
-games:x:5:60:games:/usr/games:/bin/sh
-man:x:6:12:man:/var/cache/man:/bin/sh
-lp:x:7:7:lp:/var/spool/lpd:/bin/sh
-mail:x:8:8:mail:/var/mail:/bin/sh
-news:x:9:9:news:/var/spool/news:/bin/sh
-uucp:x:10:10:uucp:/var/spool/uucp:/bin/sh
-proxy:x:13:13:proxy:/bin:/bin/sh
-postgres:x:31:32:postgres:/var/lib/postgres:/bin/sh
-www-data:x:33:33:www-data:/var/www:/bin/sh
-backup:x:34:34:backup:/var/backups:/bin/sh
-operator:x:37:37:Operator:/var:/bin/sh
-list:x:38:38:Mailing List Manager:/var/list:/bin/sh
-irc:x:39:39:ircd:/var/run/ircd:/bin/sh
-gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
-nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
 EOF
 
-USER="root"
-GROUP="sbuild"
-mkdir -p "$TARGET/var/lib/sbuild/srcdep-lock" "$TARGET/build"
-chown -R "$USER:$GROUP" "$TARGET/var/lib/sbuild" "$TARGET/build"
-chmod -R 02775 "$TARGET/var/lib/sbuild"
-
-echo
-echo "Successfully set up chroot: $SUITE"
-echo
+echo "I: Configured APT sources.list:"
+echo "────────────────────────────────────────────────────────────────────────"
+cat "$TARGET/etc/apt/sources.list"
+echo "────────────────────────────────────────────────────────────────────────"
 
 cat <<EOF
-
--------------------------------------------------------------------------
-Please add this line to /etc/fstab:
-
-  none $TARGET/proc proc  defaults 0 0
-
-and mount it:
-
-  sudo mount $TARGET/proc
-
-The add_sbuild_user script sets up the new chroot for a user:
-
-  sudo /usr/share/sbuild/add_sbuild_user $TARGET $SUITE <user>
-
--------------------------------------------------------------------------
+I: Please add any additional APT sources to $TARGET/etc/apt/sources.list
+I: Successfully set up $SUITE chroot.
+I: Please add the following entry to /etc/schroot/schroot.conf:
+────────────────────────────────────────────────────────────────────────
+[$SUITE-sbuild]
+type=directory
+description=Debian $distribution autobuilder
+location=$TARGET
+priority=3
+groups=root,sbuild
+root-groups=root,sbuild
+run-setup-scripts=true
+run-exec-scripts=true
+────────────────────────────────────────────────────────────────────────
+I: Run the add_sbuild_user script to add new sbuild users.
 EOF
 
 exit 0
