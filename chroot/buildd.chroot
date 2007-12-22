@@ -38,7 +38,7 @@ SUITE=$1
 TARGET=$2
 MIRROR=$3
 
-/usr/sbin/debootstrap --variant=buildd "$SUITE" "$TARGET" "$MIRROR"
+#/usr/sbin/debootstrap --variant=buildd "$SUITE" "$TARGET" "$MIRROR"
 
 cat <<EOF >"$TARGET/etc/apt/sources.list"
 # $SUITE
@@ -59,7 +59,7 @@ I: Please add the following entry to /etc/schroot/schroot.conf:
 ────────────────────────────────────────────────────────────────────────
 [$SUITE-sbuild]
 type=directory
-description=Debian $distribution autobuilder
+description=Debian $SUITE autobuilder
 location=$TARGET
 priority=3
 groups=root,sbuild
