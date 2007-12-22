@@ -24,8 +24,8 @@ use Sbuild::Utility qw(setup cleanup shutdown);
 package main;
 
 sub usage {
-	print STDERR "Usage: $0 <chroot> package [package ...]\n";
-	exit 1;
+    print STDERR "Usage: $0 <chroot> package [package ...]\n";
+    exit 1;
 }
 
 usage() if (@ARGV < 2);
@@ -38,19 +38,19 @@ print STDOUT "Holding packages in $chroot chroot:";
 
 my $command = get_command("$Sbuild::Conf::dpkg --set-selections", "root", 1);
 if (!open(SELECTIONS, "| $command")) {
-	print STDERR "Can't run dpkg --set-selections in chroot\n";
-	shutdown();
+    print STDERR "Can't run dpkg --set-selections in chroot\n";
+    shutdown();
 }
 
 shift @ARGV;
 foreach (@ARGV) {
-	print SELECTIONS "$_        hold\n";
-	print STDOUT " $_";
+    print SELECTIONS "$_        hold\n";
+    print STDOUT " $_";
 }
 
 if (!close SELECTIONS) {
-	print STDERR "Can't run dpkg --set-selections in chroot\n";
-	shutdown();
+    print STDERR "Can't run dpkg --set-selections in chroot\n";
+    shutdown();
 }
 
 print STDOUT ".\n";

@@ -26,8 +26,8 @@ use Sbuild::Utility qw(setup cleanup shutdown);
 package main;
 
 sub usage {
-	print STDERR "Usage: $0 <chroot>\n";
-	exit 1;
+    print STDERR "Usage: $0 <chroot>\n";
+    exit 1;
 }
 
 usage() if (@ARGV != 1);
@@ -40,31 +40,31 @@ my $chroot_dir = $$Sbuild::Chroot::current{'Location'};
 my (@status, @ref, @install, @remove);
 
 if (! open STATUS, "grep-status -F Status -s Package ' installed' '$chroot_dir/var/lib/dpkg/status' | awk '{print \$2}' |" ) {
-	print STDERR "Can't read dpkg status file in chroot: $!\n";
-	shutdown();
+    print STDERR "Can't read dpkg status file in chroot: $!\n";
+    shutdown();
 }
 while (<STATUS>) {
-	chomp;
-	push @status, $_;
+    chomp;
+    push @status, $_;
 }
 if (! close STATUS) {
-	print STDERR "Error reading dpkg status file in chroot: $!\n";
-	shutdown();
+    print STDERR "Error reading dpkg status file in chroot: $!\n";
+    shutdown();
 }
 
 my $dist = Sbuild::Utility::get_dist($ARGV[0]);
 
 if (! open REF, "< $chroot_dir/../ref-$dist") {
-	print STDERR "Can't read reference status file $chroot_dir/../ref-$dist: $!\n";
-	shutdown();
+    print STDERR "Can't read reference status file $chroot_dir/../ref-$dist: $!\n";
+    shutdown();
 }
 while (<REF>) {
-	chomp;
-	push @ref, $_;
+    chomp;
+    push @ref, $_;
 }
 if (! close REF) {
-	print STDERR "Error reading reference status file: $!\n";
-	shutdown();
+    print STDERR "Error reading reference status file: $!\n";
+    shutdown();
 }
 
 @status = sort @status;
@@ -86,29 +86,29 @@ my $j = 0;
 
 while ($i < scalar @status && $j < scalar @ref) {
 
-	my $c = $status[$i] cmp $ref[$j];
-	if ($c < 0) {
-		# In status, not reference; remove.
-		print "$status[$i]\n";
-		$i++;
-	} elsif ($c > 0) {
-		# In reference, not status; install.
-		print "                   $ref[$j]\n";
-		$j++;
-	} else {
-		# Identical; skip.
-		$i++; $j++;
-	}
+    my $c = $status[$i] cmp $ref[$j];
+    if ($c < 0) {
+	# In status, not reference; remove.
+	print "$status[$i]\n";
+	$i++;
+    } elsif ($c > 0) {
+	# In reference, not status; install.
+	print "                   $ref[$j]\n";
+	$j++;
+    } else {
+	# Identical; skip.
+	$i++; $j++;
+    }
 }
 
 # Print any remaining elements
 while ($i < scalar @status) {
-	print "$status[$i]\n";
-	$i++;
+    print "$status[$i]\n";
+    $i++;
 }
 while ($j < scalar @ref) {
-	print "                   $ref[$j]\n";
-	$j++;
+    print "                   $ref[$j]\n";
+    $j++;
 }
 
 

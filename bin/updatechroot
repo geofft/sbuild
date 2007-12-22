@@ -23,8 +23,8 @@ use Sbuild::Utility qw(setup cleanup);
 package main;
 
 sub usage {
-	print STDERR "Usage: $0 <chroot> [<chroot> ...]\n";
-	exit 1;
+    print STDERR "Usage: $0 <chroot> [<chroot> ...]\n";
+    exit 1;
 }
 
 usage() if (@ARGV < 1);
@@ -33,17 +33,17 @@ $Sbuild::Conf::cwd = "/";
 
 foreach (@ARGV) {
 
-	my $chroot = Sbuild::Utility::get_dist($_);
+    my $chroot = Sbuild::Utility::get_dist($_);
 
-	!setup($ARGV[0]) or die "Chroot setup failed";
+    !setup($ARGV[0]) or die "Chroot setup failed";
 
-	print STDOUT "Updating $chroot chroot...\n";
-	my $status = run_apt_command($Sbuild::Conf::apt_get, "update",
-				     "root", 1);
+    print STDOUT "Updating $chroot chroot...\n";
+    my $status = run_apt_command($Sbuild::Conf::apt_get, "update",
+				 "root", 1);
 
-	cleanup();
+    cleanup();
 
-	exit $status if ($status);
+    exit $status if ($status);
 }
 
 exit 0;

@@ -8,6 +8,10 @@ sbuild (0.57) unstable; urgency=low
     - build: Use unicode line drawing characters instead of ASCII.
     - filter_dependencies: Remove redundant conditional.  Thanks to
       Jan-Marek Glogowski.
+  * Sbuild/*.pm: Reindent to increase readability.
+  * bin/*: Reindent to increase readability.
+  * chroot/*: Reindent to increase readability.
+  * chroot/buildd.chroot: Add GPL boilerplate.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 

@@ -1,23 +1,37 @@
-#!/bin/bash
+#!/bin/sh
 #
-# This is the new style for buildd.chroot.
-# It uses builtins of debootstrap and add a few other files needed to
-# have a working sbuild.
+# Run debootstrap and add a few other files needed to create a working
+# sbuild chroot.
 #
-# Copyright (C) 2004 Francesco P. Lovergine.
+# Copyright © 2004 Francesco P. Lovergine.
 #
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+############################################################################
 
 set -e
 
 if [ $(id -u) != 0 ]; then
-	echo "You need to run this command as root"
-	exit 2
+    echo "You need to run this command as root"
+    exit 2
 fi
 
 if [ $# -lt 3 ]; then
-	echo "$0 <suite> <target-dir> <debian-mirror-url>"
-	echo "	E.g. $0 sarge /path/to/chroot http://http.us.debian.org/debian"
-	exit 1
+    echo "$0 <suite> <target-dir> <debian-mirror-url>"
+    echo "	E.g. $0 sarge /path/to/chroot http://http.us.debian.org/debian"
+    exit 1
 fi
 
 SUITE=$1
@@ -84,4 +98,3 @@ The add_sbuild_user script sets up the new chroot for a user:
 EOF
 
 exit 0
-

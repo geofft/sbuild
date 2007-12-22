@@ -23,20 +23,20 @@ use Sbuild::Utility qw(setup cleanup);
 package main;
 
 sub usage {
-	print STDERR "Usage: $0 <chroot> apt-get|apt-cache args\n";
-	exit 1;
+    print STDERR "Usage: $0 <chroot> apt-get|apt-cache args\n";
+    exit 1;
 }
 
 usage() if ($#ARGV < 2);
 
 my $command = $ARGV[1];
 if ($command eq "apt-get") {
-	$command = $Sbuild::Conf::apt_get;
+    $command = $Sbuild::Conf::apt_get;
 } elsif ($command eq "apt-cache") {
-	$command = $Sbuild::Conf::apt_cache;
+    $command = $Sbuild::Conf::apt_cache;
 } else {
-	print STDERR "Bad command $command.  Allowed commands: apt-get or apt-cache\n";
-	exit 1;
+    print STDERR "Bad command $command.  Allowed commands: apt-get or apt-cache\n";
+    exit 1;
 }
 
 $Sbuild::Conf::cwd = "/";

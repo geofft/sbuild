@@ -24,8 +24,8 @@ use Sbuild::Utility qw(setup cleanup);
 package main;
 
 sub usage {
-	print STDERR "Usage: $0 <chroot>\n";
-	exit 1;
+    print STDERR "Usage: $0 <chroot>\n";
+    exit 1;
 }
 
 usage() if (@ARGV != 1);
