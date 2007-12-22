@@ -47,7 +47,7 @@ BEGIN {
 
 # Originally from the main namespace.
 (our $HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
+    or die "HOME not defined in environment!\n";
 our $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 our $cwd = cwd();
 our $verbose = 0;
@@ -133,47 +133,47 @@ require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init {
-	# some checks
-	die "mailprog binary $Sbuild::Conf::mailprog does not exist or isn't executable\n"
-		if !-x $Sbuild::Conf::mailprog;
-	die "schroot binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
-	    if !-x $Sbuild::Conf::schroot;
-	die "apt-get binary $Sbuild::Conf::apt_get does not exist or isn't executable\n"
-		if !-x $Sbuild::Conf::apt_get;
-	die "apt-cache binary $Sbuild::Conf::apt_cache does not exist or isn't executable\n"
-		if !-x $Sbuild::Conf::apt_cache;
-	die "dpkg-source binary $Sbuild::Conf::dpkg_source does not exist or isn't executable\n"
-		if !-x $Sbuild::Conf::dpkg_source;
-	die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"
-		if ! -d $Sbuild::Conf::srcdep_lock_dir;
+    # some checks
+    die "mailprog binary $Sbuild::Conf::mailprog does not exist or isn't executable\n"
+	if !-x $Sbuild::Conf::mailprog;
+    die "schroot binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
+	if !-x $Sbuild::Conf::schroot;
+    die "apt-get binary $Sbuild::Conf::apt_get does not exist or isn't executable\n"
+	if !-x $Sbuild::Conf::apt_get;
+    die "apt-cache binary $Sbuild::Conf::apt_cache does not exist or isn't executable\n"
+	if !-x $Sbuild::Conf::apt_cache;
+    die "dpkg-source binary $Sbuild::Conf::dpkg_source does not exist or isn't executable\n"
+	if !-x $Sbuild::Conf::dpkg_source;
+    die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"
+	if ! -d $Sbuild::Conf::srcdep_lock_dir;
 
-	die "mailto not set\n" if !$Sbuild::Conf::mailto;
+    die "mailto not set\n" if !$Sbuild::Conf::mailto;
 
-	if (!defined($Sbuild::Conf::build_dir)) {
-	    $Sbuild::Conf::build_dir = $Sbuild::Conf::cwd;
-	}
-	if (! -d "$Sbuild::Conf::build_dir") {
-	    die "Build directory $Sbuild::Conf::build_dir does not exist";
-	}
+    if (!defined($Sbuild::Conf::build_dir)) {
+	$Sbuild::Conf::build_dir = $Sbuild::Conf::cwd;
+    }
+    if (! -d "$Sbuild::Conf::build_dir") {
+	die "Build directory $Sbuild::Conf::build_dir does not exist";
+    }
 
-	# TODO: Remove chroot_mode, chroot_only, sudo and
-	# source_dependencies after Lenny.
+    # TODO: Remove chroot_mode, chroot_only, sudo and
+    # source_dependencies after Lenny.
 
-	if (defined($chroot_mode)) {
-	    die "chroot_mode is obsolete";
-	}
+    if (defined($chroot_mode)) {
+	die "chroot_mode is obsolete";
+    }
 
-	if (defined($chroot_only)) {
-	    die "chroot_only is obsolete";
-	}
+    if (defined($chroot_only)) {
+	die "chroot_only is obsolete";
+    }
 
-	if (defined($sudo)) {
-	    die "sudo is obsolete";
-	}
+    if (defined($sudo)) {
+	die "sudo is obsolete";
+    }
 
-	if (defined($source_dependencies)) {
-	    die "Source dependencies are obsolete";
-	}
+    if (defined($source_dependencies)) {
+	die "Source dependencies are obsolete";
+    }
 
 }
 

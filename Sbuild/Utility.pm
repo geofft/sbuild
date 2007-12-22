@@ -59,42 +59,42 @@ BEGIN {
 }
 
 sub get_dist {
-	my $dist = shift;
+    my $dist = shift;
 
-	$dist = "unstable" if ($dist eq "-u" || $dist eq "u");
-	$dist = "testing" if ($dist eq "-t" || $dist eq "t");
-	$dist = "stable" if ($dist eq "-s" || $dist eq "s");
-	$dist = "oldstable" if ($dist eq "-o" || $dist eq "o");
-	$dist = "experimental" if ($dist eq "-e" || $dist eq "e");
+    $dist = "unstable" if ($dist eq "-u" || $dist eq "u");
+    $dist = "testing" if ($dist eq "-t" || $dist eq "t");
+    $dist = "stable" if ($dist eq "-s" || $dist eq "s");
+    $dist = "oldstable" if ($dist eq "-o" || $dist eq "o");
+    $dist = "experimental" if ($dist eq "-e" || $dist eq "e");
 
-	return $dist;
+    return $dist;
 }
 
 sub setup {
-	my $chroot = shift;
-	$chroot = get_dist($chroot);
+    my $chroot = shift;
+    $chroot = get_dist($chroot);
 
-	if (!begin_session($chroot)) {
-		print STDERR "Error setting up $chroot chroot\n";
-		return 1;
-	}
+    if (!begin_session($chroot)) {
+	print STDERR "Error setting up $chroot chroot\n";
+	return 1;
+    }
 
-	if (defined(&main::local_setup)) {
-		return main::local_setup($chroot);
-	}
-	return 0;
+    if (defined(&main::local_setup)) {
+	return main::local_setup($chroot);
+    }
+    return 0;
 }
 
 sub cleanup {
-	if (defined(&main::local_cleanup)) {
-		main::local_cleanup();
-	}
-	end_session();
+    if (defined(&main::local_cleanup)) {
+	main::local_cleanup();
+    }
+    end_session();
 }
 
 sub shutdown {
-	cleanup();
-	exit 1;
+    cleanup();
+    exit 1;
 }
 
 1;
