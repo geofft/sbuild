@@ -34,12 +34,6 @@ sbuild (0.57) unstable; urgency=low
     $check_depends_algorithm.  [Jan-Marek Glogowski]
   * sbuild.1: Document --check-depends-algorithm [Jan-Marek Glogowski]
 
-  - Add --check-depends-algorithm to select the algorithm to check the build
-    dependencies. Also adds the config option $check_depends_algorithm to
-    change this in your sbuild configuration. Thanks to Jan-Marek Glogowski.
-  - Cleanup sbuild.conf and example.sbuildrc to declare valid variables when
-    uncommented. Thanks to Jan-Marek Glogowski.
-
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 
 sbuild (0.56) unstable; urgency=low
