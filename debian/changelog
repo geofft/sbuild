@@ -17,6 +17,13 @@ sbuild (0.57) unstable; urgency=low
     - Remove sbuild directory creation (already done by schroot).
     - Use here doc to set up /etc/apt/sources.list.
     - List sources.list.
+  * chroot/README: Rename from README.buildd-chroot.  Remove
+    buildd.chroot section.
+  * bin/sbuild-createchroot: Moved from chroot/buildd.chroot.
+  * sbuild-createchroot.1.in: Add manual page.
+  * debian/manpages: Add sbuild-createchroot.1.
+  * debian/rules: Install sbuild-createchroot, and add buildd.chroot
+    compatibility symlink.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 

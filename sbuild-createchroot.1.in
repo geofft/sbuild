@@ -1,0 +1,84 @@
+.\" Copyright © 2005-2007  Roger Leigh <rleigh@debian.org>
+.\"
+.\" sbuild is free software; you can redistribute it and/or modify it
+.\" under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" sbuild is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+.\" MA  02111-1307  USA
+.TH SBUILD\-CREATECHROOT 1 "@DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+sbuild\-createchroot \- create sbuild chroot
+.SH SYNOPSIS
+.B sbuild\-createchroot
+.I suite
+.I target-directory
+.I debian-mirror-uri
+.SH DESCRIPTION
+\fBsbuild\-createchroot\fR runs
+.BR debootstrap (1)
+to create a chroot suitable for building packages with sbuild.  Note that while
+debootstrap may be used directly, sbuild\-createchroot performs additional
+setup tasks such as setting up \fI/etc/apt/sources.list\fP to include main,
+contrib and non-free archive sections.  Invoking sbuild\-createchroot is
+functionally equivalent to running \f[CB]debootstrap\ --variant=buildd\fP, then
+editing \fI/etc/apt/sources.list\fP by hand.
+.SH OPTIONS
+Note that
+.BR debootstrap (1)
+is the canonical reference for the meaning of the options; they are passed
+directory to debootstrap.
+.TP
+.I suite
+The distribution to bootstrap (e.g. \[oq]sarge\[cq], \[oq]etch\[cq],
+\[oq]lenny\[cq], \[oq]sid\[cq]).  A complete list may be found in
+\fI/usr/share/debootstrap/scripts\fP.
+.TP
+.I target-directory
+The directory to create the chroot in.  The directory will be created if it
+does not already exist.
+.TP
+.I debian-mirror-uri
+An \f[CR]http://\fP, \f[CR]file:///\fP, or \f[CR]ssh:///\fP URI
+pointing to a suitable archive mirror.
+.SH EXAMPLES
+To create a sid (unstable) chroot in \fI/srv/chroot/unstable\fP using the
+\fIftp.uk.debian.org\fP Debian mirror:
+.PP
+\f[CR]% \f[CB]sudo sbuild\-createchroot sid /srv/chroot/unstable \fP\fP\\
+.br
+\f[CB]    http://ftp.uk.debian.org/debian\fP\[CR]
+.SH HISTORY
+sbuild\-createchroot was previously known as \fBbuildd.chroot\fP.
+buildd.chroot performed exactly the same tasks, but additionally created a
+number of directories in the chroot for use by sbuild.  This is now done by
+.BR schroot (1).
+.SH AUTHORS
+.nf
+Roger Leigh.
+Francesco P. Lovergine.
+.fi
+.SH COPYRIGHT
+.nf
+Copyright \[co] 2004 Francesco P. Lovergine <frankie@debian.org>.
+Copyright \[co] 2007 Roger Leigh <rleigh@debian.org>.
+.fi
+.SH "SEE ALSO"
+.BR debootstrap (8),
+.BR schroot (1),
+.BR sbuild (1),
+.BR sbuild\-setup (7).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:

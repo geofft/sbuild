@@ -9,6 +9,7 @@ DATE = $(shell date -d "$$(dpkg-parsechangelog | grep ^Date: | sed -n '/^Date: /
 GENFILES =			\
 	avg-pkg-build-time.1	\
 	sbuild.1		\
+        sbuild-createchroot.1	\
 	sbuild-setup.7		\
 	Sbuild/Log.pm
 
@@ -58,8 +59,12 @@ install: build
 	cp -a configs example.sbuildrc $(DESTDIR)/usr/share/doc/sbuild/examples/.
 	find bin -maxdepth 1 -type f -exec cp {} $(DESTDIR)/usr/share/sbuild/ \;
 	find chroot -maxdepth 1 -type f -exec cp {} $(DESTDIR)/usr/share/sbuild/ \;
-	mv $(DESTDIR)/usr/share/sbuild/README-buildd.chroot \
-		$(DESTDIR)/usr/share/doc/sbuild/
+	rm -f $(DESTDIR)/usr/share/sbuild/*.in
+	mv $(DESTDIR)/usr/share/sbuild/sbuild* $(DESTDIR)/usr/bin
+	ln -s /usr/bin/sbuild-createchroot \
+		$(DESTDIR)/usr/share/sbuild/buildd.chroot
+	mv $(DESTDIR)/usr/share/sbuild/README \
+		$(DESTDIR)/usr/share/doc/sbuild
 
 # Build architecture-independent files here.
 binary-indep: build install

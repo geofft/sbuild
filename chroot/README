@@ -1,26 +1,3 @@
-
-buildd.chroot (Sarge Edition)
-=============================
-
-This script creates the chroot environment for sbuild. It's written
-on the basis of current debootstrap --variant=buildd option by
-adding the few other files needed for a working environment.
-The pre-sarge script is broken in sarge, please ignore it.
-
-Usage:
-
-  sudo buildd.chroot <dist> <chroot> <mirror>
-  eg,
-  sudo /usr/share/sbuild/buildd.chroot sid /usr/local/chroot/unstable \
-      http://http.us.debian.org/debian 
-
-where <dist> is one of the *.buildd name you can find in 
-/usr/lib/debootstrap/scripts. Currently only woody, sarge and sid are 
-supported.
-
-Ignore errors about pseudo-fs not mounted, if any.
-
-        ---------------------------------------
 add_sbuild_user (buildd.chroot prompts you when finished)
 ==============================================================
 Usage:

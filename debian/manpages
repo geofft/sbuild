@@ -1,3 +1,4 @@
 avg-pkg-build-time.1
 sbuild.1
+sbuild-createchroot.1
 sbuild-setup.7
