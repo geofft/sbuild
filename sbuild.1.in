@@ -94,6 +94,13 @@ instead of \-B.
 Operate in batchmode, i.e. write a build-progress file during execution
 and files on shutdown to facilitate a clean restart.
 .TP
+.IR \-C , "\-\-check\-depends\-algorithm=<algorithm>"
+Selects the algorithm to check for build dependencies. The default algorithm
+(\[oq]first-only\[cq]) just checks the first package, even if there are
+alternative dependencies available. The second algorithm
+(\[oq]alternatives\[cq]) also tries to satisfy the build dependencies using
+these alternatives.
+.TP
 .IR \-d , "\-\-distribution=<distribution>"
 Fetch source packages from specified distribution.
 .TP
@@ -194,7 +201,7 @@ Roger Leigh <rleigh@debian.org>
 .BR update\-sourcedeps (1),
 .BR avg\-pkg\-build\-time (1),
 .BR schroot (1),
-.BR sbuild\-setup(7).
+.BR sbuild\-setup (7).
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:

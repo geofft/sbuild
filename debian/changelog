@@ -6,9 +6,14 @@ sbuild (0.57) unstable; urgency=low
     - Reindent to increase readability.
     - Add additional syntax checks.  Thanks to Jan-Marek Glogowski.
     - build: Use unicode line drawing characters instead of ASCII.
-    - filter_dependencies: Remove redundant conditional.  Thanks to
-      Jan-Marek Glogowski.
+    - filter_dependencies: Remove redundant conditional.
+      [Jan-Marek Glogowski]
+    - Add check for check-depends-algorithm option. [Jan-Marek Glogowski]
+    - filter_dependencies: Change dependency behaviour depending upon
+      check_depends_algorithm.  [Jan-Marek Glogowski]
   * Sbuild/*.pm: Reindent to increase readability.
+  * Sbuild/Conf.pm: Add and export $check_depends_algorithm.
+    [Jan-Marek Glogowski]
   * bin/*: Reindent to increase readability.
   * chroot/*: Reindent to increase readability.
   * chroot/buildd.chroot:
@@ -24,6 +29,16 @@ sbuild (0.57) unstable; urgency=low
   * debian/manpages: Add sbuild-createchroot.1.
   * debian/rules: Install sbuild-createchroot, and add buildd.chroot
     compatibility symlink.
+  * example.sbuildrc: Add missing variable types.  [Jan-Marek Glogowski]
+  * example.sbuildrc: Add missing variable types and add
+    $check_depends_algorithm.  [Jan-Marek Glogowski]
+  * sbuild.1: Document --check-depends-algorithm [Jan-Marek Glogowski]
+
+  - Add --check-depends-algorithm to select the algorithm to check the build
+    dependencies. Also adds the config option $check_depends_algorithm to
+    change this in your sbuild configuration. Thanks to Jan-Marek Glogowski.
+  - Cleanup sbuild.conf and example.sbuildrc to declare valid variables when
+    uncommented. Thanks to Jan-Marek Glogowski.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 

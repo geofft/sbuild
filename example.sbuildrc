@@ -1,4 +1,4 @@
-# example for ~/.sbuildrc.  (Also see /etc/sbuild/sbuild.conf.)
+# example for ~/.sbuildrc.  (Also see /etc/sbuild/sbuild.conf.)  -*- Perl -*-
 #
 # Default settings are commented out.
 # Additional options found in /etc/sbuild/sbuild.conf may be
@@ -64,17 +64,17 @@
 
 # Time (in minutes) of inactivity after which a build is terminated. Activity
 # is measured by output to the log file.
-#stalled_pkg_timeout = 150;
+#$stalled_pkg_timeout = 150;
 
 # Some packages may exceed the general timeout (e.g. redirecting output to
 # a file) and need a different timeout. Below are some examples.
-#individual_stalled_pkg_timeout = (smalleiffel => 300,
+#%individual_stalled_pkg_timeout = (smalleiffel => 300,
 #				   jade => 300,
 #				   atlas => 300,
 #				   glibc => 1000,
 #				   'gcc-3.3' => 300,
 #				   kwave => 600);
-
+#
 
 ##
 ## FILE AND DIRECTORY LOCATIONS

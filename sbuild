@@ -117,6 +117,12 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "a|add-depends=s" => sub {
 			   push( @main::manual_srcdeps, "a".$_[1] );
 		       },
+		       "check-depends-algorithm=s" => sub {
+			   die "Bad build dependency check algorithm\n"
+		       		if( ! ($_[1] eq "first-only" 
+				    || $_[1] eq "alternatives") );
+			   $conf::check_depends_algorithm = $_[1];
+		       },
 		       "b|batch" => \$main::batchmode,
 		       "make-binNMU=s" => sub {
 			   $main::binNMU = $_[1];
@@ -1331,6 +1337,7 @@ sub filter_dependencies {
 			}
 			if(!$installable) {
 			    print PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n";
+			    next if ($conf::check_depends_algorithm eq "alternatives");
 			}
 		    } else {
 			print PLOG "Using default version " . $policy{$name}->{defversion} . "\n";

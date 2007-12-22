@@ -1,7 +1,7 @@
 #
 # Conf.pm: configuration library for sbuild
-# Copyright (C) 2005 Ryan Murray <rmurray@debian.org>
-# Copyright (C) 2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005 Ryan Murray <rmurray@debian.org>
+# Copyright © 2006 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -38,10 +38,11 @@ BEGIN {
 		 $apt_cache $dpkg_source $md5sum $avg_time_db
 		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
 		 $mailto $mailfrom @no_auto_upgrade
-		 $purge_build_directory @toolchain_regex
-		 $stalled_pkg_timeout $srcdep_lock_dir
-		 $srcdep_lock_wait @ignore_watches_no_build_deps
-		 $build_dir $sbuild_mode $debug $force_orig_source
+		 $check_depends_algorithm $purge_build_directory
+		 @toolchain_regex $stalled_pkg_timeout
+		 $srcdep_lock_dir $srcdep_lock_wait
+		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
+		 $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name %watches $key_id); }
 
@@ -127,6 +128,7 @@ our %alternatives = ("info-browser"		=> "info",
 		     "freetype2-dev"		=> "libttf-dev");
 
 our @no_auto_upgrade = qw(dpkg apt bash libc6 libc6-dev dpkg-dev);
+our $check_depends_algorithm = "first-only";
 
 # read conf files
 require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";

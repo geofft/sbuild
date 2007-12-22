@@ -1,6 +1,6 @@
 #
 # Utility.pm: library for sbuild utility programs
-# Copyright (C) 2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
