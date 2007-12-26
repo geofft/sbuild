@@ -20,7 +20,7 @@
 CC = gcc
 CFLAGS = -O2 -Wall -g
 LD = gcc
-LDFLAGS = 
+LDFLAGS =
 
 PRGS = wanna-build-mail buildd-mail-wrapper
 
@@ -34,5 +34,5 @@ buildd-mail-wrapper: buildd-mail-wrapper.c
 	$(CC) $(CFLAGS) -o $@ $^
 	strip $@
 
-clean: 
+clean:
 	rm -f $(PRGS)

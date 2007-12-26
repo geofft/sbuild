@@ -28,7 +28,7 @@ set -- $SSH_ORIGINAL_COMMAND
 
 bn=$(basename "$1")
 if [ "$bn" != "wanna-build" ]; then
-	exit 1
+    exit 1
 fi
 
 shift

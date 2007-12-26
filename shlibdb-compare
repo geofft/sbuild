@@ -20,9 +20,9 @@
 #######################################################################
 
 BEGIN {
-        ($HOME = $ENV{'HOME'})
-                or die "HOME not defined in environment!\n";
-        push( @INC, "$main::HOME/lib" );
+    ($HOME = $ENV{'HOME'})
+	or die "HOME not defined in environment!\n";
+    push( @INC, "$main::HOME/lib" );
 }
 
 package conf;
@@ -42,54 +42,54 @@ use vars qw($verbose %dbold %dbnew %result $HOME);
 
 $verbose = 0;
 my %options =
-	(# flags
-	 verbose          => { short => "v", flag => \$verbose },
-	 # options with args
-	 libdir           => { short => "l", arg => \$conf::shlib_db_dir }
-	);
-					   
+    (# flags
+     verbose          => { short => "v", flag => \$verbose },
+     # options with args
+     libdir           => { short => "l", arg => \$conf::shlib_db_dir }
+    );
+
 while( @ARGV && $ARGV[0] =~ /^-/ ) {
-	$_ = shift @ARGV;
-	last if $_ eq "--";
-	my($opt, $optname, $arg);
-	if (/^--([^=]+)(=|$)/) {
-		$optname = $1;
-		$opt = $options{$optname};
-		$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
+    $_ = shift @ARGV;
+    last if $_ eq "--";
+    my($opt, $optname, $arg);
+    if (/^--([^=]+)(=|$)/) {
+	$optname = $1;
+	$opt = $options{$optname};
+	$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
+    }
+    else {
+	$optname = substr( $_, 1, 1 );
+	$opt = (grep { $_->{short} eq $optname } values %options)[0];
+	$arg = $1 if /^-$optname(.+)$/;
+    }
+    if (!$opt) {
+	warn "Unknown option: --$1\n";
+	usage();
+    }
+    if ($opt->{arg}) {
+	if (!defined $arg) {
+	    die "$optname option missing argument\n" if !@ARGV;
+	    $arg = shift @ARGV;
 	}
-	else {
-		$optname = substr( $_, 1, 1 );
-		$opt = (grep { $_->{short} eq $optname } values %options)[0];
-		$arg = $1 if /^-$optname(.+)$/;
-	}
-	if (!$opt) {
-		warn "Unknown option: --$1\n";
-		usage();
-	}
-	if ($opt->{arg}) {
-		if (!defined $arg) {
-			die "$optname option missing argument\n" if !@ARGV;
-			$arg = shift @ARGV;
-		}
-		${$opt->{arg}} = $arg;
-	}
-	elsif (defined $arg) {
-		die "Option $optname takes no argument\n";
-	}
-	
-	if ($opt->{flag}) {
-		${$opt->{flag}}++;
-	}
-	if ($opt->{code}) {
-		&{$opt->{code}};
-	}
+	${$opt->{arg}} = $arg;
+    }
+    elsif (defined $arg) {
+	die "Option $optname takes no argument\n";
+    }
+
+    if ($opt->{flag}) {
+	${$opt->{flag}}++;
+    }
+    if ($opt->{code}) {
+	&{$opt->{code}};
+    }
 }
 
 die "Usage: $0 dist1 dist2\n" if @ARGV != 2;
 
 # some checks
 die "Database dir $conf::shlib_db_dir is not a directory\n"
-	if ! -d $conf::shlib_db_dir;
+    if ! -d $conf::shlib_db_dir;
 
 my $distold = $ARGV[0];
 my $distnew = $ARGV[1];
@@ -101,32 +101,32 @@ tie %dbnew, 'DB_File', $dbnewname, O_RDONLY, 0644, $DB_HASH;
 die "Cannot open database $dbnewname: $!\n" if !tied %dbnew;
 
 foreach (keys %dbold) {
-	my $md5old = db_md5($dbold{$_});
-	next if $md5old eq "*";
-	if (!db_exists( \%dbnew, $_ )) {
-		$result{$_} = "only in $distold";
-	}
-	else {
-		my $md5new = db_md5($dbnew{$_});
-		$result{$_} = ($md5old eq $md5new ? "" : "not ") . "compatible";
-	}
+    my $md5old = db_md5($dbold{$_});
+    next if $md5old eq "*";
+    if (!db_exists( \%dbnew, $_ )) {
+	$result{$_} = "only in $distold";
+    }
+    else {
+	my $md5new = db_md5($dbnew{$_});
+	$result{$_} = ($md5old eq $md5new ? "" : "not ") . "compatible";
+    }
 }
 foreach (keys %dbnew) {
-	my $md5new = db_md5($dbnew{$_});
-	next if $md5new eq "*";
-	$result{$_} = "only in $distnew" if !db_exists( \%dbold, $_ );
+    my $md5new = db_md5($dbnew{$_});
+    next if $md5new eq "*";
+    $result{$_} = "only in $distnew" if !db_exists( \%dbold, $_ );
 }
 
 foreach (sort keys %result) {
-	print "$_: $result{$_}\n";
+    print "$_: $result{$_}\n";
 }
 
 sub db_exists {
-	my $db = shift;
-	my $key = shift;
-	return exists $db->{$key} && db_md5($db->{$key}) ne "*";
+    my $db = shift;
+    my $key = shift;
+    return exists $db->{$key} && db_md5($db->{$key}) ne "*";
 }
 
 sub db_md5 {
-	return (split( ' ', $_[0] ))[1];
+    return (split( ' ', $_[0] ))[1];
 }

@@ -27,57 +27,57 @@
 exit 0;
 
 while( <> ) {
-	chomp;
-	next if /^\s*$/ || /^\s*#/;
+    chomp;
+    next if /^\s*$/ || /^\s*#/;
 	while( /\\$/ ) {
-		chop;
-		$_ .= <F>;
-		chomp;
-	}
-	if ($in_special) {
-		$in_special = 0 if /^$/;
-	}
-	elsif (/^(\*\*?[\w\d.+-]+):\s*$/) {
-		$in_special = 1;
-	}
-	elsif (/^abbrev\s+([\w\d.+-]+)\s*=\s*(.*)\s*$/) {
-		my ($abbrev, $def) = ($1, $2);
-		parse_one_srcdep( $abbrev, $def );
-		$abbrevs{$abbrev} = 1;
-	}
-	elsif (!/^([\w\d.+-]+):\s*(.*)\s*$/) {
-		warn "Syntax error in line $.\n";
-	}
-	else {
-		my( $pkg, $deps ) = ($1, $2);
-		parse_one_srcdep( $pkg, $deps );
-	}
+	    chop;
+	    $_ .= <F>;
+	    chomp;
+    }
+    if ($in_special) {
+	$in_special = 0 if /^$/;
+    }
+    elsif (/^(\*\*?[\w\d.+-]+):\s*$/) {
+	$in_special = 1;
+    }
+    elsif (/^abbrev\s+([\w\d.+-]+)\s*=\s*(.*)\s*$/) {
+	my ($abbrev, $def) = ($1, $2);
+	parse_one_srcdep( $abbrev, $def );
+	$abbrevs{$abbrev} = 1;
+    }
+    elsif (!/^([\w\d.+-]+):\s*(.*)\s*$/) {
+	warn "Syntax error in line $.\n";
+    }
+    else {
+	my( $pkg, $deps ) = ($1, $2);
+	parse_one_srcdep( $pkg, $deps );
+    }
 }
 
 foreach (keys %abbrevs) {
-	delete $deppkgs{$_};
+    delete $deppkgs{$_};
 }
 print join( "\n", sort keys %deppkgs ), "\n";
 exit 0;
 
 sub parse_one_srcdep {
-	my $pkg = shift;
-	my $deps = shift;
-	
-	$deps =~ s/^\s*(.*)\s*$/$1/;
-	foreach (split( /\s*,\s*/, $deps )) {
-		if (/^\&/) {
-			s/^\&\s+//;
-		}
-		my @alts = split( /\s*\|\s*/, $_ );
-		foreach (@alts) {
-			if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
-				warn "Warning: syntax error in dependency '$_' of $pkg\n";
-				next;
-			}
-			my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
-			next if $dep =~ /^[*!]/;
-			$deppkgs{$dep}++;
-		}
+    my $pkg = shift;
+    my $deps = shift;
+
+    $deps =~ s/^\s*(.*)\s*$/$1/;
+    foreach (split( /\s*,\s*/, $deps )) {
+	if (/^\&/) {
+	    s/^\&\s+//;
 	}
+	my @alts = split( /\s*\|\s*/, $_ );
+	foreach (@alts) {
+	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+		warn "Warning: syntax error in dependency '$_' of $pkg\n";
+		next;
+	    }
+	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
+	    next if $dep =~ /^[*!]/;
+	    $deppkgs{$dep}++;
+	}
+    }
 }

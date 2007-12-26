@@ -19,21 +19,21 @@
 #######################################################################
 
 if [ -d ~/build/chroot-* ]; then
-	cleanup() {
-		rm -f ~/NO-DAEMON-PLEASE
-		buildd-watcher
-	}
-	touch ~/NO-DAEMON-PLEASE
-	trap cleanup 0
-	touch ~/EXIT-DAEMON-PLEASE
-	echo -n Waiting for sbuild and buildd to exit...
-	while [ -f ~/EXIT-DAEMON-PLEASE ]; do
-		sleep 10
-	done
-	echo .
-	for chroot in ~/build/chroot-*; do
-		sudo chroot $chroot apt-get update
-		echo Upgrading $chroot:
-		sudo chroot $chroot apt-get upgrade
-	done
+    cleanup() {
+	rm -f ~/NO-DAEMON-PLEASE
+	buildd-watcher
+    }
+    touch ~/NO-DAEMON-PLEASE
+    trap cleanup 0
+    touch ~/EXIT-DAEMON-PLEASE
+    echo -n Waiting for sbuild and buildd to exit...
+    while [ -f ~/EXIT-DAEMON-PLEASE ]; do
+	sleep 10
+    done
+    echo .
+    for chroot in ~/build/chroot-*; do
+	sudo chroot $chroot apt-get update
+	echo Upgrading $chroot:
+	sudo chroot $chroot apt-get upgrade
+    done
 fi

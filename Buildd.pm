@@ -29,9 +29,10 @@ use FileHandle;
 
 require Exporter;
 @Buildd::ISA = qw(Exporter);
-@Buildd::EXPORT = qw(read_config lock_file unlock_file open_log reopen_log close_log
-					 logger parse_deplist build_deplist send_mail
-					 ll_send_mail isin exitstatus write_stats binNMU_version);
+@Buildd::EXPORT = qw(read_config lock_file unlock_file open_log
+ 		     reopen_log close_log logger parse_deplist
+ 		     build_deplist send_mail ll_send_mail isin
+ 		     exitstatus write_stats binNMU_version);
 
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
@@ -47,143 +48,143 @@ $ENV{'PATH'} = $oldPATH;
 $Buildd::hostname =~ /^(\S+)$/; $Buildd::hostname = $1; # untaint
 
 sub unset_env {
-	# unset any locale variables
-	delete $ENV{'LANG'};
-	delete $ENV{'LC_ALL'};
-	delete $ENV{'LC_COLLATE'};
-	delete $ENV{'LC_CTYPE'};
-	delete $ENV{'LC_MONETARY'};
-	delete $ENV{'LC_MESSAGES'};
-	delete $ENV{'LC_NUMERIC'};
-	delete $ENV{'LC_TIME'};
-	delete $ENV{'LANGUAGE'};
-	# other unneeded variables that might be set
-	delete $ENV{'DISPLAY'};
-	delete $ENV{'TERM'};
+    # unset any locale variables
+    delete $ENV{'LANG'};
+    delete $ENV{'LC_ALL'};
+    delete $ENV{'LC_COLLATE'};
+    delete $ENV{'LC_CTYPE'};
+    delete $ENV{'LC_MONETARY'};
+    delete $ENV{'LC_MESSAGES'};
+    delete $ENV{'LC_NUMERIC'};
+    delete $ENV{'LC_TIME'};
+    delete $ENV{'LANGUAGE'};
+    # other unneeded variables that might be set
+    delete $ENV{'DISPLAY'};
+    delete $ENV{'TERM'};
 }
 
 sub read_config {
-	unset_env();
-	if (-f "$main::HOME/buildd.conf") {
-		package conf;
-		require "$main::HOME/buildd.conf";
-		$conf::admin_mail; # don't know why this is needed
-		package Buildd;
-	}
+    unset_env();
+    if (-f "$main::HOME/buildd.conf") {
+	package conf;
+	require "$main::HOME/buildd.conf";
+	$conf::admin_mail; # don't know why this is needed
+	package Buildd;
+    }
 }
 
 
 sub lock_file {
-	my $file = shift;
-	my $nowait = shift;
-	my $lockfile = "$file.lock";
-	my $try = 0;
-	my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
-	
+    my $file = shift;
+    my $nowait = shift;
+    my $lockfile = "$file.lock";
+    my $try = 0;
+    my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
+
   repeat:
-	if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
-		if ($! == EEXIST) {
-			# lock file exists, wait
-			goto repeat if !open( F, "<$lockfile" );
-			my $line = <F>;
-			close( F );
-			if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
-				warn "Bad lock file contents ($lockfile) -- still trying\n";
-			}
-			else {
-				my($pid, $user) = ($1, $2);
-				my $cnt = kill( 0, $pid );
-				if ($cnt == 0 && $! == ESRCH) {
-					# process doesn't exist anymore, remove stale lock
-					warn "Removing stale lock file $lockfile ".
-						 " (pid $pid, user $user)\n";
-					unlink( $lockfile );
-					goto repeat;
-				} elsif ($cnt >= 1 and $nowait == 1) {
-					# process exists.
-					return 0;
-				}
-			}
-			if (++$try > $Buildd::max_lock_trys) {
-				warn "Lockfile $lockfile still present after ".
-				     "$Buildd::max_lock_trys * $Buildd::lock_interval ".
-					 " seconds -- giving up\n";
-				return 0;
-			}
-			sleep $Buildd::lock_interval;
-			goto repeat;
+    if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+	if ($! == EEXIST) {
+	    # lock file exists, wait
+	    goto repeat if !open( F, "<$lockfile" );
+	    my $line = <F>;
+	    close( F );
+	    if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
+		warn "Bad lock file contents ($lockfile) -- still trying\n";
+	    }
+	    else {
+		my($pid, $user) = ($1, $2);
+		my $cnt = kill( 0, $pid );
+		if ($cnt == 0 && $! == ESRCH) {
+		    # process doesn't exist anymore, remove stale lock
+		    warn "Removing stale lock file $lockfile ".
+			" (pid $pid, user $user)\n";
+		    unlink( $lockfile );
+		    goto repeat;
+		} elsif ($cnt >= 1 and $nowait == 1) {
+		    # process exists.
+		    return 0;
 		}
-		die "$Buildd::progname: Can't create lock file $lockfile: $!\n";
+	    }
+	    if (++$try > $Buildd::max_lock_trys) {
+		warn "Lockfile $lockfile still present after ".
+		    "$Buildd::max_lock_trys * $Buildd::lock_interval ".
+		    " seconds -- giving up\n";
+		return 0;
+	    }
+	    sleep $Buildd::lock_interval;
+	    goto repeat;
 	}
-	F->print("$$ $username\n");
-	F->close();
-	return 1;
+	die "$Buildd::progname: Can't create lock file $lockfile: $!\n";
+    }
+    F->print("$$ $username\n");
+    F->close();
+    return 1;
 }
 
 sub unlock_file {
-	my $file = shift;
-	my $lockfile = "$file.lock";
+    my $file = shift;
+    my $lockfile = "$file.lock";
 
-	unlink( $lockfile );
+    unlink( $lockfile );
 }
 
 
 sub write_stats {
-	my ($cat, $val) = @_;
-	local( *F );
+    my ($cat, $val) = @_;
+    local( *F );
 
-	lock_file( "$main::HOME/stats" );
-	open( F, ">>$main::HOME/stats/$cat" );
-	print F "$val\n";
-	close( F );
-	unlock_file( "$main::HOME/stats" );
+    lock_file( "$main::HOME/stats" );
+    open( F, ">>$main::HOME/stats/$cat" );
+    print F "$val\n";
+    close( F );
+    unlock_file( "$main::HOME/stats" );
 }
 
 sub open_log {
-	open( LOG, ">>$main::HOME/daemon.log" )
-		or die "$0: Cannot open my logfile $main::HOME/daemon.log: $!\n";
-	chmod( 0640, "$main::HOME/daemon.log" )
-		or die "$0: Cannot set modes of $main::HOME/daemon.log: $!\n";
-	select( (select(LOG), $| = 1)[0] );
-	open( STDOUT, ">&LOG" )
-		or die "$0: Can't redirect stdout to $main::HOME/daemon.log: $!\n";
-	open( STDERR, ">&LOG" )
-		or die "$0: Can't redirect stderr to $main::HOME/daemon.log: $!\n";
+    open( LOG, ">>$main::HOME/daemon.log" )
+	or die "$0: Cannot open my logfile $main::HOME/daemon.log: $!\n";
+    chmod( 0640, "$main::HOME/daemon.log" )
+	or die "$0: Cannot set modes of $main::HOME/daemon.log: $!\n";
+    select( (select(LOG), $| = 1)[0] );
+    open( STDOUT, ">&LOG" )
+	or die "$0: Can't redirect stdout to $main::HOME/daemon.log: $!\n";
+    open( STDERR, ">&LOG" )
+	or die "$0: Can't redirect stderr to $main::HOME/daemon.log: $!\n";
 }
 
 sub logger {
-	my $t;
-	my $text = "";
+    my $t;
+    my $text = "";
 
-	# omit weekday and year for brevity
-	($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
-	foreach (@_) { $text .= $_; }
-	$text =~ s/\n+$/\n/; # remove newlines at end
-	$text .= "\n" if $text !~ /\n$/; # ensure newline at end
-	$text =~ s/^/$1$t $Buildd::progname: /mg;
-	print LOG $text;
+    # omit weekday and year for brevity
+    ($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
+    foreach (@_) { $text .= $_; }
+    $text =~ s/\n+$/\n/; # remove newlines at end
+    $text .= "\n" if $text !~ /\n$/; # ensure newline at end
+    $text =~ s/^/$1$t $Buildd::progname: /mg;
+    print LOG $text;
 }
 
 sub close_log {
-	close( LOG );
-	close( STDOUT );
-	close( STDERR );
+    close( LOG );
+    close( STDOUT );
+    close( STDERR );
 }
 
 sub reopen_log {
-	my $errno = $!;
-	close_log();
-	open_log();
-	$! = $errno;
+    my $errno = $!;
+    close_log();
+    open_log();
+    $! = $errno;
 }
 
 sub send_mail {
-	my $addr = shift;
-	my $subject = shift;
-	my $text = shift;
-	my $add_headers = shift;
+    my $addr = shift;
+    my $subject = shift;
+    my $text = shift;
+    my $add_headers = shift;
 
-	return ll_send_mail( $addr,
+    return ll_send_mail( $addr,
 			 "To: $addr\n".
 			 "Subject: $subject\n".
 			 "From: $Buildd::gecos ".
@@ -193,40 +194,40 @@ sub send_mail {
 }
 
 sub ll_send_mail {
-	my $to = shift;
-	my $text = shift;
-	local( *MAIL );
+    my $to = shift;
+    my $text = shift;
+    local( *MAIL );
 
-	$text =~ s/^\.$/../mg;
-	local $SIG{'PIPE'} = 'IGNORE';
-	if (!open( MAIL, "|/usr/sbin/sendmail -oem '$to'" )) {
-		logger( "Could not open pipe to /usr/sbin/sendmail: $!\n" );
-		return 0;
-	}
-	print MAIL $text;
-	if (!close( MAIL )) {
-		logger( "sendmail failed (exit status ", exitstatus($?), ")\n" );
-		return 0;
-	}
-	return 1;
+    $text =~ s/^\.$/../mg;
+    local $SIG{'PIPE'} = 'IGNORE';
+    if (!open( MAIL, "|/usr/sbin/sendmail -oem '$to'" )) {
+	logger( "Could not open pipe to /usr/sbin/sendmail: $!\n" );
+	return 0;
+    }
+    print MAIL $text;
+    if (!close( MAIL )) {
+	logger( "sendmail failed (exit status ", exitstatus($?), ")\n" );
+	return 0;
+    }
+    return 1;
 }
 
 sub isin {
-	my $val = shift;
-	return grep( $_ eq $val, @_ );
+    my $val = shift;
+    return grep( $_ eq $val, @_ );
 }
 
 sub exitstatus {
-	my $stat = shift;
+    my $stat = shift;
 
-	return ($stat >> 8) . "/" . ($stat % 256);
+    return ($stat >> 8) . "/" . ($stat % 256);
 }
 
 sub binNMU_version {
-	my $v = shift;
-	my $binNMUver = shift;
+    my $v = shift;
+    my $binNMUver = shift;
 
-	return "$v+b$binNMUver";
+    return "$v+b$binNMUver";
 }
 
 1;

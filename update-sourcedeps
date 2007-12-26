@@ -37,22 +37,22 @@ trap 'rm -rf $tmp' 0
 done=""
 for distribution in stable testing unstable; do
 
-	name=$file-$distribution
+    name=$file-$distribution
     if wget --tries=3 -q http://$host/$dir/$name.gz; then
-		gunzip $name.gz
-		if ! cmp -s $name $dbdir/$name; then
-			done="$done $distribution"
-			cp $name $dbdir/
-			chmod 664 $dbdir/$name
+	gunzip $name.gz
+	if ! cmp -s $name $dbdir/$name; then
+	    done="$done $distribution"
+cp $name $dbdir/
+chmod 664 $dbdir/$name
 #			if [ -x /usr/bin/sourcedeps-makerev ]; then
 #				/usr/bin/sourcedeps-makerev $dbdir/$name >$dbdir/$name.rev
 #			fi
-		fi
 	fi
-done
+    fi
+    done
 
-if [ -n "$done" ]; then
+    if [ -n "$done" ]; then
 	echo "Updated source-dependencies for:$done"
-fi
+    fi
 
-exit 0
+    exit 0

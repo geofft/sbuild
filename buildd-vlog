@@ -22,84 +22,84 @@
 use POSIX;
 
 ($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
+    or die "HOME not defined in environment!\n";
 $logpath = "$main::HOME/logs";
 
 while( 1 ) {
-	
-	my $curr_pkg = read_progress();
-	if (!$curr_pkg) {
-		print "No build-progress -- waiting\n";
-		do {
-			sleep 5;
-		} while (!($curr_pkg = read_progress()));
-	}
 
-	my $logf = newest_log( "$logpath/${curr_pkg}_*" );
-	print "\n\n", "="x78, "\n$logf:\n\n";
+    my $curr_pkg = read_progress();
+    if (!$curr_pkg) {
+	print "No build-progress -- waiting\n";
+	do {
+	    sleep 5;
+	} while (!($curr_pkg = read_progress()));
+    }
 
-	tail( $logf );
+    my $logf = newest_log( "$logpath/${curr_pkg}_*" );
+    print "\n\n", "="x78, "\n$logf:\n\n";
+
+    tail( $logf );
 }
 
 sub read_progress {
-	my $f = "$main::HOME/build/build-progress";
-	my $p = "";
-	
-	open( F, "<$f" ) || return "";
-	while( <F> ) {
-		$p = $1 if /^(\S+): currently building/;
-	}
-	close( F );
-	return $p;
+    my $f = "$main::HOME/build/build-progress";
+    my $p = "";
+
+    open( F, "<$f" ) || return "";
+    while( <F> ) {
+	$p = $1 if /^(\S+): currently building/;
+    }
+    close( F );
+    return $p;
 }
 
 sub newest_log {
-	my $pattern = shift;
+    my $pattern = shift;
 
-	my @f = glob( $pattern );
-	my $maxtime = 0;
-	my $f = "";
-	my @s;
-	
-	foreach (@f) {
-		@s = stat( $_ );
-		warn "Cannot stat $_: $!", next if !@s;
-		if ($s[9] > $maxtime) {
-			$maxtime = $s[9];
-			$f = $_;
-		}
+    my @f = glob( $pattern );
+    my $maxtime = 0;
+    my $f = "";
+    my @s;
+
+    foreach (@f) {
+	@s = stat( $_ );
+	warn "Cannot stat $_: $!", next if !@s;
+	if ($s[9] > $maxtime) {
+	    $maxtime = $s[9];
+	    $f = $_;
 	}
-	return $f;
+    }
+    return $f;
 }
 
 sub tail {
-	my $f = shift;
+    my $f = shift;
 
-	my @s = stat( $f );
-	if (!@s) {
-		warn "Cannot stat $f: $!\n";
-		return;
-	}
-	my $size = $s[7];
-	
-	if (!open( F, "<$f" )) {
-		warn "Cannot open $f: $!\n";
-		return;
-	}
-	if ($size > 3*1024) {
-		seek( F, -3*1024, SEEK_END );
-		my $junk = <F>; # throw away first incomplete line
-		print $size+3*1024, " bytes skipped...\n";
-	}
+    my @s = stat( $f );
+    if (!@s) {
+	warn "Cannot stat $f: $!\n";
+	return;
+    }
+    my $size = $s[7];
 
-	while( 1 ) {
-		while( <F> ) {
-			print $_;
-			if (/^Build needed \d\d:\d\d:\d\d/) {
-				close( F );
-				return;
-			}
-		}
-		sleep( 2 );
+    if (!open( F, "<$f" )) {
+	warn "Cannot open $f: $!\n";
+	return;
+    }
+    if ($size > 3*1024) {
+	seek( F, -3*1024, SEEK_END );
+	my $junk = <F>; # throw away first incomplete line
+	print $size+3*1024, " bytes skipped...\n";
+    }
+
+    while( 1 ) {
+	while( <F> ) {
+	    print $_;
+	    if (/^Build needed \d\d:\d\d:\d\d/) {
+		close( F );
+		return;
+	    }
 	}
+	sleep( 2 );
+    }
 }
