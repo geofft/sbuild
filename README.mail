@@ -48,7 +48,3 @@ address the request came from (From: header). Alternatively, it obeys a
 Reply-To: header if present.
 
 Hope it works... :-)
-
-
-#
-# $Id$

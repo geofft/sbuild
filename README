@@ -486,6 +486,3 @@ This way, a lot of recompilations of the same version can be avoided.
 However, unfortunately, not all of them. If another version for unstable is
 installed in the archive before the frozen version comes in from
 quinn-diff, the binary packages are already lost and cannot be reuploaded.
-
-#
-# $Id$

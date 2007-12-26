@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 #
 # wanna-build-statistics: print statistics for wanna-build databases
-# Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 2 of the
-# License, or (at your option) any later version.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,25 +14,10 @@
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
 #
-# $Id$
-#
-# $Log: wanna-build-statistics,v $
-# Revision 1.4  2000/10/19 09:15:37  rnhodek
-# percent: handle $total == 0 case.
-#
-# Revision 1.3  1999/01/13 09:57:17  rnhodek
-# If wanna-build returns error status, also print last message from it.
-#
-# Revision 1.2  1998/12/16 10:51:34  rnhodek
-# Print nothing at all if wanna-build says that the db doesn't exist.
-# Remove debugging stuff.
-#
-# Revision 1.1  1998/12/16 10:29:09  rnhodek
-# Initial writing.
-#
+#######################################################################
 
 use strict;
 use vars qw($verbose $dist $database);
