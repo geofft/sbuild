@@ -18,9 +18,6 @@
 ;;; <http://www.gnu.org/licenses/>.
 ;;;
 ;;; This file is not part of GNU Emacs.
-;;;
-;;; $Id$
-;;;
 
 (defun buildd-prepare-mail (label send-now &rest ins)
   (if label

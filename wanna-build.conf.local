@@ -1,9 +1,7 @@
-#
 # /etc/wanna-build.conf: local wanna-build configuration
 #
 # This is an example file, values are for for the m68k wanna-build on
 # m68k.debian.org.
-#
 
 # directory for the databases, lock files and log files
 $basedir = "/usr/local/var/debbuild";
