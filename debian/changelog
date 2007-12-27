@@ -24,7 +24,9 @@ sbuild (0.57) unstable; urgency=low
     - List sources.list.
   * chroot/README: Rename from README.buildd-chroot.  Remove
     buildd.chroot section.
-  * bin/sbuild-createchroot: Moved from chroot/buildd.chroot.
+  * bin/sbuild-createchroot:
+    - Moved from chroot/buildd.chroot.
+    - Also install fakeroot and build-essential.
   * sbuild-createchroot.1.in: Add manual page.
   * debian/manpages: Add sbuild-createchroot.1.
   * debian/rules: Install sbuild-createchroot, and add buildd.chroot

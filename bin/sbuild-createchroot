@@ -38,7 +38,10 @@ SUITE=$1
 TARGET=$2
 MIRROR=$3
 
-#/usr/sbin/debootstrap --variant=buildd "$SUITE" "$TARGET" "$MIRROR"
+/usr/sbin/debootstrap \
+    --variant=buildd \
+    --include=fakeroot,build-essential \
+    "$SUITE" "$TARGET" "$MIRROR"
 
 cat <<EOF >"$TARGET/etc/apt/sources.list"
 # $SUITE

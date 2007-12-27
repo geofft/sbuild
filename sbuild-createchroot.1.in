@@ -30,7 +30,8 @@ debootstrap may be used directly, sbuild\-createchroot performs additional
 setup tasks such as setting up \fI/etc/apt/sources.list\fP to include main,
 contrib and non-free archive sections.  Invoking sbuild\-createchroot is
 functionally equivalent to running \f[CB]debootstrap\ --variant=buildd\fP, then
-editing \fI/etc/apt/sources.list\fP by hand.
+editing \fI/etc/apt/sources.list\fP by hand.  The \fIbuild\-essential\fP and
+\fIfakeroot\fP packages are additionally installed.
 .SH OPTIONS
 Note that
 .BR debootstrap (1)
