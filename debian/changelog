@@ -11,6 +11,9 @@ sbuild (0.57) unstable; urgency=low
     - Add check for check-depends-algorithm option. [Jan-Marek Glogowski]
     - filter_dependencies: Change dependency behaviour depending upon
       check_depends_algorithm.  [Jan-Marek Glogowski]
+    - Move to bin/.
+  * avg-pkg-build-time:
+    - Move to bin/.
   * Sbuild/*.pm: Reindent to increase readability.
   * Sbuild/Conf.pm: Add and export $check_depends_algorithm.
     [Jan-Marek Glogowski]

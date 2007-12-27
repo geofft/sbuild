@@ -46,7 +46,7 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	$(INSTALL) -m 755 sbuild avg-pkg-build-time \
+	$(INSTALL) -m 755 bin/sbuild bin/avg-pkg-build-time \
 		$(DESTDIR)/usr/bin/
 	$(INSTALL) -m 644 Sbuild.pm $(DESTDIR)/usr/share/perl5/
 	$(INSTALL) -m 644 Sbuild/Chroot.pm $(DESTDIR)/usr/share/perl5/Sbuild/Chroot.pm
