@@ -1,11 +1,6 @@
 sudo removal
 ------------
 
-chroot/README-buildd.chroot:
-  Update add_sbuild_user sudo references
-  Update chroot update description
-
-Remove $build_dir, and only use the current working directory.
 Add the ability to disable the current symlinks.
 
 Check packages in the alternatives and stalled_pkg_timeout lists in
