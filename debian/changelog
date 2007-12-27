@@ -32,14 +32,18 @@ sbuild (0.57) unstable; urgency=low
     - Also install fakeroot and build-essential.
   * sbuild-createchroot.1.in: Add manual page.
   * debian/manpages: Add sbuild-createchroot.1.
-  * debian/rules: Install sbuild-createchroot, and add buildd.chroot
-    compatibility symlink.
+  * debian/rules:
+    - Install sbuild-createchroot, and add buildd.chroot compatibility
+      symlink.
+    - Move -stamp files to debian/.
   * example.sbuildrc: Add missing variable types.  [Jan-Marek Glogowski]
   * example.sbuildrc: Add missing variable types and add
     $check_depends_algorithm.  [Jan-Marek Glogowski]
   * sbuild.1: Document --check-depends-algorithm [Jan-Marek Glogowski]
   * Move manual pages to man/.
   * debian/manpages: Move manual pages to man/.
+  * sbuild.conf: Move to etc/.
+  * example.sbuildrc: Move to etc/.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 

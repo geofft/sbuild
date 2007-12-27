@@ -21,22 +21,22 @@ GENFILES =				\
 INSTALL=/usr/bin/install
 DESTDIR=$(CURDIR)/debian/sbuild
 
-configure: configure-stamp
-configure-stamp:
+configure: debian/configure-stamp
+debian/configure-stamp:
 	dh_testdir
-	touch configure-stamp
+	touch debian/configure-stamp
 
-build: configure-stamp build-stamp
-build-stamp: $(GENFILES)
+build: debian/configure-stamp debian/build-stamp
+debian/build-stamp: $(GENFILES)
 	dh_testdir
-	touch build-stamp
+	touch debian/build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
 
 	rm -f $(GENFILES)
-	rm -f build-stamp configure-stamp
+	rm -f debian/build-stamp debian/configure-stamp
 
 	dh_clean
 
@@ -54,9 +54,9 @@ install: build
 	$(INSTALL) -m 644 Sbuild/Log.pm $(DESTDIR)/usr/share/perl5/Sbuild/Log.pm
 	$(INSTALL) -m 644 Sbuild/Utility.pm $(DESTDIR)/usr/share/perl5/Sbuild/Utility.pm
 	ln -s avg-pkg-build-time $(DESTDIR)/usr/bin/avg-pkg-build-space
-	$(INSTALL) -m 644 sbuild.conf $(DESTDIR)/etc/sbuild/sbuild.conf
+	$(INSTALL) -m 644 etc/sbuild.conf $(DESTDIR)/etc/sbuild/sbuild.conf
 
-	cp -a configs example.sbuildrc $(DESTDIR)/usr/share/doc/sbuild/examples/.
+	cp -a configs etc/example.sbuildrc $(DESTDIR)/usr/share/doc/sbuild/examples/.
 	find bin -maxdepth 1 -type f -exec cp {} $(DESTDIR)/usr/share/sbuild/ \;
 	find chroot -maxdepth 1 -type f -exec cp {} $(DESTDIR)/usr/share/sbuild/ \;
 	rm -f $(DESTDIR)/usr/share/sbuild/*.in
