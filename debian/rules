@@ -6,13 +6,6 @@
 VERSION = $(shell dpkg-parsechangelog | grep ^Version: | sed "s/.* //" | sed "s/-[^-]*$$//")
 DATE = $(shell date -d "$$(dpkg-parsechangelog | grep ^Date: | sed -n '/^Date: /s///p')" "+%d %b %Y")
 
-GENFILES =				\
-	man/avg-pkg-build-time.1	\
-	man/sbuild.1			\
-        man/sbuild-createchroot.1	\
-	man/sbuild-setup.7		\
-	Sbuild/Log.pm
-
 %: %.in
 	sed -e 's/\$$Revision: [0-9.]* \$$/$(VERSION)/g' \
 	    -e 's/@VERSION@/$(VERSION)/g' \
@@ -21,22 +14,35 @@ GENFILES =				\
 INSTALL=/usr/bin/install
 DESTDIR=$(CURDIR)/debian/sbuild
 
-configure: debian/configure-stamp
-debian/configure-stamp:
+debian/build/config.status: configure
 	dh_testdir
-	touch debian/configure-stamp
 
-build: debian/configure-stamp debian/build-stamp
-debian/build-stamp: $(GENFILES)
+	mkdir debian/build; \
+	cd debian/build; \
+	CFLAGS="$(CFLAGS)" ../../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/lib --localstatedir=/var --mandir=\$${prefix}/share/man
+
+build: debian/build/config.status debian/build-stamp
+debian/build-stamp:  debian/build/config.status
 	dh_testdir
+
+	cd debian/build; \
+	$(MAKE) all
+
 	touch debian/build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
+	rm -rf debian/build
+	rm -rf debian/install
+	rm -f debian/build-stamp
 
-	rm -f $(GENFILES)
-	rm -f debian/build-stamp debian/configure-stamp
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	cp -f /usr/share/misc/config.sub scripts/config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	cp -f /usr/share/misc/config.guess scripts/config.guess
+endif
 
 	dh_clean
 
@@ -46,25 +52,10 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	$(INSTALL) -m 755 bin/sbuild bin/avg-pkg-build-time \
-		$(DESTDIR)/usr/bin/
-	$(INSTALL) -m 644 Sbuild.pm $(DESTDIR)/usr/share/perl5/
-	$(INSTALL) -m 644 Sbuild/Chroot.pm $(DESTDIR)/usr/share/perl5/Sbuild/Chroot.pm
-	$(INSTALL) -m 644 Sbuild/Conf.pm $(DESTDIR)/usr/share/perl5/Sbuild/Conf.pm
-	$(INSTALL) -m 644 Sbuild/Log.pm $(DESTDIR)/usr/share/perl5/Sbuild/Log.pm
-	$(INSTALL) -m 644 Sbuild/Utility.pm $(DESTDIR)/usr/share/perl5/Sbuild/Utility.pm
-	ln -s avg-pkg-build-time $(DESTDIR)/usr/bin/avg-pkg-build-space
-	$(INSTALL) -m 644 etc/sbuild.conf $(DESTDIR)/etc/sbuild/sbuild.conf
+	cd debian/build; \
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/install
+	dh_install
 
-	cp -a configs etc/example.sbuildrc $(DESTDIR)/usr/share/doc/sbuild/examples/.
-	find bin -maxdepth 1 -type f -exec cp {} $(DESTDIR)/usr/share/sbuild/ \;
-	find chroot -maxdepth 1 -type f -exec cp {} $(DESTDIR)/usr/share/sbuild/ \;
-	rm -f $(DESTDIR)/usr/share/sbuild/*.in
-	mv $(DESTDIR)/usr/share/sbuild/sbuild* $(DESTDIR)/usr/bin
-	ln -s /usr/bin/sbuild-createchroot \
-		$(DESTDIR)/usr/share/sbuild/buildd.chroot
-	mv $(DESTDIR)/usr/share/sbuild/README \
-		$(DESTDIR)/usr/share/doc/sbuild
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -72,9 +63,10 @@ binary-indep: build install
 	dh_testroot
 	dh_installdocs debian/cvslogs.old
 	dh_installman
-	ln -s avg-pkg-build-time.1.gz debian/sbuild/usr/share/man/man1/avg-pkg-build-space.1.gz
+#	ln -s avg-pkg-build-time.1.gz debian/sbuild/usr/share/man/man1/avg-pkg-build-space.1.gz
 	dh_installchangelogs
-	dh_compress -Xbuildd.chroot -XREADME-buildd.chroot
+	dh_compress
+# -Xbuildd.chroot -XREADME-buildd.chroot
 	dh_fixperms
 	dh_installdeb
 	dh_perl
@@ -87,4 +79,4 @@ binary-arch: build
 # We have nothing to do by default.
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure
+.PHONY: build clean binary-indep binary-arch binary install

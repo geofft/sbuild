@@ -15,7 +15,7 @@
 .\" along with this program; if not, write to the Free Software
 .\" Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 .\" MA  02111-1307  USA
-.TH AVG\-PKG\-BUILD\-TIME 1 "@DATE@" "Version @VERSION@" "Debian sbuild"
+.TH AVG\-PKG\-BUILD\-TIME 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
 avg\-pkg\-build\-time \- display or alter database of package build times/space
 .SH SYNOPSIS

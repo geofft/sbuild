@@ -4,3 +4,15 @@ debian/sbuild.substvars
 *.5
 *.7
 *-stamp
+Makefile
+Makefile.in
+config.h
+config.h.in
+config.log
+config.status
+stamp-h1
+aclocal.m4
+autom4te.cache
+configure
+m4
+INSTALL

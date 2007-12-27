@@ -6,3 +6,8 @@ Add the ability to disable the current symlinks.
 Check packages in the alternatives and stalled_pkg_timeout lists in
 the configuration file and Conf.pm.  Make sure they are current and
 valid.
+
+checkchroot should be able to dump a chroot reference list.
+
+Provide a way of generating current reference lists from debootstrapped chroots.
+Make sbuild-createchroot create an initial reference list on chroot creation.

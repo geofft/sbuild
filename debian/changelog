@@ -36,6 +36,10 @@ sbuild (0.57) unstable; urgency=low
     - Install sbuild-createchroot, and add buildd.chroot compatibility
       symlink.
     - Move -stamp files to debian/.
+    - Remove GENFILES.
+    - Run configure, make, and make install in appropriate rules.
+    - Use dh_install.
+    - Remove all special-cased installation rules (now handled by automake).
   * example.sbuildrc: Add missing variable types.  [Jan-Marek Glogowski]
   * example.sbuildrc: Add missing variable types and add
     $check_depends_algorithm.  [Jan-Marek Glogowski]
@@ -44,6 +48,19 @@ sbuild (0.57) unstable; urgency=low
   * debian/manpages: Move manual pages to man/.
   * sbuild.conf: Move to etc/.
   * example.sbuildrc: Move to etc/.
+  * debian/compat: Move to debhelper v6 compatibility level.
+  * debian/control: Update to Standards-Version 3.7.3.
+  * debian/copyright:
+    - Update git repository location.
+    - Update GPL boilerplate.
+  * debian/sbuild.dirs:
+    - Rename from debian/dirs.
+    - Remove all but -var/lib/sbuild/srcdep-lock.
+  * debian/manpages: Remove.
+  * debian/sbuild.postinst: Rename from debian/postinst.
+  * debian/sbuild.preinst: Rename from debian/preinst.
+  * debian/sbuild.postrm: Rename from debian/postrm.
+  * debian/sbuild.install: New file.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 

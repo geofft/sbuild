@@ -1,0 +1,35 @@
+2007-12-27  Roger Leigh  <rleigh@debian.org>
+
+	* debian/*: Update packaging to use new autoconf/make.  See
+	debian/changelog.
+
+	* scripts/sbuild_release.m4.in: New file for generating release
+	date.
+
+	* scripts/global.mk: Global automake defaults.
+
+	* */.gitignore: Update with new generated files.
+
+	* man/*.1.in, man/*.7.in: Use @RELEASE_DATE@.
+
+	* debian/.cvsignore: Remove.
+
+	* bin/add_sbuild_user: Move from chroot/.
+
+	* TODO: Add checkchroot updates.
+
+	* lib/Sbuild*: Move from Sbuild*.
+
+	* README: Move from chroot/README.
+
+	* bootstrap: Add autotools bootstrap script.
+
+	* configure.ac: Add autoconf template.
+
+	* */Makefile.am: Add automake templates.
+
+	* AUTHORS: New file.
+
+	* ChangeLog: Start upstream changelog.
+
+
