@@ -31,6 +31,7 @@ use GDBM_File;
 use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
+use Sbuild::Sysconfig qw($arch $hostname $version);
 
 BEGIN {
     use Exporter ();
@@ -183,10 +184,8 @@ sub open_pkg_log {
     main::PLOG->autoflush(1);
     select(main::PLOG);
 
-    chomp( my $HOSTNAME = `hostname` );
-    chomp( my $arch = `$conf::dpkg --print-installation-architecture` );
-    print main::PLOG "Automatic build of $pkg_name on $HOSTNAME by ".
-	"sbuild/$arch @VERSION@\n";
+    print main::PLOG "Automatic build of $pkg_name on $hostname by ".
+	"sbuild/$arch $version\n";
     print main::PLOG "Build started at $date\n";
     print main::PLOG "*"x78, "\n";
     return 1;

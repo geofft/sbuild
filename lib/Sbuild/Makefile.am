@@ -27,4 +27,5 @@ perlmodsbuild_DATA =	\
 	Chroot.pm	\
 	Conf.pm		\
 	Log.pm		\
+	Sysconfig.pm	\
 	Utility.pm
