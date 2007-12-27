@@ -6,11 +6,11 @@
 VERSION = $(shell dpkg-parsechangelog | grep ^Version: | sed "s/.* //" | sed "s/-[^-]*$$//")
 DATE = $(shell date -d "$$(dpkg-parsechangelog | grep ^Date: | sed -n '/^Date: /s///p')" "+%d %b %Y")
 
-GENFILES =			\
-	avg-pkg-build-time.1	\
-	sbuild.1		\
-        sbuild-createchroot.1	\
-	sbuild-setup.7		\
+GENFILES =				\
+	man/avg-pkg-build-time.1	\
+	man/sbuild.1			\
+        man/sbuild-createchroot.1	\
+	man/sbuild-setup.7		\
 	Sbuild/Log.pm
 
 %: %.in
