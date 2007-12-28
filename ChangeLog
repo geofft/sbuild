@@ -1,3 +1,19 @@
+2007-12-28  Roger Leigh  <rleigh@debian.org>
+
+	* Update copyright and GPL2+ licence boilerplate on all files.
+
+2007-12-27  Roger Leigh  <rleigh@debian.org>
+
+	* configure.ac: Create lib/Sbuild/Sysconfig.pm.  Don't create
+	lib/Sbuild/Log.pm.
+
+	* lib/Sbuild/Sysconfig.pm.in: New file.  Generate with version
+	number, and determine hostname and arch.  Export arch, hostname
+	and version.
+
+	* lib/Sbuild/Log.pm: Rename from lib/Sbuild/Log.pm.in.  Remove
+	substituted @VERSION@ and hostname and arch determination.
+
 2007-12-27  Roger Leigh  <rleigh@debian.org>
 
 	* debian/*: Update packaging to use new autoconf/make.  See
