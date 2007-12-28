@@ -1,5 +1,16 @@
 2007-12-28  Roger Leigh  <rleigh@debian.org>
 
+	* man/Makefile.am: Add sbuild-adduser.8.in.
+
+	* bin/Makefile.am: Add sbuild-adduser.  Move sbuild-adduser and
+	sbuild-createchroot to sbin_SCRIPTS.
+
+	* bin/sbuild-adduser: Renamed from bin/add_sbuild_user.
+
+	* man/sbuild-adduser.8.in: New file.
+
+2007-12-28  Roger Leigh  <rleigh@debian.org>
+
 	* Update copyright and GPL2+ licence boilerplate on all files.
 
 2007-12-27  Roger Leigh  <rleigh@debian.org>

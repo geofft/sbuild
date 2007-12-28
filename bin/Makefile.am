@@ -24,12 +24,14 @@ include $(top_srcdir)/scripts/global.mk
 pkglibexecdir = $(SBUILD_LIBEXEC_DIR)
 
 bin_SCRIPTS = 			\
-	sbuild			\
+	sbuild
+
+sbin_SCRIPTS = 			\
+	sbuild-adduser		\
 	sbuild-createchroot
 
 pkglibexec_SCRIPTS =		\
 	abort-current-build	\
-	add_sbuild_user		\
 	avg-pkg-build-time	\
 	checkchroot		\
 	chrapt			\
@@ -45,4 +47,5 @@ doc_DATA = 		\
 
 install-exec-hook:
 	ln -sf avg-pkg-build-time $(DESTDIR)$(pkglibexecdir)/avg-pkg-build-space
+	ln -sf $(bindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user
 	ln -sf $(bindir)/sbuild-createchroot $(DESTDIR)$(pkglibexecdir)/buildd.chroot

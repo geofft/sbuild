@@ -24,7 +24,8 @@ include $(top_srcdir)/scripts/global.mk
 man_MANS = \
 	avg-pkg-build-time.1	\
 	sbuild.1		\
-	sbuild-createchroot.1	\
+	sbuild-adduser.8	\
+	sbuild-createchroot.8	\
 	sbuild-setup.7
 
 install-data-hook:

@@ -60,7 +60,9 @@ sbuild (0.57) unstable; urgency=low
   * debian/sbuild.postinst: Rename from debian/postinst.
   * debian/sbuild.preinst: Rename from debian/preinst.
   * debian/sbuild.postrm: Rename from debian/postrm.
-  * debian/sbuild.install: New file.
+  * debian/sbuild.install:
+    - New file.
+    - Install files from usr/sbin and usr/share/man/man8.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 
