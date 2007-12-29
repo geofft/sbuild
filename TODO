@@ -1,17 +1,25 @@
-sudo removal
-------------
-
 Add the ability to disable the current symlinks.
 
 Check packages in the alternatives and stalled_pkg_timeout lists in
 the configuration file and Conf.pm.  Make sure they are current and
 valid.
 
-checkchroot should be able to dump a chroot reference list.
-
 sbuild-createchroot should import most of buildd-make-chroot.
+(note: only needed for buildd use--accounts and passwords needed for access)
+
+sbuild-createchroot should update schroot config
+(need /etc/schroot/conf.d)
+
+sbuild-createchroot should update the package reference list
+(sbuild-checkpackages --set)
 
 Provide a way of generating current reference lists from debootstrapped chroots.
 Make sbuild-createchroot create an initial reference list on chroot creation.
 
+Split utility programs into library functions. Functions should operate on
+chroot objects, or plain files where appropriate.
+
 Log.pm: Handle nolog case by always opening LOG and PLOG.
+
+Log.pm: Log functions should be generic (writeout of sbuild version/build info
+and symlink creation should be customisable).

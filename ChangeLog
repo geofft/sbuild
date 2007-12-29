@@ -1,5 +1,21 @@
 2007-12-29  Roger Leigh  <rleigh@debian.org>
 
+	* man/Makefile.am: Add new manual page.
+
+	* man/sbuild-abort.1.in: New file.
+
+	* bin/Makefile.am: Use new program name.  Create compatibility
+	symlink.  Add --list and --set options.
+
+	* lib/Sbuild/Conf.pm: Add and export $package_checklist.
+
+	* configure.ac: Add sbuild-checkpackages.1.
+
+	* bin/sbuild-checkpackages: Rename from bin/checkchroot.  Use
+	$Sbuild::Conf::package_checklist for reference list location.
+
+2007-12-29  Roger Leigh  <rleigh@debian.org>
+
 	* sbuild-abort.1.in, sbuild-apt.1.in, sbuild-hold.1.in,
 	sbuild-shell.1.in, sbuild-update.1.in, sbuild-upgrade.1.in: New
 	manual pages.

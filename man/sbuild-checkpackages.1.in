@@ -1,0 +1,66 @@
+.\" Copyright © 2005-2007  Roger Leigh <rleigh@debian.org>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH SBUILD\-CHECKPACKAGES 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+sbuild\-checkpackages \- check the package list in a sbuild chroot against a reference list
+.SH SYNOPSIS
+.BR sbuild\-checkpackages
+.B chroot
+.BR \-\-list " \[or] " \-\-set
+.SH DESCRIPTION
+\fBsbuild\-checkpackages\fR compares the package list in an sbuild chroot (dpkg
+status file) against a reference list of packages.  The differences between the
+two lists are displayed, showing the changes to remove and install in order to
+return the chroot to match the reference list.
+.PP
+The reference list may be set from the dpkg status file; this must be done
+initially in order to have a baseline reference for comparison.
+.SH OPTIONS
+.TP
+.I chroot
+The chroot to use.
+.TP
+.I \-\-list
+List the differences between the installed packages and the reference file.
+.TP
+.I \-\-set
+Set the reference file from the currently installed package list.
+.SH EXAMPLES
+To set the reference file in the \fIunstable\fP chroot:
+.PP
+\f[CR]% \f[CB]sbuild\-checkpackages unstable --set\fP\fP
+.br
+.PP
+To show the differences in the \fIunstable\fP chroot:
+.PP
+\f[CR]% \f[CB]sbuild\-checkpackages unstable --list\fP\fP
+.br
+.SH AUTHORS
+.nf
+Roger Leigh.
+.fi
+.SH COPYRIGHT
+.nf
+Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
+.fi
+.SH "SEE ALSO"
+.BR sbuild (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:

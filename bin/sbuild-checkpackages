@@ -23,21 +23,26 @@ use strict;
 use warnings;
 use locale;
 use POSIX qw(locale_h);
+use Sbuild::Conf qw($package_checklist);
 use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
 sub usage {
-    print STDERR "Usage: $0 <chroot>\n";
+    print STDERR "Usage: $0 <chroot> [--list|--set]\n";
     exit 1;
 }
 
-usage() if (@ARGV != 1);
+usage() if (@ARGV != 2 ||
+	    ($ARGV[1] ne "--list" && $ARGV[1] ne "--set") );
+
+my $chroot = $ARGV[0];
+my $cmd = $ARGV[1];
 
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
 
-!setup($ARGV[0]) or die "Chroot setup failed";
+!setup($chroot) or die "Chroot setup failed";
 my $chroot_dir = $$Sbuild::Chroot::current{'Location'};
 my (@status, @ref, @install, @remove);
 
@@ -53,66 +58,77 @@ if (! close STATUS) {
     print STDERR "Error reading dpkg status file in chroot: $!\n";
     shutdown();
 }
-
-my $dist = Sbuild::Utility::get_dist($ARGV[0]);
-
-if (! open REF, "< $chroot_dir/../ref-$dist") {
-    print STDERR "Can't read reference status file $chroot_dir/../ref-$dist: $!\n";
-    shutdown();
-}
-while (<REF>) {
-    chomp;
-    push @ref, $_;
-}
-if (! close REF) {
-    print STDERR "Error reading reference status file: $!\n";
-    shutdown();
-}
-
 @status = sort @status;
-@ref = sort @ref;
-
 if (!@status) {
     print STDERR "dpkg status file is empty\n";
     shutdown();
 }
-if (!@ref) {
-    print STDERR "Reference status file is empty\n";
-    shutdown();
-}
 
-print "DELETE             ADD\n";
-print "======================================\n";
-my $i = 0;
-my $j = 0;
-
-while ($i < scalar @status && $j < scalar @ref) {
-
-    my $c = $status[$i] cmp $ref[$j];
-    if ($c < 0) {
-	# In status, not reference; remove.
-	print "$status[$i]\n";
-	$i++;
-    } elsif ($c > 0) {
-	# In reference, not status; install.
-	print "                   $ref[$j]\n";
-	$j++;
-    } else {
-	# Identical; skip.
-	$i++; $j++;
+if ($cmd eq "--set") {
+    if (! open WREF, "> $chroot_dir/$package_checklist") {
+	print STDERR "Can't write reference status file $chroot_dir/$package_checklist: $!\n";
+	shutdown();
     }
-}
+    foreach (@status) {
+	print WREF "$_\n";
+    }
+    if (! close WREF) {
+	print STDERR "Error writing reference status file: $!\n";
+	shutdown();
+    }
+} else { # --list
+
+    if (! open REF, "< $chroot_dir/$package_checklist") {
+	print STDERR "Can't read reference status file $chroot_dir/$package_checklist: $!\n";
+	shutdown();
+    }
+    while (<REF>) {
+	chomp;
+	push @ref, $_;
+    }
+    if (! close REF) {
+	print STDERR "Error reading reference status file: $!\n";
+	shutdown();
+    }
+
+    @ref = sort @ref;
+    if (!@ref) {
+	print STDERR "Reference status file is empty\n";
+	shutdown();
+    }
+
+    print "DELETE             ADD\n";
+    print "======================================\n";
+    my $i = 0;
+    my $j = 0;
+
+    while ($i < scalar @status && $j < scalar @ref) {
+
+	my $c = $status[$i] cmp $ref[$j];
+	if ($c < 0) {
+	    # In status, not reference; remove.
+	    print "$status[$i]\n";
+	    $i++;
+	} elsif ($c > 0) {
+	    # In reference, not status; install.
+	    print "                   $ref[$j]\n";
+	    $j++;
+	} else {
+	    # Identical; skip.
+	    $i++; $j++;
+	}
+    }
 
 # Print any remaining elements
-while ($i < scalar @status) {
-    print "$status[$i]\n";
-    $i++;
+    while ($i < scalar @status) {
+	print "$status[$i]\n";
+	$i++;
+    }
+    while ($j < scalar @ref) {
+	print "                   $ref[$j]\n";
+	$j++;
+    }
 }
-while ($j < scalar @ref) {
-    print "                   $ref[$j]\n";
-    $j++;
-}
-
 
 cleanup();
 exit 0;

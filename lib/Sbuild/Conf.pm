@@ -35,13 +35,13 @@ BEGIN {
 		 $username $verbose $nolog $mailprog $dpkg $su
 		 $schroot $schroot_options $fakeroot $apt_get
 		 $apt_cache $dpkg_source $md5sum $avg_time_db
-		 $avg_space_db $build_env_cmnd $pgp_options $log_dir
-		 $mailto $mailfrom @no_auto_upgrade
-		 $check_depends_algorithm $purge_build_directory
-		 @toolchain_regex $stalled_pkg_timeout
-		 $srcdep_lock_dir $srcdep_lock_wait
-		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
-		 $debug $force_orig_source
+		 $avg_space_db $package_checklist $build_env_cmnd
+		 $pgp_options $log_dir $mailto $mailfrom
+		 @no_auto_upgrade $check_depends_algorithm
+		 $purge_build_directory @toolchain_regex
+		 $stalled_pkg_timeout $srcdep_lock_dir
+		 $srcdep_lock_wait @ignore_watches_no_build_deps
+		 $build_dir $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name %watches $key_id); }
 
@@ -69,6 +69,7 @@ our $dpkg_source = "/usr/bin/dpkg-source";
 our $md5sum = "/usr/bin/md5sum";
 our $avg_time_db = "/var/lib/sbuild/avg-build-times";
 our $avg_space_db = "/var/lib/sbuild/avg-build-space";
+our $package_checklist = "/var/lib/sbuild/package-checklist";
 our $build_env_cmnd = "";
 our $pgp_options = "-us -uc";
 our $log_dir = "$HOME/logs";

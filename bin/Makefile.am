@@ -27,6 +27,7 @@ bin_SCRIPTS = 			\
 	sbuild			\
 	sbuild-abort		\
 	sbuild-apt		\
+	sbuild-checkpackages	\
 	sbuild-update		\
 	sbuild-upgrade		\
 	sbuild-shell		\
@@ -39,13 +40,13 @@ sbin_SCRIPTS = 			\
 
 pkglibexec_SCRIPTS =		\
 	avg-pkg-build-time	\
-	checkchroot		\
 	dobuildlog
 
 doc_DATA = 		\
 	README.bins
 
 install-exec-hook:
+# Links for compatibility.
 	ln -sf avg-pkg-build-time $(DESTDIR)$(pkglibexecdir)/avg-pkg-build-space
 	ln -sf $(bindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user
 	ln -sf $(bindir)/sbuild-createchroot $(DESTDIR)$(pkglibexecdir)/buildd.chroot
@@ -56,4 +57,4 @@ install-exec-hook:
 	ln -sf $(bindir)/sbuild-hold $(DESTDIR)$(pkglibexecdir)/chr-hold
 	ln -sf $(bindir)/sbuild-unhold $(DESTDIR)$(pkglibexecdir)/chr-unhold
 	ln -sf $(bindir)/sbuild-abort $(DESTDIR)$(pkglibexecdir)/abort-current-build
-
+	ln -sf $(bindir)/sbuild-checkpackages $(DESTDIR)$(pkglibexecdir)/checkchroot

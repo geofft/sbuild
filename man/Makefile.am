@@ -27,6 +27,7 @@ man_MANS = \
 	sbuild-abort.1		\
 	sbuild-adduser.8	\
 	sbuild-apt.1		\
+	sbuild-checkpackages.1	\
 	sbuild-createchroot.8	\
 	sbuild-hold.1		\
 	sbuild-setup.7		\

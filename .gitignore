@@ -3,6 +3,7 @@ debian/sbuild.substvars
 *.1
 *.5
 *.7
+*.8
 *-stamp
 Makefile
 Makefile.in
