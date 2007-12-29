@@ -24,23 +24,23 @@ include $(top_srcdir)/scripts/global.mk
 pkglibexecdir = $(SBUILD_LIBEXEC_DIR)
 
 bin_SCRIPTS = 			\
-	sbuild
+	sbuild			\
+	sbuild-abort		\
+	sbuild-apt		\
+	sbuild-update		\
+	sbuild-upgrade		\
+	sbuild-shell		\
+	sbuild-hold		\
+	sbuild-unhold
 
 sbin_SCRIPTS = 			\
 	sbuild-adduser		\
 	sbuild-createchroot
 
 pkglibexec_SCRIPTS =		\
-	abort-current-build	\
 	avg-pkg-build-time	\
 	checkchroot		\
-	chrapt			\
-	chr-hold		\
-	chr-unhold		\
-	dobuildlog		\
-	gochroot		\
-	updatechroot		\
-	upgradechroot
+	dobuildlog
 
 doc_DATA = 		\
 	README.bins
@@ -49,3 +49,11 @@ install-exec-hook:
 	ln -sf avg-pkg-build-time $(DESTDIR)$(pkglibexecdir)/avg-pkg-build-space
 	ln -sf $(bindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user
 	ln -sf $(bindir)/sbuild-createchroot $(DESTDIR)$(pkglibexecdir)/buildd.chroot
+	ln -sf $(bindir)/sbuild-apt $(DESTDIR)$(pkglibexecdir)/chrapt
+	ln -sf $(bindir)/sbuild-upgrade $(DESTDIR)$(pkglibexecdir)/upgradechroot
+	ln -sf $(bindir)/sbuild-update $(DESTDIR)$(pkglibexecdir)/updatechroot
+	ln -sf $(bindir)/sbuild-shell $(DESTDIR)$(pkglibexecdir)/gochroot
+	ln -sf $(bindir)/sbuild-hold $(DESTDIR)$(pkglibexecdir)/chr-hold
+	ln -sf $(bindir)/sbuild-unhold $(DESTDIR)$(pkglibexecdir)/chr-unhold
+	ln -sf $(bindir)/sbuild-abort $(DESTDIR)$(pkglibexecdir)/abort-current-build
+

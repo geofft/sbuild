@@ -24,6 +24,7 @@ use Sbuild::Conf;
 use Sbuild::Log qw(open_log close_log);
 use Sbuild::Chroot qw(get_command run_command exec_command
 		      get_apt_command run_apt_command current);
+use Sbuild::Sysconfig;
 
 $ENV{'LC_ALL'} = "POSIX";
 $ENV{'SHELL'} = "/bin/sh";
@@ -71,6 +72,10 @@ sub get_dist {
 
 sub setup {
     my $chroot = shift;
+
+    $Sbuild::Conf::nolog = 1;
+    Sbuild::Log::open_log($chroot);
+
     $chroot = get_dist($chroot);
 
     if (!begin_session($chroot)) {
@@ -89,6 +94,7 @@ sub cleanup {
 	main::local_cleanup();
     }
     end_session();
+    Sbuild::Log::close_log();
 }
 
 sub shutdown {

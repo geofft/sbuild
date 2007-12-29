@@ -25,30 +25,28 @@ use Sbuild::Utility qw(setup cleanup);
 package main;
 
 sub usage {
-    print STDERR "Usage: $0 <chroot> apt-get|apt-cache args\n";
+    print STDERR "Usage: $0 <chroot> [<chroot> ...]\n";
     exit 1;
 }
 
-usage() if ($#ARGV < 2);
-
-my $command = $ARGV[1];
-if ($command eq "apt-get") {
-    $command = $Sbuild::Conf::apt_get;
-} elsif ($command eq "apt-cache") {
-    $command = $Sbuild::Conf::apt_cache;
-} else {
-    print STDERR "Bad command $command.  Allowed commands: apt-get or apt-cache\n";
-    exit 1;
-}
+usage() if (@ARGV < 1);
 
 $Sbuild::Conf::cwd = "/";
 
-!setup($ARGV[0]) or die "Chroot setup failed";
+foreach (@ARGV) {
 
-shift @ARGV;
-shift @ARGV;
-my $cmd = join(' ', @ARGV);
-my $status = run_apt_command($command, $cmd, "root", 1);
+    my $chroot = Sbuild::Utility::get_dist($_);
 
-cleanup();
-exit $status;
+    !setup($_) or die "Chroot setup failed for $chroot chroot";
+
+    print STDOUT "Upgrading $chroot chroot...\n";
+    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+    my $status = run_apt_command($Sbuild::Conf::apt_get, "-uy upgrade",
+				 "root", 1);
+
+    cleanup();
+
+    exit $status if ($status);
+}
+
+exit 0;

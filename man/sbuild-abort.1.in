@@ -13,47 +13,37 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see
 .\" <http://www.gnu.org/licenses/>.
-.TH SBUILD\-ADDUSER 8 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.TH SBUILD\-ABORT 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
-sbuild\-adduser \- add an sbuild user
+sbuild\-abort \- abort the current sbuild build
 .SH SYNOPSIS
-.B sbuild\-adduser
-.B user1
-.RB "[ " user2 " [ " user\f[BI]n\fP... ]]
+.BR sbuild\-abort
 .SH DESCRIPTION
-\fBsbuild\-adduser\fR adds the specified users to the \fIsbuild\fP group,
-granting them the privelege to build packages with
-.BR sbuild (1).
-The 
-.BR schroot (1)
-configuration must permit the user to obtain root permissions in the chroot via
-the \f[CI]root\-users\fP and \f[CI]root\-groups\fP options in
-\fIschroot.conf\fP, because this is required to install and remove
-build-dependencies inside the chroot.  This is normally done using the
-\fIsbuild\fP group, but additional users or groups may be added in order to
-grant finer-grained permissions, for example to restrict individual users to
-particular chroots.
+\fBsbuild\-abort\fR kills the currently running \fIdpkg\-buildpackage\fP
+process.  It will not kill if more than one process is found.
 .SH OPTIONS
 .TP
-.I user
-The user to be granted sbuild access.
+.I chroot
+The chroot to use.
 .SH EXAMPLES
-To allow user \fIrleigh\fP sbuild access:
+To abort the current build:
 .PP
-\f[CR]% \f[CB]sudo sbuild\-adduser rleigh\fP\fP
+\f[CR]% \f[CB]sbuild\-abort\fP\fP
 .br
 .SH AUTHORS
 .nf
+Roman Hodek.
+Ryan Murray.
 Roger Leigh.
 .fi
 .SH COPYRIGHT
 .nf
+Copyright \[co] 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>.
+Copyright \[co] 2003 Ryan Murray <rmurray@debian.org>.
 Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
 .fi
 .SH "SEE ALSO"
-.BR sbuild (1),
-.BR sbuild\-setup (7),
-.BR schroot.conf (5).
+.BR sbuild (1).
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:

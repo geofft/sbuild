@@ -13,34 +13,23 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see
 .\" <http://www.gnu.org/licenses/>.
-.TH SBUILD\-ADDUSER 8 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.TH SBUILD\-SHELL 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
-sbuild\-adduser \- add an sbuild user
+sbuild\-shell \- run a shell in an sbuild chroot
 .SH SYNOPSIS
-.B sbuild\-adduser
-.B user1
-.RB "[ " user2 " [ " user\f[BI]n\fP... ]]
+.BR sbuild\-shell
+.B chroot
 .SH DESCRIPTION
-\fBsbuild\-adduser\fR adds the specified users to the \fIsbuild\fP group,
-granting them the privelege to build packages with
-.BR sbuild (1).
-The 
-.BR schroot (1)
-configuration must permit the user to obtain root permissions in the chroot via
-the \f[CI]root\-users\fP and \f[CI]root\-groups\fP options in
-\fIschroot.conf\fP, because this is required to install and remove
-build-dependencies inside the chroot.  This is normally done using the
-\fIsbuild\fP group, but additional users or groups may be added in order to
-grant finer-grained permissions, for example to restrict individual users to
-particular chroots.
+\fBsbuild\-shell\fR runs and interactive shell (\fI/bin/sh\fP) inside the
+specified chroot.
 .SH OPTIONS
 .TP
-.I user
-The user to be granted sbuild access.
+.I chroot
+The chroot to use.
 .SH EXAMPLES
-To allow user \fIrleigh\fP sbuild access:
+To run a shell in the \fIunstable\fP chroot:
 .PP
-\f[CR]% \f[CB]sudo sbuild\-adduser rleigh\fP\fP
+\f[CR]% \f[CB]sbuild\-shell unstable\fP\fP
 .br
 .SH AUTHORS
 .nf
@@ -51,9 +40,7 @@ Roger Leigh.
 Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
 .fi
 .SH "SEE ALSO"
-.BR sbuild (1),
-.BR sbuild\-setup (7),
-.BR schroot.conf (5).
+.BR sbuild (1).
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:

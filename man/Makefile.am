@@ -24,9 +24,16 @@ include $(top_srcdir)/scripts/global.mk
 man_MANS = \
 	avg-pkg-build-time.1	\
 	sbuild.1		\
+	sbuild-abort.1		\
 	sbuild-adduser.8	\
+	sbuild-apt.1		\
 	sbuild-createchroot.8	\
-	sbuild-setup.7
+	sbuild-hold.1		\
+	sbuild-setup.7		\
+	sbuild-shell.1		\
+	sbuild-update.1		\
+	sbuild-upgrade.1
 
 install-data-hook:
 	ln -sf avg-pkg-build-time.1 $(DESTDIR)$(man1dir)/avg-pkg-build-space.1
+	ln -sf sbuild-hold.1 $(DESTDIR)$(man1dir)/sbuild-unhold.1

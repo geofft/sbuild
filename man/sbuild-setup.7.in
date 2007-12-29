@@ -275,7 +275,9 @@ Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .SH SEE ALSO
 .BR debootstrap (1),
-.BR sbuild (1).
+.BR sbuild (1),
+.BR sbuild\-adduser (1),
+.BR sbuild\-createchroot (1).
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:

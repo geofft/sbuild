@@ -218,9 +218,15 @@ AC_CONFIG_FILES([lib/Sbuild/Sysconfig.pm])
 AC_CONFIG_FILES([man/Makefile])
 AC_CONFIG_FILES([man/avg-pkg-build-time.1])
 AC_CONFIG_FILES([man/sbuild.1])
+AC_CONFIG_FILES([man/sbuild-abort.1])
 AC_CONFIG_FILES([man/sbuild-adduser.8])
+AC_CONFIG_FILES([man/sbuild-apt.1])
 AC_CONFIG_FILES([man/sbuild-createchroot.8])
+AC_CONFIG_FILES([man/sbuild-hold.1])
 AC_CONFIG_FILES([man/sbuild-setup.7])
+AC_CONFIG_FILES([man/sbuild-shell.1])
+AC_CONFIG_FILES([man/sbuild-update.1])
+AC_CONFIG_FILES([man/sbuild-upgrade.1])
 
 dnl Output the generated config.status script.
 AC_OUTPUT

@@ -13,3 +13,5 @@ sbuild-createchroot should import most of buildd-make-chroot.
 
 Provide a way of generating current reference lists from debootstrapped chroots.
 Make sbuild-createchroot create an initial reference list on chroot creation.
+
+Log.pm: Handle nolog case by always opening LOG and PLOG.

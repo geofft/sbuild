@@ -40,6 +40,7 @@ foreach (@ARGV) {
     !setup($ARGV[0]) or die "Chroot setup failed";
 
     print STDOUT "Updating $chroot chroot...\n";
+    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
     my $status = run_apt_command($Sbuild::Conf::apt_get, "update",
 				 "root", 1);
 

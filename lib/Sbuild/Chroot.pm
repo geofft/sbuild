@@ -22,6 +22,7 @@
 package Sbuild::Chroot;
 
 use Sbuild::Conf;
+use Sbuild::Sysconfig;
 
 use strict;
 use POSIX;
@@ -160,6 +161,8 @@ sub begin_session {
     my $distribution = shift;
     my $arch = shift;
 
+    $arch = "" if !defined($arch);
+
     my $arch_found = 0;
 
     if ($arch ne "" &&
@@ -263,7 +266,7 @@ sub get_command_internal {
 	$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
 	if ($user ne $Sbuild::Conf::username) {
-	    print LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
+	    print main::LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
 	}
 	$cmdline .= "/bin/sh -c '$command'";
     }

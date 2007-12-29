@@ -1,3 +1,31 @@
+2007-12-29  Roger Leigh  <rleigh@debian.org>
+
+	* sbuild-abort.1.in, sbuild-apt.1.in, sbuild-hold.1.in,
+	sbuild-shell.1.in, sbuild-update.1.in, sbuild-upgrade.1.in: New
+	manual pages.
+
+	* lib/Sbuild/Utility.pm: Call open_log and close_log in setup and
+	cleanup, respectively (following setting nolog=1).  This is to
+	create main::LOG and main::PLOG.
+
+	* lib/Sbuild/Sysconfig.pm.in: Use Sbuild::Conf::dpkg.
+
+	* lib/Sbuild/Chroot.pm (begin_session): Ensure $arch is defined.
+	Use main::LOG rather than LOG.
+
+	* configure.ac: Add manual pages.
+
+	* bin/sbuild-apt, bin/sbuild-update, bin/sbuild-upgrade: Set
+	DEBIAN_FRONTEND to "noninteractive".
+
+	* bin/Makefile.am: Update script names, and create symlinks for
+	compatibility with the old names.
+
+	* sbuild-abort, sbuild-apt, sbuild-update, sbuild-upgrade,
+	sbuild-shell, sbuild-hold, sbuild-unhold: Rename from
+	abort-current-build, chrapt, updatechroot, upgradechroot,
+	gochroot, chr-hold, and chr-unhold, respectively.
+
 2007-12-28  Roger Leigh  <rleigh@debian.org>
 
 	* man/Makefile.am: Add sbuild-adduser.8.in.
