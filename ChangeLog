@@ -1,5 +1,9 @@
 2007-12-29  Roger Leigh  <rleigh@debian.org>
 
+	* Document chroot abbreviations.
+
+2007-12-29  Roger Leigh  <rleigh@debian.org>
+
 	* man/Makefile.am: Add new manual page.
 
 	* man/sbuild-abort.1.in: New file.

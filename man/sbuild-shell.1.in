@@ -25,7 +25,10 @@ specified chroot.
 .SH OPTIONS
 .TP
 .I chroot
-The chroot to use.
+The chroot to use.  Note that \[oq]o\[cq], \[oq]s\[cq],
+\[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
+\[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
+and \[oq]experimental\[cq], respectively.
 .SH EXAMPLES
 To run a shell in the \fIunstable\fP chroot:
 .PP

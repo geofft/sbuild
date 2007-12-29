@@ -23,3 +23,6 @@ Log.pm: Handle nolog case by always opening LOG and PLOG.
 
 Log.pm: Log functions should be generic (writeout of sbuild version/build info
 and symlink creation should be customisable).
+
+avg-pkg-build-* should use the database inside the chroot.  Add options to
+specify the chroot and database to read.  Rename to sbuild-stats.

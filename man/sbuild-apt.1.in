@@ -30,7 +30,10 @@ inside the specified chroot, along with any additional arguments.
 .SH OPTIONS
 .TP
 .I chroot
-The chroot to run the command in.
+The chroot to run the command in.  Note that \[oq]o\[cq], \[oq]s\[cq],
+\[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
+\[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
+and \[oq]experimental\[cq], respectively.
 .SH EXAMPLES
 To update the APT package lists in the \fIunstable\fP chroot:
 .PP

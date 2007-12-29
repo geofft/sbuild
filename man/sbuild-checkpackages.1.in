@@ -27,11 +27,16 @@ two lists are displayed, showing the changes to remove and install in order to
 return the chroot to match the reference list.
 .PP
 The reference list may be set from the dpkg status file; this must be done
-initially in order to have a baseline reference for comparison.
+initially in order to have a baseline reference for comparison.  The chroot
+should only include \fBessential\fP and \fBbuild-essential\fP packages, plus
+the extra packages that sbuild needs such as \fBfakeroot\fP.
 .SH OPTIONS
 .TP
 .I chroot
-The chroot to use.
+The chroot to use.  Note that \[oq]o\[cq], \[oq]s\[cq],
+\[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
+\[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
+and \[oq]experimental\[cq], respectively.
 .TP
 .I \-\-list
 List the differences between the installed packages and the reference file.
