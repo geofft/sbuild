@@ -53,8 +53,8 @@ EXTRA_DIST =			\
 
 install-exec-hook:
 # Links for compatibility.
-	ln -sf $(bindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user
-	ln -sf $(bindir)/sbuild-createchroot $(DESTDIR)$(pkglibexecdir)/buildd.chroot
+	ln -sf $(sbindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user
+	ln -sf $(sbindir)/sbuild-createchroot $(DESTDIR)$(pkglibexecdir)/buildd.chroot
 	ln -sf $(bindir)/sbuild-apt $(DESTDIR)$(pkglibexecdir)/chrapt
 	ln -sf $(bindir)/sbuild-upgrade $(DESTDIR)$(pkglibexecdir)/upgradechroot
 	ln -sf $(bindir)/sbuild-update $(DESTDIR)$(pkglibexecdir)/updatechroot

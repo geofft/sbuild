@@ -1,5 +1,10 @@
 2008-01-01  Roger Leigh  <rleigh@debian.org>
 
+	* bin/Makefile.am: Create sbuild-adduser and sbuild-createchroot
+	compatibility symlinks to $(sbindir).
+
+2008-01-01  Roger Leigh  <rleigh@debian.org>
+
 	* NEWS: Add changes.
 
 2008-01-01  Roger Leigh  <rleigh@debian.org>
