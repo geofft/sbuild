@@ -45,6 +45,12 @@ pkglibexec_SCRIPTS =		\
 doc_DATA = 		\
 	README.bins
 
+EXTRA_DIST =			\
+	$(bin_SCRIPTS)		\
+	$(sbin_SCRIPTS) 	\
+	$(pkglibexec_SCRIPTS)	\
+	$(doc_DATA)
+
 install-exec-hook:
 # Links for compatibility.
 	ln -sf $(bindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user

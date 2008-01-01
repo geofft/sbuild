@@ -28,3 +28,6 @@ exampleconf_DATA =	\
 	ref-stable	\
 	ref-testing	\
 	ref-unstable
+
+EXTRA_DIST =			\
+	$(exampleconf_DATA)

@@ -26,3 +26,7 @@ pkgsysconf_DATA = sbuild.conf
 
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
+
+EXTRA_DIST =			\
+	$(pkgsysconf_DATA)	\
+	$(exampleconf_DATA)

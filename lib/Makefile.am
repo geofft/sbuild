@@ -25,3 +25,6 @@ SUBDIRS = Sbuild
 
 perlmod_DATA =		\
 	Sbuild.pm
+
+EXTRA_DIST =		\
+	$(perlmod_DATA)

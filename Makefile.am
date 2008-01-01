@@ -33,8 +33,7 @@ dist-hook:
 EXTRA_DIST =				\
 	bootstrap			\
 	debian				\
-	scripts/sbuild_release.m4.in	\
-	m4
+	scripts/sbuild_release.m4.in
 
 ps:
 	$(MAKE) -C doc sbuild.ps

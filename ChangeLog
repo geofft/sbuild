@@ -1,5 +1,9 @@
 2008-01-01  Roger Leigh  <rleigh@debian.org>
 
+	* Makefile.am: Distribute all scripts and files.
+
+2008-01-01  Roger Leigh  <rleigh@debian.org>
+
 	* man/sbuild-stats.1.in: Rename from avg-pkg-build-time.1.in.
 	Update with --time option and examples.  Update copyright
 	information.
