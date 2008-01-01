@@ -1,0 +1,105 @@
+.\" Copyright © 1998  James Troup <james@nocrew.org>
+.\" Copyright © 2006  Roger Leigh <rleigh@debian.org>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH SBUILD\-STATS 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+sbuild\-stats \- display or alter database of package build times/space
+.SH SYNOPSIS
+.B sbuild\-stats
+.B avg\-pkg\-build\-time
+.B avg\-pkg\-build\-space
+[\-s/\-\-space] [\-a/\-\-add <package name> <time>] [\-\-delete <package name>] [\-\-dump] [\-t/\-\-top]
+.SH VERSION
+This man page documents the packaged version of sbuild.  This version is
+maintained by the \fBbuildd-tools\fP project developers on Alioth
+(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
+.SH DESCRIPTION
+\fBsbuild\-stats\fR displays or alters data from a database of package build
+times or space, usually updated by sbuild.  Note: sbuild\-stats was previously
+known as avg\-pkg\-build\-time and avg\-pkg\-build\-space.  When invoked with
+the old names, the database is defaulted to either the build-time or
+build-space database, as if the \fI\-\-time\fP or \fI\-\-space\fP options had
+been used, respectively.
+.PP
+If no option other than the database to use is given, \fBsbuild\-stats\fR will
+display the entire contents of the database.
+.PP
+The database files are only used if they already exist.  See
+\fIREADME.Debian\fP for more information.
+.PP
+.SS OPTIONS
+.TP
+.IR \-a , "\-\-add <package name> <time>"
+Add an entry for a package. <time> is in the format HH:MM:SS, where
+hours and minutes are optional.
+.TP
+.IR "\-\-delete <package name>"
+Remove the data for a package from the database.
+.TP
+.IR "\-\-dump"
+Output the contents of the database in unprocessed form.
+.TP
+.IR \-t , "\-\-time"
+Display build-time database.
+.TP
+.IR \-s , "\-\-space"
+Display build-space database.
+.TP
+.IR "\-\-top"
+Sort the output by build time; longest build first.
+.SH ENVIRONMENT VARIABLES
+The following environment variables are used by \fBsbuild\-stats\fR:
+.IP HOME
+The home directory of the user.
+.SH FILES
+\fBsbuild\-stats\fR reads the sbuild configuration files
+\fI/etc/sbuild/sbuild.conf\fP and \fI~/.sbuildrc\fP (if it exists) to discover
+the location of the databases, which are usually located under
+\fI/var/lib/sbuild\fP.
+.SH EXAMPLES
+To view the average build time for the \fIkoffice\fP package:
+.PP
+\f[CR]% \f[CB]sbuild-stats --time koffice\fP\fP
+.br
+koffice:                02:44:55 (1 entry, sigma 00:00:00)
+.PP
+To view the average build space for the \fIkoffice\fP package:
+.PP
+\f[CR]% \f[CB]sbuild-stats --space koffice\fP\fP
+.br
+koffice:                1597724k (1597724k latest)
+\f[CR]% \f[CB]sbuild\-update unstable\fP\fP
+.br
+.SH AUTHORS
+.nf
+Roman Hodek.
+Roger Leigh.
+.fi
+.SH COPYRIGHT
+.nf
+Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>.
+.fi
+.SH "SEE ALSO"
+.BR sbuild (1),
+.BR sbuild\-apt (1),
+.BR sbuild\-upgrade (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:

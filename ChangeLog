@@ -1,3 +1,27 @@
+2008-01-01  Roger Leigh  <rleigh@debian.org>
+
+	* man/sbuild-stats.1.in: Rename from avg-pkg-build-time.1.in.
+	Update with --time option and examples.  Update copyright
+	information.
+
+	* man/Makefile.am
+	(man_MANS): Rename avg-pkg-build-time.1 to sbuild-stats.1.
+	(install-data-hook): Create compatibility symlinks for
+	avg-pkg-build-*.
+
+	* configure.ac: Add man/sbuild-stats.1.
+
+	* bin/sbuild-stats: Rename from avg-pkg-build-time.  Use
+	Getopt::Long.  Unify modes into $mode, and update database
+	location based upon $db, which is also set if invoked through a
+	compatibility avg-pkg-build-* symlink.
+
+	* bin/Makefile.am
+	(bin_SCRIPTS): Add sbuild-stats.
+	(pkglibexec_SCRIPTS): Remove avg-pkg-build-time.
+	(install-exec-hook): Symlink avg-pkg-build-time and
+	avg-pkg-build-space to sbuild-stats.
+
 2007-12-29  Roger Leigh  <rleigh@debian.org>
 
 	* Document chroot abbreviations.

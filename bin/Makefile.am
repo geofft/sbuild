@@ -31,6 +31,7 @@ bin_SCRIPTS = 			\
 	sbuild-update		\
 	sbuild-upgrade		\
 	sbuild-shell		\
+	sbuild-stats		\
 	sbuild-hold		\
 	sbuild-unhold
 
@@ -39,7 +40,6 @@ sbin_SCRIPTS = 			\
 	sbuild-createchroot
 
 pkglibexec_SCRIPTS =		\
-	avg-pkg-build-time	\
 	dobuildlog
 
 doc_DATA = 		\
@@ -47,7 +47,6 @@ doc_DATA = 		\
 
 install-exec-hook:
 # Links for compatibility.
-	ln -sf avg-pkg-build-time $(DESTDIR)$(pkglibexecdir)/avg-pkg-build-space
 	ln -sf $(bindir)/sbuild-adduser $(DESTDIR)$(pkglibexecdir)/add_sbuild_user
 	ln -sf $(bindir)/sbuild-createchroot $(DESTDIR)$(pkglibexecdir)/buildd.chroot
 	ln -sf $(bindir)/sbuild-apt $(DESTDIR)$(pkglibexecdir)/chrapt
@@ -58,3 +57,5 @@ install-exec-hook:
 	ln -sf $(bindir)/sbuild-unhold $(DESTDIR)$(pkglibexecdir)/chr-unhold
 	ln -sf $(bindir)/sbuild-abort $(DESTDIR)$(pkglibexecdir)/abort-current-build
 	ln -sf $(bindir)/sbuild-checkpackages $(DESTDIR)$(pkglibexecdir)/checkchroot
+	ln -sf sbuild-stats $(DESTDIR)$(bindir)/avg-pkg-build-time
+	ln -sf sbuild-stats $(DESTDIR)$(bindir)/avg-pkg-build-space
