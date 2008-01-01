@@ -1,5 +1,11 @@
 2008-01-01  Roger Leigh  <rleigh@debian.org>
 
+	* Version 0.57.0.
+
+	* lib/Sbuild/Makefile.am: Install Sysconfig.pm.
+
+2008-01-01  Roger Leigh  <rleigh@debian.org>
+
 	* bin/Makefile.am: Create sbuild-adduser and sbuild-createchroot
 	compatibility symlinks to $(sbindir).
 

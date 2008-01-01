@@ -64,7 +64,7 @@ sbuild (0.57.0-1) unstable; urgency=low
     - Remove all special-cased installation rules (now handled by automake).
   * Note: All upstream changes are now in an upstream ChangeLog.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 01 Jan 2008 11:36:55 +0000
 
 sbuild (0.56) unstable; urgency=low
 

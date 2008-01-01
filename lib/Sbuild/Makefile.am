@@ -30,7 +30,7 @@ MODULES =	\
 	Utility.pm
 
 perlmodsbuild_DATA =	\
-	$(MODULES)
+	$(MODULES)	\
 	Sysconfig.pm
 
 EXTRA_DIST =		\
