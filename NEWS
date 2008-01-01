@@ -1,0 +1,29 @@
+NEWS                                                            -*- outline -*-
+----
+
+Welcome to sbuild 0.57.0.  Please read these release notes carefully.
+
+Full installation instructions are provided in the INSTALL file.  The
+README file also contains more specific notes regarding building and
+configuration.
+
+* Major changes in 0.57.0:
+
+  1) All programs have been moved from /usr/share/sbuild to /usr/bin
+     (with the exception of dobuildlog), with an sbuild- prefix.  In
+     some cases, the names have been changed.  The older programs are
+     still available under /usr/lib/sbuild.
+
+  2) All programs (with the exception of dobuildlog) now have manual
+     pages.
+
+  3) sbuild now runs apt-get with APT::Install-Recommends set to
+     false.
+
+  4) sbuild can be optionally configured to use an alternative
+     algorithm to compute build dependencies, to allow installation of
+     alternative build dependencies.
+
+  5) sbuild-createchroot (formerly buildd.chroot) now creates a fully
+     working chroot, with no manual setup required other than adding
+     the schroot configuration.
