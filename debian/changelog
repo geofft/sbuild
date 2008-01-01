@@ -1,7 +1,10 @@
-sbuild (0.57) unstable; urgency=low
+sbuild (0.57.0-1) unstable; urgency=low
 
+  * Sbuild/*.pm: Reindent to increase readability.
   * Sbuild/Chroot.pm: set APT::Install-Recommends to false inside the
     chroot (Closes: #449253).
+  * Sbuild/Conf.pm: Add and export $check_depends_algorithm.
+    [Jan-Marek Glogowski]
   * sbuild:
     - Reindent to increase readability.
     - Add additional syntax checks.  Thanks to Jan-Marek Glogowski.
@@ -14,11 +17,12 @@ sbuild (0.57) unstable; urgency=low
     - Move to bin/.
   * avg-pkg-build-time:
     - Move to bin/.
-  * Sbuild/*.pm: Reindent to increase readability.
-  * Sbuild/Conf.pm: Add and export $check_depends_algorithm.
-    [Jan-Marek Glogowski]
   * bin/*: Reindent to increase readability.
   * chroot/*: Reindent to increase readability.
+  * bin/sbuild-createchroot:
+    - Moved from chroot/buildd.chroot.
+    - Also install fakeroot and build-essential.
+  * sbuild-createchroot.1.in: Add manual page.
   * chroot/buildd.chroot:
     - Add GPL boilerplate.
     - Remove /etc/passwd creation (already done by debootstrap).
@@ -27,19 +31,6 @@ sbuild (0.57) unstable; urgency=low
     - List sources.list.
   * chroot/README: Rename from README.buildd-chroot.  Remove
     buildd.chroot section.
-  * bin/sbuild-createchroot:
-    - Moved from chroot/buildd.chroot.
-    - Also install fakeroot and build-essential.
-  * sbuild-createchroot.1.in: Add manual page.
-  * debian/manpages: Add sbuild-createchroot.1.
-  * debian/rules:
-    - Install sbuild-createchroot, and add buildd.chroot compatibility
-      symlink.
-    - Move -stamp files to debian/.
-    - Remove GENFILES.
-    - Run configure, make, and make install in appropriate rules.
-    - Use dh_install.
-    - Remove all special-cased installation rules (now handled by automake).
   * example.sbuildrc: Add missing variable types.  [Jan-Marek Glogowski]
   * example.sbuildrc: Add missing variable types and add
     $check_depends_algorithm.  [Jan-Marek Glogowski]
@@ -63,6 +54,15 @@ sbuild (0.57) unstable; urgency=low
   * debian/sbuild.install:
     - New file.
     - Install files from usr/sbin and usr/share/man/man8.
+  * debian/rules:
+    - Install sbuild-createchroot, and add buildd.chroot compatibility
+      symlink.
+    - Move -stamp files to debian/.
+    - Remove GENFILES.
+    - Run configure, make, and make install in appropriate rules.
+    - Use dh_install.
+    - Remove all special-cased installation rules (now handled by automake).
+  * Note: All upstream changes are now in an upstream ChangeLog.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 02 Dec 2007 15:03:04 +0000
 
