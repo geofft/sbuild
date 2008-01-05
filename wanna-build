@@ -26,6 +26,8 @@ $basedir = "/var/lib/debbuild";
 $dbbase = "build-db";
 $transactlog = "transactions.log";
 $mailprog = "/usr/sbin/sendmail";
+@distributions = qw(oldstable-security stable testing unstable stable-security testing-security);
+%dist_order = ( 'oldstable-security' => 0, stable => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, unstable => 3 );
 require "/etc/wanna-build.conf";
 die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;
 die "dbbase is empty\n" if ! $dbbase;
@@ -43,21 +45,19 @@ use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use WannaBuild;
 
-our ($verbose, $mail_logs, $list_order, $list_state, @distributions,
-     %dist_order, $curr_date, $op_mode, $user, $real_user, $distribution,
-     $fail_reason, $opt_override, $import_from, $export_to, $opt_create_db,
+our ($verbose, $mail_logs, $list_order, $list_state, $curr_date,
+     $op_mode, $user, $real_user, $distribution, $fail_reason,
+     $opt_override, $import_from, $export_to, $opt_create_db,
      $transactlog, %db, %otherdb, %otherdb_lock, %prioval, %sectval,
      $info_all_dists, $hostname, $arch, $opt_no_propagation,
      $opt_no_down_propagation, $category, %catval, %short_category,
-     $short_date, $list_min_age, $dbbase, $host_set,
-     $build_priority, %new_vers, $binNMUver, %merge_srcvers);
+     $short_date, $list_min_age, $dbbase, $host_set, $build_priority,
+     %new_vers, $binNMUver, %merge_srcvers);
 
 # global vars
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $verbose = 0;
 $mail_logs = "";
-@distributions = qw(oldstable-security stable testing unstable stable-security testing-security);
-%dist_order = ( 'oldstable-security' => 0, stable => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, unstable => 3 );
 $curr_date = strftime("%Y %b %d %H:%M:%S",localtime);
 $short_date = strftime("%m/%d/%y",localtime);
 $| = 1;
@@ -235,7 +235,7 @@ $list_order = $list_state eq "failed" ? 'fPcpsn' : 'PScpsn'
     if !$list_order;
 $distribution ||= "unstable";
 die "Bad distribution '$distribution'\n"
-    if !isin($distribution, @distributions);
+    if !isin($distribution, @conf::distributions);
 $conf::dbbase =~ m#^([^/]+/)#;
 $transactlog = "$conf::basedir/$1$conf::transactlog";
 
@@ -304,7 +304,7 @@ lock_db( $distribution );
 END {
     untie %db;
     unlock_db( $distribution );
-    foreach (@distributions) {
+    foreach (@conf::distributions) {
 	untie %{$otherdb{$_}} if tied(%{$otherdb{$_}});
 	unlock_db( $_ ) if $otherdb_lock{$_};
     }
@@ -1753,7 +1753,7 @@ sub info_packages {
     my( $name, $pkg, $key, $dist );
     my @firstkeys = qw(Package Version Builder State Section Priority
 					   Installed-Version Previous-State State-Change);
-    my @dists = $info_all_dists ? @distributions : ($distribution);
+    my @dists = $info_all_dists ? @conf::distributions : ($distribution);
 
     foreach $dist (@dists) {
 	if ($dist ne $distribution) {
@@ -2096,7 +2096,7 @@ sub propagate_ta {
 
     return if $opt_no_propagation;
 
-    foreach $dist (@distributions) {
+    foreach $dist (@conf::distributions) {
 	next if $dist eq $distribution;
 	next if dist_cmp ($dist, $distribution) == 0;
 	next if $opt_no_down_propagation && dist_cmp($dist, $distribution) < 0;
@@ -2131,7 +2131,7 @@ sub exists_in_other_dist {
     my $inst_v_ok = shift;
     my $dist;
 
-    foreach $dist (@distributions) {
+    foreach $dist (@conf::distributions) {
 	next if $dist eq $distribution;
 	next if ! -f db_filename( $dist );
 	next if !open_other_db( $dist );
@@ -2211,7 +2211,7 @@ sub dist_cmp {
     my $d1 = shift;
     my $d2 = shift;
 
-    return $dist_order{$d1} <=> $dist_order{$d2};
+    return $conf::dist_order{$d1} <=> $conf::dist_order{$d2};
 }
 
 

@@ -10,4 +10,10 @@ buildd (0.10) UNRELEASED; urgency=low
     - Log command-line arguments.  Thanks to Florian Lohoff.
     - Use --auto-give-back arguments correctly with newer sbuild option
       parser.  Thanks to Florian Lohoff.
- -- Roger Leigh <rleigh@debian.org>  Mon, 17 Dec 2007 08:00:15 +0000
+  * wanna-build:
+    - Move @distributions and %dist_order into conf package.  Thanks
+      to Florian Lohoff.
+  * wanna-build.conf:
+    - Add @distributions and %dist_order.
+
+ -- Roger Leigh <rleigh@debian.org>  Sat, 05 Jan 2008 19:12:47 +0000
