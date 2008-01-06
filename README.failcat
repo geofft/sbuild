@@ -1,0 +1,103 @@
+                                                    -*- mode: indented-text -*-
+
+
+					  Usage of Failed Categories
+					  --------------------------
+
+					  Roman Hodek, March 1st 2000
+
+
+I have now introduced a new concept in the wanna-build database that
+(hopefully) makes maintenance of failed packages a bit easier. The new
+concept are failed categories.
+
+Every package in state Failed can be assigned a category. The
+following categories exist:
+
+  easy (e)
+  medium (m)
+  hard (h)
+  compiler-error (c)
+  fix-expected (f)
+  reminder-sent (r)
+  nmu-offered (n)
+  uploaded-fixed-pkg (u)
+
+and additionally the special category "none" that is used if no
+category has been assigned.
+
+Usually, if a package failed recompilation, you report a bug and set
+it to Failed. Now you should also assign a category to this failed
+package. "easy" is for more or less trivial bugs, like typos or the
+like. "medium" is for things that require a bit more effort (e.g.,
+writing new configs for your arch) but are still doable with a normal
+NMU. "hard" is meant for things that need special bootstrapping, for
+programs that segfault and need debugging, and so on. If you know the
+package maintainer to fix reported bugs quickly and reliably, you can
+also use "fix-expected" as category.
+
+You can assign a category directly with wanna-build:
+
+  failed-build -c easy some-pkg_1.0-1
+
+or
+
+  wanna-build -c easy some-pkg_1.0-1
+
+You can also use one-letter abbreviations for the categories, as
+mentioned above in parens. Another way to assign a category is to
+include them in the fail message, probably the one that you send back
+to the build daemon. If the message starts with [XXX], the XXX will be
+interpreted as a category and be assigned to the package. Of course,
+you can use the abbreviations here, too. You can also change an
+existing category by including a new one in a fail message (that will
+be appended). That inclusion into a message is usually the most
+convenient way to set or change a category.
+
+From time to time you should make a bug fixing session to check for
+old, unfixed bugs. You can easily list such failed packages with the
+new --min-age=DAYS (-a) option of wanna-build. For example, I
+regularily do
+
+  list-failed -a 14
+
+to list all failed packages that haven't been fixed in the last 14
+days. The listing is sorted by categories. You probably can ignore
+"hard" packages (except you have lots of spare time now :-)
+
+For packages that are "easy" or "medium", you can send a reminder to
+the maintainer and change the category to "reminder-sent". If a
+package is in that category for several days and the maintainer still
+didn't respond, you should offer to make a NMU if there is no
+reaction. The category changes to "nmu-offered". If a package has that
+label and is older than (e.g.) 21 days, you really should do the NMU
+now.
+
+Of course, the timings are more or less a subjective choice, and also
+can very with importance of the failed package. Simply use common
+sense. For really old bugs, you obviously also can skip the reminder
+phase.
+
+If the maintainer replies to a bug report and says he is actively
+working on a fix, a good new category is "fix-expected". With this you
+note for yourself that a reminder and NMU offer is probably not
+necessary (except the package is for too long in this state...)
+
+If the maintainer says that he already has uploaded a fixed version
+(or is about to do this), you can set the category to
+"uploaded-fixed-pkg". This again is a note for your bug tracking.
+
+The above to actions can be easily done with the Emacs functions
+buildd-bug-change-category (C-c C-a C-c) and buildd-comment (C-c C-a
+C-a). They both can be called in a reply to the bug report, provided
+that the maintainer left the subject unchanged, i.e. it still is in
+the form
+
+  Re: Bug#XXXX: PACKAGE_VERSION(DIST): blabla
+
+Those infos are needed to construct a mail with correct subject to
+buildd that will call failed-build then. Obviously, you can also
+change the category with buildd-bug-comment, by including [CATEGORY]
+in the text to be appended.
+
+Roman

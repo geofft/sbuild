@@ -1,0 +1,716 @@
+2008-01-06  Roger Leigh  <rleigh@whinlatter.ukfsn.org>
+
+	* wanna-build.conf.local: Remove.
+
+	* wanna-build.conf: Update with a complete list of settings,
+	including those from wanna-build.conf.local, removing unused
+	variables.
+
+	* wanna-build: Use WannaBuild::Conf.  Check if $conf::log_mail is
+	defined.
+
+	* do-merge-quinn: Use WannaBuild::Conf.  Check if $conf::stat_mail
+	is defined.
+
+	* do-merge-packages: Use WannaBuild::Conf.
+
+	* WannaBuild/Conf.pm: Module to load wanna-build.conf, created
+	from common code in wanna-build and do-merge-*, modelled on
+	Sbuild::Conf.  This contains a complete list of default settings.
+
+2008-01-06  Roger Leigh  <rleigh@debian.org>
+
+	* Replace all references to /var/debbuild (or /var/state/debbuild
+	or /usr/local/var/debbuild) with /var/lib/wanna-build for FHS
+	compliance.
+
+	* Initial buildd packaging.
+
+	* abort-current-build: Re-add.
+
+	* buildd: Log command-line arguments.  Thanks to Florian Lohoff.
+	Use --auto-give-back arguments correctly with newer sbuild option
+	parser.  Thanks to Florian Lohoff.
+
+	* wanna-build: Move @distributions and %dist_order into conf
+	package.  Thanks to Florian Lohoff.
+
+	* wanna-build.conf: Add @distributions and %dist_order.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* README.chroot-building: Refer to modern buildd chroot creation
+	script in README.chroot-building.  Merge from upstream SVN cset
+	106.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* wb-ssh-wrapper: New file.  Merge from upstream SVN cset 105.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* buildd-make-chroot: Fix typos, and add some additional setup
+	that the debootstrap backport on d.o doesn't currently do.  Merge
+	from upstream SVN cset 104.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* buildd-uploader: Really fix for new dpkg.  Merge from upstream
+	SVN cset 103.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* buildd-uploader: Update version regexes for new dpkg.  Merge
+	from upstream SVN cset 102.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* wanna-build-catdb: Rename from catdb.
+
+	* buildd-vlog: Rename from vlog.
+
+	* buildd-update-chroots: Rename from update_chroot.
+
+2007-02-03  Roger Leigh  <rleigh@debian.org>
+
+	* buildd-make-chroot: Merge from upstream SVN cset 101.
+
+2006-08-26  Roger Leigh  <rleigh@debian.org>
+
+	* debian/changelog: Initial version.
+
+	* debian/control: Update package descriptions.
+
+	* debian/copyright: Update with new download location and
+	maintainers.
+
+	* debian/sbuild.postinst: Remove.
+
+2006-08-01  Roger Leigh  <rleigh@debian.org>
+
+	* ChangeLog: New file.  Generate from subversion history.
+
+2006-06-09  Roger Leigh  <rleigh@debian.org>
+
+	* Remove sbuild package.
+
+2006-06-09  Roger Leigh  <rleigh@debian.org>
+
+	* Remove files already in the sbuild package.
+
+2006-06-06  Ryan Murray  <rmurray@debian.org>
+
+	* fix typo detected by lintian
+
+2006-03-18  Ryan Murray  <rmurray@debian.org>
+
+	* complain on _all.udeb files built when they shouldn't be, too.
+
+2006-02-24  Ryan Murray  <rmurray@debian.org>
+
+	* Remove \n from pkg_file filename, pointed out by rleigh@d.o
+
+2006-02-24  Ryan Murray  <rmurray@debian.org>
+
+	* Update svn:ignore for everything a debian package build produces
+
+2006-02-17  Ryan Murray  <rmurray@debian.org>
+
+	* Remove \n from strftime calls.  Suggested by bod@d.o after going
+	over the sbuild segfault on mips and arm in gdb.
+
+2006-02-13  Ryan Murray  <rmurray@debian.org>
+
+	* save some backtracking.  Thanks to bod@d.o
+
+2006-01-30  Ryan Murray  <rmurray@debian.org>
+
+	* add DEBIAN_FRONTEND to sudoers example defaults
+
+2006-01-30  Ryan Murray  <rmurray@debian.org>
+
+	* As buildd-uploader now calls dupload with a single changes file,
+	any error return from dupload most likely means that the job
+	failed, so we treat it as such.
+
+2006-01-30  Ryan Murray  <rmurray@debian.org>
+
+	* Add comments of the needed sudoers entries, including Defaults
+	entry needed for the stable security update
+
+2006-01-08  Ryan Murray  <rmurray@debian.org>
+
+	* Fix to delete symlinks, too
+
+2006-01-08  Ryan Murray  <rmurray@debian.org>
+
+	* update version
+
+2006-01-08  Ryan Murray  <rmurray@debian.org>
+
+	* setup_system: don't bother with /etc/source-dependencies-*
+	anymore
+
+	* sbuild.postinst: remove obsolete /etc/source-dependencies-*
+	files.
+
+2006-01-08  Ryan Murray  <rmurray@debian.org>
+
+	* remove unmaintained rbuilder
+
+2006-01-08  Ryan Murray  <rmurray@debian.org>
+
+	* don't install update-sourcedeps in the sbuild package anymore
+
+2006-01-08  Ryan Murray  <rmurray@debian.org>
+
+	* make existance of source-dependencies optional
+
+	* move username to end of su command
+
+2005-12-12  Ryan Murray  <rmurray@debian.org>
+
+	* make the sources.list more column-ized, use the mirror specified
+	for initial install in the generated sources.list, fix up security
+	related entries.
+
+2005-12-02  Ryan Murray  <rmurray@debian.org>
+
+	* remove Binary-NMU fields when a Dep-Wait'd package has a new
+	sourceful version uploaded.
+
+2005-11-29  Ryan Murray  <rmurray@debian.org>
+
+	* Fix Revision output to just have the revision
+
+	* Forget binNMU info when a new source comes along.
+
+	* Warn on packages that are in state Installed, but the version
+	installed is less than the source version in w-b.
+
+	* If a package is in state Installed, but it doesn't have binaries
+	from the current source version in parse_quinn, also move to
+	Needs-Build.
+
+2005-11-28  Ryan Murray  <rmurray@debian.org>
+
+	* watch for EOF from STDIN when reading failure messages
+
+	* update the source version if it's less than the packages in
+	parse_packages (fixing the "why does that buildd build what was
+	uploaded with the source?"  problem)
+
+2005-11-23  Ryan Murray  <rmurray@debian.org>
+
+	* Fix duplicate copy of binNMU_version function for new versioning
+
+2005-11-15  Ryan Murray  <rmurray@debian.org>
+
+	* (sbuild): Delete binary-all packages that we didn't ask to be
+	built.
+
+	* (buildd): specify a username when asking what's to be built
+	(needs new wanna-build)
+
+	* (wanna-build): store last seen timestamp for each buildd
+
+	* update changelog version
+
+2005-11-15  Ryan Murray  <rmurray@debian.org>
+
+	* Include more setup commands.  Lay out chroot's by codename, for
+	future auto suite-switching code (hopefully for etch release)
+
+2005-11-15  Ryan Murray  <rmurray@debian.org>
+
+	* change defaults for security to use security-master
+
+2005-11-15  Ryan Murray  <rmurray@debian.org>
+
+	* move parse_date here from wanna-build binary.
+
+	* change binNMU numbering to be {sourceversion}+b{binNMUnumber}
+
+2005-11-04  Ryan Murray  <rmurray@debian.org>
+
+	* add pwd infront of target if not specified, so the fstab entries
+	will always work
+
+2005-10-13  Ryan Murray  <rmurray@debian.org>
+
+	* fix typo of database name
+
+2005-10-12  Ryan Murray  <rmurray@debian.org>
+
+	* fix already building binNMU error message output what database
+	w-b is running on when run with -v on the version line
+
+2005-10-11  Ryan Murray  <rmurray@debian.org>
+
+	* Add regex for failure to connect to the ssh socket for newer
+	openssh versions
+
+2005-10-11  Ryan Murray  <rmurray@debian.org>
+
+	* Add optional admin_users array that lists which users are
+	allowed to use overall database admin commands such as --merge-*,
+	--import, and --manual-edit
+
+	* Ensure to-be registered binNMU version is newer than the
+	currently installed version.
+
+2005-10-03  Ryan Murray  <rmurray@debian.org>
+
+	* Fix broken pkg_version_eq calls
+
+2005-10-02  Ryan Murray  <rmurray@debian.org>
+
+	* (wanna-build): add support for storing binary NMUs in the
+	wanna-build db with --binNMU=# where # is the binNMU number to
+	create.  You will be asked for the changelog entry if not
+	specified with -m.  The Version field of the database entry will
+	always track the source version from the sources files now, rather
+	than the Packages files.  Version numbers for binNMUs can be
+	specified as either the source version, or the full binNMU version
+	number.
+
+	* (buildd): add support for taking binNMUs from wanna-build,
+	passing them to sbuild, and adding them to REDO.  Older buildds
+	will delete binNMU redo lines from the redo file as being invalid,
+	and will take binNMUs, but not attempt to build them.  BinNMUs are
+	scheduled ahead of regular builds, and are always taken
+	one-at-a-time, like weak_no_autobuild.  binNMUs show in the
+	logfile as !#!pkg_ver, where # is the binNMU version number.
+
+	* (sbuild): Add REDO support for binNMUs.  binNMU packages will
+	only appear in the progress file as their binNMU version number
+	while actually building, so buildd-vlog continues to work.
+	Otherwise, it will be the source version.
+
+	* (buildd-uploader): Large rewrite to work better for buildds with
+	slow or intermittent links.  The logfile is no longer locked the
+	whole time buildd-uploader runs, so mail can still be processed.
+	Each package is uploaded in a seperate dupload process, and
+	wanna-build state updated right after the upload is successful.
+	This also has the effect that one stalled upload will not prevent
+	attempts at uploading the other packages.  Ensure that no more
+	than one buildd-uploader can run at once; previously, after 15
+	minutes, buildd-uploader would run anyways, possibly uploading
+	duplicates.  Take distribution field from changes files, rather
+	than requiring the distribution field to be in a hardcoded list.
+
+	* (buildd): removed stats generation for build time.
+
+	* (sbuild): add stats generation for download+install, build, and
+	remove times.
+
+	* (buildd-watcher): output new time stats.  These won't be fully
+	accurate from when one upgrades until the next stats generation,
+	after which, they should reflect the full stats time period (one
+	week by default)
+
+	* (debian/control): update dependencies to indicate that buildd
+	and sbuild need the latest versions of each other, due to the REDO
+	format change and time stats changes.
+
+	* (sbuild): disassociate from the controlling terminal and make
+	stdin /dev/null for the dpkg-buildpackage process.  buildd already
+	does this, but you didn't get that when run from the command line.
+
+	* (sbuild): don't create entries to the sbuild log when a package
+	claims to build an _all.deb, but doesn't.  Instead, warn to the
+	build log.
+
+	* (sbuild): workaround race condition while apt-ftparchive is
+	running on the archive host.  The signed Release file doesn't
+	match what is downloaded, so current apt deletes the list.  These
+	cases are now given-back, rather than failed.
+
+	* (abort-current-build): use a sudo'd perl to kill the
+	dpkg-buildpackage process, incase sudo is being used by sbuild
+
+	* (buildd): report errors while waiting for sbuild, and don't keep
+	waiting for it if there are no children at all.
+
+	* (sbuild.conf): default watch list to empty, most buildds run
+	with clean chroots
+
+	* (sbuild.conf): update alternatives, remove some ancient ones
+	that aren't used anymore
+
+	* (wanna-build): remove db entries that don't have any binary
+	packages in the Packages files anymore.  If something is added to
+	P-a-s, and the binaries removed, it was still showing as
+	"installed" with the last built version.
+
+	* (setup_system): add additional commented out adduser command for
+	when you already have a buildd group
+
+	* (setup_system): update chroot build command I:
+
+	* (buildd-make-chroot): create /etc/hosts file in chroot
+
+	* (buildd-make-chroot): Update debootstrap call to work with
+	modern debootstrap that pull Build-Essential from the packages
+	files.
+
+	* (buildd-make-chroot): support etch
+
+	* (many): Update FSF address again.
+
+2005-08-22  Ryan Murray  <rmurray@debian.org>
+
+	* add missing $change++ in parse_quinn so that changes will
+	actually be committed.
+
+2005-08-22  Ryan Murray  <rmurray@debian.org>
+
+	* really fix --uploaded with current buildd-uploader arbitrary
+	priorities can be specified for a package.  It will apply to the
+	current package for Needs-Build, Building, and Uploaded.  It will
+	apply to the next version of the package for Failed and Dep-Wait.
+	The priority will be reverted after that build.  There is also a
+	permanent priority setting, to change the default that the package
+	will be returned to.
+
+2005-08-20  Ryan Murray  <rmurray@debian.org>
+
+	* ensure --uploaded works with existing buildd-uploaders and
+	epochs
+
+2005-08-19  Ryan Murray  <rmurray@debian.org>
+
+	* AutoDepWait V1.  Catches the package (>= version) and (>>
+	version) cases.  Only applies to packages just moved to
+	Needs-Build by the quinn merge, so there is a way to get out from
+	behind them, if they are wrong for whatever reason.
+
+	* split WB version compare functions to seperate perl module use
+	them from sbuild instead of forking dpkg for each comparison
+	further MLDBM optimizations and fixes
+
+2005-08-05  Ryan Murray  <rmurray@debian.org>
+
+	* fix small error in dupload strings update
+
+2005-07-19  Ryan Murray  <rmurray@debian.org>
+
+	* more removal of non-US.
+
+	* also check the security upload dir for deletions in one more
+	place
+
+2005-07-19  Ryan Murray  <rmurray@debian.org>
+
+	* update dupload error strings for modern dupload
+
+2005-07-15  Ryan Murray  <rmurray@debian.org>
+
+	* parameters weren't being passed to pretend_avail()
+
+2005-07-13  Ryan Murray  <rmurray@debian.org>
+
+	* Treat "-" in quinn-diff priority fields as "unknown", rather
+	than "-"
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* Ensure a hash exists before a reference is passed to
+	change_state, or the state change won't be recorded.
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* disable strict refs for now
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* Patch from Brendan O'Dea <bod@debian.org> for version
+	comparisons to support ~ correctly.
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* And the big efficiency rewrite required by MLDBM.  It actually
+	works now :)
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* fix strftime calls
+
+	* add --merge-all option to take exactly one of Packages,
+	quinn-diff, and Sources.  Import them all, then clean the db.
+	Saves multiple opens of the database for daily maintenance.
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* use strftime instead of `date`, don't set a default arch (only
+	used for parsing packages, which should always be specified), and
+	only call hostname if we actually send mail.
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	* switch to Storable for MLDBM, as this is faster than the default
+	of Data::Dumper.
+
+2005-07-10  Ryan Murray  <rmurray@debian.org>
+
+	Replace wanna-build's WrapDB class with MLDBM, resulting in a 3x
+	speed improvement on database accesses.  This change requires you
+	to first --export your database with the old version, and then
+	--import with the new one.
+
+2005-07-06  Ryan Murray  <rmurray@debian.org>
+
+	* Fix ~ support in versions.
+
+2005-07-06  Ryan Murray  <rmurray@debian.org>
+
+	* set DEBIAN_FRONTEND to noninteractive when purging packages,
+	too.
+
+2005-07-06  Ryan Murray  <rmurray@debian.org>
+
+	* commented out example of chroot_only option
+
+2005-07-06  Ryan Murray  <rmurray@debian.org>
+
+	* add chroot_only mode, where sbuild will die if it's not building
+	inside a chroot, rather than using the root
+
+2005-07-06  Ryan Murray  <rmurray@debian.org>
+
+	* fix buildd-watcher to correctly report old files in chroots,
+	too.
+
+2005-07-06  Ryan Murray  <rmurray@debian.org>
+
+	* update $no_warn_pattern for ssh socket.
+
+2005-06-06  Ryan Murray  <rmurray@debian.org>
+
+	* don't bother creating upload-non-US anymore
+
+2005-06-02  Ryan Murray  <rmurray@debian.org>
+
+	* Update version
+
+2005-06-01  Ryan Murray  <rmurray@debian.org>
+
+	* sync with newraff, pointed out by Lamont.
+
+2005-06-01  Ryan Murray  <rmurray@debian.org>
+
+	* From Lamont: allow arch: all packages to be built when
+	$main::build_arch_all is true.
+
+2005-06-01  Ryan Murray  <rmurray@debian.org>
+
+	* Make sbuild more resilient about cruft in the status file
+	(again), without undoing the provides and real package at the same
+	time fix.
+
+2005-06-01  Ryan Murray  <rmurray@debian.org>
+
+	* fix typo in fallback code
+
+2005-06-01  Ryan Murray  <rmurray@debian.org>
+
+	* use /var/debbuild/apt.conf if it exists.  If it doesn't exist,
+	try to create it with the Dir ""; directive for the chroot.  If it
+	can't be created, use the existing logic.  This fixes the problem
+	of the root's /etc/apt/apt.conf and /etc/apt/apt.conf.d
+	directories being used, while the chroot's are ignored.
+
+2005-06-01  Ryan Murray  <rmurray@debian.org>
+
+	* make it "work"
+
+2005-05-28  Ryan Murray  <rmurray@debian.org>
+
+	* remove buildd incoming dir from testing chroots
+
+2005-05-16  Ryan Murray  <rmurray@debian.org>
+
+	* output commands to add to fstab
+
+2005-05-16  Ryan Murray  <rmurray@debian.org>
+
+	* update line break code for the longest size mutt likes: 989.
+
+2005-05-05  Ryan Murray  <rmurray@debian.org>
+
+	* update version
+
+2005-05-01  Ryan Murray  <rmurray@debian.org>
+
+	* remove use of external utilities where we already have functions
+	imported that do the same thing
+
+2005-05-01  Ryan Murray  <rmurray@debian.org>
+
+	* install buildd-make-chroot in /usr/sbin, rather than /usr/bin
+
+2005-04-28  Ryan Murray  <rmurray@debian.org>
+
+	* check EXIT-DAEMON-PLEASE in check_restart() instead of at the
+	top of mainloop.
+
+2005-04-25  Ryan Murray  <rmurray@debian.org>
+
+	* fix for versioned depends with both provided and actual package
+	installed; The versioned depends should always happen off the
+	actual package.
+
+2005-04-21  Ryan Murray  <rmurray@debian.org>
+
+	* include buildd-make-chroot in the sbuild package
+
+2005-03-26  Ryan Murray  <rmurray@debian.org>
+
+	* update version
+
+2005-03-26  Ryan Murray  <rmurray@debian.org>
+
+	* output purged packages line by line like other external
+	processes, rather than outputting everything all at once after the
+	process finishes.
+
+2005-03-26  Ryan Murray  <rmurray@debian.org>
+
+	* move unset_env call to read_config, remove from all the
+	binaries.  Environment is unset before reading the config, so that
+	any binaries referenced in the config with ` will have the
+	sanitized environment.
+
+2005-03-26  Ryan Murray  <rmurray@debian.org>
+
+	* always purge packages if we're building in a chroot.
+
+2005-03-25  Ryan Murray  <rmurray@debian.org>
+
+	* move environment cleansing to Buildd.pm unset_env cleanse
+	environment from buildd-mail, buildd-watcher, and buildd-uploader,
+	too.
+
+2005-03-25  Ryan Murray  <rmurray@debian.org>
+
+	* change length limit in changes to 990.  The RFC says 998,
+	postfix's default is 990, and others are somewhere in the 998-1000
+	range, or don't care...
+
+2005-03-22  Ryan Murray  <rmurray@debian.org>
+
+	* update version
+
+2005-03-22  Ryan Murray  <rmurray@debian.org>
+
+	* re-append the slave option after the config is reloaded
+
+2005-03-20  Ryan Murray  <rmurray@debian.org>
+
+	* setup master link before doing rebuilds, incase they
+	auto-giveback
+
+2005-03-20  Ryan Murray  <rmurray@debian.org>
+
+	* unset all locale related environment variables at startup kill
+	ssh with TERM (which is caught) instead of HUP (which isn't) watch
+	for the error message when the master is dead and the socket is
+	left behind (Connection refused).
+
+2005-03-20  Ryan Murray  <rmurray@debian.org>
+
+	* update version
+
+2005-03-20  Ryan Murray  <rmurray@debian.org>
+
+	* Always show versions of installed build dependencies.
+
+2005-03-19  Ryan Murray  <rmurray@debian.org>
+
+	* add support for passing the buildd sshsocket to sbuild for
+	autogivebacks.
+
+2005-03-19  Ryan Murray  <rmurray@debian.org>
+
+	* Make the mailing of rotated logs optional.
+
+2005-03-19  Ryan Murray  <rmurray@debian.org>
+
+	* finish conversion of weak_no_auto to be per-dist
+
+2005-03-19  Ryan Murray  <rmurray@debian.org>
+
+	* add comment indicating that the socket must be a relative path
+
+2005-03-18  Ryan Murray  <rmurray@debian.org>
+
+	* fix case where $conf::should_build_msgs is off to only build the
+	prevfailed package once.
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* fix kill parameters and check for existence of the socket before
+	starting a new master.
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* fix missing package qualifiers
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* kill the ssh process before exiting or shutting down
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* Revert wait-for-sbuild test, the extra check for ssh isn't
+	needed.
+
+	* Add socket support to buildd-mail and buildd-uploader
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* add support for ssh 3.9's -M and -S options.  set
+	$conf::sshsocket to the filename for the socket.  Requires ssh 3.9
+	on both ends, and doesn't attempt to fall back if you have an
+	older version installed.
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* fix $conf::should_build_msgs and setting $conf::nice_level to 0
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* build weak_no_auto packages at the end of each dist, rather than
+	after all dists, making it useful for security buildds.
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* add missing file handle
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* Split changes files sent in the log correctly, every 1000
+	characters, to better behave the mail RFCs.
+
+2005-03-16  Ryan Murray  <rmurray@debian.org>
+
+	* Misc cleanups to the source:
+
+	* Add license to repository.
+
+	* Update FSF address.
+
+	* Update Copyright.
+
+	* Set svn:eol-style to LF for all files
+
+	* Set svn:keywords to appropriate values for files that use them.
+
+	* Remove $Log$ keyword and contents where used (see revision 1 for
+	the log)
+
+	* Set svn:mime-type for several files
+
+2005-03-15  Ryan Murray  <rmurray@debian.org>
+
+	* initial import to svn

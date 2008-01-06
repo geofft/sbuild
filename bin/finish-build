@@ -1,0 +1,121 @@
+#!/bin/sh
+#
+# finish-build: finishes a manually fixed build by running binary-arch
+# if necessary and generating a .changes file
+# Copyright © 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+set -e
+
+if [ ! -f debian/rules ]; then
+    echo "This directory doesn't seem to contain a Debian source tree" 1>&2
+    exit 1
+fi
+
+logpath=$(cat /etc/sbuild.conf /etc/sbuild.conf.local $HOME/.sbuildrc  | \
+    sed -n '/^\$log_dir/s/.*"\(.*\)".*/\1/p' | tail -1)
+logpath=`eval echo $logpath`
+if [ -z "$logpath" ]; then
+    logpath=$HOME/logs
+fi
+
+maintname=$(cat /etc/sbuild.conf /etc/sbuild.conf.local $HOME/.sbuildrc  | \
+    sed -n '/^\$maintainer_name/s/.*"\(.*\)".*/\1/p' | tail -1)
+maintname=$(echo $maintname | sed 's/\\@/@/g')
+if [ -z "$maintname" ]; then
+    echo "Can't extract \$maintainer_name variable from sbuild config" 1>&2
+    exit 1
+fi
+
+mailto=$(cat /etc/sbuild.conf /etc/sbuild.conf.local $HOME/.sbuildrc  | \
+    sed -n '/^\$mailto/s/.*"\(.*\)".*/\1/p' | tail -1)
+mailto=$(echo $mailto | sed 's/\\@/@/g')
+if [ -z "$mailto" ]; then
+    echo "Can't extract \$mailto variable from sbuild config" 1>&2
+    exit 1
+fi
+
+setvar () {
+    if [ "x$2" = x ]; then
+	echo "$0: unable to determine $3"
+	exit 1
+    else
+	eval "$1='$2'"
+    fi
+}
+
+opt_b=0
+while [ $# -ge 1 ]; do
+    case "$1" in
+	-b) opt_b=1;;
+	*)  echo "Unknown option $1" 1>&2; exit 1;;
+    esac
+    shift
+done
+
+tmpf=/tmp/finish-build.$$
+dpkg-parsechangelog > $tmpf
+setvar package "`sed -n 's/^Source: //p' $tmpf`" "source package"
+setvar version "`sed -n 's/^Version: //p' $tmpf`" "source version"
+setvar arch "`dpkg --print-architecture`" "build architecture"
+rm -f $tmpf
+sversion=`echo "$version" | perl -pe 's/^\d+://'`
+changes=${package}_${sversion}_${arch}.changes
+logpat=${package}_${version}
+
+lastlog=`(cd $logpath; ls -1t ${logpat}_* | head -1) 2>/dev/null`
+if [ -z "$lastlog" ]; then
+    echo "No log file found (pattern ${logpat}_*)" 1>&2
+    exit 1
+else
+    echo "  Log file is $lastlog"
+fi
+
+do_binarch=0
+if [ ! -f debian/files ]; then
+    echo "  debian/files missing -- running binary-arch"
+    do_binarch=1
+elif [ $opt_b = 1 ]; then
+    do_binarch=1
+fi
+
+if [ $do_binarch = 1 ]; then
+    echo "  sudo debian/rules binary-arch"
+    sudo debian/rules binary-arch 2>&1 | tee -a $logpath/$lastlog
+fi
+
+if [ ! -s ../$changes ]; then
+    echo "  Generating .changes file:"
+    dpkg-genchanges -B -m"$maintname" > ../$changes
+fi
+
+if [ ! -f debian/files ]; then
+    echo "debian/files not found" 1>&2
+    exit 1
+fi
+files="`cut -d' ' -f1 debian/files`"
+if [ -z "$files" ]; then
+    echo "No files list" 1>&2
+    exit 1
+fi
+
+(cat $logpath/$lastlog;
+    for i in $files; do echo; echo "$i:"; dpkg --info ../$i; done;
+    for i in $files; do echo; echo "$i:"; dpkg --contents ../$i; done;
+    echo; echo "$changes:"; cat ../$changes
+    ) | mail -s "Log for successful build of $logpat (dist=unstable)" $mailto

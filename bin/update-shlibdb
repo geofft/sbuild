@@ -1,0 +1,408 @@
+#!/usr/bin/perl -w
+#
+# update-shlibdb: build/update database of shlib signatures
+# Copyright © 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+BEGIN {
+    ($HOME = $ENV{'HOME'})
+	or die "HOME not defined in environment!\n";
+    push( @INC, "$main::HOME/lib" );
+}
+
+package conf;
+$HOME = $main::HOME;
+# defaults:
+$shlib_db_dir = ".";
+$dpkglibdir = "/var/lib/dpkg";
+# read conf files
+require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
+require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
+package main;
+
+use strict;
+use Digest::MD5;
+use File::Basename;
+use DB_File;
+use vars qw(%shlib_pkg %shlib_link_pkg %pkg_shlibs_md5 %shlib_alias
+			%lib_to_dev %dev_to_lib %dev_shlibs_md5 %pkg_vers $arch $component
+			$dist $installed $verbose $full_scan %db $HOME);
+
+chomp( $arch = `dpkg --print-architecture 2>/dev/null` );
+$arch ||= "i386";
+$component = "main";
+$dist = "unstable";
+$verbose = 0;
+$installed = 0;
+$full_scan = 0;
+my @ignore_i_pkgs = qw(-(i386|m68k|alpha|sparc|powerpc|arm|hurd-i386)-cross$);
+$| = 1;
+
+my %options =
+    (# flags
+     verbose          => { short => "v", flag => \$verbose },
+     installed        => { short => "i", flag => \$installed },
+     "full-scan"	  => { short => "f", flag => \$full_scan },
+     # options with args
+     arch             => { short => "a", arg => \$arch },
+     dist             => { short => "d", arg => \$dist },
+     component        => { short => "c", arg => \$component },
+     libdir           => { short => "l", arg => \$conf::shlib_db_dir }
+    );
+
+while( @ARGV && $ARGV[0] =~ /^-/ ) {
+    $_ = shift @ARGV;
+    last if $_ eq "--";
+    my($opt, $optname, $arg);
+    if (/^--([^=]+)(=|$)/) {
+	$optname = $1;
+	$opt = $options{$optname};
+	$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
+    }
+    else {
+	$optname = substr( $_, 1, 1 );
+	$opt = (grep { $_->{short} eq $optname } values %options)[0];
+	$arg = $1 if /^-$optname(.+)$/;
+    }
+    if (!$opt) {
+	warn "Unknown option: --$1\n";
+	usage();
+    }
+    if ($opt->{arg}) {
+	if (!defined $arg) {
+	    die "$optname option missing argument\n" if !@ARGV;
+	    $arg = shift @ARGV;
+	}
+	${$opt->{arg}} = $arg;
+    }
+    elsif (defined $arg) {
+	die "Option $optname takes no argument\n";
+    }
+
+    if ($opt->{flag}) {
+	${$opt->{flag}}++;
+    }
+    if ($opt->{code}) {
+	&{$opt->{code}};
+    }
+}
+
+# some checks
+die "Database dir $conf::shlib_db_dir is not a directory\n"
+    if ! -d $conf::shlib_db_dir;
+
+my $dbname = "$conf::shlib_db_dir/shlibsigs-".
+    ($installed ? "installed" : $dist);
+tie %db, 'DB_File', $dbname, O_RDWR|O_CREAT|($full_scan?O_TRUNC:0),
+    0644, $DB_HASH;
+die "Cannot open database $dbname: $!\n" if !tied %db;
+
+my ($file, $so, $libpkg, $devpkg);
+if ($installed) {
+    die "Dpkg lib dir $conf::dpkglibdir is not a directory\n"
+	if ! -d $conf::dpkglibdir;
+    read_dpkg_status();
+    foreach $file (glob( "$conf::dpkglibdir/info/*.list" )) {
+	scan_i_package( $file );
+    }
+}
+else {
+    open( F, "/org/ftp.debian.org/database/dists/${dist}_${component}_binary-${arch}.list" )
+	or die "Cannot open file list: $!\n";
+    chomp( my @files = <F> );
+    close( F );
+
+    foreach $file (@files) {
+	scan_a_package( $file );
+    }
+}
+
+foreach $so (keys %shlib_pkg) {
+    my $libpkg = $shlib_pkg{$so};
+    if (!exists $pkg_shlibs_md5{$libpkg}) {
+	warn "WARNING: $libpkg contains a shared library ($so), but has ",
+	"no shlibs file\n";
+	next;
+    }
+    my $so2 = $so;
+    $so2 = $shlib_alias{$so2}
+    while !exists $shlib_link_pkg{$so2} && exists $shlib_alias{$so2};
+    if (!exists $shlib_link_pkg{$so2} ||
+	(my @devpkgs = keys %{$shlib_link_pkg{$so2}}) == 0) {
+	warn "NOTE: no dev link to $so in $libpkg found",
+	($installed ? " (associated -dev package not installed?)" : ""),
+	"\n";
+    }
+    else {
+	warn "WARNING: more than one package contains links to $so: @devpkgs\n"
+	    if @devpkgs > 1;
+	foreach (@devpkgs) {
+	    $lib_to_dev{$libpkg}->{$_} = 1;
+	}
+    }
+}
+
+foreach (keys %lib_to_dev) {
+    warn "NOTE: more than one dev package associated with $_: ",
+    join( " ", keys %{$lib_to_dev{$_}} ), "\n"
+	if keys %{$lib_to_dev{$_}} > 1;
+}
+
+foreach $libpkg (keys %pkg_shlibs_md5) {
+    warn "WARNING: $libpkg with shlibs file isn't a -dev\n", next if !exists $lib_to_dev{$libpkg};
+    foreach $devpkg (keys %{$lib_to_dev{$libpkg}}) {
+	$dev_to_lib{$devpkg}->{$libpkg} = 1;
+    }
+}
+
+foreach (keys %dev_to_lib) {
+    warn "WARNING: more than one lib package associated with $_: ",
+    join( " ", keys %{$dev_to_lib{$_}} ), "\n"
+	if keys %{$dev_to_lib{$_}} > 1;
+    my $s = join(";",map { $pkg_shlibs_md5{$_} } sort keys %{$dev_to_lib{$_}});
+    print "$_ => $s\n" if $verbose;
+    set_db( $_, $pkg_vers{$_}, $s );
+}
+
+
+sub scan_a_package {
+    my $file = shift;
+    local( *PIPE );
+
+    $file =~ m,/([^/_]+)_([^/]+)\.deb$,;
+    my ($pkg, $vers) = ($1, $2);
+    my $have_shlibs = 0;
+
+    if (db_exists($pkg) && strip_epoch(db_version($pkg)) eq $vers) {
+	print "Skipping ${pkg}_$vers (already in db)\n" if $verbose >= 2;
+	return;
+    }
+
+    print "Scanning $pkg\n" if $verbose >= 2;
+
+    if (!open( PIPE, "ar p $file control.tar.gz | ".
+	       "tar xzOf - ./control | grep '^Version:' 2>&1 |" )) {
+	warn "Cannot open pipe to ar/tar: $!\n";
+	return;
+    }
+    chomp( my $version = <PIPE> );
+    close( PIPE );
+    if (!$version) {
+	warn "ERROR: No Version: header found for $file\n";
+	return;
+    }
+    $version =~ s/^Version:\s*//;
+    $pkg_vers{$pkg} = $version;
+
+    if (!open( PIPE, "ar p $file data.tar.gz | tar tvzf - |" )) {
+	warn "Cannot open pipe to ar/tar: $!\n";
+	return;
+    }
+    while( <PIPE> ) {
+	my @f = split;
+	my $manyfields = 0; #(@f >= 8);
+	my $mode = $f[0];
+	my $name = normalize_path("/" . $f[$manyfields ? 7 : 5]);
+	my $link = $f[$manyfields ? 9 : 7];
+	if ($mode =~ /^-/ && $name =~ m,/[^/]+\.so\.[^/]+$,) {
+	    my $so = $name;
+	    $shlib_pkg{$so} = $pkg;
+	    print "Found $so in $pkg\n" if $verbose;
+	    $have_shlibs = 1;
+	}
+	elsif ($mode =~ /^l/ && $name =~ m,/[^/]+\.so\.[^/]+$,) {
+	    my $so = $name;
+	    my $target = make_abs_link($link, $name);
+	    $shlib_alias{$target} = $so;
+	    print "Found alias $so for $target\n" if $verbose;
+	}
+	elsif ($mode =~ /^l/ && $name =~ m,/[^/]+\.so$, &&
+	       $link =~ m,(^|/)[^/]+\.so\.[^/]+$,) {
+	    my $so = make_abs_link($link, $name);
+	    $shlib_link_pkg{$so}->{$pkg} = 1;
+	    print "Found link to $so in $pkg\n" if $verbose;
+	}
+    }
+    close( PIPE );
+    warn "dpkg --contents $file returned status $?\n", return if $?;
+
+    if ($have_shlibs) {
+	if (!open( PIPE, "ar p $file control.tar.gz | ".
+		   "tar xzOf - ./shlibs 2>&1 |" )) {
+	    warn "Cannot open pipe to ar/tar: $!\n";
+	    return;
+	}
+	my $shlibs_contents;
+	{ local($/); $shlibs_contents = <PIPE>; }
+	close( PIPE );
+
+	if ($shlibs_contents =~ m#^tar: ./shlibs: Not found#mi) {
+	    # no warning here...
+	}
+	elsif ($?) {
+	    warn "ar|tar shlibs returned status $?\n";
+	}
+	else {
+	    $pkg_shlibs_md5{$pkg} = make_shlibs_md5( $shlibs_contents );
+	    print "shlib-md5 for $pkg is $pkg_shlibs_md5{$pkg}\n" if $verbose;
+	}
+    }
+
+    set_db( $pkg, $version, $pkg_shlibs_md5{$pkg} );
+}
+
+
+sub scan_i_package {
+    my $list_file = shift;
+    local( *F );
+
+    $list_file =~ m,/([^/_]+)\.list$,;
+    my $pkg = $1;
+    return if !exists $pkg_vers{$pkg} || # probably Status: != installed
+	grep { $pkg =~ /$_/ } @ignore_i_pkgs;
+
+    my $have_shlibs = 0;
+
+    if (db_exists($pkg) && db_version($pkg) eq $pkg_vers{$pkg}) {
+	print "Skipping ${pkg}_$pkg_vers{$pkg} (already in db)\n"
+	    if $verbose >= 2;
+	return;
+    }
+
+    print "Scanning $pkg\n" if $verbose >= 2;
+
+    open( F, "<$list_file" )
+	or die "Cannot open $list_file: $!\n";
+    while( <F> ) {
+	chomp;
+	my ($isl, $isf, $issod, $target);
+	next if !m,/[^/]+\.so(\.[^/]+)?$,;
+	$issod = 1 if !$1;
+	$isf = 1 if -f $_;
+	$isl = 1 if -l $_;
+	$target = make_abs_link(readlink($_),$_) if $isl;
+
+	if (!$isl && $isf && (!$issod || m,(^|/)libstdc\+\+,)) {
+	    $shlib_pkg{$_} = $pkg;
+	    print "Found $_ in $pkg\n" if $verbose;
+	    $have_shlibs = 1;
+	}
+	elsif ($isl && !$issod) {
+	    $shlib_alias{$target} = $_;
+	    print "Found alias $_ for $target\n" if $verbose;
+	}
+	elsif ($isl && $issod && -l $_ &&
+	       $target =~ m,(^|/)([^/]+\.so\.[^/]+)$,) {
+	    $shlib_link_pkg{$target}->{$pkg} = 1;
+	    print "Found link to $target in $pkg\n" if $verbose;
+	}
+    }
+    close( F );
+
+    if ($have_shlibs) {
+	(my $shlibs_file = $list_file) =~ s/\.list$/.shlibs/;
+	if (-f $shlibs_file) {
+	    if (!open( F, "<$shlibs_file" )) {
+		warn "Cannot open $shlibs_file: $!\n";
+		return;
+	    }
+	    my $shlibs_contents;
+	    { local($/); $shlibs_contents = <F>; }
+	    close( F );
+
+	    $pkg_shlibs_md5{$pkg} = make_shlibs_md5( $shlibs_contents );
+	    print "shlib-md5 for $pkg is $pkg_shlibs_md5{$pkg}\n" if $verbose;
+	}
+    }
+
+    set_db( $pkg, $pkg_vers{$pkg} );
+}
+
+sub read_dpkg_status {
+    local( *F );
+    local($/) = "";
+
+    open( F, "$conf::dpkglibdir/status" )
+	or die "Cannot open $conf::dpkglibdir/status: $!\n";
+    while( <F> ) {
+	my ($package, $status, $version);
+	/Package:\s*(\S+)\s*$/mi and $package = $1;
+	/Status:.*?(\S+)\s*$/mi and $status = $1;
+	/Version:\s*(\S+)\s*$/mi and $version = $1;
+	next if $status ne "installed";
+	$pkg_vers{$package} = $version;
+    }
+    close( F );
+}
+
+sub make_shlibs_md5 {
+    my $contents = shift;
+    my $md5 = new Digest::MD5;
+
+    foreach (split( "\n", $contents )) {
+	next if /^\s*$/;
+	my @f = split;
+	$md5->add( join( " ", @f[0..1], join( "", @f[2..$#f] )) );
+    }
+    return $md5->hexdigest();
+}
+
+sub make_abs_link {
+    my $link = shift;
+    my $name = shift;
+
+    $link = dirname($name)."/".$link if $link !~ m,^/,;
+    $link = normalize_path($link);
+    return $link;
+}
+
+sub normalize_path {
+    my $p = shift;
+    my $q = $p;
+
+    $p =~ s,//+,/,g;
+    $p =~ s,/\./,/,g;
+    $p =~ s,[^/]+/\.\./,, while $p =~ m,[^/]+/\.\./,;
+    $p =~ s,^(/\.\.)+,,;
+    return $p;
+}
+
+sub strip_epoch {
+    my $str = shift;
+    $str =~ s/^\d+://;
+    return $str;
+}
+
+sub set_db {
+    my ($pkg, $version, $md5) = @_;
+
+    $md5 ||= "*";
+    $db{$pkg} = "$version $md5";
+}
+
+sub db_exists {
+    return exists $db{$_[0]};
+}
+
+sub db_version {
+    return (split( ' ', $db{$_[0]} ))[0];
+}
+
+sub db_md5 {
+    return (split( ' ', $db{$_[0]} ))[1];
+}

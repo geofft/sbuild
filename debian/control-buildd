@@ -1,0 +1,21 @@
+Source: buildd
+Section: devel
+Priority: extra
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debian.org>
+Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, Francesco Paolo Lovergine <frankie@debian.org>
+Standards-Version: 3.6.2
+
+Package: wanna-build
+Architecture: any
+Depends: ${shlibs:Depends}, perl5, libmldbm-perl
+Recommends: exim | mail-transport-agent, cron, wget
+Suggests: gnupg
+Description: Database for Debian source packages needing to be compiled.
+ wanna-build maintains a database of packages which need to be compiled.
+
+Package: buildd
+Architecture: any
+Depends: ${shlibs:Depends}, perl5, sbuild (>= 0.49), dupload, cron, exim | mail-transport-agent
+Description: Build daemon for automatically compiling Debian packages
+ buildd is a build daemon which will compile Debian packages automatically.
+

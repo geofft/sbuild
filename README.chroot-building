@@ -1,0 +1,93 @@
+                                                    -*- mode: indented-text -*-
+
+
+			 Building in chroot environments with sbuild
+			 -------------------------------------------
+
+					  Roman Hodek, June 7th 2000
+
+
+Starting with revision 1.133, sbuild can build packages also in a
+chroot environment. (You also need buildd-addpkg >= 1.5). There are
+different such environments for each distribution. The advantages of
+this are:
+
+ - You can build for different distributions on the same machine
+   without headaches about shared library version or the like.
+
+ - Badly programmed build procedures can't modify files on the build
+   host.
+
+ - The access time check for binaries used without a source dependency
+   becomes a bit more reliable, because normal user activities can't
+   cause an atime change.
+
+It works like in the following outline:
+
+ - For each distribution (stable, frozen, unstable), there's a
+   separate installation in (e.g.) /usr/local/chroot/DIST. (This path
+   isn't hardwired, but used in this documentation.)
+
+ - The chroot environment can be prepared with buildd-setup-chroot.
+
+ - If in the build directory a symlink chroot-DIST exists (and the
+   build is for DIST), then sbuild will unpack the sources in
+   chroot-DIST/build/USERNAME and build the package there.
+   dpkg-buildpackage will be called under chroot, so that the whole
+   build process can't access files outside the build root.
+
+ - All apt and dpkg and similar operations are also chroot-ed, so only
+   the chroot environment for that distribution is affected. That way,
+   different shared lib versions can coexist on the same machine and
+   the like. (It also reduces waiting time for parallel builds: If
+   they're for different distributions, installations can happen at
+   the same time and don't need to wait for each other.)
+
+Ok, now a bit more slowly:
+
+Best you prepare your chroot environments with the script
+buildd-make-chroot. It does lots of things automatically. However,
+manual fixes may be required. buildd-make-chroot is usually called
+as:
+
+  sudo buildd-make-chroot buildd DIST chroot-DIST http://optional.nearby.mirror/debian
+
+This will call debootstrap 0.3.2 or higher to create a new chroot, and then set
+it up for the buildd user specified.
+
+Ok, after the chroot environments for all the distributions you want
+are set up, you can start building in them. sbuild recognizes the
+chroot environments by the existance of a chroot-DIST symlink in its
+build directory (the dir where sbuild is started). If such a link
+doesn't exist for the requested distribution, a normal build in the
+host filesystem is performed like you're used to.
+
+If, however, the symlink exists, it should point to the root of the
+chroot environment. Sources are unpacked in
+chroot-DIST/build/USERNAME. (The username is appended so that multiple
+users can utilize the chroot environment at the same time without
+mixing the source trees.) All checks for packages and package
+installations are performed --of course-- in the chroot. After
+building, the .debs and the .changes file are moved back to the normal
+build directory. (If a build fails, the source tree isn't moved back
+but remains in chroot-DIST/build/USERNAME.)
+
+One point still worth mentioning is how the AddPkg directories are
+handled. Those directories contain freshly built packages that might
+be needed for building other packages before they're installed in the
+archive. Since revision 1.5 of buildd-addpkg, the AddPkg packages are
+separated by distribution, which is necessary to export them
+selectivly into the chroot environments. For example, in the frozen
+chroot, only AddPkg/stable and AddPkg/frozen will be mounted but not
+AddPkg/unstable, because unstable packages may not be used for
+building frozen packages. Likewise the stable chroot mounts only
+AddPkg/stable, and the unstable one mounts all three.
+
+The access from inside the chroot environments to the AddPkg packages
+works over the local NFS mounts described above. The appropriate deb
+lines in sources.list should have been created by buildd-setup-chroot.
+
+The installation into an AddPkg directory by sbuild and buildd-addpkg
+is done from outside the chroot environment.
+
+

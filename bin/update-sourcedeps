@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# update-shlibdb: build/update database of shlib signatures
+# Copyright © 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+set -e
+
+tmp=/tmp/update-sourcedep.$$
+dbdir=/etc
+arch=$(dpkg --print-installation-architecture)
+host=buildd.debian.org
+dir=andrea/$arch
+file=source-dependencies
+
+mkdir $tmp
+cd $tmp
+
+trap 'rm -rf $tmp ; exit 1' 1 2 3 13 15
+trap 'rm -rf $tmp' 0
+
+done=""
+for distribution in stable testing unstable; do
+
+    name=$file-$distribution
+    if wget --tries=3 -q http://$host/$dir/$name.gz; then
+	gunzip $name.gz
+	if ! cmp -s $name $dbdir/$name; then
+	    done="$done $distribution"
+cp $name $dbdir/
+chmod 664 $dbdir/$name
+#			if [ -x /usr/bin/sourcedeps-makerev ]; then
+#				/usr/bin/sourcedeps-makerev $dbdir/$name >$dbdir/$name.rev
+#			fi
+	fi
+    fi
+    done
+
+    if [ -n "$done" ]; then
+	echo "Updated source-dependencies for:$done"
+    fi
+
+    exit 0

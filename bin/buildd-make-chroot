@@ -1,0 +1,99 @@
+#!/bin/sh -e
+#
+# Script that uses debootstrap 0.3.2+ to build a build-essential
+# chroot for buildd use.
+# Copyright © 2005 Ryan Murray <rmurray@debian.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+# user suite target <mirror>
+if [ "$#" -lt "3" ]; then
+    echo "usage: buildd-make-chroot user suite target <mirror>"
+    exit 1
+fi
+
+if [ "$#" -gt "4" ]; then
+    echo "usage: buildd-make-chroot user suite target <mirror>"
+    exit 1
+fi
+
+USER=$1
+SUITE=$2
+if echo "$3" | grep -Eq '^/'; then
+    TARGET="$3"
+else
+    TARGET="`pwd`/$3"
+fi
+if [ "$#" -gt "3" ]; then
+    MIRROR=$4
+else
+    MIRROR=http://incoming.debian.org/debian
+fi
+debootstrap --variant=buildd --include=sudo,fakeroot,build-essential $SUITE $TARGET $MIRROR
+hostname=`hostname`
+echo 127.0.0.1 $hostname localhost > $TARGET/etc/hosts
+echo "# put any local/close mirrors at the top of the file" > $TARGET/etc/apt/sources.list
+if [ "$#" -gt "3" ]; then
+    echo "deb     $4 $SUITE main contrib" >> $TARGET/etc/apt/sources.list
+fi
+echo "deb     http://incoming.debian.org/debian $SUITE main contrib" >> $TARGET/etc/apt/sources.list
+echo "deb-src http://incoming.debian.org/debian $SUITE main contrib" >> $TARGET/etc/apt/sources.list
+case "$2" in
+    sid)
+	echo "deb     http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://incoming.debian.org/buildd /" >> $TARGET/etc/apt/sources.list
+	;;
+    woody)
+	echo "deb     http://non-us.debian.org/debian-non-US $SUITE/non-US main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://non-us.debian.org/debian-non-US $SUITE/non-US main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://$hostname:PASSWORD@security-master.debian.org/debian-security $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/debian-security $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	;;
+    sarge)
+	echo "deb     http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://$hostname:PASSWORD@security-master.debian.org/debian-security $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/debian-security $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	;;
+    etch)
+	echo "deb     http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://incoming.debian.org/debian $SUITE-proposed-updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://$hostname:PASSWORD@security-master.debian.org/debian-security $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/debian-security $SUITE/updates main contrib" >> $TARGET/etc/apt/sources.list
+	echo "deb     http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	echo "deb-src http://$hostname:PASSWORD@security-master.debian.org/buildd $SUITE/" >> $TARGET/etc/apt/sources.list
+	;;
+esac
+getent passwd $USER | sed -re 's/^([^:]+):x/\1:*/' -e 's/:[^:]+:([^:]+)$/:\/nonexistent:\1/' >> $TARGET/etc/passwd
+getent group $USER | sed -re 's/^([^:]+):x/\1:*/' >> $TARGET/etc/group
+echo $USER  ALL=NOPASSWD:  ALL >> $TARGET/etc/sudoers
+mkdir -p $TARGET/var/lib/sbuild//srcdep-lock $TARGET/build/$USER
+chown -R $USER:$USER $TARGET/var/lib/sbuild $TARGET/build/$USER
+chmod -R 02775 $TARGET/var/lib/sbuild
+echo include /etc/ld.so.conf.d/*.conf >> $TARGET/etc/ld.so.conf
+(cd $TARGET/dev ; ./MAKEDEV fd)
+sudo chroot $TARGET dpkg -P debconf-i18n debconf liblocale-gettext-perl libtext-charwidth-perl libtext-iconv-perl libtext-wrapi18n-perl procps makedev
+echo "Successfully setup chroot for a buildd"
+echo Possible commands to append to fstab:
+echo echo $SUITE-proc $TARGET/proc proc defaults 0 0 \>\> /etc/fstab
+echo echo $SUITE-devpts $TARGET/dev/pts devpts defaults,gid=5,mode=600 0 0 \>\> /etc/fstab
