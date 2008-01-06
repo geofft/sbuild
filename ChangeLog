@@ -1,5 +1,13 @@
 2008-01-06  Roger Leigh  <rleigh@debian.org>
 
+	* bin/wanna-build: use Sbuild.pm.
+
+	* lib/WannaBuild.pm: Remove (replaced by Sbuild.pm).
+
+	* lib/Sbuild.pm: Add parse_date function (from WannaBuild.pm).
+
+2008-01-06  Roger Leigh  <rleigh@debian.org>
+
 	* Merge buildd repository.
 
 2008-01-01  Roger Leigh  <rleigh@debian.org>

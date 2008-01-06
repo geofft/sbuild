@@ -32,7 +32,7 @@ use POSIX;
 use FileHandle;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
-use WannaBuild;
+use Sbuild;
 
 our ($verbose, $mail_logs, $list_order, $list_state, $curr_date,
      $op_mode, $user, $real_user, $distribution, $fail_reason,
@@ -88,7 +88,7 @@ my %options =
      verbose        => { short => "v", flag => \$verbose },
      override		=> { short => "o", flag => \$opt_override },
      "create-db"	=> { flag => \$opt_create_db },
-     "correct-compare" => { flag => \$WannaBuild::opt_correct_version_cmp },
+     "correct-compare" => { flag => \$Sbuild::opt_correct_version_cmp },
      "no-propagation" => { short => "N", flag => \$opt_no_propagation },
      "no-down-propagation" => { short => "D", flag => \$opt_no_down_propagation },
      # normal actions
