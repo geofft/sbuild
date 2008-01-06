@@ -1,0 +1,4 @@
+#!/bin/sh -e
+if [ ! -e /etc/cron.d/buildd ]; then
+	zcat /usr/share/doc/buildd/examples/crontab.gz > /etc/cron.d/buildd
+fi

@@ -1,0 +1,53 @@
+#!/bin/sh
+#
+# Copyright © 2005-2006 Ryan Murray <rmurray@debian.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+
+# Needed sudoers entries:
+#buildd  ALL=NOPASSWD: ALL
+#Defaults:buildd env_keep+="APT_CONFIG DEBIAN_FRONTEND"
+#
+# parts to be run as root.
+# ons of these, depending on whether you have a buildd group or not
+#sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --ingroup buildd --disabled-password buildd
+sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --group --disabled-password buildd
+sudo chown -R buildd:buildd /var/lib/wanna-build
+sudo chmod -R 2775 /var/lib/wanna-build
+# parts to be done as buildd.
+cd ~buildd
+zcat /usr/share/doc/buildd/examples/buildd.conf.gz > buildd.conf
+zcat /usr/share/doc/sbuild/examples/sbuildrc.gz > .sbuildrc
+mkdir -p .ssh build logs mqueue old-logs stats/graphs upload upload-security
+chmod o= .ssh upload-security old-logs mqueue logs build
+echo "|/usr/bin/buildd-mail-wrapper" > .forward
+ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N ''
+echo I: setup .forward-porters with where you want buildd mail to go.
+echo I: chroot creation commands:
+echo buildd-make-chroot buildd sid build/chroot-unstable http://ftp.debian.org/debian
+echo buildd-make-chroot buildd sarge build/chroot-sarge http://ftp.debian.org/debian
+echo buildd-make-chroot buildd woody build/chroot-woody http://ftp.debian.org/debian
+echo buildd-make-chroot buildd etch build/chroot-etch http://ftp.debian.org/debian
+echo I: Link commands for the chroots:
+echo ln -s chroot-woody chroot-oldstable-security
+echo ln -s chroot-sarge chroot-stable
+echo ln -s chroot-sarge chroot-stable-security
+echo ln -s chroot-etch chroot-testing
+echo ln -s chroot-etch chroot-testing-security
+echo I: Done.
+exit 0

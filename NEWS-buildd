@@ -1,0 +1,1416 @@
+2004-09-05  Ryan Murray  <rmurray@debian.org>
+
+	* buildd-mail: get filelist from changes file first when processing
+	  ACCEPTED/INSTALLED mail.  Limit filename pattern to valid filename
+	  characters if the changes file doesn't exist.  Solves possible
+	  remote execution vulnerability (non-existant in default setup).
+
+2003-11-05  Ryan Murray  <rmurray@debian.org>
+
+	* sbuild: display toolchain package versions
+	* sbuild: get build-essential information from the chroot, not
+        the root.
+	* sbuild: new --use-snapshot option that installs the gcc-snapshot
+	package as a build-depends, and sets the environment variables needed
+	to use it.
+	* buildd-mail: attempt to move installed packages to the apt cache dir
+	rather than deleting them.  This saves bandwidth, as they will not
+	need to be downloaded again if they are build-depends, but uses a lot
+	of diskspace.
+	* wanna-build: add --clean-db option to free unused space in the dbm
+	file
+	* sbuild: set the state of installed build-dependencies to purge after
+	installation, so that in case of a crash, dpkg -P --pending should
+	remove all packages that no longer need to be there.
+	* sbuild: add $conf::build_env_cmnd to setup the build environment
+	for sparc32 building on sparc64 (and other things?)
+	* sbuild:  add --binNMU=# parameter for use with --make-binNMU
+	for the case where more than one binNMU is needed between
+	upstream releases.  defaults to 1.
+	* sbuild: remove unused --store-built-packages
+	* buildd: don't call sbuild with --store-built-packages
+	* sourcedeps-makerev: disable for now, needs a rewrite for apt
+	* update-sourcedeps: comment call to sourcedeps-makerev for now
+	* buildd-mail: check for a Distribution: line in signed changes files,
+	and at least one file.
+	* buildd: call apt-get autoclean after an apt-get update that updates
+	the apt package cache.
+	* buildd-uploader: don't upload what's in the current directory if we
+	can't chdir to the upload dir.
+	* buildd: fork and call setsid so we don't have a controlling terminal.
+	* abort-current-build: use /bin/kill instead of shell builtin
+	* add EXIT-DAEMON-PLEASE flagfile.  buildd checks it once per loop
+          and will exit if found, taking the file with it.  sbuild checks it
+          after finishing each build, and will exit when finished a job.
+	* Patch from Anthony Towns <ajt@debian.org> to sort standard and higher
+	  priorities higher, and add it to the front of the default order
+	  characters (the new character is S).  This has the effect of making
+	  standard and higher uncompiled sort higher than all optional and
+	  extra, which is ideal for Debian.
+
+2001-01-11  Roman Hodek  <roman@caldera.de>
+
+	* FetchFile.pm: Various fixes for package pools (tnx to Dan for
+	patches).
+
+	* sbuild.conf.local: New variable %dist_aliases can be used to
+	translate distribution names (entries under dists/ on a mirror).
+	Currently needed for strange unstable -> sid symlink, which IMHO
+	should point to woody instead.
+
+2000-10-19  Roman Hodek  <roman@caldera.de>
+
+	* sbuild: By Dan: Make sure that /etc/ld.so.conf is readable
+	before building.
+
+	* sbuild: Introduced local source dependency overrides with
+	%conf::srcdep_over defined in some config file. You can replace
+	deps on arbitrary packages with something else, e.g.
+	$srcdep_over{'libfoo1-dev'} = [qw(libfoo2 >= 2.0)];
+
+	* buildd-mail: Added preliminary PGP/MIME support by Dan.
+
+2000-06-27  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: There are two new section types for special
+	dependencies. The first is 'prepre', which contains a shell script
+	like 'pre', but the script is run *before* dependencies are
+	installed ('pre' is run afterwards).
+	The second new section is 'unpack'. You can list a number of
+	source package names there. sbuild will fetch the .dsc files and
+	unpack the source trees in the build dir. After the build, those
+	trees will be removed again. This can replace the dpkg-source
+	calls that were used in pre scripts. Their problem were that they
+	needed access to a local mirror, which can't be guaranteed now
+	with chroot environments. 
+
+2000-06-20  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: For chrooted builds, call apt-get with a bunch of
+	options to relocate all relevant files instead of chrooting apt
+	itself. This makes it unnecessary to have the Debian archive to be
+	available from inside the chroot environment. Also dpkg and
+	apt-cache calls are chrooted with options now.
+
+	* buildd-addpkg: Also here apt-get is called with options instead
+	of chrooting it.
+
+2000-06-19  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-addpkg: New option --chroot=DIR (can be given multiple
+	times). Causes apt-get update to be run chrooted for that dirs,
+	too.
+
+	* sbuild: If build was chrooted and produced source-deps, call
+	buildd-addpkg with --chroot options for all dists greater or
+	equal to the current one to get apt caches correctly updated.
+
+	* sbuild, sbuild.conf: New config var
+	@ignore_watches_no_build_deps. Watch packages listed there aren't
+	reported if the package has no Build-Depends. This is for things
+	like debhelper and debstd which are considered essential with
+	the central source deps but not with Build-Depends.
+
+2000-06-13  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Also execute shell scripts of special dependencies in
+	chroot environment.
+
+2000-06-09  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* rbuilder: Has been modified to use chroot environments. So you
+	finally can build stable packages on kullervo now without shared
+	library version problems!
+	It also uses wanna-build again, but doesn't give back packages
+	anymore so that the stable build daemon won't take them.
+
+2000-06-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Implemented building in chroot environments. See
+	README.chroot-building for details.
+
+	* buildd-setup-chroot: New script for setting up a chroot
+	environment for sbuild. See README.chroot-building for details.
+
+	* README.chroot-building: New documentation for the above.	
+
+2000-06-06  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: New option --source (-s): Also build source package,
+	i.e. don't call dpkg-buildpackage with -b or -B. Also
+	automatically switches on --purge=never.
+
+2000-05-30  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* do-merge-{packages,quinn}: Rewritten in Perl and moved all
+	configuration to /etc/wanna-build.conf.local. It was really a mess
+	that those two scripts still had to be edited by hand... Also,
+	they support local mirrors and quinn-diff files now.
+
+	* buildd-addpkg: Local packages are now installed separated by
+	distributions to ~/AddPkg/DIST. With this, you can exclude e.g.
+	unstable packages from being installed on a frozen system by
+	excluding that directory from /etc/apt/sources.list. buildd-addpkg
+	has a new --dist option that defaults to unstable. --clean mode
+	always operates on all distributions.
+
+	* sbuild: Now calls buildd-addpkg with --dist option. Also does
+	automatically install freshly built packages only if
+	$conf::system_level is a "greater" or equal distribution that the
+	distro the pkg was built for. For example, if the system level is
+	"frozen", packages built for unstable won't be installed
+	automatically.
+
+2000-05-16  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Do a chmod -R go+rX on the build tree before building,
+	so that files are readable. Some .orig.tar.gz's contain rather
+	restrictive permissions that are simply inconvenient.
+
+2000-03-03  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: The deleting of Arch: all packages was a really Bad
+	Idea (TM)... It deleted all entries where *at least* one binary
+	packages was Arch: all, and that really wasn't what I meant...
+	Reverted this.
+
+	The correct solution: There's a --merge-source now that reads the
+	Sources.gz file (uncompressed) for a distribution and looks at
+	Arch: all packages. If such a package also exists in the database
+	with a less or equal version, the entry is deleted.
+
+2000-03-02  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: If a package with Architecture: all appears in the
+	database, it probably just has changed to this arch. Just delete
+	it, it's not needed anymore.
+
+	* wanna-build: If a package disappears from quinn-diff in states
+	Building or Upload, delete is as well as it would have been
+	Needs-Build, Failed, or Dep-Wait.
+
+	* buildd-mail: Fixed a bug that caused check_building_any_dist to
+	fail. As a consequence, a package still could be deleted if it
+	became outdated and still was building in another dist.
+
+2000-03-01  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Introduced new concept of failed categories. See
+	README.failcat for more details. (New option --category == -c)
+
+	* README.failcat: new file.
+	
+	* wanna-build: New options --min-age=DAYS (-a DAYS) and
+	--max-age=DAYS to restrict listed package depending on the time of
+	last state change.
+
+	* buildd-reply.el:There are two new functions:
+	buildd-bug-change-category changes the failed category of a failed
+	package; you use it from a mail buffer with a reply to the bug
+	report (if the maintainer hasn't changed the subject...); you are
+	prompted for a new category, which can be TAB-expanded.
+	buildd-bug-comment adds next text to the fail message of a
+	package; used the same way as buildd-bug-change-category above,
+	but you can insert arbitrary text; with [CAT] you can also
+	set/change the category.
+	
+	I've also changed keybindings: C-c C-a (formerly
+	buildd-bug-ack-append) is now a prefix for 3 bindings that append
+	something to fail messages:
+	C-c C-a C-n -> buildd-bug-ack-append (i.e., append a bug number)
+	C-c C-a C-a -> buildd-bug-comment (append arbitrary text)
+	C-c C-a C-c -> buildd-bug-change-category
+	
+	* buildd: In get_changelog, remove an epoch if using the package
+	name as part of a file name.
+
+	* sbuild: Also match error message "dpkg: status database area is
+	locked" from apt and retry call later.
+
+2000-02-23  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Added a warning for packages that have a newer
+	version in the database than in quinn-diff, and the state is one
+	of Installed, Install-Wait, Reupload-Wait, or Not-For-Us. In those
+	cases, the newer version is questionable... it could be caused by
+	a lame mirror, or it is an error in the db. During --merge-quinn,
+	wanna-build now checks for such cases and if it detects some, it
+	sends a mail about them to the admin.
+
+2000-02-16  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Fix support for !needs-no-XXX deps (should now work as
+	advertised :-)
+
+	* sbuild: A package log contains now the version number of sbuild.
+
+2000-02-15  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Improved warnings about missing central source
+	dependencies: The list of package build dependencies is now not
+	only dependency-expanded, but also virtual packages among them are
+	expanded to an alternative of all providing packages. That way, a
+	concrete package in the central deps shouldn't any longer be
+	reported as missing if the build deps contain a corresponding
+	virtual package. (E.g.: build dep is libncurses-dev, central deps
+	contain libncurses5-dev.)
+
+2000-02-11  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Do not show warnings that !this-package-does-not-exist
+	or !needs-no-XXX type dependencies are missing in the package
+	build dependencies.
+
+	* sbuild: Do not activate watches for dependencies of build deps
+	and not for packages where a !needs-no-XXX dep exists.
+
+2000-02-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: --no-build now also propagates the new state to
+	other distributions, which makes it consistent to the other
+	actions.
+
+	* wanna-build: new options --no-propagation (-N) and
+	--no-down-propagation (-D) which suppress state propagation at all
+	or to ``smaller'' distributions, resp. The former is sometimes
+	useful for manually fixing things (e.g. a package fails only in
+	stable due to the build environment, but not in unstable).
+	--no-down-propagation is useful for the build daemon to avoid
+	unwanted propagations.
+
+	* buildd, buildd-mail, buildd-uploader, sbuild: Use
+	--no-down-propagation in wanna-build calls.
+	
+2000-01-28  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Finally let it also accept abbrevs for distributions (s,
+	f, and u).
+
+	* buildd-reupload: Now finally can completely reconstruct a
+	.changes from the source package and the existing binary packages
+	that should be re-uploaded for different distributions. This
+	finally makes the script usable :-)
+
+	* buildd-reupload added to install and update-buildd scripts.
+
+	* sbuild: New option --make-binNMU='message'. This will create a
+	new changelog entry for a binary-only NMU. The message in the
+	option will be used as description in the changelog (it may
+	contain newlines and will be formatted properly). Please note that
+	the version number in the package argument(s) still must be the
+	existing, non-NMU versions so that sources can be downloaded. The
+	version in the logfile etc. will be modified automatically. An
+	bin-NMU entry won't be created twice in the same build tree.
+	
+2000-01-27  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd: Remove $DISPLAY from the environment. The variable
+	doesn't make sense when running in the background.
+
+2000-01-20  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-mail: Allow "give-back" as answer to a Should-I-Build
+	question.
+
+2000-01-18  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-mail: "not-for-us" or "no-build" are now valid answers to
+	a Should-I-Build question. This is handy if a package is now arch
+	specific or the like.
+
+	* buildd-mail: Fix outdated handling (packages are only outdated
+	in a distrib if they were reported to be so...)
+
+	* buildd-mail: If a package is reported as being outdated now,
+	skip the build and/or delete the files only if we're not still
+	building it in any other distribution.
+
+2000-01-13  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Pass the --force-confold option to dpkg only if the
+	version is before 1.4.1.18. Those old versions don't understand
+	the option and fail. Newer versions need it, because they fail if
+	they ask the conffile question and stdin is /dev/zero.
+
+1999-12-17  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: even more improved printout of missing central
+	dependencies check. First sbuild reads the list of build-essential
+	packages (as according to policy, from the build-essential
+	package) and expands its dependencies. Those packages are filtered
+	out and separately. They should never be mentioned in
+	Build-Depends. Next, dependencies of the Build-Depends are
+	expanded and those missing deps are also printed separately. It
+	depends on the circumstances if those should be reported. This all
+	together should make bug reports based on the sbuild warnings more
+	reliable.
+
+1999-12-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: allow multi-line build dependencies when reading a .dsc.
+	Those are actually forbidden is you look into packaging manual
+	closely, but too many packages use them...
+
+	* sbuild: Fix a bug in reading packages status: If a name was both
+	provided and a real pkg name (probably an old one), the
+	"not-installed" on the real pkg could set the installed status to 0.
+
+	* sbuild: Special dependencies (those with a '*') are always
+	implicitly overrides, i.e. they're added to package-supplied build
+	dependencies.
+
+1999-12-03  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: When using source deps from a .dsc, compare them with
+	the central deps and report any missing things. It seems that many
+	packages lack some deps at the first try, and this aids reporting
+	bugs.
+
+1999-11-30  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: When a package has its own source dependencies in the
+	.dsc, store them in a file debian/.sbuild-build-deps in the build
+	tree. This is needed when the package is later built again and the
+	.dsc isn't available anymore. If a sbuild argument is a directory
+	(building from tree without .dsc), look if this file exists and if
+	yes, read build deps from it.
+
+	* sbuild: Print a message to the log if package build deps are
+	used. It already happened sometimes that I searched for an error
+	in madd_sd-* or andrea, but the bad dependencies came from the
+	packages :-) Such a message at least reminds you where to look...
+
+1999-11-12  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd: There's a new config variable, $secondary_daemon_threshold,
+	in buildd.conf. It's intended for secondary daemons that should
+	start building only if the primary daemon(s) are overloaded. The
+	threshold gives a number of Needs-Build packages that must be
+	reached before the secondary starts off.
+	
+1999-10-29  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* Fixed buildd statistics: The packages given back by sbuild
+	weren't recorded, so some figures were a bit corrupted (specially
+	processed). sbuild now appends 1 for each given-back pkg if it's
+	given the new option --stats-dir. buildd passes that option.
+	buildd-watcher knows about the new stats file and prints it in the
+	summary.
+
+	* buildd-addpkg: If apt-get update fails with "E: Could not get
+	lock", try again a minute later.
+	
+	* sbuild: Make apt always pass --force-confold to dpkg. The
+	</dev/null trick doesn't work anymore with dpkg >= 1.4.1.18 (it
+	gives an error on the conffile question if it read EOF.)
+
+	* sbuild: If using an already unpacked source tree, check if it's
+	really the version we want to build. (The requested version could
+	be different in the Debian revision, and you can't see that on the
+	directory's name.)
+
+1999-10-25  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* New script buildd-clean-upload: It removes all jobs (.changes +
+	associated files + .upload) that are installed in the archive
+	(must be local or NFS mounted). I needed this now, because
+	INSTALLED mails from maor-installer don't come through at the
+	moment. But it's more a quick fix that can be useful later, too,
+	than a real part of buildd.
+
+1999-10-21  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* New script buildd-addpkg that maintains a private package
+	archive for apt. buildd-addpkg copies a list of (reshly built)
+	packages to ~/AddPkg and updates the Packages file there. Older
+	versions of the pkg that existed in AddPkg/ are removed. Then
+	apt-get update is called to make the installed pkgs available for
+	apt. If called with --clean, buildd-addpkg checks apt knows about
+	the packages in AddPkg/ from somewhere else and removes those.
+	~buildd/AddPkg should be in the last line of your
+	/etc/apt/sources.list.
+
+	* sourcedeps-makerev: New script that builds a reverse index of
+	source dependencies, i.e. a list of all packages that are a
+	referenced as source dependency. It is called now by
+	update-sourcedeps after installing a new file, and the reverse
+	index is stored as /etc/source-dependencies-DIST.rev. It is read
+	by sbuild if called with --store-built-packages.
+	
+	* sbuild: New option --store-built-packages=PROG. PROG is a
+	program that makes built packages available for apt and is usually
+	buildd-addpkg. If this option is given, sbuild checks after each
+	build if any of the produced packages is a source dependency. If
+	yes, it is scheduled for installation. Also installed are packages
+	that already scheduled packages depend on (maybe via Provides:)
+	and that were also built. All those packages are passed to PROG,
+	which makes the available for apt.
+	Finally, if one of the src-dep packages is already installed and
+	it's not in @conf::no_auto_upgrade, apt is called to install the
+	new version.
+
+	* buildd: Now calls sbuild with --store-built-packages=buildd-addpkg 
+	if that tool exists and $conf::no_store_packages isn't set
+	(default).
+	
+1999-10-06  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-mail: before actions on retry, fail, dep-ret, man,
+	give-back and should-I-build replies are executed, check that the
+	state is Building in the given version. This should avoid that old
+	mails (stalled in a queue somewhere) cause wrong things to be done
+	on outdated stuff. Little exception: If a "fail" answer appends a
+	bug number, the required state is Failed instead.
+	Also, on should-I-build replies there is a check for outdated
+	packages.
+
+	* buildd-mail: There are now different error messages for the
+	reply mail and the log. Often the messages were too verbose for
+	the log.
+
+	* buildd-mail: Logging of queue daemon messages can be turned off
+	by $log_queued_messages = 0 in ~/buildd.conf.
+
+	* buildd-mail: Before moving a package to the upload dir, every
+	.deb is checked for correct md5 checksum. It happened in the past
+	that a package was built twice (due to errors) overwriting the
+	.debs. And if you then acknowledged the older log the md5sums didn't
+	match, resulting in later errors in the queue or on master.
+
+	* buildd: Removed message "DEBUG: not taking ... because given
+	back recently".
+	
+1999-09-22  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-mail: Fix a bug that caused outdated packages to be added
+	to REDO sometimes on "retry" mails.
+
+1999-09-02  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* finish-build: I've added this script I'm using for some time to
+	CVS now. It's used to finish builds that aborted and that were
+	fixed manually. It runs the binary-arch if no debian/files exists,
+	generates a .changes and sends a mail like sbuild would have done.
+
+1999-09-01  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* {wanna-build,sbuild,buildd}.conf: All config files split into
+	local and shared parts. The shared parts are to be modified by the
+	buildd author only. The local parts contains some variables of
+	local nature (mail addresses etc.) and also can override shared
+	values. To keep compability with the previous names, the local and
+	shared files are named as follows:
+
+	              | shared file             | local file 
+	 -------------+-------------------------+----------------------------
+	  wanna-build | /etc/wanna-build.conf   | /etc/wanna-build.conf.local
+	  sbuild      | /etc/sbuild.conf        | /etc/sbuild.conf.local
+	  buildd      | /etc/buildd.conf.global | ~buildd/buildd.conf
+
+	Except for buildd.conf, the shared file reads in the local file at
+	the end. For buildd.conf, it's the other way round.
+	On installation the shared files can be replaced without
+	questions, so don't make modifications there. These should go into
+	the local files.
+	
+	* buildd: Additionally check /etc/buildd.conf.global for changes
+	and re-read configuration then.
+
+	* buildd-mail, buildd-watcher: Add a special check for error
+	mails: If more than 5 mails from a mailer daemon are received
+	within less than $conf::error_mail_window (default 8 hours),
+	they're not forwarded anymore to avoid possible mail loops. (This
+	happens if the error is about the admin address itself.) The dates
+	of error mails are stored in the new file ~buildd/mail-errormails.
+	buildd-watcher regularily purges old entries from this file and
+	removes it if it becomes empty.
+
+1999-08-27  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: --auto-give-back has a new optional argument giving the
+	user and hostname where to call wanna-build (like $conf::sshcmd of
+	buildd). This is needed that sbuild can do give-backs when there's
+	no local wanna-build. If the argument is missing, wanna-build is
+	called locally. Otherwise, it's used like
+
+	  --auto-give-back=[[WBUSER@]USER@]HOST
+
+	An ssh calls is made as USER to HOST, and wanna-build called there
+	with --user=WBUSER. If WBUSER is missing, it's the same as USER.
+	If both are missing, the local username is used for both.
+
+	* buildd: Passes the new --auto-give-back arg to sbuild now if
+	$conf::sshcmd is set. Also correctly uses
+	--user=$conf::wanna_build_user when taking packages.
+
+1999-08-26  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-reply.el: Fixed several problems of alphabetical ordering
+	with buildd-edit-manual-source-deps (C-c C-s). New function
+	buildd-add-sd-map (C-c C-v) for editing sd_map files.
+
+1999-08-23  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: When merging a Packages file, ignore entries for
+	foreign architectures (including Arch: all). This is necessary for
+	merging the Packages from proposed-updates, and this includes
+	.debs for all archs.
+
+	* do-merge-packages: Also merge Packages from proposed-updates.
+
+	* Many changes in sbuild:
+
+	* Support for alternatives in src-deps. This means you can have
+	dependencies like "foo | bar (>= 1.2)". The installation is
+	handled as follows:
+	 - If at least one alternative is installed in a matching version,
+	   nothing has to be done.
+	 - If at least one alternative is installed, but in the wrong
+	   version, the first such alternative is tried to upgrade.
+	 - If no alternative is installed, the first one is installed.
+	 - If all alternatives would need a downgrade to satisfy the
+	   version constraint, sbuild bails out that it can't do this.
+	The decision which package to install or upgrade is made before
+	apt is called and can't be changed later (yet). This means that,
+	e.g., if the first alternative is not installable but the second
+	would be, the package fails nevertheless. I might work on this in
+	future...
+
+	* Src-deps can now contain the [ARCH1 !ARCH2] architecture
+	restrictions that will be used soon by the Build-Depends: field in
+	the .dsc. The semantics are: The dependency is ignored if the
+	current build arch isn't mentioned in the list, or if it's
+	mentioned with a '!' prefix. The arch restrictions come after the
+	version relation (if present) and apply to single alternatives.
+	Example:
+
+	  foo: svgalib (>= 1.3) [i386 alpha] | svgalib-dummy [!i386 !alpha]
+
+	* sbuild now checks the .dsc file for Build-{Depends,Conflicts}:
+	fields and uses those as src-deps if present. (The *-Indep variants
+	are also used if the --arch-all option is given.) The deps from
+	the .dsc override the ones from /etc/source-dependencies*, as they
+	are considered to be newer and/or more exact. However, there's
+	still a way to add dependencies to packages that come already with
+	src-deps: If you prefix a dep with '&' in the central src-dep
+	file, those deps won't be thrown away.
+
+	* There's a new feature of abbreviations in src-deps. You can
+	define them by
+
+	  abbrev FOO = foo, bar, yxy
+
+	anywhere in the source-dependencies-* file. Then FOO can be used
+	just like any other package name. It will be replaced by "foo,
+	bar, yxy" later. Abbrevs can't be used with version relations and
+	inside alternatives.
+	
+	* New options: --arch-all (-A) also builds Arch: all packages
+	(uses  dpkg-buildpackage -b instead of -B); --add-depends (-a)
+	like -f, but doesn't override existing deps completely but adds to
+	them.
+	
+	* sbuild now only parses the src-deps for package which should be
+	compiled. This should reduce the start-up time a bit.
+
+1999-08-10  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Allow section names like non-US/non-free when
+	parsing a quinn-diff. (The section can contain letters, digits, -,
+	and / now.)
+
+	* do-merge-{packages,quinn}: New config var $section, can be more
+	than just main (default is "main non-US/main"). Both scripts now
+	import data from all sections in $section. ftp.uni-erlangen.de
+	provides the necessary quinn-diff data.
+	Both scripts now also print the names of the files downloaded and
+	which will be merged.
+
+	* sbuild: Virtual packages as source dependencies didn't really
+	work yet... An alternative was installed ok, but the following
+	consistency check didn't see the provided package, because it used
+	dpkg --status, and that doesn't know virtual packages.
+	Solution: get_dpkg_status() now directly reads
+	/var/lib/dpkg/status (which should be a bit faster, too) and
+	parses the Provides: fields of installed packages. Provided
+	packages are considered installed for src-dep purposes.
+
+	* sbuild: Make some more messages go to the package log (instead
+	of the sbuild log, where they didn't belong). Also fix the
+	stdout/stderr redirecting when running scripts of special deps.
+
+	* FetchFile.pm: Redirect output of ftpget (lftp code).
+
+	* Buildd.pm: Increase lock_interval from 5s to 15s, giving a total
+	try time of 30m. I've seen cases where a valid lock has been
+	broken because it existed too long. This shouldn't happen.
+
+1999-08-09  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-mail, buildd-uploader: support for non-US packages
+	There's a new dir upload-non-US for packages that should go to the
+	non-US server. buildd-mail automatically recognizes such packages
+	if the .deb sections contain the string "non-US"
+	(case-insensitive). Also packages listed in @conf::non_us_packages
+	are moved to this upload dir.
+	Acknowledged packages are moved to the appropriate upload dir
+	(upload/ or upload-non-US/). When removing a job from the upload
+	dir (either if it has been installed into the archive, or on the
+	upload-rem command), check if the changes file is in upload-non-US
+	and use this dir then.
+	buildd-uploader simply uploads packages from both dirs. The
+	dupload in upload-non-US use a --to option of
+	$conf::dupload_to_non_us (default "non-us"). Please make sure you
+	can upload there without questions for passwords etc.
+
+	* buildd.conf: New config vars $dupload_to_non_us and
+	@non_us_packages.
+
+	* sbuild.conf: Add non-US/main to @do_dists, remove non-us (seems
+	obsolete).
+
+1999-08-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: When taking a package, print the warning that
+	previous version failed also if the previous state was
+	Failed-Removed.
+
+	* buildd*: Implemented the collecting of some statistical data.
+	All the figures are written to files in ~/stats, where some script
+	will pick them up. Written files are: taken, builds, uploads,
+	failed, dep-wait, no-build, idle-time, and build-time.
+
+	* buildd-watcher: Implemented statistics summary, which is mailed
+	once per week.
+
+	* buildd.conf: two new config vars: $statistics_period and
+	$statistics_mail.
+
+1999-08-03  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: I hope I've found out now what caused the
+	HASH(0x........): fields which corrupted the databases from time
+	to time. (It is something between unexpected Perl behaviour and a
+	proper bug in perl-5.005.)
+
+1999-07-28  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* rbuilder: Don't use wanna-build anymore at all -- it caused too
+	many problems (If a package was given back, the new version was
+	Needs-Build and the daemon grabbed it, but couldn't download the
+	source; often distribution lines confused users; ...) The code is
+	still there, but deactivated by $main::use_wb = 0.
+
+	* rbuilder: Don't remove the build dir if upload failed or on
+	.changes inconsistencies. Such stuff can probably be fixed
+	manually and the packages doesn't need be rebuilt.
+
+1999-07-27  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd: New config variable $idle_sleep_time (in buildd.conf)
+	instead of hardwired pause of 5 minutes between list-needs-build
+	calls.
+
+	* wanna-build: --info -dist=all created non-existing databases
+	(e.g. for frozen); fixed.
+
+1999-07-23  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Avoid that MTAs add domains to From: or To:
+	addresses: Add the local domain to the to addr if it doesn't
+	contain a domain yet. Also add a explicit From: header, as the MTA
+	might use the plain username otherwise.
+
+	* rbuilder: If the package can't be built or uploaded
+	successfully, give it back so it can be retried later.
+
+1999-07-21  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* FetchFile.pm: Made the FTP downloading (via the Perl-internal
+	Net::FTP module, not lftp) more fault-tolerant. If the received
+	file is smaller than expected, it is retried as long as each try
+	increases the file size.
+
+	* buildd-mail-wrapper now sets the umask to 022, because some
+	mailers seem use 077, which makes the files in ~/upload unreadable
+	for others.
+
+1999-07-09  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* check-security-uploaded: New script; to be run from crontab of
+	wanna-build db admin. It downloads the Packages files from
+	security.debian.org and compares the packages there with the ones
+	that 'rbuilder' is currently building. If such packages are found
+	to be installed, they're set to 'Uploaded' to avoid old-build
+	mails.
+
+	* rbuilder: Now maintains a file "builders" where it stores
+	package names + versions and the email addresses of the people who
+	requested to build those packages. The addresses are used for
+	old-build mails: They're forwarded to the responsible person
+	instead of being rejected because they're not PGP-signed.
+
+1999-06-21  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Also recognize new message "Package file ... is out of
+	sync" from apt-get and run apt-get update.
+
+1999-06-18  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* rbuilder, wanna-build-mail: Both now support also GnuPG for
+	signing the mails.
+	* wanna-build-mail: Now can also parse mails signed with MIME/PGP,
+	like rbuilder.
+
+1999-06-14  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Now packages can also changed from Installed to
+	Installed if a newer version than registered in the database
+	appears in the Packages file. This can happen if someone uploads a
+	package without any wanna-build interaction. Formerly, only the
+	Installed-Version: was updated, but not Version:.
+
+	* wanna-build: Don't use getlogin() anymore for determining the
+	user name; it returns wrong results if su has been used (returns
+	the user you su-ed from).
+
+	* rbuilder: Keep the logs for all requested builds for 100 days in
+	a logs/ subdir.
+
+	* rbuilder: In error replies, quote the mail that caused the
+	error.
+
+	* rbuilder: If taking a package fails, report the wanna-build
+	messages to the user.
+
+	* rbuilder: Fix silly syntax error ($main::wanna-build instead of
+	$main::wanna_build).
+
+1999-06-09  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Fixed some silly errors with global patches: Accept them
+	at all when parsing the source-dependencies file; fix the loop in
+	apply_patches to handle the args consistently; don't let the build
+	fail if a global patch didn't apply.
+
+1999-06-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: When reading quinn-diff output, accept empty
+	sections and priorities. (Those are generated by quinn-diff now on
+	packages from proposed-updates.) The empty values are replaced by
+	"unknown".
+
+1999-06-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: When giving back a package, don't forget the --dist
+	option to wanna-build.
+
+	* sbuild: Added support for virtual packages in source
+	dependencies. When sbuild tries to install such a package, apt-get
+	will tell it which alternatives exist. One of these is substitued
+	for the virtual package and apt-get will be retried. Which one to
+	use is either determined by %conf::alternatives or more or less by
+	random (first one listed).
+
+1999-06-02  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Removed as many die's as possible. The error exit status
+	caused by die can let buildd retry all jobs of this sbuild run,
+	even if some have already been finished.
+
+	* sbuild: Make sure that we're in the correct directory after a
+	build (some chdir()s in error cases were missing). Also don't use
+	chdir(".."), because we may have followed a symlink; better use
+	the absolute path of the wanted dir.
+
+	* sbuild: If the directory where a package should be unpacked
+	already exists but is a symlink, then complain.
+
+	* sbuild: With --batch write each finished job to a file
+	SBUILD-FINISHED. buildd can look at this file if sbuild crashed
+	for jobs that need not be rebuilt.
+
+	* buildd: If sbuild exited with error status and hasn't dumped
+	unfinished jobs to REDO itself, look for SBUILD-FINISHED to sort
+	out jobs that don't need rebuilding.
+
+	* check-old-builds: Add /usr/local/bin to $PATH if not included yet.
+
+1999-06-01  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-mail: Now creates the upload directory if it didn't exist
+	yet. And if not all files belonging to an upload could be moved
+	there, abort with an error.
+
+	* Removed some more hardcoded paths to binaries in buildd and
+	buildd-watcher.
+
+1999-05-31  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: The du after the build (to get the total space required)
+	is now run under sudo, because under some debian/tmp-like some
+	dirs can not be accessible to normal users.
+
+	* buildd.conf: Added build/{HOLD-BACK,Attic} to $no_warn_pattern.
+
+	* In all scripts remove calls to aliases of wanna-build (the
+	list-needs-build, build-info etc. symlinks) and use wanna-build
+	itself with appropriate option instead. This removes the necessity
+	to have the symlinks; you may still want them for typing
+	convenience...
+
+	* Removed hardcoded /usr/local paths.
+
+	* Removed hardcoded /usr/local/var/debbuild paths from do-merge-*
+	scripts. They extract the database dir now from
+	/etc/wanna-build.conf.
+
+1999-05-26  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Introduced epochs in the database (they were
+	ignored until now); now finally packages that have changed epoch
+	go to state Needs-Build automatically. You're still allowed to
+	omit the epoch in the usual commands (version comparison is fuzzy
+	here) to still be able to pass file names as arguments. However,
+	the input of --merge-packages and --merge-quinn must be exact can
+	contain epochs.
+	Caution #1: If the quinn-diff piped into wanna-build ignores epochs,
+	you need to set $ignore_epochs in /etc/wanna-build.conf.
+	Caution #2: When you install this wanna-build version (1.102) and
+	have an existing database without epochs, run --merge-packages and
+	--merge-quinn once with the --introduce-epochs option.
+	Caution #3: Epochs are also added for currently building packages.
+	buildd-mail might be confused by this if in the subjects of mails
+	the epoch is still missing. You must add the epoch manually in
+	this case.
+	Caution #4: The automatic adding of epochs fails in one case: If
+	someone has taken a version newer than what quinn-diff knows (e.g.
+	a NMU planned) and that version was meant already with the epoch.
+	In this case wanna-build will reset the state to Needs-Build and
+	send you a new-version-while-building notice. Just re-take the
+	package.
+
+	* sbuild: Ignore epochs when fetching source files.
+
+	* sbuild: If dpkg-source -x fails, remove the .tmp-nest dir if
+	it's left over.
+
+	* buildd-mail: Fix extraction of error message again (for replies
+	to should-I-build mails): ignore empty parts between separators.
+
+	* buildd-mail: Ignore epochs when constructing the name of a
+	changes file or the name of a build directory.
+
+	* wanna-build: If you take a package you have already taken, you
+	don't get an error message anymore ("NOT OK; already taken by
+	USER") but a notice instead that you already own the package and
+	an ok.
+
+1999-05-17  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* Fixed /tmp insecurity on wanna-build --manual-edit.
+
+1999-05-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: After a build the disk space required for it is
+	determined (final size of build dir before purging + size of
+	generated .deb's) and printed in the package log. Additionally,
+	the figure is stored in a new database avg-build-space, analogous
+	to avg-build-time. However, the calculation of the "average" is
+	different. Since disk space isn't expected to vary as much as
+	times, the last figure seems more important than later ones.
+	Therefore, max. 4 numbers are stored, and when calculating the
+	average, the latest is weighted with factor 4, the next with 3 and
+	so on.
+
+	* avg-pkg-build-time: Can now dump the space db, too, with option
+	--space (-s), or if called as avg-pkg-build-space. Output format
+	for space is a bit different, but adding, dumping, sorting etc.
+	works as usual.
+
+1999-05-03  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: After unpacking a source, run "chmod -R g-s" on it. Some
+	.orig.tar.gz files seems to be packaged with the setgid bit on,
+	which causes the debian dir and its subdirs (e.g. debian/tmp) to
+	be created setgid, too; and later dpkg-deb --build complains about
+	bad permissions.
+
+1999-04-26  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* rbuilder: Now can also parse mails signed with MIME/PGP.
+
+1999-04-21  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: sbuild can now check if certain binaries have been used
+	during a package build (to update the source dependencies). The
+	check just looks for access time of the binary being later than
+	the start of the build, so it could be fooled by parallel
+	activities on the machine. So better check manually...
+	There's a new config var %watches where one can list all the
+	packages and binaries therein to watch for.
+
+1999-03-12  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: New option --force-depends (-f) to override source
+	dependencies of a package, in case they're wrong. The argument
+	should be a line in the same format as used in
+	/etc/source-dependencies.
+
+1999-03-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: On --merge-packages, it can happen that multiple
+	versions exist for one source package (if old binary packages
+	from the same source haven't been removed from the archive yet).
+	So skip a package in Packages not always if the same (source)
+	packages has already been processed, but only if also the versions
+	match. That way, all versions will be processed.
+
+	* wanna-build: New option --pretend-avail. The packages given on
+	the command line (versions required) are treated as if they're
+	installed, and packages waiting for them are moved from Dep-Wait
+	to Needs-Build (if other dependencies are available, too, of
+	course).
+	To make implementation of this easier, the Depends: list of a
+	package in state Dep-Wait is now shortened each time a dependency
+	is available.
+
+1999-03-07  James Troup  <james@nocrew.org>
+
+	* andrea, merger: new option --architecture (-a) to define the
+	architecture and override the default as set by the output of dpkg
+	--print-architecture.
+
+1999-03-05  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* FetchFile: Bigger redesign of caching: Do not cache all file
+	names anymore, but only directory names. Building a full cache
+	takes some time, specially if for a FTP site. And most of the
+	infos is never needed, specially if compiling only one package.
+	Additionally, the full cache must be cleared rather often after
+	"not found" results, because the mirror might have changed. This
+	isn't necessary if caching dir names, because they're very
+	unlikely to change. The new cache should be a major speedup for
+	single-package builds and/or if several source packages must be
+	fetched from a FTP site.
+
+	* sbuild: No not remove build-progress if not writing it (no
+	--batch).
+
+	* sbuild: New option --purge (-p) to define build dir purge mode
+	on command line.
+
+1999-03-02  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Now implemented source dependency locking. This allows
+	(securely) for multiple sbuild instances at the same time. For
+	each job, a lock file with needed source dependencies is written.
+	Before installing src deps, sbuild checks all those lock files if
+	any of the packages needed by other instances would be touched in
+	any way (removed, installed, updated). In that case, the second
+	instance must wait until all conflicting jobs are finished.
+	Special dependencies usually cause no conflict, except they are
+	marked with a "global { yes }" subsection, which means they
+	influence global system state. At most one package at a time may
+	be built that has such a global dependency.
+
+	* sbuild: Source dependencies that were newly installed for a
+	build are now removed immediately after the build has finished,
+	not anymore at the end of all builds. The old behaviour might be a
+	bit more efficient, but is complex to handle with src-dep locks.
+
+1999-03-01  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* rbuilder: New script for remote building on demand. Accompanying
+	is a rbuilder-wrapper.
+
+	* wanna-build: When merging Packages files, unknown (source)
+	packages aren't ignored anymore. The ignoring was initially done
+	to keep the databases smaller, but by now most packages are
+	included there anyway. So it is now better to have a full
+	database, which also makes the statistics a bit more correct.
+
+1999-02-24  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: New option -n (--nolog): Do not write any log files
+	(package log, build log), but only print to stdout. Also do not
+	send any mails.
+
+	* sbuild: Now a kind of source dependency locking information is
+	maintained: In $conf::srcdep_lock_dir (usually
+	/usr/local/var/debbuild/srcdep-lock) each instance of sbuild puts
+	a file named after its pid and writes all needed packages into
+	that file. Later instances of sbuild can use this information to
+	check if a src-dep conflict exists. (To be implemented...)
+
+1999-02-23  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Now URLs (http:// and ftp://) are allowed as command
+	line parameters; the URL should point to a .dsc file. This feature
+	can be used to build packages in arbitrary locations, not only
+	those listed in @archive_locations. Also no searching is
+	necessary, since the path is given. 
+
+1999-02-18  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Fix an old typo in some output text (chnages vs. changes)
+
+1999-02-17  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: --give-back can now change to state Needs-Build
+	from any state (not only Building) with --override.
+	
+	* wanna-build: --info and --forget (which take only package names
+	without version) now strip anything following a '_' to avoid
+	confusion.
+
+	* sbuild: With -v don't mail the build log, because the same
+	information is already mailed as the package log. And the
+	additional stuff in the build log (e.g. removing packages) can be
+	see interactively.
+
+	* buildd: New config variable @take_from_dists: buildd will only
+	take new packages from the distributions listed here. This can be
+	used to let one buildd make this distrib, the other buildd the
+	next and so on. If this variable isn't initialized in buildd.conf,
+	it's set to (stable frozen unstable), i.e. all distributions.
+
+
+1999-02-08  James Troup  <james@nocrew.org>
+
+	* andrea is now architecture and distrubtion independent through
+	the use of multiple new format files for source dependency
+	mappings and manually added source dependencies.
+
+1999-02-03  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: If installation of source dependencies (apt-get run)
+	fails, try to reinstall removed packages and to remove newly
+	installed packages. If apt-get failed because some package didn't
+	configure, that package must be removed, otherwise all following
+	apt-get runs will fail because they try to configure that package!
+
+	* check-old-builds: Remove packages from reported-old-builds if
+	they're not in state Building anymore.
+
+	* wanna-build: "new version of ..." mails now include
+	distribution.
+
+	* wanna-build: With --info you can now also use --dist=all (or
+	-da). Then infos are printed for all known distribution.
+
+	* buildd-mail: Handle outdatedness for multiple distributions:
+	  - The outdated-packages file now also records distributions in
+	    which the package is outdated.
+	  - In the check for outdatedness, it can happen that it's
+	    outdated in none, some, or all distributions. The none and all
+	    cases are the same as before, but in the some case, a modified
+	    .changes needs to be sent, or an action cannot be applied
+	    automatically.
+	  - If the reply is no changes, we have to determine separately
+	    to which distributions the packaged is targeted. This is done
+	    by checking for state Building of the version in question.
+
+	* buildd-mail: Fixed get_fail_msg for new output format of
+	build-info.
+
+	* buildd-mail: Before moving a package to the upload dir, check if
+	it's really registered for building in all target distributions.
+	If this is not the case, it's an indication of error. Either it
+	should be registered, or some distributions should be deleted.
+	
+1999-02-01  James Troup  <james@nocrew.org>
+
+	* andrea's merger's ability to strip automatically generated
+	dependencies through the source-dependencies file has been fixed.
+
+1999-02-01  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* avg-pkg-build-time: New option -f (--dbfile) to select the
+	database to consult on the command line.
+
+1999-01-25  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: When parsing dpkg --status output, ignore the help
+	message appended at the end under some circumstances. This should
+	remove the "parse error in dpkg --status: no Package: field" error
+	messages.
+
+1999-01-19  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* check-old-builds now checks all distributions, not only unstable.
+
+1999-01-18  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: When opening the database, handle error EAGAIN:
+	Wait 2 seconds and then try again for max. 30 times. Starting with
+	the switch to GDBM, it often happened that after a lock was gone
+	the database still couldn't be opened (file locking?).
+	
+1999-01-13  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: Added --quiet option to patch call to avoid some blurb
+	in the sbuild log file.
+	* do-merge-quinn: Mail the statistics file only if its size is
+	greater than 0.
+	* wanna-build-statistics: If wanna-build --list=all dies with
+	error status, print the last message from it.
+	
+1999-01-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Don't warn if a package goes Reupload-Wait ->
+	Installed, this is rather normal.
+	* wanna-build now uses GDBM databases (instead of DB hash from
+	glibc), because the former database driver crashed randomly on
+	sufficiently big databases :-(
+
+1998-12-23  James Troup  <james@nocrew.org>
+
+	* andrea now handles multi-line dependency information as found,
+	for example, with the sgml-tools package.
+
+1998-12-22  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* Several internal changes in wanna-build: make regexps faster by
+	not using $`,$&,$'; replace ugly $main::var syntax for global
+	variables by $var together with a use vars; made program name and
+	option handling more general by replacing big switches by
+	table-driven approach.
+
+	* wanna-build now by default uses its own comparison function,
+	written in Perl. This should be a great deal faster than forking
+	dpkg --compare-versions all the time. But since this isn't 100%
+	correct (dpkg is the only instance that really knows about version
+	ordering), a new option --correct-compare can be used to force
+	calling dpkg.
+	
+1998-12-16  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* New script wanna-build-statistics: Prints some nice statistics
+	about how much packages are in which state, who put them into that
+	state and so on.
+	
+	* do-merge-quinn now calls wanna-build-statistics after each merge
+	and sends the results to a mailing list.
+
+	* wanna-build now also allows --uploaded on packages in state
+	Install-Wait without --override.
+
+1998-12-15  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* Little correction to handling of Install-Wait state in
+	wanna-build: If the corresponding package in another distribution
+	changes state to Failed, Dep-Wait, or Needs-Build (on give-back),
+	propagate this state change to the distrib where the Install-Wait
+	is. This is necessary because in those cases, no upload will
+	happen, and thus we could wait endless for an installation.
+
+1998-12-11  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* On --merge-quinn, if a state is copied from another
+	distribution, wanna-build must also set the Package: field,
+	because the entry might not have existed before. This caused
+	(rarely) "entry misses Package: field" errors.
+
+1998-12-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* A SBUILD-REDO-DUMPED file is now also removed by buildd if
+	sbuild exits with 0 status (as it does if the shutdown goes ok).
+
+1998-12-07  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd now also catches SIGALRM around the call to
+	get_changelog, which uses FetchFile. This is similar to the recent
+	change to sbuild.
+
+1998-12-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* There's a new config variable in buildd.conf:
+	@weak_no_auto_build. Packages listed there are usually not taken
+	and built, just as those in @no_auto_build. However, if there is
+	really nothing to do (in no distribution) and the daemon would go
+	into its idle loop otherwise, it will also take one package that
+	is in @weak_no_auto_build (if one is available). Only one package
+	is taken, because it is assumed that those packages need
+	relatively much time. The consideration behind all this is that
+	it's better to start an expensive build instead of doing nothing.
+
+	* sbuild now also catches SIGALRM and calls its shutdown function
+	if receiving it. In the last time, it happened sometimes that the
+	Net::FTP module triggered some unhandled SIGALRMs after unexpected
+	FTP timeouts. This caused the whole sbuild to crash, and *all*
+	packages were dumped to REDO. Calling shutdown at least will dump
+	only the unfinished ones.
+
+1998-11-26  James Troup  <james@nocrew.org>
+
+	* sbuild: sbuild can now use lftp instead of the perl FTP module
+	to download source files; this was necessary for cookie-monster
+	which is on a slow shared modem connection which consitently
+	defeated the perl FTP module.  It's optional (see sbuild.conf) and
+	off by default because only machines with slow/poor connections
+	should use it as it's slower than using the perl FTP module due to
+	the overhead of spawning multiple copies of lftp.
+
+	sbuild also now handles the case of an aborted dpkg-source
+	extraction by removing a .orig.tmp-nest directory if it's in the
+	way.
+
+1998-11-25  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd-reupload: New tool to reupload packages, which are
+	already installed, for different distributions.
+
+	* wanna-build: There are now two new states to solve the
+	delayed-frozen-problem. Brief summary: If a (source) package is
+	for (e.g.) frozen and unstable, it will be installed in unstable
+	automatically, but in frozen later after acknowledgement by the
+	release manager. This means that quinn-diff lists the new version
+	for unstable earlier than for frozen, and that a build daemon
+	might pick up the package from unstable. Since the upload cannot
+	immediately go to frozen, too (the new version isn't accepted for
+	this yet), sbuild modifies the .changes so the upload only goes to
+	unstable (see sbuild change yesterday).
+
+	But still the frozen version must be uploaded at some point. This
+	is now handled by wanna-build (but not really completely; a
+	perfect solution would have been rather hard to implement.) If
+	quinn-diff lists a new version of some package, and the same
+	version is Building or Uploaded for some other dist, the new state
+	will be Install-Wait instead of Needs-Build. As soon as
+	--merge-packages detects that that version has been installed,
+	Install-Wait is turned into Reupload-Wait. If the packages was
+	already installed in some dist at the time quinn-diff listed it,
+	it goes to Reupload-Wait immediately. Whenever state Reupload-Wait
+	is entered, the previous builder of the package receives a mail
+	that a reupload for a different distribution is needed.
+	buildd-mail will do this for some cases automatically, but
+	sometimes manual work will be necessary.
+
+	Why this solution isn't perfect: If another unstable version is
+	installed before the previous version is needed for frozen, a
+	recompilation is needed.
+	
+	Similar: If a version of a package is Failed or Dep-Wait in some
+	other distrib and now is listed by quinn-diff for some dist, the
+	Failed/Dep-Wait state is copied to the new dist.
+
+	* wanna-build: You can abbreviate the argument to -d or --dist now
+	as 's', 'f', or 'u'.
+
+	* buildd-reply.el: new file with some Emacs functions that make it
+	easier to reply to buildd mails.
+
+1998-11-24  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild: If the changelog of a package wants to upload also for
+	"lower" (stable < frozen < unstable) distributions than the
+	distrib. set on the command line, then delete those distrib.s in
+	the Distribution: field of the resulting .changes, because
+	probably the package hasn't been accepted for stable or frozen,
+	resp., yet. Instead, write a second, modified .changes to
+	SAVED-CHANGES, which lists the omitted distribs in the
+	Distribution: field.
+
+1998-11-21  James Troup  <james@nocrew.org>
+
+	* do-merge-quinn: handle temporary files securely and don't
+	hardcode architecture.
+
+1998-11-20  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild, source-dependencies: Special dependencies now can also
+	have 'patch' subsections. These patches are applied when a source
+	tree has been unpacked (and the package depends on the special
+	dependency that has the patch subsection...) This is intended for
+	cases where some packages need to be patched, but the patch isn't
+	be appropriate for the main package. Examples are: ddd (cannot be
+	compiled with -g, because then needs to much memory), gcc (needs
+	-O in CFLAGS if compiled on a '060). For more infos on the patch
+	subsections, see the comment in source-dependencies.
+
+1998-11-19  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build: Implemented a global "maintenance" lock. Purpose:
+	The --merge-{packages,quinn} commands work on each distribution
+	separately, but the data still belong together. Concretely, it
+	happened that a build daemon built some packages twice, because at
+	the time of the first list-needs-build, they were Needs-Build for
+	frozen, but not yet for unstable because the unstable quinn-diff
+	wasn't merged in yet. The maintenance lock can be set or removed
+	by the --create-maintenance-lock or --remove-maintenance-lock
+	options, resp. If such a lock exists, every command except the two
+	merge commands will wait for the lock to disappear.
+	* do-merge-quinn, do-merge-packages: Use maintenance locks.
+	* Whenever sbuild does auto-givebacks, it now logs them into a
+	file SBUILD-GIVE-BACK, together with the current time. This list
+	is used later by buildd: If a give-back hasn't been done at least
+	$conf::delay_after_give_back minutes ago, the package will be
+	ignored in list-needs-build output. buildd also deletes older
+	entries from the file. This is to protect against loops, where
+	buildd takes the same packages over and over, and sbuild only
+	gives them back, for example because they're not on the mirror or
+	the files are damaged.
+
+1998-11-17  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild now tries to open /etc/source-dependencies-DISTRIB before
+	/etc/source-dependencies. This is necessary because andrea will
+	generate distrib-specific dependencies, so we need different files
+	for each dist. The fallback without -DISTRIB appended is for
+	compability.
+
+1998-11-15  Roman Hodek  <rnhodek@emilio.informatik.uni-erlangen.de>
+	
+	* In source-dependencies, more than one dependency on the same
+	package is now possible. (For example, one with >= relation and
+	the other with <<.) Dependencies of this type can be produced by
+	andrea.
+	* sbuild can now detect cases where a package would have to be
+	downgraded to fulfill a dependency. apt-get (how it is used
+	currently) cannot handle downgrades, it always upgrades to the
+	newest available version. Thus, in such cases a build is aborted.
+
+1998-11-14  James Troup  <james@nocrew.org>
+
+	* do-merge-packages now handles temporary files securely, is no
+	longer architecture dependent and refuses to try and merge zero
+	length Packages files.
+
+1998-11-10  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* sbuild now doesn't pass packages that are already installed in a
+	sufficient version to apt-get. This removes the side effect that
+	packages that are source dependencies are always updated to the
+	newest version, which is not always desired.
+	* In wanna-build --list, the sorting order of sections has been
+	changed. They're not anymore sorted alphabetically, but by some
+	kind of importance. This has been done because the build daemons
+	pick up packages in the order listed by wanna-build.
+	
+1998-11-09  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* buildd now also checks its config file (~/buildd.conf) for
+	changes and rereads it if the modification time has changed. No
+	extra SIGHUP is needed anymore.
+
+1998-11-06  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* New script check-old-builds, which sends warning mails for
+	packages being in state Building for more than 10 days.
+	
+1998-11-05  James Troup  <james@nocrew.org>
+
+	* buildd-mail-wrapper now checks the pid in mailer-running files
+	for validity (i.e. if the pid mentioned there really still exists).
+	
+1998-11-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
+
+	* wanna-build does not anymore send out mails for Failed->Failed
+	state changes ("message appended").
+	* sbuild: Fixed the changes-hack-for-frozen (didn't work at all).
+
+# Local Variables:
+# mode: change-log
+# change-log-default-name: "NEWS"
+# End:

@@ -1,0 +1,272 @@
+#!/usr/bin/perl
+#
+# buildd-uploader: upload finished packages for buildd
+# Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright © 2005 Ryan Murray <rmurray@debian.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+BEGIN {
+    ($main::HOME = $ENV{'HOME'})
+	or die "HOME not defined in environment!\n";
+    push( @INC, "$main::HOME/lib" );
+}
+
+use strict;
+use Buildd;
+$ENV{'PATH'} = "$main::HOME/bin:/usr/local/bin:/usr/bin:/bin";
+
+read_config();
+
+if ($conf::sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
+    $conf::sshcmd .= " -S $main::HOME/build/$conf::sshsocket";
+}
+
+$conf::dupload_to ||= "anonymous-ftp-master";
+$conf::dupload_to_security ||= "security";
+
+my $log_locked = 0;
+my $locked = 0;
+END { unlock_file( "$main::HOME/daemon.log" ) if $log_locked;
+      unlock_file( "$main::HOME/buildd-uploader" ) if $locked; }
+
+lock_file( "$main::HOME/daemon.log" );
+$log_locked = 1;
+
+open_log();
+
+if (lock_file( "$main::HOME/buildd-uploader", 1 ) == 0) {
+    logger( "exiting; another buildd-uploader is still running" );
+    exit 1;
+}
+$locked = 1;
+
+my %uploaded_pkgs;
+
+upload( "upload-security", $conf::dupload_to_security );
+upload( "upload", $conf::dupload_to );
+
+foreach my $dist (keys %uploaded_pkgs) {
+    logger( "Set to Uploaded($dist):$uploaded_pkgs{$dist}" );
+}
+
+exit 0;
+
+sub uploaded {
+    my $pkg = shift;
+    my @propagated_pkgs = ();
+    foreach my $dist (@_) {
+	my $msgs = "";
+	if (open( PIPE, "$conf::sshcmd wanna-build --uploaded --user=$conf::wanna_build_user ".
+		  ($conf::wanna_build_dbbase?"--database=$conf::wanna_build_dbbase ":"").
+		  "--no-down-propagation --dist=$dist ".
+		  "$pkg 2>&1 |" )) {
+	    while( <PIPE> ) {
+		if (/^(\S+): Propagating new state /) {
+		    push( @propagated_pkgs, $1 );
+		}
+		elsif (/^(\S+): already uploaded/ &&
+		       isin( $1, @propagated_pkgs )) {
+		    # be quiet on this
+		}
+		else {
+		    $msgs .= $_;
+		}
+	    }
+	    close( PIPE );
+	    if ($msgs or $?) {
+		lock_file( "$main::HOME/daemon.log" );
+		$log_locked = 1;
+		logger( $msgs ) if $msgs;
+		logger( "uploaded-build failed with status ", exitstatus($?), "\n" )
+		    if $?;
+		unlock_file( "$main::HOME/daemon.log" );
+		$log_locked = 0;
+	    } else {
+		$uploaded_pkgs{$dist} .= " $pkg";
+	    }
+	}
+	else {
+	    lock_file( "$main::HOME/daemon.log" );
+	    $log_locked = 1;
+	    logger( "Cannot spawn uploaded-build: $!\n" );
+	    unlock_file( "$main::HOME/daemon.log" );
+	    $log_locked = 0;
+	}
+    }
+}
+
+sub upload {
+    my $udir = shift;
+    my $upload_to = shift;
+
+    chdir( "$main::HOME/$udir" ) || return;
+    lock_file( "$main::HOME/$udir" );
+
+    my( $f, $g, @before, @after );
+    foreach $f (<*.changes>) {
+	($g = $f) =~ s/\.changes$/\.upload/;
+	push( @before, $f ) if ! -f $g;
+    }
+
+    unlock_file( "$main::HOME/$udir" );
+
+    if (!@before) {
+	logger( "Nothing to do for $udir\n" );
+	return;
+    }
+
+    logger( scalar(@before), " jobs to upload in $udir: @before\n" );
+    unlock_file( "$main::HOME/daemon.log" );
+    $log_locked = 0;
+
+    foreach $f (@before) {
+	($g = $f) =~ s/\.changes$/\.upload/;
+	my $logref = do_dupload( $upload_to, $f );
+
+	if (defined $logref and scalar(@$logref) > 0) {
+	    my $line;
+
+	    lock_file( "$main::HOME/daemon.log" );
+	    $log_locked = 1;
+
+	    foreach $line (@$logref) {
+		logger $line;
+	    }
+	    unlock_file( "$main::HOME/daemon.log" );
+	    $log_locked = 0;
+	}
+
+	if ( -f $g ) {
+	    if (!open( F, "<$f" )) {
+		logger( "Cannot open $f: $!\n" );
+		next;
+	    }
+	    my $text;
+	    { local($/); undef $/; $text = <F>; }
+	    close( F );
+	    if ($text !~ /^Distribution:\s*(.*)\s*$/m) {
+		lock_file( "$main::HOME/daemon.log" );
+		$log_locked = 1;
+		logger( "$f doesn't have a Distribution: field\n" );
+		unlock_file( "$main::HOME/daemon.log" );
+		$log_locked = 0;
+		next;
+	    }
+	    my @dists = split( /\s+/, $1 );
+	    my ($version,$source,$pkg);
+	    if ($text =~ /^Version:\s*(\S+)\s*$/m) {
+		$version = $1;
+	    }
+	    if ($text =~ /^Source:\s*(\S+)(?:\s+\(\S+\))?\s*$/m) {
+		$source = $1;
+	    }
+	    if (defined($version) and defined($source)) {
+		$pkg = "${source}_$version";
+	    } else {
+		($pkg = $f) =~ s/_\S+\.changes$//;
+	    }
+	    uploaded($pkg,@dists);
+	} else {
+	    push (@after, $f);
+	}
+    }
+
+    lock_file( "$main::HOME/daemon.log" );
+    $log_locked = 1;
+    if (@after) {
+	logger( "The following jobs were not processed (successfully):\n".
+		"@after\n" );
+    }
+    else {
+	logger( "dupload successful.\n" );
+    }
+    write_stats( "uploads", scalar(@before) - scalar(@after) );
+}
+
+sub do_dupload {
+    my $upload_to = shift;
+    my @jobs = @_;
+    my @log;
+    local( *PIPE );
+    my( $current_job, $current_file, @failed, $errs );
+
+    if (!open( PIPE, "dupload -k --to $upload_to @jobs </dev/null 2>&1 |" )) {
+	return "Cannot spawn dupload: $!";
+    }
+
+    my $dup_log = "";
+    while( <PIPE> ) {
+	$dup_log .= $_;
+	chomp;
+	if (/^\[ job \S+ from (\S+\.changes)$/) {
+	    $current_job = $1;
+	}
+	elsif (/^warning: MD5sum mismatch for (\S+), skipping/i) {
+	    my $f = $1;
+	    push( @log, "dupload error: md5sum mismatch for $f\n" );
+	    $errs .= "md5sum mismatch on file $f ($current_job)\n";
+	    push( @failed, $current_job );
+	}
+	elsif (/^\[ Uploading job (\S+)$/) {
+	    $current_job = "$1.changes";
+	}
+	elsif (/dupload fatal error: Can't upload (\S+)/i ||
+	       /^\s(\S+).*scp: (.*)$/) {
+	    my($f, $e) = ($1, $2);
+	    push( @log, "dupload error: upload error for $f\n" );
+	    push( @log, "($e)\n" ) if $e;
+	    $errs .= "upload error on file $f ($current_job)\n";
+	    push( @failed, $current_job );
+	}
+	elsif (/Timeout at [\S]+ line [\d]+$/) {
+	    $errs .= "upload timeout on file $current_job\n";
+	    push( @failed, $current_job );
+	}
+	elsif (/^\s(\S+)\s+[\d.]+ kB /) {
+	    $current_file = $1;
+	}
+    }
+    close( PIPE );
+    if ($?) {
+	if (($? >> 8) == 141) {
+	    push( @log, "dupload error: SIGPIPE (broken connection)\n" );
+	    $errs .= "upload error (broken connection) during ".
+		"file $current_file ($current_job)\n";
+	    push( @failed, $current_job );
+	}
+	else {
+	    push( @log, "dupload exit status ". exitstatus($?)  );
+	    $errs .= "dupload exit status ".exitstatus($?)."\n";
+	    push( @failed, $current_job );
+	}
+    }
+
+    foreach (@failed) {
+	my $u;
+	($u = $_) =~ s/\.changes$/\.upload/;
+	unlink( $u );
+	push( @log, "Removed $u due to upload errors.\n" );
+	$errs .= "Removed $u to reupload later.\n";
+    }
+
+    if ($errs) {
+	$errs .= "\nComplete output from dupload:\n\n$dup_log";
+	send_mail( $conf::admin_mail, "dupload errors", $errs );
+    }
+    return \@log;
+}

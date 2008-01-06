@@ -1,0 +1,94 @@
+
+		      wanna-build & Co. overview
+		      --------------------------
+
+
+wanna-build is an automatic distributed build system intended to
+recompile Debian binary packages from the Debian source.  This is an
+attempt to give an overview of the system.
+
+Quinn Diff -----          -------> Build Daemon <-------> Adminstrator
+                \        /              ^       
+                 \      /                \-------------
+                  |    |                               \
+                  V    V                               V
+               Wanna Build                          sbuild <--------- Andrea
+                  ^    ^                               ^
+                  |    |                              /
+                 /      \                            /
+                /        \                          /
+Packages -------          -------> Human <----------
+
+The 8 components in more detail:
+
+(1) Quinn Diff
+
+This is the program used to determine which packages need recompiled;
+it's optional and anything which produces the same output could be
+used.
+
+The quinn diff program can either be run on the same machine as
+wanna-build or on any other machine, or one can use the cannonical
+quinn site (http://quinn-diff.nocrew.org/).
+
+(2) Packages
+
+This is just the Packages file from an ftp site (preferablly all build
+daemons should use the same ftp mirror as wanna-build does);
+wanna-build uses the information in it to determine which packages
+have been installed (after they've been `uploaded'), which packages
+can now be built (after they've been put on `dep-wait').
+
+(3) Wanna Build
+
+The heart of the build system: it's a database of packages which need
+rebuilt.  The packages can be in several states (e.g. `needs-build',
+`failed', `dep-wait' etc.).  The database does full locking, so as
+long as build daemons and humans all register what they want to build
+via wanna-build, there'll be no duplication of work.
+
+(4) Build Daemon
+
+The build daemon can be used on a permanently connected machine to
+ensure packages are being compiled all day, every day.  It gets a
+lists of packages to build from the wanna-build database and builds
+them with sbuild.  The logs of the build are then sent to the human
+adminstrator.
+
+(5) Adminstrator
+
+Each build daemon must have a human adminstrator who looks at each
+build logs and sends a response.  The response can be a signed
+.changes file, in which case the build daemon will upload the package,
+or it can be a `fail' response along with a reason, in which case the
+build daemon will notify the wanna-build database about the packages'
+change of state.
+
+(6) Sbuild
+
+This is the script used to build Debian source packages; it's similar
+to dbuild or debbuild, but unlike either of those it knows about
+source dependencies.
+
+(7) Andrea
+
+Andrea is a script which auto-generates a subset of source
+dependencies from a Packages file.  It works by making guesses based
+on the Dependencies of the packages for i386; e.g. any package which
+Depends: on zlib1g is likely to source-depend on zlib1g-dev.  The
+output of andrea is merged with a set of manual source dependencies to
+form the source dependencies list used by sbuild.
+
+(8) Humans
+
+Humans can compile and upload packages without duplication of work iff
+they register their intent with wanna-build.  Humans are recommended
+to use sbuild or something similar, but there's nothing that requires
+them to.
+
+For more detail see the man pages and the README and README.mail file
+in /usr/doc/wanna-build/.
+
+-- 
+James Troup <james@nocrew.org>, Bradford, UK
+Sat, 21 Nov 1998 13:52:00 +0000

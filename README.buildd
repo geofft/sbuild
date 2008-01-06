@@ -1,0 +1,488 @@
+
+
+                          wanna-build & Co. Usage
+                          -----------------------
+
+					Roman Hodek, July 9th 1998 - Mar 2000
+
+
+wanna-build (and its aliases) are intended to better coordinate the package
+rebuilding, and to make it easy to determine which packages need
+recompilation. This document is a short outline of the usage of the tool.
+
+wanna-build comes with a bunch of aliases to it (all in /usr/bin/wb-short),
+which save you to type the operation option. Those aliases exist:
+
+ Actions:
+  wanna-build       == wanna-build --take
+  uploaded-build    == wanna-build --uploaded
+  failed-build      == wanna-build --failed
+  give-back-build   == wanna-build --give-back
+  dep-wait-build    == wanna-build --dep-wait
+  forget-build      == wanna-build --forget
+  no-build          == wanna-build --no-build
+ Information:
+  build-info        == wanna-build --info
+  list-needs-build  == wanna-build --list=needs-build
+  list-building     == wanna-build --list=building
+  list-uploaded     == wanna-build --list=uploaded
+  list-installed    == wanna-build --list=installed
+  list-failed       == wanna-build --list=failed
+  list-dep-wait     == wanna-build --list=dep-wait
+  list-not-for-us   == wanna-build --list=not-for-us
+  list-all          == wanna-build --list=all
+ Internal (done by cron jobs):
+  merge-quinn       == wanna-build --merge-quinn
+  merge-packages    == wanna-build --merge-packages
+
+wanna-build maintains a database (/var/lib/wanna-build/build-db-DIST)
+in which it keeps information about all the packages and their
+states. These states can be:
+
+  Installed:
+    The source and binary version of a package match, no action is
+    needed.
+
+  Needs-Build:
+    The source version is newer than the binary version for this
+				architecture, so the package needs recompilation.
+
+  Building:
+    Someone has taken the package and currently builds it.
+
+  Uploaded:
+    A previous rebuild has been successfull, and the resulting binary
+    package has been uploaded, but it is not installed into the
+    archive yet.
+
+  Failed:
+    A previous build failed for some reason, and a new version of the
+				source package is needed to fix this. This means you don't need
+    to try to recompile this version of the package again, it's in
+    vain. The "Failed" state is reset if a new source version appears
+    (but there are some warnings that it previously failed).
+
+  Dep-Wait:
+    A previous build failed because it needs some other package (or newer
+    version of) that isn't available yet for this architecture. Along with
+    this state a dependency list is stored (normal Depends: syntax and
+    features). Once all those dependencies are known to be available (are
+    in state Installed and satisfying version requirements if present), the
+    package changes state to Needs-Build again.
+
+  Not-For-Us:
+    The package isn't suitable for this architecture for some reason.
+    (E.g., isdnutils is useless on m68k.) The package is (nearly)
+				completely ignored by wanna-build and never will appear in needs-build
+    lists, even if new source versions come up.
+
+  Failed-Removed:
+    This is a rather special state... It occurs if a package disappears
+    from quinn-diff output and was in state Failed before. Such
+    disappearing packages are usually deleted from the database, but state
+    Failed packages are treated differently, to avoid loosing the failure
+    messages. Therefore they're put into this special state, so that they
+    still have an entry, but are otherwise ignored. If was missing from
+    quinn-diff due to an error and re-appears later, it will change back
+    state to Failed as nothing has happened.
+
+  Dep-Wait-Removed:
+    This is similar to Failed-Remove, and this state is entered if a
+    package was in Dep-Wait and then disappears from quinn-diff. The state
+    is just to prevent loosing the dependency information if the package
+    later is listed again (for example, if the disappearance was a
+    quinn-diff failure).
+
+  Install-Wait:
+  Reupload-Wait:
+    These states handle a special case, the delayed-frozen-installation,
+    which is described in its own chapter at the end of this document.
+
+A packages changes states by the various calls to wanna-build. The usual
+process is:
+
+ - merge-quinn (run by a cron job) detects that some package needs
+   recompilation due to a new source version. The state changes from
+   "Installed" to "Needs-Build", and the version number is updated.
+
+ - Somebody notices that the package needs rebuilding, and takes it with
+
+     wanna-build hello_1.0-1
+
+   The state changes from "Needs-Build" to "Building".
+
+ - The build is successfull and the job is uploaded. Then the uploader
+   calls
+
+     uploaded-build hello_1.0-1.dsc
+
+   The package changes state from "Building" to "Uploaded".
+
+ - If the package has been installed into the Debian archive by dinstall on
+   master, it will be in the binary-ARCH/Packages file eventually some days
+   later. A cron job calls merge-packages and this detects that the version
+   that previously was uploaded is now in there and changes the state from
+   "Uploaded" to "Installed".
+
+The wanna-build call in the second step also serves another purpose: It
+detects (and tells you) if somebody else already has taken the package (to
+avoid double work), or if the package failed previously. The output could
+look like:
+
+  $ wanna-build hello_1.0-1
+  hello: NOT OK!
+    already taken by rnhodek
+
+or
+
+  $ wanna-build hello_1.0-1
+  hello: NOT OK!
+    build of 1.0-1 failed previously:
+      Needs a special source patch to compile for m68k (see #99999)
+
+For packages that are not taken yet and have no other specialities, you get
+no output except you give the -v (verbose) option.
+
+The arguments you give to wanna-build, uploaded-build, and failed-build
+are rather free-format. The tools just need the package name and the
+version number, separated by '_'. Path prefixes and extensions like ".dsc",
+".deb", ".changes", ... are ignored. This often allows you to use your
+shells filename completion or cut&paste to enter the arguments.
+
+uploaded-build shouldn't fail except the state is wrong (not "Building"),
+or you're not the one who has taken the package, or if there is a version
+mismatch. But there is no coordination or the like here.
+
+If a build fails (and the error can't be fixed without source
+modifications), you should inform your fellows by calling
+
+  failed-build hello_1.0-1
+
+You will be asked for a failure message that will be put in the database.
+It can be more than one line. For example:
+
+  Enter reason for failing (end with '.' alone on its line):
+  Needs a special source patch to compile for m68k (see #99999)
+  .
+  hello: registered as failed
+
+The failed messages are also useful for keeping failed lists (list-failed)
+and going though it and remembering maintainers about bugs from time to
+time. If the package was already in state "Failed", your message will be
+appended to the previous one.
+
+If later a new source version is detected by merging quinn-diff output, the
+state will be reset to "Needs-Build", assuming that the new source version
+fixes the problem. For example, if the new version of hello is 1.0-2 and
+you take the package, you'll see:
+
+  $ wanna-build -v hello_1.0-2
+  hello: Warning: Previous version failed!
+  hello: ok
+
+This should make you cautious and you can look at the fail message:
+
+  $ build-info hello
+  hello:
+    Package             : hello
+    Version             : 1.0-2
+    Builder             : rnhodek
+    State               : Building
+    Section             : devel
+    Priority            : optional
+    Previous-State      : Failed
+    State-Change        : 1998 Jun 16 16:17:41
+    Notes               : out-of-date:libc6
+    Old-Failed          : -------------------- 1.0-1 --------------------
+   Needs a special source patch to compile for m68k (see #99999)
+
+Now you can look into the changelog of the package and check if bug #99999
+really has been fixed. If it seems unlikely that this version will work,
+you can immediately call failed-build again.
+
+
+Besides build-info, there is the --list option or the list-* aliases that
+retrieve information from the database. The most commonly used command is
+list-needs-build, which tells you which packages are ready for taking. For
+example:
+
+  $ list-needs-build
+  editors/xemacs19_19.16-9 [important:uncompiled:libc6:X]
+  editors/sex_0.16 [optional:uncompiled:libc6:X]
+  editors/the_2.5-0.6 [optional:uncompiled:libc6]
+  editors/xemacs20_20.4-12 [optional:uncompiled:libc6:X]
+  Total 4 package(s)
+
+The output is similar to quinn-diff intentionally. The difference is that
+already taken or uploaded or failed packages aren't listed. quinn-diff
+can't know these things.
+
+The packages are usually ordered by the following criteria (in this order):
+
+ - out-of-date/uncompiled (the former come first)
+
+ - priority (e.g. "required" before "optional")
+
+ - section (alphabetically)
+
+ - package name (alphabetically)
+
+You can also change the sorting with the -O or --order option. That option
+needs an argument that consists of a series of letters. Each letter stands
+for one criterium, and the order of the letters decides in which order to
+apply these criteria. Available letters are:
+
+ - 'b': builder, alphabetically
+
+ - 'c': out-of-date/uncompiled (out-of-date comes before uncompiled)
+
+ - 'n': package name, alphabetically
+
+ - 'p': priority (required -> important -> ... -> extra)
+
+ - 's': section name, ordered by some kind of importance
+
+ - 'f': failed category (none > uploaded-fixed-pkg > fix-expected >
+        reminder-sent > nmu-offered > easy > medium > hard >
+								compiler-error)
+
+I.e., the default order would be --order=cpsn. If listing failed packages,
+the default order becomes fcpsn.
+
+The other list-* commands can list packages in other states, e.g.
+list-uploaded would list all packages that have been uploaded, but are not
+installed yet. Or list-building would give you infos on who currently
+builds what.
+
+All the list-* commands can also take a -U (--user) option to restrict the
+output to a specific user.
+
+
+Option summary:
+===============
+
+Actions and options, as already discussed:
+
+  --take (default)
+  -f, --failed
+  -u, --uploaded
+  -n, --no-build
+  -i, --info
+  -l STATE, --list=STATE
+  --merge-quinn
+  --merge-packages
+  -O, --order
+
+-v, --verbose
+-------------
+Be somewhat more verbose, and print revision number at start.
+
+-d DIST, --dist=DIST
+--------------------
+Set distribution on which wanna-build should work. There are separate
+databases for stable, frozen, and unstable. A default distribution is set
+with the variable $default_dist in /etc/wanna-build.conf. The distributions
+"stable", "frozen", "unstable" can be abbreviated as 's', 'f', and 'u',
+resp.
+
+--forget
+--------
+This is another action: The named packages (only name, no version) will be
+removed from the database completely. This is for maintainence purposes,
+not for day-by-day use. A mail will be sent to the database maintainer.
+
+--give-back
+-----------
+If you decide to stop building a package that you have taken before (i.e.,
+which is in state Building and you're the builder), but that package hasn't
+failed, you can give it back with this option. The state changes back to
+Needs-Build.
+
+--dep-wait
+---------
+If you see that a package source-depends on some other package which isn't
+available yet for your architecture, you best set the package to state
+Dep-Wait. You additionally give a list of dependencies with the -m option,
+formatted just like a Depends: field (versioned dependencies are allowed,
+but no alternatives). If -m is not used, wanna-build will ask interactively
+for the dependency list. The package is set back to state Needs-Build as
+soon as all the dependencies are known to be available (detected by
+--merge-packages).
+
+-m MESSAGE, --message=MESSAGE
+-----------------------------
+Set fail message for --failed. If not set on the command line, wanna-build
+will ask interactively for it.
+Set the dependencies that a package should wait for if used with
+--dep-wait. Again, wanna-build will ask interactively for the dependencies
+if this option isn't given.
+
+-o, --override
+--------------
+Take over a package from somebody else. This is possible for packages in
+state Building or Failed. The new state will be Building, and the owner
+changes. A mail notice will be sent to the previous owner.
+
+-O ORDER, --order=ORDER
+-----------------------
+Select criteria for how to order --list output (see above).
+
+-U USER, --user=USER
+--------------------
+Set the user whose name is logged with the transaction, or who will be
+entered in the database as builder of the package (--take). The default is
+the login name of the caller, but for maintainence purposes it can be
+changed on the command line.
+
+-N, --no-propagation
+--------------------
+Do not propagate a state change to other databases. (Propagation usually
+happens if the same version of the package in the same state appears in
+another distribution, too). This option is only for special purposes when
+propagation wouldn't be correct (it usually is).
+
+-D, --no-down-propagation
+-------------------------
+Like above, but only inhibit propagation to "lower" (i.e., older)
+distributions. For example, a change in frozen would be propagated to
+unstable, but not to stable. This option is often used by the build daemon
+because it also works only in "up" direction of distros.
+
+-c CATEGORY, --category=CATEGORY
+--------------------------------
+Set/change the failed category (with --failed) or list only failed packages
+in this category (with --list). For more details on failed categories,
+please see the file README.failcat.
+
+-a DAYS, --min-age=DAYS
+-------------------------
+Used together with --list. List only packages whose state change is at
+least DAYS ago. Days can be negative, then only packages at most DAYS
+old are listed.
+
+--max-age=DAYS
+--------------
+Same as the above, but specifies a maximum age (same meaning as negative
+DAYS in --min-days). DAYS can be negativ here, too, meaning a minimum age
+again.
+
+
+--export=FILE
+-------------
+Export the internal database (which is in Berkeley DB hash format, to speed
+up operation) into an ASCII file. The file format is somewhat similar to a
+Packages file, but with different keywords. The --export option is not
+intended for public use, but for the database maintainer to view the
+contents of the DB directly, or the make manual changes.
+
+--import=FILE
+-------------
+Import an ASCII format database (as described above) into the internal
+database. This is NOT intended for public use. CAUTION: The internal
+database is cleared before the import, so that packages can also be deleted
+by manual editing. But this also means that you can also easily destroy the
+whole DB with this option!
+
+--manual-edit
+-------------
+Lock the database, export it, start an editor for it, and after the editor
+exists, re-import the modified file. Then the db is unlocked again. This
+option is meant for manual fixes to the database, with full locking.
+
+--create-db
+-----------
+Since wanna-build refuses to open (and thus create) non-existing databases
+now, this option is necessary if you really want to create a
+not-yet-existing db.
+
+--create-maintenance-lock
+-------------------------
+This action creates a master lock file for all databases. All operations
+except --merge-packages and --merge-quinn will block until this master lock
+is gone. The purpose of this lock is to interception of other operation in
+the middle of a database update that must be done sequentially for
+different distributions, but the merged data nevertheless belong together.
+The maintenance lock is used by the do-merge-quinn and do-merge-packages
+scripts.
+
+--remove-maintenance-lock
+-------------------------
+Remove a master lock file again.
+
+--correct-compare
+-----------------
+Use dpkg --compare-versions for version comparisons, as it is really
+correct. However, spawning a dpkg process for every comparison is very
+time-consuming, so the default is to use the internal implementation.
+(Which has been derived from the dpkg source.)
+
+--introduce-epochs
+------------------
+This was needed when an old database was updated to contain epochs. As now
+all databases should include epochs, this option should be unneeded.
+
+
+As usual, a double minus ("--") stops option processing, and remaining
+arguments will be treated as non-options, even if they start with a '-'.
+
+
+The delayed-frozen-install problem
+==================================
+
+A special problem should be documented here, since wanna-build tries to
+handle it, but nevertheless some manual work is required, and there is a
+deficiency you might want to know about.
+
+If a source upload is for frozen and unstable, the source will be installed
+in unstable immediately, but before going to frozen it needs manual
+acknowledge by the release manager. (The same can also happen if stable is
+involved. In the following frozen+unstable will be used as example, but
+there are also different combinations to which the problem applies to:
+stable+unstable, stable+frozen (unlikely), stable+frozen+unstable.)
+Therefore, quinn-diff for unstable will list the package earlier then the
+one for frozen, and it will be in Needs-Build in unstable earlier. If now
+someone takes the unstable package, the state change is not propagated to
+frozen, because there is still an older version in the database. (The same
+scenario can also happen if the quinn-diff for frozen isn't updated for a
+few days due to malfunctions.)
+
+Now the builder may not upload the package for frozen and unstable, because
+he cannot know if the package will be accepted for frozen. So he must
+delete frozen from the Distribution: field in the .changes file. (sbuild
+does this.) He should also save the .changes file because he will need it
+later. (Also this done automatically by sbuild.) But if the package is
+accepted for frozen, the new version will become Needs-Build a few days or
+so later. To avoid building the same version again as far as this can be
+avoided, wanna-build takes the following actions:
+
+  - If a package comes in from quinn-diff for distribution A and the
+    Installed-Version: of the same package in another distribution B is
+    equal to the incoming version, the state in distrib A will not be
+    Needs-Build but Reupload-Wait.
+
+ - If a package comes in from quinn-diff for distribution A and the
+   the same package in another distribution B has the same version number
+   and is in states Building or Uploaded, the state in distrib A will not
+   be Needs-Build but Install-Wait.
+
+ - If a package comes in from quinn-diff for distribution A and the
+   the same package in another distribution B has the same version number
+   and the state there is Failed or Dep-Wait, the state from B is copied,
+   together with fail messages or dependencies, resp.
+
+ - If during --merge-packages for distribution A the same version of the
+   package in another distrib B is in state Install-Wait, the state in B is
+   changed to Reupload-Wait.
+
+ - Any time a package changes state to Reupload-Wait, a mail is sent to the
+   previous builder that he should reupload the package for the
+   distribution in question. The builder is supposed to take the binary
+   packages from a Debian mirror, and make a new upload based on the
+   .changes he saved after the build for unstable. The Distribution: should
+   be what wanna-build tells him in its mail. (There is a script,
+   buildd-reupload, for this task.)
+
+This way, a lot of recompilations of the same version can be avoided.
+However, unfortunately, not all of them. If another version for unstable is
+installed in the archive before the frozen version comes in from
+quinn-diff, the binary packages are already lost and cannot be reuploaded.
