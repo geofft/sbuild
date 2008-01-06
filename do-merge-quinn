@@ -21,16 +21,8 @@
 #######################################################################
 
 package conf;
-# defaults
-$basedir = "/var/lib/wanna-build";
-$dbbase = "build-db";
-require "/etc/wanna-build.conf";
-die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;
-die "dbbase is empty\n" if ! $dbbase;
-die "\@conf::sections is not defined\n" if ! @conf::sections;
-die "\$conf::quinn_source is not defined\n" if ! $conf::quinn_source;
-die "\$conf::quinn_source_multi_section is not defined\n"
-    if ! defined $conf::quinn_source_multi_section;
+use WannaBuild::Conf;
+
 package main;
 
 use strict;
@@ -114,7 +106,7 @@ foreach $dist (@dists) {
     system "echo '' >>stats";
 }
 
-if (-s "stats") {
+if (-s "stats" && defined($conf::stat_mail) && $conf::stat_mail) {
     system "mail -s 'wanna-build statistics $date' $conf::stat_mail <stats"
 	and warn "mail for statistics error status: $?\n";
     if ($conf::web_stats && -w $conf::web_stats) {

@@ -1,3 +1,23 @@
+2008-01-06  Roger Leigh  <rleigh@whinlatter.ukfsn.org>
+
+	* wanna-build.conf.local: Remove.
+
+	* wanna-build.conf: Update with a complete list of settings,
+	including those from wanna-build.conf.local, removing unused
+	variables.
+
+	* wanna-build: Use WannaBuild::Conf.  Check if $conf::log_mail is
+	defined.
+
+	* do-merge-quinn: Use WannaBuild::Conf.  Check if $conf::stat_mail
+	is defined.
+
+	* do-merge-packages: Use WannaBuild::Conf.
+
+	* WannaBuild/Conf.pm: Module to load wanna-build.conf, created
+	from common code in wanna-build and do-merge-*, modelled on
+	Sbuild::Conf.  This contains a complete list of default settings.
+
 2008-01-06  Roger Leigh  <rleigh@debian.org>
 
 	* Replace all references to /var/debbuild (or /var/state/debbuild

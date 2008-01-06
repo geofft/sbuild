@@ -5,6 +5,9 @@ buildd (0.10) UNRELEASED; urgency=low
     - Fix line wrapping.  Thanks to Florian Lohoff.
   * debian/rules:
     - Use prefixed binary names for installation.  Thanks to Florian Lohoff.
+    - Install wanna-build.conf in /etc/buildd.
+    - Install WannaBuild/Conf.pm in usr/share/perl5/WannaBuild.
+    - Don't install removed wanna-build.conf.local.
   * abort-current-build: Re-add.
   * buildd:
     - Log command-line arguments.  Thanks to Florian Lohoff.
@@ -16,4 +19,4 @@ buildd (0.10) UNRELEASED; urgency=low
   * wanna-build.conf:
     - Add @distributions and %dist_order.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 05 Jan 2008 19:12:47 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 06 Jan 2008 16:41:58 +0000

@@ -21,19 +21,8 @@
 #######################################################################
 
 package conf;
-# defaults
-$basedir = "/var/lib/wanna-build";
-$dbbase = "build-db";
-$transactlog = "transactions.log";
-$mailprog = "/usr/sbin/sendmail";
-@distributions = qw(oldstable-security stable testing unstable stable-security testing-security);
-%dist_order = ( 'oldstable-security' => 0, stable => 1, 'stable-security' => 1, testing => 2, 'testing-security' => 2, unstable => 3 );
-require "/etc/wanna-build.conf";
-die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;
-die "dbbase is empty\n" if ! $dbbase;
-die "transactlog is empty\n" if ! $transactlog;
-die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
-    if !-x $conf::mailprog;
+use WannaBuild::Conf;
+
 package main;
 
 use strict;
@@ -315,7 +304,7 @@ tie %db, 'MLDBM', db_filename( $distribution ), GDBM_WRCREAT, 0664
 
 process();
 
-if ($mail_logs && $conf::log_mail) {
+if ($mail_logs && defined($conf::log_mail) && $conf::log_mail) {
     send_mail( $conf::log_mail,
 	       "wanna-build $distribution state changes $curr_date",
 	       "State changes at $curr_date for distribution ".
