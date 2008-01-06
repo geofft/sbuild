@@ -22,7 +22,7 @@
 
 package conf;
 # defaults
-$basedir = "/var/lib/debbuild";
+$basedir = "/var/lib/wanna-build";
 $dbbase = "build-db";
 $transactlog = "transactions.log";
 $mailprog = "/usr/sbin/sendmail";

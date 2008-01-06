@@ -412,7 +412,7 @@ sub do_build {
     if (-d "chroot-$dist") {
 	my $absroot = cwd() . "/chroot-$dist";
 	$chroot_apt_options = "-o Dir::State::status=$absroot/var/lib/dpkg/status";
-	my $aptconf = "$absroot/var/debbuild/apt.conf";
+	my $aptconf = "$absroot/var/lib/sbuild/apt.conf";
 	$ENV{'APT_CONFIG'} = $aptconf;
 	if ( ! -f $aptconf ) {
 	    if (open F, ">$aptconf") {

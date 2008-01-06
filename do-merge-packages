@@ -22,7 +22,7 @@
 
 package conf;
 # defaults
-$basedir = "/var/state/debbuild";
+$basedir = "/var/lib/wanna-build";
 $dbbase = "build-db";
 require "/etc/wanna-build.conf";
 die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;

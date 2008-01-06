@@ -1,3 +1,22 @@
+2008-01-06  Roger Leigh  <rleigh@debian.org>
+
+	* Replace all references to /var/debbuild (or /var/state/debbuild
+	or /usr/local/var/debbuild) with /var/lib/wanna-build for FHS
+	compliance.
+
+	* Initial buildd packaging.
+
+	* abort-current-build: Re-add.
+
+	* buildd: Log command-line arguments.  Thanks to Florian Lohoff.
+	Use --auto-give-back arguments correctly with newer sbuild option
+	parser.  Thanks to Florian Lohoff.
+
+	* wanna-build: Move @distributions and %dist_order into conf
+	package.  Thanks to Florian Lohoff.
+
+	* wanna-build.conf: Add @distributions and %dist_order.
+
 2007-02-03  Roger Leigh  <rleigh@debian.org>
 
 	* README.chroot-building: Refer to modern buildd chroot creation

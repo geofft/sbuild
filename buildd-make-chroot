@@ -87,9 +87,9 @@ esac
 getent passwd $USER | sed -re 's/^([^:]+):x/\1:*/' -e 's/:[^:]+:([^:]+)$/:\/nonexistent:\1/' >> $TARGET/etc/passwd
 getent group $USER | sed -re 's/^([^:]+):x/\1:*/' >> $TARGET/etc/group
 echo $USER  ALL=NOPASSWD:  ALL >> $TARGET/etc/sudoers
-mkdir -p $TARGET/var/debbuild/srcdep-lock $TARGET/build/$USER
-chown -R $USER:$USER $TARGET/var/debbuild $TARGET/build/$USER
-chmod -R 02775 $TARGET/var/debbuild
+mkdir -p $TARGET/var/lib/sbuild//srcdep-lock $TARGET/build/$USER
+chown -R $USER:$USER $TARGET/var/lib/sbuild $TARGET/build/$USER
+chmod -R 02775 $TARGET/var/lib/sbuild
 echo include /etc/ld.so.conf.d/*.conf >> $TARGET/etc/ld.so.conf
 (cd $TARGET/dev ; ./MAKEDEV fd)
 sudo chroot $TARGET dpkg -P debconf-i18n debconf liblocale-gettext-perl libtext-charwidth-perl libtext-iconv-perl libtext-wrapi18n-perl procps makedev

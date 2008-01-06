@@ -35,9 +35,9 @@ which save you to type the operation option. Those aliases exist:
   merge-quinn       == wanna-build --merge-quinn
   merge-packages    == wanna-build --merge-packages
 
-wanna-build maintains a database (/debbuild/build-db-DIST) in which it
-keeps information about all the packages and their states. These states can
-be:
+wanna-build maintains a database (/var/lib/wanna-build/build-db-DIST)
+in which it keeps information about all the packages and their
+states. These states can be:
 
   Installed:
     The source and binary version of a package match, no action is

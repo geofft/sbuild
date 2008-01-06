@@ -4,7 +4,7 @@
 # m68k.debian.org.
 
 # directory for the databases, lock files and log files
-$basedir = "/usr/local/var/debbuild";
+$basedir = "/usr/local/var/wanna-build";
 
 # ignore all epochs? (needed if quinn-diff prints no epochs)
 #$ignore_epochs = 0;

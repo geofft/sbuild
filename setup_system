@@ -27,9 +27,8 @@
 # ons of these, depending on whether you have a buildd group or not
 #sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --ingroup buildd --disabled-password buildd
 sudo adduser --system --shell /bin/sh --uid 60000 --gecos 'Build Daemon' --group --disabled-password buildd
-sudo mkdir -p /var/debbuild/srcdep-lock
-sudo chown -R buildd:buildd /var/debbuild
-sudo chmod -R 2775 /var/debbuild
+sudo chown -R buildd:buildd /var/lib/wanna-build
+sudo chmod -R 2775 /var/lib/wanna-build
 # parts to be done as buildd.
 cd ~buildd
 zcat /usr/share/doc/buildd/examples/buildd.conf.gz > buildd.conf

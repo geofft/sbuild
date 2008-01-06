@@ -4,11 +4,13 @@
 There's now also a mail interface to wanna-build on kullervo, for people
 who consider kullervo too slow for interactive work :-)
 
-To use it, send mail to <wanna-build@kullervo.infodrom.north.de>. Subject
-doesn't matter. The body must be signed with PGP, with a key registered in
-/usr/local/var/debbuild/mail-keyring.pgp. Only keys in there are authorized
-to use the mail interface. Additionally, the file mail-users in the same
-directory is used to map PGP-key names to user names on kullervo.
+To use it, send mail to
+<wanna-build@kullervo.infodrom.north.de>. Subject doesn't matter. The
+body must be signed with PGP, with a key registered in
+/var/lib/wanna-build/mail-keyring.pgp. Only keys in there are
+authorized to use the mail interface. Additionally, the file
+mail-users in the same directory is used to map PGP-key names to user
+names on kullervo.
 
 In the body (the PGP-signed part), you can write commands like:
 
