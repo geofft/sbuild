@@ -29,10 +29,10 @@ use FileHandle;
 
 require Exporter;
 @Buildd::ISA = qw(Exporter);
-@Buildd::EXPORT = qw(read_config lock_file unlock_file open_log
- 		     reopen_log close_log logger parse_deplist
- 		     build_deplist send_mail ll_send_mail isin
- 		     exitstatus write_stats binNMU_version);
+
+@Buildd::EXPORT = qw(unset_env lock_file unlock_file open_log
+ 		     reopen_log close_log logger send_mail
+ 		     ll_send_mail exitstatus write_stats);
 
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
@@ -62,17 +62,6 @@ sub unset_env {
     delete $ENV{'DISPLAY'};
     delete $ENV{'TERM'};
 }
-
-sub read_config {
-    unset_env();
-    if (-f "$main::HOME/buildd.conf") {
-	package conf;
-	require "$main::HOME/buildd.conf";
-	$conf::admin_mail; # don't know why this is needed
-	package Buildd;
-    }
-}
-
 
 sub lock_file {
     my $file = shift;
@@ -212,10 +201,6 @@ sub ll_send_mail {
     return 1;
 }
 
-sub isin {
-    my $val = shift;
-    return grep( $_ eq $val, @_ );
-}
 
 sub exitstatus {
     my $stat = shift;
@@ -223,11 +208,5 @@ sub exitstatus {
     return ($stat >> 8) . "/" . ($stat % 256);
 }
 
-sub binNMU_version {
-    my $v = shift;
-    my $binNMUver = shift;
-
-    return "$v+b$binNMUver";
-}
 
 1;

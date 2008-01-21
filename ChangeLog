@@ -1,5 +1,11 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* lib/Buildd.pm: Remove read_config function (replaced by
+	Buildd::Conf).  Remove isin and binNMU_version functions also
+	implemented in Sbuild.pm.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
 	* lib/Sbuild.pm: Add isin function.
 
 2008-01-06  Roger Leigh  <rleigh@debian.org>
