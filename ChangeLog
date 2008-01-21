@@ -1,3 +1,15 @@
+2008-01-21  Roger Leigh  <rleigh@whinlatter.ukfsn.org>
+
+	* lib/Buildd/Conf.pm: Add and export read function to read
+	config.  Add checks from buildd.
+
+	* bin/buildd: Use Buildd::Conf.  Use Buildd::Conf::read in place
+	of read_config().
+
+	* bin/wanna-build: Remove isin function (now in Sbuild.pm).
+
+	* bin/buildd-uploader, bin/buildd-watcher: Use Buildd::Conf.
+
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
 	* bin/sbuild: Rename "Session Managed" to "Session Cloned".

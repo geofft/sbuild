@@ -44,7 +44,7 @@ BEGIN {
                  $autoclean_interval $secondary_daemon_threshold
                  $admin_mail $statistics_mail $dupload_to
                  $dupload_to_non_us $dupload_to_security
-                 $log_queued_messages $wanna_build_dbbase);
+                 $log_queued_messages $wanna_build_dbbase read);
 }
 
 
@@ -85,11 +85,30 @@ our $log_queued_messages = 0;
 our $wanna_build_dbbase = "arch/build-db";
 
 # read conf files
-require "/etc/buildd/buildd.conf" if -r "/etc/buildd/buildd.conf";
-require "$HOME/.builddrc" if -r "$HOME/.builddrc";
+sub read {
+    require "/etc/buildd/buildd.conf" if -r "/etc/buildd/buildd.conf";
+    require "$HOME/.builddrc" if -r "$HOME/.builddrc";
+}
 
 sub init {
+    read();
+
     # some checks
+    if ($conf::sshcmd) {
+	if ($conf::sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
+	    ($main::sshuser, $main::sshhost) = ($1, $2);
+	}
+	elsif ($conf::sshcmd =~ /(\S+)\@(\S+)/) {
+	    ($main::sshuser, $main::sshhost) = ($1, $2);
+	}
+	else {
+	    $conf::sshcmd =~ /(\S+)\s*$/;
+	    ($main::sshuser, $main::sshhost) = ("", $1);
+	}
+	if ($conf::sshsocket) {
+	    $conf::sshcmd .= " -S $conf::sshsocket";
+	}
+    }
 }
 
 1;

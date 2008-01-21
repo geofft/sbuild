@@ -28,9 +28,10 @@ BEGIN {
 
 use strict;
 use Buildd;
+use Buildd::Conf;
 $ENV{'PATH'} = "$main::HOME/bin:/usr/local/bin:/usr/bin:/bin";
 
-read_config();
+unset_env();
 
 if ($conf::sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
     $conf::sshcmd .= " -S $main::HOME/build/$conf::sshsocket";

@@ -2230,12 +2230,6 @@ sub send_mail {
     close( PIPE );
 }
 
-sub isin {
-    my $val = shift;
-
-    return grep( $_ eq $val, @_ );
-}
-
 sub db_filename {
     my $dist = shift;
     return "$conf::basedir/$conf::dbbase-$dist";
