@@ -1,3 +1,10 @@
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
+	* bin/sbuild: Rename "Session Managed" to "Session Cloned".
+
+	* lib/Sbuild/Chroot.pm (init): Rename "Session Managed" to
+	"Session Cloned".
+
 2008-01-06  Roger Leigh  <rleigh@debian.org>
 
 	* Merge buildd repository.

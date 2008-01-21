@@ -296,9 +296,9 @@ foreach $dscfile (@ARGV) {
     append_to_FINISHED( $pkgv );
 
   cleanup_packages:
-    if (defined ($$Sbuild::Chroot::current{'Session Managed'}) &&
-	$$Sbuild::Chroot::current{'Session Managed'} == 1) {
-	print PLOG "Not removing build depends: session managed chroot in use\n";
+    if (defined ($$Sbuild::Chroot::current{'Session Cloned'}) &&
+	$$Sbuild::Chroot::current{'Session Cloned'} == 1) {
+	print PLOG "Not removing build depends: cloned chroot in use\n";
     } else {
 	uninstall_deps();
     }
