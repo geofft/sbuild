@@ -19,7 +19,7 @@ debian/build/config.status: configure
 
 	mkdir debian/build; \
 	cd debian/build; \
-	CFLAGS="$(CFLAGS)" ../../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/lib --localstatedir=/var --mandir=\$${prefix}/share/man
+	CFLAGS="$(CFLAGS)" ../../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/share --localstatedir=/var --mandir=\$${prefix}/share/man
 
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status

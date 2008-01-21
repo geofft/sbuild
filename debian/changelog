@@ -4,8 +4,11 @@ sbuild (0.57.1-1) unstable; urgency=low
   * debian/control: Depend upon schroot >= 1.1.6.  This version includes
     a SESSION_CLONE property, used to determine if a chroot is cloned,
     and hence package removal may be skipped.
+  * debian/rules: set libexecdir to /usr/share, for compatibility with
+    locations of scripts in earlier versions.
+  * debian/schroot.install: use /usr/share in place of /usr/lib.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 20 Jan 2008 18:57:03 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 21 Jan 2008 23:28:29 +0000
 
 sbuild (0.57.0-1) unstable; urgency=low
 
