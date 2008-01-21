@@ -24,3 +24,4 @@ Log.pm: Handle nolog case by always opening LOG and PLOG.
 Log.pm: Log functions should be generic (writeout of sbuild version/build info
 and symlink creation should be customisable).
 
+*/Conf.pm need to be classes.
