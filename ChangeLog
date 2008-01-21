@@ -1,5 +1,19 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* src/buildd-mail-wrapper.c, src/wanna-build-mail.c: Remove
+	shebang in comment boilerplate.
+
+	* configure.ac: Generate new Makefiles.
+
+	* src/Makefile.am: Build buildd-mail-wrapper and wanna-build-mail.
+
+	* lib/Makefile.am (SUBDIRS): Add Buildd and WannaBuild.
+
+	* lib/Buildd/Makefile.am, lib/WannaBuild/Makefile.am: New files.
+	Install perl modules.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
 	* lib/Buildd.pm: Remove read_config function (replaced by
 	Buildd::Conf).  Remove isin and binNMU_version functions also
 	implemented in Sbuild.pm.

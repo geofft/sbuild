@@ -1,5 +1,4 @@
-/*!/usr/bin/perl
- *
+/*
  * buildd-mail-wrapper: wrapper for buildd-mail, does queuing
  * Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
  *

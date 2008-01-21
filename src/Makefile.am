@@ -1,7 +1,7 @@
 # sbuild Makefile template
 #
 #
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2008  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = Buildd Sbuild WannaBuild
+bin_PROGRAMS =			\
+	buildd-mail-wrapper	\
+	wanna-build-mail
 
-perlmod_DATA =		\
-	Sbuild.pm
+buildd_mail_wrapper_SOURCES =	\
+	buildd-mail-wrapper.c
 
-EXTRA_DIST =		\
-	$(perlmod_DATA)
+wanna_build_mail_SOURCES =	\
+	wanna-build-mail.c

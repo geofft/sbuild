@@ -99,6 +99,7 @@ fi
 # Checks for programs.
 AC_PATH_PROG([FIND], [find])
 AC_PATH_PROG([XARGS], [xargs])
+AC_PROG_CC_C99
 
 dnl Set PACKAGE_LOCALE_DIR in config.h
 AH_TEMPLATE(PACKAGE_LOCALE_DIR, [Package locale directory])
@@ -213,7 +214,9 @@ AC_CONFIG_FILES([bin/Makefile])
 AC_CONFIG_FILES([configs/Makefile])
 AC_CONFIG_FILES([etc/Makefile])
 AC_CONFIG_FILES([lib/Makefile])
+AC_CONFIG_FILES([lib/Buildd/Makefile])
 AC_CONFIG_FILES([lib/Sbuild/Makefile])
+AC_CONFIG_FILES([lib/WannaBuild/Makefile])
 AC_CONFIG_FILES([lib/Sbuild/Sysconfig.pm])
 AC_CONFIG_FILES([man/Makefile])
 AC_CONFIG_FILES([man/sbuild.1])
@@ -228,6 +231,7 @@ AC_CONFIG_FILES([man/sbuild-shell.1])
 AC_CONFIG_FILES([man/sbuild-stats.1])
 AC_CONFIG_FILES([man/sbuild-update.1])
 AC_CONFIG_FILES([man/sbuild-upgrade.1])
+AC_CONFIG_FILES([src/Makefile])
 
 dnl Output the generated config.status script.
 AC_OUTPUT

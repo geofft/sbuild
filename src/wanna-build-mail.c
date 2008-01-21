@@ -1,5 +1,4 @@
-/*!/usr/bin/perl
- *
+/*
  * Copyright © 1999 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
  *
  * This program is free software: you can redistribute it and/or modify
