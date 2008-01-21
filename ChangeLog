@@ -1,5 +1,9 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* lib/Makefile.am (perlmod_DATA): Add Buildd.pm.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
 	* etc/buildd.conf: Update with default options.
 
 	* lib/Buildd/Conf.pm: Add and export read function to read
