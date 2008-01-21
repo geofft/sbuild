@@ -1,5 +1,9 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* etc/wanna-build.conf: Correct comments.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
 	* src/buildd-mail-wrapper.c, src/wanna-build-mail.c: Remove
 	shebang in comment boilerplate.
 
