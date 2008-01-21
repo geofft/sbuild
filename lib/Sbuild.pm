@@ -30,14 +30,14 @@ use Time::Local;
 require Exporter;
 @Sbuild::ISA = qw(Exporter);
 @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
-		     version_compare binNMU_version parse_date);
+		     version_compare binNMU_version parse_date isin);
 
 my $opt_correct_version_cmp;
 
 sub version_less {
 	my $v1 = shift;
 	my $v2 = shift;
-	
+
 	return version_compare( $v1, "<<", $v2 );
 }
 
@@ -59,7 +59,7 @@ sub version_compare {
 	my $v1 = shift;
 	my $rel = shift;
 	my $v2 = shift;
-	
+
 	if ($Sbuild::opt_correct_version_cmp) {
 		system "dpkg", "--compare-versions", $v1, $rel, $v2;
 		return $? == 0;
@@ -188,6 +188,11 @@ sub parse_date {
     die "Invalid month name $mon" if !exists $monname{$mon};
     $mon = $monname{$mon};
     return timelocal($sec, $min, $hour, $day, $mon, $year);
+}
+
+sub isin {
+    my $val = shift;
+    return grep( $_ eq $val, @_ );
 }
 
 1;

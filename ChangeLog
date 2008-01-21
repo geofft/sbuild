@@ -1,3 +1,7 @@
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
+	* lib/Sbuild.pm: Add isin function.
+
 2008-01-06  Roger Leigh  <rleigh@debian.org>
 
 	* bin/wanna-build: use Sbuild.pm.
