@@ -1,5 +1,11 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* NEWS: Add changes for 0.57.1.
+
+	* configure.ac: Create .tar.gz distribution tarball.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
 	* lib/Makefile.am (perlmod_DATA): Add Buildd.pm.
 
 2008-01-21  Roger Leigh  <rleigh@debian.org>
@@ -35,7 +41,7 @@
 
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
-	* configure.ac: Dump version to 0.57.1.
+	* configure.ac: Bump version to 0.57.1.
 
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 

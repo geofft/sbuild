@@ -1,11 +1,24 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.57.0.  Please read these release notes carefully.
+Welcome to sbuild 0.57.1.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.57.1:
+
+  1) While not used in the Debian packaging, the buildd and
+     wanna-build sources have been merged from the separate buildd.git
+     repository.  They will be built as packages in a future release.
+
+  2) Helper scripts in the Debian package have been moved from
+     /usr/lib/sbuild back to /usr/share/sbuild, where they were
+     located prior to 0.57.0.
+
+  3) schroot "directory" type chroots are now purged correctly
+     following a package build.
 
 * Major changes in 0.57.0:
 

@@ -77,7 +77,7 @@ AC_SUBST([SBUILD_MICRO_VERSION])
 AC_SUBST([SBUILD_VERSION])
 
 dnl Initialise automake stuff.
-AM_INIT_AUTOMAKE([1.9 gnu check-news dist-bzip2 no-dist-gzip tar-pax])
+AM_INIT_AUTOMAKE([1.9 gnu check-news tar-pax])
 AM_MAINTAINER_MODE
 SBUILD_RELEASE_DATE
 
