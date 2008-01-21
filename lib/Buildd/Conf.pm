@@ -94,19 +94,19 @@ sub init {
     read();
 
     # some checks
-    if ($conf::sshcmd) {
-	if ($conf::sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
+    if ($sshcmd) {
+	if ($sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
 	    ($main::sshuser, $main::sshhost) = ($1, $2);
 	}
-	elsif ($conf::sshcmd =~ /(\S+)\@(\S+)/) {
+	elsif ($sshcmd =~ /(\S+)\@(\S+)/) {
 	    ($main::sshuser, $main::sshhost) = ($1, $2);
 	}
 	else {
-	    $conf::sshcmd =~ /(\S+)\s*$/;
+	    $sshcmd =~ /(\S+)\s*$/;
 	    ($main::sshuser, $main::sshhost) = ("", $1);
 	}
-	if ($conf::sshsocket) {
-	    $conf::sshcmd .= " -S $conf::sshsocket";
+	if ($sshsocket) {
+	    $sshcmd .= " -S $sshsocket";
 	}
     }
 }
