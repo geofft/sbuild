@@ -1,5 +1,9 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* Makefile.am (SUBDIRS): Add src.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
 	* etc/wanna-build.conf: Correct comments.
 
 2008-01-21  Roger Leigh  <rleigh@debian.org>

@@ -21,8 +21,7 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-#SUBDIRS = chroot
-SUBDIRS = bin configs etc lib man
+SUBDIRS = bin configs etc lib man src
 
 # Remove junk from the generated tarball.
 dist-hook:
