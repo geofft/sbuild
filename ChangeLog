@@ -1,10 +1,23 @@
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
+	* bin/sbuild: Rename "Session Managed" to "Session Cloned".
+
+	* lib/Sbuild/Chroot.pm (init): Rename "Session Managed" to
+	"Session Cloned".
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
+	* lib/Sbuild.pm: Add parse_date function (from WannaBuild.pm).
+
 	* Makefile.am (SUBDIRS): Add src.
 
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
 	* etc/wanna-build.conf: Correct comments.
+
+2008-01-21  Roger Leigh  <rleigh@debian.org>
+
+	* configure.ac: Dump version to 0.57.1.
 
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
@@ -35,8 +48,6 @@
 	* bin/wanna-build: use Sbuild.pm.
 
 	* lib/WannaBuild.pm: Remove (replaced by Sbuild.pm).
-
-	* lib/Sbuild.pm: Add parse_date function (from WannaBuild.pm).
 
 2008-01-06  Roger Leigh  <rleigh@debian.org>
 

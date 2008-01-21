@@ -49,7 +49,7 @@ sub _get_schroot_info {
     my $chroot_type = "";
     my %tmp = ('Priority' => 0,
 	       'Location' => "",
-	       'Session Managed' => 0);
+	       'Session Cloned' => 0);
     open CHROOT_DATA, '-|', $Sbuild::Conf::schroot, '--info', '--chroot', $chroot or die "Can't run $Sbuild::Conf::schroot to get chroot data";
     while (<CHROOT_DATA>) {
 	chomp;
@@ -71,20 +71,14 @@ sub _get_schroot_info {
 	if (/^\s*Priority:?\s+(\d+)$/) {
 	    $tmp{'Priority'} = $1;
 	}
-	if (/^\s*Session Managed\s+(.*)$/) {
+	if (/^\s*Session Cloned\s+(.*)$/) {
 	    if ($1 eq "true") {
-		$tmp{'Session Managed'} = 1;
+		$tmp{'Session Cloned'} = 1;
 	    }
 	}
     }
 
     close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
-
-    # "plain" chroots are never session-capable, even if they say
-    # they are.
-    if ($chroot_type eq "plain") {
-	$tmp{'Session Managed'} = 0;
-    }
 
     if ($Sbuild::Conf::debug) {
 	print STDERR "Found schroot chroot: $chroot\n";
@@ -100,7 +94,7 @@ sub init {
     foreach (glob("${Sbuild::Conf::build_dir}/chroot-*")) {
 	my %tmp = ('Priority' => 0,
 		   'Location' => $_,
-		   'Session Managed' => 0);
+		   'Session Cloned' => 0);
 	if (-d $tmp{'Location'}) {
 	    my $name = $_;
 	    $name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;
