@@ -22,11 +22,7 @@
 include $(top_srcdir)/scripts/global.mk
 
 bin_PROGRAMS =			\
-	buildd-mail-wrapper	\
-	wanna-build-mail
+	buildd-mail-wrapper
 
 buildd_mail_wrapper_SOURCES =	\
 	buildd-mail-wrapper.c
-
-wanna_build_mail_SOURCES =	\
-	wanna-build-mail.c
