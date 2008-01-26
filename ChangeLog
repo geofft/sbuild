@@ -1,3 +1,18 @@
+2008-01-26  Roger Leigh  <rleigh@debian.org>
+
+	* etc/Makefile.am (builddsysconf_DATA): Add buildd config files.
+
+	* configure.ac: Add paths for buildd config files.
+
+2008-01-26  Roger Leigh  <rleigh@debian.org>
+
+	* bin/wanna-build-mail: Rename from wanna-build-mail.pl.
+
+	* src/wanna-build-mail.c: Remove.
+
+	* src/Makefile.am:
+	(bin_PROGRAMS): Remove wanna-build-mail.c.
+
 2008-01-21  Roger Leigh  <rleigh@debian.org>
 
 	* NEWS: Add changes for 0.57.1.

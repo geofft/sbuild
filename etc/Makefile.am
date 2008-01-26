@@ -21,12 +21,16 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-pkgsysconfdir = $(PACKAGE_SYSCONF_DIR)
-pkgsysconf_DATA = sbuild.conf
+sbuildsysconfdir = $(SBUILD_SYSCONF_DIR)
+sbuildsysconf_DATA = sbuild.conf
+
+builddsysconfdir = $(BUILDD_SYSCONF_DIR)
+builddsysconf_DATA = buildd.conf wanna-build.conf
 
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
 EXTRA_DIST =			\
-	$(pkgsysconf_DATA)	\
+	$(sbuildsysconf_DATA)	\
+	$(builddsysconf_DATA)	\
 	$(exampleconf_DATA)

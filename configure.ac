@@ -179,26 +179,53 @@ else
   PACKAGE_LOCALSTATE_DIR="${localstatedir}"
 fi
 
-dnl Set PACKAGE_SYSCONF_DIR in config.h.
-AH_TEMPLATE(PACKAGE_SYSCONF_DIR, [Package system configuration directory])
+dnl Set SBUILD_SYSCONF_DIR in config.h.
+AH_TEMPLATE(SBUILD_SYSCONF_DIR, [Package system configuration directory])
 if test "x${sysconfdir}" = 'x${prefix}/etc'; then
   if test "x${prefix}" = "xNONE"; then
-    PACKAGE_SYSCONF_DIR="${ac_default_prefix}/etc"
+    SBUILD_SYSCONF_DIR="${ac_default_prefix}/etc"
   else
-    PACKAGE_SYSCONF_DIR="${prefix}/etc"
+    SBUILD_SYSCONF_DIR="${prefix}/etc"
   fi
 else
-  PACKAGE_SYSCONF_DIR="${sysconfdir}"
+  SBUILD_SYSCONF_DIR="${sysconfdir}"
 fi
-PACKAGE_SYSCONF_DIR="${PACKAGE_SYSCONF_DIR}/sbuild"
-AC_DEFINE_UNQUOTED([PACKAGE_SYSCONF_DIR], ["$PACKAGE_SYSCONF_DIR"])
-AC_SUBST([PACKAGE_SYSCONF_DIR])
+SBUILD_SYSCONF_DIR="${SBUILD_SYSCONF_DIR}/sbuild"
+AC_DEFINE_UNQUOTED([SBUILD_SYSCONF_DIR], ["$SBUILD_SYSCONF_DIR"])
+AC_SUBST([SBUILD_SYSCONF_DIR])
 
-SBUILD_CONF="${PACKAGE_SYSCONF_DIR}/sbuild.conf"
+SBUILD_CONF="${SBUILD_SYSCONF_DIR}/sbuild.conf"
 AC_SUBST([SBUILD_CONF])
 
 AH_TEMPLATE(SBUILD_CONF, [sbuild config file path])
 AC_DEFINE_UNQUOTED(SBUILD_CONF, ["$SBUILD_CONF"])
+
+dnl Set BUILDD_SYSCONF_DIR in config.h.
+AH_TEMPLATE(BUILDD_SYSCONF_DIR, [Package system configuration directory])
+if test "x${sysconfdir}" = 'x${prefix}/etc'; then
+  if test "x${prefix}" = "xNONE"; then
+    BUILDD_SYSCONF_DIR="${ac_default_prefix}/etc"
+  else
+    BUILDD_SYSCONF_DIR="${prefix}/etc"
+  fi
+else
+  BUILDD_SYSCONF_DIR="${sysconfdir}"
+fi
+BUILDD_SYSCONF_DIR="${BUILDD_SYSCONF_DIR}/buildd"
+AC_DEFINE_UNQUOTED([BUILDD_SYSCONF_DIR], ["$BUILDD_SYSCONF_DIR"])
+AC_SUBST([BUILDD_SYSCONF_DIR])
+
+BUILDD_CONF="${BUILDD_SYSCONF_DIR}/buildd.conf"
+AC_SUBST([BUILDD_CONF])
+
+AH_TEMPLATE(BUILDD_CONF, [buildd config file path])
+AC_DEFINE_UNQUOTED(BUILDD_CONF, ["$BUILDD_CONF"])
+
+WANNA_BUILD_CONF="${WANNA_BUILD_SYSCONF_DIR}/wanna-build.conf"
+AC_SUBST([WANNA_BUILD_CONF])
+
+AH_TEMPLATE(WANNA_BUILD_CONF, [wanna-build config file path])
+AC_DEFINE_UNQUOTED(WANNA_BUILD_CONF, ["$WANNA_BUILD_CONF"])
 
 AH_TEMPLATE(SBUILD_DATADIR, [Package data directory])
 SBUILD_DATADIR="${PACKAGE_DATA_DIR}/${PACKAGE_VERSION}"
