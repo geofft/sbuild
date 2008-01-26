@@ -33,7 +33,11 @@ bin_SCRIPTS = 			\
 	sbuild-shell		\
 	sbuild-stats		\
 	sbuild-hold		\
-	sbuild-unhold
+	sbuild-unhold		\
+	wanna-build		\
+	wanna-build-catdb	\
+	wanna-build-mail	\
+	wanna-build-statistics
 
 sbin_SCRIPTS = 			\
 	sbuild-adduser		\

@@ -1,5 +1,9 @@
 2008-01-26  Roger Leigh  <rleigh@debian.org>
 
+	* bin/Makefile.am (bin_SCRIPTS): Add wanna-build programs.
+
+2008-01-26  Roger Leigh  <rleigh@debian.org>
+
 	* etc/Makefile.am (builddsysconf_DATA): Add buildd config files.
 
 	* configure.ac: Add paths for buildd config files.
