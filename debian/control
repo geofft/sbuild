@@ -16,7 +16,7 @@ Description: Tool for building Debian binary packages from Debian sources
  wanna-build, buildd and sbuild -- written by Roman Hodek and
  used by most architectures to build binary packages from source
  packages.  buildd schedules work from information it gets from
- wanna-build; sbuild does the grunt-work.
+ the wanna-build database; sbuild does the grunt-work.
  .
  sbuild can do its work in chroots so both stable and unstable
  environments can be used on the same machine.  Useful for, say,
@@ -25,3 +25,14 @@ Description: Tool for building Debian binary packages from Debian sources
  in the chroots, you can find the correct build dependencies for
  a package.
 
+Package: wanna-build
+Architecture: all
+Depends: ${perl:Depends}, perl-modules, libmldbm-perl
+Recommends: exim | mail-transport-agent, cron, wget
+Suggests: gnupg
+Description: Database to track building of Debian binary packages from Debian sources
+ wanna-build is part of a suite of programs -- consisting of
+ wanna-build, buildd and sbuild -- written by Roman Hodek and used by
+ most architectures to build binary packages from source packages.
+ buildd schedules work from information it gets from the wanna-build
+ database; sbuild does the grunt-work.

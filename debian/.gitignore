@@ -2,3 +2,5 @@ sbuild
 files
 build
 install
+wanna-build
+*.substvars

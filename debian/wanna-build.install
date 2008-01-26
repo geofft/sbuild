@@ -1,0 +1,3 @@
+debian/install/etc/buildd/wanna-build*     etc/buildd
+debian/install/usr/bin/wanna-build*        usr/bin
+debian/install/usr/share/perl5/WannaBuild  usr/share/perl5
