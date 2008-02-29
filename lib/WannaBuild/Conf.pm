@@ -32,12 +32,16 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($basedir $dbbase $transactlog @distributions
+    @EXPORT = qw($HOME $basedir $dbbase $transactlog @distributions
     %dist_order @sections $pkgs_source $quinn_source @admin_users
     $mailprog $db_maint $notforus_maint $log_mail $stat_mail
     $web_stats);
 }
 
+
+# Originally from the main namespace.
+(our $HOME = $ENV{'HOME'})
+    or die "HOME not defined in environment!\n";
 
 # Defaults.
 our $basedir = "/var/lib/wanna-build";
