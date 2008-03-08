@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($max_build $nice_level $idle_sleep_time
+    @EXPORT = qw($HOME $max_build $nice_level $idle_sleep_time
                  $min_free_space @take_from_dists @no_auto_build
                  $no_build_regex $build_regex @weak_no_auto_build
                  $delay_after_give_back $pkg_log_keep $pkg_log_keep
@@ -47,6 +47,12 @@ BEGIN {
                  $log_queued_messages $wanna_build_dbbase read);
 }
 
+sub read ();
+sub init ();
+
+# Originally from the main namespace.
+(our $HOME = $ENV{'HOME'})
+    or die "HOME not defined in environment!\n";
 
 # Defaults.
 our $max_build = 10;
@@ -85,13 +91,13 @@ our $log_queued_messages = 0;
 our $wanna_build_dbbase = "arch/build-db";
 
 # read conf files
-sub read {
+sub read () {
     require "/etc/buildd/buildd.conf" if -r "/etc/buildd/buildd.conf";
     require "$HOME/.builddrc" if -r "$HOME/.builddrc";
 }
 
-sub init {
-    read();
+sub init () {
+    Buildd::Conf::read();
 
     # some checks
     if ($sshcmd) {

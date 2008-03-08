@@ -32,7 +32,25 @@ use Buildd;
 use Buildd::Conf;
 use Sbuild;
 use Cwd;
-sub ST_MTIME() { 9 }
+
+sub ST_MTIME ();
+sub get_from_REDO ($\%);
+sub read_givenback ();
+sub do_wanna_build ($\%@);
+sub do_build ($\%@);
+sub handle_prevfailed ($$);
+sub get_changelog ($$);
+sub df ($);
+sub append_to_REDO ($$@);
+sub read_FINISHED ();
+sub shutdown ($);
+sub check_restart ();
+sub check_reread_config ();
+sub block_signals ();
+sub unblock_signals ();
+sub check_ssh_master ();
+
+sub ST_MTIME () { 9 }
 
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin:/usr/bin/X11:/usr/games";
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
@@ -84,7 +102,7 @@ open_log();
 logger( "Daemon started. (pid=$$)\n" );
 
 foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
-    $SIG{$_} = sub {
+    $SIG{$_} = sub ($) {
 	my $signame = shift;
 	logger( "buildd ($$) killed by SIG$signame\n" );
 	unlink( "buildd.pid" );
@@ -94,7 +112,7 @@ foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
 $SIG{'HUP'} = \&reopen_log;
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
-$SIG{'USR1'} = sub { $main::reread_config = 1; };
+$SIG{'USR1'} = sub ($) { $main::reread_config = 1; };
 undef $ENV{'DISPLAY'};
 
 $main::block_sigset = POSIX::SigSet->new;
@@ -116,9 +134,9 @@ MAINLOOP: while( 1 ) {
 	foreach $dist (@Conf::take_from_dists) {
 	    check_restart();
 	    check_reread_config();
-	    my @redo = get_from_REDO( $dist, \%binNMUlog );
+	    my @redo = get_from_REDO( $dist, %binNMUlog );
 	    next if !@redo;
-	    do_build( $dist, \%binNMUlog, @redo );
+	    do_build( $dist, %binNMUlog, @redo );
 	    ++$done;
 	    ++$thisdone;
 	}
@@ -192,9 +210,9 @@ MAINLOOP: while( 1 ) {
 	}
 
 	next if !@todo;
-	@todo = do_wanna_build( $dist, \%binNMUlog, @todo );
+	@todo = do_wanna_build( $dist, %binNMUlog, @todo );
 	next if !@todo;
-	do_build( $dist, \%binNMUlog, @todo );
+	do_build( $dist, %binNMUlog, @todo );
 	++$done;
 	last;
     }
@@ -209,7 +227,7 @@ MAINLOOP: while( 1 ) {
     }
 }
 
-sub get_from_REDO {
+sub get_from_REDO ($\%) {
     my $wanted_dist = shift;
     my $binNMUlog = shift;
     my @redo = ();
@@ -262,7 +280,7 @@ sub get_from_REDO {
     return @redo;
 }
 
-sub read_givenback {
+sub read_givenback () {
     my %gb;
     my $now = time;
     local( *F );
@@ -294,7 +312,7 @@ sub read_givenback {
     return %gb;
 }
 
-sub do_wanna_build {
+sub do_wanna_build ($\%@) {
     my $dist = shift;
     my $binNMUlog = shift;
     my @output = ();
@@ -361,7 +379,7 @@ sub do_wanna_build {
     }
 }
 
-sub do_build {
+sub do_build ($\%@) {
     my $dist = shift;
     my $binNMUlog = shift;
     return if !@_;
@@ -540,7 +558,7 @@ EOF
             my $oldsig;
 	    eval <<'EOF';
 $oldsig = $SIG{'USR2'};
-$SIG{'USR2'} = sub { die "signal\n" };
+$SIG{'USR2'} = sub ($) { die "signal\n" };
 my $idle_start_time = time;
 sleep( 60*60 );
 my $idle_end_time = time;
@@ -556,7 +574,7 @@ EOF
     logger( "Build finished.\n" );
 }
 
-sub handle_prevfailed {
+sub handle_prevfailed ($$) {
     my $dist = shift;
     my $pkgv = shift;
     my( $pkg, $fail_msg, $changelog, $fail_cmd);
@@ -568,7 +586,7 @@ sub handle_prevfailed {
     $fail_msg = `$fail_cmd`;
 
     {
-	local $SIG{'ALRM'} = sub { die "Timeout!\n" };
+	local $SIG{'ALRM'} = sub ($) { die "Timeout!\n" };
 	eval { $changelog = get_changelog( $dist, $pkgv ) };
     }
     $changelog = "ERROR: FTP timeout" if $@;
@@ -589,7 +607,7 @@ sub handle_prevfailed {
 	       "or 'fail'.\n" );
 }
 
-sub get_changelog {
+sub get_changelog ($$) {
     my $dist = shift;
     my $pkg = shift;
     my $changelog = "";
@@ -681,7 +699,8 @@ retry:
     return $changelog;
 }
 
-sub df {
+# TODO: Merge with sbuild function
+sub df ($) {
     my $dir = shift;
 
     my $free = `/bin/df $dir | tail -1`;
@@ -689,7 +708,7 @@ sub df {
     return $free[3];
 }
 
-sub append_to_REDO {
+sub append_to_REDO ($$@) {
     my $dist = shift;
     my $postfix = shift;
     my @npkgs = @_;
@@ -721,7 +740,7 @@ sub append_to_REDO {
     unblock_signals();
 }
 
-sub read_FINISHED {
+sub read_FINISHED () {
     local( *F );
     my @pkgs;
 
@@ -735,7 +754,7 @@ sub read_FINISHED {
     return @pkgs;
 }
 
-sub shutdown {
+sub shutdown ($) {
     my $signame = shift;
 
     logger( "buildd ($$) received SIG$signame -- shutting down\n" );
@@ -746,7 +765,7 @@ sub shutdown {
 	logger( "Killing sbuild (pid=$main::sbuild_pid)\n" );
 	kill( 15, $main::sbuild_pid );
 	logger( "Waiting max. 2 minutes for sbuild to finish\n" );
-	$SIG{'ALRM'} = sub { die "timeout\n"; };
+	$SIG{'ALRM'} = sub ($) { die "timeout\n"; };
 	alarm( 120 );
 	eval "waitpid( $main::sbuild_pid, 0 )";
 	alarm( 0 );
@@ -764,7 +783,7 @@ sub shutdown {
     exit 1;
 }
 
-sub check_restart {
+sub check_restart () {
     my @stats = stat( $my_binary );
 
     if (@stats && $my_bin_time != $stats[ST_MTIME]) {
@@ -780,7 +799,7 @@ sub check_restart {
     }
 }
 
-sub check_reread_config {
+sub check_reread_config () {
     my @stats = stat( $my_config );
     my @stats_g = stat( $my_config_global );
 
@@ -800,15 +819,15 @@ sub check_reread_config {
     }
 }
 
-sub block_signals() {
+sub block_signals () {
     POSIX::sigprocmask( SIG_BLOCK, $main::block_sigset );
 }
 
-sub unblock_signals() {
+sub unblock_signals () {
     POSIX::sigprocmask( SIG_UNBLOCK, $main::block_sigset );
 }
 
-sub check_ssh_master {
+sub check_ssh_master () {
     return 1 if (!$Conf::sshsocket);
     return 1 if ( -S $Conf::sshsocket );
 
