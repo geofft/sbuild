@@ -35,6 +35,65 @@ use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(binNMU_version version_compare);
 use Data::Dumper;
 
+sub fetch_source_files ($$$$$);
+sub build ($$);
+sub analyze_fail_stage ($);
+sub remove_files (@);
+sub install_deps ($);
+sub wait_for_srcdep_conflicts (@);
+sub uninstall_deps ();
+sub uninstall_debs ($@);
+sub run_apt ($\@\@@);
+sub filter_dependencies (\@\@\@);
+sub check_dependencies (\@);
+sub get_apt_policy (@);
+sub get_dpkg_status (@);
+sub copy ($);
+sub merge_pkg_build_deps ($$$$$);
+sub cmp_dep_lists (\@\@);
+sub get_altlist ($);
+sub is_superset (\%\%);
+sub read_build_essential ();
+sub expand_dependencies (\@);
+sub expand_virtuals (\@);
+sub get_dependencies (@);
+sub get_virtuals (@);
+sub parse_one_srcdep ($$\%);
+sub parse_manual_srcdeps (@);
+sub check_space (@);
+sub file_for_name ($@);
+sub write_jobs_file ($);
+sub append_to_FINISHED ($);
+sub write_srcdep_lock_file (\@);
+sub check_srcdep_conflicts (\@\@);
+sub remove_srcdep_lock_file ();
+sub prepare_watches (\@@);
+sub check_watches ();
+sub should_skip ($);
+sub add_givenback ($$);
+sub set_installed (@);
+sub set_removed (@);
+sub unset_installed (@);
+sub unset_removed (@);
+sub df ($);
+sub isin ($@);
+sub fixup_pkgv (\$);
+sub format_deps (@);
+sub lock_file ($$);
+sub unlock_file ($);
+sub shutdown ($);
+sub write_stats ($$);
+sub debian_files_list ($);
+sub dsc_md5sums ($);
+sub verify_md5sums ($);
+sub chroot_arch ();
+sub check_group_membership ();
+sub open_build_log ($$$);
+sub close_build_log ($$$$$$);
+sub add_time_entry ($$);
+sub add_space_entry ($$);
+sub dump_main_state ();
+
 package conf;
 use Sbuild::Conf;
 package main;
@@ -203,7 +262,7 @@ $SIG{'PIPE'} = \&shutdown;
 
 parse_manual_srcdeps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
 
-write_jobs_file();
+write_jobs_file("");
 
 my $dscfile;
 foreach $dscfile (@ARGV) {
@@ -325,7 +384,7 @@ foreach $dscfile (@ARGV) {
     }
     dump_main_state() if $conf::debug;
 }
-write_jobs_file();
+write_jobs_file("");
 
 close_log();
 unlink( $main::jobs_file ) if $main::batchmode;
@@ -336,7 +395,7 @@ if ($conf::sbuild_mode eq "user") {
 exit 0;
 
 
-sub fetch_source_files {
+sub fetch_source_files ($$$$$) {
     my $dscfile_ref = shift;
     my $dir = shift;
     my $pkg = shift;
@@ -510,13 +569,13 @@ sub fetch_source_files {
     return @made;
 }
 
-sub build {
+sub build ($$) {
     my $dsc = shift;
     my $pkgv = shift;
     my( $dir, $rv, $changes );
     local( *PIPE, *F, *F2 );
 
-    fixup_pkgv( \$pkgv );
+    fixup_pkgv( $pkgv );
     print PLOG "-"x78, "\n";
     # count build time from now, ignoring the installation of source
     # deps
@@ -905,7 +964,7 @@ EOF
     return $rv == 0 ? 1 : 0;
 }
 
-sub analyze_fail_stage {
+sub analyze_fail_stage ($) {
     my $pkgv = shift;
 
     return if $main::pkg_status ne "failed";
@@ -938,7 +997,7 @@ sub analyze_fail_stage {
     }
 }
 
-sub remove_files {
+sub remove_files (@) {
 
     foreach (@_) {
 	unlink $_;
@@ -947,7 +1006,7 @@ sub remove_files {
 }
 
 
-sub install_deps {
+sub install_deps ($) {
     my $pkg = shift;
     my( @positive, @negative, @instd, @rmvd );
 
@@ -963,14 +1022,14 @@ sub install_deps {
     lock_file( "$main::ilock_file", 1 );
 
     print "Filtering dependencies\n" if $conf::debug;
-    if (!filter_dependencies( $dep, \@positive, \@negative )) {
+    if (!filter_dependencies( @$dep, @positive, @negative )) {
 	print PLOG "Package installation not possible\n";
 	unlock_file( "$main::ilock_file" );
 	return 0;
     }
 
     print PLOG "Checking for source dependency conflicts...\n";
-    if (!run_apt( "-s", \@instd, \@rmvd, @positive )) {
+    if (!run_apt( "-s", @instd, @rmvd, @positive )) {
 	print PLOG "Test what should be installed failed.\n";
 	unlock_file( "$main::ilock_file" );
 	return 0;
@@ -978,7 +1037,7 @@ sub install_deps {
     # add negative deps as to be removed for checking srcdep conflicts
     push( @rmvd, @negative );
     my @confl;
-    if (@confl = check_srcdep_conflicts( \@instd, \@rmvd )) {
+    if (@confl = check_srcdep_conflicts( @instd, @rmvd )) {
 	print PLOG "Waiting for job(s) @confl to finish\n";
 
 	unlock_file( "$main::ilock_file" );
@@ -986,18 +1045,18 @@ sub install_deps {
 	goto repeat;
     }
 
-    write_srcdep_lock_file( $dep );
+    write_srcdep_lock_file( @$dep );
 
     my $install_start_time = time;
     print "Installing positive dependencies: @positive\n" if $conf::debug;
-    if (!run_apt( "-y", \@instd, \@rmvd, @positive )) {
+    if (!run_apt( "-y", @instd, @rmvd, @positive )) {
 	print PLOG "Package installation failed\n";
 	# try to reinstall removed packages
 	print PLOG "Trying to reinstall removed packages:\n";
 	print "Reinstalling removed packages: @rmvd\n" if $conf::debug;
 	my (@instd2, @rmvd2);
 	print PLOG "Failed to reinstall removed packages!\n"
-	    if !run_apt( "-y", \@instd2, \@rmvd2, @rmvd );
+	    if !run_apt( "-y", @instd2, @rmvd2, @rmvd );
 	print "Installed were: @instd2\n" if $conf::debug;
 	print "Removed were: @rmvd2\n" if $conf::debug;
 	# remove additional packages
@@ -1020,7 +1079,7 @@ sub install_deps {
     write_stats( 'install-download-time',
 		 $install_stop_time - $install_start_time );
 
-    my $fail = check_dependencies( $dep );
+    my $fail = check_dependencies( @$dep );
     if ($fail) {
 	print PLOG "After installing, the following source dependencies are ".
 	    "still unsatisfied:\n$fail\n";
@@ -1046,11 +1105,11 @@ sub install_deps {
 
     unlock_file( "$main::ilock_file" );
 
-    prepare_watches( $dep, @instd );
+    prepare_watches( @$dep, @instd );
     return 1;
 }
 
-sub wait_for_srcdep_conflicts {
+sub wait_for_srcdep_conflicts (@) {
     my @confl = @_;
 
     for(;;) {
@@ -1075,7 +1134,7 @@ sub wait_for_srcdep_conflicts {
     }
 }
 
-sub uninstall_deps {
+sub uninstall_deps () {
     my( @pkgs, @instd, @rmvd );
 
     lock_file( "$main::ilock_file", 1 );
@@ -1083,7 +1142,7 @@ sub uninstall_deps {
     @pkgs = keys %{$main::changes->{'removed'}};
     print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
     print PLOG "Failed to reinstall removed packages!\n"
-	if !run_apt( "-y", \@instd, \@rmvd, @pkgs );
+	if !run_apt( "-y", @instd, @rmvd, @pkgs );
     print "Installed were: @instd\n" if $conf::debug;
     print "Removed were: @rmvd\n" if $conf::debug;
     unset_removed( @instd );
@@ -1098,7 +1157,7 @@ sub uninstall_deps {
     unlock_file( "$main::ilock_file" );
 }
 
-sub uninstall_debs {
+sub uninstall_debs ($@) {
     my $mode = shift;
     local (*PIPE);
     local (%ENV) = %ENV; # make local environment hardwire frontend
@@ -1135,7 +1194,7 @@ sub uninstall_debs {
     return $? == 0;
 }
 
-sub run_apt {
+sub run_apt ($\@\@@) {
     my $mode = shift;
     my $inst_ret = shift;
     my $rem_ret = shift;
@@ -1264,7 +1323,7 @@ sub run_apt {
     return $mode eq "-s" || $status == 0;
 }
 
-sub filter_dependencies {
+sub filter_dependencies (\@\@\@) {
     my $dependencies = shift;
     my $pos_list = shift;
     my $neg_list = shift;
@@ -1409,7 +1468,7 @@ sub filter_dependencies {
     return 1;
 }
 
-sub check_dependencies {
+sub check_dependencies (\@) {
     my $dependencies = shift;
     my $fail = "";
     my($dep, $d, $name, %names);
@@ -1490,7 +1549,7 @@ sub check_dependencies {
     return $fail;
 }
 
-sub get_apt_policy {
+sub get_apt_policy (@) {
     my @interest = @_;
     my $package;
     my %packages;
@@ -1516,7 +1575,7 @@ sub get_apt_policy {
     return %packages;
 }
 
-sub get_dpkg_status {
+sub get_dpkg_status (@) {
     my @interest = @_;
     my %result;
     local( *STATUS );
@@ -1575,7 +1634,7 @@ sub get_dpkg_status {
     return \%result;
 }
 
-sub copy {
+sub copy ($) {
     my $r = shift;
     my $new;
 
@@ -1602,7 +1661,7 @@ sub copy {
     return $new;
 }
 
-sub merge_pkg_build_deps {
+sub merge_pkg_build_deps ($$$$$) {
     my $pkg = shift;
     my $depends = shift;
     my $dependsi = shift;
@@ -1643,18 +1702,18 @@ sub merge_pkg_build_deps {
     $deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
     @{$main::deps{$pkg}} = @l;
     print "Merging pkg deps: $deps\n" if $conf::debug;
-    parse_one_srcdep( $pkg, $deps, \%main::deps );
+    parse_one_srcdep( $pkg, $deps, %main::deps );
 
-    my $missing = (cmp_dep_lists( $old_deps, $main::deps{$pkg} ))[1];
+    my $missing = (cmp_dep_lists( @$old_deps, @{$main::deps{$pkg}} ))[1];
 
     # read list of build-essential packages (if not yet done) and
     # expand their dependencies (those are implicitly essential)
     if (!defined($main::deps{'ESSENTIAL'})) {
 	my $ess = read_build_essential();
-	parse_one_srcdep( 'ESSENTIAL', $ess, \%main::deps );
+	parse_one_srcdep( 'ESSENTIAL', $ess, %main::deps );
     }
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = expand_dependencies( $main::deps{'ESSENTIAL'} );
+    $exp_essential = expand_dependencies( @{$main::deps{'ESSENTIAL'}} );
     print "Dependency-expanded build essential packages:\n",
     format_deps(@$exp_essential), "\n" if $conf::debug;
 
@@ -1671,26 +1730,26 @@ sub merge_pkg_build_deps {
     return if !@$missing;
 
     # remove missing essential deps
-    ($filt_essential, $missing) = cmp_dep_lists( $missing, $exp_essential );
+    ($filt_essential, $missing) = cmp_dep_lists( @$missing, @$exp_essential );
     print PLOG "** Filtered missing build-essential deps:\n",
 	       format_deps(@$filt_essential), "\n"
 	           if @$filt_essential;
 
     # if some build deps are virtual packages, replace them by an
     # alternative over all providing packages
-    $exp_pkgdeps = expand_virtuals( $main::deps{$pkg} );
+    $exp_pkgdeps = expand_virtuals( @{$main::deps{$pkg}} );
     print "Provided-expanded build deps:\n",
 	  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
 
     # now expand dependencies of package build deps
-    $exp_pkgdeps = expand_dependencies( $exp_pkgdeps );
+    $exp_pkgdeps = expand_dependencies( @$exp_pkgdeps );
     print "Dependency-expanded build deps:\n",
 	  format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
     $main::additional_deps = $exp_pkgdeps;
 
     # remove missing essential deps that are dependencies of build
     # deps
-    ($filt_pkgdeps, $missing) = cmp_dep_lists( $missing, $exp_pkgdeps );
+    ($filt_pkgdeps, $missing) = cmp_dep_lists( @$missing, @$exp_pkgdeps );
     print PLOG "** Filtered missing build-essential deps that are dependencies of ",
 	       "or provide build-deps:\n",
 	       format_deps(@$filt_pkgdeps), "\n"
@@ -1709,7 +1768,7 @@ sub merge_pkg_build_deps {
 	           if @$missing;
 }
 
-sub cmp_dep_lists {
+sub cmp_dep_lists (\@\@) {
     my $list1 = shift;
     my $list2 = shift;
     my ($dep, @common, @missing);
@@ -1728,7 +1787,7 @@ sub cmp_dep_lists {
 	else {
 	    my $al = get_altlist($dep);
 	    foreach (@$list2) {
-		if (is_superset( get_altlist($_), $al )) {
+		if (is_superset( %{get_altlist($_)}, %$al )) {
 		    $found = 1;
 		    last;
 		}
@@ -1745,7 +1804,7 @@ sub cmp_dep_lists {
     return (\@common, \@missing);
 }
 
-sub get_altlist {
+sub get_altlist ($) {
     my $dep = shift;
     my %l;
 
@@ -1755,7 +1814,7 @@ sub get_altlist {
     return \%l;
 }
 
-sub is_superset {
+sub is_superset (\%\%) {
     my $l1 = shift;
     my $l2 = shift;
 
@@ -1765,7 +1824,7 @@ sub is_superset {
     return 1;
 }
 
-sub read_build_essential {
+sub read_build_essential () {
     my @essential;
     local (*F);
 
@@ -1802,7 +1861,7 @@ sub read_build_essential {
     return join( ", ", @essential );
 }
 
-sub expand_dependencies {
+sub expand_dependencies (\@) {
     my $dlist = shift;
     my (@to_check, @result, %seen, $check, $dep);
 
@@ -1839,7 +1898,7 @@ sub expand_dependencies {
     return \@result;
 }
 
-sub expand_virtuals {
+sub expand_virtuals (\@) {
     my $dlist = shift;
     my ($dep, %names, @new_dlist);
 
@@ -1872,7 +1931,7 @@ sub expand_virtuals {
     return \@new_dlist;
 }
 
-sub get_dependencies {
+sub get_dependencies (@) {
     local(*PIPE);
     my %deps;
 
@@ -1899,7 +1958,7 @@ sub get_dependencies {
     return \%deps;
 }
 
-sub get_virtuals {
+sub get_virtuals (@) {
     local(*PIPE);
 
     my $command = get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0);
@@ -1931,7 +1990,7 @@ sub get_virtuals {
     return \%provided_by;
 }
 
-sub parse_one_srcdep {
+sub parse_one_srcdep ($$\%) {
     my $pkg = shift;
     my $deps = shift;
     my $hash = shift;
@@ -2011,7 +2070,7 @@ sub parse_one_srcdep {
     }
 }
 
-sub parse_manual_srcdeps {
+sub parse_manual_srcdeps (@) {
     my @for_pkgs = @_;
 
     foreach (@main::manual_srcdeps) {
@@ -2023,11 +2082,11 @@ sub parse_manual_srcdeps {
 	my ($mode, $pkg, $deps) = ($1, $2, $3);
 	next if !isin( $pkg, @for_pkgs );
 	@{$main::deps{$pkg}} = () if $mode eq 'f';
-	parse_one_srcdep( $pkg, $deps, \%main::deps );
+	parse_one_srcdep( $pkg, $deps, %main::deps );
     }
 }
 
-sub check_space {
+sub check_space (@) {
     my @files = @_;
     my $sum = 0;
     local( *PIPE );
@@ -2056,13 +2115,13 @@ sub check_space {
     $main::this_space = $sum;
 }
 
-sub file_for_name {
+sub file_for_name ($@) {
     my $name = shift;
     my @x = grep { /^\Q$name\E_/ } @_;
     return $x[0];
 }
 
-sub write_jobs_file {
+sub write_jobs_file ($) {
     my $news = shift;
     my $job;
     local( *F );
@@ -2089,7 +2148,7 @@ sub write_jobs_file {
     close( F );
 }
 
-sub append_to_FINISHED {
+sub append_to_FINISHED ($) {
     my $pkg = shift;
     local( *F );
 
@@ -2100,7 +2159,7 @@ sub append_to_FINISHED {
     close( F );
 }
 
-sub write_srcdep_lock_file {
+sub write_srcdep_lock_file (\@) {
     my $deps = shift;
     local( *F );
 
@@ -2123,7 +2182,7 @@ sub write_srcdep_lock_file {
     close( F );
 }
 
-sub check_srcdep_conflicts {
+sub check_srcdep_conflicts (\@\@) {
     my $to_inst = shift;
     my $to_remove = shift;
     local( *F, *DIR );
@@ -2189,7 +2248,7 @@ sub check_srcdep_conflicts {
     return @conflict_builds;
 }
 
-sub remove_srcdep_lock_file {
+sub remove_srcdep_lock_file () {
     my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
 
     print "Removing srcdep lock file $f\n" if $conf::debug;
@@ -2199,7 +2258,7 @@ sub remove_srcdep_lock_file {
     }
 }
 
-sub prepare_watches {
+sub prepare_watches (\@@) {
     my $dependencies = shift;
     my @instd = @_;
     my(@dep_on, $dep, $pkg, $prg);
@@ -2231,7 +2290,7 @@ sub prepare_watches {
     }
 }
 
-sub check_watches {
+sub check_watches () {
     my($prg, @st, %used);
 
     return if (!$conf::check_watches);
@@ -2266,11 +2325,11 @@ EOF
     print PLOG "\n";
 }
 
-sub should_skip {
+sub should_skip ($) {
     my $pkgv = shift;
 
-    fixup_pkgv( \$pkgv );
-    lock_file( "SKIP" );
+    fixup_pkgv( $pkgv );
+    lock_file( "SKIP", 0 );
     goto unlock if !open( F, "SKIP" );
     my @pkgs = <F>;
     close( F );
@@ -2296,12 +2355,12 @@ sub should_skip {
     return $found;
 }
 
-sub add_givenback {
+sub add_givenback ($$) {
     my $pkgv = shift;
     my $time = shift;
     local( *F );
 
-    lock_file( "SBUILD-GIVEN-BACK" );
+    lock_file( "SBUILD-GIVEN-BACK", 0 );
 
     if (open( F, ">>SBUILD-GIVEN-BACK" )) {
 	print F "$pkgv $time\n";
@@ -2315,14 +2374,14 @@ sub add_givenback {
     unlock_file( "SBUILD-GIVEN-BACK" );
 }
 
-sub set_installed {
+sub set_installed (@) {
     foreach (@_) {
 	$main::changes->{'installed'}->{$_} = 1;
     }
     print "Added to installed list: @_\n" if $conf::debug;
 }
 
-sub set_removed {
+sub set_removed (@) {
     foreach (@_) {
 	$main::changes->{'removed'}->{$_} = 1;
 	if (exists $main::changes->{'installed'}->{$_}) {
@@ -2334,14 +2393,14 @@ sub set_removed {
     print "Added to removed list: @_\n" if $conf::debug;
 }
 
-sub unset_installed {
+sub unset_installed (@) {
     foreach (@_) {
 	delete $main::changes->{'installed'}->{$_};
     }
     print "Removed from installed list: @_\n" if $conf::debug;
 }
 
-sub unset_removed {
+sub unset_removed (@) {
     foreach (@_) {
 	delete $main::changes->{'removed'}->{$_};
 	if (exists $main::changes->{'auto-removed'}->{$_}) {
@@ -2353,7 +2412,7 @@ sub unset_removed {
     print "Removed from removed list: @_\n" if $conf::debug;
 }
 
-sub df {
+sub df ($) {
     my $dir = shift;
 
     my $free = `/bin/df $dir | tail -n 1`;
@@ -2361,12 +2420,12 @@ sub df {
     return $free[3];
 }
 
-sub isin {
+sub isin ($@) {
     my $val = shift;
     return grep( $_ eq $val, @_ );
 }
 
-sub fixup_pkgv {
+sub fixup_pkgv (\$) {
     my $pkgv = shift;
 
     $$pkgv =~ s,^.*/,,; # strip path
@@ -2374,7 +2433,7 @@ sub fixup_pkgv {
     $$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
 }
 
-sub format_deps {
+sub format_deps (@) {
     return join( ", ",
 		 map { join( "|",
 			     map { ($_->{'Neg'} ? "!" : "") .
@@ -2383,7 +2442,7 @@ sub format_deps {
 			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
-sub lock_file {
+sub lock_file ($$) {
     my $file = shift;
     my $for_srcdep = shift;
     my $lockfile = "$file.lock";
@@ -2430,14 +2489,14 @@ sub lock_file {
     F->close();
 }
 
-sub unlock_file {
+sub unlock_file ($) {
     my $file = shift;
     my $lockfile = "$file.lock";
 
     unlink( $lockfile );
 }
 
-sub shutdown {
+sub shutdown ($) {
     my $signame = shift;
     my($job,@npkgs,@pkgs);
     local( *F );
@@ -2455,7 +2514,7 @@ sub shutdown {
     # most important: dump out names of unfinished jobs to REDO
     foreach $job (@ARGV) {
 	my $job2 = $job;
-	fixup_pkgv( \$job2 );
+	fixup_pkgv( $job2 );
 	push( @npkgs, $job2 )
 	    if !$main::job_state{$job} || $job eq $main::current_job;
     }
@@ -2511,7 +2570,7 @@ sub shutdown {
 
     # close logs and send mails
     if ( $main::current_job ) {
-	fixup_pkgv( \$main::current_job );
+	fixup_pkgv( $main::current_job );
 	end_session();
 	close_build_log( $main::current_job, $main::distribution, $main::pkg_status,
 			 $main::pkg_start_time, $main::pkg_end_time,
@@ -2527,19 +2586,19 @@ sub shutdown {
     exit 0;
 }
 
-sub write_stats {
+sub write_stats ($$) {
     return if not defined $main::stats_dir;
     my ($cat, $val) = @_;
     local( *F );
 
-    lock_file( "$main::stats_dir" );
+    lock_file( "$main::stats_dir", 0 );
     open( F, ">>$main::stats_dir/$cat" );
     print F "$val\n";
     close( F );
     unlock_file( "$main::stats_dir" );
 }
 
-sub debian_files_list {
+sub debian_files_list ($) {
     my $files = shift;
 
     my @list;
@@ -2559,7 +2618,7 @@ sub debian_files_list {
     return @list;
 }
 
-sub dsc_md5sums {
+sub dsc_md5sums ($) {
     my $dsc = shift;
     my $dir = dirname($dsc);
     $dir .= "/" if $dir !~ /\/$/;
@@ -2586,7 +2645,7 @@ sub dsc_md5sums {
     return \%dsc_md5;
 }
 
-sub verify_md5sums {
+sub verify_md5sums ($) {
     my $exp_md5 = shift; # Hashref of filenames and expected MD5sums.
     my %obs_md5 = (); # Observed MD5sums.
 
@@ -2625,7 +2684,7 @@ sub verify_md5sums {
 }
 
 # Figure out chroot architecture
-sub chroot_arch {
+sub chroot_arch () {
     $main::sub_pid = open( PIPE, "-|" );
     if (!defined $main::sub_pid) {
 	print PLOG "Can't spawn dpkg: $!\n";
@@ -2644,7 +2703,7 @@ sub chroot_arch {
     return $chroot_arch;
 }
 
-sub check_group_membership {
+sub check_group_membership () {
     my $user = getpwuid($<);
     my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
 
@@ -2666,7 +2725,7 @@ sub check_group_membership {
     return;
 }
 
-sub open_build_log {
+sub open_build_log ($$$) {
     my $pkg_name = shift;
     my $pkg_distribution = shift;
     my $date = shift;
@@ -2678,7 +2737,7 @@ sub open_build_log {
     print PLOG "*"x78, "\n";
 }
 
-sub close_build_log {
+sub close_build_log ($$$$$$) {
     my $pkg_name = shift;
     my $pkg_distribution = shift;
     my $status = shift;
@@ -2702,7 +2761,7 @@ sub close_build_log {
 		   $pkg_start_time, $pkg_end_time);
 }
 
-sub add_time_entry {
+sub add_time_entry ($$) {
     my $pkg = shift;
     my $t = shift;
 
@@ -2728,7 +2787,7 @@ sub add_time_entry {
     untie %db;
 }
 
-sub add_space_entry {
+sub add_space_entry ($$) {
     my $pkg = shift;
     my $space = shift;
 
@@ -2761,7 +2820,7 @@ sub add_space_entry {
     untie %db;
 }
 
-sub dump_main_state {
+sub dump_main_state () {
     print STDERR Data::Dumper->Dump([\@main::additional_deps,
 				     $main::arch,
 				     $main::auto_giveback,
