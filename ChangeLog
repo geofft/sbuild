@@ -1,3 +1,21 @@
+2008-03-08  Roger Leigh  <rleigh@debian.org>
+
+	* bin/sbuild: Pass date to open_pkg_log.  Pass current job and
+	distribution to close_pkg_log.
+	(open_build_log): New function to wrap open_pkg_log and print
+	start message.
+	(close_build_log): New function to wrap open_pkg_log, update
+	statistics and print end message.
+	(add_time_entry, add_space_entry): Move from Log.pm.
+
+	* lib/Sbuild/Log.pm:
+	(open_pkg_log): Pass date as an argument.  Don't print build start
+	message.
+	(close_pkg_log): Pass package name and distribution as arguments;
+	don't pass build space.  Format date from $pkg_end_time.  Remove
+	statistics updates and buld end message.
+	(add_time_entry, add_space_entry): Remove.
+
 2008-02-29  Roger Leigh  <rleigh@debian.org>
 
 	* lib/WannaBuild/Conf.pm: Define $HOME.

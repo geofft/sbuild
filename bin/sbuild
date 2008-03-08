@@ -30,6 +30,7 @@ use File::Basename qw(basename dirname);
 use IO::Handle;
 use IPC::Open3;
 use FileHandle;
+use GDBM_File;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(binNMU_version version_compare);
 use Data::Dumper;
@@ -43,6 +44,7 @@ use Sbuild::Chroot qw(begin_session end_session strip_chroot_path
                       get_command run_command exec_command
                       get_apt_command run_apt_command);
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
+use Sbuild::Sysconfig qw($arch $hostname $version);
 
 Sbuild::Conf::init();
 
@@ -243,6 +245,8 @@ foreach $dscfile (@ARGV) {
 
     {
 	my $tpkg = basename($pkgv);
+	# TODO: This should be $pkg_start_time, set in build().
+	my $date = strftime("%Y%m%d-%H%M",localtime);
 
 	if ($main::binNMU) {
 	    $tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
@@ -251,7 +255,7 @@ foreach $dscfile (@ARGV) {
 	    $tpkg .= $3;
 	}
 
-	next if !open_pkg_log( $tpkg, $main::distribution );
+	next if !open_build_log( $tpkg, $main::distribution, $date );
     }
 
     $main::pkg_status = "failed"; # assume for now
@@ -311,9 +315,9 @@ foreach $dscfile (@ARGV) {
 
     end_session();
 
-    close_pkg_log( $main::pkg_status,
-		   $main::pkg_start_time, $main::pkg_end_time,
-		   $main::this_space );
+    close_build_log( $main::current_job, $main::distribution, $main::pkg_status,
+		     $main::pkg_start_time, $main::pkg_end_time,
+		     $main::this_space );
     undef $main::binNMU_name;
     $main::current_job = "";
     if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
@@ -2509,9 +2513,9 @@ sub shutdown {
     if ( $main::current_job ) {
 	fixup_pkgv( \$main::current_job );
 	end_session();
-	close_pkg_log( $main::pkg_status,
-		       $main::pkg_start_time, $main::pkg_end_time,
-		       $main::this_space );
+	close_build_log( $main::current_job, $main::distribution, $main::pkg_status,
+			 $main::pkg_start_time, $main::pkg_end_time,
+			 $main::this_space );
 	undef $main::binNMU_name;
     }
     close_log();
@@ -2660,6 +2664,101 @@ sub check_group_membership {
     }
 
     return;
+}
+
+sub open_build_log {
+    my $pkg_name = shift;
+    my $pkg_distribution = shift;
+    my $date = shift;
+
+    open_pkg_log($pkg_name, $pkg_distribution, $date);
+    print PLOG "Automatic build of $pkg_name on $hostname by ".
+	"sbuild/$arch $version\n";
+    print PLOG "Build started at $date\n";
+    print PLOG "*"x78, "\n";
+}
+
+sub close_build_log {
+    my $pkg_name = shift;
+    my $pkg_distribution = shift;
+    my $status = shift;
+    my $pkg_start_time = shift;
+    my $pkg_end_time = shift;
+    my $space = shift;
+    my $date = strftime("%Y%m%d-%H%M", localtime($pkg_end_time));
+
+    my $time = $pkg_end_time - $pkg_start_time;
+
+    $time = 0 if $time < 0;
+    if (defined($status) && $status eq "successful") {
+	add_time_entry( $pkg_name, $time );
+	add_space_entry( $pkg_name, $space );
+    }
+    print PLOG "*"x78, "\n";
+    printf PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
+    int($time/3600), int(($time%3600)/60), int($time%60), $space;
+
+    close_pkg_log ($pkg_name, $pkg_distribution, $status,
+		   $pkg_start_time, $pkg_end_time);
+}
+
+sub add_time_entry {
+    my $pkg = shift;
+    my $t = shift;
+
+    return if !$Sbuild::Conf::avg_time_db;
+    my %db;
+    if (!tie %db, 'GDBM_File', $Sbuild::Conf::avg_time_db, GDBM_WRCREAT, 0664) {
+	print "Can't open average time db $Sbuild::Conf::avg_time_db\n";
+	return;
+    }
+    $pkg =~ s/_.*//;
+
+    if (exists $db{$pkg}) {
+	my @times = split( /\s+/, $db{$pkg} );
+	push( @times, $t );
+	my $sum = 0;
+	foreach (@times[1..$#times]) { $sum += $_; }
+	$times[0] = $sum / (@times-1);
+	$db{$pkg} = join( ' ', @times );
+    }
+    else {
+	$db{$pkg} = "$t $t";
+    }
+    untie %db;
+}
+
+sub add_space_entry {
+    my $pkg = shift;
+    my $space = shift;
+
+    my $keepvals = 4;
+
+    return if !$Sbuild::Conf::avg_space_db || $space == 0;
+    my %db;
+    if (!tie %db, 'GDBM_File', $Sbuild::Conf::avg_space_db, &GDBM_WRCREAT, 0664) {
+	print "Can't open average space db $Sbuild::Conf::avg_space_db\n";
+	return;
+    }
+    $pkg =~ s/_.*//;
+
+    if (exists $db{$pkg}) {
+	my @values = split( /\s+/, $db{$pkg} );
+	shift @values;
+	unshift( @values, $space );
+	pop @values if @values > $keepvals;
+	my ($sum, $n, $weight, $i) = (0, 0, scalar(@values));
+	for( $i = 0; $i < @values; ++$i) {
+	    $sum += $values[$i] * $weight;
+	    $n += $weight;
+	}
+	unshift( @values, $sum/$n );
+	$db{$pkg} = join( ' ', @values );
+    }
+    else {
+	$db{$pkg} = "$space $space";
+    }
+    untie %db;
 }
 
 sub dump_main_state {

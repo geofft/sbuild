@@ -26,11 +26,9 @@ use Sbuild::Conf;
 use strict;
 use warnings;
 use File::Temp ();
-use GDBM_File;
 use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
-use Sbuild::Sysconfig qw($arch $hostname $version);
 
 BEGIN {
     use Exporter ();
@@ -127,9 +125,9 @@ sub close_log {
 }
 
 sub open_pkg_log {
-    my $date = strftime("%Y%m%d-%H%M",localtime);
     $pkg_name = shift;
     $pkg_distribution = shift;
+    my $date = shift;
 
     if (!defined $log_dir_available) {
 	if (! -d $Sbuild::Conf::log_dir &&
@@ -183,94 +181,22 @@ sub open_pkg_log {
     main::PLOG->autoflush(1);
     select(main::PLOG);
 
-    print main::PLOG "Automatic build of $pkg_name on $hostname by ".
-	"sbuild/$arch $version\n";
-    print main::PLOG "Build started at $date\n";
-    print main::PLOG "*"x78, "\n";
     return 1;
 }
 
 sub close_pkg_log {
-    my $date = strftime("%Y%m%d-%H%M",localtime);
+    my $pkg_name = shift;
+    my $pkg_distribution = shift;
     my $status = shift;
     my $pkg_start_time = shift;
     my $pkg_end_time = shift;
-    my $space = shift;
+    my $date = strftime("%Y%m%d-%H%M", localtime($pkg_end_time));
 
-    my $time = $pkg_end_time - $pkg_start_time;
-
-    $time = 0 if $time < 0;
-    if (defined($status) && $status eq "successful") {
-	add_time_entry( $pkg_name, $time );
-	add_space_entry( $pkg_name, $space );
-    }
-    print main::PLOG "*"x78, "\n";
-    printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
-    int($time/3600), int(($time%3600)/60), int($time%60), $space;
     close( main::PLOG );
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
     send_mail( $Sbuild::Conf::mailto,
 	       "Log for $status build of $pkg_name (dist=$pkg_distribution)",
 	       $pkg_logfile ) if !$Sbuild::Conf::nolog && $log_dir_available && $Sbuild::Conf::mailto;
-}
-
-sub add_time_entry {
-    my $pkg = shift;
-    my $t = shift;
-
-    return if !$Sbuild::Conf::avg_time_db;
-    my %db;
-    if (!tie %db, 'GDBM_File',$Sbuild::Conf::avg_time_db,GDBM_WRCREAT,0664) {
-	print "Can't open average time db $Sbuild::Conf::avg_time_db\n";
-	return;
-    }
-    $pkg =~ s/_.*//;
-
-    if (exists $db{$pkg}) {
-	my @times = split( /\s+/, $db{$pkg} );
-	push( @times, $t );
-	my $sum = 0;
-	foreach (@times[1..$#times]) { $sum += $_; }
-	$times[0] = $sum / (@times-1);
-	$db{$pkg} = join( ' ', @times );
-    }
-    else {
-	$db{$pkg} = "$t $t";
-    }
-    untie %db;
-}
-
-sub add_space_entry {
-    my $pkg = shift;
-    my $space = shift;
-
-    my $keepvals = 4;
-
-    return if !$Sbuild::Conf::avg_space_db || $space == 0;
-    my %db;
-    if (!tie %db, 'GDBM_File',$Sbuild::Conf::avg_space_db,GDBM_WRCREAT,0664) {
-	print "Can't open average space db $Sbuild::Conf::avg_space_db\n";
-	return;
-    }
-    $pkg =~ s/_.*//;
-
-    if (exists $db{$pkg}) {
-	my @values = split( /\s+/, $db{$pkg} );
-	shift @values;
-	unshift( @values, $space );
-	pop @values if @values > $keepvals;
-	my ($sum, $n, $weight, $i) = (0, 0, scalar(@values));
-	for( $i = 0; $i < @values; ++$i) {
-	    $sum += $values[$i] * $weight;
-	    $n += $weight;
-	}
-	unshift( @values, $sum/$n );
-	$db{$pkg} = join( ' ', @values );
-    }
-    else {
-	$db{$pkg} = "$space $space";
-    }
-    untie %db;
 }
 
 sub send_mail {
