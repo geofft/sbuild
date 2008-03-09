@@ -26,6 +26,8 @@ use strict;
 use warnings;
 use Cwd qw(cwd);
 
+sub init ();
+
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -84,7 +86,7 @@ our $web_stats = undef;
 require "/etc/buildd/wanna-build.conf" if -r "/etc/buildd/wanna-build.conf";
 require "$HOME/.wanna-buildrc" if -r "$HOME/.wanna-buildrc";
 
-sub init {
+sub init () {
     # some checks
 
     die "$conf::basedir is not a directory\n" if ! -d $conf::basedir;

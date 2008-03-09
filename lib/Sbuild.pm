@@ -34,28 +34,40 @@ require Exporter;
 
 my $opt_correct_version_cmp;
 
-sub version_less {
+sub version_less ($$);
+sub version_lesseq ($$);
+sub version_eq ($$);
+sub version_compare ($$$);
+sub do_version_cmp ($$);
+sub order ($);
+sub version_cmp_single ($$);
+sub split_version ($);
+sub binNMU_version ($$);
+sub parse_date ($);
+sub isin ($@);
+
+sub version_less ($$) {
 	my $v1 = shift;
 	my $v2 = shift;
 
 	return version_compare( $v1, "<<", $v2 );
 }
 
-sub version_lesseq {
+sub version_lesseq ($$) {
 	my $v1 = shift;
 	my $v2 = shift;
 
 	return version_compare( $v1, "<=", $v2 );
 }
 
-sub version_eq {
+sub version_eq ($$) {
 	my $v1 = shift;
 	my $v2 = shift;
 
 	return version_compare( $v1, "=", $v2 );
 }
 
-sub version_compare {
+sub version_compare ($$$) {
 	my $v1 = shift;
 	my $rel = shift;
 	my $v2 = shift;
@@ -87,7 +99,7 @@ sub version_compare {
 	}
 }
 
-sub do_version_cmp {
+sub do_version_cmp ($$) {
 	my($versa, $versb) = @_;
 	my($epocha,$upstra,$reva);
 	my($epochb,$upstrb,$revb);
@@ -109,7 +121,7 @@ sub do_version_cmp {
 	return $r < 0;
 }
 
-sub order {
+sub order ($) {
 	for ($_[0])
 	{
 	/\~/     and return -1;
@@ -119,7 +131,7 @@ sub order {
 	}
 }
 
-sub version_cmp_single {
+sub version_cmp_single ($$) {
 	my($versa, $versb) = @_;
 	my($a,$b,$lena,$lenb,$va,$vb,$i);
 
@@ -150,7 +162,7 @@ sub version_cmp_single {
 	}
 }
 
-sub split_version {
+sub split_version ($) {
 	my($vers) = @_;
 	my($epoch,$revision) = (0,"");
 
@@ -167,7 +179,7 @@ sub split_version {
 	return( $epoch, $vers, $revision );
 }
 
-sub binNMU_version {
+sub binNMU_version ($$) {
 	my $v = shift;
 	my $binNMUver = shift;
 
@@ -177,7 +189,7 @@ sub binNMU_version {
 my %monname = ('jan', 0, 'feb', 1, 'mar', 2, 'apr', 3, 'may', 4, 'jun', 5,
 	       'jul', 6, 'aug', 7, 'sep', 8, 'oct', 9, 'nov', 10, 'dec', 11 );
 
-sub parse_date {
+sub parse_date ($) {
     my $text = shift;
 
     return 0 if !$text;
@@ -190,7 +202,7 @@ sub parse_date {
     return timelocal($sec, $min, $hour, $day, $mon, $year);
 }
 
-sub isin {
+sub isin ($@) {
     my $val = shift;
     return grep( $_ eq $val, @_ );
 }

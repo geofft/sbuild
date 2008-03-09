@@ -25,6 +25,7 @@ use Sbuild::Conf;
 use Sbuild::Sysconfig;
 
 use strict;
+use warnings;
 use POSIX;
 use FileHandle;
 use File::Temp ();
@@ -44,7 +45,22 @@ my $schroot_session = "";
 
 our $current;
 
-sub _get_schroot_info {
+sub _get_schroot_info ($);
+sub init ();
+sub _setup_options ($);
+sub begin_session ($$);
+sub end_session ();
+sub strip_chroot_path ($);
+sub log_command ($$);
+sub get_command_internal ($$$);
+sub get_command ($$$$);
+sub run_command ($$$$);
+sub exec_command ($$$$);
+sub get_apt_command_internal ($$);
+sub get_apt_command ($$$$);
+sub run_apt_command ($$$$);
+
+sub _get_schroot_info ($) {
     my $chroot = shift;
     my $chroot_type = "";
     my %tmp = ('Priority' => 0,
@@ -90,7 +106,7 @@ sub _get_schroot_info {
     $chroots{$chroot} = \%tmp;
 }
 
-sub init {
+sub init () {
     foreach (glob("${Sbuild::Conf::build_dir}/chroot-*")) {
 	my %tmp = ('Priority' => 0,
 		   'Location' => $_,
@@ -117,7 +133,7 @@ sub init {
     close CHROOTS or die "Can't close schroot pipe";
 }
 
-sub _setup_options {
+sub _setup_options ($) {
     my $distribution = shift;
 
     if (defined($chroots{$distribution}) &&
@@ -151,7 +167,7 @@ sub _setup_options {
     }
 }
 
-sub begin_session {
+sub begin_session ($$) {
     my $distribution = shift;
     my $arch = shift;
 
@@ -209,7 +225,7 @@ sub begin_session {
     return 1;
 }
 
-sub end_session {
+sub end_session () {
     $current = undef;
     return if $schroot_session eq "";
     print STDERR "Cleaning up chroot (session id $schroot_session)\n"
@@ -223,7 +239,7 @@ sub end_session {
     return 1;
 }
 
-sub strip_chroot_path {
+sub strip_chroot_path ($) {
     my $path = shift;
 
     $path =~ s/^\Q$$current{'Location'}\E//;
@@ -231,7 +247,7 @@ sub strip_chroot_path {
     return $path;
 }
 
-sub log_command {
+sub log_command ($$) {
     my $msg = shift;      # Message to log
     my $priority = shift; # Priority of log message
 
@@ -243,7 +259,7 @@ sub log_command {
     }
 }
 
-sub get_command_internal {
+sub get_command_internal ($$$) {
     my $command = shift; # Command to run
     my $user = shift;    # User to run command under
     if (!defined $user || $user eq "") {
@@ -268,7 +284,7 @@ sub get_command_internal {
     return $cmdline;
 }
 
-sub get_command {
+sub get_command ($$$$) {
     my $command = shift;  # Command to run
     my $user = shift;     # User to run command under
     my $chroot = shift;   # Run in chroot?
@@ -290,7 +306,7 @@ sub get_command {
 
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed.
-sub run_command {
+sub run_command ($$$$) {
     my $command = shift;  # Command to run
     my $user = shift;     # User to run command under
     my $chroot = shift;   # Run in chroot?
@@ -309,7 +325,7 @@ sub run_command {
     return system($cmdline);
 }
 
-sub exec_command {
+sub exec_command ($$$$) {
     my $command = shift;  # Command to run
     my $user = shift;     # User to run command under
     my $chroot = shift;   # Run in chroot?
@@ -328,7 +344,7 @@ sub exec_command {
     exec $cmdline;
 }
 
-sub get_apt_command_internal {
+sub get_apt_command_internal ($$) {
     my $aptcommand = shift; # Command to run
     my $options = shift;    # Command options
     $aptcommand .= " $$current{'APT Options'} $options";
@@ -336,7 +352,7 @@ sub get_apt_command_internal {
     return $aptcommand;
 }
 
-sub get_apt_command {
+sub get_apt_command ($$$$) {
     my $command = shift;  # Command to run
     my $options = shift;  # Command options
     my $user = shift;     # User to run command under
@@ -350,7 +366,7 @@ sub get_apt_command {
     return $cmdline;
 }
 
-sub run_apt_command {
+sub run_apt_command ($$$$) {
     my $command = shift;  # Command to run
     my $options = shift;  # Command options
     my $user = shift;     # User to run command under

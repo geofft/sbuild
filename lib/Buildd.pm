@@ -47,7 +47,19 @@ $Buildd::hostname = `/bin/hostname -f`;
 $ENV{'PATH'} = $oldPATH;
 $Buildd::hostname =~ /^(\S+)$/; $Buildd::hostname = $1; # untaint
 
-sub unset_env {
+sub unset_env ();
+sub lock_file ($;$);
+sub unlock_file ($);
+sub write_stats ($$);
+sub open_log ();
+sub logger (@);
+sub close_log ();
+sub reopen_log ();
+sub send_mail ($$$;$);
+sub ll_send_mail ($$);
+sub exitstatus ($);
+
+sub unset_env () {
     # unset any locale variables
     delete $ENV{'LANG'};
     delete $ENV{'LC_ALL'};
@@ -63,7 +75,7 @@ sub unset_env {
     delete $ENV{'TERM'};
 }
 
-sub lock_file {
+sub lock_file ($;$) {
     my $file = shift;
     my $nowait = shift;
     my $lockfile = "$file.lock";
@@ -110,7 +122,7 @@ sub lock_file {
     return 1;
 }
 
-sub unlock_file {
+sub unlock_file ($) {
     my $file = shift;
     my $lockfile = "$file.lock";
 
@@ -118,7 +130,7 @@ sub unlock_file {
 }
 
 
-sub write_stats {
+sub write_stats ($$) {
     my ($cat, $val) = @_;
     local( *F );
 
@@ -129,7 +141,7 @@ sub write_stats {
     unlock_file( "$main::HOME/stats" );
 }
 
-sub open_log {
+sub open_log () {
     open( LOG, ">>$main::HOME/daemon.log" )
 	or die "$0: Cannot open my logfile $main::HOME/daemon.log: $!\n";
     chmod( 0640, "$main::HOME/daemon.log" )
@@ -141,7 +153,7 @@ sub open_log {
 	or die "$0: Can't redirect stderr to $main::HOME/daemon.log: $!\n";
 }
 
-sub logger {
+sub logger (@) {
     my $t;
     my $text = "";
 
@@ -154,20 +166,20 @@ sub logger {
     print LOG $text;
 }
 
-sub close_log {
+sub close_log () {
     close( LOG );
     close( STDOUT );
     close( STDERR );
 }
 
-sub reopen_log {
+sub reopen_log () {
     my $errno = $!;
     close_log();
     open_log();
     $! = $errno;
 }
 
-sub send_mail {
+sub send_mail ($$$;$) {
     my $addr = shift;
     my $subject = shift;
     my $text = shift;
@@ -182,7 +194,7 @@ sub send_mail {
 			 "\n$text\n" );
 }
 
-sub ll_send_mail {
+sub ll_send_mail ($$) {
     my $to = shift;
     my $text = shift;
     local( *MAIL );
@@ -202,7 +214,7 @@ sub ll_send_mail {
 }
 
 
-sub exitstatus {
+sub exitstatus ($) {
     my $stat = shift;
 
     return ($stat >> 8) . "/" . ($stat % 256);

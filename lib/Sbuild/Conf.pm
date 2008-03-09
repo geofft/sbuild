@@ -25,6 +25,8 @@ use strict;
 use warnings;
 use Cwd qw(cwd);
 
+sub init ();
+
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -134,7 +136,7 @@ our $check_depends_algorithm = "first-only";
 require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
-sub init {
+sub init () {
     # some checks
     die "mailprog binary $Sbuild::Conf::mailprog does not exist or isn't executable\n"
 	if !-x $Sbuild::Conf::mailprog;

@@ -30,6 +30,13 @@ use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
 
+sub open_log ($);
+sub close_log ();
+sub open_pkg_log ($$$);
+sub close_pkg_log ($$$$$);
+sub send_mail ($$$);
+sub log_symlink ($$);
+
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -46,7 +53,7 @@ my $pkg_distribution;
 my $pkg_name;
 my $log_dir_available;
 
-sub open_log {
+sub open_log ($) {
     my $main_distribution = shift;
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
@@ -101,7 +108,7 @@ sub open_log {
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 }
 
-sub close_log {
+sub close_log () {
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
     close( main::PLOG );
@@ -124,7 +131,7 @@ sub close_log {
     }
 }
 
-sub open_pkg_log {
+sub open_pkg_log ($$$) {
     $pkg_name = shift;
     $pkg_distribution = shift;
     my $date = shift;
@@ -184,7 +191,7 @@ sub open_pkg_log {
     return 1;
 }
 
-sub close_pkg_log {
+sub close_pkg_log ($$$$$) {
     my $pkg_name = shift;
     my $pkg_distribution = shift;
     my $status = shift;
@@ -199,7 +206,7 @@ sub close_pkg_log {
 	       $pkg_logfile ) if !$Sbuild::Conf::nolog && $log_dir_available && $Sbuild::Conf::mailto;
 }
 
-sub send_mail {
+sub send_mail ($$$) {
     my $to = shift;
     my $subject = shift;
     my $file = shift;
@@ -233,7 +240,7 @@ sub send_mail {
     return 1;
 }
 
-sub log_symlink {
+sub log_symlink ($$) {
     my $log = shift;
     my $dest = shift;
 
