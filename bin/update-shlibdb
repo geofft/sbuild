@@ -43,6 +43,18 @@ use vars qw(%shlib_pkg %shlib_link_pkg %pkg_shlibs_md5 %shlib_alias
 			%lib_to_dev %dev_to_lib %dev_shlibs_md5 %pkg_vers $arch $component
 			$dist $installed $verbose $full_scan %db $HOME);
 
+sub scan_a_package ($);
+sub scan_i_package ($);
+sub read_dpkg_status ();
+sub make_shlibs_md5 ($);
+sub make_abs_link ($$);
+sub normalize_path ($);
+sub strip_epoch ($);
+sub set_db ($$$);
+sub db_exists ($);
+sub db_version ($);
+sub db_md5 ($);
+
 chomp( $arch = `dpkg --print-architecture 2>/dev/null` );
 $arch ||= "i386";
 $component = "main";
@@ -180,7 +192,7 @@ foreach (keys %dev_to_lib) {
 }
 
 
-sub scan_a_package {
+sub scan_a_package ($) {
     my $file = shift;
     local( *PIPE );
 
@@ -267,7 +279,7 @@ sub scan_a_package {
 }
 
 
-sub scan_i_package {
+sub scan_i_package ($) {
     my $list_file = shift;
     local( *F );
 
@@ -330,10 +342,10 @@ sub scan_i_package {
 	}
     }
 
-    set_db( $pkg, $pkg_vers{$pkg} );
+    set_db( $pkg, $pkg_vers{$pkg}, "" );
 }
 
-sub read_dpkg_status {
+sub read_dpkg_status () {
     local( *F );
     local($/) = "";
 
@@ -350,7 +362,7 @@ sub read_dpkg_status {
     close( F );
 }
 
-sub make_shlibs_md5 {
+sub make_shlibs_md5 ($) {
     my $contents = shift;
     my $md5 = new Digest::MD5;
 
@@ -362,7 +374,7 @@ sub make_shlibs_md5 {
     return $md5->hexdigest();
 }
 
-sub make_abs_link {
+sub make_abs_link ($$) {
     my $link = shift;
     my $name = shift;
 
@@ -371,7 +383,7 @@ sub make_abs_link {
     return $link;
 }
 
-sub normalize_path {
+sub normalize_path ($) {
     my $p = shift;
     my $q = $p;
 
@@ -382,27 +394,27 @@ sub normalize_path {
     return $p;
 }
 
-sub strip_epoch {
+sub strip_epoch ($) {
     my $str = shift;
     $str =~ s/^\d+://;
     return $str;
 }
 
-sub set_db {
+sub set_db ($$$) {
     my ($pkg, $version, $md5) = @_;
 
     $md5 ||= "*";
     $db{$pkg} = "$version $md5";
 }
 
-sub db_exists {
+sub db_exists ($) {
     return exists $db{$_[0]};
 }
 
-sub db_version {
+sub db_version ($) {
     return (split( ' ', $db{$_[0]} ))[0];
 }
 
-sub db_md5 {
+sub db_md5 ($) {
     return (split( ' ', $db{$_[0]} ))[1];
 }

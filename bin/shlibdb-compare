@@ -40,6 +40,9 @@ use strict;
 use DB_File;
 use vars qw($verbose %dbold %dbnew %result $HOME);
 
+sub db_exists ($$);
+sub db_md5 ($);
+
 $verbose = 0;
 my %options =
     (# flags
@@ -121,12 +124,12 @@ foreach (sort keys %result) {
     print "$_: $result{$_}\n";
 }
 
-sub db_exists {
+sub db_exists ($$) {
     my $db = shift;
     my $key = shift;
     return exists $db->{$key} && db_md5($db->{$key}) ne "*";
 }
 
-sub db_md5 {
+sub db_md5 ($) {
     return (split( ' ', $_[0] ))[1];
 }

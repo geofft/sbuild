@@ -26,6 +26,8 @@
 # read it in, and only try to move packages that are build-deps
 exit 0;
 
+sub parse_one_srcdep ($$);
+
 while( <> ) {
     chomp;
     next if /^\s*$/ || /^\s*#/;
@@ -60,7 +62,7 @@ foreach (keys %abbrevs) {
 print join( "\n", sort keys %deppkgs ), "\n";
 exit 0;
 
-sub parse_one_srcdep {
+sub parse_one_srcdep ($$) {
     my $pkg = shift;
     my $deps = shift;
 
