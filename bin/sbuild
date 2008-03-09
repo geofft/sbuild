@@ -1089,7 +1089,7 @@ sub install_deps ($) {
 
     local (*F);
 
-    my $command = get_command("$conf::dpkg --set-selections", "root", 1);
+    my $command = get_command("$conf::dpkg --set-selections", "root", 1, 0);
 
     my $success = open( F, "| $command");
 
