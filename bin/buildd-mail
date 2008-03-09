@@ -29,12 +29,41 @@ BEGIN {
 
 use strict;
 use Buildd;
+use Buildd::Conf;
 use POSIX;
 use File::Basename;
 
+sub get_next_file ();
+sub process_mail ();
+sub prepare_for_upload ($$);
+sub redo_new_version ($$$);
+sub purge_pkg ($$);
+sub remove_from_upload ($);
+sub append_to_REDO ($$);
+sub remove_from_REDO ($);
+sub append_to_SKIP ($);
+sub check_is_outdated ($$);
+sub is_outdated ($$);
+sub register_outdated ($$$);
+sub set_to_failed ($$$);
+sub set_to_depwait ($$$);
+sub give_back ($$);
+sub no_build ($$);
+sub get_fail_msg ($$);
+sub check_state ($$@);
+sub check_building_any_dist ($);
+sub get_files_from_changes ($);
+sub is_for_non_us ($$);
+sub is_for_security ($);
+sub get_dists_from_changes ($);
+sub reply ($);
+sub is_blacklisted ($);
+sub add_error_mail ();
+sub dist_cmp ($$);
+sub dist_list_ge ($);
+
 $main::keep_running = 1;
 $ENV{'PATH'} = "$main::HOME/bin:/bin:/usr/bin:/usr/local/bin";
-read_config();
 
 chdir( "$main::HOME" );
 
@@ -109,12 +138,12 @@ goto relock if get_next_file();
 exit 0;
 
 
-sub get_next_file {
+sub get_next_file () {
     my @files = glob( "mqueue/mail.*" );
     return @files ? $files[0] : "";
 }
 
-sub process_mail {
+sub process_mail () {
 
     my $header_text = "";
     my $lastheader = "";
@@ -256,7 +285,7 @@ sub process_mail {
 	}
 	elsif ($body_text =~ /^---+\s*BEGIN PGP SIGNED MESSAGE/) {
 	    if (prepare_for_upload( $package, $body_text )) {
-		purge_pkg( $package );
+		purge_pkg( $package, $dist );
 	    }
 	}
 	elsif ($body_text =~ /^--/ && $header{'content-type'} =~ m,multipart/signed,) {
@@ -445,7 +474,7 @@ forward_mail:
 }
 
 
-sub prepare_for_upload {
+sub prepare_for_upload ($$) {
     my $pkg = shift;
     my $changes = shift;
     my( @files, @md5, @missing, @md5fail, $i );
@@ -539,7 +568,7 @@ sub prepare_for_upload {
     logger( "Moved $pkg to ", basename($upload_dir), "\n" );
 }
 
-sub redo_new_version {
+sub redo_new_version ($$$) {
     my $dist = shift;
     my $oldv = shift;
     my $newv = shift;
@@ -571,7 +600,7 @@ sub redo_new_version {
     append_to_REDO( $newv, $dist );
 }
 
-sub purge_pkg {
+sub purge_pkg ($$) {
     my $pkg = shift;
     my $dist = shift;
     my $dir;
@@ -617,7 +646,7 @@ sub purge_pkg {
     unlock_file( "build/PURGE" );
 }
 
-sub remove_from_upload {
+sub remove_from_upload ($) {
     my $pkg = shift;
     my($changes_f, $upload_f, $changes_text, @to_remove);
     local( *F );
@@ -651,7 +680,7 @@ sub remove_from_upload {
     }
 }
 
-sub append_to_REDO {
+sub append_to_REDO ($$) {
     my $pkg = shift;
     my $dist = shift;
     local( *F );
@@ -681,7 +710,7 @@ sub append_to_REDO {
     unlock_file( "build/REDO" );
 }
 
-sub remove_from_REDO {
+sub remove_from_REDO ($) {
     my $pkg = shift;
     local( *F );
 
@@ -710,7 +739,7 @@ sub remove_from_REDO {
     return $done;
 }
 
-sub append_to_SKIP {
+sub append_to_SKIP ($) {
     my $pkg = shift;
     local( *F );
 
@@ -731,7 +760,7 @@ sub append_to_SKIP {
     }
 }
 
-sub check_is_outdated {
+sub check_is_outdated ($$) {
     my $dist = shift;
     my $package = shift;
     my %newv;
@@ -789,7 +818,7 @@ sub check_is_outdated {
     return 1;
 }
 
-sub is_outdated {
+sub is_outdated ($$) {
     my $dist = shift;
     my $pkg = shift;
     my %result = ();
@@ -810,7 +839,7 @@ sub is_outdated {
     return %result;
 }
 
-sub register_outdated {
+sub register_outdated ($$$) {
     my $dist = shift;
     my $oldv = shift;
     my $newv = shift;
@@ -842,7 +871,7 @@ sub register_outdated {
     unlock_file( "outdated-packages" );
 }
 
-sub set_to_failed {
+sub set_to_failed ($$$) {
     my $pkg = shift;
     my $dist = shift;
     my $text = shift;
@@ -873,7 +902,7 @@ sub set_to_failed {
     }
 }
 
-sub set_to_depwait {
+sub set_to_depwait ($$$) {
     my $pkg = shift;
     my $dist = shift;
     my $deps = shift;
@@ -896,7 +925,7 @@ sub set_to_depwait {
     write_stats( "dep-wait", 1 );
 }
 
-sub give_back {
+sub give_back ($$) {
     my $pkg = shift;
     my $dist = shift;
     my $answer_cmd;
@@ -912,7 +941,7 @@ sub give_back {
     }
 }
 
-sub no_build {
+sub no_build ($$) {
     my $pkg = shift;
     my $dist = shift;
     my $answer_cmd;
@@ -929,7 +958,7 @@ sub no_build {
     write_stats( "no-build", 1 );
 }
 
-sub get_fail_msg {
+sub get_fail_msg ($$) {
     my $pkg = shift;
     my $dist = shift;
     local( *PIPE );
@@ -964,7 +993,7 @@ sub get_fail_msg {
     }
 }
 
-sub check_state {
+sub check_state ($$@) {
     my $pkgv = shift;
     my $dist = shift;
     my @wanted_states = @_;
@@ -1004,7 +1033,7 @@ sub check_state {
     return 1;
 }
 
-sub check_building_any_dist {
+sub check_building_any_dist ($) {
     my $pkgv = shift;
     my @dists;
     local( *PIPE );
@@ -1035,7 +1064,7 @@ sub check_building_any_dist {
     return @dists;
 }
 
-sub get_files_from_changes {
+sub get_files_from_changes ($) {
     my $changes_text = shift;
     my(@filelines, @files);
 
@@ -1047,7 +1076,7 @@ sub get_files_from_changes {
     return @files;
 }
 
-sub is_for_non_us {
+sub is_for_non_us ($$) {
     my $pkg = shift;
     my $changes_text = shift;
 
@@ -1062,7 +1091,7 @@ sub is_for_non_us {
     return 0;
 }
 
-sub is_for_security {
+sub is_for_security ($) {
     my $changes_text = shift;
 
     # check if there's a "-security" in the distribution
@@ -1073,14 +1102,14 @@ sub is_for_security {
     return 0;
 }
 
-sub get_dists_from_changes {
+sub get_dists_from_changes ($) {
     my $changes_text = shift;
 
     $changes_text =~ /^Distribution:\s*(.*)\s*$/mi;
     return split( /\s+/, $1 );
 }
 
-sub reply {
+sub reply ($) {
     my $text = shift;
     my( $to, $subj, $quoting );
 
@@ -1094,7 +1123,7 @@ sub reply {
 	       "In-Reply-To: $header{'message-id'}\n" );
 }
 
-sub is_blacklisted {
+sub is_blacklisted ($) {
     my $addr = shift;
     local( *BL );
 
@@ -1111,7 +1140,7 @@ sub is_blacklisted {
     return 0;
 }
 
-sub add_error_mail {
+sub add_error_mail () {
     local( *F );
     my $now = time;
     my @em = ();
@@ -1136,14 +1165,15 @@ sub add_error_mail {
 }
 
 BEGIN { %main::dist_order = ( stable => 0, frozen => 1, unstable => 2 ); }
-sub dist_cmp {
+
+sub dist_cmp ($$) {
     my $d1 = shift;
     my $d2 = shift;
 
     return $main::dist_order{$d1} <=> $main::dist_order{$d2};
 }
 
-sub dist_list_ge {
+sub dist_list_ge ($) {
     my $d = shift;
     my @l = ();
 
