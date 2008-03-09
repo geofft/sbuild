@@ -22,6 +22,9 @@
 use strict;
 use vars qw($verbose $dist $database);
 
+sub percent (@);
+sub isin ($@);
+
 $verbose = 0;
 $dist = "unstable";
 $database = "build-db";
@@ -33,7 +36,7 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
     }
     elsif (/^-d/ || /^--dist/) {
 	if (/^-d(.)/ || /^--dist=(.)/) {
-	    $dist = $1.$POSTMATCH;
+	    $dist = $1.$';
 	}
 	elsif (!@ARGV) {
 	    die "$_ option missing argument\n";
@@ -134,7 +137,7 @@ print percent(qw(Failed Dep-Wait)), " failed or waiting (long-term delay)\n";
 
 exit 0;
 
-sub percent {
+sub percent (@) {
     my $n = 0;
     foreach (@_) {
 	$n += $n_state{$_};
@@ -144,7 +147,7 @@ sub percent {
     return sprintf "%6.2f%%", 0;
 }
 
-sub isin {
+sub isin ($@) {
     my $val = shift;
     return grep( $_ eq $val, @_ );
 }

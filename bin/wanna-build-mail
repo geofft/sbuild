@@ -21,6 +21,12 @@
 
 use strict;
 
+sub read_users ();
+sub pgp_check ($);
+sub reply (@);
+sub fatal (@);
+sub logger (@);
+
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $main::tempfile = "/bin/tempfile";
 $main::wanna_build = -f "/usr/local/bin/wanna-build" ?
@@ -123,7 +129,7 @@ while( <F> ) {
 	push( @{$failed_args[$n_failed]}, split( /\s+/, $args ));
 	while( <F> ) {
 	    last if !/^\s+/;
-	    my $text = $POSTMATCH;
+	    my $text = $';
 	    chomp( $text );
 	    $text =~ s/'/'\\''/g;
 	    $failed_msg[$n_failed] .= "$text\n";
@@ -233,7 +239,7 @@ logger( "Processed: ",
 exit 0;
 
 
-sub read_users {
+sub read_users () {
     local( *F );
 
     open( F, "<$main::userdb" )
@@ -245,7 +251,7 @@ sub read_users {
     close( F );
 }
 
-sub pgp_check {
+sub pgp_check ($) {
     my $file = shift;
     my $output = "";
     my $signator;
@@ -330,7 +336,7 @@ sub pgp_check {
 }
 
 
-sub reply {
+sub reply (@) {
     my $subject;
 
     if (!$main::reply_addr) {
@@ -365,7 +371,7 @@ print MAIL "In-Reply-To: $main::msgid\n" if $main::msgid;
 }
 
 
-sub fatal {
+sub fatal (@) {
     logger( @_ );
     if ($main::reply_addr && !$main::no_reply) {
 	reply( "FATAL ERROR: ", @_, "\n" );
@@ -376,7 +382,7 @@ sub fatal {
     }
 }
 
-sub logger {
+sub logger (@) {
     local( *F );
     my( $str, @lines );
 

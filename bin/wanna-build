@@ -34,6 +34,51 @@ use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use Sbuild;
 
+sub process ();
+sub add_packages ($@);
+sub add_one_building ($$);
+sub add_one_uploaded ($$);
+sub add_one_failed ($$);
+sub add_one_notforus ($$);
+sub add_one_needsbuild ($$);
+sub set_one_binnmu ($$);
+sub set_one_buildpri ($$$);
+sub add_one_depwait ($$);
+sub parse_sources ($);
+sub parse_packages ();
+sub pretend_avail (@);
+sub check_dep_wait ($$);
+sub parse_quinn_diff ($);
+sub send_reupload_mail ($$$$$);
+sub sort_list_func ();
+sub list_packages ($);
+sub info_packages (@);
+sub forget_packages (@);
+sub forget_users (@);
+sub lock_db ($);
+sub unlock_db ($);
+sub create_maintlock ();
+sub remove_maintlock ();
+sub waitfor_maintlock ();
+sub read_db ($);
+sub check_entry ($);
+sub write_db ($);
+sub change_state ($$;$);
+sub propagate_ta ($$);
+sub exists_in_other_dist ($$$);
+sub open_other_db ($);
+sub log_ta ($$;$);
+sub dist_cmp ($$);
+sub send_mail ($$$);
+sub db_filename ($);
+sub parse_deplist ($$);
+sub parse_srcdeplist ($$$);
+sub build_deplist ($);
+sub clean_db ();
+sub set_dep_wait ($$);
+sub usage ();
+sub pkg_version_eq ($$);
+
 our ($verbose, $mail_logs, $list_order, $list_state, $curr_date,
      $op_mode, $user, $real_user, $distribution, $fail_reason,
      $opt_override, $import_from, $export_to, $opt_create_db,
@@ -314,7 +359,7 @@ if ($mail_logs && defined($conf::log_mail) && $conf::log_mail) {
 exit 0;
 
 
-sub process {
+sub process () {
 
   SWITCH: foreach ($op_mode) {
       /^set-(.+)/ && do {
@@ -437,7 +482,7 @@ sub process {
     }
 }
 
-sub add_packages {
+sub add_packages ($@) {
     my $newstate = shift;
     my( $package, $name, $version, $ok, $reason );
 
@@ -484,7 +529,7 @@ sub add_packages {
     }
 }
 
-sub add_one_building {
+sub add_one_building ($$) {
     my $name = shift;
     my $version = shift;
     my( $ok, $reason );
@@ -625,7 +670,7 @@ sub add_one_building {
     }
 }
 
-sub add_one_uploaded {
+sub add_one_uploaded ($$) {
     my $name = shift;
     my $version = shift;
     my $pkg = $db{$name};
@@ -674,7 +719,7 @@ sub add_one_uploaded {
     print "$name: registered as uploaded\n" if $verbose;
 }
 
-sub add_one_failed {
+sub add_one_failed ($$) {
     my $name = shift;
     my $version = shift;
     my ($state, $cat);
@@ -769,7 +814,7 @@ sub add_one_failed {
     print "$name: registered as failed\n" if $verbose;
 }
 
-sub add_one_notforus {
+sub add_one_notforus ($$) {
     my $name = shift;
     my $version = shift;
     my $pkg = $db{$name};
@@ -821,7 +866,7 @@ sub add_one_notforus {
     $db{$name} = $pkg;
 }
 
-sub add_one_needsbuild {
+sub add_one_needsbuild ($$) {
     my $name = shift;
     my $version = shift;
     my $state;
@@ -874,7 +919,7 @@ sub add_one_needsbuild {
     print "$name: given back\n" if $verbose;
 }
 
-sub set_one_binnmu {
+sub set_one_binnmu ($$) {
     my $name = shift;
     my $version = shift;
     my $pkg = $db{$name};
@@ -936,7 +981,7 @@ sub set_one_binnmu {
     print "${name}: registered for binNMU $fullver\n" if $verbose;
 }
 
-sub set_one_buildpri {
+sub set_one_buildpri ($$$) {
     my $name = shift;
     my $version = shift;
     my $key = shift;
@@ -978,7 +1023,7 @@ sub set_one_buildpri {
     print "$name: set to build priority $build_priority\n" if $verbose;
 }
 
-sub add_one_depwait {
+sub add_one_depwait ($$) {
     my $name = shift;
     my $version = shift;
     my $state;
@@ -1042,8 +1087,8 @@ sub add_one_depwait {
     } else {
 	delete $pkg->{'BuildPri'};
     }
-    my $deplist = parse_deplist( $pkg->{'Depends'} );
-    my $new_deplist = parse_deplist( $fail_reason );
+    my $deplist = parse_deplist( $pkg->{'Depends'}, 0 );
+    my $new_deplist = parse_deplist( $fail_reason, 0 );
     # add new dependencies, maybe overwriting old entries
     foreach (keys %$new_deplist) {
 	$deplist->{$_} = $new_deplist->{$_};
@@ -1056,7 +1101,7 @@ sub add_one_depwait {
 }
 
 
-sub parse_sources {
+sub parse_sources ($) {
     my %pkgs;
     my %srcver;
     my $name;
@@ -1149,7 +1194,7 @@ sub parse_sources {
 
 # This function looks through a Packages file and sets the state of
 # packages to 'Installed'
-sub parse_packages {
+sub parse_packages () {
     my $installed;
 
     local($/) = ""; # read in paragraph mode
@@ -1240,7 +1285,7 @@ sub parse_packages {
     return $installed;
 }
 
-sub pretend_avail {
+sub pretend_avail (@) {
     my ($package, $name, $version, $installed);
 
     foreach $package (@_) {
@@ -1261,7 +1306,7 @@ sub pretend_avail {
     check_dep_wait( "--pretend-avail", $installed );
 }
 
-sub check_dep_wait {
+sub check_dep_wait ($$) {
     my $action = shift;
     my $installed = shift;
 
@@ -1278,7 +1323,7 @@ sub check_dep_wait {
 	    "dependencies!\n";
 	    goto make_needs_build;
 	}
-	my $deplist = parse_deplist($deps);
+	my $deplist = parse_deplist($deps, 0);
 	my $new_deplist;
 	my $allok = 1;
 	my @removed_deps;
@@ -1319,7 +1364,7 @@ sub check_dep_wait {
 # This function accepts quinn-diff output (either from a file named on
 # the command line, or on stdin) and sets the packages named there to
 # state 'Needs-Build'.
-sub parse_quinn_diff {
+sub parse_quinn_diff ($) {
     my $partial = shift;
     my %quinn_pkgs;
     my $dubious = "";
@@ -1535,7 +1580,7 @@ sub parse_quinn_diff {
     }
 }
 
-sub send_reupload_mail {
+sub send_reupload_mail ($$$$$) {
     my $to = shift;
     my $pkg = shift;
     my $version = shift;
@@ -1613,7 +1658,7 @@ BEGIN {
 		 "compiler-error"     => -12 );
 }
 
-sub sort_list_func {
+sub sort_list_func () {
     my( $letter, $x, $ax, $bx );
 
     foreach $letter (split( "", $list_order )) {
@@ -1675,7 +1720,7 @@ sub sort_list_func {
     return 0;
 }
 
-sub list_packages {
+sub list_packages ($) {
     my $state = shift;
     my( $name, $pkg, @list );
     my $cnt = 0;
@@ -1738,7 +1783,7 @@ sub list_packages {
 
 }
 
-sub info_packages {
+sub info_packages (@) {
     my( $name, $pkg, $key, $dist );
     my @firstkeys = qw(Package Version Builder State Section Priority
 					   Installed-Version Previous-State State-Change);
@@ -1786,7 +1831,7 @@ sub info_packages {
     }
 }
 
-sub forget_packages {
+sub forget_packages (@) {
     my( $name, $pkg, $key, $data );
 
     foreach $name (@_) {
@@ -1817,7 +1862,7 @@ sub forget_packages {
     }
 }
 
-sub forget_users {
+sub forget_users (@) {
     my( $name, $ui );
     my $change = 0;
 
@@ -1835,7 +1880,7 @@ sub forget_users {
     $db{'_userinfo'} = $ui if $change;
 }
 
-sub lock_db {
+sub lock_db ($) {
     my $dist = shift;
     my $try = 0;
     my $lockfile = db_filename($dist) . ".lock";
@@ -1876,7 +1921,7 @@ sub lock_db {
     F->close();
 }
 
-sub unlock_db {
+sub unlock_db ($) {
     my $dist = shift;
     my $lockfile = db_filename($dist) . ".lock";
 
@@ -1886,7 +1931,7 @@ sub unlock_db {
     }
 }
 
-sub create_maintlock {
+sub create_maintlock () {
     my $lockfile = db_filename("maintenance") . ".lock";
     my $try = 0;
     local( *F );
@@ -1925,14 +1970,14 @@ sub create_maintlock {
     F->close();
 }
 
-sub remove_maintlock {
+sub remove_maintlock () {
     my $lockfile = db_filename("maintenance") . ".lock";
 
     print "Removing maintenance lock\n" if $verbose >= 2;
     unlink $lockfile;
 }
 
-sub waitfor_maintlock {
+sub waitfor_maintlock () {
     my $lockfile = db_filename("maintenance") . ".lock";
     my $try = 0;
     local( *F );
@@ -1965,7 +2010,7 @@ sub waitfor_maintlock {
 }
 
 
-sub read_db {
+sub read_db ($) {
     my $file = shift;
 
     print "Reading ASCII database from $file..." if $verbose >= 1;
@@ -1993,7 +2038,7 @@ sub read_db {
     print "done\n" if $verbose >= 1;
 }
 
-sub check_entry {
+sub check_entry ($) {
     my $pkg = shift;
     my $field;
 
@@ -2021,7 +2066,7 @@ sub check_entry {
 					 ) );
 }
 
-sub write_db {
+sub write_db ($) {
     my $file = shift;
     my($name,$pkg,$key);
 
@@ -2043,7 +2088,7 @@ sub write_db {
     print "done\n" if $verbose >= 1;
 }
 
-sub change_state {
+sub change_state ($$;$) {
     my $pkgr = shift;
     my $pkg = $$pkgr;
     my $newstate = shift;
@@ -2078,7 +2123,7 @@ sub change_state {
     $$state = $newstate;
 }
 
-sub propagate_ta {
+sub propagate_ta ($$) {
     my $pkg = shift;
     my $action = shift;
     my $dist;
@@ -2114,7 +2159,7 @@ sub propagate_ta {
     }
 }
 
-sub exists_in_other_dist {
+sub exists_in_other_dist ($$$) {
     my $name = shift;
     my $version = shift;
     my $inst_v_ok = shift;
@@ -2143,7 +2188,7 @@ sub exists_in_other_dist {
     return 0;
 }
 
-sub open_other_db {
+sub open_other_db ($) {
     my $dist = shift;
 
     if (!tied(%{$otherdb{$dist}})) {
@@ -2159,7 +2204,7 @@ sub open_other_db {
     return 1;
 }
 
-sub log_ta {
+sub log_ta ($$;$) {
     my $pkg = shift;
     my $action = shift;
     my $dist = shift;
@@ -2196,7 +2241,7 @@ sub log_ta {
 }
 
 
-sub dist_cmp {
+sub dist_cmp ($$) {
     my $d1 = shift;
     my $d2 = shift;
 
@@ -2205,7 +2250,7 @@ sub dist_cmp {
 
 
 
-sub send_mail {
+sub send_mail ($$$) {
     my $to = shift;
     my $subject = shift;
     my $text = shift;
@@ -2230,13 +2275,13 @@ sub send_mail {
     close( PIPE );
 }
 
-sub db_filename {
+sub db_filename ($) {
     my $dist = shift;
     return "$conf::basedir/$conf::dbbase-$dist";
 }
 
 # for parsing input to dep-wait
-sub parse_deplist {
+sub parse_deplist ($$) {
     my $deps = shift;
     my $verify = shift;
     my %result;
@@ -2260,7 +2305,7 @@ sub parse_deplist {
 }
 
 # for parsing Build-Depends from Sources
-sub parse_srcdeplist {
+sub parse_srcdeplist ($$$) {
     my $pkg = shift;
     my $deps = shift;
     my $arch = shift;
@@ -2312,7 +2357,7 @@ sub parse_srcdeplist {
     return \@results;
 }
 
-sub build_deplist {
+sub build_deplist ($) {
     my $list = shift;
     my($key, $result);
 
@@ -2325,7 +2370,7 @@ sub build_deplist {
     return $result;
 }
 
-sub clean_db {
+sub clean_db () {
     my %new_db;
     tie %new_db, 'MLDBM', db_filename( $distribution ) . ".new", GDBM_WRCREAT, 0664
 	or die "FATAL: Cannot create new database\n";
@@ -2339,7 +2384,7 @@ sub clean_db {
 }
 
 
-sub set_dep_wait {
+sub set_dep_wait ($$) {
     my $bd = shift;
     my $pkgs = shift;
     my $key;
@@ -2359,7 +2404,7 @@ sub set_dep_wait {
 		    if (!version_compare( $pkgs->{$dep->{'Package'}}, $dep->{'Rel'}, $dep->{'Version'} )) {
 			if (version_compare( $dep->{'Version'}, ">>", $pkgs->{$dep->{'Package'}} )) {
 			    $change++;
-			    my $deplist = parse_deplist( $pkg->{'Depends'} );
+			    my $deplist = parse_deplist( $pkg->{'Depends'}, 0 );
 			    $deplist->{$dep->{'Package'}} = $dep;
 			    $pkg->{'Depends'} = build_deplist($deplist);
 			}
@@ -2376,7 +2421,7 @@ sub set_dep_wait {
     }
 }
 
-sub usage {
+sub usage () {
     my $prgname;
     ($prgname = $0) =~ s,^.*/,,;
     print <<"EOF";
@@ -2425,7 +2470,7 @@ EOF
     exit 1;
 }
 
-sub pkg_version_eq {
+sub pkg_version_eq ($$) {
     my $pkg = shift;
     my $version = shift;
 
