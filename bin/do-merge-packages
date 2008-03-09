@@ -25,6 +25,8 @@ use WannaBuild::Conf;
 
 package main;
 
+sub cleanup ($);
+
 use strict;
 use vars qw($HOME $tmpdir $arch @dists $locked);
 
@@ -149,7 +151,7 @@ system "buildd-addpkg", "--clean"
 
 exit( 0 );
 
-sub cleanup {
+sub cleanup ($) {
     system "wanna-build", "--remove-maintenance-lock" if $locked;
     system "rm -rf $tmpdir" if $tmpdir;
 }
