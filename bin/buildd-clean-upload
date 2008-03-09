@@ -25,7 +25,12 @@ BEGIN {
 }
 
 use strict;
+use warnings;
 use vars qw($debianroot @dists @components $verbose);
+
+sub in_archive ($);
+sub get_files_from_changes ($);
+sub split_debname ($);
 
 $debianroot = "/pub/Linux/debian";
 @dists = qw(unstable);
@@ -73,7 +78,7 @@ foreach $job (@jobs) {
 }
 
 
-sub in_archive {
+sub in_archive ($) {
     my $fn = shift;
     my ($p, $v, $a) = split_debname($fn);
     my $afn = "${p}_${v}.deb";
@@ -88,7 +93,7 @@ sub in_archive {
     return 0;
 }
 
-sub get_files_from_changes {
+sub get_files_from_changes ($) {
     my $changes_text = shift;
     my(@filelines, @files);
 
@@ -100,7 +105,7 @@ sub get_files_from_changes {
     return @files;
 }
 
-sub split_debname {
+sub split_debname ($) {
     my $pkgv = shift;
 
     if ($pkgv !~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.~+-]+)(_([a-zA-Z\d-]+))?\.deb$/) {
