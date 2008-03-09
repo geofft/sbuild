@@ -31,6 +31,10 @@ use Buildd;
 use Buildd::Conf;
 $ENV{'PATH'} = "$main::HOME/bin:/usr/local/bin:/usr/bin:/bin";
 
+sub uploaded ($@);
+sub upload ($$);
+sub do_dupload ($@);
+
 unset_env();
 
 if ($conf::sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
@@ -67,7 +71,7 @@ foreach my $dist (keys %uploaded_pkgs) {
 
 exit 0;
 
-sub uploaded {
+sub uploaded ($@) {
     my $pkg = shift;
     my @propagated_pkgs = ();
     foreach my $dist (@_) {
@@ -111,7 +115,7 @@ sub uploaded {
     }
 }
 
-sub upload {
+sub upload ($$) {
     my $udir = shift;
     my $upload_to = shift;
 
@@ -199,7 +203,7 @@ sub upload {
     write_stats( "uploads", scalar(@before) - scalar(@after) );
 }
 
-sub do_dupload {
+sub do_dupload ($@) {
     my $upload_to = shift;
     my @jobs = @_;
     my @log;
