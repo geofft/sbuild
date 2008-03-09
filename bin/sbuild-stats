@@ -32,6 +32,9 @@ use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 
 package main;
 
+sub align ($);
+sub sortfunc ();
+
 $Sbuild::Conf::cwd = "/";
 
 my $db = "unspec";
@@ -173,7 +176,7 @@ untie %db;
 
 exit 0;
 
-sub align {
+sub align ($) {
     my $str = shift;
 
     $str .= ":";
@@ -184,7 +187,7 @@ sub align {
     return $str;
 }
 
-sub sortfunc {
+sub sortfunc () {
     if ($topmode) {
 	my $tima = (split( /\s+/, $db{$a} ))[0];
 	my $timb = (split( /\s+/, $db{$b} ))[0];

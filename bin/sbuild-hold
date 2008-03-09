@@ -25,7 +25,9 @@ use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
-sub usage {
+sub usage ();
+
+sub usage () {
     print STDERR "Usage: $0 <chroot> package [package ...]\n";
     exit 1;
 }

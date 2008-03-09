@@ -24,7 +24,9 @@ use Sbuild::Utility qw(setup cleanup);
 
 package main;
 
-sub usage {
+sub usage ();
+
+sub usage () {
     print STDERR "Usage: $0 <chroot> apt-get|apt-cache args\n";
     exit 1;
 }
