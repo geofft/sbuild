@@ -25,6 +25,10 @@ use POSIX;
     or die "HOME not defined in environment!\n";
 $logpath = "$main::HOME/logs";
 
+sub read_progress ();
+sub newest_log ($);
+sub tail ($);
+
 while( 1 ) {
 
     my $curr_pkg = read_progress();
@@ -41,7 +45,7 @@ while( 1 ) {
     tail( $logf );
 }
 
-sub read_progress {
+sub read_progress () {
     my $f = "$main::HOME/build/build-progress";
     my $p = "";
 
@@ -53,7 +57,7 @@ sub read_progress {
     return $p;
 }
 
-sub newest_log {
+sub newest_log ($) {
     my $pattern = shift;
 
     my @f = glob( $pattern );
@@ -72,7 +76,7 @@ sub newest_log {
     return $f;
 }
 
-sub tail {
+sub tail ($) {
     my $f = shift;
 
     my @s = stat( $f );
