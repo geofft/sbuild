@@ -31,7 +31,16 @@ use Buildd::Conf;
 use POSIX qw(ESRCH LONG_MAX);
 use Cwd;
 
-sub ST_MTIME() { 9 }
+sub ST_MTIME () { 9 }
+sub archive_logs ($$$$);
+sub make_statistics ($$);
+sub print_time ($);
+sub print_graph ($$$);
+sub format_time ($);
+sub format_date ($);
+
+sub ST_MTIME () { 9 }
+
 $ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 my $fudge = 1/24/6; # 10 minutes in units of a day
 my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
@@ -266,7 +275,7 @@ if ($restart) {
 exit 0;
 
 
-sub archive_logs {
+sub archive_logs ($$$$) {
     my $dir = shift;
     my $pattern = shift;
     my $destpat = shift;
@@ -328,7 +337,7 @@ BEGIN {
 	  "idle-time-percent"	=> 1 );
 }
 
-sub make_statistics {
+sub make_statistics ($$) {
     my $start_time = shift;
     my $end_time = shift;
     my @svars = qw(taken builds uploads	failed dep-wait no-build give-back
@@ -445,7 +454,7 @@ sub make_statistics {
 	close( OUT );
 }
 
-sub print_time {
+sub print_time ($) {
     my $t = shift;
     my $str = sprintf "%02d:%02d:%02d", int($t/3600), int(($t%3600)/60),
     int($t%60);
@@ -453,7 +462,7 @@ sub print_time {
     return $str;
 }
 
-sub print_graph {
+sub print_graph ($$$) {
     my $val = shift;
     my $date = shift;
     my $graph = shift;
@@ -476,7 +485,7 @@ sub print_graph {
     close( G );
 }
 
-sub format_time {
+sub format_time ($) {
     my $t = shift;
     my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = localtime($t);
 
@@ -484,7 +493,7 @@ sub format_time {
     $year+1900, $mon+1, $mday, $hour, $min;
 }
 
-sub format_date {
+sub format_date ($) {
     my $t = shift;
     my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) = localtime($t);
 
