@@ -602,32 +602,13 @@ sub build ($$) {
 	if (-d $tmpunpackdir) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
-	$main::sub_pid = open( PIPE, "-|" );
-	if (!defined $main::sub_pid) {
-	    print PLOG "Can't spawn dpkg-source: $!\n";
-	    return 0;
-	}
-	if ($main::sub_pid == 0) {
-	    exec_command("$conf::dpkg_source -sn -x $dsc 2>&1", $main::username, 1, 0);
-	}
+	$dir = "$dsc";
+	$dir =~ s/\.dsc$//;
 	$main::sub_task = "dpkg-source";
-
-	while( <PIPE> ) {
-	    print PLOG $_;
-	    $dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
-	    $main::pkg_fail_stage = "unpack-check"
-		if /^dpkg-source: error: file.*instead of expected/;
-	}
-	close( PIPE );
-	undef $main::sub_pid;
+	run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $main::username, 1, 0);
 	if ($?) {
 	    print PLOG "FAILED [dpkg-source died]\n";
 
-	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
-	    return 0;
-	}
-	if (!$dir) {
-	    print PLOG "Couldn't find directory of $dsc in dpkg-source output\n";
 	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 	    return 0;
 	}

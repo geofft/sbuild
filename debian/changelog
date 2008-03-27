@@ -11,8 +11,9 @@ sbuild (0.57.1-1) unstable; urgency=low
   * debian/schroot.install: use /usr/share in place of /usr/lib
     (Closes: #458779).
   * debian/wanna-build.install: New file: files for wanna-build.
+  * sbuild: Don't parse output of dpkg-source (Closes: #471747).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Jan 2008 21:12:55 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu, 27 Mar 2008 20:42:56 +0000
 
 sbuild (0.57.0-1) unstable; urgency=low
 
