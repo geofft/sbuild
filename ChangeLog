@@ -1,5 +1,10 @@
 2008-03-27  Roger Leigh  <rleigh@debian.org>
 
+	* Version 0.57.1.
+
+
+2008-03-27  Roger Leigh  <rleigh@debian.org>
+
 	* bin/sbuild (build): Don't parse output of dpkg-source.  Specify
 	the build directory explicity.
 
