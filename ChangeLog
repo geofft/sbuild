@@ -5,6 +5,15 @@
 	(verify_md5sums): Remove.  The verification is already done by
 	dpkg-source.
 
+2008-03-27  Roger Leigh  <rleigh@debian.org>
+
+	* Version 0.57.1.
+
+2008-03-27  Roger Leigh  <rleigh@debian.org>
+
+	* bin/sbuild (build): Don't parse output of dpkg-source.  Specify
+	the build directory explicity.
+
 2008-03-08  Roger Leigh  <rleigh@debian.org>
 
 	* bin/sbuild: Pass date to open_pkg_log.  Pass current job and
