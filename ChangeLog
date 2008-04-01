@@ -1,3 +1,10 @@
+2008-04-01  Roger Leigh  <rleigh@debian.org>
+
+	* bin/sbuild
+	(fetch_source_files): Remove use of verify_md5sums.
+	(verify_md5sums): Remove.  The verification is already done by
+	dpkg-source.
+
 2008-03-08  Roger Leigh  <rleigh@debian.org>
 
 	* bin/sbuild: Pass date to open_pkg_log.  Pass current job and
