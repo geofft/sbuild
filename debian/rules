@@ -65,6 +65,7 @@ binary-indep: build install
 	dh_installman
 #	ln -s avg-pkg-build-time.1.gz debian/sbuild/usr/share/man/man1/avg-pkg-build-space.1.gz
 	dh_installchangelogs
+	dh_link
 	dh_compress
 # -Xbuildd.chroot -XREADME-buildd.chroot
 	dh_fixperms

@@ -1,6 +1,7 @@
 sbuild (0.57.1-2) unstable; urgency=low
 
   * debian/copyright: Update copyright holders and copyright information.
+  * debian/rules: Run dh_link in binary-indep target to correct symlinks.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 05 Apr 2008 14:34:34 +0100
 
