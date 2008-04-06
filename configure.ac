@@ -257,7 +257,8 @@ AC_CONFIG_FILES([man/sbuild-setup.7])
 AC_CONFIG_FILES([man/sbuild-shell.1])
 AC_CONFIG_FILES([man/sbuild-stats.1])
 AC_CONFIG_FILES([man/sbuild-update.1])
-AC_CONFIG_FILES([man/sbuild-upgrade.1])
+AC_CONFIG_FILES([man/wanna-build.1])
+AC_CONFIG_FILES([man/sbuild.1])
 AC_CONFIG_FILES([src/Makefile])
 
 dnl Output the generated config.status script.

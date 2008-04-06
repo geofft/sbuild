@@ -1,3 +1,14 @@
+2008-04-06  Roger Leigh  <rleigh@debian.org>
+
+	* man/Makefile.am (man_MANS): Install wanna-build.1.
+
+	* configure.ac: Generate man/wanna-build.1.
+
+	* man/wanna-build.1.in: New manual page, replacing README.buildd,
+	README.failcat and README.overview, which have been removed.
+
+	* main/sbuild.1.in: Update configuration file description.
+
 2008-04-01  Roger Leigh  <rleigh@debian.org>
 
 	* bin/sbuild

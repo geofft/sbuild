@@ -1,7 +1,7 @@
 # sbuild Makefile template
 #
 #
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2008  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -33,7 +33,8 @@ man_MANS = \
 	sbuild-shell.1		\
 	sbuild-stats.1		\
 	sbuild-update.1		\
-	sbuild-upgrade.1
+	sbuild-upgrade.1	\
+	wanna-build.1
 
 install-data-hook:
 	ln -sf sbuild-stats.1 $(DESTDIR)$(man1dir)/avg-pkg-build-time.1
