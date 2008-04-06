@@ -147,21 +147,26 @@ AH_TEMPLATE(PACKAGE_LIBEXEC_DIR, [Package libexec directory])
 if test "x${libexecdir}" = 'x${exec_prefix}/libexec'; then
   if test "x${exec_prefix}" = "xNONE"; then
     if test "x${prefix}" = "xNONE"; then
-      PACKAGE_LIBEXEC_DIR="${ac_default_prefix}/libexec/${PACKAGE}"
+      PACKAGE_LIBEXEC_DIR="${ac_default_prefix}/libexec"
     else
-      PACKAGE_LIBEXEC_DIR="${prefix}/libexec/${PACKAGE}"
+      PACKAGE_LIBEXEC_DIR="${prefix}/libexec"
     fi
   else
-    PACKAGE_LIBEXEC_DIR="${exec_prefix}/libexec/${PACKAGE}"
+    PACKAGE_LIBEXEC_DIR="${exec_prefix}/libexec"
   fi
 else
-  PACKAGE_LIBEXEC_DIR="${libexecdir}/${PACKAGE}"
+  PACKAGE_LIBEXEC_DIR="${libexecdir}"
 fi
 
-SBUILD_LIBEXEC_DIR="${PACKAGE_LIBEXEC_DIR}"
+SBUILD_LIBEXEC_DIR="${PACKAGE_LIBEXEC_DIR}/sbuild"
 AC_SUBST(SBUILD_LIBEXEC_DIR)
 AH_TEMPLATE(SBUILD_LIBEXEC_DIR, [Package libexec directory])
 AC_DEFINE_UNQUOTED(SBUILD_LIBEXEC_DIR, ["$SBUILD_LIBEXEC_DIR"])
+
+WANNABUILD_LIBEXEC_DIR="${PACKAGE_LIBEXEC_DIR}/wanna-build"
+AC_SUBST(WANNABUILD_LIBEXEC_DIR)
+AH_TEMPLATE(WANNABUILD_LIBEXEC_DIR, [Package libexec directory])
+AC_DEFINE_UNQUOTED(WANNABUILD_LIBEXEC_DIR, ["$WANNABUILD_LIBEXEC_DIR"])
 
 dnl Set PACKAGE_LOCALSTATE_DIR in config.h.
 AH_TEMPLATE(PACKAGE_LOCALSTATE_DIR, [Package localstate directory])
