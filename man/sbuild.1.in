@@ -67,7 +67,7 @@ build in the base install which is not what you want.  When using schroot,
 these requirements do not apply; the chroot having the name (or alias) of the
 specified distribution will be used; schroot uses a chroot named
 \fI$distribution\-$arch-sbuild\fP, \fI$distribution\-sbuild\fP,
-\fI$distribution\-arch\fP or \fI$distribution\fP, in that order of preference.
+\fI$distribution\-$arch\fP or \fI$distribution\fP, in that order of preference.
 .SH OPTIONS
 .TP
 .IR \-a , "\-\-add\-depends=<dependency-line>"

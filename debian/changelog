@@ -1,8 +1,10 @@
-sbuild (0.57.1-2) unstable; urgency=low
+sbuild (0.57.2-1) unstable; urgency=low
 
   * debian/copyright: Update copyright holders and copyright information.
   * debian/rules: Run dh_link in binary-indep target to correct symlinks.
   * debian/wanna-build.install: Install manual pages.
+  * man/sbuild.1.in: Add missing character, thanks to LI Daobing
+    (Closes: #474487).
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 05 Apr 2008 14:34:34 +0100
 
