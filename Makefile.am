@@ -23,11 +23,16 @@ include $(top_srcdir)/scripts/global.mk
 
 SUBDIRS = bin configs etc lib man src
 
-# Remove junk from the generated tarball.
 dist-hook:
+# Remove junk from the generated tarball.
 	$(FIND) $(distdir) -name '.*' -print | $(XARGS) xargs $(RM) -rf
 	$(FIND) $(distdir) -name '#*' -print | $(XARGS) $(RM) -rf
 	$(FIND) $(distdir) -name '*~' -print | $(XARGS) $(RM) -rf
+
+# Generate ChangeLog
+	if [ -d .git ]; then			\
+	  git log > $(distdir)/ChangeLog;	\
+	fi
 
 EXTRA_DIST =				\
 	bootstrap			\

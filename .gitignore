@@ -7,6 +7,7 @@ debian/sbuild.substvars
 *-stamp
 Makefile
 Makefile.in
+ChangeLog
 config.h
 config.h.in
 config.log
