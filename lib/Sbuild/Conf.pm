@@ -36,8 +36,8 @@ BEGIN {
     @EXPORT = qw($HOME %alternatives $apt_policy $apt_update
 		 $check_watches $cwd $username $verbose $nolog
 		 $mailprog $dpkg $su $schroot $schroot_options
-		 $fakeroot $apt_get $apt_cache $dpkg_source $md5sum
-		 $avg_time_db $avg_space_db $package_checklist
+		 $fakeroot $apt_get $apt_cache $dpkg_source $dcmd
+		 $md5sum $avg_time_db $avg_space_db $package_checklist
 		 $build_env_cmnd $pgp_options $log_dir $mailto
 		 $mailfrom @no_auto_upgrade $check_depends_algorithm
 		 $purge_build_directory @toolchain_regex
@@ -69,6 +69,7 @@ our $fakeroot = "/usr/bin/fakeroot";
 our $apt_get = "/usr/bin/apt-get";
 our $apt_cache = "/usr/bin/apt-cache";
 our $dpkg_source = "/usr/bin/dpkg-source";
+our $dcmd = "/usr/bin/dcmd";
 our $md5sum = "/usr/bin/md5sum";
 our $avg_time_db = "/var/lib/sbuild/avg-build-times";
 our $avg_space_db = "/var/lib/sbuild/avg-build-space";
