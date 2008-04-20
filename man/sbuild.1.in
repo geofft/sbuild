@@ -1,5 +1,6 @@
 .\" Copyright © 1998       James Troup <james@nocrew.org>
-.\" Copyright © 2005-2006  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2008       Simon McVittie <smcv@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by

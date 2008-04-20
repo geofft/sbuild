@@ -25,3 +25,6 @@ Log.pm: Log functions should be generic (writeout of sbuild version/build info
 and symlink creation should be customisable).
 
 */Conf.pm need to be classes.
+
+Chroot.pm: Move chroot naming out of begin_session.
+
