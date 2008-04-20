@@ -3,7 +3,8 @@
 # sbuild: build packages, obeying source dependencies
 # Copyright © 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2007 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org
+# Copyright © 2008      Timothy G Abbott <tabbott@mit.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -191,6 +192,7 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "binNMU=i" => \$main::binNMUver,
 		       "database=s" => \$main::database,
 		       "D|debug+" => \$conf::debug,
+		       "apt-update" => \$conf::apt_update,
 		       "d|dist=s" => sub {
 			   $main::distribution = $_[1];
 			   $main::distribution = "oldstable"
@@ -337,6 +339,22 @@ foreach $dscfile (@ARGV) {
 
     $main::arch = chroot_arch();
 
+    # Update APT cache.
+    if ($conf::apt_update) {
+	if (!open(PIPE, Sbuild::Chroot::get_apt_command("$conf::apt_get", "-q update", "root", 1) . " 2>&1 |")) {
+	    print PLOG "Can't open pipe to apt-get: $!\n";
+	    return 0;
+	}
+	while(<PIPE>) {
+	    print PLOG $_;
+	}
+	close(PIPE);
+	if ($?) {
+	    print PLOG "apt-get update failed\n" ;
+	    $main::pkg_status = "skipped";
+	    goto cleanup_close;
+	}
+    }
 
     $main::pkg_fail_stage = "fetch-src";
     my @files_to_rm = fetch_source_files( \$dscfile,
@@ -433,7 +451,7 @@ sub fetch_source_files ($$$$$) {
 	}
     } else {
 	my %entries = ();
-	my $retried = 0;
+	my $retried = $conf::apt_update;
       retry:
 	print PLOG "Checking available source versions...\n";
 	my $command = get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);

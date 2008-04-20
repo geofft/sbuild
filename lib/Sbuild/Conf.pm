@@ -33,19 +33,20 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME %alternatives $apt_policy $check_watches $cwd
-		 $username $verbose $nolog $mailprog $dpkg $su
-		 $schroot $schroot_options $fakeroot $apt_get
-		 $apt_cache $dpkg_source $md5sum $avg_time_db
-		 $avg_space_db $package_checklist $build_env_cmnd
-		 $pgp_options $log_dir $mailto $mailfrom
-		 @no_auto_upgrade $check_depends_algorithm
+    @EXPORT = qw($HOME %alternatives $apt_policy $apt_update
+		 $check_watches $cwd $username $verbose $nolog
+		 $mailprog $dpkg $su $schroot $schroot_options
+		 $fakeroot $apt_get $apt_cache $dpkg_source $md5sum
+		 $avg_time_db $avg_space_db $package_checklist
+		 $build_env_cmnd $pgp_options $log_dir $mailto
+		 $mailfrom @no_auto_upgrade $check_depends_algorithm
 		 $purge_build_directory @toolchain_regex
 		 $stalled_pkg_timeout $srcdep_lock_dir
 		 $srcdep_lock_wait @ignore_watches_no_build_deps
 		 $build_dir $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
-		 $maintainer_name $uploader_name %watches $key_id); }
+		 $maintainer_name $uploader_name %watches $key_id);
+}
 
 # Originally from the main namespace.
 (our $HOME = $ENV{'HOME'})
@@ -100,6 +101,7 @@ our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X
 our $maintainer_name;
 our $uploader_name;
 our $key_id;
+our $apt_update = 0;
 our %alternatives = ("info-browser"		=> "info",
 		     "httpd"			=> "apache",
 		     "postscript-viewer"	=> "ghostview",

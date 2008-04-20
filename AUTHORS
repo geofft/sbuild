@@ -16,3 +16,7 @@ Roger Leigh		<rleigh@debian.org>
 Ryan Murray		<rmurray@debian.org>
      	modifications for security building
 	maintenance
+
+Timothy G Abbott	<tabbott@mit.edu>
+	support for running "apt-get update" in chroots prior to
+	fetching sources and building

@@ -111,6 +111,9 @@ is a line of source dependencies in the same format as in
 .IR \-D , "\-\-debug"
 Enable debug output.
 .TP
+.IR "\-\-apt\-update"
+Run apt-get update in the chroot before executing the build.
+.TP
 .IR \-m , "\-\-maintainer=<maintainer>"
 Passed to dpkg\-genchanges and is used to set the Maintainer: field in
 the .changes file(s).
