@@ -4,7 +4,7 @@ sbuild for Debian
 setup
 =====
 
-  The full procedure for setting up a chroot and setting up a user is
+  The full procedure for setting up a chroot and setting up users is
   documented in sbuild-setup(7).  Existing users may need to review
   their setup, due to the removal of sudo support. (User setup, part 4).
 
@@ -12,22 +12,26 @@ setup
 chroots
 =======
 
-  If you don't have an existing chroot, README-buildd.chroot
-  describes how to set one up and season it for a user.
+  If you don't have an existing chroot, sbuild-createchroot(8)
+  describes how to set one up.
 
 
 helper scripts
 ==============
 
-  /usr/share/sbuild/README.bins describes the helper shell scripts
-  that are in /usr/share/sbuild.
+See sbuild-abort(1), sbuild-apt(1), sbuild-checkpackages(1),
+sbuild-hold(1), sbuild-stats(1), sbuild-update(1), and
+sbuild-upgrade(1).  These scripts were previously found in
+/usr/share/sbuild, which now contains symbolic links to the new
+scripts in /usr/bin.  The symbolic links will be removed following the
+release of Lenny.
 
 
 extras
 ======
 
-  avg-build-times and avg-build-space
-  -----------------------------------
+  sbuild-stats
+  ------------
   sbuild will keep databases of the time and space that builds
   require if a couple files exist:
 
@@ -35,8 +39,8 @@ extras
     chmod 664 /var/lib/sbuild/avg-build-{times,space}
     chgrp sbuild /var/lib/sbuild/avg-build-{times,space}
 
-  These have limited usefulness outside buildd context....  See
-  the avg-pkg-build-time man page for more info.
+  These have limited usefulness outside buildd context.  See
+  the sbuild-stats(1) man page for more info.
 
   src-deps
   --------
@@ -51,4 +55,4 @@ chroot must be named "sbuild-unstable" or "unstable" (in order of
 preference).
 
 
- -- Roger Leigh <rleigh@debian.org>, Thu, 29 Mar 2007 13:17:25 +0100
+ -- Roger Leigh <rleigh@debian.org>, Sun, 20 Apr 2008 11:46:20 +0100
