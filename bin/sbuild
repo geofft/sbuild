@@ -125,6 +125,7 @@ check_group_membership();
 umask(022);
 
 $main::distribution = "unstable";
+undef $main::chroot;
 
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
 $main::user_arch = "";
@@ -190,6 +191,7 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 			   $main::binNMUver ||= 1;
 		       },
 		       "binNMU=i" => \$main::binNMUver,
+		       "c|chroot=s" => \$main::chroot,
 		       "database=s" => \$main::database,
 		       "D|debug+" => \$conf::debug,
 		       "apt-update" => \$conf::apt_update,
@@ -235,6 +237,8 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 
 print "Selected distribution $main::distribution\n"
     if $conf::debug;
+print "Selected chroot $main::chroot\n"
+    if $conf::debug and defined $main::chroot;
 print "Selected architecture $main::user_arch\n"
     if $conf::debug;
 
@@ -327,7 +331,7 @@ foreach $dscfile (@ARGV) {
 	goto cleanup_close;
     }
 
-    if (!begin_session($main::distribution, $main::user_arch)) {
+    if (!begin_session($main::distribution, $main::chroot, $main::user_arch)) {
 	print PLOG "Skipping $pkg\n";
 	$main::pkg_status = "skipped";
 	goto cleanup_close;

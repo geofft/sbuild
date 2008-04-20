@@ -48,7 +48,7 @@ our $current;
 sub _get_schroot_info ($);
 sub init ();
 sub _setup_options ($);
-sub begin_session ($$);
+sub begin_session ($$$);
 sub end_session ();
 sub strip_chroot_path ($);
 sub log_command ($$);
@@ -167,26 +167,31 @@ sub _setup_options ($) {
     }
 }
 
-sub begin_session ($$) {
+sub begin_session ($$$) {
     my $distribution = shift;
+    my $chroot = shift;
     my $arch = shift;
 
     $arch = "" if !defined($arch);
 
     my $arch_found = 0;
 
-    if ($arch ne "" &&
-	defined($chroots{"${distribution}-${arch}-sbuild"})) {
-	$distribution = "${distribution}-${arch}-sbuild";
-	$arch_found = 1;
-    }
-    elsif (defined($chroots{"${distribution}-sbuild"})) {
-	$distribution = "${distribution}-sbuild";
-    }
-    elsif ($arch ne "" &&
-	   defined($chroots{"${distribution}-${arch}"})) {
-	$distribution = "${distribution}-${arch}";
-	$arch_found = 1;
+    if (!defined $chroot) {
+        if ($arch ne "" &&
+            defined($chroots{"${distribution}-${arch}-sbuild"})) {
+            $chroot = "${distribution}-${arch}-sbuild";
+            $arch_found = 1;
+        }
+        elsif (defined($chroots{"${distribution}-sbuild"})) {
+            $chroot = "${distribution}-sbuild";
+        }
+        elsif ($arch ne "" &&
+               defined($chroots{"${distribution}-${arch}"})) {
+            $chroot = "${distribution}-${arch}";
+            $arch_found = 1;
+        } elsif (defined($chroots{$distribution})) {
+            $chroot = $distribution;
+	}
     }
 
     if (!$arch_found && $arch ne "") {
@@ -194,19 +199,24 @@ sub begin_session ($$) {
 	return 0;
     }
 
-    $schroot_session=`$Sbuild::Conf::schroot -c $distribution --begin-session`;
+    if (!$chroot) {
+	print STDERR "Chroot for distribution $distribution, architecture $arch not found\n";
+	return 0;
+    }
+
+    $schroot_session=`$Sbuild::Conf::schroot -c $chroot --begin-session`;
     chomp($schroot_session);
     if ($?) {
 	print STDERR "Chroot setup failed\n";
 
-	if (-d "chroot-$distribution" || -l "chroot-$distribution") {
-	    print STDERR "\nFound obsolete chroot: ${Sbuild::Conf::build_dir}/chroot-$distribution\n";
+	if (-d "chroot-$chroot" || -l "chroot-$chroot") {
+	    print STDERR "\nFound obsolete chroot: ${Sbuild::Conf::build_dir}/chroot-$chroot\n";
 	    print STDERR "Chroot access via sudo has been replaced with schroot chroot management.\n";
 	    print STDERR "To upgrade to schroot, add the following lines to /etc/schroot/schroot.conf:\n\n";
-	    print STDERR "[$distribution]\n";
+	    print STDERR "[$chroot]\n";
 	    print STDERR "type=directory\n";
 	    print STDERR "description=Debian $distribution autobuilder\n";
-	    print STDERR "location=${Sbuild::Conf::build_dir}/chroot-$distribution\n";
+	    print STDERR "location=${Sbuild::Conf::build_dir}/chroot-$chroot\n";
 	    print STDERR "priority=3\n";
 	    print STDERR "groups=root,sbuild\n";
 	    print STDERR "root-groups=root,sbuild\n";
@@ -217,7 +227,7 @@ sub begin_session ($$) {
 	}
 	return 0;
     }
-    print STDERR "Setting up chroot $distribution (session id $schroot_session)\n"
+    print STDERR "Setting up chroot $chroot (session id $schroot_session)\n"
 	if $Sbuild::Conf::debug;
     _get_schroot_info($schroot_session);
     _setup_options($schroot_session);

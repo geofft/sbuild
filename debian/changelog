@@ -11,6 +11,9 @@ sbuild (0.57.2-1) unstable; urgency=low
   * Add --apt-update option to sbuild to run "apt-get update" in the
     chroot prior to fetching sources and building (Closes: #472350).
     Thanks to Timothy G Abbott for this patch.
+  * Add --chroot option to specify a chroot separately from the
+    distribution name (Closes: #474160).  Thanks to Simon McVittie for
+    this patch.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 05 Apr 2008 14:34:34 +0100
 

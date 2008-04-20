@@ -64,8 +64,9 @@ remote one by specifying an explicit dpkg version.
 Note: \fBsbuild\fR must be run in the directory (\fI~/build\fP by default) with
 the chroot\-{stable,testing,unstable} symlink to the chroot or it will do the
 build in the base install which is not what you want.  When using schroot,
-these requirements do not apply; the chroot having the name (or alias) of the
-specified distribution will be used; schroot uses a chroot named
+these requirements do not apply. If the \-c or \-\-chroot option is used, the
+specified chroot will be used. Otherwise, the chroot having the name (or alias) 
+of the specified distribution will be used; schroot uses a chroot named
 \fI$distribution\-$arch-sbuild\fP, \fI$distribution\-sbuild\fP,
 \fI$distribution\-$arch\fP or \fI$distribution\fP, in that order of preference.
 .SH OPTIONS
@@ -91,6 +92,11 @@ instead of \-B.
 .IR \-b , "\-\-batch"
 Operate in batchmode, i.e. write a build-progress file during execution
 and files on shutdown to facilitate a clean restart.
+.TP
+.IR \-c , "\-\-chroot"
+Use the specified chroot. If not specified, the default is the first of
+\fI$distribution\-$arch\-sbuild\fP, \fI$distribution\-sbuild\fP,
+\fI$distribution\-$arch\fP or \fI$distribution\fP that exists.
 .TP
 .IR \-C , "\-\-check\-depends\-algorithm=<algorithm>"
 Selects the algorithm to check for build dependencies. The default algorithm

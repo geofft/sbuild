@@ -84,7 +84,7 @@ sub setup ($) {
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
-    if (!begin_session($chroot, $arch)) {
+    if (!begin_session($chroot, undef, $arch)) {
 	print STDERR "Error setting up $chroot chroot\n";
 	return 1;
     }
