@@ -87,7 +87,7 @@ sub unlock_file ($);
 sub shutdown ($);
 sub write_stats ($$);
 sub debian_files_list ($);
-sub dsc_md5sums ($);
+sub dsc_files ($);
 sub chroot_arch ();
 sub check_group_membership ();
 sub open_build_log ($$$);
@@ -442,11 +442,10 @@ sub fetch_source_files ($$$$$) {
 	return 0;
     }
 
-    my $md5sums = dsc_md5sums("${dir}/${dscbase}");
     if (-f "${dir}/${dscbase}" && !$download) {
 	print PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
-	my @cwd_files = ("${dir}/${dscbase}");
-	push @cwd_files, keys %$md5sums;
+#	my @cwd_files = ("${dir}/${dscbase}");
+	my @cwd_files = dsc_files("${dir}/${dscbase}");
 	foreach (@cwd_files) {
 	    if (system ("cp '$_' '$main::chroot_build_dir'")) {
 		print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
@@ -2613,31 +2612,24 @@ sub debian_files_list ($) {
     return @list;
 }
 
-sub dsc_md5sums ($) {
+sub dsc_files ($) {
     my $dsc = shift;
-    my $dir = dirname($dsc);
-    $dir .= "/" if $dir !~ /\/$/;
-
-    my %dsc_md5 = (); # dsc MD5
+    my @files;
 
     print STDERR "Parsing $dsc\n" if $conf::debug;
 
-    if (-r $dsc && open( DSC, "<$dsc" )) {
+    if (-r $dsc && open( DSC, "$conf::dcmd $dsc|" )) {
 	while (<DSC>) {
 	    chomp;
-	    if (/^ [a-z0-9]{32}/) {
-		my @fields = split( /\s+/, $_ );
-		$dsc_md5{"$dir$fields[3]"} = $fields[1];
-
-		print STDERR "  $dir$fields[3]: $fields[1]\n" if $conf::debug;
-	    }
+	    push @files, $_;
+	    print STDERR "  $_\n" if $conf::debug;
 	}
 	close( DSC ) or print PLOG "Failed to close $dsc\n";
     } else {
 	print PLOG "Failed to open $dsc\n";
     }
 
-    return \%dsc_md5;
+    return @files;
 }
 
 # Figure out chroot architecture

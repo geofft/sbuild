@@ -21,8 +21,10 @@ sbuild (0.57.2-1) unstable; urgency=low
     #477655).  Thanks to Martin F Krafft.
   * lib/Sbuild/Conf.pm: Don't require $mailto to be set if not running in
     a buildd environment (Closes: #478045).  Thanks to Martin F Krafft.
+  * Use dcmd to parse dsc files, rather than hand-parsing.  This allows
+    support of the new dpkg source format.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Apr 2008 18:49:04 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Apr 2008 19:14:04 +0100
 
 sbuild (0.57.1-1) unstable; urgency=low
 
