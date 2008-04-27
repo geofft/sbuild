@@ -3,8 +3,9 @@ sbuild (0.57.2-1) unstable; urgency=low
   * debian/copyright: Update copyright holders and copyright information.
   * debian/rules: Run dh_link in binary-indep target to correct symlinks.
   * debian/wanna-build.install: Install manual pages.
-  * man/sbuild.1.in: Add missing character, thanks to LI Daobing
-    (Closes: #474487).
+  * man/sbuild.1.in:
+    - Add missing character, thanks to LI Daobing (Closes: #474487).
+    - Document --binNMU (Closes: #466927).
   * debian/README.Debian: Remove reference to README-buildd.chroot
     (Closes: #474030), thanks to Marc Fargas.  Update sbuild statistics
     information.

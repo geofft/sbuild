@@ -30,6 +30,7 @@ sbuild \- build debian packages from source
 [ \-\-purge=<mode>] [ \-s/\-\-source ] [ \-\-force\-orig\-source ]
 [ \-v/\-\-verbose ] [ \-q/\-\-quiet ]
 [ \-\-make\-binNMU=<entry> ]
+[ \-\-binNMU=<version> ]
 [ \-\-nolog ]
 package-to-build_x.y-z(.dsc) [ ... ]
 .SH VERSION
@@ -159,14 +160,18 @@ Be quiet.  This is the opposite of \-\-verbose.
 .IR "\-\-make\-binNMU=<entry>"
 With this option, \fBsbuild\fR will create a new changelog entry in
 debian/changelog of every package built. The version number will be in the
-format for binary-only NMUs (three dotted parts in the Debian revision); the
-maintainer is set to the maintainer name configured for \fBsbuild\fR. The
-\fIentry\fR parameter will be used as a changelog entry after a fixed one
-\[lq]Binary-only non-maintainer upload for ARCH -- no source
-changes\[rq]. Please note that the versions in the \fIpackage-to-build\fR
-arguments still have to be the unmodified (non-NMU ones) so that sources can be
-found. The version number in log files and mails will be modified by
-\fBsbuild\fR automatically.
+format for binary-only NMUs (see \-\-binNMU); the maintainer is set to the
+maintainer name configured for \fBsbuild\fR. The \fIentry\fR parameter will be
+used as a changelog entry after a fixed one \[lq]Binary-only non-maintainer
+upload for ARCH -- no source changes\[rq]. Please note that the versions in the
+\fIpackage-to-build\fR arguments still have to be the unmodified (non-NMU ones)
+so that sources can be found. The version number in log files and mails will be
+modified by \fBsbuild\fR automatically.
+.TP
+.IR "\-\-binNMU=<version>"
+The version number of the binary NMU.  This should be used in conjunction with
+\-\-make\-binNMU.  \fIversion\fP is a single number for the (+b\fIn\fR) format
+used for binary NMUs.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
 .IP "HOME"
