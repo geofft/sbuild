@@ -4,3 +4,4 @@ build
 install
 wanna-build
 *.substvars
+*.log
