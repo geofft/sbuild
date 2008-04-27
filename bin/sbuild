@@ -339,7 +339,7 @@ foreach $dscfile (@ARGV) {
 	goto cleanup_close;
     }
     $main::chroot_dir = $$Sbuild::Chroot::current{'Location'};
-    $main::chroot_build_dir = tempdir("$username-$pkgv-XXXXXX" , DIR => $$Sbuild::Chroot::current{'Build Location'});
+    $main::chroot_build_dir = tempdir("$username-$pkgv-$arch-XXXXXX" , DIR => $$Sbuild::Chroot::current{'Build Location'});
     # TODO: Don't hack the build location in; add a means to customise
     # the chroot directly.
     $Sbuild::Chroot::current->{'Build Location'} = $main::chroot_build_dir;

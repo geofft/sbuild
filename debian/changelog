@@ -23,8 +23,11 @@ sbuild (0.57.2-1) unstable; urgency=low
     a buildd environment (Closes: #478045).  Thanks to Martin F Krafft.
   * Use dcmd to parse dsc files, rather than hand-parsing.  This allows
     support of the new dpkg source format.
+  * All files used in a build are stored in
+    /build/username-package_version-arch-XXXXXX inside the chroot (Closes:
+    #478044).
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Apr 2008 19:14:04 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Apr 2008 21:22:19 +0100
 
 sbuild (0.57.1-1) unstable; urgency=low
 
