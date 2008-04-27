@@ -1,11 +1,31 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.57.1.  Please read these release notes carefully.
+Welcome to sbuild 0.57.2.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.57.2:
+
+  1) The new dpkg source format is now supported.
+
+  2) The chroot to build in may be specified independently of the
+     distribution.
+
+  3) Purging of files in the chroot has been made more reliable, by
+     putting all of the build files in a single temporary directory
+     which is purged after the build completes.
+
+  4) $mailto no longer needs setting in .sbuildrc if not running as a
+     buildd.
+
+  5) An option to always update the APT package list has been added
+     ($apt_update in sbuild.conf).
+
+  6) wanna-build, the database used to track which packages need
+     rebuilding, has been added as a separate package.
 
 * Major changes in 0.57.1:
 
