@@ -13,6 +13,7 @@ Architecture: all
 Depends: ${perl:Depends}, perl-modules, adduser, apt, exim4 | mail-transport-agent, dpkg-dev, dctrl-tools, schroot (>= 1.1.6)
 Recommends: fakeroot, debootstrap
 Suggests: wget, deborphan
+Replaces: schroot (<= 1.1.6-1)
 Description: Tool for building Debian binary packages from Debian sources
  sbuild is part of a suite of programs -- consisting of
  wanna-build, buildd and sbuild -- written by Roman Hodek and

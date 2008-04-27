@@ -30,6 +30,9 @@ builddsysconf_DATA = buildd.conf wanna-build.conf
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
+schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
+schrootsetup_DATA = 50sbuild
+
 EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
 	$(builddsysconf_DATA)	\

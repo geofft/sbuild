@@ -223,6 +223,24 @@ AC_SUBST([BUILDD_SYSCONF_DIR])
 BUILDD_CONF="${BUILDD_SYSCONF_DIR}/buildd.conf"
 AC_SUBST([BUILDD_CONF])
 
+dnl Set SCHROOT_SYSCONF_DIR in config.h.
+AH_TEMPLATE(SCHROOT_SYSCONF_DIR, [Package system configuration directory])
+if test "x${sysconfdir}" = 'x${prefix}/etc'; then
+  if test "x${prefix}" = "xNONE"; then
+    SCHROOT_SYSCONF_DIR="${ac_default_prefix}/etc"
+  else
+    SCHROOT_SYSCONF_DIR="${prefix}/etc"
+  fi
+else
+  SCHROOT_SYSCONF_DIR="${sysconfdir}"
+fi
+SCHROOT_SYSCONF_DIR="${SCHROOT_SYSCONF_DIR}/schroot"
+AC_DEFINE_UNQUOTED([SCHROOT_SYSCONF_DIR], ["$SCHROOT_SYSCONF_DIR"])
+AC_SUBST([SCHROOT_SYSCONF_DIR])
+
+SCHROOT_CONF="${SCHROOT_SYSCONF_DIR}/schroot.conf"
+AC_SUBST([SCHROOT_CONF])
+
 AH_TEMPLATE(BUILDD_CONF, [buildd config file path])
 AC_DEFINE_UNQUOTED(BUILDD_CONF, ["$BUILDD_CONF"])
 
