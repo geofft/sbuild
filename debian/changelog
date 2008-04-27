@@ -19,8 +19,10 @@ sbuild (0.57.2-1) unstable; urgency=low
     this patch.
   * debian/control: Depend on debhelper version 6 or greater (Closes:
     #477655).  Thanks to Martin F Krafft.
+  * lib/Sbuild/Conf.pm: Don't require $mailto to be set if not running in
+    a buildd environment (Closes: #478045).  Thanks to Martin F Krafft.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Apr 2008 18:20:38 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Apr 2008 18:49:04 +0100
 
 sbuild (0.57.1-1) unstable; urgency=low
 

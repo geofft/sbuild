@@ -154,7 +154,7 @@ sub init () {
     die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"
 	if ! -d $Sbuild::Conf::srcdep_lock_dir;
 
-    die "mailto not set\n" if !$Sbuild::Conf::mailto;
+    die "mailto not set\n" if !$Sbuild::Conf::mailto && $sbuild_mode eq "buildd";
 
     if (!defined($Sbuild::Conf::build_dir)) {
 	$Sbuild::Conf::build_dir = $Sbuild::Conf::cwd;
