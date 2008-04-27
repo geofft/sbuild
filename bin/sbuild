@@ -36,6 +36,7 @@ use GDBM_File;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(binNMU_version version_compare);
 use Data::Dumper;
+use File::Temp qw(tempdir);
 
 sub fetch_source_files ($$$$$);
 sub build ($$);
@@ -338,7 +339,10 @@ foreach $dscfile (@ARGV) {
 	goto cleanup_close;
     }
     $main::chroot_dir = $$Sbuild::Chroot::current{'Location'};
-    $main::chroot_build_dir = $$Sbuild::Chroot::current{'Build Location'};
+    $main::chroot_build_dir = tempdir("$username-$pkgv-XXXXXX" , DIR => $$Sbuild::Chroot::current{'Build Location'});
+    # TODO: Don't hack the build location in; add a means to customise
+    # the chroot directly.
+    $Sbuild::Chroot::current->{'Build Location'} = $main::chroot_build_dir;
     $main::srcdep_lock_dir = $$Sbuild::Chroot::current{'Srcdep Lock Dir'};
     $main::ilock_file = $$Sbuild::Chroot::current{'Install Lock'};
 
@@ -362,11 +366,9 @@ foreach $dscfile (@ARGV) {
     }
 
     $main::pkg_fail_stage = "fetch-src";
-    my @files_to_rm = fetch_source_files( \$dscfile,
-					  $dir, $pkg, $version, $download);
-    if (@files_to_rm && $files_to_rm[0] eq "ERROR") {
-	shift @files_to_rm;
-	goto cleanup_symlinks;
+    if (!fetch_source_files(\$dscfile,
+			    $dir, $pkg, $version, $download)) {
+	goto cleanup_close;
     }
 
     $main::pkg_fail_stage = "install-deps";
@@ -388,8 +390,6 @@ foreach $dscfile (@ARGV) {
 	uninstall_deps();
     }
     remove_srcdep_lock_file();
-  cleanup_symlinks:
-    remove_files( @files_to_rm );
   cleanup_close:
     analyze_fail_stage( $pkgv );
     write_jobs_file( $main::pkg_status );
@@ -424,7 +424,7 @@ sub fetch_source_files ($$$$$) {
     my $version = shift;
     my $download = shift;
 
-    my ($dscbase, $files, @other_files, $dscarchs, @made);
+    my ($dscbase, $files, @other_files, $dscarchs, @fetched);
 
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
     $dscbase = "${pkg}_${sversion}.dsc";
@@ -439,7 +439,7 @@ sub fetch_source_files ($$$$$) {
 
     if (!defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
 	print PLOG "Invalid source: $$dscfile_ref\n";
-	return ("ERROR");
+	return 0;
     }
 
     my $md5sums = dsc_md5sums("${dir}/${dscbase}");
@@ -450,9 +450,9 @@ sub fetch_source_files ($$$$$) {
 	foreach (@cwd_files) {
 	    if (system ("cp '$_' '$main::chroot_build_dir'")) {
 		print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
-		return ("ERROR", @made);
+		return 0;
 	    }
-	    push(@made, "${main::chroot_build_dir}/" . basename($_));
+	    push(@fetched, "${main::chroot_build_dir}/" . basename($_));
 	}
     } else {
 	my %entries = ();
@@ -463,7 +463,7 @@ sub fetch_source_files ($$$$$) {
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
 	if (!$pid) {
 	    print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
-	    return ("ERROR");
+	    return 0;
 	}
 	{
 	    local($/) = "";
@@ -486,7 +486,7 @@ sub fetch_source_files ($$$$$) {
 	    if (! scalar keys %entries) {
 		print PLOG "$conf::apt_cache returned no information about $pkg source\n";
 		print PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
-		return ("ERROR");
+		return 0;
 
 	    }
 	}
@@ -494,7 +494,7 @@ sub fetch_source_files ($$$$$) {
 	waitpid $pid, 0;
 	if ($?) {
 	    print PLOG "$conf::apt_cache failed\n";
-	    return ("ERROR");
+	    return 0;
 	}
 
 	if (!defined($entries{"$pkg $version"})) {
@@ -508,18 +508,18 @@ sub fetch_source_files ($$$$$) {
 	    print PLOG "(only different version(s) ",
 	    join( ", ", sort keys %entries), " found)\n"
 		if %entries;
-	    return( "ERROR" );
+	    return 0;
 	}
 
 	print PLOG "Fetching source files...\n";
 	foreach (@{$entries{"$pkg $version"}}) {
-	    push(@made, "$main::chroot_build_dir/$_");
+	    push(@fetched, "$main::chroot_build_dir/$_");
 	}
 
 	my $command2 = get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
 	if (!open( PIPE, "$command2 |" )) {
 	    print PLOG "Can't open pipe to $conf::apt_get: $!\n";
-	    return ("ERROR", @made);
+	    return 0;
 	}
 	while( <PIPE> ) {
 	    print PLOG $_;
@@ -527,16 +527,16 @@ sub fetch_source_files ($$$$$) {
 	close( PIPE );
 	if ($?) {
 	    print PLOG "$conf::apt_get for sources failed\n";
-	    return( "ERROR", @made );
+	    return 0;
 	}
 	# touch the downloaded files, otherwise buildd-watcher will
 	# complain that they're old :)
-	$$dscfile_ref = (grep { /\.dsc$/ } @made)[0];
+	$$dscfile_ref = (grep { /\.dsc$/ } @fetched)[0];
     }
 
     if (!open( F, "<${main::chroot_build_dir}/${dscbase}" )) {
 	print PLOG "Can't open ${main::chroot_build_dir}/${dscbase}: $!\n";
-	return( "ERROR", @made );
+	return 0;
     }
     my $dsctext;
     my $orig;
@@ -571,7 +571,7 @@ sub fetch_source_files ($$$$$) {
 	    print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
 		"skipping\n";
 	    $main::pkg_fail_stage = "arch-check";
-	    return( "ERROR", @made );
+	    return 0;
 	}
     }
     print "Arch check ok ($main::arch included in $dscarchs)\n"
@@ -582,7 +582,7 @@ sub fetch_source_files ($$$$$) {
     merge_pkg_build_deps( $pkg, $build_depends, $build_depends_indep,
 			  $build_conflicts, $build_conflicts_indep );
 
-    return @made;
+    return 1;
 }
 
 sub build ($$) {
@@ -690,9 +690,10 @@ sub build ($$) {
 	if ($free < 2*$current_usage) {
 	    print PLOG "Disk space is propably not enough for building.\n".
 		"(Source needs $current_usage KB, free are $free KB.)\n";
-	    print PLOG "Purging $dir\n";
+	    # TODO: Only purge in a single place.
+	    print PLOG "Purging $main::chroot_build_dir\n";
 	    chdir( $main::cwd );
-	    my $bdir = strip_chroot_path($dir);
+	    my $bdir = strip_chroot_path($main::chroot_build_dir);
 	    run_command("rm -rf '$bdir'", "root", 1, 0);
 	    return 0;
 	}
@@ -952,8 +953,8 @@ EOF
 
     if ($conf::purge_build_directory eq "always" ||
 	($conf::purge_build_directory eq "successful" && $rv == 0)) {
-	print PLOG "Purging $dir\n";
-	my $bdir = strip_chroot_path($dir);
+	print PLOG "Purging $main::chroot_build_dir\n";
+	my $bdir = strip_chroot_path($main::chroot_build_dir);
 	run_command("rm -rf '$bdir'", "root", 1, 0);
     }
 
@@ -993,15 +994,6 @@ sub analyze_fail_stage ($) {
 	}
     }
 }
-
-sub remove_files (@) {
-
-    foreach (@_) {
-	unlink $_;
-	print "Removed $_\n" if $conf::debug;
-    }
-}
-
 
 sub install_deps ($) {
     my $pkg = shift;
@@ -2567,6 +2559,12 @@ sub shutdown ($) {
 
     # close logs and send mails
     if ( $main::current_job ) {
+	if ($conf::purge_build_directory eq "always") {
+	    print PLOG "Purging $main::chroot_build_dir\n";
+	    my $bdir = strip_chroot_path($main::chroot_build_dir);
+	    run_command("rm -rf '$bdir'", "root", 1, 0);
+	}
+
 	fixup_pkgv( $main::current_job );
 	end_session();
 	close_build_log( $main::current_job, $main::distribution, $main::pkg_status,

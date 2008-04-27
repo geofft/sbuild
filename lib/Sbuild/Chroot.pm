@@ -140,7 +140,7 @@ sub _setup_options ($) {
     if (defined($chroots{$distribution}) &&
 	-d $chroots{"$distribution"}->{'Location'}) {
 	my $chroot_dir = $chroots{"$distribution"}->{'Location'};
-	$chroots{"$distribution"}->{'Build Location'} = "$chroot_dir/build/$Sbuild::Conf::username";
+	$chroots{"$distribution"}->{'Build Location'} = "$chroot_dir/build";
 	my $srcdep_lock_dir = "$chroot_dir/$Sbuild::Conf::srcdep_lock_dir";
 	$chroots{"$distribution"}->{'Srcdep Lock Dir'} = $srcdep_lock_dir;
 	$chroots{"$distribution"}->{'Install Lock'} = "$srcdep_lock_dir/install";
@@ -283,6 +283,7 @@ sub get_command_internal ($$$) {
 
     my $cmdline;
     if ($chroot != 0) { # Run command inside chroot
+	# TODO: Allow user to set build location
 	my $dir = strip_chroot_path($$current{'Build Location'});
 	$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c $schroot_session --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
