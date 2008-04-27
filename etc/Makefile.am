@@ -36,4 +36,5 @@ schrootsetup_DATA = 50sbuild
 EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
 	$(builddsysconf_DATA)	\
-	$(exampleconf_DATA)
+	$(exampleconf_DATA)	\
+	$(schrootsetup_DATA)
