@@ -107,7 +107,7 @@ alternative dependencies available. The second algorithm
 (\[oq]alternatives\[cq]) also tries to satisfy the build dependencies using
 these alternatives.
 .TP
-.IR \-d , "\-\-distribution=<distribution>"
+.IR \-d , "\-\-dist=<distribution>"
 Fetch source packages from specified distribution.
 .TP
 .IR \-f , "\-\-force\-depends=<dependency-line>"

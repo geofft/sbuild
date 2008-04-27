@@ -6,6 +6,8 @@ sbuild (0.57.2-1) unstable; urgency=low
   * man/sbuild.1.in:
     - Add missing character, thanks to LI Daobing (Closes: #474487).
     - Document --binNMU (Closes: #466927).
+    - --distribution should be --dist (Closes: #477693).  Thanks to Martin
+      F Krafft.
   * debian/README.Debian: Remove reference to README-buildd.chroot
     (Closes: #474030), thanks to Marc Fargas.  Update sbuild statistics
     information.
