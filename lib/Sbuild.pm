@@ -1,6 +1,7 @@
 #
 # Sbuild.pm: library for sbuild
 # Copyright © 2005 Ryan Murray <rmurray@debian.org>
+# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,10 +28,16 @@ use POSIX;
 use FileHandle;
 use Time::Local;
 
-require Exporter;
-@Sbuild::ISA = qw(Exporter);
-@Sbuild::EXPORT = qw(version_less version_lesseq version_eq
-		     version_compare binNMU_version parse_date isin);
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @Sbuild::ISA = qw(Exporter);
+
+    @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
+		         version_compare binNMU_version parse_date
+		         isin);
+}
 
 my $opt_correct_version_cmp;
 
