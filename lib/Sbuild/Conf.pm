@@ -48,6 +48,10 @@ BEGIN {
 		 $maintainer_name $uploader_name %watches $key_id);
 }
 
+INIT {
+    init();
+}
+
 # Originally from the main namespace.
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";

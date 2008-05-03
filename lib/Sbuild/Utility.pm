@@ -31,7 +31,6 @@ $ENV{'SHELL'} = "/bin/sh";
 # avoid intermixing of stdout and stderr
 $| = 1;
 
-Sbuild::Conf::init();
 $Sbuild::Conf::verbose++;
 Sbuild::Chroot::init();
 

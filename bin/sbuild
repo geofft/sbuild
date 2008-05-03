@@ -107,8 +107,6 @@ use Sbuild::Chroot qw(begin_session end_session strip_chroot_path
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($arch $hostname $version);
 
-Sbuild::Conf::init();
-
 $ENV{'LC_ALL'} = "POSIX";
 $ENV{'SHELL'} = "/bin/sh";
 
