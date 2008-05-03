@@ -1,3 +1,9 @@
+sbuild (0.57.3-1) unstable; urgency=low
+
+  * New release.
+
+ -- Roger Leigh <rleigh@debian.org>  Sat, 03 May 2008 13:39:56 +0100
+
 sbuild (0.57.2-1) unstable; urgency=low
 
   * debian/copyright: Update copyright holders and copyright information.

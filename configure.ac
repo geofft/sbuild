@@ -1,5 +1,5 @@
 #                                                              -*- Autoconf -*-
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2008  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 pushdef([SBUILD_NAME],              [sbuild])
 pushdef([SBUILD_MAJOR_VERSION],     [0])
 pushdef([SBUILD_MINOR_VERSION],     [57])
-pushdef([SBUILD_MICRO_VERSION],     [2])
+pushdef([SBUILD_MICRO_VERSION],     [3])
 pushdef([SBUILD_EXTRA_VERSION],     [])
 pushdef([SBUILD_VERSION], SBUILD_MAJOR_VERSION.SBUILD_MINOR_VERSION.SBUILD_MICRO_VERSION[]SBUILD_EXTRA_VERSION)
 dnl
@@ -42,7 +42,7 @@ AC_CONFIG_HEADER([config.h])
 
 AC_COPYRIGHT(
 [
-Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+Copyright © 2004-2008  Roger Leigh <rleigh@debian.org>
 
 Parts of this configure script come from the 'configure.ac' file, and
 are not based on freely-redistributable m4 macros; you can
