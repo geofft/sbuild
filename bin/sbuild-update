@@ -39,12 +39,12 @@ foreach (@ARGV) {
 
     my $chroot = Sbuild::Utility::get_dist($_);
 
-    !setup($ARGV[0]) or die "Chroot setup failed";
+    my $session = setup($ARGV[0]) or die "Chroot setup failed";
 
     print STDOUT "Updating $chroot chroot...\n";
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-    my $status = run_apt_command($Sbuild::Conf::apt_get, "update",
-				 "root", 1);
+    my $status = $session->run_apt_command($Sbuild::Conf::apt_get, "update",
+					   "root", 1);
 
     cleanup();
 

@@ -34,9 +34,10 @@ sub usage () {
 
 usage() if (@ARGV != 1);
 
-!setup($ARGV[0]) or die "Chroot setup failed";
+my $session = setup($ARGV[0]) or die "Chroot setup failed";
 
-my $status = run_command("/bin/sh", $Sbuild::Conf::username, 1);
+my $status = $session->run_command("/bin/sh", $Sbuild::Conf::username, 1);
 
 cleanup();
+
 exit $status;

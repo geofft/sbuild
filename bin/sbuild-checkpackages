@@ -44,8 +44,8 @@ my $cmd = $ARGV[1];
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
 
-!setup($chroot) or die "Chroot setup failed";
-my $chroot_dir = $$Sbuild::Chroot::current{'Location'};
+my $session = setup($chroot) or die "Chroot setup failed";
+my $chroot_dir = $session->{'Location'};
 my (@status, @ref, @install, @remove);
 
 if (! open STATUS, "grep-status -F Status -s Package ' installed' '$chroot_dir/var/lib/dpkg/status' | awk '{print \$2}' |" ) {

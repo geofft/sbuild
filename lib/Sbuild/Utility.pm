@@ -22,8 +22,7 @@
 package main;
 use Sbuild::Conf;
 use Sbuild::Log qw(open_log close_log);
-use Sbuild::Chroot qw(get_command run_command exec_command
-		      get_apt_command run_apt_command current);
+use Sbuild::Chroot;
 
 $ENV{'LC_ALL'} = "POSIX";
 $ENV{'SHELL'} = "/bin/sh";
@@ -32,7 +31,6 @@ $ENV{'SHELL'} = "/bin/sh";
 $| = 1;
 
 $Sbuild::Conf::verbose++;
-Sbuild::Chroot::init();
 
 package Sbuild::Utility;
 
@@ -40,13 +38,15 @@ use strict;
 use warnings;
 
 use Sbuild::Conf;
-use Sbuild::Chroot qw(begin_session end_session);
+use Sbuild::Chroot;
 use Sbuild::Sysconfig qw($arch);
 
 sub get_dist ($);
 sub setup ($);
 sub cleanup ();
 sub shutdown ($);
+
+my $current_session;
 
 BEGIN {
     use Exporter ();
@@ -83,22 +83,25 @@ sub setup ($) {
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
-    if (!begin_session($chroot, undef, $arch)) {
+    my $session = Sbuild::Chroot::new($chroot, undef, undef);
+    $Sbuild::Utility::current_session = $session;
+
+    if (!$session->begin_session()) {
 	print STDERR "Error setting up $chroot chroot\n";
-	return 1;
+	return undef;
     }
 
     if (defined(&main::local_setup)) {
-	return main::local_setup($chroot);
+	return main::local_setup($session);
     }
-    return 0;
+    return $session;
 }
 
 sub cleanup () {
     if (defined(&main::local_cleanup)) {
-	main::local_cleanup();
+	main::local_cleanup($Sbuild::Utility::current_session);
     }
-    end_session();
+    $Sbuild::Utility::current_session->end_session();
     Sbuild::Log::close_log();
 }
 

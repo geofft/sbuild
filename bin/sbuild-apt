@@ -45,14 +45,14 @@ if ($command eq "apt-get") {
 
 $Sbuild::Conf::cwd = "/";
 
-!setup($ARGV[0]) or die "Chroot setup failed";
+my $session = setup($ARGV[0]) or die "Chroot setup failed";
 
 shift @ARGV;
 shift @ARGV;
 my $cmd = join(' ', @ARGV);
 
 $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-my $status = run_apt_command($command, $cmd, "root", 1);
+my $status = $session->run_apt_command($command, $cmd, "root", 1);
 
 cleanup();
 

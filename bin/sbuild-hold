@@ -36,11 +36,12 @@ usage() if (@ARGV < 2);
 
 my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
 
-!setup($ARGV[0]) or die "Chroot setup failed for $chroot chroot";
+my $session = setup($ARGV[0]) or die "Chroot setup failed for $chroot chroot";
 
 print STDOUT "Holding packages in $chroot chroot:";
 
-my $command = get_command("$Sbuild::Conf::dpkg --set-selections", "root", 1);
+my $command = $session->get_command("$Sbuild::Conf::dpkg --set-selections",
+				    "root", 1);
 if (!open(SELECTIONS, "| $command")) {
     print STDERR "Can't run dpkg --set-selections in chroot\n";
     shutdown("TERM");
@@ -60,7 +61,8 @@ if (!close SELECTIONS) {
 print STDOUT ".\n";
 
 my $packages = join(" ", @ARGV);
-my $status = run_command("$Sbuild::Conf::dpkg --list $packages", "root", 1, 0);
+my $status = $session->run_command("$Sbuild::Conf::dpkg --list $packages",
+				   "root", 1, 0);
 
 cleanup();
 
