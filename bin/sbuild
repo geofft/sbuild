@@ -348,7 +348,7 @@ foreach $dscfile (@ARGV) {
 
     # Update APT cache.
     if ($conf::apt_update) {
-	if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1) . " 2>&1 |")) {
+	if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1, '/') . " 2>&1 |")) {
 	    print PLOG "Can't open pipe to apt-get: $!\n";
 	    return 0;
 	}
@@ -377,7 +377,6 @@ foreach $dscfile (@ARGV) {
 
     $main::pkg_status = "successful"
 	if build ($session, basename($dscfile), $pkgv);
-    chdir( $main::cwd );
     write_jobs_file( $main::pkg_status );
     append_to_FINISHED( $pkgv );
 
@@ -460,7 +459,7 @@ sub fetch_source_files ($$$$$$) {
 	my $retried = $conf::apt_update;
       retry:
 	print PLOG "Checking available source versions...\n";
-	my $command = $session->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0);
+	my $command = $session->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
 	if (!$pid) {
 	    print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
@@ -501,7 +500,7 @@ sub fetch_source_files ($$$$$$) {
 	if (!defined($entries{"$pkg $version"})) {
 	    if (!$retried) {
 		# try to update apt's cache if nothing found
-		$session->run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0);
+		$session->run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0, '/');
 		$retried = 1;
 		goto retry;
 	    }
@@ -517,7 +516,7 @@ sub fetch_source_files ($$$$$$) {
 	    push(@fetched, "$main::chroot_build_dir/$_");
 	}
 
-	my $command2 = $session->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0);
+	my $command2 = $session->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
 	    print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 	    return 0;
@@ -624,7 +623,7 @@ sub build ($$$) {
 	$dir = "$dsc";
 	$dir =~ s/\.dsc$//;
 	$main::sub_task = "dpkg-source";
-	$session->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $main::username, 1, 0);
+	$session->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $main::username, 1, 0, undef);
 	if ($?) {
 	    print PLOG "FAILED [dpkg-source died]\n";
 
@@ -650,7 +649,7 @@ sub build ($$$) {
 	}
 	if ($main::sub_pid == 0) {
 	    $dir = $session->strip_chroot_path($dir);
-	    $session->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0);
+	    $session->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0, undef);
 	}
 	$main::sub_task = "dpkg-parsechangelog";
 
@@ -678,33 +677,25 @@ sub build ($$$) {
 	}
     }
 
-    if (!chdir( $dir )) {
-	print PLOG "Couldn't cd to $dir: $!\n";
-	system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
-	return 0;
-    }
-
     $main::pkg_fail_stage = "check-space";
-    my $current_usage = `/usr/bin/du -k -s .`;
+    my $current_usage = `/usr/bin/du -k -s "$dir"`;
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
     if ($current_usage) {
-	my $free = df( "." );
+	my $free = df( "$dir" );
 	if ($free < 2*$current_usage) {
 	    print PLOG "Disk space is propably not enough for building.\n".
 		"(Source needs $current_usage KB, free are $free KB.)\n";
 	    # TODO: Only purge in a single place.
 	    print PLOG "Purging $main::chroot_build_dir\n";
-	    chdir( $main::cwd );
-	    my $bdir = $session->strip_chroot_path($main::chroot_build_dir);
-	    $session->run_command("rm -rf '$bdir'", "root", 1, 0);
+	    $session->run_command("rm -rf '$main::chroot_build_dir'", "root", 1, 0, '/');
 	    return 0;
 	}
     }
 
     $main::pkg_fail_stage = "hack-binNMU";
-    if ($main::binNMU && ! -f "debian/.sbuild-binNMU-done") {
-	if (open( F, "<debian/changelog" )) {
+    if ($main::binNMU && ! -f "$dir/debian/.sbuild-binNMU-done") {
+	if (open( F, "<$dir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
 	    $firstline = <F> while $firstline =~ /^$/;
@@ -714,9 +705,8 @@ sub build ($$$) {
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
 	    my $NMUversion = binNMU_version($version,$main::binNMUver);
 	    chomp( my $date = `date -R` );
-	    if (!open( F, ">debian/changelog" )) {
+	    if (!open( F, ">$dir/debian/changelog" )) {
 		print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
-		chdir( $main::cwd );
 		return 0;
 	    }
 	    $dists = $main::distribution;
@@ -728,7 +718,7 @@ sub build ($$$) {
 
 	    print F $firstline, $text;
 	    close( F );
-	    system "touch 'debian/.sbuild-binNMU-done'";
+	    system "touch '$dir/debian/.sbuild-binNMU-done'";
 	    print PLOG "*** Created changelog entry for bin-NMU version $NMUversion\n";
 	}
 	else {
@@ -736,10 +726,10 @@ sub build ($$$) {
 	}
     }
 
-    if (-f "debian/files") {
+    if (-f "$dir/debian/files") {
 	local( *FILES );
 	my @lines;
-	open( FILES, "<debian/files" );
+	open( FILES, "<$dir/debian/files" );
 	chomp( @lines = <FILES> );
 	close( FILES );
 	@lines = map { my $ind = 68-length($_);
@@ -764,7 +754,7 @@ EOF
 
 EOF
 
-	unlink "debian/files";
+	unlink "$dir/debian/files";
     }
 
     $main::build_start_time = time;
@@ -772,7 +762,6 @@ EOF
     $main::sub_pid = open( PIPE, "-|" );
     if (!defined $main::sub_pid) {
 	print PLOG "Can't spawn dpkg-buildpackage: $!\n";
-	chdir( $main::cwd );
 	return 0;
     }
     if ($main::sub_pid == 0) {
@@ -784,17 +773,15 @@ EOF
 	my $bdir = $session->strip_chroot_path($dir);
 	if (-f "$main::chroot_dir/etc/ld.so.conf" &&
 	    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-	    $session->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0);
+	    $session->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
 	    print PLOG "ld.so.conf was not readable! Fixed.\n";
 	}
-	chdir( $main::cwd ); # schroot doesn't need to be in $dir, and
-			     # this quells a harmless warning
 	my $buildcmd = "cd $bdir && PATH=$conf::path ".
 	    (defined($main::ld_library_path) ?
 	     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 	     "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-	$session->exec_command($buildcmd, $main::username, 1, 0);
+	$session->exec_command($buildcmd, $main::username, 1, 0, undef);
     }
     $main::sub_task = "dpkg-buildpackage";
 
@@ -810,7 +797,7 @@ EOF
 
     local $SIG{'ALRM'} = sub {
 	my $signal = ($timed_out > 0) ? "KILL" : "TERM";
-	$session->run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0);
+	$session->run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0, '/');
 	$timeout_times[$timed_out] = time - $last_time;
 	$timeout_sigs[$timed_out] = $signal;
 	$timed_out++;
@@ -839,7 +826,6 @@ EOF
     my $date = strftime("%Y%m%d-%H%M",localtime($main::pkg_end_time));
     print PLOG "*"x78, "\n";
     print PLOG "Build finished at $date\n";
-    chdir( $main::cwd );
 
     my @space_files = ("$dir");
     if ($rv) {
@@ -958,7 +944,7 @@ EOF
 	($conf::purge_build_directory eq "successful" && $rv == 0)) {
 	print PLOG "Purging $main::chroot_build_dir\n";
 	my $bdir = $session->strip_chroot_path($main::chroot_build_dir);
-	$session->run_command("rm -rf '$bdir'", "root", 1, 0);
+	$session->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
     }
 
     print PLOG "-"x78, "\n";
@@ -975,7 +961,6 @@ sub analyze_fail_stage ($) {
 	$main::pkg_status = "given-back";
 	print PLOG "Giving back package $pkgv after failure in ".
 	    "$main::pkg_fail_stage stage.\n";
-	chdir( $main::cwd );
 	my $cmd = "";
 	$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
 	    if $main::auto_giveback_host;
@@ -1086,7 +1071,7 @@ sub install_deps ($$) {
 
     local (*F);
 
-    my $command = $session->get_command("$conf::dpkg --set-selections", "root", 1, 0);
+    my $command = $session->get_command("$conf::dpkg --set-selections", "root", 1, 0, '/');
 
     my $success = open( F, "| $command");
 
@@ -1167,7 +1152,7 @@ sub uninstall_debs ($$@) {
     return 1 if !@_;
     print "Uninstalling packages: @_\n" if $conf::debug;
 
-    my $command = $session->get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0);
+    my $command = $session->get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
   repeat:
     my $output;
     my $remove_start_time = time;
@@ -1221,7 +1206,7 @@ sub run_apt ($$\@\@@) {
 	$session->get_apt_command("$conf::apt_get", "--purge ".
 				  "-o DPkg::Options::=--force-confold ".
 				  "-q $mode install @to_install ".
-				  "2>&1 </dev/null", "root", 0);
+				  "2>&1 </dev/null", "root", 0, '/');
 
     if (!open( PIPE, "$command |" )) {
 	print PLOG "Can't open pipe to apt-get: $!\n";
@@ -1237,7 +1222,7 @@ sub run_apt ($$\@\@@) {
     if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
 	my $command =
 	    $session->get_apt_command("$conf::apt_get", "-q update 2>&1",
-				      "root", 1);
+				      "root", 1, '/');
 	if (!open( PIPE, "$command |" )) {
 	    print PLOG "Can't open pipe to apt-get: $!\n";
 	    return 0;
@@ -1565,7 +1550,7 @@ sub get_apt_policy ($@) {
     my $command =
 	$session->get_apt_command("$conf::apt_cache",
 				  "policy @interest",
-				  $main::username, 0);
+				  $main::username, 0, '/');
 
     my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&PLOG', "$command" );
     if (!$pid) {
@@ -1949,7 +1934,7 @@ sub get_dependencies ($@) {
     local(*PIPE);
     my %deps;
 
-    my $command = $session->get_apt_command("$conf::apt_cache", "show @_", $main::username, 0);
+    my $command = $session->get_apt_command("$conf::apt_cache", "show @_", $main::username, 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -1977,7 +1962,7 @@ sub get_virtuals ($@) {
 
     local(*PIPE);
 
-    my $command = $session->get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0);
+    my $command = $session->get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -2525,7 +2510,6 @@ sub shutdown ($) {
     $SIG{'ALRM'} = 'IGNORE';
     $SIG{'PIPE'} = 'IGNORE';
     print PLOG "sbuild received SIG$signame -- shutting down\n";
-    chdir( $main::cwd );
 
     goto not_ni_shutdown if !$main::batchmode;
 
@@ -2582,7 +2566,7 @@ sub shutdown ($) {
     # next: kill currently running command (if one)
     if ($main::sub_pid) {
 	print "Killing $main::sub_task subprocess $main::sub_pid\n";
-	run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0);
+	run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0, '/');
     }
     remove_srcdep_lock_file();
 
@@ -2591,7 +2575,7 @@ sub shutdown ($) {
 	if ($conf::purge_build_directory eq "always") {
 	    print PLOG "Purging $main::chroot_build_dir\n";
 	    my $bdir = $main::current_session->strip_chroot_path($main::chroot_build_dir);
-	    $main::current_session->run_command("rm -rf '$bdir'", "root", 1, 0);
+	    $main::current_session->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
 	}
 
 	fixup_pkgv( $main::current_job );
@@ -2675,7 +2659,7 @@ sub chroot_arch ($) {
 	return 0;
     }
     if ($main::sub_pid == 0) {
-	$session->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0);
+	$session->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0, '/');
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );

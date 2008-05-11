@@ -47,13 +47,13 @@ sub begin_session (\$);
 sub end_session (\$);
 sub strip_chroot_path (\$$);
 sub log_command (\$$$);
-sub get_command_internal (\$$$$);
-sub get_command (\$$$$$);
-sub run_command (\$$$$$);
-sub exec_command (\$$$$$);
+sub get_command_internal (\$$$$$);
+sub get_command (\$$$$$$);
+sub run_command (\$$$$$$);
+sub exec_command (\$$$$$$);
 sub get_apt_command_internal (\$$$);
-sub get_apt_command (\$$$$$);
-sub run_apt_command (\$$$$$);
+sub get_apt_command (\$$$$$$);
+sub run_apt_command (\$$$$$$);
 
 sub new($$$) {
 # TODO: specify distribution parameters here...
@@ -202,14 +202,16 @@ sub log_command (\$$$) {
     }
 }
 
-sub get_command_internal (\$$$$) {
+sub get_command_internal (\$$$$$) {
     my $self = shift;
     my $command = shift; # Command to run
     my $user = shift;    # User to run command under
+    my $chroot = shift;  # Run in chroot?
+    my $dir = shift;     # Directory to use (optional)
+
     if (!defined $user || $user eq "") {
 	$user = $Sbuild::Conf::username;
     }
-    my $chroot = shift;  # Run in chroot?
     if (!defined $chroot) {
 	$chroot = 1;
     }
@@ -217,7 +219,9 @@ sub get_command_internal (\$$$$) {
     my $cmdline;
     if ($chroot != 0) { # Run command inside chroot
 	# TODO: Allow user to set build location
-	my $dir = $self->strip_chroot_path($self->get('Build Location'));
+	if (!defined($dir)) {
+	    $dir = $self->strip_chroot_path($self->get('Build Location'));
+	}
 	$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c " . $self->get('Session ID') . " --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
 	if ($user ne $Sbuild::Conf::username) {
@@ -229,13 +233,14 @@ sub get_command_internal (\$$$$) {
     return $cmdline;
 }
 
-sub get_command (\$$$$$) {
+sub get_command (\$$$$$$) {
     my $self = shift;
     my $command = shift;  # Command to run
     my $user = shift;     # User to run command under
     my $chroot = shift;   # Run in chroot?
     my $priority = shift; # Priority of log message
-    my $cmdline = $self->get_command_internal($command, $user, $chroot);
+    my $dir = shift;     # Directory to use (optional)
+    my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
     if ($Sbuild::Conf::debug) {
 	$self->log_command($cmdline, $priority);
@@ -252,13 +257,14 @@ sub get_command (\$$$$$) {
 
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed.
-sub run_command (\$$$$$) {
+sub run_command (\$$$$$$) {
     my $self = shift;
     my $command = shift;  # Command to run
     my $user = shift;     # User to run command under
     my $chroot = shift;   # Run in chroot?
     my $priority = shift; # Priority of log message
-    my $cmdline = $self->get_command_internal($command, $user, $chroot);
+    my $dir = shift;     # Directory to use (optional)
+    my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
     if ($Sbuild::Conf::debug) {
 	$self->log_command($cmdline, $priority);
@@ -272,13 +278,14 @@ sub run_command (\$$$$$) {
     return system($cmdline);
 }
 
-sub exec_command (\$$$$$) {
+sub exec_command (\$$$$$$) {
     my $self = shift;
     my $command = shift;  # Command to run
     my $user = shift;     # User to run command under
     my $chroot = shift;   # Run in chroot?
     my $priority = shift; # Priority of log message
-    my $cmdline = $self->get_command_internal($command, $user, $chroot);
+    my $dir = shift;     # Directory to use (optional)
+    my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
     if ($Sbuild::Conf::debug) {
 	$self->log_command($cmdline, $priority);
@@ -301,14 +308,15 @@ sub get_apt_command_internal (\$$$) {
     return $aptcommand;
 }
 
-sub get_apt_command (\$$$$$) {
+sub get_apt_command (\$$$$$$) {
     my $self = shift;
     my $command = shift;  # Command to run
     my $options = shift;  # Command options
     my $user = shift;     # User to run command under
     my $priority = shift; # Priority of log message
+    my $dir = shift;      # Directory to use (optional)
 
-    my $aptcommand = $self->get_apt_command_internal($command, $options);
+    my $aptcommand = $self->get_apt_command_internal($command, $options, $dir);
 
     my $cmdline = $self->get_command($aptcommand, $user, 1, $priority);
 
@@ -316,17 +324,18 @@ sub get_apt_command (\$$$$$) {
     return $cmdline;
 }
 
-sub run_apt_command (\$$$$$) {
+sub run_apt_command (\$$$$$$) {
     my $self = shift;
     my $command = shift;  # Command to run
     my $options = shift;  # Command options
     my $user = shift;     # User to run command under
     my $priority = shift; # Priority of log message
+    my $dir = shift;      # Directory to use (optional)
 
     my $aptcommand = $self->get_apt_command_internal($command, $options);
 
     chdir($Sbuild::Conf::cwd);
-    return $self->run_command($aptcommand, $user, 1, $priority);
+    return $self->run_command($aptcommand, $user, 1, $priority, $dir);
 }
 
 1;
