@@ -1,8 +1,10 @@
 sbuild (0.57.3-1) unstable; urgency=low
 
   * New release.
+  * --chroot and --arch now work together (Closes: #479714).
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 03 May 2008 13:39:56 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 11 May 2008 10:49:17 +0100
 
 sbuild (0.57.2-1) unstable; urgency=low
 
@@ -45,7 +47,7 @@ sbuild (0.57.1-1) unstable; urgency=low
     - Add wanna-build package.
   * debian/rules: set libexecdir to /usr/share, for compatibility with
     locations of scripts in earlier versions.
-  * debian/schroot.install: use /usr/share in place of /usr/lib
+  * debian/sbuild.install: use /usr/share in place of /usr/lib
     (Closes: #458779).
   * debian/wanna-build.install: New file: files for wanna-build.
   * sbuild: Don't parse output of dpkg-source (Closes: #471747).
