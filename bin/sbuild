@@ -100,7 +100,7 @@ sub dump_main_state ();
 package conf;
 use Sbuild::Conf;
 package main;
-use Sbuild::Conf qw($username $verbose); # For backward compatibility.
+use Sbuild::Conf qw($verbose); # For backward compatibility.
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($arch $hostname $version);
@@ -376,7 +376,7 @@ sub main ($) {
 	    goto cleanup_close;
 	}
 	$main::chroot_dir = $session->{'Location'};
-	$main::chroot_build_dir = tempdir("$username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
+	$main::chroot_build_dir = tempdir("$Sbuild::Conf::username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
 	$session->{'Build Location'} = $main::chroot_build_dir;
@@ -501,7 +501,7 @@ sub fetch_source_files ($$$$$$) {
 	my $retried = $conf::apt_update;
       retry:
 	print PLOG "Checking available source versions...\n";
-	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0, '/');
+	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $Sbuild::Conf::username, 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
 	if (!$pid) {
 	    print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
@@ -558,7 +558,7 @@ sub fetch_source_files ($$$$$$) {
 	    push(@fetched, "$main::chroot_build_dir/$_");
 	}
 
-	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0, undef);
+	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $Sbuild::Conf::username, 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
 	    print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 	    return 0;
@@ -665,7 +665,7 @@ sub build ($$$) {
 	$dir = "$dsc";
 	$dir =~ s/\.dsc$//;
 	$main::sub_task = "dpkg-source";
-	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $main::username, 1, 0, undef);
+	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	if ($?) {
 	    print PLOG "FAILED [dpkg-source died]\n";
 
@@ -691,7 +691,7 @@ sub build ($$$) {
 	}
 	if ($main::sub_pid == 0) {
 	    $dir = $self->{'Session'}->strip_chroot_path($dir);
-	    $self->{'Session'}->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0, undef);
+	    $self->{'Session'}->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	}
 	$main::sub_task = "dpkg-parsechangelog";
 
@@ -823,7 +823,7 @@ EOF
 	     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 	     "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-	$self->{'Session'}->exec_command($buildcmd, $main::username, 1, 0, undef);
+	$self->{'Session'}->exec_command($buildcmd, $Sbuild::Conf::username, 1, 0, undef);
     }
     $main::sub_task = "dpkg-buildpackage";
 
@@ -1595,7 +1595,7 @@ sub get_apt_policy ($@) {
     my $command =
 	$self->{'Session'}->get_apt_command("$conf::apt_cache",
 				  "policy @interest",
-				  $main::username, 0, '/');
+				  $Sbuild::Conf::username, 0, '/');
 
     my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&PLOG', "$command" );
     if (!$pid) {
@@ -1985,7 +1985,7 @@ sub get_dependencies ($@) {
     local(*PIPE);
     my %deps;
 
-    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "show @_", $main::username, 0, '/');
+    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "show @_", $Sbuild::Conf::username, 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -2013,7 +2013,7 @@ sub get_virtuals ($@) {
 
     local(*PIPE);
 
-    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0, '/');
+    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "showpkg @_", $Sbuild::Conf::username, 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -2153,7 +2153,7 @@ sub check_space ($@) {
 	    $_ = $self->{'Session'}->strip_chroot_path($_);
 	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
 	} else {
-	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $main::username, 0, 0);
+	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $Sbuild::Conf::username, 0, 0);
 	}
 
 	if (!open( PIPE, "$command |" )) {
@@ -2740,7 +2740,7 @@ sub chroot_arch ($) {
 	return 0;
     }
     if ($main::sub_pid == 0) {
-	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0, '/');
+	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $Sbuild::Conf::username, 1, 0, '/');
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );
@@ -2764,7 +2764,7 @@ sub check_group_membership () {
 
     my $in_group = 0;
     foreach (split(' ', $members)) {
-	$in_group = 1 if $_ eq $main::username;
+	$in_group = 1 if $_ eq $Sbuild::Conf::username;
     }
 
     if (!$in_group) {
@@ -2915,7 +2915,6 @@ sub dump_main_state () {
 				     $main::this_space,
 				     \%main::this_watches,
 				     \@main::toolchain_pkgs,
-				     $main::username,
 				     $main::useSNAP,
 				     $main::verbose],
 				    [qw(@main::additional_deps
@@ -2952,6 +2951,6 @@ sub dump_main_state () {
 					$main::this_space
 					%main::this_watches
 					@main::toolchain_pkgs
-					$main::username $main::useSNAP
+					$main::useSNAP
 					$main::verbose)] );
 }
