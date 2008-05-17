@@ -160,6 +160,7 @@ sub build_new () {
     $build{'Changes'} = {};
     $build{'Dependencies'} = {};
     $build{'Signing Options'} = {};
+    $build{'Have DSC Build Deps'} = [];
 
     return \%build;
 }
@@ -475,7 +476,7 @@ sub fetch_source_files ($$$$$$) {
     my $build_conflicts_indep = "";
     local( *F );
 
-    @main::have_dsc_build_deps = ();
+    $self->{'Have DSC Build Deps'} = [];
 
     if (!defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
 	print PLOG "Invalid source: $$dscfile_ref\n";
@@ -616,8 +617,9 @@ sub fetch_source_files ($$$$$$) {
     print "Arch check ok ($self->{'Arch'} included in $dscarchs)\n"
 	if $conf::debug;
 
-    @main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
-				  $build_conflicts,$build_conflicts_indep);
+    @{$self->{'Have DSC Build Deps'}} =
+	($build_depends, $build_depends_indep,
+	 $build_conflicts,$build_conflicts_indep);
     merge_pkg_build_deps( $self, $pkg, $build_depends,
 			  $build_depends_indep, $build_conflicts,
 			  $build_conflicts_indep );
@@ -2368,7 +2370,7 @@ sub check_watches ($) {
 	    my $pkg = $main::this_watches{$prg};
 	    my $prg2 = $self->{'Session'}->strip_chroot_path($prg);
 	    push( @{$used{$pkg}}, $prg2 )
-		if @main::have_dsc_build_deps ||
+		if @{$self->{'Have DSC Build Deps'}} ||
 		!isin( $pkg, @conf::ignore_watches_no_build_deps );
 	}
 	else {
@@ -2879,7 +2881,6 @@ sub dump_main_state () {
 
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
-				     \@main::have_dsc_build_deps,
 				     \%main::job_state,
 				     $main::ld_library_path,
 				     \@main::manual_srcdeps,
@@ -2891,7 +2892,6 @@ sub dump_main_state () {
 				     $main::useSNAP],
 				    [qw($main::current_job
 					$main::DEVNULL
-					@main::have_dsc_build_deps
 					%main::job_state
 					$main::ld_library_path
 					@main::manual_srcdeps
