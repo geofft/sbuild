@@ -156,7 +156,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-@main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 $main::sub_task = "initialisation";
 
@@ -1505,7 +1504,7 @@ sub check_dependencies ($\@) {
 	    $names{$name} = 1 if $name !~ /^\*/;
 	}
     }
-    foreach $name (@main::toolchain_pkgs) {
+    foreach $name (@{$self->{'Toolchain Packages'}}) {
 	$names{$name} = 1;
     }
     my $status = get_dpkg_status($self, keys %names);
@@ -1553,11 +1552,11 @@ sub check_dependencies ($\@) {
 	}
     }
     $fail =~ s/\s+$//;
-    if (!$fail && @main::toolchain_pkgs) {
+    if (!$fail && @{$self->{'Toolchain Packages'}}) {
 	my ($sysname, $nodename, $release, $version, $machine) = uname();
 	print PLOG "Kernel: $sysname $release $self->{'Arch'} ($machine)\n";
 	print PLOG "Toolchain package versions:";
-	foreach $name (@main::toolchain_pkgs) {
+	foreach $name (@{$self->{'Toolchain Packages'}}) {
 	    if (defined($status->{$name}->{'Version'})) {
 		print PLOG ' ' . $name . '_' . $status->{$name}->{'Version'};
 	    } else {
@@ -1746,12 +1745,12 @@ sub merge_pkg_build_deps ($$$$$$) {
     print "Dependency-expanded build essential packages:\n",
     format_deps($self, @$exp_essential), "\n" if $conf::debug;
 
-    # populate toolchain_pkgs from toolchain_regexes and
+    # populate Toolchain Packages from toolchain_regexes and
     # build-essential packages.
-    @main::toolchain_pkgs = ();
+    $self->{'Toolchain Packages'} = ();
     foreach my $tpkg (@$exp_essential) {
         foreach my $regex (@conf::toolchain_regex) {
-	    push @main::toolchain_pkgs,$tpkg->{'Package'}
+	    push @{$self->{'Toolchain Packages'}},$tpkg->{'Package'}
 	        if $tpkg->{'Package'} =~ m,^$regex,;
 	}
     }
@@ -2887,7 +2886,6 @@ sub dump_main_state () {
 				     $main::sub_pid,
 				     $main::sub_task,
 				     \%main::this_watches,
-				     \@main::toolchain_pkgs,
 				     $main::useSNAP],
 				    [qw(@main::additional_deps
 					$main::binNMU_name
@@ -2908,6 +2906,5 @@ sub dump_main_state () {
 					$main::stats_dir
 					$main::sub_pid $main::sub_task
 					%main::this_watches
-					@main::toolchain_pkgs
 					$main::useSNAP)] );
 }
