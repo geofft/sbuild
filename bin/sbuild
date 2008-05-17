@@ -166,7 +166,7 @@ sub build_new () {
     $build{'Have DSC Build Deps'} = [];
     $build{'LD_LIBRARY_PATH'} = undef;
     $build{'Manual Srcdeps'} = [];
-    $build{'GCC Snapshot'} = [];
+    $build{'GCC Snapshot'} = 0;
 
     return \%build;
 }
