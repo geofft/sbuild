@@ -149,7 +149,6 @@ $main::build_object{"Override Distribution"} = 0;
 $main::build_object{"Sub Task"} = "initialisation";
 $main::build_object{"Current Session"} = undef;
 
-$main::distribution = "unstable";
 undef $main::chroot;
 
 $main::arch = $Sbuild::Sysconfig::arch;
@@ -219,17 +218,17 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "D|debug+" => \$conf::debug,
 		       "apt-update" => \$conf::apt_update,
 		       "d|dist=s" => sub {
-			   $main::distribution = $_[1];
-			   $main::distribution = "oldstable"
-			       if $main::distribution eq "o";
-			   $main::distribution = "stable"
-			       if $main::distribution eq "s";
-			   $main::distribution = "testing"
-			       if $main::distribution eq "t";
-			   $main::distribution = "unstable"
-			       if $main::distribution eq "u";
-			   $main::distribution = "experimental"
-			       if $main::distribution eq "e";
+			   $main::build_object_ref->{'Distribution'} = $_[1];
+			   $main::build_object_ref->{'Distribution'} = "oldstable"
+			       if $main::build_object_ref->{'Distribution'} eq "o";
+			   $main::build_object_ref->{'Distribution'} = "stable"
+			       if $main::build_object_ref->{'Distribution'} eq "s";
+			   $main::build_object_ref->{'Distribution'} = "testing"
+			       if $main::build_object_ref->{'Distribution'} eq "t";
+			   $main::build_object_ref->{'Distribution'} = "unstable"
+			       if $main::build_object_ref->{'Distribution'} eq "u";
+			   $main::build_object_ref->{'Distribution'} = "experimental"
+			       if $main::build_object_ref->{'Distribution'} eq "e";
 			   $main::override_distribution = 1;
 		       },
 		       "force-orig-source" => \$conf::force_orig_source,
@@ -258,15 +257,15 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       },
     );
 
-print "Selected distribution $main::distribution\n"
+print "Selected distribution $main::build_object_ref->{'Distribution'}\n"
     if $conf::debug;
 print "Selected chroot $main::chroot\n"
     if $conf::debug and defined $main::chroot;
 print "Selected architecture $main::user_arch\n"
     if $conf::debug;
 
-$conf::mailto = $conf::mailto{$main::distribution}
-    if $conf::mailto{$main::distribution};
+$conf::mailto = $conf::mailto{$main::build_object_ref->{'Distribution'}}
+    if $conf::mailto{$main::build_object_ref->{'Distribution'}};
 
 # see debsign for priorities, we will follow the same order
 $main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
@@ -282,7 +281,7 @@ if (!defined($conf::maintainer_name) &&
 }
 
 # variables for scripts:
-open_log($main::distribution);
+open_log($main::build_object_ref->{'Distribution'});
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
@@ -342,7 +341,7 @@ foreach $dscfile (@ARGV) {
 	    $tpkg .= $3;
 	}
 
-	next if !open_build_log($main::build_object_ref, $tpkg, $main::distribution, $date );
+	next if !open_build_log($main::build_object_ref, $tpkg, $main::build_object_ref->{'Distribution'}, $date );
     }
 
     $main::pkg_status = "failed"; # assume for now
@@ -354,7 +353,7 @@ foreach $dscfile (@ARGV) {
 	goto cleanup_close;
     }
 
-    my $session = Sbuild::Chroot::new($main::distribution,
+    my $session = Sbuild::Chroot::new($main::build_object_ref->{'Distribution'},
 				      $main::chroot, $main::user_arch);
     $main::current_session = $session;
 
@@ -424,7 +423,7 @@ foreach $dscfile (@ARGV) {
     $main::current_session = undef;
 
     close_build_log( $main::build_object_ref,
-		     $main::current_job, $main::distribution, $main::pkg_status,
+		     $main::current_job, $main::build_object_ref->{'Distribution'}, $main::pkg_status,
 		     $main::pkg_start_time, $main::pkg_end_time,
 		     $main::this_space );
     undef $main::binNMU_name;
@@ -739,7 +738,7 @@ sub build (\$$$$) {
 		print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
 		return 0;
 	    }
-	    $dists = $main::distribution;
+	    $dists = $self->{'Distribution'};
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
 	    print F "  * Binary-only non-maintainer upload for $main::arch; ",
 	    "no source changes.\n";
@@ -889,8 +888,8 @@ EOF
 	    if (open( F2, ">$changes.new" )) {
 		while( <F> ) {
 		    if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
-			print PLOG "Distribution: $main::distribution\n";
-			print F2 "Distribution: $main::distribution\n";
+			print PLOG "Distribution: $self->{'Distribution'}\n";
+			print F2 "Distribution: $self->{'Distribution'}\n";
 		    }
 		    else {
 			print F2 $_;
@@ -998,7 +997,7 @@ sub analyze_fail_stage (\$$) {
 	$cmd .= "-S $main::auto_giveback_socket "
 	    if $main::auto_giveback_socket;
 	$cmd .= "wanna-build --give-back --no-down-propagation ".
-	    "--dist=$main::distribution";
+	    "--dist=$self->{'Distribution'}";
 	$cmd .= " --database=$main::database" if $main::database;
 	$cmd .= " --user=$main::auto_giveback_wb_user "
 	    if $main::auto_giveback_wb_user;
@@ -2611,9 +2610,9 @@ sub shutdown ($) {
 	foreach $job (@npkgs) {
 	    next if grep( /^\Q$job\E\s/, @pkgs );
 	    if (not defined $main::binNMUver) {
-		print F "$job $main::distribution\n";
+		print F "$job $main::build_object_ref->{'Distribution'}\n";
 	    } else {
-		print F "$job $main::distribution $main::binNMUver $main::binNMU\n";
+		print F "$job $main::build_object_ref->{'Distribution'} $main::binNMUver $main::binNMU\n";
 	    }
 	}
 	close( F );
@@ -2659,7 +2658,9 @@ sub shutdown ($) {
 	undef $main::current_session;
 
 	close_build_log( $main::build_object_ref,
-			 $main::current_job, $main::distribution, $main::pkg_status,
+			 $main::current_job,
+			 $main::build_object_ref->{'Distribution'},
+			 $main::pkg_status,
 			 $main::pkg_start_time, $main::pkg_end_time,
 			 $main::this_space );
 	undef $main::binNMU_name;
@@ -2900,7 +2901,6 @@ sub dump_main_state () {
 				     $main::database,
 				     \%main::deps,
 				     $main::DEVNULL,
-				     $main::distribution,
 				     $main::dpkg_buildpackage_signopt,
 				     \@main::have_dsc_build_deps,
 				     $main::ilock_file,
@@ -2946,7 +2946,6 @@ sub dump_main_state () {
 					$main::current_session
 					$main::cwd $main::database
 					%main::deps $main::DEVNULL
-					$main::distribution
 					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
 					$main::ilock_file
