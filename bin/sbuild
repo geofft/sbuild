@@ -158,7 +158,6 @@ $main::build_object = build_new();
 
 undef $main::chroot;
 
-$main::arch = $Sbuild::Sysconfig::arch;
 $main::user_arch = "";
 $main::batchmode = 0;
 $main::auto_giveback = 0;
@@ -382,7 +381,7 @@ sub main ($) {
 	$main::srcdep_lock_dir = $session->{'Srcdep Lock Dir'};
 	$main::ilock_file = $session->{'Install Lock'};
 
-	$main::arch = chroot_arch($self);
+	$self->{'Arch'} = chroot_arch($self);
 
 	# Update APT cache.
 	if ($conf::apt_update) {
@@ -607,15 +606,15 @@ sub fetch_source_files ($$$$$$) {
 	print PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
     }
     else {
-	if ($dscarchs ne "any" && $dscarchs !~ /\b$main::arch\b/ &&
+	if ($dscarchs ne "any" && $dscarchs !~ /\b$self->{'Arch'}\b/ &&
 	    !($dscarchs eq "all" && $main::build_arch_all) )  {
-	    print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
+	    print PLOG "$dscbase: $self->{'Arch'} not in arch list: $dscarchs -- ".
 		"skipping\n";
 	    $main::pkg_fail_stage = "arch-check";
 	    return 0;
 	}
     }
-    print "Arch check ok ($main::arch included in $dscarchs)\n"
+    print "Arch check ok ($self->{'Arch'} included in $dscarchs)\n"
 	if $conf::debug;
 
     @main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
@@ -752,7 +751,7 @@ sub build ($$$) {
 	    }
 	    $dists = $self->{'Distribution'};
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
-	    print F "  * Binary-only non-maintainer upload for $main::arch; ",
+	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
 	    "no source changes.\n";
 	    print F "  * ", join( "    ", split( "\n", $main::binNMU )), "\n\n";
 	    print F " -- $conf::maintainer_name  $date\n\n";
@@ -891,7 +890,7 @@ EOF
 
 	$changes = "${pkg}_".
 	    ($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
-	    "_$main::arch.changes";
+	    "_$self->{'Arch'}.changes";
 	my @cfiles;
 	if (-r "$main::chroot_build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
@@ -941,7 +940,7 @@ EOF
 	my @debcfiles = @cfiles;
 	foreach (@debcfiles) {
 	    my $deb = "$main::chroot_build_dir/$_";
-	    next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
+	    next if $deb !~ /($self->{'Arch'}|all)\.[\w\d.-]*$/;
 
 	    print PLOG "\n$deb:\n";
 	    if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
@@ -956,7 +955,7 @@ EOF
 	@debcfiles = @cfiles;
 	foreach (@debcfiles) {
 	    my $deb = "$main::chroot_build_dir/$_";
-	    next if $deb !~ /($main::arch|all)\.[\w\d.-]*$/;
+	    next if $deb !~ /($self->{'Arch'}|all)\.[\w\d.-]*$/;
 
 	    print PLOG "\n$deb:\n";
 	    if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
@@ -1567,7 +1566,7 @@ sub check_dependencies ($\@) {
     $fail =~ s/\s+$//;
     if (!$fail && @main::toolchain_pkgs) {
 	my ($sysname, $nodename, $release, $version, $machine) = uname();
-	print PLOG "Kernel: $sysname $release $main::arch ($machine)\n";
+	print PLOG "Kernel: $sysname $release $self->{'Arch'} ($machine)\n";
 	print PLOG "Toolchain package versions:";
 	foreach $name (@main::toolchain_pkgs) {
 	    if (defined($status->{$name}->{'Version'})) {
@@ -2069,10 +2068,10 @@ sub parse_one_srcdep ($$$\%) {
 		my ($use_it, $ignore_it, $include) = (0, 0, 0);
 		foreach (@archs) {
 		    if (/^!/) {
-			$ignore_it = 1 if substr($_, 1) eq $main::arch;
+			$ignore_it = 1 if substr($_, 1) eq $self->{'Arch'};
 		    }
 		    else {
-			$use_it = 1 if $_ eq $main::arch;
+			$use_it = 1 if $_ eq $self->{'Arch'};
 			$include = 1;
 		    }
 		}
