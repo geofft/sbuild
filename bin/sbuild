@@ -38,6 +38,7 @@ use Sbuild qw(binNMU_version version_compare);
 use Data::Dumper;
 use File::Temp qw(tempdir);
 
+sub build_new ();
 sub fetch_source_files ($$$$$$);
 sub build ($$$);
 sub analyze_fail_stage ($$);
@@ -121,33 +122,38 @@ check_group_membership();
 
 umask(022);
 
-%main::build_object = ();
-$main::build_object_ref = \%main::build_object;
+sub build_new () {
+    my %build = ();
 
-$main::build_object_ref->{'Distribution'} = 'unstable';
-$main::build_object_ref->{'Chroot'} = undef;
-$main::build_object_ref->{'Arch'} = $main::Sbuild::Sysconfig::arch;
-$main::build_object_ref->{'User Arch'} = '';
-$main::build_object_ref->{'Batch Mode'} = 0;
-$main::build_object_ref->{'Auto Giveback'} = 0;
-$main::build_object_ref->{'Build Arch All'} = 0;
-$main::build_object_ref->{'Build Source'} = 0;
-$main::build_object_ref->{'Build Progress'} = 0;
-$main::build_object_ref->{'Max Lock Trys'} = 120;
-$main::build_object_ref->{'Lock Interval'} = 5;
-$main::build_object_ref->{'Srcdep Lock Dir'} = '';
-$main::build_object_ref->{'ILock File'} = '';
-$main::build_object_ref->{'Srcdep Lock Count'} = 0;
-$main::build_object_ref->{'Pkg Status'} = '';
-$main::build_object_ref->{'Pkg Start Time'} = 0;
-$main::build_object_ref->{'Pkg End Time'} = 0;
-$main::build_object_ref->{'This Space'} = 0;
-$main::build_object_ref->{'Chroot Dir'} = '';
-$main::build_object_ref->{'Chroot Build Dir'} = '';
-$main::build_object_ref->{'Toolchain Packages'} = [];
-$main::build_object_ref->{'Override Distribution'} = 0;
-$main::build_object_ref->{'Sub Task'} = 'initialisation';
-$main::build_object_ref->{'Session'} = undef;
+    $build{'Distribution'} = 'unstable';
+    $build{'Chroot'} = undef;
+    $build{'Arch'} = $main::Sbuild::Sysconfig::arch;
+    $build{'User Arch'} = '';
+    $build{'Batch Mode'} = 0;
+    $build{'Auto Giveback'} = 0;
+    $build{'Build Arch All'} = 0;
+    $build{'Build Source'} = 0;
+    $build{'Build Progress'} = 0;
+    $build{'Max Lock Trys'} = 120;
+    $build{'Lock Interval'} = 5;
+    $build{'Srcdep Lock Dir'} = '';
+    $build{'ILock File'} = '';
+    $build{'Srcdep Lock Count'} = 0;
+    $build{'Pkg Status'} = '';
+    $build{'Pkg Start Time'} = 0;
+    $build{'Pkg End Time'} = 0;
+    $build{'This Space'} = 0;
+    $build{'Chroot Dir'} = '';
+    $build{'Chroot Build Dir'} = '';
+    $build{'Toolchain Packages'} = [];
+    $build{'Override Distribution'} = 0;
+    $build{'Sub Task'} = 'initialisation';
+    $build{'Session'} = undef;
+
+    return \%build;
+}
+
+$main::build_object = build_new();
 
 undef $main::chroot;
 
@@ -217,17 +223,17 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       "D|debug+" => \$conf::debug,
 		       "apt-update" => \$conf::apt_update,
 		       "d|dist=s" => sub {
-			   $main::build_object_ref->{'Distribution'} = $_[1];
-			   $main::build_object_ref->{'Distribution'} = "oldstable"
-			       if $main::build_object_ref->{'Distribution'} eq "o";
-			   $main::build_object_ref->{'Distribution'} = "stable"
-			       if $main::build_object_ref->{'Distribution'} eq "s";
-			   $main::build_object_ref->{'Distribution'} = "testing"
-			       if $main::build_object_ref->{'Distribution'} eq "t";
-			   $main::build_object_ref->{'Distribution'} = "unstable"
-			       if $main::build_object_ref->{'Distribution'} eq "u";
-			   $main::build_object_ref->{'Distribution'} = "experimental"
-			       if $main::build_object_ref->{'Distribution'} eq "e";
+			   $main::build_object->{'Distribution'} = $_[1];
+			   $main::build_object->{'Distribution'} = "oldstable"
+			       if $main::build_object->{'Distribution'} eq "o";
+			   $main::build_object->{'Distribution'} = "stable"
+			       if $main::build_object->{'Distribution'} eq "s";
+			   $main::build_object->{'Distribution'} = "testing"
+			       if $main::build_object->{'Distribution'} eq "t";
+			   $main::build_object->{'Distribution'} = "unstable"
+			       if $main::build_object->{'Distribution'} eq "u";
+			   $main::build_object->{'Distribution'} = "experimental"
+			       if $main::build_object->{'Distribution'} eq "e";
 			   $main::override_distribution = 1;
 		       },
 		       "force-orig-source" => \$conf::force_orig_source,
@@ -256,15 +262,15 @@ exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
 		       },
     );
 
-print "Selected distribution $main::build_object_ref->{'Distribution'}\n"
+print "Selected distribution $main::build_object->{'Distribution'}\n"
     if $conf::debug;
 print "Selected chroot $main::chroot\n"
     if $conf::debug and defined $main::chroot;
 print "Selected architecture $main::user_arch\n"
     if $conf::debug;
 
-$conf::mailto = $conf::mailto{$main::build_object_ref->{'Distribution'}}
-    if $conf::mailto{$main::build_object_ref->{'Distribution'}};
+$conf::mailto = $conf::mailto{$main::build_object->{'Distribution'}}
+    if $conf::mailto{$main::build_object->{'Distribution'}};
 
 # see debsign for priorities, we will follow the same order
 $main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
@@ -280,15 +286,15 @@ if (!defined($conf::maintainer_name) &&
 }
 
 # variables for scripts:
-open_log($main::build_object_ref->{'Distribution'});
+open_log($main::build_object->{'Distribution'});
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 
-parse_manual_srcdeps($main::build_object_ref, map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
+parse_manual_srcdeps($main::build_object, map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
 
-write_jobs_file($main::build_object_ref, "");
+write_jobs_file($main::build_object, "");
 
 my $dscfile;
 foreach $dscfile (@ARGV) {
@@ -340,21 +346,21 @@ foreach $dscfile (@ARGV) {
 	    $tpkg .= $3;
 	}
 
-	next if !open_build_log($main::build_object_ref, $tpkg, $main::build_object_ref->{'Distribution'}, $date );
+	next if !open_build_log($main::build_object, $tpkg, $main::build_object->{'Distribution'}, $date );
     }
 
     $main::pkg_status = "failed"; # assume for now
     $main::current_job = $pkgv;
     $main::additional_deps = [];
-    write_jobs_file($main::build_object_ref, "currently building" );
-    if (should_skip($main::build_object_ref, $pkgv )) {
+    write_jobs_file($main::build_object, "currently building" );
+    if (should_skip($main::build_object, $pkgv )) {
 	$main::pkg_status = "skipped";
 	goto cleanup_close;
     }
 
-    my $session = Sbuild::Chroot::new($main::build_object_ref->{'Distribution'},
+    my $session = Sbuild::Chroot::new($main::build_object->{'Distribution'},
 				      $main::chroot, $main::user_arch);
-    $main::build_object_ref->{'Session'} = $session;
+    $main::build_object->{'Session'} = $session;
 
     if (!$session->begin_session()) {
 	print PLOG "Error creating schroot session: skipping $pkg\n";
@@ -369,7 +375,7 @@ foreach $dscfile (@ARGV) {
     $main::srcdep_lock_dir = $session->{'Srcdep Lock Dir'};
     $main::ilock_file = $session->{'Install Lock'};
 
-    $main::arch = chroot_arch($main::build_object_ref);
+    $main::arch = chroot_arch($main::build_object);
 
     # Update APT cache.
     if ($conf::apt_update) {
@@ -389,40 +395,40 @@ foreach $dscfile (@ARGV) {
     }
 
     $main::pkg_fail_stage = "fetch-src";
-    if (!fetch_source_files($main::build_object_ref, \$dscfile,
+    if (!fetch_source_files($main::build_object, \$dscfile,
 			    $dir, $pkg, $version, $download)) {
 	goto cleanup_close;
     }
 
     $main::pkg_fail_stage = "install-deps";
-    if (!install_deps($main::build_object_ref, $pkg)) {
+    if (!install_deps($main::build_object, $pkg)) {
 	print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
 	goto cleanup_packages;
     }
 
     $main::pkg_status = "successful"
-	if build ($main::build_object_ref, basename($dscfile), $pkgv);
-    write_jobs_file($main::build_object_ref, $main::pkg_status);
-    append_to_FINISHED($main::build_object_ref, $pkgv);
+	if build ($main::build_object, basename($dscfile), $pkgv);
+    write_jobs_file($main::build_object, $main::pkg_status);
+    append_to_FINISHED($main::build_object, $pkgv);
 
   cleanup_packages:
     if (defined ($session->{'Session Cloned'}) &&
 	$session->{'Session Cloned'} == 1) {
 	print PLOG "Not removing build depends: cloned chroot in use\n";
     } else {
-	uninstall_deps($main::build_object_ref);
+	uninstall_deps($main::build_object);
     }
-    remove_srcdep_lock_file($main::build_object_ref);
+    remove_srcdep_lock_file($main::build_object);
   cleanup_close:
-    analyze_fail_stage($main::build_object_ref, $pkgv);
-    write_jobs_file($main::build_object_ref, $main::pkg_status );
+    analyze_fail_stage($main::build_object, $pkgv);
+    write_jobs_file($main::build_object, $main::pkg_status );
 
     $session->end_session();
     $session = undef;
-    $main::build_object_ref->{'Session'} = undef;
+    $main::build_object->{'Session'} = undef;
 
-    close_build_log( $main::build_object_ref,
-		     $main::current_job, $main::build_object_ref->{'Distribution'}, $main::pkg_status,
+    close_build_log( $main::build_object,
+		     $main::current_job, $main::build_object->{'Distribution'}, $main::pkg_status,
 		     $main::pkg_start_time, $main::pkg_end_time,
 		     $main::this_space );
     undef $main::binNMU_name;
@@ -432,7 +438,7 @@ foreach $dscfile (@ARGV) {
     }
     dump_main_state() if $conf::debug;
 }
-write_jobs_file($main::build_object_ref, "");
+write_jobs_file($main::build_object, "");
 
 close_log();
 unlink( $main::jobs_file ) if $main::batchmode;
@@ -2574,7 +2580,7 @@ sub shutdown ($) {
     # most important: dump out names of unfinished jobs to REDO
     foreach $job (@ARGV) {
 	my $job2 = $job;
-	fixup_pkgv($main::build_object_ref, $job2);
+	fixup_pkgv($main::build_object, $job2);
 	push( @npkgs, $job2 )
 	    if !$main::job_state{$job} || $job eq $main::current_job;
     }
@@ -2594,9 +2600,9 @@ sub shutdown ($) {
 	foreach $job (@npkgs) {
 	    next if grep( /^\Q$job\E\s/, @pkgs );
 	    if (not defined $main::binNMUver) {
-		print F "$job $main::build_object_ref->{'Distribution'}\n";
+		print F "$job $main::build_object->{'Distribution'}\n";
 	    } else {
-		print F "$job $main::build_object_ref->{'Distribution'} $main::binNMUver $main::binNMU\n";
+		print F "$job $main::build_object->{'Distribution'} $main::binNMUver $main::binNMU\n";
 	    }
 	}
 	close( F );
@@ -2626,24 +2632,24 @@ sub shutdown ($) {
 	print "Killing $main::sub_task subprocess $main::sub_pid\n";
 	run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0, '/');
     }
-    remove_srcdep_lock_file($main::build_object_ref);
+    remove_srcdep_lock_file($main::build_object);
 
     # close logs and send mails
-    if ( $main::current_job && defined($main::build_object_ref->{'Session'})) {
+    if ( $main::current_job && defined($main::build_object->{'Session'})) {
 	if ($conf::purge_build_directory eq "always") {
 	    print PLOG "Purging $main::chroot_build_dir\n";
-	    my $bdir = $main::build_object_ref->{'Session'}->strip_chroot_path($main::chroot_build_dir);
-	    $main::build_object_ref->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
+	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::chroot_build_dir);
+	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
 	}
 
-	fixup_pkgv($main::build_object_ref, $main::current_job);
+	fixup_pkgv($main::build_object, $main::current_job);
 
-	$main::build_object_ref->{'Session'}->end_session();
-	undef $main::build_object_ref->{'Session'};
+	$main::build_object->{'Session'}->end_session();
+	undef $main::build_object->{'Session'};
 
-	close_build_log( $main::build_object_ref,
+	close_build_log( $main::build_object,
 			 $main::current_job,
-			 $main::build_object_ref->{'Distribution'},
+			 $main::build_object->{'Distribution'},
 			 $main::pkg_status,
 			 $main::pkg_start_time, $main::pkg_end_time,
 			 $main::this_space );
