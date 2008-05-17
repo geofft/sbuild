@@ -37,14 +37,14 @@ BEGIN {
 		 $check_watches $cwd $username $verbose $nolog
 		 $mailprog $dpkg $su $schroot $schroot_options
 		 $fakeroot $apt_get $apt_cache $dpkg_source $dcmd
-		 $md5sum $avg_time_db $avg_space_db $package_checklist
-		 $build_env_cmnd $pgp_options $log_dir $mailto
-		 $mailfrom @no_auto_upgrade $check_depends_algorithm
-		 $purge_build_directory @toolchain_regex
-		 $stalled_pkg_timeout $srcdep_lock_dir
-		 $srcdep_lock_wait $max_lock_trys $lock_interval
-		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
-		 $debug $force_orig_source
+		 $md5sum $avg_time_db $avg_space_db $stats_dir
+		 $package_checklist $build_env_cmnd $pgp_options
+		 $log_dir $mailto $mailfrom @no_auto_upgrade
+		 $check_depends_algorithm $purge_build_directory
+		 @toolchain_regex $stalled_pkg_timeout
+		 $srcdep_lock_dir $srcdep_lock_wait $max_lock_trys
+		 $lock_interval @ignore_watches_no_build_deps
+		 $build_dir $sbuild_mode $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name %watches $key_id);
 }
@@ -78,6 +78,7 @@ our $dcmd = "/usr/bin/dcmd";
 our $md5sum = "/usr/bin/md5sum";
 our $avg_time_db = "/var/lib/sbuild/avg-build-times";
 our $avg_space_db = "/var/lib/sbuild/avg-build-space";
+our $stats_dir = "$HOME/stats";
 our $package_checklist = "/var/lib/sbuild/package-checklist";
 our $build_env_cmnd = "";
 our $pgp_options = "-us -uc";

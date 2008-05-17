@@ -91,6 +91,9 @@
 # Directory for writing build logs to
 #$log_dir = "$HOME/logs";
 
+# Directory for writing build statistics to
+#$stats_dir = "$HOME/stats";
+
 
 # don't remove this, Perl needs it:
 1;

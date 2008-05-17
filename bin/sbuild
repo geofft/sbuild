@@ -260,7 +260,7 @@ sub main ($) {
 			   "s|source" => sub {
 			       $self->{'Build Source'} = 1
 			   },
-			   "stats-dir=s" => \$main::stats_dir,
+			   "stats-dir=s" => \$conf::stats_dir,
 			   "use-snapshot" => sub {
 			       $self->{'GCC Snapshot'} = 1;
 			       $self->{'LD_LIBRARY_PATH'} =
@@ -2684,15 +2684,22 @@ sub shutdown ($) {
 sub write_stats ($$$) {
     my $self = shift;
 
-    return if not defined $main::stats_dir;
+    return if not defined $conf::stats_dir;
+
+    if (! -d $conf::stats_dir &&
+	!mkdir $conf::stats_dir) {
+	warn "Could not create $conf::stats_dir: $!\n";
+	return;
+    }
+
     my ($cat, $val) = @_;
     local( *F );
 
-    lock_file($self, "$main::stats_dir", 0);
-    open( F, ">>$main::stats_dir/$cat" );
+    lock_file($self, "$conf::stats_dir", 0);
+    open( F, ">>$conf::stats_dir/$cat" );
     print F "$val\n";
     close( F );
-    unlock_file($self, "$main::stats_dir");
+    unlock_file($self, "$conf::stats_dir");
 }
 
 sub debian_files_list ($$) {
@@ -2887,10 +2894,8 @@ sub dump_main_state () {
 
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
-				     \%main::job_state,
-				     $main::stats_dir],
+				     \%main::job_state],
 				    [qw($main::current_job
 					$main::DEVNULL
-					%main::job_state
-					$main::stats_dir)] );
+					%main::job_state)] );
 }
