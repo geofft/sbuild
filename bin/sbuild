@@ -126,7 +126,7 @@ sub build_new () {
 
     $build{'Distribution'} = 'unstable';
     $build{'Chroot'} = undef;
-    $build{'Arch'} = $main::Sbuild::Sysconfig::arch;
+    $build{'Arch'} = $Sbuild::Sysconfig::arch;
     $build{'User Arch'} = '';
     $build{'Batch Mode'} = 0;
     $build{'Auto Giveback'} = 0;
