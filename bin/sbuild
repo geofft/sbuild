@@ -141,7 +141,6 @@ sub build_new () {
     $build{'Jobs File'} = 'build-progress';
     $build{'Max Lock Trys'} = 120;
     $build{'Lock Interval'} = 5;
-    $build{'ILock File'} = '';
     $build{'Srcdep Lock Count'} = 0;
     $build{'Pkg Status'} = '';
     $build{'Pkg Start Time'} = 0;
@@ -157,7 +156,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-$main::ilock_file = "";
 $main::pkg_status = "";
 $main::pkg_end_time = 0;
 $main::pkg_start_time = 0;
@@ -374,7 +372,6 @@ sub main ($) {
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
 	$session->{'Build Location'} = $self->{'Chroot Build Dir'};
-	$main::ilock_file = $session->{'Install Lock'};
 
 	$self->{'Arch'} = chroot_arch($self);
 
@@ -1033,19 +1030,19 @@ sub install_deps ($$) {
     }
 
   repeat:
-    lock_file($self, "$main::ilock_file", 1);
+    lock_file($self, "$self->{'Session'}->{'Install Lock'}", 1);
 
     print "Filtering dependencies\n" if $conf::debug;
     if (!filter_dependencies($self, @$dep, @positive, @negative )) {
 	print PLOG "Package installation not possible\n";
-	unlock_file($self, "$main::ilock_file");
+	unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 	return 0;
     }
 
     print PLOG "Checking for source dependency conflicts...\n";
     if (!run_apt($self, "-s", @instd, @rmvd, @positive)) {
 	print PLOG "Test what should be installed failed.\n";
-	unlock_file($self, "$main::ilock_file");
+	unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 	return 0;
     }
     # add negative deps as to be removed for checking srcdep conflicts
@@ -1054,7 +1051,7 @@ sub install_deps ($$) {
     if (@confl = check_srcdep_conflicts($self, @instd, @rmvd)) {
 	print PLOG "Waiting for job(s) @confl to finish\n";
 
-	unlock_file($self, "$main::ilock_file");
+	unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 	wait_for_srcdep_conflicts($self, @confl );
 	goto repeat;
     }
@@ -1078,7 +1075,7 @@ sub install_deps ($$) {
 	uninstall_debs($self,
 		       $self->{'Chroot Dir'} ? "purge" : "remove",
 		       @instd);
-	unlock_file($self, "$main::ilock_file");
+	unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 	return 0;
     }
     set_installed($self, @instd);
@@ -1089,7 +1086,7 @@ sub install_deps ($$) {
 			$self->{'Chroot Dir'} ? "purge" : "remove",
 			@negative)) {
 	print PLOG "Removal of packages failed\n";
-	unlock_file($self, "$main::ilock_file");
+	unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 	return 0;
     }
     set_removed($self, @negative);
@@ -1101,7 +1098,7 @@ sub install_deps ($$) {
     if ($fail) {
 	print PLOG "After installing, the following source dependencies are ".
 	    "still unsatisfied:\n$fail\n";
-	unlock_file($self, "$main::ilock_file");
+	unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 	return 0;
     }
 
@@ -1121,7 +1118,7 @@ sub install_deps ($$) {
 	}
     }
 
-    unlock_file($self, "$main::ilock_file");
+    unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 
     prepare_watches($self, @$dep, @instd );
     return 1;
@@ -1158,7 +1155,7 @@ sub uninstall_deps ($) {
 
     my( @pkgs, @instd, @rmvd );
 
-    lock_file($self, "$main::ilock_file", 1);
+    lock_file($self, "$self->{'Session'}->{'Install Lock'}", 1);
 
     @pkgs = keys %{$main::changes->{'removed'}};
     print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
@@ -1175,7 +1172,7 @@ sub uninstall_deps ($) {
 	if !uninstall_debs($self, "purge", @pkgs);
     unset_installed($self, @pkgs);
 
-    unlock_file($self, "$main::ilock_file");
+    unlock_file($self, "$self->{'Session'}->{'Install Lock'}");
 }
 
 sub uninstall_debs ($$@) {
@@ -2883,7 +2880,6 @@ sub dump_main_state () {
 				     $main::DEVNULL,
 				     $main::dpkg_buildpackage_signopt,
 				     \@main::have_dsc_build_deps,
-				     $main::ilock_file,
 				     \%main::job_state,
 				     $main::ld_library_path,
 				     \@main::manual_srcdeps,
@@ -2910,7 +2906,6 @@ sub dump_main_state () {
 					%main::deps $main::DEVNULL
 					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
-					$main::ilock_file
 					%main::job_state
 					$main::ld_library_path
 					@main::manual_srcdeps
