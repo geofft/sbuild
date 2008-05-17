@@ -132,6 +132,10 @@ sub build_new () {
     $build{'User Arch'} = '';
     $build{'Batch Mode'} = 0;
     $build{'Auto Giveback'} = 0;
+    $build{'Auto Giveback Host'} = 0;
+    $build{'Auto Giveback Socket'} = 0;
+    $build{'Auto Giveback User'} = 0;
+    $build{'Auto Giveback WannaBuild User'} = 0;
     $build{'Build Arch All'} = 0;
     $build{'Build Source'} = 0;
     $build{'Build Progress'} = 0;
@@ -158,8 +162,6 @@ $main::build_object = build_new();
 
 undef $main::chroot;
 
-$main::batchmode = 0;
-$main::auto_giveback = 0;
 $main::build_arch_all = 0;
 $main::build_source = 0;
 $main::jobs_file = "build-progress";
@@ -192,16 +194,16 @@ sub main ($) {
     exit 1 if !GetOptions ("arch=s" => \$self->{'User Arch'},
 			   "A|arch-all" => \$main::build_arch_all,
 			   "auto-give-back=s" => sub {
-			       $main::auto_giveback = 1;
+			       $self->{'Auto Giveback'} = 1;
 			       if ($_[1]) {
 				   my @parts = split( '@', $_[1] );
-				   $main::auto_giveback_socket =
+				   $self->{'Auto Giveback Socket'} =
 				       $parts[$#parts-3] if @parts > 3;
-				   $main::auto_giveback_wb_user =
+				   $self->{'Auto Giveback WannaBuild User'} =
 				       $parts[$#parts-2] if @parts > 2;
-				   $main::auto_giveback_user =
+				   $self->{'Auto Giveback User'} =
 				       $parts[$#parts-1] if @parts > 1;
-				   $main::auto_giveback_host =
+				   $self->{'Auto Giveback Host'} =
 				       $parts[$#parts];
 			       }
 			   },
@@ -997,22 +999,22 @@ sub analyze_fail_stage ($$) {
     my $pkgv = shift;
 
     return if $main::pkg_status ne "failed";
-    return if !$main::auto_giveback;
+    return if !$self->{'Auto Giveback'};
     if (isin( $main::pkg_fail_stage,
 	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
 	$main::pkg_status = "given-back";
 	print PLOG "Giving back package $pkgv after failure in ".
 	    "$main::pkg_fail_stage stage.\n";
 	my $cmd = "";
-	$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
-	    if $main::auto_giveback_host;
-	$cmd .= "-S $main::auto_giveback_socket "
-	    if $main::auto_giveback_socket;
+	$cmd = "ssh -l$self->{'Auto Giveback User'} $self->{'Auto Giveback Host'} "
+	    if $self->{'Auto Giveback Host'};
+	$cmd .= "-S $self->{'Auto Giveback Socket'} "
+	    if $self->{'Auto Giveback Socket'};
 	$cmd .= "wanna-build --give-back --no-down-propagation ".
 	    "--dist=$self->{'Distribution'}";
 	$cmd .= " --database=$main::database" if $main::database;
-	$cmd .= " --user=$main::auto_giveback_wb_user "
-	    if $main::auto_giveback_wb_user;
+	$cmd .= " --user=$self->{'Auto Giveback WannaBuild User'} "
+	    if $self->{'Auto Giveback WannaBuild User'};
 	$cmd .= " $pkgv";
 	system $cmd;
 	if ($?) {
@@ -2878,11 +2880,6 @@ sub dump_main_state () {
     my $self = shift;
 
     print STDERR Data::Dumper->Dump([\@main::additional_deps,
-				     $main::auto_giveback,
-				     $main::auto_giveback_host,
-				     $main::auto_giveback_socket,
-				     $main::auto_giveback_user,
-				     $main::auto_giveback_wb_user,
 				     $main::binNMU,
 				     $main::binNMU_name,
 				     $main::binNMUver,
@@ -2924,11 +2921,6 @@ sub dump_main_state () {
 				     $main::useSNAP,
 				     $main::verbose],
 				    [qw(@main::additional_deps
-					$main::auto_giveback
-					$main::auto_giveback_host
-					$main::auto_giveback_socket
-					$main::auto_giveback_user
-					$main::auto_giveback_wb_user
 					$main::binNMU_name
 					$main::binNMUver
 					$main::build_arch_all
