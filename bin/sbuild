@@ -125,8 +125,10 @@ sub build_new () {
     my %build = ();
 
     $build{'Distribution'} = 'unstable';
-    $build{'Chroot'} = undef;
     $build{'Arch'} = $Sbuild::Sysconfig::arch;
+    $build{'Chroot'} = undef;
+    $build{'Chroot Dir'} = '';
+    $build{'Chroot Build Dir'} = '';
     $build{'User Arch'} = '';
     $build{'Batch Mode'} = 0;
     $build{'Auto Giveback'} = 0;
@@ -146,8 +148,6 @@ sub build_new () {
     $build{'Pkg Start Time'} = 0;
     $build{'Pkg End Time'} = 0;
     $build{'This Space'} = 0;
-    $build{'Chroot Dir'} = '';
-    $build{'Chroot Build Dir'} = '';
     $build{'Toolchain Packages'} = [];
     $build{'Override Distribution'} = 0;
     $build{'Sub Task'} = 'initialisation';
@@ -158,8 +158,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-undef $main::chroot;
-
 $main::srcdep_lock_dir = "";
 $main::ilock_file = "";
 $main::srcdep_lock_cnt = 0;
@@ -167,8 +165,6 @@ $main::pkg_status = "";
 $main::pkg_end_time = 0;
 $main::pkg_start_time = 0;
 $main::this_space = 0;
-$main::chroot_dir = "";
-$main::chroot_build_dir = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 $main::sub_task = "initialisation";
@@ -222,7 +218,9 @@ sub main ($) {
 			       $main::binNMUver ||= 1;
 			   },
 			   "binNMU=i" => \$main::binNMUver,
-			   "c|chroot=s" => \$main::chroot,
+			   "c|chroot=s" => sub {
+			       $self->{'Chroot'} = $_[1];
+			   },
 			   "database=s" => \$main::database,
 			   "D|debug+" => \$conf::debug,
 			   "apt-update" => \$conf::apt_update,
@@ -270,8 +268,8 @@ sub main ($) {
 
     print "Selected distribution $self->{'Distribution'}\n"
 	if $conf::debug;
-    print "Selected chroot $main::chroot\n"
-	if $conf::debug and defined $main::chroot;
+    print "Selected chroot $self->{'Chroot'}\n"
+	if $conf::debug and defined $self->{'Chroot'};
     print "Selected architecture $self->{'User Arch'}\n"
 	if $conf::debug;
 
@@ -365,7 +363,8 @@ sub main ($) {
 	}
 
 	my $session = Sbuild::Chroot::new($self->{'Distribution'},
-					  $main::chroot, $self->{'User Arch'});
+					  $self->{'Chroot'},
+					  $self->{'User Arch'});
 	$self->{'Session'} = $session;
 
 	if (!$session->begin_session()) {
@@ -373,11 +372,11 @@ sub main ($) {
 	    $main::pkg_status = "skipped";
 	    goto cleanup_close;
 	}
-	$main::chroot_dir = $session->{'Location'};
-	$main::chroot_build_dir = tempdir("$Sbuild::Conf::username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
+	$self->{'Chroot Dir'} = $session->{'Location'};
+	$self->{'Chroot Build Dir'} = tempdir("$Sbuild::Conf::username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
-	$session->{'Build Location'} = $main::chroot_build_dir;
+	$session->{'Build Location'} = $self->{'Chroot Build Dir'};
 	$main::srcdep_lock_dir = $session->{'Srcdep Lock Dir'};
 	$main::ilock_file = $session->{'Install Lock'};
 
@@ -488,11 +487,11 @@ sub fetch_source_files ($$$$$$) {
 #	my @cwd_files = ("${dir}/${dscbase}");
 	my @cwd_files = dsc_files($self, "${dir}/${dscbase}");
 	foreach (@cwd_files) {
-	    if (system ("cp '$_' '$main::chroot_build_dir'")) {
-		print PLOG "ERROR: Could not copy $_ to $main::chroot_build_dir \n";
+	    if (system ("cp '$_' '$self->{'Chroot Build Dir'}'")) {
+		print PLOG "ERROR: Could not copy $_ to $self->{'Chroot Build Dir'} \n";
 		return 0;
 	    }
-	    push(@fetched, "${main::chroot_build_dir}/" . basename($_));
+	    push(@fetched, "$self->{'Chroot Build Dir'}/" . basename($_));
 	}
     } else {
 	my %entries = ();
@@ -553,7 +552,7 @@ sub fetch_source_files ($$$$$$) {
 
 	print PLOG "Fetching source files...\n";
 	foreach (@{$entries{"$pkg $version"}}) {
-	    push(@fetched, "$main::chroot_build_dir/$_");
+	    push(@fetched, "$self->{'Chroot Build Dir'}/$_");
 	}
 
 	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $Sbuild::Conf::username, 0, undef);
@@ -574,8 +573,8 @@ sub fetch_source_files ($$$$$$) {
 	$$dscfile_ref = (grep { /\.dsc$/ } @fetched)[0];
     }
 
-    if (!open( F, "<${main::chroot_build_dir}/${dscbase}" )) {
-	print PLOG "Can't open ${main::chroot_build_dir}/${dscbase}: $!\n";
+    if (!open( F, "<$self->{'Chroot Build Dir'}/${dscbase}" )) {
+	print PLOG "Can't open $self->{'Chroot Build Dir'}/${dscbase}: $!\n";
 	return 0;
     }
     my $dsctext;
@@ -645,15 +644,15 @@ sub build ($$$) {
     my $tmpunpackdir = $dsc;
     $tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
     $tmpunpackdir =~ s/_/-/;
-    $tmpunpackdir = "$main::chroot_build_dir/$tmpunpackdir";
+    $tmpunpackdir = "$self->{'Chroot Build Dir'}/$tmpunpackdir";
 
-    if (-d "$main::chroot_build_dir/$dsc" && -l "$main::chroot_build_dir/$dsc") {
+    if (-d "$self->{'Chroot Build Dir'}/$dsc" && -l "$self->{'Chroot Build Dir'}/$dsc") {
 	# if the package dir already exists but is a symlink, complain
 	print PLOG "Cannot unpack source: a symlink to a directory with the\n",
 	"same name already exists.\n";
 	return 0;
     }
-    if (! -d "$main::chroot_build_dir/$dsc") {
+    if (! -d "$self->{'Chroot Build Dir'}/$dsc") {
 	$main::pkg_fail_stage = "unpack";
 	# dpkg-source refuses to remove the remanants of an aborted
 	# dpkg-source extraction, so we will if necessary.
@@ -670,7 +669,7 @@ sub build ($$$) {
 	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 	    return 0;
 	}
-	$dir = "$main::chroot_build_dir/$dir";
+	$dir = "$self->{'Chroot Build Dir'}/$dir";
 
 	if (system( "chmod -R g-s,go+rX $dir" ) != 0) {
 	    print PLOG "chmod -R g-s,go+rX $dir failed.\n";
@@ -678,7 +677,7 @@ sub build ($$$) {
 	}
     }
     else {
-	$dir = "$main::chroot_build_dir/$dsc";
+	$dir = "$self->{'Chroot Build Dir'}/$dsc";
 
 	$main::pkg_fail_stage = "check-unpacked-version";
 	# check if the unpacked tree is really the version we need
@@ -727,8 +726,8 @@ sub build ($$$) {
 	    print PLOG "Disk space is propably not enough for building.\n".
 		"(Source needs $current_usage KB, free are $free KB.)\n";
 	    # TODO: Only purge in a single place.
-	    print PLOG "Purging $main::chroot_build_dir\n";
-	    $self->{'Session'}->run_command("rm -rf '$main::chroot_build_dir'", "root", 1, 0, '/');
+	    print PLOG "Purging $self->{'Chroot Build Dir'}\n";
+	    $self->{'Session'}->run_command("rm -rf '$self->{'Chroot Build Dir'}'", "root", 1, 0, '/');
 	    return 0;
 	}
     }
@@ -811,8 +810,8 @@ EOF
 	    $self->{'Build Arch All'} ?	"-b" : "-B";
 
 	my $bdir = $self->{'Session'}->strip_chroot_path($dir);
-	if (-f "$main::chroot_dir/etc/ld.so.conf" &&
-	    ! -r "$main::chroot_dir/etc/ld.so.conf") {
+	if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
+	    ! -r "$self->{'Chroot Dir'}/etc/ld.so.conf") {
 	    $self->{'Session'}->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
 	    print PLOG "ld.so.conf was not readable! Fixed.\n";
 	}
@@ -872,17 +871,17 @@ EOF
 	print PLOG "FAILED [dpkg-buildpackage died]\n";
     }
     else {
-	if (-r "$dir/debian/files" && $main::chroot_build_dir) {
+	if (-r "$dir/debian/files" && $self->{'Chroot Build Dir'}) {
 	    my @files = debian_files_list($self, "$dir/debian/files");
 
 	    foreach (@files) {
-		if (! -f "$main::chroot_build_dir/$_") {
+		if (! -f "$self->{'Chroot Build Dir'}/$_") {
 		    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
 		    next;
 		}
 		if (/_all.u?deb$/ and not $self->{'Build Arch All'}) {
 		    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
-		    unlink("$main::chroot_build_dir/$_");
+		    unlink("$self->{'Chroot Build Dir'}/$_");
 		    next;
 		}
 	    }
@@ -892,10 +891,10 @@ EOF
 	    ($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
 	    "_$self->{'Arch'}.changes";
 	my @cfiles;
-	if (-r "$main::chroot_build_dir/$changes") {
+	if (-r "$self->{'Chroot Build Dir'}/$changes") {
 	    my(@do_dists, @saved_dists);
 	    print PLOG "\n$changes:\n";
-	    open( F, "<$main::chroot_build_dir/$changes" );
+	    open( F, "<$self->{'Chroot Build Dir'}/$changes" );
 	    if (open( F2, ">$changes.new" )) {
 		while( <F> ) {
 		    if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
@@ -920,14 +919,14 @@ EOF
 		rename( "$changes.new", "$changes" )
 		    or print PLOG "$changes.new could not be renamed ".
 		    "to $changes: $!\n";
-		unlink( "$main::chroot_build_dir/$changes" )
-		    if $main::chroot_build_dir;
+		unlink( "$self->{'Chroot Build Dir'}/$changes" )
+		    if $self->{'Chroot Build Dir'};
 	    }
 	    else {
 		print PLOG "Cannot create $changes.new: $!\n";
 		print PLOG "Distribution field may be wrong!!!\n";
-		if ($main::chroot_build_dir) {
-		    system "mv", "-f", "$main::chroot_build_dir/$changes", "."
+		if ($self->{'Chroot Build Dir'}) {
+		    system "mv", "-f", "$self->{'Chroot Build Dir'}/$changes", "."
 			and print PLOG "ERROR: Could not move ".basename($_)." to .\n";
 		}
 	    }
@@ -939,7 +938,7 @@ EOF
 
 	my @debcfiles = @cfiles;
 	foreach (@debcfiles) {
-	    my $deb = "$main::chroot_build_dir/$_";
+	    my $deb = "$self->{'Chroot Build Dir'}/$_";
 	    next if $deb !~ /($self->{'Arch'}|all)\.[\w\d.-]*$/;
 
 	    print PLOG "\n$deb:\n";
@@ -954,7 +953,7 @@ EOF
 
 	@debcfiles = @cfiles;
 	foreach (@debcfiles) {
-	    my $deb = "$main::chroot_build_dir/$_";
+	    my $deb = "$self->{'Chroot Build Dir'}/$_";
 	    next if $deb !~ /($self->{'Arch'}|all)\.[\w\d.-]*$/;
 
 	    print PLOG "\n$deb:\n";
@@ -969,7 +968,7 @@ EOF
 
 	foreach (@cfiles) {
 	    push( @space_files, $_ );
-	    system "mv", "-f", "$main::chroot_build_dir/$_", "."
+	    system "mv", "-f", "$self->{'Chroot Build Dir'}/$_", "."
 		and print PLOG "ERROR: Could not move $_ to .\n";
 	}
 	print PLOG "\n";
@@ -982,8 +981,8 @@ EOF
 
     if ($conf::purge_build_directory eq "always" ||
 	($conf::purge_build_directory eq "successful" && $rv == 0)) {
-	print PLOG "Purging $main::chroot_build_dir\n";
-	my $bdir = $self->{'Session'}->strip_chroot_path($main::chroot_build_dir);
+	print PLOG "Purging $self->{'Chroot Build Dir'}\n";
+	my $bdir = $self->{'Session'}->strip_chroot_path($self->{'Chroot Build Dir'});
 	$self->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
     }
 
@@ -1081,7 +1080,7 @@ sub install_deps ($$) {
 	# remove additional packages
 	print PLOG "Trying to uninstall newly installed packages:\n";
 	uninstall_debs($self,
-		       $main::chroot_dir ? "purge" : "remove",
+		       $self->{'Chroot Dir'} ? "purge" : "remove",
 		       @instd);
 	unlock_file($self, "$main::ilock_file");
 	return 0;
@@ -1091,7 +1090,7 @@ sub install_deps ($$) {
 
     print "Removing negative dependencies: @negative\n" if $conf::debug;
     if (!uninstall_debs($self,
-			$main::chroot_dir ? "purge" : "remove",
+			$self->{'Chroot Dir'} ? "purge" : "remove",
 			@negative)) {
 	print PLOG "Removal of packages failed\n";
 	unlock_file($self, "$main::ilock_file");
@@ -1621,8 +1620,8 @@ sub get_dpkg_status ($@) {
     return () if !@_;
     print "Requesting dpkg status for packages: @interest\n"
 	if $conf::debug;
-    if (!open( STATUS, "<$main::chroot_dir/var/lib/dpkg/status" )) {
-	print PLOG "Can't open $main::chroot_dir/var/lib/dpkg/status: $!\n";
+    if (!open( STATUS, "<$self->{'Chroot Dir'}/var/lib/dpkg/status" )) {
+	print PLOG "Can't open $self->{'Chroot Dir'}/var/lib/dpkg/status: $!\n";
 	return ();
     }
     local( $/ ) = "";
@@ -1633,7 +1632,7 @@ sub get_dpkg_status ($@) {
 	/^Version:\s*(.*)\s*$/mi and $version = $1;
 	/^Provides:\s*(.*)\s*$/mi and $provides = $1;
 	if (!$pkg) {
-	    print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
+	    print PLOG "sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: ",
 	    "no Package: field\n";
 	    next;
 	}
@@ -1643,7 +1642,7 @@ sub get_dpkg_status ($@) {
 	    print "$pkg status: $status\n" if $conf::debug >= 2;
 	}
 	if (!$status) {
-	    print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
+	    print PLOG "sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: ",
 	    "no Status: field for package $pkg\n";
 	    next;
 	}
@@ -1654,7 +1653,7 @@ sub get_dpkg_status ($@) {
 	    next;
 	}
 	if (!defined $version || $version eq "") {
-	    print PLOG "sbuild: parse error in $main::chroot_dir/var/lib/dpkg/status: ",
+	    print PLOG "sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: ",
 	    "no Version: field for package $pkg\n";
 	    next;
 	}
@@ -1872,7 +1871,7 @@ sub read_build_essential ($) {
     my @essential;
     local (*F);
 
-    if (open( F, "$main::chroot_dir/usr/share/doc/build-essential/essential-packages-list" )) {
+    if (open( F, "$self->{'Chroot Dir'}/usr/share/doc/build-essential/essential-packages-list" )) {
 	while( <F> ) {
 	    last if $_ eq "\n";
 	}
@@ -1883,10 +1882,10 @@ sub read_build_essential ($) {
 	close( F );
     }
     else {
-	warn "Cannot open $main::chroot_dir/usr/share/doc/build-essential/essential-packages-list: $!\n";
+	warn "Cannot open $self->{'Chroot Dir'}/usr/share/doc/build-essential/essential-packages-list: $!\n";
     }
 
-    if (open( F, "$main::chroot_dir/usr/share/doc/build-essential/list" )) {
+    if (open( F, "$self->{'Chroot Dir'}/usr/share/doc/build-essential/list" )) {
 	while( <F> ) {
 	    last if $_ eq "BEGIN LIST OF PACKAGES\n";
 	}
@@ -1899,7 +1898,7 @@ sub read_build_essential ($) {
 	close( F );
     }
     else {
-	warn "Cannot open $main::chroot_dir/usr/share/doc/build-essential/list: $!\n";
+	warn "Cannot open $self->{'Chroot Dir'}/usr/share/doc/build-essential/list: $!\n";
     }
 
     return join( ", ", @essential );
@@ -2147,7 +2146,7 @@ sub check_space ($@) {
     foreach (@files) {
 	my $command;
 
-	if (/^\Q$main::chroot_dir\E/) {
+	if (/^\Q$self->{'Chroot Dir'}\E/) {
 	    $_ = $self->{'Session'}->strip_chroot_path($_);
 	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
 	} else {
@@ -2347,7 +2346,7 @@ sub prepare_watches ($\@@) {
 	}
 	foreach $prg (@{$conf::watches{$pkg}}) {
 	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
-	    $main::this_watches{"$main::chroot_dir$prg"} = $pkg;
+	    $main::this_watches{"$self->{'Chroot Dir'}$prg"} = $pkg;
 	    print "Will watch for $prg ($pkg)\n" if $conf::debug;
 	}
     }
@@ -2645,8 +2644,8 @@ sub shutdown ($) {
     # close logs and send mails
     if ( $main::current_job && defined($main::build_object->{'Session'})) {
 	if ($conf::purge_build_directory eq "always") {
-	    print PLOG "Purging $main::chroot_build_dir\n";
-	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::chroot_build_dir);
+	    print PLOG "Purging $main::build_object->{'Chroot Build Dir'}\n";
+	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::build_object->{'Chroot Build Dir'});
 	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
 	}
 
