@@ -159,6 +159,7 @@ sub build_new () {
     $build{'binNMU Version'} = undef;
     $build{'Changes'} = {};
     $build{'Dependencies'} = {};
+    $build{'Signing Options'} = {};
 
     return \%build;
 }
@@ -277,9 +278,9 @@ sub main ($) {
     if $conf::mailto{$self->{'Distribution'}};
 
 # see debsign for priorities, we will follow the same order
-    $main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
-    $main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name;
-    $main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id;
+    $self->{'Signing Options'}="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
+    $self->{'Signing Options'}="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name;
+    $self->{'Signing Options'}="-k\"".$conf::key_id."\"" if defined $conf::key_id;
     $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
     $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
@@ -818,7 +819,7 @@ EOF
 	    (defined($main::ld_library_path) ?
 	     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-	     "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
+	     "$binopt $self->{'Signing Options'} -r$conf::fakeroot 2>&1";
 	$self->{'Session'}->exec_command($buildcmd, $Sbuild::Conf::username, 1, 0, undef);
     }
     $self->{'Sub Task'} = "dpkg-buildpackage";
@@ -2878,7 +2879,6 @@ sub dump_main_state () {
 
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
-				     $main::dpkg_buildpackage_signopt,
 				     \@main::have_dsc_build_deps,
 				     \%main::job_state,
 				     $main::ld_library_path,
@@ -2891,7 +2891,6 @@ sub dump_main_state () {
 				     $main::useSNAP],
 				    [qw($main::current_job
 					$main::DEVNULL
-					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
 					%main::job_state
 					$main::ld_library_path
