@@ -152,6 +152,7 @@ sub build_new () {
     $build{'Toolchain Packages'} = [];
     $build{'Override Distribution'} = 0;
     $build{'Sub Task'} = 'initialisation';
+    $build{'Sub PID'} = undef;
     $build{'Session'} = undef;
     $build{'Additional Deps'} = [];
     $build{'binNMU'} = undef;
@@ -685,12 +686,12 @@ sub build ($$$) {
 
 	$main::pkg_fail_stage = "check-unpacked-version";
 	# check if the unpacked tree is really the version we need
-	$main::sub_pid = open( PIPE, "-|" );
-	if (!defined $main::sub_pid) {
+	$self->{'Sub PID'} = open( PIPE, "-|" );
+	if (!defined $self->{'Sub PID'}) {
 	    print PLOG "Can't spawn dpkg-parsechangelog: $!\n";
 	    return 0;
 	}
-	if ($main::sub_pid == 0) {
+	if ($self->{'Sub PID'} == 0) {
 	    $dir = $self->{'Session'}->strip_chroot_path($dir);
 	    $self->{'Session'}->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	}
@@ -701,7 +702,7 @@ sub build ($$$) {
 	    $clog .= $_;
 	}
 	close( PIPE );
-	undef $main::sub_pid;
+	undef $self->{'Sub PID'};
 	if ($?) {
 	    print PLOG "FAILED [dpkg-parsechangelog died]\n";
 	    return 0;
@@ -802,12 +803,12 @@ EOF
 
     $self->{'Build Start Time'} = time;
     $main::pkg_fail_stage = "build";
-    $main::sub_pid = open( PIPE, "-|" );
-    if (!defined $main::sub_pid) {
+    $self->{'Sub PID'} = open( PIPE, "-|" );
+    if (!defined $self->{'Sub PID'}) {
 	print PLOG "Can't spawn dpkg-buildpackage: $!\n";
 	return 0;
     }
-    if ($main::sub_pid == 0) {
+    if ($self->{'Sub PID'} == 0) {
 	open( STDIN, "</dev/null" );
 	my $binopt = $self->{'Build Source'} ?
 	    $conf::force_orig_source ? "-sa" : "" :
@@ -840,7 +841,7 @@ EOF
 
     local $SIG{'ALRM'} = sub {
 	my $signal = ($timed_out > 0) ? "KILL" : "TERM";
-	$self->{'Session'}->run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0, '/');
+	$self->{'Session'}->run_command("perl -e \"kill( \\\"$signal\\\", $self->{'Sub PID'} )\"", "root", 1, 0, '/');
 	$timeout_times[$timed_out] = time - $last_time;
 	$timeout_sigs[$timed_out] = $signal;
 	$timed_out++;
@@ -854,7 +855,7 @@ EOF
 	print PLOG $_;
     }
     close( PIPE );
-    undef $main::sub_pid;
+    undef $self->{'Sub PID'};
     alarm( 0 );
     $rv = $?;
 
@@ -2640,9 +2641,9 @@ sub shutdown ($) {
 
   not_ni_shutdown:
     # next: kill currently running command (if one)
-    if ($main::sub_pid) {
-	print "Killing $main::build_object->{'Sub Task'} subprocess $main::sub_pid\n";
-	run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0, '/');
+    if ($main::build_object->{'Sub PID'}) {
+	print "Killing $main::build_object->{'Sub Task'} subprocess $main::build_object->{'Sub PID'}\n";
+	run_command("perl -e \"kill( \\\"TERM\\\", $main::build_object->{'Sub PID'} )\"", "root", 1, 0, '/');
     }
     remove_srcdep_lock_file($main::build_object);
 
@@ -2737,17 +2738,17 @@ sub dsc_files ($$) {
 sub chroot_arch ($) {
     my $self = shift;
 
-    $main::sub_pid = open( PIPE, "-|" );
-    if (!defined $main::sub_pid) {
+    $self->{'Sub PID'} = open( PIPE, "-|" );
+    if (!defined $self->{'Sub PID'}) {
 	print PLOG "Can't spawn dpkg: $!\n";
 	return 0;
     }
-    if ($main::sub_pid == 0) {
+    if ($self->{'Sub PID'} == 0) {
 	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $Sbuild::Conf::username, 1, 0, '/');
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );
-    undef $main::sub_pid;
+    undef $self->{'Sub PID'};
 
     die "Can't determine architecture of chroot: $!\n"
 	if ($? || !defined($chroot_arch));
@@ -2885,18 +2886,14 @@ sub dump_main_state () {
 				     $main::DEVNULL,
 				     \%main::job_state,
 				     $main::pkg_fail_stage,
-				     $main::shutdown,
 				     $main::stats_dir,
-				     $main::sub_pid,
 				     \%main::this_watches,
 				     $main::useSNAP],
 				    [qw($main::current_job
 					$main::DEVNULL
 					%main::job_state
 					$main::pkg_fail_stage
-					$main::shutdown
 					$main::stats_dir
-					$main::sub_pid
 					%main::this_watches
 					$main::useSNAP)] );
 }
