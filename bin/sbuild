@@ -150,6 +150,7 @@ sub build_new () {
     $build{'Pkg Fail Stage'} = 0;
     $build{'Build Start Time'} = 0;
     $build{'This Space'} = 0;
+    $build{'This Watches'} = {};
     $build{'Toolchain Packages'} = [];
     $build{'Override Distribution'} = 0;
     $build{'Sub Task'} = 'initialisation';
@@ -2346,7 +2347,7 @@ sub prepare_watches ($\@@) {
     }
     # init %this_watches to names of packages which have not been
     # installed as source dependencies
-    undef %main::this_watches;
+    $self->{'This Watches'} = {};
     foreach $pkg (keys %conf::watches) {
 	if (isin( $pkg, @dep_on )) {
 	    print "Excluding from watch: $pkg\n" if $conf::debug;
@@ -2354,7 +2355,7 @@ sub prepare_watches ($\@@) {
 	}
 	foreach $prg (@{$conf::watches{$pkg}}) {
 	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
-	    $main::this_watches{"$self->{'Chroot Dir'}$prg"} = $pkg;
+	    $self->{'This Watches'}->{"$self->{'Chroot Dir'}$prg"} = $pkg;
 	    print "Will watch for $prg ($pkg)\n" if $conf::debug;
 	}
     }
@@ -2366,13 +2367,13 @@ sub check_watches ($) {
 
     return if (!$conf::check_watches);
 
-    foreach $prg (keys %main::this_watches) {
+    foreach $prg (keys %{$self->{'This Watches'}}) {
 	if (!(@st = stat( $prg ))) {
 	    print "Watch: $prg: stat failed\n" if $conf::debug;
 	    next;
 	}
 	if ($st[8] > $self->{'Build Start Time'}) {
-	    my $pkg = $main::this_watches{$prg};
+	    my $pkg = $self->{'This Watches'}->{$prg};
 	    my $prg2 = $self->{'Session'}->strip_chroot_path($prg);
 	    push( @{$used{$pkg}}, $prg2 )
 		if @{$self->{'Have DSC Build Deps'}} ||
@@ -2887,11 +2888,9 @@ sub dump_main_state () {
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
 				     \%main::job_state,
-				     $main::stats_dir,
-				     \%main::this_watches],
+				     $main::stats_dir],
 				    [qw($main::current_job
 					$main::DEVNULL
 					%main::job_state
-					$main::stats_dir
-					%main::this_watches)] );
+					$main::stats_dir)] );
 }
