@@ -100,8 +100,7 @@ sub dump_main_state ();
 package conf;
 use Sbuild::Conf;
 package main;
-use Sbuild::Conf qw($cwd $nolog $username $verbose); # For backward
-						     # compatibility.
+use Sbuild::Conf qw($nolog $username $verbose); # For backward compatibility.
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($arch $hostname $version);
@@ -2890,7 +2889,6 @@ sub dump_main_state () {
 				     $main::chroot_build_dir,
 				     $main::chroot_dir,
 				     $main::current_job,
-				     $main::cwd,
 				     $main::database,
 				     \%main::deps,
 				     $main::DEVNULL,
@@ -2930,7 +2928,7 @@ sub dump_main_state () {
 					$main::chroot_build_dir
 					$main::chroot_dir
 					$main::current_job
-					$main::cwd $main::database
+					$main::database
 					%main::deps $main::DEVNULL
 					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
