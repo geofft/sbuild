@@ -150,6 +150,7 @@ sub build_new () {
     $build{'Override Distribution'} = 0;
     $build{'Sub Task'} = 'initialisation';
     $build{'Session'} = undef;
+    $build{'Additional Deps'} = [];
 
     return \%build;
 }
@@ -342,7 +343,7 @@ sub main ($) {
 
 	$self->{'Pkg Status'} = "failed"; # assume for now
 	$main::current_job = $pkgv;
-	$main::additional_deps = [];
+	$self->{'Additional Deps'} = [];
 	write_jobs_file($self, "currently building" );
 	if (should_skip($self, $pkgv )) {
 	    $self->{'Pkg Status'} = "skipped";
@@ -1770,7 +1771,9 @@ sub merge_pkg_build_deps ($$$$$$) {
     $exp_pkgdeps = expand_dependencies($self, @$exp_pkgdeps );
     print "Dependency-expanded build deps:\n",
 	  format_deps($self, @$exp_pkgdeps), "\n" if $conf::debug;
-    $main::additional_deps = $exp_pkgdeps;
+    # NOTE: Was $main::additional_deps, not @main::additional_deps.
+    # They may be separate?
+    @{$self->{'Additional Deps'}} = @$exp_pkgdeps;
 
     # remove missing essential deps that are dependencies of build
     # deps
@@ -1781,7 +1784,7 @@ sub merge_pkg_build_deps ($$$$$$) {
 	           if @$filt_pkgdeps;
 
     # remove comment package names
-    push( @$main::additional_deps,
+    push( @{$self->{'Additional Deps'}},
 	  grep { $_->{'Neg'} && $_->{'Package'} =~ /^needs-no-/ } @$missing );
     $missing = [ grep { !($_->{'Neg'} &&
 	                ($_->{'Package'} =~ /^this-package-does-not-exist/ ||
@@ -2312,7 +2315,7 @@ sub prepare_watches ($\@@) {
     my(@dep_on, $dep, $pkg, $prg);
 
     @dep_on = @instd;
-    foreach $dep (@$dependencies, @$main::additional_deps) {
+    foreach $dep (@$dependencies, @{$self->{'Additional Deps'}}) {
 	if ($dep->{'Neg'} && $dep->{'Package'} =~ /^needs-no-(\S+)/) {
 	    push( @dep_on, $1 );
 	}
@@ -2862,8 +2865,7 @@ sub add_space_entry ($$$) {
 sub dump_main_state () {
     my $self = shift;
 
-    print STDERR Data::Dumper->Dump([\@main::additional_deps,
-				     $main::binNMU_name,
+    print STDERR Data::Dumper->Dump([$main::binNMU_name,
 				     $main::binNMUver,
 				     $main::build_start_time,
 				     $main::changes,
@@ -2882,8 +2884,7 @@ sub dump_main_state () {
 				     $main::sub_pid,
 				     \%main::this_watches,
 				     $main::useSNAP],
-				    [qw(@main::additional_deps
-					$main::binNMU_name
+				    [qw($main::binNMU_name
 					$main::binNMUver
 					$main::build_start_time
 					$main::changes
