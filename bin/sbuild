@@ -156,7 +156,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-$main::this_space = 0;
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 $main::sub_task = "initialisation";
@@ -428,7 +427,7 @@ sub main ($) {
 			 $self->{'Pkg Status'},
 			 $self->{'Pkg Start Time'},
 			 $self->{'Pkg End Time'},
-			 $main::this_space );
+			 $self->{'This Space'} );
 	undef $main::binNMU_name;
 	$main::current_job = "";
 	if ( $self->{'Batch Mode'} and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
@@ -628,7 +627,7 @@ sub build ($$$) {
     # count build time from now, ignoring the installation of source
     # deps
     $self->{'Pkg Start Time'} = time;
-    $main::this_space = 0;
+    $self->{'This Space'} = 0;
     $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
     my ($pkg, $version) = ($1,$2);
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
@@ -2155,7 +2154,7 @@ sub check_space ($@) {
 	close( PIPE );
     }
 
-    $main::this_space = $sum;
+    $self->{'This Space'} = $sum;
 }
 
 # UNUSED
@@ -2651,7 +2650,7 @@ sub shutdown ($) {
 			 $main::build_object->{'Pkg Status'},
 			 $main::build_object->{'Pkg Start Time'},
 			 $main::build_object->{'Pkg End Time'},
-			 $main::this_space );
+			 $main::build_object->{'This Space'} );
 	undef $main::binNMU_name;
     }
     close_log();
@@ -2868,7 +2867,6 @@ sub dump_main_state () {
     my $self = shift;
 
     print STDERR Data::Dumper->Dump([\@main::additional_deps,
-				     $main::binNMU,
 				     $main::binNMU_name,
 				     $main::binNMUver,
 				     $main::build_start_time,
@@ -2888,7 +2886,6 @@ sub dump_main_state () {
 				     $main::stats_dir,
 				     $main::sub_pid,
 				     $main::sub_task,
-				     $main::this_space,
 				     \%main::this_watches,
 				     \@main::toolchain_pkgs,
 				     $main::useSNAP],
@@ -2910,7 +2907,6 @@ sub dump_main_state () {
 					$main::shutdown
 					$main::stats_dir
 					$main::sub_pid $main::sub_task
-					$main::this_space
 					%main::this_watches
 					@main::toolchain_pkgs
 					$main::useSNAP)] );
