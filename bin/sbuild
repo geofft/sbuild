@@ -38,61 +38,61 @@ use Sbuild qw(binNMU_version version_compare);
 use Data::Dumper;
 use File::Temp qw(tempdir);
 
-sub fetch_source_files (\$$$$$$$);
-sub build (\$$$$);
-sub analyze_fail_stage (\$$);
-sub install_deps (\$$$);
-sub wait_for_srcdep_conflicts (\$@);
-sub uninstall_deps (\$$);
-sub uninstall_debs (\$$$@);
-sub run_apt (\$$$\@\@@);
-sub filter_dependencies (\$$\@\@\@);
-sub check_dependencies (\$\@);
-sub get_apt_policy (\$$@);
-sub get_dpkg_status (\$@);
-sub copy (\$$);
-sub merge_pkg_build_deps (\$$$$$$$);
-sub cmp_dep_lists (\$\@\@);
-sub get_altlist (\$$);
-sub is_superset (\$\%\%);
-sub read_build_essential (\$);
-sub expand_dependencies (\$$\@);
-sub expand_virtuals (\$$\@);
-sub get_dependencies (\$$@);
-sub get_virtuals (\$$@);
-sub parse_one_srcdep (\$$$\%);
-sub parse_manual_srcdeps (\$@);
-sub check_space (\$$@);
-sub file_for_name (\$$@);
-sub write_jobs_file (\$$);
-sub append_to_FINISHED (\$$);
-sub write_srcdep_lock_file (\$\@);
-sub check_srcdep_conflicts (\$\@\@);
-sub remove_srcdep_lock_file (\$);
-sub prepare_watches (\$\@@);
-sub check_watches (\$$);
-sub should_skip (\$$);
-sub add_givenback (\$$$);
-sub set_installed (\$@);
-sub set_removed (\$@);
-sub unset_installed (\$@);
-sub unset_removed (\$@);
-sub df (\$$);
+sub fetch_source_files ($$$$$$$);
+sub build ($$$$);
+sub analyze_fail_stage ($$);
+sub install_deps ($$$);
+sub wait_for_srcdep_conflicts ($@);
+sub uninstall_deps ($$);
+sub uninstall_debs ($$$@);
+sub run_apt ($$$\@\@@);
+sub filter_dependencies ($$\@\@\@);
+sub check_dependencies ($\@);
+sub get_apt_policy ($$@);
+sub get_dpkg_status ($@);
+sub copy ($$);
+sub merge_pkg_build_deps ($$$$$$$);
+sub cmp_dep_lists ($\@\@);
+sub get_altlist ($$);
+sub is_superset ($\%\%);
+sub read_build_essential ($);
+sub expand_dependencies ($$\@);
+sub expand_virtuals ($$\@);
+sub get_dependencies ($$@);
+sub get_virtuals ($$@);
+sub parse_one_srcdep ($$$\%);
+sub parse_manual_srcdeps ($@);
+sub check_space ($$@);
+sub file_for_name ($$@);
+sub write_jobs_file ($$);
+sub append_to_FINISHED ($$);
+sub write_srcdep_lock_file ($\@);
+sub check_srcdep_conflicts ($\@\@);
+sub remove_srcdep_lock_file ($);
+sub prepare_watches ($\@@);
+sub check_watches ($$);
+sub should_skip ($$);
+sub add_givenback ($$$);
+sub set_installed ($@);
+sub set_removed ($@);
+sub unset_installed ($@);
+sub unset_removed ($@);
+sub df ($$);
 sub isin ($@);
-sub fixup_pkgv (\$\$);
-sub format_deps (\$@);
-sub lock_file (\$$$);
-sub unlock_file (\$$);
+sub fixup_pkgv ($\$);
+sub format_deps ($@);
+sub lock_file ($$$);
+sub unlock_file ($$);
 sub shutdown ($);
-sub write_stats (\$$$);
-sub debian_files_list (\$$);
-sub dsc_files (\$$);
-sub chroot_arch (\$$);
+sub write_stats ($$$);
+sub debian_files_list ($$);
+sub dsc_files ($$);
+sub chroot_arch ($$);
 sub check_group_membership ();
-sub open_build_log (\$$$$);
-sub close_build_log (\$$$$$$$);
-sub add_time_entry (\$$$);
-sub add_space_entry (\$$$);
+sub open_build_log ($$$$);
+sub close_build_log ($$$$$$$);
+sub add_time_entry ($$$);
+sub add_space_entry ($$$);
 sub dump_main_state ();
 
 package conf;
@@ -124,30 +124,30 @@ umask(022);
 %main::build_object = ();
 $main::build_object_ref = \%main::build_object;
 
-$main::build_object{'Distribution'} = 'unstable';
-$main::build_object{'Chroot'} = undef;
-$main::build_object{'Arch'} = $main::Sbuild::Sysconfig::arch;
-$main::build_object{'User Arch'} = '';
-$main::build_object{'Batch Mode'} = 0;
-$main::build_object{'Auto Giveback'} = 0;
-$main::build_object{'Build Arch All'} = 0;
-$main::build_object{'Build Source'} = 0;
-$main::build_object{'Build Progress'} = 0;
-$main::build_object{'Max Lock Trys'} = 120;
-$main::build_object{'Lock Interval'} = 5;
-$main::build_object{'Srcdep Lock Dir'} = '';
-$main::build_object{'ILock File'} = '';
-$main::build_object{'Srcdep Lock Count'} = 0;
-$main::build_object{'Pkg Status'} = '';
-$main::build_object{'Pkg Start Time'} = 0;
-$main::build_object{'Pkg End Time'} = 0;
-$main::build_object{'This Space'} = 0;
-$main::build_object{'Chroot Dir'} = '';
-$main::build_object{'Chroot Build Dir'} = '';
-$main::build_object{'Toolchain Packages'} = [];
-$main::build_object{'Override Distribution'} = 0;
-$main::build_object{'Sub Task'} = 'initialisation';
-$main::build_object{'Session'} = undef;
+$main::build_object_ref->{'Distribution'} = 'unstable';
+$main::build_object_ref->{'Chroot'} = undef;
+$main::build_object_ref->{'Arch'} = $main::Sbuild::Sysconfig::arch;
+$main::build_object_ref->{'User Arch'} = '';
+$main::build_object_ref->{'Batch Mode'} = 0;
+$main::build_object_ref->{'Auto Giveback'} = 0;
+$main::build_object_ref->{'Build Arch All'} = 0;
+$main::build_object_ref->{'Build Source'} = 0;
+$main::build_object_ref->{'Build Progress'} = 0;
+$main::build_object_ref->{'Max Lock Trys'} = 120;
+$main::build_object_ref->{'Lock Interval'} = 5;
+$main::build_object_ref->{'Srcdep Lock Dir'} = '';
+$main::build_object_ref->{'ILock File'} = '';
+$main::build_object_ref->{'Srcdep Lock Count'} = 0;
+$main::build_object_ref->{'Pkg Status'} = '';
+$main::build_object_ref->{'Pkg Start Time'} = 0;
+$main::build_object_ref->{'Pkg End Time'} = 0;
+$main::build_object_ref->{'This Space'} = 0;
+$main::build_object_ref->{'Chroot Dir'} = '';
+$main::build_object_ref->{'Chroot Build Dir'} = '';
+$main::build_object_ref->{'Toolchain Packages'} = [];
+$main::build_object_ref->{'Override Distribution'} = 0;
+$main::build_object_ref->{'Sub Task'} = 'initialisation';
+$main::build_object_ref->{'Session'} = undef;
 
 undef $main::chroot;
 
@@ -443,7 +443,7 @@ if ($conf::sbuild_mode eq "user") {
 exit 0;
 
 
-sub fetch_source_files (\$$$$$$$) {
+sub fetch_source_files ($$$$$$$) {
     my $self = shift;
     my $session = shift;
     my $dscfile_ref = shift;
@@ -486,7 +486,7 @@ sub fetch_source_files (\$$$$$$$) {
 	my $retried = $conf::apt_update;
       retry:
 	print PLOG "Checking available source versions...\n";
-	my $command = $session->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0, '/');
+	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $main::username, 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
 	if (!$pid) {
 	    print PLOG "Can't open pipe to $conf::apt_cache: $!\n";
@@ -527,7 +527,7 @@ sub fetch_source_files (\$$$$$$$) {
 	if (!defined($entries{"$pkg $version"})) {
 	    if (!$retried) {
 		# try to update apt's cache if nothing found
-		$session->run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0, '/');
+		$self->{'Session'}->run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0, '/');
 		$retried = 1;
 		goto retry;
 	    }
@@ -543,7 +543,7 @@ sub fetch_source_files (\$$$$$$$) {
 	    push(@fetched, "$main::chroot_build_dir/$_");
 	}
 
-	my $command2 = $session->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0, undef);
+	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $main::username, 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
 	    print PLOG "Can't open pipe to $conf::apt_get: $!\n";
 	    return 0;
@@ -606,14 +606,14 @@ sub fetch_source_files (\$$$$$$$) {
 
     @main::have_dsc_build_deps = ($build_depends, $build_depends_indep,
 				  $build_conflicts,$build_conflicts_indep);
-    merge_pkg_build_deps( $self, $session, $pkg, $build_depends,
+    merge_pkg_build_deps( $self, $self->{'Session'}, $pkg, $build_depends,
 			  $build_depends_indep, $build_conflicts,
 			  $build_conflicts_indep );
 
     return 1;
 }
 
-sub build (\$$$$) {
+sub build ($$$$) {
     my $self = shift;
     my $session = shift;
     my $dsc = shift;
@@ -651,7 +651,7 @@ sub build (\$$$$) {
 	$dir = "$dsc";
 	$dir =~ s/\.dsc$//;
 	$main::sub_task = "dpkg-source";
-	$session->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $main::username, 1, 0, undef);
+	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $main::username, 1, 0, undef);
 	if ($?) {
 	    print PLOG "FAILED [dpkg-source died]\n";
 
@@ -676,8 +676,8 @@ sub build (\$$$$) {
 	    return 0;
 	}
 	if ($main::sub_pid == 0) {
-	    $dir = $session->strip_chroot_path($dir);
-	    $session->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0, undef);
+	    $dir = $self->{'Session'}->strip_chroot_path($dir);
+	    $self->{'Session'}->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $main::username, 1, 0, undef);
 	}
 	$main::sub_task = "dpkg-parsechangelog";
 
@@ -716,7 +716,7 @@ sub build (\$$$$) {
 		"(Source needs $current_usage KB, free are $free KB.)\n";
 	    # TODO: Only purge in a single place.
 	    print PLOG "Purging $main::chroot_build_dir\n";
-	    $session->run_command("rm -rf '$main::chroot_build_dir'", "root", 1, 0, '/');
+	    $self->{'Session'}->run_command("rm -rf '$main::chroot_build_dir'", "root", 1, 0, '/');
 	    return 0;
 	}
     }
@@ -798,10 +798,10 @@ EOF
 	    $conf::force_orig_source ? "-sa" : "" :
 	    $main::build_arch_all ?	"-b" : "-B";
 
-	my $bdir = $session->strip_chroot_path($dir);
+	my $bdir = $self->{'Session'}->strip_chroot_path($dir);
 	if (-f "$main::chroot_dir/etc/ld.so.conf" &&
 	    ! -r "$main::chroot_dir/etc/ld.so.conf") {
-	    $session->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
+	    $self->{'Session'}->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
 	    print PLOG "ld.so.conf was not readable! Fixed.\n";
 	}
 	my $buildcmd = "cd $bdir && PATH=$conf::path ".
@@ -809,7 +809,7 @@ EOF
 	     "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 	     "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
-	$session->exec_command($buildcmd, $main::username, 1, 0, undef);
+	$self->{'Session'}->exec_command($buildcmd, $main::username, 1, 0, undef);
     }
     $main::sub_task = "dpkg-buildpackage";
 
@@ -825,7 +825,7 @@ EOF
 
     local $SIG{'ALRM'} = sub {
 	my $signal = ($timed_out > 0) ? "KILL" : "TERM";
-	$session->run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0, '/');
+	$self->{'Session'}->run_command("perl -e \"kill( \\\"$signal\\\", $main::sub_pid )\"", "root", 1, 0, '/');
 	$timeout_times[$timed_out] = time - $last_time;
 	$timeout_sigs[$timed_out] = $signal;
 	$timed_out++;
@@ -965,21 +965,21 @@ EOF
 	print PLOG "Built successfully\n";
     }
 
-    check_watches($self, $session);
-    check_space($self, $session, @space_files);
+    check_watches($self, $self->{'Session'});
+    check_space($self, $self->{'Session'}, @space_files);
 
     if ($conf::purge_build_directory eq "always" ||
 	($conf::purge_build_directory eq "successful" && $rv == 0)) {
 	print PLOG "Purging $main::chroot_build_dir\n";
-	my $bdir = $session->strip_chroot_path($main::chroot_build_dir);
-	$session->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
+	my $bdir = $self->{'Session'}->strip_chroot_path($main::chroot_build_dir);
+	$self->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
     }
 
     print PLOG "-"x78, "\n";
     return $rv == 0 ? 1 : 0;
 }
 
-sub analyze_fail_stage (\$$) {
+sub analyze_fail_stage ($$) {
     my $self = shift;
     my $pkgv = shift;
 
@@ -1012,7 +1012,7 @@ sub analyze_fail_stage (\$$) {
     }
 }
 
-sub install_deps (\$$$) {
+sub install_deps ($$$) {
     my $self = shift;
     my $session = shift;
     my $pkg = shift;
@@ -1030,14 +1030,14 @@ sub install_deps (\$$$) {
     lock_file($self, "$main::ilock_file", 1);
 
     print "Filtering dependencies\n" if $conf::debug;
-    if (!filter_dependencies($self, $session, @$dep, @positive, @negative )) {
+    if (!filter_dependencies($self, $self->{'Session'}, @$dep, @positive, @negative )) {
 	print PLOG "Package installation not possible\n";
 	unlock_file($self, "$main::ilock_file");
 	return 0;
     }
 
     print PLOG "Checking for source dependency conflicts...\n";
-    if (!run_apt($self, $session, "-s", @instd, @rmvd, @positive)) {
+    if (!run_apt($self, $self->{'Session'}, "-s", @instd, @rmvd, @positive)) {
 	print PLOG "Test what should be installed failed.\n";
 	unlock_file($self, "$main::ilock_file");
 	return 0;
@@ -1057,19 +1057,19 @@ sub install_deps (\$$$) {
 
     my $install_start_time = time;
     print "Installing positive dependencies: @positive\n" if $conf::debug;
-    if (!run_apt($self, $session, "-y", @instd, @rmvd, @positive)) {
+    if (!run_apt($self, $self->{'Session'}, "-y", @instd, @rmvd, @positive)) {
 	print PLOG "Package installation failed\n";
 	# try to reinstall removed packages
 	print PLOG "Trying to reinstall removed packages:\n";
 	print "Reinstalling removed packages: @rmvd\n" if $conf::debug;
 	my (@instd2, @rmvd2);
 	print PLOG "Failed to reinstall removed packages!\n"
-	    if !run_apt($self, $session, "-y", @instd2, @rmvd2, @rmvd);
+	    if !run_apt($self, $self->{'Session'}, "-y", @instd2, @rmvd2, @rmvd);
 	print "Installed were: @instd2\n" if $conf::debug;
 	print "Removed were: @rmvd2\n" if $conf::debug;
 	# remove additional packages
 	print PLOG "Trying to uninstall newly installed packages:\n";
-	uninstall_debs($self, $session,
+	uninstall_debs($self, $self->{'Session'},
 		       $main::chroot_dir ? "purge" : "remove",
 		       @instd);
 	unlock_file($self, "$main::ilock_file");
@@ -1079,7 +1079,7 @@ sub install_deps (\$$$) {
     set_removed($self, @rmvd);
 
     print "Removing negative dependencies: @negative\n" if $conf::debug;
-    if (!uninstall_debs($self, $session,
+    if (!uninstall_debs($self, $self->{'Session'},
 			$main::chroot_dir ? "purge" : "remove",
 			@negative)) {
 	print PLOG "Removal of packages failed\n";
@@ -1101,7 +1101,7 @@ sub install_deps (\$$$) {
 
     local (*F);
 
-    my $command = $session->get_command("$conf::dpkg --set-selections", "root", 1, 0, '/');
+    my $command = $self->{'Session'}->get_command("$conf::dpkg --set-selections", "root", 1, 0, '/');
 
     my $success = open( F, "| $command");
 
@@ -1121,7 +1121,7 @@ sub install_deps (\$$$) {
     return 1;
 }
 
-sub wait_for_srcdep_conflicts (\$@) {
+sub wait_for_srcdep_conflicts ($@) {
     my $self = shift;
     my @confl = @_;
 
@@ -1147,7 +1147,7 @@ sub wait_for_srcdep_conflicts (\$@) {
     }
 }
 
-sub uninstall_deps (\$$) {
+sub uninstall_deps ($$) {
     my $self = shift;
     my $session = shift;
 
@@ -1158,7 +1158,7 @@ sub uninstall_deps (\$$) {
     @pkgs = keys %{$main::changes->{'removed'}};
     print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
     print PLOG "Failed to reinstall removed packages!\n"
-	if !run_apt($self, $session, "-y", @instd, @rmvd, @pkgs);
+	if !run_apt($self, $self->{'Session'}, "-y", @instd, @rmvd, @pkgs);
     print "Installed were: @instd\n" if $conf::debug;
     print "Removed were: @rmvd\n" if $conf::debug;
     unset_removed($self, @instd);
@@ -1167,13 +1167,13 @@ sub uninstall_deps (\$$) {
     @pkgs = keys %{$main::changes->{'installed'}};
     print "Removing installed packages: @pkgs\n" if $conf::debug;
     print PLOG "Failed to remove installed packages!\n"
-	if !uninstall_debs($self, $session, "purge", @pkgs);
+	if !uninstall_debs($self, $self->{'Session'}, "purge", @pkgs);
     unset_installed($self, @pkgs);
 
     unlock_file($self, "$main::ilock_file");
 }
 
-sub uninstall_debs (\$$$@) {
+sub uninstall_debs ($$$@) {
     my $self = shift;
     my $session = shift;
     my $mode = shift;
@@ -1185,7 +1185,7 @@ sub uninstall_debs (\$$$@) {
     return 1 if !@_;
     print "Uninstalling packages: @_\n" if $conf::debug;
 
-    my $command = $session->get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
+    my $command = $self->{'Session'}->get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
   repeat:
     my $output;
     my $remove_start_time = time;
@@ -1212,7 +1212,7 @@ sub uninstall_debs (\$$$@) {
     return $? == 0;
 }
 
-sub run_apt (\$$$\@\@@) {
+sub run_apt ($$$\@\@@) {
     my $self = shift;
     my $session = shift;
     my $mode = shift;
@@ -1237,7 +1237,7 @@ sub run_apt (\$$$\@\@@) {
     # it reads EOF -- hardwire the new --force-confold option to avoid
     # the questions.
     my $command =
-	$session->get_apt_command("$conf::apt_get", "--purge ".
+	$self->{'Session'}->get_apt_command("$conf::apt_get", "--purge ".
 				  "-o DPkg::Options::=--force-confold ".
 				  "-q $mode install @to_install ".
 				  "2>&1 </dev/null", "root", 0, '/');
@@ -1255,7 +1255,7 @@ sub run_apt (\$$$\@\@@) {
 
     if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
 	my $command =
-	    $session->get_apt_command("$conf::apt_get", "-q update 2>&1",
+	    $self->{'Session'}->get_apt_command("$conf::apt_get", "-q update 2>&1",
 				      "root", 1, '/');
 	if (!open( PIPE, "$command |" )) {
 	    print PLOG "Can't open pipe to apt-get: $!\n";
@@ -1346,7 +1346,7 @@ sub run_apt (\$$$\@\@@) {
     return $mode eq "-s" || $status == 0;
 }
 
-sub filter_dependencies (\$$\@\@\@) {
+sub filter_dependencies ($$\@\@\@) {
     my $self = shift;
     my $session = shift;
     my $dependencies = shift;
@@ -1369,7 +1369,7 @@ sub filter_dependencies (\$$\@\@\@) {
 
     my %policy;
     if ($conf::apt_policy) {
-	%policy = get_apt_policy($self, $session, keys %names);
+	%policy = get_apt_policy($self, $self->{'Session'}, keys %names);
     }
 
     foreach $dep (@$dependencies) {
@@ -1493,7 +1493,7 @@ sub filter_dependencies (\$$\@\@\@) {
     return 1;
 }
 
-sub check_dependencies (\$\@) {
+sub check_dependencies ($\@) {
     my $self = shift;
     my $dependencies = shift;
     my $fail = "";
@@ -1575,7 +1575,7 @@ sub check_dependencies (\$\@) {
     return $fail;
 }
 
-sub get_apt_policy (\$$@) {
+sub get_apt_policy ($$@) {
     my $self = shift;
     my $session = shift;
     my @interest = @_;
@@ -1585,7 +1585,7 @@ sub get_apt_policy (\$$@) {
     $ENV{LC_ALL}='C';
 
     my $command =
-	$session->get_apt_command("$conf::apt_cache",
+	$self->{'Session'}->get_apt_command("$conf::apt_cache",
 				  "policy @interest",
 				  $main::username, 0, '/');
 
@@ -1606,7 +1606,7 @@ sub get_apt_policy (\$$@) {
     return %packages;
 }
 
-sub get_dpkg_status (\$@) {
+sub get_dpkg_status ($@) {
     my $self = shift;
     my @interest = @_;
     my %result;
@@ -1666,7 +1666,7 @@ sub get_dpkg_status (\$@) {
     return \%result;
 }
 
-sub copy (\$$) {
+sub copy ($$) {
     my $self = shift;
     my $r = shift;
     my $new;
@@ -1694,7 +1694,7 @@ sub copy (\$$) {
     return $new;
 }
 
-sub merge_pkg_build_deps (\$$$$$$$) {
+sub merge_pkg_build_deps ($$$$$$$) {
     my $self = shift;
     my $session = shift;
     my $pkg = shift;
@@ -1748,7 +1748,7 @@ sub merge_pkg_build_deps (\$$$$$$$) {
 	parse_one_srcdep($self, 'ESSENTIAL', $ess, %main::deps );
     }
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = expand_dependencies($self, $session, @{$main::deps{'ESSENTIAL'}} );
+    $exp_essential = expand_dependencies($self, $self->{'Session'}, @{$main::deps{'ESSENTIAL'}} );
     print "Dependency-expanded build essential packages:\n",
     format_deps($self, @$exp_essential), "\n" if $conf::debug;
 
@@ -1772,12 +1772,12 @@ sub merge_pkg_build_deps (\$$$$$$$) {
 
     # if some build deps are virtual packages, replace them by an
     # alternative over all providing packages
-    $exp_pkgdeps = expand_virtuals($self, $session, @{$main::deps{$pkg}} );
+    $exp_pkgdeps = expand_virtuals($self, $self->{'Session'}, @{$main::deps{$pkg}} );
     print "Provided-expanded build deps:\n",
 	  format_deps($self, @$exp_pkgdeps), "\n" if $conf::debug;
 
     # now expand dependencies of package build deps
-    $exp_pkgdeps = expand_dependencies($self, $session, @$exp_pkgdeps );
+    $exp_pkgdeps = expand_dependencies($self, $self->{'Session'}, @$exp_pkgdeps );
     print "Dependency-expanded build deps:\n",
 	  format_deps($self, @$exp_pkgdeps), "\n" if $conf::debug;
     $main::additional_deps = $exp_pkgdeps;
@@ -1803,7 +1803,7 @@ sub merge_pkg_build_deps (\$$$$$$$) {
 	           if @$missing;
 }
 
-sub cmp_dep_lists (\$\@\@) {
+sub cmp_dep_lists ($\@\@) {
     my $self = shift;
     my $list1 = shift;
     my $list2 = shift;
@@ -1840,7 +1840,7 @@ sub cmp_dep_lists (\$\@\@) {
     return (\@common, \@missing);
 }
 
-sub get_altlist (\$$) {
+sub get_altlist ($$) {
     my $self = shift;
     my $dep = shift;
     my %l;
@@ -1851,7 +1851,7 @@ sub get_altlist (\$$) {
     return \%l;
 }
 
-sub is_superset (\$\%\%) {
+sub is_superset ($\%\%) {
     my $self = shift;
     my $l1 = shift;
     my $l2 = shift;
@@ -1862,7 +1862,7 @@ sub is_superset (\$\%\%) {
     return 1;
 }
 
-sub read_build_essential (\$) {
+sub read_build_essential ($) {
     my $self = shift;
     my @essential;
     local (*F);
@@ -1900,7 +1900,7 @@ sub read_build_essential (\$) {
     return join( ", ", @essential );
 }
 
-sub expand_dependencies (\$$\@) {
+sub expand_dependencies ($$\@) {
     my $self = shift;
     my $session = shift;
     my $dlist = shift;
@@ -1917,7 +1917,7 @@ sub expand_dependencies (\$$\@) {
     }
 
     while( @to_check ) {
-	my $deps = get_dependencies($self, $session, @to_check );
+	my $deps = get_dependencies($self, $self->{'Session'}, @to_check );
 	my @check = @to_check;
 	@to_check = ();
 	foreach $check (@check) {
@@ -1939,7 +1939,7 @@ sub expand_dependencies (\$$\@) {
     return \@result;
 }
 
-sub expand_virtuals (\$$\@) {
+sub expand_virtuals ($$\@) {
     my $self = shift;
     my $session = shift;
     my $dlist = shift;
@@ -1950,7 +1950,7 @@ sub expand_virtuals (\$$\@) {
 	    $names{$_->{'Package'}} = 1;
 	}
     }
-    my $provided_by = get_virtuals($self, $session, keys %names );
+    my $provided_by = get_virtuals($self, $self->{'Session'}, keys %names );
 
     foreach $dep (@$dlist) {
 	my %seen;
@@ -1974,14 +1974,14 @@ sub expand_virtuals (\$$\@) {
     return \@new_dlist;
 }
 
-sub get_dependencies (\$$@) {
+sub get_dependencies ($$@) {
     my $self = shift;
     my $session = shift;
 
     local(*PIPE);
     my %deps;
 
-    my $command = $session->get_apt_command("$conf::apt_cache", "show @_", $main::username, 0, '/');
+    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "show @_", $main::username, 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -2004,13 +2004,13 @@ sub get_dependencies (\$$@) {
     return \%deps;
 }
 
-sub get_virtuals (\$$@) {
+sub get_virtuals ($$@) {
     my $self = shift;
     my $session = shift;
 
     local(*PIPE);
 
-    my $command = $session->get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0, '/');
+    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "showpkg @_", $main::username, 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -2039,7 +2039,7 @@ sub get_virtuals (\$$@) {
     return \%provided_by;
 }
 
-sub parse_one_srcdep (\$$$\%) {
+sub parse_one_srcdep ($$$\%) {
     my $self = shift;
     my $pkg = shift;
     my $deps = shift;
@@ -2120,7 +2120,7 @@ sub parse_one_srcdep (\$$$\%) {
     }
 }
 
-sub parse_manual_srcdeps (\$@) {
+sub parse_manual_srcdeps ($@) {
     my $self = shift;
     my @for_pkgs = @_;
 
@@ -2137,7 +2137,7 @@ sub parse_manual_srcdeps (\$@) {
     }
 }
 
-sub check_space (\$$@) {
+sub check_space ($$@) {
     my $self = shift;
     my $session = shift;
     my @files = @_;
@@ -2148,10 +2148,10 @@ sub check_space (\$$@) {
 	my $command;
 
 	if (/^\Q$main::chroot_dir\E/) {
-	    $_ = $session->strip_chroot_path($_);
-	    $command = $session->get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
+	    $_ = $self->{'Session'}->strip_chroot_path($_);
+	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
 	} else {
-	    $command = $session->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $main::username, 0, 0);
+	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $main::username, 0, 0);
 	}
 
 	if (!open( PIPE, "$command |" )) {
@@ -2169,7 +2169,7 @@ sub check_space (\$$@) {
 }
 
 # UNUSED
-sub file_for_name (\$$@) {
+sub file_for_name ($$@) {
     my $self = shift;
     my $name = shift;
     my @x = grep { /^\Q$name\E_/ } @_;
@@ -2177,7 +2177,7 @@ sub file_for_name (\$$@) {
 }
 
 # only called from main loop
-sub write_jobs_file (\$$) {
+sub write_jobs_file ($$) {
     my $self = shift;
     my $news = shift;
     my $job;
@@ -2205,7 +2205,7 @@ sub write_jobs_file (\$$) {
     close( F );
 }
 
-sub append_to_FINISHED (\$$) {
+sub append_to_FINISHED ($$) {
     my $self = shift;
     my $pkg = shift;
     local( *F );
@@ -2217,7 +2217,7 @@ sub append_to_FINISHED (\$$) {
     close( F );
 }
 
-sub write_srcdep_lock_file (\$\@) {
+sub write_srcdep_lock_file ($\@) {
     my $self = shift;
     my $deps = shift;
     local( *F );
@@ -2241,7 +2241,7 @@ sub write_srcdep_lock_file (\$\@) {
     close( F );
 }
 
-sub check_srcdep_conflicts (\$\@\@) {
+sub check_srcdep_conflicts ($\@\@) {
     my $self = shift;
     my $to_inst = shift;
     my $to_remove = shift;
@@ -2308,7 +2308,7 @@ sub check_srcdep_conflicts (\$\@\@) {
     return @conflict_builds;
 }
 
-sub remove_srcdep_lock_file (\$) {
+sub remove_srcdep_lock_file ($) {
     my $self = shift;
 
     my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
@@ -2320,7 +2320,7 @@ sub remove_srcdep_lock_file (\$) {
     }
 }
 
-sub prepare_watches (\$\@@) {
+sub prepare_watches ($\@@) {
     my $self = shift;
     my $dependencies = shift;
     my @instd = @_;
@@ -2353,7 +2353,7 @@ sub prepare_watches (\$\@@) {
     }
 }
 
-sub check_watches (\$$) {
+sub check_watches ($$) {
     my $self = shift;
     my $session = shift;
     my($prg, @st, %used);
@@ -2367,7 +2367,7 @@ sub check_watches (\$$) {
 	}
 	if ($st[8] > $main::build_start_time) {
 	    my $pkg = $main::this_watches{$prg};
-	    my $prg2 = $session->strip_chroot_path($prg);
+	    my $prg2 = $self->{'Session'}->strip_chroot_path($prg);
 	    push( @{$used{$pkg}}, $prg2 )
 		if @main::have_dsc_build_deps ||
 		!isin( $pkg, @conf::ignore_watches_no_build_deps );
@@ -2390,7 +2390,7 @@ EOF
     print PLOG "\n";
 }
 
-sub should_skip (\$$) {
+sub should_skip ($$) {
     my $self = shift;
     my $pkgv = shift;
 
@@ -2421,7 +2421,7 @@ sub should_skip (\$$) {
     return $found;
 }
 
-sub add_givenback (\$$$) {
+sub add_givenback ($$$) {
     my $self = shift;
     my $pkgv = shift;
     my $time = shift;
@@ -2441,7 +2441,7 @@ sub add_givenback (\$$$) {
     unlock_file($self, "SBUILD-GIVEN-BACK");
 }
 
-sub set_installed (\$@) {
+sub set_installed ($@) {
     my $self = shift;
     foreach (@_) {
 	$main::changes->{'installed'}->{$_} = 1;
@@ -2449,7 +2449,7 @@ sub set_installed (\$@) {
     print "Added to installed list: @_\n" if $conf::debug;
 }
 
-sub set_removed (\$@) {
+sub set_removed ($@) {
     my $self = shift;
     foreach (@_) {
 	$main::changes->{'removed'}->{$_} = 1;
@@ -2462,7 +2462,7 @@ sub set_removed (\$@) {
     print "Added to removed list: @_\n" if $conf::debug;
 }
 
-sub unset_installed (\$@) {
+sub unset_installed ($@) {
     my $self = shift;
     foreach (@_) {
 	delete $main::changes->{'installed'}->{$_};
@@ -2470,7 +2470,7 @@ sub unset_installed (\$@) {
     print "Removed from installed list: @_\n" if $conf::debug;
 }
 
-sub unset_removed (\$@) {
+sub unset_removed ($@) {
     my $self = shift;
     foreach (@_) {
 	delete $main::changes->{'removed'}->{$_};
@@ -2483,7 +2483,7 @@ sub unset_removed (\$@) {
     print "Removed from removed list: @_\n" if $conf::debug;
 }
 
-sub df (\$$) {
+sub df ($$) {
     my $self = shift;
     my $dir = shift;
 
@@ -2497,7 +2497,7 @@ sub isin ($@) {
     return grep( $_ eq $val, @_ );
 }
 
-sub fixup_pkgv (\$\$) {
+sub fixup_pkgv ($\$) {
     my $self = shift;
     my $pkgv = shift;
 
@@ -2506,7 +2506,7 @@ sub fixup_pkgv (\$\$) {
     $$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
 }
 
-sub format_deps (\$@) {
+sub format_deps ($@) {
     my $self = shift;
     return join( ", ",
 		 map { join( "|",
@@ -2516,7 +2516,7 @@ sub format_deps (\$@) {
 			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
-sub lock_file (\$$$) {
+sub lock_file ($$$) {
     my $self = shift;
     my $file = shift;
     my $for_srcdep = shift;
@@ -2564,7 +2564,7 @@ sub lock_file (\$$$) {
     F->close();
 }
 
-sub unlock_file (\$$) {
+sub unlock_file ($$) {
     my $self = shift;
     my $file = shift;
     my $lockfile = "$file.lock";
@@ -2673,7 +2673,7 @@ sub shutdown ($) {
     exit 0;
 }
 
-sub write_stats (\$$$) {
+sub write_stats ($$$) {
     my $self = shift;
 
     return if not defined $main::stats_dir;
@@ -2687,7 +2687,7 @@ sub write_stats (\$$$) {
     unlock_file($self, "$main::stats_dir");
 }
 
-sub debian_files_list (\$$) {
+sub debian_files_list ($$) {
     my $self = shift;
     my $files = shift;
 
@@ -2708,7 +2708,7 @@ sub debian_files_list (\$$) {
     return @list;
 }
 
-sub dsc_files (\$$) {
+sub dsc_files ($$) {
     my $self = shift;
     my $dsc = shift;
     my @files;
@@ -2730,7 +2730,7 @@ sub dsc_files (\$$) {
 }
 
 # Figure out chroot architecture
-sub chroot_arch (\$$) {
+sub chroot_arch ($$) {
     my $self = shift;
     my $session = shift;
 
@@ -2740,7 +2740,7 @@ sub chroot_arch (\$$) {
 	return 0;
     }
     if ($main::sub_pid == 0) {
-	$session->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0, '/');
+	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $main::username, 1, 0, '/');
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );
@@ -2776,7 +2776,7 @@ sub check_group_membership () {
     return;
 }
 
-sub open_build_log (\$$$$) {
+sub open_build_log ($$$$) {
     my $self = shift;
     my $pkg_name = shift;
     my $pkg_distribution = shift;
@@ -2789,7 +2789,7 @@ sub open_build_log (\$$$$) {
     print PLOG "*"x78, "\n";
 }
 
-sub close_build_log (\$$$$$$$) {
+sub close_build_log ($$$$$$$) {
     my $self = shift;
     my $pkg_name = shift;
     my $pkg_distribution = shift;
@@ -2814,7 +2814,7 @@ sub close_build_log (\$$$$$$$) {
 		   $pkg_start_time, $pkg_end_time);
 }
 
-sub add_time_entry (\$$$) {
+sub add_time_entry ($$$) {
     my $self = shift;
     my $pkg = shift;
     my $t = shift;
@@ -2841,7 +2841,7 @@ sub add_time_entry (\$$$) {
     untie %db;
 }
 
-sub add_space_entry (\$$$) {
+sub add_space_entry ($$$) {
     my $self = shift;
     my $pkg = shift;
     my $space = shift;
