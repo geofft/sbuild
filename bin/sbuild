@@ -156,8 +156,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-$main::sub_task = "initialisation";
-
 main($main::build_object);
 
 
@@ -649,7 +647,7 @@ sub build ($$$) {
 	}
 	$dir = "$dsc";
 	$dir =~ s/\.dsc$//;
-	$main::sub_task = "dpkg-source";
+	$self->{'Sub Task'} = "dpkg-source";
 	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	if ($?) {
 	    print PLOG "FAILED [dpkg-source died]\n";
@@ -678,7 +676,7 @@ sub build ($$$) {
 	    $dir = $self->{'Session'}->strip_chroot_path($dir);
 	    $self->{'Session'}->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	}
-	$main::sub_task = "dpkg-parsechangelog";
+	$self->{'Sub Task'} = "dpkg-parsechangelog";
 
 	my $clog = "";
 	while( <PIPE> ) {
@@ -810,7 +808,7 @@ EOF
 	     "$binopt $main::dpkg_buildpackage_signopt -r$conf::fakeroot 2>&1";
 	$self->{'Session'}->exec_command($buildcmd, $Sbuild::Conf::username, 1, 0, undef);
     }
-    $main::sub_task = "dpkg-buildpackage";
+    $self->{'Sub Task'} = "dpkg-buildpackage";
 
     # We must send the signal as root, because some subprocesses of
     # dpkg-buildpackage could run as root. So we have to use a shell
@@ -2624,7 +2622,7 @@ sub shutdown ($) {
   not_ni_shutdown:
     # next: kill currently running command (if one)
     if ($main::sub_pid) {
-	print "Killing $main::sub_task subprocess $main::sub_pid\n";
+	print "Killing $main::build_object->{'Sub Task'} subprocess $main::sub_pid\n";
 	run_command("perl -e \"kill( \\\"TERM\\\", $main::sub_pid )\"", "root", 1, 0, '/');
     }
     remove_srcdep_lock_file($main::build_object);
@@ -2882,7 +2880,6 @@ sub dump_main_state () {
 				     $main::shutdown,
 				     $main::stats_dir,
 				     $main::sub_pid,
-				     $main::sub_task,
 				     \%main::this_watches,
 				     $main::useSNAP],
 				    [qw(@main::additional_deps
@@ -2901,7 +2898,7 @@ sub dump_main_state () {
 					$main::pkg_fail_stage
 					$main::shutdown
 					$main::stats_dir
-					$main::sub_pid $main::sub_task
+					$main::sub_pid
 					%main::this_watches
 					$main::useSNAP)] );
 }
