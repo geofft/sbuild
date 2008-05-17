@@ -100,7 +100,6 @@ sub dump_main_state ();
 package conf;
 use Sbuild::Conf;
 package main;
-use Sbuild::Conf qw($verbose); # For backward compatibility.
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($arch $hostname $version);
@@ -186,7 +185,7 @@ sub main ($) {
     my $self = shift;
 
 # Be verbose by default if on a tty
-    if (-t STDIN && -t STDOUT && $main::verbose == 0) {
+    if (-t STDIN && -t STDOUT && $Sbuild::Conf::verbose == 0) {
 	$conf::verbose = 1;
     }
 
@@ -264,9 +263,9 @@ sub main ($) {
 			       $conf::path =
 				   "/usr/lib/gcc-snapshot/bin:$conf::path";
 			   },
-			   "v|verbose+" => \$main::verbose,
+			   "v|verbose+" => \$Sbuild::Conf::verbose,
 			   "q|quiet" => sub {
-			       $main::verbose-- if $conf::verbose;
+			       $Sbuild::Conf::verbose-- if $conf::verbose;
 			   },
 	);
 
@@ -2089,7 +2088,7 @@ sub parse_one_srcdep ($$$\%) {
 		$neg_seen = 1;
 	    }
 	    if ($conf::srcdep_over{$dep}) {
-		if ($main::verbose) {
+		if ($Sbuild::Conf::verbose) {
 		    print PLOG "Replacing source dep $dep";
 		    print PLOG " ($rel $relv)" if $relv;
 		    print PLOG " with $conf::srcdep_over{$dep}[0]";
@@ -2915,8 +2914,7 @@ sub dump_main_state () {
 				     $main::this_space,
 				     \%main::this_watches,
 				     \@main::toolchain_pkgs,
-				     $main::useSNAP,
-				     $main::verbose],
+				     $main::useSNAP],
 				    [qw(@main::additional_deps
 					$main::binNMU_name
 					$main::binNMUver
@@ -2951,6 +2949,5 @@ sub dump_main_state () {
 					$main::this_space
 					%main::this_watches
 					@main::toolchain_pkgs
-					$main::useSNAP
-					$main::verbose)] );
+					$main::useSNAP)] );
 }
