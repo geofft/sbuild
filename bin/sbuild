@@ -145,6 +145,7 @@ sub build_new () {
     $build{'Pkg Status'} = '';
     $build{'Pkg Start Time'} = 0;
     $build{'Pkg End Time'} = 0;
+    $build{'Build Start Time'} = 0;
     $build{'This Space'} = 0;
     $build{'Toolchain Packages'} = [];
     $build{'Override Distribution'} = 0;
@@ -788,7 +789,7 @@ EOF
 	unlink "$dir/debian/files";
     }
 
-    $main::build_start_time = time;
+    $self->{'Build Start Time'} = time;
     $main::pkg_fail_stage = "build";
     $main::sub_pid = open( PIPE, "-|" );
     if (!defined $main::sub_pid) {
@@ -853,7 +854,7 @@ EOF
 	           " minutes of inactivity\n";
     }
     $self->{'Pkg End Time'} = time;
-    write_stats($self, 'build-time',$self->{'Pkg End Time'}-$main::build_start_time);
+    write_stats($self, 'build-time',$self->{'Pkg End Time'}-$self->{'Build Start Time'});
     my $date = strftime("%Y%m%d-%H%M",localtime($self->{'Pkg End Time'}));
     print PLOG "*"x78, "\n";
     print PLOG "Build finished at $date\n";
@@ -2357,7 +2358,7 @@ sub check_watches ($) {
 	    print "Watch: $prg: stat failed\n" if $conf::debug;
 	    next;
 	}
-	if ($st[8] > $main::build_start_time) {
+	if ($st[8] > $self->{'Build Start Time'}) {
 	    my $pkg = $main::this_watches{$prg};
 	    my $prg2 = $self->{'Session'}->strip_chroot_path($prg);
 	    push( @{$used{$pkg}}, $prg2 )
@@ -2870,8 +2871,7 @@ sub add_space_entry ($$$) {
 sub dump_main_state () {
     my $self = shift;
 
-    print STDERR Data::Dumper->Dump([$main::build_start_time,
-				     $main::changes,
+    print STDERR Data::Dumper->Dump([$main::changes,
 				     $main::current_job,
 				     $main::database,
 				     \%main::deps,
@@ -2887,8 +2887,7 @@ sub dump_main_state () {
 				     $main::sub_pid,
 				     \%main::this_watches,
 				     $main::useSNAP],
-				    [qw($main::build_start_time
-					$main::changes
+				    [qw($main::changes
 					$main::current_job
 					$main::database
 					%main::deps $main::DEVNULL
