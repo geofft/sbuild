@@ -39,6 +39,7 @@ use Data::Dumper;
 use File::Temp qw(tempdir);
 
 sub build_new ();
+sub main ($);
 sub fetch_source_files ($$$$$$);
 sub build ($$$);
 sub analyze_fail_stage ($$);
@@ -179,275 +180,283 @@ $main::chroot_build_dir = "";
 $main::override_distribution = 0;
 $main::sub_task = "initialisation";
 
+main($main::build_object);
+
+
+sub main ($) {
+    my $self = shift;
+
 # Be verbose by default if on a tty
-if (-t STDIN && -t STDOUT && $main::verbose == 0) {
-    $conf::verbose = 1;
-}
+    if (-t STDIN && -t STDOUT && $main::verbose == 0) {
+	$conf::verbose = 1;
+    }
 
-exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
-		       "A|arch-all" => \$main::build_arch_all,
-		       "auto-give-back=s" => sub {
-			   $main::auto_giveback = 1;
-			   if ($_[1]) {
-			       my @parts = split( '@', $_[1] );
-			       $main::auto_giveback_socket =
-				   $parts[$#parts-3] if @parts > 3;
-			       $main::auto_giveback_wb_user =
-				   $parts[$#parts-2] if @parts > 2;
-			       $main::auto_giveback_user =
-				   $parts[$#parts-1] if @parts > 1;
-			       $main::auto_giveback_host =
-				   $parts[$#parts];
-			   }
-		       },
-		       "f|force-depends=s" => sub {
-			   push( @main::manual_srcdeps, "f".$_[1] );
-		       },
-		       "a|add-depends=s" => sub {
-			   push( @main::manual_srcdeps, "a".$_[1] );
-		       },
-		       "check-depends-algorithm=s" => sub {
-			   die "Bad build dependency check algorithm\n"
-		       		if( ! ($_[1] eq "first-only" 
-				    || $_[1] eq "alternatives") );
-			   $conf::check_depends_algorithm = $_[1];
-		       },
-		       "b|batch" => \$main::batchmode,
-		       "make-binNMU=s" => sub {
-			   $main::binNMU = $_[1];
-			   $main::binNMUver ||= 1;
-		       },
-		       "binNMU=i" => \$main::binNMUver,
-		       "c|chroot=s" => \$main::chroot,
-		       "database=s" => \$main::database,
-		       "D|debug+" => \$conf::debug,
-		       "apt-update" => \$conf::apt_update,
-		       "d|dist=s" => sub {
-			   $main::build_object->{'Distribution'} = $_[1];
-			   $main::build_object->{'Distribution'} = "oldstable"
-			       if $main::build_object->{'Distribution'} eq "o";
-			   $main::build_object->{'Distribution'} = "stable"
-			       if $main::build_object->{'Distribution'} eq "s";
-			   $main::build_object->{'Distribution'} = "testing"
-			       if $main::build_object->{'Distribution'} eq "t";
-			   $main::build_object->{'Distribution'} = "unstable"
-			       if $main::build_object->{'Distribution'} eq "u";
-			   $main::build_object->{'Distribution'} = "experimental"
-			       if $main::build_object->{'Distribution'} eq "e";
-			   $main::override_distribution = 1;
-		       },
-		       "force-orig-source" => \$conf::force_orig_source,
-		       "m|maintainer=s" => \$conf::maintainer_name,
-		       "k|keyid=s" => \$conf::key_id,
-		       "e|uploader=s" => \$conf::uploader_name,
-		       "n|nolog" => \$conf::nolog,
-		       "purge=s" => sub {
-			   $conf::purge_build_directory = $_[1];
-			   die "Bad purge mode\n"
-			       if !isin($conf::purge_build_directory,
-					qw(always successful never));
-		       },
-		       "s|source" => \$main::build_source,
-		       "stats-dir=s" => \$main::stats_dir,
-		       "use-snapshot" => sub {
-			   $main::useSNAP = 1;
-			   $main::ld_library_path =
-			       "/usr/lib/gcc-snapshot/lib";
-			   $conf::path =
-			       "/usr/lib/gcc-snapshot/bin:$conf::path";
-		       },
-		       "v|verbose+" => \$main::verbose,
-		       "q|quiet" => sub {
-			   $main::verbose-- if $conf::verbose;
-		       },
-    );
+    exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
+			   "A|arch-all" => \$main::build_arch_all,
+			   "auto-give-back=s" => sub {
+			       $main::auto_giveback = 1;
+			       if ($_[1]) {
+				   my @parts = split( '@', $_[1] );
+				   $main::auto_giveback_socket =
+				       $parts[$#parts-3] if @parts > 3;
+				   $main::auto_giveback_wb_user =
+				       $parts[$#parts-2] if @parts > 2;
+				   $main::auto_giveback_user =
+				       $parts[$#parts-1] if @parts > 1;
+				   $main::auto_giveback_host =
+				       $parts[$#parts];
+			       }
+			   },
+			   "f|force-depends=s" => sub {
+			       push( @main::manual_srcdeps, "f".$_[1] );
+			   },
+			   "a|add-depends=s" => sub {
+			       push( @main::manual_srcdeps, "a".$_[1] );
+			   },
+			   "check-depends-algorithm=s" => sub {
+			       die "Bad build dependency check algorithm\n"
+				   if( ! ($_[1] eq "first-only" 
+					  || $_[1] eq "alternatives") );
+			       $conf::check_depends_algorithm = $_[1];
+			   },
+			   "b|batch" => \$main::batchmode,
+			   "make-binNMU=s" => sub {
+			       $main::binNMU = $_[1];
+			       $main::binNMUver ||= 1;
+			   },
+			   "binNMU=i" => \$main::binNMUver,
+			   "c|chroot=s" => \$main::chroot,
+			   "database=s" => \$main::database,
+			   "D|debug+" => \$conf::debug,
+			   "apt-update" => \$conf::apt_update,
+			   "d|dist=s" => sub {
+			       $self->{'Distribution'} = $_[1];
+			       $self->{'Distribution'} = "oldstable"
+				   if $self->{'Distribution'} eq "o";
+			       $self->{'Distribution'} = "stable"
+				   if $self->{'Distribution'} eq "s";
+			       $self->{'Distribution'} = "testing"
+				   if $self->{'Distribution'} eq "t";
+			       $self->{'Distribution'} = "unstable"
+				   if $self->{'Distribution'} eq "u";
+			       $self->{'Distribution'} = "experimental"
+				   if $self->{'Distribution'} eq "e";
+			       $main::override_distribution = 1;
+			   },
+			   "force-orig-source" => \$conf::force_orig_source,
+			   "m|maintainer=s" => \$conf::maintainer_name,
+			   "k|keyid=s" => \$conf::key_id,
+			   "e|uploader=s" => \$conf::uploader_name,
+			   "n|nolog" => \$conf::nolog,
+			   "purge=s" => sub {
+			       $conf::purge_build_directory = $_[1];
+			       die "Bad purge mode\n"
+				   if !isin($conf::purge_build_directory,
+					    qw(always successful never));
+			   },
+			   "s|source" => \$main::build_source,
+			   "stats-dir=s" => \$main::stats_dir,
+			   "use-snapshot" => sub {
+			       $main::useSNAP = 1;
+			       $main::ld_library_path =
+				   "/usr/lib/gcc-snapshot/lib";
+			       $conf::path =
+				   "/usr/lib/gcc-snapshot/bin:$conf::path";
+			   },
+			   "v|verbose+" => \$main::verbose,
+			   "q|quiet" => sub {
+			       $main::verbose-- if $conf::verbose;
+			   },
+	);
 
-print "Selected distribution $main::build_object->{'Distribution'}\n"
-    if $conf::debug;
-print "Selected chroot $main::chroot\n"
-    if $conf::debug and defined $main::chroot;
-print "Selected architecture $main::user_arch\n"
-    if $conf::debug;
+    print "Selected distribution $self->{'Distribution'}\n"
+	if $conf::debug;
+    print "Selected chroot $main::chroot\n"
+	if $conf::debug and defined $main::chroot;
+    print "Selected architecture $main::user_arch\n"
+	if $conf::debug;
 
-$conf::mailto = $conf::mailto{$main::build_object->{'Distribution'}}
-    if $conf::mailto{$main::build_object->{'Distribution'}};
+    $conf::mailto = $conf::mailto{$self->{'Distribution'}}
+    if $conf::mailto{$self->{'Distribution'}};
 
 # see debsign for priorities, we will follow the same order
-$main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
-$main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name;
-$main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id;
-$conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
-$conf::maintainer_name=$conf::key_id if defined $conf::key_id;
+    $main::dpkg_buildpackage_signopt="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
+    $main::dpkg_buildpackage_signopt="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name;
+    $main::dpkg_buildpackage_signopt="-k\"".$conf::key_id."\"" if defined $conf::key_id;
+    $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
+    $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
-if (!defined($conf::maintainer_name) &&
-    !defined($conf::uploader_name) &&
-    !defined($conf::key_id) ) {
-    die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k\n";
-}
+    if (!defined($conf::maintainer_name) &&
+	!defined($conf::uploader_name) &&
+	!defined($conf::key_id) ) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k\n";
+    }
 
 # variables for scripts:
-open_log($main::build_object->{'Distribution'});
-$SIG{'INT'} = \&shutdown;
-$SIG{'TERM'} = \&shutdown;
-$SIG{'ALRM'} = \&shutdown;
-$SIG{'PIPE'} = \&shutdown;
+    open_log($self->{'Distribution'});
+    $SIG{'INT'} = \&shutdown;
+    $SIG{'TERM'} = \&shutdown;
+    $SIG{'ALRM'} = \&shutdown;
+    $SIG{'PIPE'} = \&shutdown;
 
-parse_manual_srcdeps($main::build_object, map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
+    parse_manual_srcdeps($self, map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
 
-write_jobs_file($main::build_object, "");
+    write_jobs_file($self, "");
 
-my $dscfile;
-foreach $dscfile (@ARGV) {
+    my $dscfile;
+    foreach $dscfile (@ARGV) {
 
-    my $dir = dirname($dscfile);
-    my $dscbase = basename($dscfile);
-    my $pkgv = basename($dscfile);
-    $pkgv =~ s/\.dsc$//;
-    my ($pkg, $version) = split /_/, $pkgv;
-    my $invalid = 0;
+	my $dir = dirname($dscfile);
+	my $dscbase = basename($dscfile);
+	my $pkgv = basename($dscfile);
+	$pkgv =~ s/\.dsc$//;
+	my ($pkg, $version) = split /_/, $pkgv;
+	my $invalid = 0;
 
-    # Download if package does not have a .dsc extension and no
-    # directory was specified.
-    my $download = 1;
-    if ($dscbase =~ m/\.dsc$/) {
-	$download = 0;
-	if( ! -f $dscfile ) {
+	# Download if package does not have a .dsc extension and no
+	# directory was specified.
+	my $download = 1;
+	if ($dscbase =~ m/\.dsc$/) {
+	    $download = 0;
+	    if( ! -f $dscfile ) {
+		$invalid = 1;
+	    }
+	}
+	elsif( ! defined $version ) {
 	    $invalid = 1;
 	}
-    }
-    elsif( ! defined $version ) {
-	$invalid = 1;
-    }
 
-    print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
-    print STDERR "D: dir = $dir\n" if $conf::debug;
-    print STDERR "D: dscbase = $dscbase\n" if $conf::debug;
-    print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
-    print STDERR "D: pkg = $pkg\n" if $conf::debug;
-    print STDERR "D: version = $version\n" if $conf::debug;
-    print STDERR "D: download = $download\n" if $conf::debug;
+	print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
+	print STDERR "D: dir = $dir\n" if $conf::debug;
+	print STDERR "D: dscbase = $dscbase\n" if $conf::debug;
+	print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
+	print STDERR "D: pkg = $pkg\n" if $conf::debug;
+	print STDERR "D: version = $version\n" if $conf::debug;
+	print STDERR "D: download = $download\n" if $conf::debug;
 
-    if ($invalid || ($download && $dscfile ne $pkgv)) {
-	print PLOG "Invalid source: $dscfile\n";
-	print PLOG "Skipping $pkg\n";
-	$main::pkg_status = "skipped";
-	goto cleanup_close;
-    }
-
-    {
-	my $tpkg = basename($pkgv);
-	# TODO: This should be $pkg_start_time, set in build().
-	my $date = strftime("%Y%m%d-%H%M",localtime);
-
-	if ($main::binNMU) {
-	    $tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-	    $tpkg = $1 . "_" . binNMU_version($2,$main::binNMUver);
-	    $main::binNMU_name = $tpkg;
-	    $tpkg .= $3;
-	}
-
-	next if !open_build_log($main::build_object, $tpkg, $main::build_object->{'Distribution'}, $date );
-    }
-
-    $main::pkg_status = "failed"; # assume for now
-    $main::current_job = $pkgv;
-    $main::additional_deps = [];
-    write_jobs_file($main::build_object, "currently building" );
-    if (should_skip($main::build_object, $pkgv )) {
-	$main::pkg_status = "skipped";
-	goto cleanup_close;
-    }
-
-    my $session = Sbuild::Chroot::new($main::build_object->{'Distribution'},
-				      $main::chroot, $main::user_arch);
-    $main::build_object->{'Session'} = $session;
-
-    if (!$session->begin_session()) {
-	print PLOG "Error creating schroot session: skipping $pkg\n";
-	$main::pkg_status = "skipped";
-	goto cleanup_close;
-    }
-    $main::chroot_dir = $session->{'Location'};
-    $main::chroot_build_dir = tempdir("$username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
-    # TODO: Don't hack the build location in; add a means to customise
-    # the chroot directly.
-    $session->{'Build Location'} = $main::chroot_build_dir;
-    $main::srcdep_lock_dir = $session->{'Srcdep Lock Dir'};
-    $main::ilock_file = $session->{'Install Lock'};
-
-    $main::arch = chroot_arch($main::build_object);
-
-    # Update APT cache.
-    if ($conf::apt_update) {
-	if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1, '/') . " 2>&1 |")) {
-	    print PLOG "Can't open pipe to apt-get: $!\n";
-	    return 0;
-	}
-	while(<PIPE>) {
-	    print PLOG $_;
-	}
-	close(PIPE);
-	if ($?) {
-	    print PLOG "apt-get update failed\n" ;
+	if ($invalid || ($download && $dscfile ne $pkgv)) {
+	    print PLOG "Invalid source: $dscfile\n";
+	    print PLOG "Skipping $pkg\n";
 	    $main::pkg_status = "skipped";
 	    goto cleanup_close;
 	}
+
+	{
+	    my $tpkg = basename($pkgv);
+	    # TODO: This should be $pkg_start_time, set in build().
+	    my $date = strftime("%Y%m%d-%H%M",localtime);
+
+	    if ($main::binNMU) {
+		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
+		$tpkg = $1 . "_" . binNMU_version($2,$main::binNMUver);
+		$main::binNMU_name = $tpkg;
+		$tpkg .= $3;
+	    }
+
+	    next if !open_build_log($self, $tpkg, $self->{'Distribution'}, $date );
+	}
+
+	$main::pkg_status = "failed"; # assume for now
+	$main::current_job = $pkgv;
+	$main::additional_deps = [];
+	write_jobs_file($self, "currently building" );
+	if (should_skip($self, $pkgv )) {
+	    $main::pkg_status = "skipped";
+	    goto cleanup_close;
+	}
+
+	my $session = Sbuild::Chroot::new($self->{'Distribution'},
+				      $main::chroot, $main::user_arch);
+	$self->{'Session'} = $session;
+
+	if (!$session->begin_session()) {
+	    print PLOG "Error creating schroot session: skipping $pkg\n";
+	    $main::pkg_status = "skipped";
+	    goto cleanup_close;
+	}
+	$main::chroot_dir = $session->{'Location'};
+	$main::chroot_build_dir = tempdir("$username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
+	# TODO: Don't hack the build location in; add a means to customise
+	# the chroot directly.
+	$session->{'Build Location'} = $main::chroot_build_dir;
+	$main::srcdep_lock_dir = $session->{'Srcdep Lock Dir'};
+	$main::ilock_file = $session->{'Install Lock'};
+
+	$main::arch = chroot_arch($self);
+
+	# Update APT cache.
+	if ($conf::apt_update) {
+	    if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1, '/') . " 2>&1 |")) {
+		print PLOG "Can't open pipe to apt-get: $!\n";
+		return 0;
+	    }
+	    while(<PIPE>) {
+		print PLOG $_;
+	    }
+	    close(PIPE);
+	    if ($?) {
+		print PLOG "apt-get update failed\n" ;
+		$main::pkg_status = "skipped";
+		goto cleanup_close;
+	    }
+	}
+
+	$main::pkg_fail_stage = "fetch-src";
+	if (!fetch_source_files($self, \$dscfile,
+				$dir, $pkg, $version, $download)) {
+	    goto cleanup_close;
+	}
+
+	$main::pkg_fail_stage = "install-deps";
+	if (!install_deps($self, $pkg)) {
+	    print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
+	    goto cleanup_packages;
+	}
+
+	$main::pkg_status = "successful"
+	    if build ($self, basename($dscfile), $pkgv);
+	write_jobs_file($self, $main::pkg_status);
+	append_to_FINISHED($self, $pkgv);
+
+      cleanup_packages:
+	if (defined ($session->{'Session Cloned'}) &&
+	    $session->{'Session Cloned'} == 1) {
+	    print PLOG "Not removing build depends: cloned chroot in use\n";
+	} else {
+	    uninstall_deps($self);
+	}
+	remove_srcdep_lock_file($self);
+      cleanup_close:
+	analyze_fail_stage($self, $pkgv);
+	write_jobs_file($self, $main::pkg_status );
+
+	$session->end_session();
+	$session = undef;
+	$self->{'Session'} = undef;
+
+	close_build_log( $self,
+			 $main::current_job,
+			 $self->{'Distribution'},
+			 $main::pkg_status,
+			 $main::pkg_start_time, $main::pkg_end_time,
+			 $main::this_space );
+	undef $main::binNMU_name;
+	$main::current_job = "";
+	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
+	    main::shutdown("NONE (flag file exit)");
+	}
+	dump_main_state() if $conf::debug;
     }
+    write_jobs_file($self, "");
 
-    $main::pkg_fail_stage = "fetch-src";
-    if (!fetch_source_files($main::build_object, \$dscfile,
-			    $dir, $pkg, $version, $download)) {
-	goto cleanup_close;
+    close_log();
+    unlink( $main::jobs_file ) if $main::batchmode;
+    unlink( "SBUILD-FINISHED" ) if $main::batchmode;
+    if ($conf::sbuild_mode eq "user") {
+	exit ($main::pkg_status ne "successful") ? 1 : 0;
     }
-
-    $main::pkg_fail_stage = "install-deps";
-    if (!install_deps($main::build_object, $pkg)) {
-	print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
-	goto cleanup_packages;
-    }
-
-    $main::pkg_status = "successful"
-	if build ($main::build_object, basename($dscfile), $pkgv);
-    write_jobs_file($main::build_object, $main::pkg_status);
-    append_to_FINISHED($main::build_object, $pkgv);
-
-  cleanup_packages:
-    if (defined ($session->{'Session Cloned'}) &&
-	$session->{'Session Cloned'} == 1) {
-	print PLOG "Not removing build depends: cloned chroot in use\n";
-    } else {
-	uninstall_deps($main::build_object);
-    }
-    remove_srcdep_lock_file($main::build_object);
-  cleanup_close:
-    analyze_fail_stage($main::build_object, $pkgv);
-    write_jobs_file($main::build_object, $main::pkg_status );
-
-    $session->end_session();
-    $session = undef;
-    $main::build_object->{'Session'} = undef;
-
-    close_build_log( $main::build_object,
-		     $main::current_job, $main::build_object->{'Distribution'}, $main::pkg_status,
-		     $main::pkg_start_time, $main::pkg_end_time,
-		     $main::this_space );
-    undef $main::binNMU_name;
-    $main::current_job = "";
-    if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
-	main::shutdown("NONE (flag file exit)");
-    }
-    dump_main_state() if $conf::debug;
+    exit 0;
 }
-write_jobs_file($main::build_object, "");
-
-close_log();
-unlink( $main::jobs_file ) if $main::batchmode;
-unlink( "SBUILD-FINISHED" ) if $main::batchmode;
-if ($conf::sbuild_mode eq "user") {
-    exit ($main::pkg_status ne "successful") ? 1 : 0;
-}
-exit 0;
-
 
 sub fetch_source_files ($$$$$$) {
     my $self = shift;
