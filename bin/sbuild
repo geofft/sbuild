@@ -151,6 +151,9 @@ sub build_new () {
     $build{'Sub Task'} = 'initialisation';
     $build{'Session'} = undef;
     $build{'Additional Deps'} = [];
+    $build{'binNMU'} = undef;
+    $build{'binNMU Name'} = undef;
+    $build{'binNMU Version'} = undef;
 
     return \%build;
 }
@@ -202,10 +205,12 @@ sub main ($) {
 			       $self->{'Batch Mode'} = 1
 			   },
 			   "make-binNMU=s" => sub {
-			       $main::binNMU = $_[1];
-			       $main::binNMUver ||= 1;
+			       $self->{'binNMU'} = $_[1];
+			       $self->{'binNMU Version'} ||= 1;
 			   },
-			   "binNMU=i" => \$main::binNMUver,
+			   "binNMU=i" => sub {
+			       $self->{'binNMU Version'} = $_[1];
+			   },
 			   "c|chroot=s" => sub {
 			       $self->{'Chroot'} = $_[1];
 			   },
@@ -331,10 +336,10 @@ sub main ($) {
 	    # TODO: This should be 'Pkg Start Time', set in build().
 	    my $date = strftime("%Y%m%d-%H%M",localtime);
 
-	    if ($main::binNMU) {
+	    if ($self->{'binNMU'}) {
 		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-		$tpkg = $1 . "_" . binNMU_version($2,$main::binNMUver);
-		$main::binNMU_name = $tpkg;
+		$tpkg = $1 . "_" . binNMU_version($2,$self->{'binNMU Version'});
+		$self->{'binNMU Name'} = $tpkg;
 		$tpkg .= $3;
 	    }
 
@@ -425,7 +430,7 @@ sub main ($) {
 			 $self->{'Pkg Start Time'},
 			 $self->{'Pkg End Time'},
 			 $self->{'This Space'} );
-	undef $main::binNMU_name;
+	undef $self->{'binNMU Name'};
 	$main::current_job = "";
 	if ( $self->{'Batch Mode'} and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
@@ -694,8 +699,8 @@ sub build ($$$) {
 	    return 0;
 	}
 	my $tree_version = $1;
-	my $cmp_version = ($main::binNMU && -f "$dir/debian/.sbuild-binNMU-done") ?
-	    binNMU_version($version,$main::binNMUver) : $version;
+	my $cmp_version = ($self->{'binNMU'} && -f "$dir/debian/.sbuild-binNMU-done") ?
+	    binNMU_version($version,$self->{'binNMU Version'}) : $version;
 	if ($tree_version ne $cmp_version) {
 	    print PLOG "The unpacked source tree $dir is version ".
 		"$tree_version, not wanted $cmp_version!\n";
@@ -720,7 +725,7 @@ sub build ($$$) {
     }
 
     $main::pkg_fail_stage = "hack-binNMU";
-    if ($main::binNMU && ! -f "$dir/debian/.sbuild-binNMU-done") {
+    if ($self->{'binNMU'} && ! -f "$dir/debian/.sbuild-binNMU-done") {
 	if (open( F, "<$dir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
@@ -729,7 +734,7 @@ sub build ($$$) {
 	    close( F );
 	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-	    my $NMUversion = binNMU_version($version,$main::binNMUver);
+	    my $NMUversion = binNMU_version($version,$self->{'binNMU Version'});
 	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dir/debian/changelog" )) {
 		print PLOG "Can't open debian/changelog for binNMU hack: $!\n";
@@ -739,7 +744,7 @@ sub build ($$$) {
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
 	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
 	    "no source changes.\n";
-	    print F "  * ", join( "    ", split( "\n", $main::binNMU )), "\n\n";
+	    print F "  * ", join( "    ", split( "\n", $self->{'binNMU'} )), "\n\n";
 	    print F " -- $conf::maintainer_name  $date\n\n";
 
 	    print F $firstline, $text;
@@ -875,7 +880,7 @@ EOF
 	}
 
 	$changes = "${pkg}_".
-	    ($main::binNMU ? binNMU_version($sversion,$main::binNMUver) : $sversion).
+	    ($self->{'binNMU'} ? binNMU_version($sversion,$self->{'binNMU Version'}) : $sversion).
 	    "_$self->{'Arch'}.changes";
 	my @cfiles;
 	if (-r "$self->{'Chroot Build Dir'}/$changes") {
@@ -2180,8 +2185,8 @@ sub write_jobs_file ($$) {
     foreach $job (@ARGV) {
 	my $jobname;
 
-	if ($job eq $main::current_job and $main::binNMU_name) {
-	    $jobname = $main::binNMU_name;
+	if ($job eq $main::current_job and $self->{'binNMU Name'}) {
+	    $jobname = $self->{'binNMU Name'};
 	} else {
 	    $jobname = $job;
 	}
@@ -2595,10 +2600,10 @@ sub shutdown ($) {
     if (open( F, ">>$f" )) {
 	foreach $job (@npkgs) {
 	    next if grep( /^\Q$job\E\s/, @pkgs );
-	    if (not defined $main::binNMUver) {
+	    if (not defined $main::build_object->{'binNMU Version'}) {
 		print F "$job $main::build_object->{'Distribution'}\n";
 	    } else {
-		print F "$job $main::build_object->{'Distribution'} $main::binNMUver $main::binNMU\n";
+		print F "$job $main::build_object->{'Distribution'} $main::build_object->{'binNMU Version'} $main::build_object->{'binNMU'}\n";
 	    }
 	}
 	close( F );
@@ -2650,7 +2655,7 @@ sub shutdown ($) {
 			 $main::build_object->{'Pkg Start Time'},
 			 $main::build_object->{'Pkg End Time'},
 			 $main::build_object->{'This Space'} );
-	undef $main::binNMU_name;
+	undef $main::build_object->{'binNMU Name'};
     }
     close_log();
     unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
@@ -2865,9 +2870,7 @@ sub add_space_entry ($$$) {
 sub dump_main_state () {
     my $self = shift;
 
-    print STDERR Data::Dumper->Dump([$main::binNMU_name,
-				     $main::binNMUver,
-				     $main::build_start_time,
+    print STDERR Data::Dumper->Dump([$main::build_start_time,
 				     $main::changes,
 				     $main::current_job,
 				     $main::database,
@@ -2884,9 +2887,7 @@ sub dump_main_state () {
 				     $main::sub_pid,
 				     \%main::this_watches,
 				     $main::useSNAP],
-				    [qw($main::binNMU_name
-					$main::binNMUver
-					$main::build_start_time
+				    [qw($main::build_start_time
 					$main::changes
 					$main::current_job
 					$main::database
