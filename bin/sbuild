@@ -155,6 +155,7 @@ sub build_new () {
     $build{'binNMU'} = undef;
     $build{'binNMU Name'} = undef;
     $build{'binNMU Version'} = undef;
+    $build{'Changes'} = {};
 
     return \%build;
 }
@@ -1157,7 +1158,7 @@ sub uninstall_deps ($) {
 
     lock_file($self, "$self->{'Session'}->{'Install Lock'}", 1);
 
-    @pkgs = keys %{$main::changes->{'removed'}};
+    @pkgs = keys %{$self->{'Changes'}->{'removed'}};
     print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
     print PLOG "Failed to reinstall removed packages!\n"
 	if !run_apt($self, "-y", @instd, @rmvd, @pkgs);
@@ -1166,7 +1167,7 @@ sub uninstall_deps ($) {
     unset_removed($self, @instd);
     unset_installed($self, @rmvd);
 
-    @pkgs = keys %{$main::changes->{'installed'}};
+    @pkgs = keys %{$self->{'Changes'}->{'installed'}};
     print "Removing installed packages: @pkgs\n" if $conf::debug;
     print PLOG "Failed to remove installed packages!\n"
 	if !uninstall_debs($self, "purge", @pkgs);
@@ -2437,7 +2438,7 @@ sub add_givenback ($$$) {
 sub set_installed ($@) {
     my $self = shift;
     foreach (@_) {
-	$main::changes->{'installed'}->{$_} = 1;
+	$self->{'Changes'}->{'installed'}->{$_} = 1;
     }
     print "Added to installed list: @_\n" if $conf::debug;
 }
@@ -2445,10 +2446,10 @@ sub set_installed ($@) {
 sub set_removed ($@) {
     my $self = shift;
     foreach (@_) {
-	$main::changes->{'removed'}->{$_} = 1;
-	if (exists $main::changes->{'installed'}->{$_}) {
-	    delete $main::changes->{'installed'}->{$_};
-	    $main::changes->{'auto-removed'}->{$_} = 1;
+	$self->{'Changes'}->{'removed'}->{$_} = 1;
+	if (exists $self->{'Changes'}->{'installed'}->{$_}) {
+	    delete $self->{'Changes'}->{'installed'}->{$_};
+	    $self->{'Changes'}->{'auto-removed'}->{$_} = 1;
 	    print "Note: $_ was installed\n" if $conf::debug;
 	}
     }
@@ -2458,7 +2459,7 @@ sub set_removed ($@) {
 sub unset_installed ($@) {
     my $self = shift;
     foreach (@_) {
-	delete $main::changes->{'installed'}->{$_};
+	delete $self->{'Changes'}->{'installed'}->{$_};
     }
     print "Removed from installed list: @_\n" if $conf::debug;
 }
@@ -2466,10 +2467,10 @@ sub unset_installed ($@) {
 sub unset_removed ($@) {
     my $self = shift;
     foreach (@_) {
-	delete $main::changes->{'removed'}->{$_};
-	if (exists $main::changes->{'auto-removed'}->{$_}) {
-	    delete $main::changes->{'auto-removed'}->{$_};
-	    $main::changes->{'installed'}->{$_} = 1;
+	delete $self->{'Changes'}->{'removed'}->{$_};
+	if (exists $self->{'Changes'}->{'auto-removed'}->{$_}) {
+	    delete $self->{'Changes'}->{'auto-removed'}->{$_};
+	    $self->{'Changes'}->{'installed'}->{$_} = 1;
 	    print "Note: revived $_ to installed list\n" if $conf::debug;
 	}
     }
@@ -2618,7 +2619,7 @@ sub shutdown ($) {
     unlink( "SBUILD-FINISHED" );
 
     # next: say which packages should be uninstalled
-    @pkgs = keys %{$main::changes->{'installed'}};
+    @pkgs = keys %{$main::build_object->{'Changes'}->{'installed'}};
     if (@pkgs) {
 	if (open( F, ">>NEED-TO-UNINSTALL" )) {
 	    print F "@pkgs\n";
@@ -2871,8 +2872,7 @@ sub add_space_entry ($$$) {
 sub dump_main_state () {
     my $self = shift;
 
-    print STDERR Data::Dumper->Dump([$main::changes,
-				     $main::current_job,
+    print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::database,
 				     \%main::deps,
 				     $main::DEVNULL,
@@ -2887,8 +2887,7 @@ sub dump_main_state () {
 				     $main::sub_pid,
 				     \%main::this_watches,
 				     $main::useSNAP],
-				    [qw($main::changes
-					$main::current_job
+				    [qw($main::current_job
 					$main::database
 					%main::deps $main::DEVNULL
 					$main::dpkg_buildpackage_signopt
