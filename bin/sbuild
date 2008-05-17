@@ -217,7 +217,9 @@ sub main ($) {
 					  || $_[1] eq "alternatives") );
 			       $conf::check_depends_algorithm = $_[1];
 			   },
-			   "b|batch" => \$main::batchmode,
+			   "b|batch" => sub {
+			       $self->{'Batch Mode'} = 1
+			   },
 			   "make-binNMU=s" => sub {
 			       $main::binNMU = $_[1];
 			       $main::binNMUver ||= 1;
@@ -440,7 +442,7 @@ sub main ($) {
 			 $main::this_space );
 	undef $main::binNMU_name;
 	$main::current_job = "";
-	if ( $main::batchmode and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
+	if ( $self->{'Batch Mode'} and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
 	dump_main_state() if $conf::debug;
@@ -448,8 +450,8 @@ sub main ($) {
     write_jobs_file($self, "");
 
     close_log();
-    unlink( $main::jobs_file ) if $main::batchmode;
-    unlink( "SBUILD-FINISHED" ) if $main::batchmode;
+    unlink( $main::jobs_file ) if $self->{'Batch Mode'};
+    unlink( "SBUILD-FINISHED" ) if $self->{'Batch Mode'};
     if ($conf::sbuild_mode eq "user") {
 	exit ($main::pkg_status ne "successful") ? 1 : 0;
     }
@@ -2185,7 +2187,7 @@ sub write_jobs_file ($$) {
     $main::job_state{$main::current_job} = $news
 	if $news && $main::current_job;
 
-    return if !$main::batchmode;
+    return if !$self->{'Batch Mode'};
 
     return if !open( F, ">$main::jobs_file" );
     foreach $job (@ARGV) {
@@ -2209,7 +2211,7 @@ sub append_to_FINISHED ($$) {
     my $pkg = shift;
     local( *F );
 
-    return if !$main::batchmode;
+    return if !$self->{'Batch Mode'};
 
     open( F, ">>SBUILD-FINISHED" );
     print F "$pkg\n";
@@ -2582,7 +2584,7 @@ sub shutdown ($) {
     $SIG{'PIPE'} = 'IGNORE';
     print PLOG "sbuild received SIG$signame -- shutting down\n";
 
-    goto not_ni_shutdown if !$main::batchmode;
+    goto not_ni_shutdown if !$main::build_object->{'Batch Mode'};
 
     # most important: dump out names of unfinished jobs to REDO
     foreach $job (@ARGV) {
@@ -2663,7 +2665,7 @@ sub shutdown ($) {
 	undef $main::binNMU_name;
     }
     close_log();
-    unlink( $main::jobs_file ) if $main::batchmode;
+    unlink( $main::jobs_file ) if $main::build_object->{'Batch Mode'};
     $? = 0; $! = 0;
     if ($conf::sbuild_mode eq "user") {
 	exit 1;
@@ -2881,7 +2883,6 @@ sub dump_main_state () {
 				     $main::auto_giveback_socket,
 				     $main::auto_giveback_user,
 				     $main::auto_giveback_wb_user,
-				     $main::batchmode,
 				     $main::binNMU,
 				     $main::binNMU_name,
 				     $main::binNMUver,
@@ -2928,7 +2929,6 @@ sub dump_main_state () {
 					$main::auto_giveback_socket
 					$main::auto_giveback_user
 					$main::auto_giveback_wb_user
-					$main::batchmode $main::binNMU
 					$main::binNMU_name
 					$main::binNMUver
 					$main::build_arch_all
