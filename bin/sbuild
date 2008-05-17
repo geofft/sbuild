@@ -124,30 +124,30 @@ umask(022);
 %main::build_object = ();
 $main::build_object_ref = \%main::build_object;
 
-$main::build_object{"Distribution"} = "unstable";
-$main::build_object{"Chroot"} = undef;
-$main::build_object{"Arch"} = $main::Sbuild::Sysconfig::arch;
-$main::build_object{"User Arch"} = "";
-$main::build_object{"Batch Mode"} = 0;
-$main::build_object{"Auto Giveback"} = 0;
-$main::build_object{"Build Arch All"} = 0;
-$main::build_object{"Build Source"} = 0;
-$main::build_object{"Build Progress"} = 0;
-$main::build_object{"Max Lock Trys"} = 120;
-$main::build_object{"Lock Interval"} = 5;
-$main::build_object{"Srcdep Lock Dir"} = "";
-$main::build_object{"ILock File"} = "";
-$main::build_object{"Srcdep Lock Count"} = 0;
-$main::build_object{"Pkg Status"} = "";
-$main::build_object{"Pkg Start Time"} = 0;
-$main::build_object{"Pkg End Time"} = 0;
-$main::build_object{"This Space"} = 0;
-$main::build_object{"Chroot Dir"} = "";
-$main::build_object{"Chroot Build Dir"} = "";
-$main::build_object{"Toolchain Packages"} = [];
-$main::build_object{"Override Distribution"} = 0;
-$main::build_object{"Sub Task"} = "initialisation";
-$main::build_object{"Current Session"} = undef;
+$main::build_object{'Distribution'} = 'unstable';
+$main::build_object{'Chroot'} = undef;
+$main::build_object{'Arch'} = $main::Sbuild::Sysconfig::arch;
+$main::build_object{'User Arch'} = '';
+$main::build_object{'Batch Mode'} = 0;
+$main::build_object{'Auto Giveback'} = 0;
+$main::build_object{'Build Arch All'} = 0;
+$main::build_object{'Build Source'} = 0;
+$main::build_object{'Build Progress'} = 0;
+$main::build_object{'Max Lock Trys'} = 120;
+$main::build_object{'Lock Interval'} = 5;
+$main::build_object{'Srcdep Lock Dir'} = '';
+$main::build_object{'ILock File'} = '';
+$main::build_object{'Srcdep Lock Count'} = 0;
+$main::build_object{'Pkg Status'} = '';
+$main::build_object{'Pkg Start Time'} = 0;
+$main::build_object{'Pkg End Time'} = 0;
+$main::build_object{'This Space'} = 0;
+$main::build_object{'Chroot Dir'} = '';
+$main::build_object{'Chroot Build Dir'} = '';
+$main::build_object{'Toolchain Packages'} = [];
+$main::build_object{'Override Distribution'} = 0;
+$main::build_object{'Sub Task'} = 'initialisation';
+$main::build_object{'Session'} = undef;
 
 undef $main::chroot;
 
@@ -172,7 +172,6 @@ $main::chroot_build_dir = "";
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
 $main::sub_task = "initialisation";
-$main::current_session = undef;
 
 # Be verbose by default if on a tty
 if (-t STDIN && -t STDOUT && $main::verbose == 0) {
@@ -355,7 +354,7 @@ foreach $dscfile (@ARGV) {
 
     my $session = Sbuild::Chroot::new($main::build_object_ref->{'Distribution'},
 				      $main::chroot, $main::user_arch);
-    $main::current_session = $session;
+    $main::build_object_ref->{'Session'} = $session;
 
     if (!$session->begin_session()) {
 	print PLOG "Error creating schroot session: skipping $pkg\n";
@@ -420,7 +419,7 @@ foreach $dscfile (@ARGV) {
 
     $session->end_session();
     $session = undef;
-    $main::current_session = undef;
+    $main::build_object_ref->{'Session'} = undef;
 
     close_build_log( $main::build_object_ref,
 		     $main::current_job, $main::build_object_ref->{'Distribution'}, $main::pkg_status,
@@ -2645,17 +2644,17 @@ sub shutdown ($) {
     remove_srcdep_lock_file($main::build_object_ref);
 
     # close logs and send mails
-    if ( $main::current_job && defined($main::current_session)) {
+    if ( $main::current_job && defined($main::build_object_ref->{'Session'})) {
 	if ($conf::purge_build_directory eq "always") {
 	    print PLOG "Purging $main::chroot_build_dir\n";
-	    my $bdir = $main::current_session->strip_chroot_path($main::chroot_build_dir);
-	    $main::current_session->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
+	    my $bdir = $main::build_object_ref->{'Session'}->strip_chroot_path($main::chroot_build_dir);
+	    $main::build_object_ref->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
 	}
 
 	fixup_pkgv($main::build_object_ref, $main::current_job);
 
-	$main::current_session->end_session();
-	undef $main::current_session;
+	$main::build_object_ref->{'Session'}->end_session();
+	undef $main::build_object_ref->{'Session'};
 
 	close_build_log( $main::build_object_ref,
 			 $main::current_job,
@@ -2896,7 +2895,6 @@ sub dump_main_state () {
 				     $main::chroot_build_dir,
 				     $main::chroot_dir,
 				     $main::current_job,
-				     $main::current_session,
 				     $main::cwd,
 				     $main::database,
 				     \%main::deps,
@@ -2943,7 +2941,6 @@ sub dump_main_state () {
 					$main::chroot_build_dir
 					$main::chroot_dir
 					$main::current_job
-					$main::current_session
 					$main::cwd $main::database
 					%main::deps $main::DEVNULL
 					$main::dpkg_buildpackage_signopt
