@@ -156,7 +156,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-$main::override_distribution = 0;
 $main::sub_task = "initialisation";
 
 main($main::build_object);
@@ -226,7 +225,7 @@ sub main ($) {
 				   if $self->{'Distribution'} eq "u";
 			       $self->{'Distribution'} = "experimental"
 				   if $self->{'Distribution'} eq "e";
-			       $main::override_distribution = 1;
+			       $self->{'Override Distribution'} = 1;
 			   },
 			   "force-orig-source" => \$conf::force_orig_source,
 			   "m|maintainer=s" => \$conf::maintainer_name,
@@ -886,7 +885,7 @@ EOF
 	    open( F, "<$self->{'Chroot Build Dir'}/$changes" );
 	    if (open( F2, ">$changes.new" )) {
 		while( <F> ) {
-		    if (/^Distribution:\s*(.*)\s*$/ and $main::override_distribution) {
+		    if (/^Distribution:\s*(.*)\s*$/ and $self->{'Override Distribution'}) {
 			print PLOG "Distribution: $self->{'Distribution'}\n";
 			print F2 "Distribution: $self->{'Distribution'}\n";
 		    }
@@ -2879,7 +2878,6 @@ sub dump_main_state () {
 				     \%main::job_state,
 				     $main::ld_library_path,
 				     \@main::manual_srcdeps,
-				     $main::override_distribution,
 				     $main::pkg_fail_stage,
 				     $main::shutdown,
 				     $main::stats_dir,
@@ -2900,7 +2898,6 @@ sub dump_main_state () {
 					%main::job_state
 					$main::ld_library_path
 					@main::manual_srcdeps
-					$main::override_distribution
 					$main::pkg_fail_stage
 					$main::shutdown
 					$main::stats_dir
