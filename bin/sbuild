@@ -160,8 +160,6 @@ $main::build_object = build_new();
 
 undef $main::chroot;
 
-$main::build_arch_all = 0;
-$main::build_source = 0;
 $main::jobs_file = "build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
@@ -190,7 +188,9 @@ sub main ($) {
     }
 
     exit 1 if !GetOptions ("arch=s" => \$self->{'User Arch'},
-			   "A|arch-all" => \$main::build_arch_all,
+			   "A|arch-all" => sub {
+			       $self->{'Build Arch All'} = 1
+			   },
 			   "auto-give-back=s" => sub {
 			       $self->{'Auto Giveback'} = 1;
 			       if ($_[1]) {
@@ -254,7 +254,9 @@ sub main ($) {
 				   if !isin($conf::purge_build_directory,
 					    qw(always successful never));
 			   },
-			   "s|source" => \$main::build_source,
+			   "s|source" => sub {
+			       $self->{'Build Source'} = 1
+			   },
 			   "stats-dir=s" => \$main::stats_dir,
 			   "use-snapshot" => sub {
 			       $main::useSNAP = 1;
@@ -608,7 +610,7 @@ sub fetch_source_files ($$$$$$) {
     }
     else {
 	if ($dscarchs ne "any" && $dscarchs !~ /\b$self->{'Arch'}\b/ &&
-	    !($dscarchs eq "all" && $main::build_arch_all) )  {
+	    !($dscarchs eq "all" && $self->{'Build Arch All'}) )  {
 	    print PLOG "$dscbase: $self->{'Arch'} not in arch list: $dscarchs -- ".
 		"skipping\n";
 	    $main::pkg_fail_stage = "arch-check";
@@ -807,9 +809,9 @@ EOF
     }
     if ($main::sub_pid == 0) {
 	open( STDIN, "</dev/null" );
-	my $binopt = $main::build_source ?
+	my $binopt = $self->{'Build Source'} ?
 	    $conf::force_orig_source ? "-sa" : "" :
-	    $main::build_arch_all ?	"-b" : "-B";
+	    $self->{'Build Arch All'} ?	"-b" : "-B";
 
 	my $bdir = $self->{'Session'}->strip_chroot_path($dir);
 	if (-f "$main::chroot_dir/etc/ld.so.conf" &&
@@ -881,7 +883,7 @@ EOF
 		    print PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
 		    next;
 		}
-		if (/_all.u?deb$/ and not $main::build_arch_all) {
+		if (/_all.u?deb$/ and not $self->{'Build Arch All'}) {
 		    print PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
 		    unlink("$main::chroot_build_dir/$_");
 		    next;
@@ -1740,7 +1742,7 @@ sub merge_pkg_build_deps ($$$$$$) {
     $conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
 
     my $deps = $depends . ", " . $conflicts;
-    $deps .= ", " . $dependsi . ", " . $conflictsi if $main::build_arch_all;
+    $deps .= ", " . $dependsi . ", " . $conflictsi if $self->{'Build Arch All'};
     @{$main::deps{$pkg}} = @l;
     print "Merging pkg deps: $deps\n" if $conf::debug;
     parse_one_srcdep($self, $pkg, $deps, %main::deps );
@@ -2881,8 +2883,6 @@ sub dump_main_state () {
 				     $main::binNMU,
 				     $main::binNMU_name,
 				     $main::binNMUver,
-				     $main::build_arch_all,
-				     $main::build_source,
 				     $main::build_start_time,
 				     $main::changes,
 				     $main::chroot_build_dir,
@@ -2918,8 +2918,6 @@ sub dump_main_state () {
 				    [qw(@main::additional_deps
 					$main::binNMU_name
 					$main::binNMUver
-					$main::build_arch_all
-					$main::build_source
 					$main::build_start_time
 					$main::changes
 					$main::chroot_build_dir
