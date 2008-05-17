@@ -84,7 +84,6 @@ sub fixup_pkgv ($\$);
 sub format_deps ($@);
 sub lock_file ($$$);
 sub unlock_file ($$);
-sub shutdown ($);
 sub write_stats ($$$);
 sub debian_files_list ($$);
 sub dsc_files ($$);
@@ -95,6 +94,7 @@ sub close_build_log ($$$$$$$);
 sub add_time_entry ($$$);
 sub add_space_entry ($$$);
 sub dump_main_state ();
+sub shutdown ($);
 
 package conf;
 use Sbuild::Conf;
@@ -2550,108 +2550,6 @@ sub unlock_file ($$) {
     unlink( $lockfile );
 }
 
-sub shutdown ($) {
-    my $signame = shift;
-    my($job,@npkgs,@pkgs);
-    local( *F );
-
-    $SIG{'INT'} = 'IGNORE';
-    $SIG{'QUIT'} = 'IGNORE';
-    $SIG{'TERM'} = 'IGNORE';
-    $SIG{'ALRM'} = 'IGNORE';
-    $SIG{'PIPE'} = 'IGNORE';
-    print PLOG "sbuild received SIG$signame -- shutting down\n";
-
-    goto not_ni_shutdown if !$main::build_object->{'Batch Mode'};
-
-    # most important: dump out names of unfinished jobs to REDO
-    foreach $job (@ARGV) {
-	my $job2 = $job;
-	fixup_pkgv($main::build_object, $job2);
-	push( @npkgs, $job2 )
-	    if !$main::job_state{$job} || $job eq $main::current_job;
-    }
-    print LOG "The following jobs were not finished: @npkgs\n";
-
-    my $f = "REDO";
-    if (-f "REDO.lock") {
-	# if lock file exists, write to a different file -- timing may
-	# be critical
-	$f = "REDO2";
-    }
-    if (open( F, "<$f" )) {
-	@pkgs = <F>;
-	close( F );
-    }
-    if (open( F, ">>$f" )) {
-	foreach $job (@npkgs) {
-	    next if grep( /^\Q$job\E\s/, @pkgs );
-	    if (not defined $main::build_object->{'binNMU Version'}) {
-		print F "$job $main::build_object->{'Distribution'}\n";
-	    } else {
-		print F "$job $main::build_object->{'Distribution'} $main::build_object->{'binNMU Version'} $main::build_object->{'binNMU'}\n";
-	    }
-	}
-	close( F );
-    }
-    else {
-	print "Cannot open $f: $!\n";
-    }
-    open( F, ">SBUILD-REDO-DUMPED" );
-    close( F );
-    print LOG "SBUILD-REDO-DUMPED created\n";
-    unlink( "SBUILD-FINISHED" );
-
-    # next: say which packages should be uninstalled
-    @pkgs = keys %{$main::build_object->{'Changes'}->{'installed'}};
-    if (@pkgs) {
-	if (open( F, ">>NEED-TO-UNINSTALL" )) {
-	    print F "@pkgs\n";
-	    close( F );
-	}
-	print "The following packages still need to be uninstalled ",
-	"(--purge):\n@pkgs\n";
-    }
-
-  not_ni_shutdown:
-    # next: kill currently running command (if one)
-    if ($main::build_object->{'Sub PID'}) {
-	print "Killing $main::build_object->{'Sub Task'} subprocess $main::build_object->{'Sub PID'}\n";
-	run_command("perl -e \"kill( \\\"TERM\\\", $main::build_object->{'Sub PID'} )\"", "root", 1, 0, '/');
-    }
-    remove_srcdep_lock_file($main::build_object);
-
-    # close logs and send mails
-    if ( $main::current_job && defined($main::build_object->{'Session'})) {
-	if ($conf::purge_build_directory eq "always") {
-	    print PLOG "Purging $main::build_object->{'Chroot Build Dir'}\n";
-	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::build_object->{'Chroot Build Dir'});
-	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
-	}
-
-	fixup_pkgv($main::build_object, $main::current_job);
-
-	$main::build_object->{'Session'}->end_session();
-	undef $main::build_object->{'Session'};
-
-	close_build_log( $main::build_object,
-			 $main::current_job,
-			 $main::build_object->{'Distribution'},
-			 $main::build_object->{'Pkg Status'},
-			 $main::build_object->{'Pkg Start Time'},
-			 $main::build_object->{'Pkg End Time'},
-			 $main::build_object->{'This Space'} );
-	undef $main::build_object->{'binNMU Name'};
-    }
-    close_log();
-    unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
-    $? = 0; $! = 0;
-    if ($conf::sbuild_mode eq "user") {
-	exit 1;
-    }
-    exit 0;
-}
-
 sub write_stats ($$$) {
     my $self = shift;
 
@@ -2869,4 +2767,106 @@ sub dump_main_state () {
 				    [qw($main::current_job
 					$main::DEVNULL
 					%main::job_state)] );
+}
+
+sub shutdown ($) {
+    my $signame = shift;
+    my($job,@npkgs,@pkgs);
+    local( *F );
+
+    $SIG{'INT'} = 'IGNORE';
+    $SIG{'QUIT'} = 'IGNORE';
+    $SIG{'TERM'} = 'IGNORE';
+    $SIG{'ALRM'} = 'IGNORE';
+    $SIG{'PIPE'} = 'IGNORE';
+    print PLOG "sbuild received SIG$signame -- shutting down\n";
+
+    goto not_ni_shutdown if !$main::build_object->{'Batch Mode'};
+
+    # most important: dump out names of unfinished jobs to REDO
+    foreach $job (@ARGV) {
+	my $job2 = $job;
+	fixup_pkgv($main::build_object, $job2);
+	push( @npkgs, $job2 )
+	    if !$main::job_state{$job} || $job eq $main::current_job;
+    }
+    print LOG "The following jobs were not finished: @npkgs\n";
+
+    my $f = "REDO";
+    if (-f "REDO.lock") {
+	# if lock file exists, write to a different file -- timing may
+	# be critical
+	$f = "REDO2";
+    }
+    if (open( F, "<$f" )) {
+	@pkgs = <F>;
+	close( F );
+    }
+    if (open( F, ">>$f" )) {
+	foreach $job (@npkgs) {
+	    next if grep( /^\Q$job\E\s/, @pkgs );
+	    if (not defined $main::build_object->{'binNMU Version'}) {
+		print F "$job $main::build_object->{'Distribution'}\n";
+	    } else {
+		print F "$job $main::build_object->{'Distribution'} $main::build_object->{'binNMU Version'} $main::build_object->{'binNMU'}\n";
+	    }
+	}
+	close( F );
+    }
+    else {
+	print "Cannot open $f: $!\n";
+    }
+    open( F, ">SBUILD-REDO-DUMPED" );
+    close( F );
+    print LOG "SBUILD-REDO-DUMPED created\n";
+    unlink( "SBUILD-FINISHED" );
+
+    # next: say which packages should be uninstalled
+    @pkgs = keys %{$main::build_object->{'Changes'}->{'installed'}};
+    if (@pkgs) {
+	if (open( F, ">>NEED-TO-UNINSTALL" )) {
+	    print F "@pkgs\n";
+	    close( F );
+	}
+	print "The following packages still need to be uninstalled ",
+	"(--purge):\n@pkgs\n";
+    }
+
+  not_ni_shutdown:
+    # next: kill currently running command (if one)
+    if ($main::build_object->{'Sub PID'}) {
+	print "Killing $main::build_object->{'Sub Task'} subprocess $main::build_object->{'Sub PID'}\n";
+	run_command("perl -e \"kill( \\\"TERM\\\", $main::build_object->{'Sub PID'} )\"", "root", 1, 0, '/');
+    }
+    remove_srcdep_lock_file($main::build_object);
+
+    # close logs and send mails
+    if ( $main::current_job && defined($main::build_object->{'Session'})) {
+	if ($conf::purge_build_directory eq "always") {
+	    print PLOG "Purging $main::build_object->{'Chroot Build Dir'}\n";
+	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::build_object->{'Chroot Build Dir'});
+	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
+	}
+
+	fixup_pkgv($main::build_object, $main::current_job);
+
+	$main::build_object->{'Session'}->end_session();
+	undef $main::build_object->{'Session'};
+
+	close_build_log( $main::build_object,
+			 $main::current_job,
+			 $main::build_object->{'Distribution'},
+			 $main::build_object->{'Pkg Status'},
+			 $main::build_object->{'Pkg Start Time'},
+			 $main::build_object->{'Pkg End Time'},
+			 $main::build_object->{'This Space'} );
+	undef $main::build_object->{'binNMU Name'};
+    }
+    close_log();
+    unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
+    $? = 0; $! = 0;
+    if ($conf::sbuild_mode eq "user") {
+	exit 1;
+    }
+    exit 0;
 }
