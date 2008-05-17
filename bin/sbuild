@@ -147,6 +147,7 @@ sub build_new () {
     $build{'Pkg Status'} = '';
     $build{'Pkg Start Time'} = 0;
     $build{'Pkg End Time'} = 0;
+    $build{'Pkg Fail Stage'} = 0;
     $build{'Build Start Time'} = 0;
     $build{'This Space'} = 0;
     $build{'Toolchain Packages'} = [];
@@ -164,6 +165,7 @@ sub build_new () {
     $build{'Have DSC Build Deps'} = [];
     $build{'LD_LIBRARY_PATH'} = undef;
     $build{'Manual Srcdeps'} = [];
+    $build{'GCC Snapshot'} = [];
 
     return \%build;
 }
@@ -259,7 +261,7 @@ sub main ($) {
 			   },
 			   "stats-dir=s" => \$main::stats_dir,
 			   "use-snapshot" => sub {
-			       $main::useSNAP = 1;
+			       $self->{'GCC Snapshot'} = 1;
 			       $self->{'LD_LIBRARY_PATH'} =
 				   "/usr/lib/gcc-snapshot/lib";
 			       $conf::path =
@@ -402,13 +404,13 @@ sub main ($) {
 	    }
 	}
 
-	$main::pkg_fail_stage = "fetch-src";
+	$self->{'Pkg Fail Stage'} = "fetch-src";
 	if (!fetch_source_files($self, \$dscfile,
 				$dir, $pkg, $version, $download)) {
 	    goto cleanup_close;
 	}
 
-	$main::pkg_fail_stage = "install-deps";
+	$self->{'Pkg Fail Stage'} = "install-deps";
 	if (!install_deps($self, $pkg)) {
 	    print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
 	    goto cleanup_packages;
@@ -613,7 +615,7 @@ sub fetch_source_files ($$$$$$) {
 	    !($dscarchs eq "all" && $self->{'Build Arch All'}) )  {
 	    print PLOG "$dscbase: $self->{'Arch'} not in arch list: $dscarchs -- ".
 		"skipping\n";
-	    $main::pkg_fail_stage = "arch-check";
+	    $self->{'Pkg Fail Stage'} = "arch-check";
 	    return 0;
 	}
     }
@@ -658,7 +660,7 @@ sub build ($$$) {
 	return 0;
     }
     if (! -d "$self->{'Chroot Build Dir'}/$dsc") {
-	$main::pkg_fail_stage = "unpack";
+	$self->{'Pkg Fail Stage'} = "unpack";
 	# dpkg-source refuses to remove the remanants of an aborted
 	# dpkg-source extraction, so we will if necessary.
 	if (-d $tmpunpackdir) {
@@ -684,7 +686,7 @@ sub build ($$$) {
     else {
 	$dir = "$self->{'Chroot Build Dir'}/$dsc";
 
-	$main::pkg_fail_stage = "check-unpacked-version";
+	$self->{'Pkg Fail Stage'} = "check-unpacked-version";
 	# check if the unpacked tree is really the version we need
 	$self->{'Sub PID'} = open( PIPE, "-|" );
 	if (!defined $self->{'Sub PID'}) {
@@ -721,7 +723,7 @@ sub build ($$$) {
 	}
     }
 
-    $main::pkg_fail_stage = "check-space";
+    $self->{'Pkg Fail Stage'} = "check-space";
     my $current_usage = `/usr/bin/du -k -s "$dir"`;
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
@@ -737,7 +739,7 @@ sub build ($$$) {
 	}
     }
 
-    $main::pkg_fail_stage = "hack-binNMU";
+    $self->{'Pkg Fail Stage'} = "hack-binNMU";
     if ($self->{'binNMU'} && ! -f "$dir/debian/.sbuild-binNMU-done") {
 	if (open( F, "<$dir/debian/changelog" )) {
 	    my($firstline, $text);
@@ -802,7 +804,7 @@ EOF
     }
 
     $self->{'Build Start Time'} = time;
-    $main::pkg_fail_stage = "build";
+    $self->{'Pkg Fail Stage'} = "build";
     $self->{'Sub PID'} = open( PIPE, "-|" );
     if (!defined $self->{'Sub PID'}) {
 	print PLOG "Can't spawn dpkg-buildpackage: $!\n";
@@ -1001,11 +1003,11 @@ sub analyze_fail_stage ($$) {
 
     return if $self->{'Pkg Status'} ne "failed";
     return if !$self->{'Auto Giveback'};
-    if (isin( $main::pkg_fail_stage,
+    if (isin( $self->{'Pkg Fail Stage'},
 	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
 	$self->{'Pkg Status'} = "given-back";
 	print PLOG "Giving back package $pkgv after failure in ".
-	    "$main::pkg_fail_stage stage.\n";
+	    "$self->{'Pkg Fail Stage'} stage.\n";
 	my $cmd = "";
 	$cmd = "ssh -l$self->{'Auto Giveback User'} $self->{'Auto Giveback Host'} "
 	    if $self->{'Auto Giveback Host'};
@@ -1327,19 +1329,19 @@ sub run_apt ($$\@\@@) {
 	 ($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
 	 ($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
 	print PLOG "Build environment unusable, giving back\n";
-	$main::pkg_fail_stage = "install-deps-env";
+	$self->{'Pkg Fail Stage'} = "install-deps-env";
     }
 
     if ($status != 0 && $mode ne "-s" &&
 	(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
 	print PLOG "Unable to fetch build-depends\n";
-	$main::pkg_fail_stage = "install-deps-env";
+	$self->{'Pkg Fail Stage'} = "install-deps-env";
     }
 
     if ($status != 0 && $mode ne "-s" &&
 	(($msgs =~ /^W: Couldn't stat source package list /mi))) {
 	print PLOG "Missing a packages file (mismatch with Release.gpg?), giving back.\n";
-	$main::pkg_fail_stage = "install-deps-env";
+	$self->{'Pkg Fail Stage'} = "install-deps-env";
     }
 
     $pkgs = $rpkgs = "";
@@ -1722,7 +1724,7 @@ sub merge_pkg_build_deps ($$$$$$) {
     my $old_deps = copy($self, $self->{'Dependencies'}->{$pkg});
 
     # Add gcc-snapshot as an override.
-    if ( $main::useSNAP ) {
+    if ( $self->{'GCC Snapshot'} ) {
 	$dep->{'Package'} = "gcc-snapshot";
 	$dep->{'Override'} = 1;
 	push( @{$self->{'Dependencies'}->{$pkg}}, $dep );
@@ -2885,15 +2887,11 @@ sub dump_main_state () {
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
 				     \%main::job_state,
-				     $main::pkg_fail_stage,
 				     $main::stats_dir,
-				     \%main::this_watches,
-				     $main::useSNAP],
+				     \%main::this_watches],
 				    [qw($main::current_job
 					$main::DEVNULL
 					%main::job_state
-					$main::pkg_fail_stage
 					$main::stats_dir
-					%main::this_watches
-					$main::useSNAP)] );
+					%main::this_watches)] );
 }
