@@ -36,7 +36,7 @@ BEGIN {
 
     @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
 		         version_compare binNMU_version parse_date
-		         isin);
+		         isin copy);
 }
 
 my $opt_correct_version_cmp;
@@ -213,5 +213,34 @@ sub isin ($@) {
     my $val = shift;
     return grep( $_ eq $val, @_ );
 }
+
+sub copy ($) {
+    my $self = shift;
+    my $r = shift;
+    my $new;
+
+    if (ref($r) eq "HASH") {
+	$new = { };
+	foreach (keys %$r) {
+	    $new->{$_} = copy($r->{$_});
+	}
+    }
+    elsif (ref($r) eq "ARRAY") {
+	my $i;
+	$new = [ ];
+	for( $i = 0; $i < @$r; ++$i ) {
+	    $new->[$i] = copy($r->[$i]);
+	}
+    }
+    elsif (!ref($r)) {
+	$new = $r;
+    }
+    else {
+	die "unknown ref type in copy\n";
+    }
+
+    return $new;
+}
+
 
 1;

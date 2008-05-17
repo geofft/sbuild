@@ -34,7 +34,7 @@ use IPC::Open3;
 use FileHandle;
 use GDBM_File;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild qw(binNMU_version version_compare);
+use Sbuild qw(binNMU_version version_compare copy);
 use Data::Dumper;
 use File::Temp qw(tempdir);
 
@@ -52,7 +52,6 @@ sub filter_dependencies ($\@\@\@);
 sub check_dependencies ($\@);
 sub get_apt_policy ($@);
 sub get_dpkg_status ($@);
-sub copy ($$);
 sub merge_pkg_build_deps ($$$$$$);
 sub cmp_dep_lists ($\@\@);
 sub get_altlist ($$);
@@ -1679,34 +1678,6 @@ sub get_dpkg_status ($@) {
     return \%result;
 }
 
-sub copy ($$) {
-    my $self = shift;
-    my $r = shift;
-    my $new;
-
-    if (ref($r) eq "HASH") {
-	$new = { };
-	foreach (keys %$r) {
-	    $new->{$_} = copy($self, $r->{$_});
-	}
-    }
-    elsif (ref($r) eq "ARRAY") {
-	my $i;
-	$new = [ ];
-	for( $i = 0; $i < @$r; ++$i ) {
-	    $new->[$i] = copy($self, $r->[$i]);
-	}
-    }
-    elsif (!ref($r)) {
-	$new = $r;
-    }
-    else {
-	die "unknown ref type in copy\n";
-    }
-
-    return $new;
-}
-
 sub merge_pkg_build_deps ($$$$$$) {
     my $self = shift;
     my $pkg = shift;
@@ -1722,7 +1693,7 @@ sub merge_pkg_build_deps ($$$$$$) {
     print PLOG "Build-Conflicts: $conflicts\n" if $conflicts;
     print PLOG "Build-Conflicts-Indep: $conflictsi\n" if $conflictsi;
 
-    my $old_deps = copy($self, $self->{'Dependencies'}->{$pkg});
+    my $old_deps = copy($self->{'Dependencies'}->{$pkg});
 
     # Add gcc-snapshot as an override.
     if ( $self->{'GCC Snapshot'} ) {
@@ -1926,7 +1897,7 @@ sub expand_dependencies ($\@) {
 	    push( @to_check, $name );
 	    $seen{$name} = 1;
 	}
-	push( @result, copy($self, $dep) );
+	push( @result, copy($dep) );
     }
 
     while( @to_check ) {
