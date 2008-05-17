@@ -141,7 +141,6 @@ sub build_new () {
     $build{'Jobs File'} = 'build-progress';
     $build{'Max Lock Trys'} = 120;
     $build{'Lock Interval'} = 5;
-    $build{'Srcdep Lock Dir'} = '';
     $build{'ILock File'} = '';
     $build{'Srcdep Lock Count'} = 0;
     $build{'Pkg Status'} = '';
@@ -158,9 +157,7 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-$main::srcdep_lock_dir = "";
 $main::ilock_file = "";
-$main::srcdep_lock_cnt = 0;
 $main::pkg_status = "";
 $main::pkg_end_time = 0;
 $main::pkg_start_time = 0;
@@ -377,7 +374,6 @@ sub main ($) {
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
 	$session->{'Build Location'} = $self->{'Chroot Build Dir'};
-	$main::srcdep_lock_dir = $session->{'Srcdep Lock Dir'};
 	$main::ilock_file = $session->{'Install Lock'};
 
 	$self->{'Arch'} = chroot_arch($self);
@@ -1141,11 +1137,11 @@ sub wait_for_srcdep_conflicts ($@) {
 	for (@confl) {
 	    /^(\d+)-(\d+)$/;
 	    my $pid = $1;
-	    if (-f "$main::srcdep_lock_dir/$_") {
+	    if (-f "$self->{'Session'}->{'Srcdep Lock Dir'}/$_") {
 		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
 		    print PLOG "Ignoring stale src-dep lock $_\n";
-		    unlink( "$main::srcdep_lock_dir/$_" ) or
-			print PLOG "Cannot remove $main::srcdep_lock_dir/$_: $!\n";
+		    unlink( "$self->{'Session'}->{'Srcdep Lock Dir'}/$_" ) or
+			print PLOG "Cannot remove $self->{'Session'}->{'Srcdep Lock Dir'}/$_: $!\n";
 		}
 		else {
 		    $allgone = 0;
@@ -2221,8 +2217,8 @@ sub write_srcdep_lock_file ($\@) {
     my $deps = shift;
     local( *F );
 
-    ++$main::srcdep_lock_cnt;
-    my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+    ++$self->{'Srcdep Lock Count'};
+    my $f = "$self->{'Session'}->{'Srcdep Lock Dir'}/$$-$self->{'Srcdep Lock Count'}";
     if (!open( F, ">$f" )) {
 	print "Warning: cannot create srcdep lock file $f: $!\n";
 	return;
@@ -2248,8 +2244,8 @@ sub check_srcdep_conflicts ($\@\@) {
     my $mypid = $$;
     my %conflict_builds;
 
-    if (!opendir( DIR, $main::srcdep_lock_dir )) {
-	print PLOG "Cannot opendir $main::srcdep_lock_dir: $!\n";
+    if (!opendir( DIR, $self->{'Session'}->{'Srcdep Lock Dir'} )) {
+	print PLOG "Cannot opendir $self->{'Session'}->{'Srcdep Lock Dir'}: $!\n";
 	return 1;
     }
     my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
@@ -2258,8 +2254,8 @@ sub check_srcdep_conflicts ($\@\@) {
 
     my $file;
     foreach $file (@files) {
-	if (!open( F, "<$main::srcdep_lock_dir/$file" )) {
-	    print PLOG "Cannot open $main::srcdep_lock_dir/$file: $!\n";
+	if (!open( F, "<$self->{'Session'}->{'Srcdep Lock Dir'}/$file" )) {
+	    print PLOG "Cannot open $self->{'Session'}->{'Srcdep Lock Dir'}/$file: $!\n";
 	    next;
 	}
 	<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
@@ -2271,7 +2267,7 @@ sub check_srcdep_conflicts ($\@\@) {
 	    close( F );
 	    print PLOG "Found stale srcdep lock file $file -- removing it\n";
 	    print PLOG "Cannot remove: $!\n"
-		if !unlink( "$main::srcdep_lock_dir/$file" );
+		if !unlink( "$self->{'Session'}->{'Srcdep Lock Dir'}/$file" );
 	    next;
 	}
 
@@ -2310,7 +2306,7 @@ sub check_srcdep_conflicts ($\@\@) {
 sub remove_srcdep_lock_file ($) {
     my $self = shift;
 
-    my $f = "$main::srcdep_lock_dir/$$-$main::srcdep_lock_cnt";
+    my $f = "$self->{'Session'}->{'Srcdep Lock Dir'}/$$-$self->{'Srcdep Lock Count'}";
 
     print "Removing srcdep lock file $f\n" if $conf::debug;
     if (!unlink( $f )) {
@@ -2897,8 +2893,6 @@ sub dump_main_state () {
 				     $main::pkg_start_time,
 				     $main::pkg_status,
 				     $main::shutdown,
-				     $main::srcdep_lock_cnt,
-				     $main::srcdep_lock_dir,
 				     $main::stats_dir,
 				     $main::sub_pid,
 				     $main::sub_task,
@@ -2926,8 +2920,6 @@ sub dump_main_state () {
 					$main::pkg_start_time
 					$main::pkg_status
 					$main::shutdown
-					$main::srcdep_lock_cnt
-					$main::srcdep_lock_dir
 					$main::stats_dir
 					$main::sub_pid $main::sub_task
 					$main::this_space
