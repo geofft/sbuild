@@ -62,7 +62,7 @@ sub expand_dependencies ($\@);
 sub expand_virtuals ($\@);
 sub get_dependencies ($@);
 sub get_virtuals ($@);
-sub parse_one_srcdep ($$$\%);
+sub parse_one_srcdep ($$$);
 sub parse_manual_srcdeps ($@);
 sub check_space ($@);
 sub file_for_name ($$@);
@@ -158,6 +158,7 @@ sub build_new () {
     $build{'binNMU Name'} = undef;
     $build{'binNMU Version'} = undef;
     $build{'Changes'} = {};
+    $build{'Dependencies'} = {};
 
     return \%build;
 }
@@ -1027,8 +1028,8 @@ sub install_deps ($$) {
     my( @positive, @negative, @instd, @rmvd );
 
     my $dep = [];
-    if (exists $main::deps{$pkg}) {
-	$dep = $main::deps{$pkg};
+    if (exists $self->{'Dependencies'}->{$pkg}) {
+	$dep = $self->{'Dependencies'}->{$pkg};
     }
     if ($conf::debug) {
 	print "Source dependencies of $pkg: ", format_deps($self, @$dep), "\n";
@@ -1712,16 +1713,16 @@ sub merge_pkg_build_deps ($$$$$$) {
     print PLOG "Build-Conflicts: $conflicts\n" if $conflicts;
     print PLOG "Build-Conflicts-Indep: $conflictsi\n" if $conflictsi;
 
-    my $old_deps = copy($self, $main::deps{$pkg});
+    my $old_deps = copy($self, $self->{'Dependencies'}->{$pkg});
 
     # Add gcc-snapshot as an override.
     if ( $main::useSNAP ) {
 	$dep->{'Package'} = "gcc-snapshot";
 	$dep->{'Override'} = 1;
-	push( @{$main::deps{$pkg}}, $dep );
+	push( @{$self->{'Dependencies'}->{$pkg}}, $dep );
     }
 
-    foreach $dep (@{$main::deps{$pkg}}) {
+    foreach $dep (@{$self->{'Dependencies'}->{$pkg}}) {
 	if ($dep->{'Override'}) {
 	    print PLOG "Added override: ",
 	    (map { ($_->{'Neg'} ? "!" : "") .
@@ -1737,20 +1738,20 @@ sub merge_pkg_build_deps ($$$$$$) {
 
     my $deps = $depends . ", " . $conflicts;
     $deps .= ", " . $dependsi . ", " . $conflictsi if $self->{'Build Arch All'};
-    @{$main::deps{$pkg}} = @l;
+    @{$self->{'Dependencies'}->{$pkg}} = @l;
     print "Merging pkg deps: $deps\n" if $conf::debug;
-    parse_one_srcdep($self, $pkg, $deps, %main::deps );
+    parse_one_srcdep($self, $pkg, $deps);
 
-    my $missing = (cmp_dep_lists($self, @$old_deps, @{$main::deps{$pkg}}))[1];
+    my $missing = (cmp_dep_lists($self, @$old_deps, @{$self->{'Dependencies'}->{$pkg}}))[1];
 
     # read list of build-essential packages (if not yet done) and
     # expand their dependencies (those are implicitly essential)
-    if (!defined($main::deps{'ESSENTIAL'})) {
+    if (!defined($self->{'Dependencies'}->{'ESSENTIAL'})) {
 	my $ess = read_build_essential($self);
-	parse_one_srcdep($self, 'ESSENTIAL', $ess, %main::deps );
+	parse_one_srcdep($self, 'ESSENTIAL', $ess);
     }
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = expand_dependencies($self, @{$main::deps{'ESSENTIAL'}} );
+    $exp_essential = expand_dependencies($self, @{$self->{'Dependencies'}->{'ESSENTIAL'}} );
     print "Dependency-expanded build essential packages:\n",
     format_deps($self, @$exp_essential), "\n" if $conf::debug;
 
@@ -1774,7 +1775,7 @@ sub merge_pkg_build_deps ($$$$$$) {
 
     # if some build deps are virtual packages, replace them by an
     # alternative over all providing packages
-    $exp_pkgdeps = expand_virtuals($self, @{$main::deps{$pkg}} );
+    $exp_pkgdeps = expand_virtuals($self, @{$self->{'Dependencies'}->{$pkg}} );
     print "Provided-expanded build deps:\n",
 	  format_deps($self, @$exp_pkgdeps), "\n" if $conf::debug;
 
@@ -2039,11 +2040,10 @@ sub get_virtuals ($@) {
     return \%provided_by;
 }
 
-sub parse_one_srcdep ($$$\%) {
+sub parse_one_srcdep ($$$) {
     my $self = shift;
     my $pkg = shift;
     my $deps = shift;
-    my $hash = shift;
 
     $deps =~ s/^\s*(.*)\s*$/$1/;
     foreach (split( /\s*,\s*/, $deps )) {
@@ -2115,7 +2115,7 @@ sub parse_one_srcdep ($$$\%) {
 	    foreach (@l) {
 		push( @{$l->{'Alternatives'}}, $_ );
 	    }
-	    push( @{$hash->{$pkg}}, $l );
+	    push( @{$self->{'Dependencies'}->{$pkg}}, $l );
 	}
     }
 }
@@ -2132,8 +2132,8 @@ sub parse_manual_srcdeps ($@) {
 	}
 	my ($mode, $pkg, $deps) = ($1, $2, $3);
 	next if !isin( $pkg, @for_pkgs );
-	@{$main::deps{$pkg}} = () if $mode eq 'f';
-	parse_one_srcdep($self, $pkg, $deps, %main::deps);
+	@{$self->{'Dependencies'}->{$pkg}} = () if $mode eq 'f';
+	parse_one_srcdep($self, $pkg, $deps);
     }
 }
 
@@ -2877,7 +2877,6 @@ sub dump_main_state () {
     my $self = shift;
 
     print STDERR Data::Dumper->Dump([$main::current_job,
-				     \%main::deps,
 				     $main::DEVNULL,
 				     $main::dpkg_buildpackage_signopt,
 				     \@main::have_dsc_build_deps,
@@ -2891,7 +2890,7 @@ sub dump_main_state () {
 				     \%main::this_watches,
 				     $main::useSNAP],
 				    [qw($main::current_job
-					%main::deps $main::DEVNULL
+					$main::DEVNULL
 					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
 					%main::job_state
