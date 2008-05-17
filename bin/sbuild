@@ -162,6 +162,7 @@ sub build_new () {
     $build{'Signing Options'} = {};
     $build{'Have DSC Build Deps'} = [];
     $build{'LD_LIBRARY_PATH'} = undef;
+    $build{'Manual Srcdeps'} = [];
 
     return \%build;
 }
@@ -198,10 +199,10 @@ sub main ($) {
 			       }
 			   },
 			   "f|force-depends=s" => sub {
-			       push( @main::manual_srcdeps, "f".$_[1] );
+			       push( @{$self->{'Manual Srcdeps'}}, "f".$_[1] );
 			   },
 			   "a|add-depends=s" => sub {
-			       push( @main::manual_srcdeps, "a".$_[1] );
+			       push( @{$self->{'Manual Srcdeps'}}, "a".$_[1] );
 			   },
 			   "check-depends-algorithm=s" => sub {
 			       die "Bad build dependency check algorithm\n"
@@ -2128,7 +2129,7 @@ sub parse_manual_srcdeps ($@) {
     my $self = shift;
     my @for_pkgs = @_;
 
-    foreach (@main::manual_srcdeps) {
+    foreach (@{$self->{'Manual Srcdeps'}}) {
 	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
 	    warn "Syntax error in manual source dependency: ",
 	    substr( $_, 1 ), "\n";
@@ -2883,7 +2884,6 @@ sub dump_main_state () {
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
 				     \%main::job_state,
-				     \@main::manual_srcdeps,
 				     $main::pkg_fail_stage,
 				     $main::shutdown,
 				     $main::stats_dir,
@@ -2893,7 +2893,6 @@ sub dump_main_state () {
 				    [qw($main::current_job
 					$main::DEVNULL
 					%main::job_state
-					@main::manual_srcdeps
 					$main::pkg_fail_stage
 					$main::shutdown
 					$main::stats_dir
