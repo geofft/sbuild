@@ -28,3 +28,4 @@ and symlink creation should be customisable).
 
 Chroot.pm: Move chroot naming out of begin_session.
 
+Are 'Build Start Time' and 'Pkg Start Time' different?
