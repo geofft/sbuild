@@ -156,9 +156,6 @@ sub build_new () {
 
 $main::build_object = build_new();
 
-$main::pkg_status = "";
-$main::pkg_end_time = 0;
-$main::pkg_start_time = 0;
 $main::this_space = 0;
 @main::toolchain_pkgs = ();
 $main::override_distribution = 0;
@@ -329,13 +326,13 @@ sub main ($) {
 	if ($invalid || ($download && $dscfile ne $pkgv)) {
 	    print PLOG "Invalid source: $dscfile\n";
 	    print PLOG "Skipping $pkg\n";
-	    $main::pkg_status = "skipped";
+	    $self->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
 
 	{
 	    my $tpkg = basename($pkgv);
-	    # TODO: This should be $pkg_start_time, set in build().
+	    # TODO: This should be 'Pkg Start Time', set in build().
 	    my $date = strftime("%Y%m%d-%H%M",localtime);
 
 	    if ($main::binNMU) {
@@ -348,12 +345,12 @@ sub main ($) {
 	    next if !open_build_log($self, $tpkg, $self->{'Distribution'}, $date );
 	}
 
-	$main::pkg_status = "failed"; # assume for now
+	$self->{'Pkg Status'} = "failed"; # assume for now
 	$main::current_job = $pkgv;
 	$main::additional_deps = [];
 	write_jobs_file($self, "currently building" );
 	if (should_skip($self, $pkgv )) {
-	    $main::pkg_status = "skipped";
+	    $self->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
 
@@ -364,7 +361,7 @@ sub main ($) {
 
 	if (!$session->begin_session()) {
 	    print PLOG "Error creating schroot session: skipping $pkg\n";
-	    $main::pkg_status = "skipped";
+	    $self->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
 	$self->{'Chroot Dir'} = $session->{'Location'};
@@ -387,7 +384,7 @@ sub main ($) {
 	    close(PIPE);
 	    if ($?) {
 		print PLOG "apt-get update failed\n" ;
-		$main::pkg_status = "skipped";
+		$self->{'Pkg Status'} = "skipped";
 		goto cleanup_close;
 	    }
 	}
@@ -404,9 +401,9 @@ sub main ($) {
 	    goto cleanup_packages;
 	}
 
-	$main::pkg_status = "successful"
+	$self->{'Pkg Status'} = "successful"
 	    if build ($self, basename($dscfile), $pkgv);
-	write_jobs_file($self, $main::pkg_status);
+	write_jobs_file($self, $self->{'Pkg Status'});
 	append_to_FINISHED($self, $pkgv);
 
       cleanup_packages:
@@ -419,7 +416,7 @@ sub main ($) {
 	remove_srcdep_lock_file($self);
       cleanup_close:
 	analyze_fail_stage($self, $pkgv);
-	write_jobs_file($self, $main::pkg_status );
+	write_jobs_file($self, $self->{'Pkg Status'} );
 
 	$session->end_session();
 	$session = undef;
@@ -428,8 +425,9 @@ sub main ($) {
 	close_build_log( $self,
 			 $main::current_job,
 			 $self->{'Distribution'},
-			 $main::pkg_status,
-			 $main::pkg_start_time, $main::pkg_end_time,
+			 $self->{'Pkg Status'},
+			 $self->{'Pkg Start Time'},
+			 $self->{'Pkg End Time'},
 			 $main::this_space );
 	undef $main::binNMU_name;
 	$main::current_job = "";
@@ -444,7 +442,7 @@ sub main ($) {
     unlink( $self->{'Jobs File'} ) if $self->{'Batch Mode'};
     unlink( "SBUILD-FINISHED" ) if $self->{'Batch Mode'};
     if ($conf::sbuild_mode eq "user") {
-	exit ($main::pkg_status ne "successful") ? 1 : 0;
+	exit ($self->{'Pkg Status'} ne "successful") ? 1 : 0;
     }
     exit 0;
 }
@@ -629,7 +627,7 @@ sub build ($$$) {
     print PLOG "-"x78, "\n";
     # count build time from now, ignoring the installation of source
     # deps
-    $main::pkg_start_time = time;
+    $self->{'Pkg Start Time'} = time;
     $main::this_space = 0;
     $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
     my ($pkg, $version) = ($1,$2);
@@ -853,9 +851,9 @@ EOF
 	           " after ", int($timeout_times[$i]/60),
 	           " minutes of inactivity\n";
     }
-    $main::pkg_end_time = time;
-    write_stats($self, 'build-time',$main::pkg_end_time-$main::build_start_time);
-    my $date = strftime("%Y%m%d-%H%M",localtime($main::pkg_end_time));
+    $self->{'Pkg End Time'} = time;
+    write_stats($self, 'build-time',$self->{'Pkg End Time'}-$main::build_start_time);
+    my $date = strftime("%Y%m%d-%H%M",localtime($self->{'Pkg End Time'}));
     print PLOG "*"x78, "\n";
     print PLOG "Build finished at $date\n";
 
@@ -987,11 +985,11 @@ sub analyze_fail_stage ($$) {
     my $self = shift;
     my $pkgv = shift;
 
-    return if $main::pkg_status ne "failed";
+    return if $self->{'Pkg Status'} ne "failed";
     return if !$self->{'Auto Giveback'};
     if (isin( $main::pkg_fail_stage,
 	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
-	$main::pkg_status = "given-back";
+	$self->{'Pkg Status'} = "given-back";
 	print PLOG "Giving back package $pkgv after failure in ".
 	    "$main::pkg_fail_stage stage.\n";
 	my $cmd = "";
@@ -2650,8 +2648,9 @@ sub shutdown ($) {
 	close_build_log( $main::build_object,
 			 $main::current_job,
 			 $main::build_object->{'Distribution'},
-			 $main::pkg_status,
-			 $main::pkg_start_time, $main::pkg_end_time,
+			 $main::build_object->{'Pkg Status'},
+			 $main::build_object->{'Pkg Start Time'},
+			 $main::build_object->{'Pkg End Time'},
 			 $main::this_space );
 	undef $main::binNMU_name;
     }
@@ -2884,10 +2883,7 @@ sub dump_main_state () {
 				     $main::ld_library_path,
 				     \@main::manual_srcdeps,
 				     $main::override_distribution,
-				     $main::pkg_end_time,
 				     $main::pkg_fail_stage,
-				     $main::pkg_start_time,
-				     $main::pkg_status,
 				     $main::shutdown,
 				     $main::stats_dir,
 				     $main::sub_pid,
@@ -2910,10 +2906,7 @@ sub dump_main_state () {
 					$main::ld_library_path
 					@main::manual_srcdeps
 					$main::override_distribution
-					$main::pkg_end_time
 					$main::pkg_fail_stage
-					$main::pkg_start_time
-					$main::pkg_status
 					$main::shutdown
 					$main::stats_dir
 					$main::sub_pid $main::sub_task
