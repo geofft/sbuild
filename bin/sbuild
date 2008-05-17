@@ -121,6 +121,7 @@ check_group_membership();
 
 umask(022);
 
+# TODO: put in all package version data and job ID (for indexing in job list)
 sub build_new () {
     my %build = ();
 
@@ -136,6 +137,7 @@ sub build_new () {
     $build{'Auto Giveback Socket'} = 0;
     $build{'Auto Giveback User'} = 0;
     $build{'Auto Giveback WannaBuild User'} = 0;
+    $build{'WannaBuild Database'} = 0;
     $build{'Build Arch All'} = 0;
     $build{'Build Source'} = 0;
     $build{'Jobs File'} = 'build-progress';
@@ -216,7 +218,9 @@ sub main ($) {
 			   "c|chroot=s" => sub {
 			       $self->{'Chroot'} = $_[1];
 			   },
-			   "database=s" => \$main::database,
+			   "database=s" => sub {
+			       $self->{'WannaBuild Database'} = $_[1]
+			   },
 			   "D|debug+" => \$conf::debug,
 			   "apt-update" => \$conf::apt_update,
 			   "d|dist=s" => sub {
@@ -1002,7 +1006,7 @@ sub analyze_fail_stage ($$) {
 	    if $self->{'Auto Giveback Socket'};
 	$cmd .= "wanna-build --give-back --no-down-propagation ".
 	    "--dist=$self->{'Distribution'}";
-	$cmd .= " --database=$main::database" if $main::database;
+	$cmd .= " --database=$self->{'WannaBuild Database'}" if $self->{'WannaBuild Database'};
 	$cmd .= " --user=$self->{'Auto Giveback WannaBuild User'} "
 	    if $self->{'Auto Giveback WannaBuild User'};
 	$cmd .= " $pkgv";
@@ -2873,7 +2877,6 @@ sub dump_main_state () {
     my $self = shift;
 
     print STDERR Data::Dumper->Dump([$main::current_job,
-				     $main::database,
 				     \%main::deps,
 				     $main::DEVNULL,
 				     $main::dpkg_buildpackage_signopt,
@@ -2888,7 +2891,6 @@ sub dump_main_state () {
 				     \%main::this_watches,
 				     $main::useSNAP],
 				    [qw($main::current_job
-					$main::database
 					%main::deps $main::DEVNULL
 					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
