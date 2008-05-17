@@ -136,7 +136,7 @@ sub build_new () {
     $build{'Auto Giveback WannaBuild User'} = 0;
     $build{'Build Arch All'} = 0;
     $build{'Build Source'} = 0;
-    $build{'Build Progress'} = 0;
+    $build{'Jobs File'} = 'build-progress';
     $build{'Max Lock Trys'} = 120;
     $build{'Lock Interval'} = 5;
     $build{'Srcdep Lock Dir'} = '';
@@ -160,7 +160,6 @@ $main::build_object = build_new();
 
 undef $main::chroot;
 
-$main::jobs_file = "build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
 $main::srcdep_lock_dir = "";
@@ -452,7 +451,7 @@ sub main ($) {
     write_jobs_file($self, "");
 
     close_log();
-    unlink( $main::jobs_file ) if $self->{'Batch Mode'};
+    unlink( $self->{'Jobs File'} ) if $self->{'Batch Mode'};
     unlink( "SBUILD-FINISHED" ) if $self->{'Batch Mode'};
     if ($conf::sbuild_mode eq "user") {
 	exit ($main::pkg_status ne "successful") ? 1 : 0;
@@ -2191,7 +2190,7 @@ sub write_jobs_file ($$) {
 
     return if !$self->{'Batch Mode'};
 
-    return if !open( F, ">$main::jobs_file" );
+    return if !open( F, ">$self->{'Jobs File'}" );
     foreach $job (@ARGV) {
 	my $jobname;
 
@@ -2667,7 +2666,7 @@ sub shutdown ($) {
 	undef $main::binNMU_name;
     }
     close_log();
-    unlink( $main::jobs_file ) if $main::build_object->{'Batch Mode'};
+    unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
     $? = 0; $! = 0;
     if ($conf::sbuild_mode eq "user") {
 	exit 1;
@@ -2894,7 +2893,6 @@ sub dump_main_state () {
 				     $main::dpkg_buildpackage_signopt,
 				     \@main::have_dsc_build_deps,
 				     $main::ilock_file,
-				     $main::jobs_file,
 				     \%main::job_state,
 				     $main::ld_library_path,
 				     $main::lock_interval,
@@ -2928,7 +2926,6 @@ sub dump_main_state () {
 					$main::dpkg_buildpackage_signopt
 					@main::have_dsc_build_deps
 					$main::ilock_file
-					$main::jobs_file
 					%main::job_state
 					$main::ld_library_path
 					$main::lock_interval
