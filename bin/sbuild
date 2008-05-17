@@ -158,7 +158,6 @@ $main::build_object = build_new();
 
 undef $main::chroot;
 
-$main::user_arch = "";
 $main::batchmode = 0;
 $main::auto_giveback = 0;
 $main::build_arch_all = 0;
@@ -190,7 +189,7 @@ sub main ($) {
 	$conf::verbose = 1;
     }
 
-    exit 1 if !GetOptions ("arch=s" => \$main::user_arch,
+    exit 1 if !GetOptions ("arch=s" => \$self->{'User Arch'},
 			   "A|arch-all" => \$main::build_arch_all,
 			   "auto-give-back=s" => sub {
 			       $main::auto_giveback = 1;
@@ -272,7 +271,7 @@ sub main ($) {
 	if $conf::debug;
     print "Selected chroot $main::chroot\n"
 	if $conf::debug and defined $main::chroot;
-    print "Selected architecture $main::user_arch\n"
+    print "Selected architecture $self->{'User Arch'}\n"
 	if $conf::debug;
 
     $conf::mailto = $conf::mailto{$self->{'Distribution'}}
@@ -365,7 +364,7 @@ sub main ($) {
 	}
 
 	my $session = Sbuild::Chroot::new($self->{'Distribution'},
-				      $main::chroot, $main::user_arch);
+					  $main::chroot, $self->{'User Arch'});
 	$self->{'Session'} = $session;
 
 	if (!$session->begin_session()) {
