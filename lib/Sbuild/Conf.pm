@@ -42,8 +42,9 @@ BEGIN {
 		 $mailfrom @no_auto_upgrade $check_depends_algorithm
 		 $purge_build_directory @toolchain_regex
 		 $stalled_pkg_timeout $srcdep_lock_dir
-		 $srcdep_lock_wait @ignore_watches_no_build_deps
-		 $build_dir $sbuild_mode $debug $force_orig_source
+		 $srcdep_lock_wait $max_lock_trys $lock_interval
+		 @ignore_watches_no_build_deps $build_dir $sbuild_mode
+		 $debug $force_orig_source
 		 %individual_stalled_pkg_timeout $path
 		 $maintainer_name $uploader_name %watches $key_id);
 }
@@ -88,6 +89,8 @@ our @toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+
 our $stalled_pkg_timeout = 150; # minutes
 our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 our $srcdep_lock_wait = 1; # minutes
+our $max_lock_trys = 120;
+our $lock_interval = 5;
 # TODO: Remove $chroot_only after Lenny
 our $chroot_only;
 # TODO: Remove $chroot_mode after Lenny

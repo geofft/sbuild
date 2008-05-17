@@ -160,8 +160,6 @@ $main::build_object = build_new();
 
 undef $main::chroot;
 
-$main::max_lock_trys = 120;
-$main::lock_interval = 5;
 $main::srcdep_lock_dir = "";
 $main::ilock_file = "";
 $main::srcdep_lock_cnt = 0;
@@ -2546,9 +2544,9 @@ sub lock_file ($$$) {
 		}
 	    }
 	    ++$try;
-	    if (!$for_srcdep && $try > $main::max_lock_trys) {
+	    if (!$for_srcdep && $try > $Sbuild::Conf::max_lock_trys) {
 		warn "Lockfile $lockfile still present after ".
-		    $main::max_lock_trys*$main::lock_interval.
+		    $Sbuild::Conf::max_lock_trys*$Sbuild::Conf::lock_interval.
 		    " seconds -- giving up\n";
 		return;
 	    }
@@ -2556,7 +2554,7 @@ sub lock_file ($$$) {
 	    "installing or\n",
 	    "removing packages -- waiting...\n"
 		if $for_srcdep && $try == 1;
-	    sleep $main::lock_interval;
+	    sleep $Sbuild::Conf::lock_interval;
 	    goto repeat;
 	}
 	warn "Can't create lock file $lockfile: $!\n";
@@ -2884,8 +2882,6 @@ sub dump_main_state () {
 				     $main::binNMUver,
 				     $main::build_start_time,
 				     $main::changes,
-				     $main::chroot_build_dir,
-				     $main::chroot_dir,
 				     $main::current_job,
 				     $main::database,
 				     \%main::deps,
@@ -2895,9 +2891,7 @@ sub dump_main_state () {
 				     $main::ilock_file,
 				     \%main::job_state,
 				     $main::ld_library_path,
-				     $main::lock_interval,
 				     \@main::manual_srcdeps,
-				     $main::max_lock_trys,
 				     $main::override_distribution,
 				     $main::pkg_end_time,
 				     $main::pkg_fail_stage,
@@ -2918,8 +2912,6 @@ sub dump_main_state () {
 					$main::binNMUver
 					$main::build_start_time
 					$main::changes
-					$main::chroot_build_dir
-					$main::chroot_dir
 					$main::current_job
 					$main::database
 					%main::deps $main::DEVNULL
@@ -2928,9 +2920,7 @@ sub dump_main_state () {
 					$main::ilock_file
 					%main::job_state
 					$main::ld_library_path
-					$main::lock_interval
 					@main::manual_srcdeps
-					$main::max_lock_trys
 					$main::override_distribution
 					$main::pkg_end_time
 					$main::pkg_fail_stage
