@@ -215,7 +215,6 @@ sub isin ($@) {
 }
 
 sub copy ($) {
-    my $self = shift;
     my $r = shift;
     my $new;
 
