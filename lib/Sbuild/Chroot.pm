@@ -38,7 +38,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(new);
+    @EXPORT = qw();
 }
 
 sub new($$$);
