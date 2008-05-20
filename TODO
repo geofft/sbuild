@@ -28,3 +28,5 @@ and symlink creation should be customisable).
 
 Chroot.pm: Move chroot naming out of begin_session.
 
+LOG and PLOG should not be in the main namespace; import directly into
+namespace needed.
