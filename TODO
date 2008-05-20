@@ -30,3 +30,5 @@ Chroot.pm: Move chroot naming out of begin_session.
 
 LOG and PLOG should not be in the main namespace; import directly into
 namespace needed.
+
+Are 'Build Start Time' and 'Pkg Start Time' different?
