@@ -45,10 +45,105 @@ use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($arch $hostname $version);
 use Sbuild::Build;
 
+sub parse_options ($);
 sub main ($);
 sub shutdown ($);
 sub check_group_membership ();
 sub dump_main_state ();
+
+sub parse_options ($) {
+    my $self = shift;
+
+     return GetOptions ("arch=s" => \$self->{'User Arch'},
+			"A|arch-all" => sub {
+			    $self->{'Build Arch All'} = 1
+			},
+			"auto-give-back=s" => sub {
+			    $self->{'Auto Giveback'} = 1;
+			    if ($_[1]) {
+				my @parts = split( '@', $_[1] );
+				$self->{'Auto Giveback Socket'} =
+				    $parts[$#parts-3] if @parts > 3;
+				$self->{'Auto Giveback WannaBuild User'} =
+				    $parts[$#parts-2] if @parts > 2;
+				$self->{'Auto Giveback User'} =
+				    $parts[$#parts-1] if @parts > 1;
+				$self->{'Auto Giveback Host'} =
+				    $parts[$#parts];
+			    }
+			},
+			"f|force-depends=s" => sub {
+			    push( @{$self->{'Manual Srcdeps'}}, "f".$_[1] );
+			},
+			"a|add-depends=s" => sub {
+			    push( @{$self->{'Manual Srcdeps'}}, "a".$_[1] );
+			},
+			"check-depends-algorithm=s" => sub {
+			    die "Bad build dependency check algorithm\n"
+				if( ! ($_[1] eq "first-only" 
+				       || $_[1] eq "alternatives") );
+			    $conf::check_depends_algorithm = $_[1];
+			},
+			"b|batch" => sub {
+			    $self->{'Batch Mode'} = 1
+			},
+			"make-binNMU=s" => sub {
+			    $self->{'binNMU'} = $_[1];
+			    $self->{'binNMU Version'} ||= 1;
+			},
+			"binNMU=i" => sub {
+			    $self->{'binNMU Version'} = $_[1];
+			},
+			"c|chroot=s" => sub {
+			    $self->{'Chroot'} = $_[1];
+			},
+			"database=s" => sub {
+			    $self->{'WannaBuild Database'} = $_[1]
+			},
+			"D|debug+" => \$conf::debug,
+			"apt-update" => \$conf::apt_update,
+			"d|dist=s" => sub {
+			    $self->{'Distribution'} = $_[1];
+			    $self->{'Distribution'} = "oldstable"
+				if $self->{'Distribution'} eq "o";
+			    $self->{'Distribution'} = "stable"
+				if $self->{'Distribution'} eq "s";
+			    $self->{'Distribution'} = "testing"
+				if $self->{'Distribution'} eq "t";
+			    $self->{'Distribution'} = "unstable"
+				if $self->{'Distribution'} eq "u";
+			    $self->{'Distribution'} = "experimental"
+				if $self->{'Distribution'} eq "e";
+			    $self->{'Override Distribution'} = 1;
+			},
+			"force-orig-source" => \$conf::force_orig_source,
+			"m|maintainer=s" => \$conf::maintainer_name,
+			"k|keyid=s" => \$conf::key_id,
+			"e|uploader=s" => \$conf::uploader_name,
+			"n|nolog" => \$conf::nolog,
+			"purge=s" => sub {
+			    $conf::purge_build_directory = $_[1];
+			    die "Bad purge mode\n"
+				if !isin($conf::purge_build_directory,
+					 qw(always successful never));
+			},
+			"s|source" => sub {
+			    $self->{'Build Source'} = 1
+			},
+			"stats-dir=s" => \$conf::stats_dir,
+			"use-snapshot" => sub {
+			    $self->{'GCC Snapshot'} = 1;
+			    $self->{'LD_LIBRARY_PATH'} =
+				"/usr/lib/gcc-snapshot/lib";
+			    $conf::path =
+				"/usr/lib/gcc-snapshot/bin:$conf::path";
+			},
+			"v|verbose+" => \$Sbuild::Conf::verbose,
+			"q|quiet" => sub {
+			    $Sbuild::Conf::verbose-- if $conf::verbose;
+			},
+	 );
+}
 
 sub main ($) {
     my $self = shift;
@@ -58,95 +153,7 @@ sub main ($) {
 	$conf::verbose = 1;
     }
 
-    exit 1 if !GetOptions ("arch=s" => \$self->{'User Arch'},
-			   "A|arch-all" => sub {
-			       $self->{'Build Arch All'} = 1
-			   },
-			   "auto-give-back=s" => sub {
-			       $self->{'Auto Giveback'} = 1;
-			       if ($_[1]) {
-				   my @parts = split( '@', $_[1] );
-				   $self->{'Auto Giveback Socket'} =
-				       $parts[$#parts-3] if @parts > 3;
-				   $self->{'Auto Giveback WannaBuild User'} =
-				       $parts[$#parts-2] if @parts > 2;
-				   $self->{'Auto Giveback User'} =
-				       $parts[$#parts-1] if @parts > 1;
-				   $self->{'Auto Giveback Host'} =
-				       $parts[$#parts];
-			       }
-			   },
-			   "f|force-depends=s" => sub {
-			       push( @{$self->{'Manual Srcdeps'}}, "f".$_[1] );
-			   },
-			   "a|add-depends=s" => sub {
-			       push( @{$self->{'Manual Srcdeps'}}, "a".$_[1] );
-			   },
-			   "check-depends-algorithm=s" => sub {
-			       die "Bad build dependency check algorithm\n"
-				   if( ! ($_[1] eq "first-only" 
-					  || $_[1] eq "alternatives") );
-			       $conf::check_depends_algorithm = $_[1];
-			   },
-			   "b|batch" => sub {
-			       $self->{'Batch Mode'} = 1
-			   },
-			   "make-binNMU=s" => sub {
-			       $self->{'binNMU'} = $_[1];
-			       $self->{'binNMU Version'} ||= 1;
-			   },
-			   "binNMU=i" => sub {
-			       $self->{'binNMU Version'} = $_[1];
-			   },
-			   "c|chroot=s" => sub {
-			       $self->{'Chroot'} = $_[1];
-			   },
-			   "database=s" => sub {
-			       $self->{'WannaBuild Database'} = $_[1]
-			   },
-			   "D|debug+" => \$conf::debug,
-			   "apt-update" => \$conf::apt_update,
-			   "d|dist=s" => sub {
-			       $self->{'Distribution'} = $_[1];
-			       $self->{'Distribution'} = "oldstable"
-				   if $self->{'Distribution'} eq "o";
-			       $self->{'Distribution'} = "stable"
-				   if $self->{'Distribution'} eq "s";
-			       $self->{'Distribution'} = "testing"
-				   if $self->{'Distribution'} eq "t";
-			       $self->{'Distribution'} = "unstable"
-				   if $self->{'Distribution'} eq "u";
-			       $self->{'Distribution'} = "experimental"
-				   if $self->{'Distribution'} eq "e";
-			       $self->{'Override Distribution'} = 1;
-			   },
-			   "force-orig-source" => \$conf::force_orig_source,
-			   "m|maintainer=s" => \$conf::maintainer_name,
-			   "k|keyid=s" => \$conf::key_id,
-			   "e|uploader=s" => \$conf::uploader_name,
-			   "n|nolog" => \$conf::nolog,
-			   "purge=s" => sub {
-			       $conf::purge_build_directory = $_[1];
-			       die "Bad purge mode\n"
-				   if !isin($conf::purge_build_directory,
-					    qw(always successful never));
-			   },
-			   "s|source" => sub {
-			       $self->{'Build Source'} = 1
-			   },
-			   "stats-dir=s" => \$conf::stats_dir,
-			   "use-snapshot" => sub {
-			       $self->{'GCC Snapshot'} = 1;
-			       $self->{'LD_LIBRARY_PATH'} =
-				   "/usr/lib/gcc-snapshot/lib";
-			       $conf::path =
-				   "/usr/lib/gcc-snapshot/bin:$conf::path";
-			   },
-			   "v|verbose+" => \$Sbuild::Conf::verbose,
-			   "q|quiet" => sub {
-			       $Sbuild::Conf::verbose-- if $conf::verbose;
-			   },
-	);
+    exit 1 if !parse_options($self);
 
     print "Selected distribution $self->{'Distribution'}\n"
 	if $conf::debug;
