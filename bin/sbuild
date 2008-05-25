@@ -304,8 +304,8 @@ sub main ($) {
 	$self->append_to_FINISHED($pkgv);
 
       cleanup_packages:
-	if (defined ($session->{'Session Cloned'}) &&
-	    $session->{'Session Cloned'} == 1) {
+	if (defined ($session->{'Session Purged'}) &&
+	    $session->{'Session Purged'} == 1) {
 	    print PLOG "Not removing build depends: cloned chroot in use\n";
 	} else {
 	    $self->uninstall_deps();

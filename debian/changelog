@@ -2,8 +2,10 @@ sbuild (0.57.3-1) unstable; urgency=low
 
   * New release.
   * --chroot and --arch now work together (Closes: #479714).
+  * Use schroot "Session Purged" flag rather than "Session Cloned"
+    (Closes: #482804).  Thanks to Timothy G Abbott.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 11 May 2008 10:49:17 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 25 May 2008 21:32:39 +0100
 
 sbuild (0.57.2-1) unstable; urgency=low
 

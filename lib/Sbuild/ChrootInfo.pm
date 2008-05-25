@@ -54,7 +54,7 @@ sub get_chroot_info ($) {
     my $chroot_type = "";
     my %tmp = ('Priority' => 0,
 	       'Location' => "",
-	       'Session Cloned' => 0);
+	       'Session Purged' => 0);
     open CHROOT_DATA, '-|', $Sbuild::Conf::schroot, '--info', '--chroot', $chroot or die "Can't run $Sbuild::Conf::schroot to get chroot data";
     while (<CHROOT_DATA>) {
 	chomp;
@@ -76,9 +76,9 @@ sub get_chroot_info ($) {
 	if (/^\s*Priority:?\s+(\d+)$/) {
 	    $tmp{'Priority'} = $1;
 	}
-	if (/^\s*Session Cloned\s+(.*)$/) {
+	if (/^\s*Session Purged\s+(.*)$/) {
 	    if ($1 eq "true") {
-		$tmp{'Session Cloned'} = 1;
+		$tmp{'Session Purged'} = 1;
 	    }
 	}
     }
@@ -99,7 +99,7 @@ sub get_chroot_info_all () {
     foreach (glob("${Sbuild::Conf::build_dir}/chroot-*")) {
 	my %tmp = ('Priority' => 0,
 		   'Location' => $_,
-		   'Session Cloned' => 0);
+		   'Session Purged' => 0);
 	if (-d $tmp{'Location'}) {
 	    my $name = $_;
 	    $name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;

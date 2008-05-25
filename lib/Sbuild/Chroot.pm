@@ -98,7 +98,7 @@ sub _setup_options (\$\$) {
 
 	$self->set('Priority', $info->{'Priority'});
 	$self->set('Location', $info->{'Location'});
-	$self->set('Session Cloned', $info->{'Session Cloned'});
+	$self->set('Session Purged', $info->{'Session Purged'});
 	$self->set('Build Location', $self->get('Location') . "/build");
 	$self->set('Srcdep Lock Dir', $self->get('Location') . "/$Sbuild::Conf::srcdep_lock_dir");
 	$self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
