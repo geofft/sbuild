@@ -197,6 +197,7 @@ sub main ($) {
 	my $pkgv = basename($dscfile);
 	$pkgv =~ s/\.dsc$//;
 	my ($pkg, $version) = split /_/, $pkgv;
+	(my $sversion = $version) =~ s/^\d+://; # Strip epoch
 	my $invalid = 0;
 
 	# Download if package does not have a .dsc extension and no
@@ -218,13 +219,14 @@ sub main ($) {
 	print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
 	print STDERR "D: pkg = $pkg\n" if $conf::debug;
 	print STDERR "D: version = $version\n" if $conf::debug;
+	print STDERR "D: sversion = $sversion\n" if $conf::debug;
 	print STDERR "D: download = $download\n" if $conf::debug;
 
 	if ($invalid || ($download && $dscfile ne $pkgv)) {
 	    print PLOG "Invalid source: $dscfile\n";
 	    print PLOG "Skipping $pkg\n";
 	    $self->{'Pkg Status'} = "skipped";
-	    goto cleanup_close;
+	    goto cleanup_skip;
 	}
 
 	{
@@ -262,7 +264,7 @@ sub main ($) {
 	    goto cleanup_close;
 	}
 	$self->{'Chroot Dir'} = $session->{'Location'};
-	$self->{'Chroot Build Dir'} = tempdir("$Sbuild::Conf::username-$pkgv-$arch-XXXXXX" , DIR => $session->{'Build Location'});
+	$self->{'Chroot Build Dir'} = tempdir("$Sbuild::Conf::username-${pkg}_$sversion-$arch-XXXXXX" , DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
 	$session->{'Build Location'} = $self->{'Chroot Build Dir'};
@@ -325,6 +327,8 @@ sub main ($) {
 			       $self->{'Pkg Start Time'},
 			       $self->{'Pkg End Time'},
 			       $self->{'This Space'} );
+
+      cleanup_skip:
 	undef $self->{'binNMU Name'};
 	$main::current_job = "";
 	if ( $self->{'Batch Mode'} and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {

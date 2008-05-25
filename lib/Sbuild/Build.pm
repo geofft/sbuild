@@ -365,8 +365,11 @@ sub build (\$$$) {
     $self->{'Pkg Start Time'} = time;
     $self->{'This Space'} = 0;
     $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
+    # Note, this version contains ".dsc".
     my ($pkg, $version) = ($1,$2);
+    $version =~ s/\.dsc$//;
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+
     my $tmpunpackdir = $dsc;
     $tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
     $tmpunpackdir =~ s/_/-/;
@@ -385,8 +388,7 @@ sub build (\$$$) {
 	if (-d $tmpunpackdir) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
-	$dir = "$dsc";
-	$dir =~ s/\.dsc$//;
+	$dir = "$pkg-$sversion";
 	$self->{'Sub Task'} = "dpkg-source";
 	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	if ($?) {
