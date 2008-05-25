@@ -24,6 +24,7 @@ package Sbuild::Build;
 
 use Errno qw(:POSIX);
 use Fcntl;
+use File::Basename qw(basename dirname);
 use GDBM_File;
 use IPC::Open3;
 use Sbuild qw(binNMU_version version_compare copy isin);
@@ -766,14 +767,14 @@ sub install_deps (\$$) {
     $self->lock_file($self->{'Session'}->{'Install Lock'}, 1);
 
     print "Filtering dependencies\n" if $conf::debug;
-    if (!$self->filter_dependencies(@$dep, @positive, @negative )) {
+    if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
 	print main::PLOG "Package installation not possible\n";
 	$self->unlock_file($self->{'Session'}->{'Install Lock'});
 	return 0;
     }
 
     print main::PLOG "Checking for source dependency conflicts...\n";
-    if (!$self->run_apt("-s", @instd, @rmvd, @positive)) {
+    if (!$self->run_apt("-s", \@instd, \@rmvd, @positive)) {
 	print main::PLOG "Test what should be installed failed.\n";
 	$self->unlock_file($self->{'Session'}->{'Install Lock'});
 	return 0;
@@ -781,7 +782,7 @@ sub install_deps (\$$) {
     # add negative deps as to be removed for checking srcdep conflicts
     push( @rmvd, @negative );
     my @confl;
-    if (@confl = $self->check_srcdep_conflicts(@instd, @rmvd)) {
+    if (@confl = $self->check_srcdep_conflicts(\@instd, \@rmvd)) {
 	print main::PLOG "Waiting for job(s) @confl to finish\n";
 
 	$self->unlock_file($self->{'Session'}->{'Install Lock'});
@@ -789,18 +790,18 @@ sub install_deps (\$$) {
 	goto repeat;
     }
 
-    $self->write_srcdep_lock_file(@$dep);
+    $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
     print "Installing positive dependencies: @positive\n" if $conf::debug;
-    if (!$self->run_apt("-y", @instd, @rmvd, @positive)) {
+    if (!$self->run_apt("-y", \@instd, \@rmvd, @positive)) {
 	print main::PLOG "Package installation failed\n";
 	# try to reinstall removed packages
 	print main::PLOG "Trying to reinstall removed packages:\n";
 	print "Reinstalling removed packages: @rmvd\n" if $conf::debug;
 	my (@instd2, @rmvd2);
 	print main::PLOG "Failed to reinstall removed packages!\n"
-	    if !$self->run_apt("-y", @instd2, @rmvd2, @rmvd);
+	    if !$self->run_apt("-y", \@instd2, \@rmvd2, @rmvd);
 	print "Installed were: @instd2\n" if $conf::debug;
 	print "Removed were: @rmvd2\n" if $conf::debug;
 	# remove additional packages
@@ -825,7 +826,7 @@ sub install_deps (\$$) {
     $self->write_stats('install-download-time',
 		       $install_stop_time - $install_start_time);
 
-    my $fail = $self->check_dependencies(@$dep);
+    my $fail = $self->check_dependencies($dep);
     if ($fail) {
 	print main::PLOG "After installing, the following source dependencies are ".
 	    "still unsatisfied:\n$fail\n";
@@ -851,7 +852,7 @@ sub install_deps (\$$) {
 
     $self->unlock_file($self->{'Session'}->{'Install Lock'});
 
-    $self->prepare_watches(@$dep, @instd );
+    $self->prepare_watches($dep, @instd );
     return 1;
 }
 
@@ -891,7 +892,7 @@ sub uninstall_deps (\$) {
     @pkgs = keys %{$self->{'Changes'}->{'removed'}};
     print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
     print main::PLOG "Failed to reinstall removed packages!\n"
-	if !$self->run_apt("-y", @instd, @rmvd, @pkgs);
+	if !$self->run_apt("-y", \@instd, \@rmvd, @pkgs);
     print "Installed were: @instd\n" if $conf::debug;
     print "Removed were: @rmvd\n" if $conf::debug;
     $self->unset_removed(@instd);
@@ -1411,6 +1412,8 @@ sub merge_pkg_build_deps (\$$$$$$) {
     print main::PLOG "Build-Conflicts: $conflicts\n" if $conflicts;
     print main::PLOG "Build-Conflicts-Indep: $conflictsi\n" if $conflictsi;
 
+    $self->{'Dependencies'}->{$pkg} = []
+	if (!defined $self->{'Dependencies'}->{$pkg});
     my $old_deps = copy($self->{'Dependencies'}->{$pkg});
 
     # Add gcc-snapshot as an override.
@@ -1440,8 +1443,8 @@ sub merge_pkg_build_deps (\$$$$$$) {
     print "Merging pkg deps: $deps\n" if $conf::debug;
     $self->parse_one_srcdep($pkg, $deps);
 
-    my $missing = ($self->cmp_dep_lists(@$old_deps,
-					@{$self->{'Dependencies'}->{$pkg}}))[1];
+    my $missing = ($self->cmp_dep_lists($old_deps,
+					$self->{'Dependencies'}->{$pkg}))[1];
 
     # read list of build-essential packages (if not yet done) and
     # expand their dependencies (those are implicitly essential)
@@ -1467,15 +1470,15 @@ sub merge_pkg_build_deps (\$$$$$$) {
     return if !@$missing;
 
     # remove missing essential deps
-    ($filt_essential, $missing) = $self->cmp_dep_lists(@$missing,
-                                                       @$exp_essential);
+    ($filt_essential, $missing) = $self->cmp_dep_lists($missing,
+                                                       $exp_essential);
     print main::PLOG "** Filtered missing build-essential deps:\n",
 	       $self->format_deps(@$filt_essential), "\n"
 	           if @$filt_essential;
 
     # if some build deps are virtual packages, replace them by an
     # alternative over all providing packages
-    $exp_pkgdeps = $self->expand_virtuals(@{$self->{'Dependencies'}->{$pkg}} );
+    $exp_pkgdeps = $self->expand_virtuals($self->{'Dependencies'}->{$pkg} );
     print "Provided-expanded build deps:\n",
 	  $self->format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
 
@@ -1489,7 +1492,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
 
     # remove missing essential deps that are dependencies of build
     # deps
-    ($filt_pkgdeps, $missing) = $self->cmp_dep_lists(@$missing, @$exp_pkgdeps);
+    ($filt_pkgdeps, $missing) = $self->cmp_dep_lists($missing, $exp_pkgdeps);
     print main::PLOG "** Filtered missing build-essential deps that are dependencies of ",
 	       "or provide build-deps:\n",
 	       $self->format_deps(@$filt_pkgdeps), "\n"
@@ -1512,6 +1515,7 @@ sub cmp_dep_lists (\$\@\@) {
     my $self = shift;
     my $list1 = shift;
     my $list2 = shift;
+
     my ($dep, @common, @missing);
 
     foreach $dep (@$list1) {
@@ -1528,7 +1532,7 @@ sub cmp_dep_lists (\$\@\@) {
 	else {
 	    my $al = $self->get_altlist($dep);
 	    foreach (@$list2) {
-		if ($self->is_superset(%{$self->get_altlist($_)}, %$al )) {
+		if ($self->is_superset($self->get_altlist($_), $al)) {
 		    $found = 1;
 		    last;
 		}
