@@ -52,6 +52,7 @@ sub split_version ($);
 sub binNMU_version ($$);
 sub parse_date ($);
 sub isin ($@);
+sub copy ($);
 
 sub version_less ($$) {
 	my $v1 = shift;
