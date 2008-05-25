@@ -1375,7 +1375,7 @@ sub get_dpkg_status (\$@) {
 	if ($status !~ /\sinstalled$/) {
 	    $result{$pkg}->{'Installed'} = 0
 		if !(exists($result{$pkg}) &&
-		     $result{$pkg}->{'Version'} eq '=*=PROVIDED=*=');
+		     $result{$pkg}->{'Version'} eq '~*=PROVIDED=*=');
 	    next;
 	}
 	if (!defined $version || $version eq "") {
@@ -1387,7 +1387,7 @@ sub get_dpkg_status (\$@) {
 	if isin( $pkg, @interest );
 	if ($provides) {
 	    foreach (split( /\s*,\s*/, $provides )) {
-		$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
+		$result{$_} = { Installed => 1, Version => '~*=PROVIDED=*=' }
 		if isin( $_, @interest ) and (not exists($result{$_}) or
 					      ($result{$_}->{'Installed'} == 0));
 	    }
