@@ -242,5 +242,4 @@ sub copy ($) {
     return $new;
 }
 
-
 1;

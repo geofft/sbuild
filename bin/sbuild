@@ -39,136 +39,46 @@ use FileHandle;
 use Sbuild qw(binNMU_version version_compare copy);
 use Data::Dumper;
 use File::Temp qw(tempdir);
-use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($arch $hostname $version);
+use Sbuild::Options;
 use Sbuild::Build;
 
-sub parse_options ($);
-sub main ($);
+sub main ();
 sub shutdown ($);
 sub check_group_membership ();
 sub dump_main_state ();
 
-sub parse_options ($) {
-    my $self = shift;
-
-     return GetOptions ("arch=s" => \$self->{'User Arch'},
-			"A|arch-all" => sub {
-			    $self->{'Build Arch All'} = 1
-			},
-			"auto-give-back=s" => sub {
-			    $self->{'Auto Giveback'} = 1;
-			    if ($_[1]) {
-				my @parts = split( '@', $_[1] );
-				$self->{'Auto Giveback Socket'} =
-				    $parts[$#parts-3] if @parts > 3;
-				$self->{'Auto Giveback WannaBuild User'} =
-				    $parts[$#parts-2] if @parts > 2;
-				$self->{'Auto Giveback User'} =
-				    $parts[$#parts-1] if @parts > 1;
-				$self->{'Auto Giveback Host'} =
-				    $parts[$#parts];
-			    }
-			},
-			"f|force-depends=s" => sub {
-			    push( @{$self->{'Manual Srcdeps'}}, "f".$_[1] );
-			},
-			"a|add-depends=s" => sub {
-			    push( @{$self->{'Manual Srcdeps'}}, "a".$_[1] );
-			},
-			"check-depends-algorithm=s" => sub {
-			    die "Bad build dependency check algorithm\n"
-				if( ! ($_[1] eq "first-only" 
-				       || $_[1] eq "alternatives") );
-			    $conf::check_depends_algorithm = $_[1];
-			},
-			"b|batch" => sub {
-			    $self->{'Batch Mode'} = 1
-			},
-			"make-binNMU=s" => sub {
-			    $self->{'binNMU'} = $_[1];
-			    $self->{'binNMU Version'} ||= 1;
-			},
-			"binNMU=i" => sub {
-			    $self->{'binNMU Version'} = $_[1];
-			},
-			"c|chroot=s" => sub {
-			    $self->{'Chroot'} = $_[1];
-			},
-			"database=s" => sub {
-			    $self->{'WannaBuild Database'} = $_[1]
-			},
-			"D|debug+" => \$conf::debug,
-			"apt-update" => \$conf::apt_update,
-			"d|dist=s" => sub {
-			    $self->{'Distribution'} = $_[1];
-			    $self->{'Distribution'} = "oldstable"
-				if $self->{'Distribution'} eq "o";
-			    $self->{'Distribution'} = "stable"
-				if $self->{'Distribution'} eq "s";
-			    $self->{'Distribution'} = "testing"
-				if $self->{'Distribution'} eq "t";
-			    $self->{'Distribution'} = "unstable"
-				if $self->{'Distribution'} eq "u";
-			    $self->{'Distribution'} = "experimental"
-				if $self->{'Distribution'} eq "e";
-			    $self->{'Override Distribution'} = 1;
-			},
-			"force-orig-source" => \$conf::force_orig_source,
-			"m|maintainer=s" => \$conf::maintainer_name,
-			"k|keyid=s" => \$conf::key_id,
-			"e|uploader=s" => \$conf::uploader_name,
-			"n|nolog" => \$conf::nolog,
-			"purge=s" => sub {
-			    $conf::purge_build_directory = $_[1];
-			    die "Bad purge mode\n"
-				if !isin($conf::purge_build_directory,
-					 qw(always successful never));
-			},
-			"s|source" => sub {
-			    $self->{'Build Source'} = 1
-			},
-			"stats-dir=s" => \$conf::stats_dir,
-			"use-snapshot" => sub {
-			    $self->{'GCC Snapshot'} = 1;
-			    $self->{'LD_LIBRARY_PATH'} =
-				"/usr/lib/gcc-snapshot/lib";
-			    $conf::path =
-				"/usr/lib/gcc-snapshot/bin:$conf::path";
-			},
-			"v|verbose+" => \$Sbuild::Conf::verbose,
-			"q|quiet" => sub {
-			    $Sbuild::Conf::verbose-- if $conf::verbose;
-			},
-	 );
-}
-
-sub main ($) {
-    my $self = shift;
-
+sub main () {
 # Be verbose by default if on a tty
     if (-t STDIN && -t STDOUT && $Sbuild::Conf::verbose == 0) {
 	$conf::verbose = 1;
     }
 
-    exit 1 if !parse_options($self);
+    my $options = Sbuild::Options::new();
+    exit 1 if !defined($options);
 
-    print "Selected distribution $self->{'Distribution'}\n"
+    print "Selected distribution " . $options->get('Distribution') . "\n"
 	if $conf::debug;
-    print "Selected chroot $self->{'Chroot'}\n"
-	if $conf::debug and defined $self->{'Chroot'};
-    print "Selected architecture $self->{'User Arch'}\n"
+    print "Selected chroot " . $options->get('Chroot') . "\n"
+	if $conf::debug and defined $options->get('Chroot');
+    print "Selected architecture " . $options->get('User Arch') . "\n"
 	if $conf::debug;
 
-    $conf::mailto = $conf::mailto{$self->{'Distribution'}}
-    if $conf::mailto{$self->{'Distribution'}};
+    $conf::mailto = $conf::mailto{$options->get('Distribution')}
+    if $conf::mailto{$options->get('Distribution')};
 
 # see debsign for priorities, we will follow the same order
-    $self->{'Signing Options'}="-m\"".$conf::maintainer_name."\"" if defined $conf::maintainer_name;
-    $self->{'Signing Options'}="-e\"".$conf::uploader_name."\"" if defined $conf::uploader_name;
-    $self->{'Signing Options'}="-k\"".$conf::key_id."\"" if defined $conf::key_id;
+    $options->set('Signing Options',
+		  "-m\"".$conf::maintainer_name."\"")
+	if defined $conf::maintainer_name;
+    $options->set('Signing Options',
+		  "-e\"".$conf::uploader_name."\"")
+	if defined $conf::uploader_name;
+    $options->set('Signing Options',
+		  "-k\"".$conf::key_id."\"")
+	if defined $conf::key_id;
     $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
     $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
@@ -179,18 +89,21 @@ sub main ($) {
     }
 
 # variables for scripts:
-    open_log($self->{'Distribution'});
+    open_log($options->get('Distribution'));
     $SIG{'INT'} = \&shutdown;
     $SIG{'TERM'} = \&shutdown;
     $SIG{'ALRM'} = \&shutdown;
     $SIG{'PIPE'} = \&shutdown;
 
-    $self->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV);
-
-    $self->write_jobs_file("");
-
     my $dscfile;
     foreach $dscfile (@ARGV) {
+
+	# TODO: Append to build list, to allow parallel builds.
+	my $build = Sbuild::Build::new($options);
+	$main::build_object = $build;
+
+	$main::build_object->write_jobs_file("");
+	$build->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV);
 
 	my $dir = dirname($dscfile);
 	my $dscbase = basename($dscfile);
@@ -222,10 +135,14 @@ sub main ($) {
 	print STDERR "D: sversion = $sversion\n" if $conf::debug;
 	print STDERR "D: download = $download\n" if $conf::debug;
 
+	# TODO: Put in Build ctor.
+	$build->{'Package'} = $pkg;
+	$build->{'Version'} = $version;
+
 	if ($invalid || ($download && $dscfile ne $pkgv)) {
 	    print PLOG "Invalid source: $dscfile\n";
 	    print PLOG "Skipping $pkg\n";
-	    $self->{'Pkg Status'} = "skipped";
+	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_skip;
 	}
 
@@ -234,42 +151,42 @@ sub main ($) {
 	    # TODO: This should be 'Pkg Start Time', set in build().
 	    my $date = strftime("%Y%m%d-%H%M",localtime);
 
-	    if ($self->{'binNMU'}) {
+	    if ($options->get('binNMU')) {
 		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-		$tpkg = $1 . "_" . binNMU_version($2,$self->{'binNMU Version'});
-		$self->{'binNMU Name'} = $tpkg;
+		$tpkg = $1 . "_" . binNMU_version($2,$options->get('binNMU Version'));
+		$options->get('binNMU Name') = $tpkg;
 		$tpkg .= $3;
 	    }
 
-	    next if !$self->open_build_log($tpkg, $self->{'Distribution'}, $date );
+	    next if !$build->open_build_log($tpkg, $options->get('Distribution'), $date );
 	}
 
-	$self->{'Pkg Status'} = "failed"; # assume for now
+	$build->{'Pkg Status'} = "failed"; # assume for now
 	$main::current_job = $pkgv;
-	$self->{'Additional Deps'} = [];
-	$self->write_jobs_file("currently building");
-	if ($self->should_skip($pkgv)) {
-	    $self->{'Pkg Status'} = "skipped";
+	$build->{'Additional Deps'} = [];
+	$main::build_object->write_jobs_file("currently building");
+	if ($build->should_skip($pkgv)) {
+	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
 
-	my $session = Sbuild::Chroot::new($self->{'Distribution'},
-					  $self->{'Chroot'},
-					  $self->{'User Arch'});
-	$self->{'Session'} = $session;
+	my $session = Sbuild::Chroot::new($options->get('Distribution'),
+					  $options->get('Chroot'),
+					  $options->get('User Arch'));
+	$build->{'Session'} = $session;
 
 	if (!$session->begin_session()) {
 	    print PLOG "Error creating schroot session: skipping $pkg\n";
-	    $self->{'Pkg Status'} = "skipped";
+	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
-	$self->{'Chroot Dir'} = $session->{'Location'};
-	$self->{'Chroot Build Dir'} = tempdir("$Sbuild::Conf::username-${pkg}_$sversion-$arch-XXXXXX" , DIR => $session->{'Build Location'});
+	$build->{'Chroot Dir'} = $session->{'Location'};
+	$build->{'Chroot Build Dir'} = tempdir("$Sbuild::Conf::username-${pkg}_$sversion-$arch-XXXXXX" , DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
-	$session->{'Build Location'} = $self->{'Chroot Build Dir'};
+	$session->{'Build Location'} = $build->{'Chroot Build Dir'};
 
-	$self->{'Arch'} = $self->chroot_arch();
+	$build->{'Arch'} = $build->chroot_arch();
 
 	# Update APT cache.
 	if ($conf::apt_update) {
@@ -283,66 +200,67 @@ sub main ($) {
 	    close(PIPE);
 	    if ($?) {
 		print PLOG "apt-get update failed\n" ;
-		$self->{'Pkg Status'} = "skipped";
+		$build->{'Pkg Status'} = "skipped";
 		goto cleanup_close;
 	    }
 	}
 
-	$self->{'Pkg Fail Stage'} = "fetch-src";
-	if (!$self->fetch_source_files(\$dscfile,
+	$build->{'Pkg Fail Stage'} = "fetch-src";
+	if (!$build->fetch_source_files(\$dscfile,
 				       $dir, $pkg, $version, $download)) {
 	    goto cleanup_close;
 	}
 
-	$self->{'Pkg Fail Stage'} = "install-deps";
-	if (!$self->install_deps($pkg)) {
+	$build->{'Pkg Fail Stage'} = "install-deps";
+	if (!$build->install_deps($pkg)) {
 	    print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
 	    goto cleanup_packages;
 	}
 
-	$self->{'Pkg Status'} = "successful"
-	    if $self->build(basename($dscfile), $pkgv);
-	$self->write_jobs_file($self->{'Pkg Status'});
-	$self->append_to_FINISHED($pkgv);
+	$build->{'Pkg Status'} = "successful"
+	    if $build->build(basename($dscfile), $pkgv);
+	$main::build_object->write_jobs_file($build->{'Pkg Status'});
+	$build->append_to_FINISHED($pkgv);
 
       cleanup_packages:
 	if (defined ($session->{'Session Purged'}) &&
 	    $session->{'Session Purged'} == 1) {
 	    print PLOG "Not removing build depends: cloned chroot in use\n";
 	} else {
-	    $self->uninstall_deps();
+	    $build->uninstall_deps();
 	}
-	$self->remove_srcdep_lock_file();
+	$build->remove_srcdep_lock_file();
       cleanup_close:
-	$self->analyze_fail_stage($pkgv);
-	$self->write_jobs_file($self->{'Pkg Status'});
+	$build->analyze_fail_stage($pkgv);
+	$main::build_object->write_jobs_file($build->{'Pkg Status'});
 
 	$session->end_session();
 	$session = undef;
-	$self->{'Session'} = undef;
+	$build->{'Session'} = undef;
 
-	$self->close_build_log($main::current_job,
-			       $self->{'Distribution'},
-			       $self->{'Pkg Status'},
-			       $self->{'Pkg Start Time'},
-			       $self->{'Pkg End Time'},
-			       $self->{'This Space'} );
+	$build->close_build_log($main::current_job,
+			       $options->get('Distribution'),
+				$build->{'Pkg Status'},
+			       $build->{'Pkg Start Time'},
+			       $build->{'Pkg End Time'},
+			       $build->{'This Space'} );
 
       cleanup_skip:
-	undef $self->{'binNMU Name'};
+	undef $build->{'binNMU Name'};
 	$main::current_job = "";
-	if ( $self->{'Batch Mode'} and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
+	if ( $options->get('Batch Mode') and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
 	dump_main_state() if $conf::debug;
+	$main::build_object->write_jobs_file("");
     }
-    $self->write_jobs_file("");
 
     close_log();
-    unlink( $self->{'Jobs File'} ) if $self->{'Batch Mode'};
-    unlink( "SBUILD-FINISHED" ) if $self->{'Batch Mode'};
+    unlink( $main::build_object->{'Jobs File'} )
+	if $options->get('Batch Mode');
+    unlink( "SBUILD-FINISHED" ) if $options->get('Batch Mode');
     if ($conf::sbuild_mode eq "user") {
-	exit ($self->{'Pkg Status'} ne "successful") ? 1 : 0;
+	exit ($main::build_object->{'Pkg Status'} ne "successful") ? 1 : 0;
     }
     exit 0;
 }
@@ -359,7 +277,7 @@ sub shutdown ($) {
     $SIG{'PIPE'} = 'IGNORE';
     print PLOG "sbuild received SIG$signame -- shutting down\n";
 
-    goto not_ni_shutdown if !$main::build_object->{'Batch Mode'};
+    goto not_ni_shutdown if !$main::build_object->get_option('Batch Mode');
 
     # most important: dump out names of unfinished jobs to REDO
     foreach $job (@ARGV) {
@@ -383,10 +301,15 @@ sub shutdown ($) {
     if (open( F, ">>$f" )) {
 	foreach $job (@npkgs) {
 	    next if grep( /^\Q$job\E\s/, @pkgs );
-	    if (not defined $main::build_object->{'binNMU Version'}) {
-		print F "$job $main::build_object->{'Distribution'}\n";
+	    if (not defined $main::build_object->get_option('binNMU Version')) {
+		print F "$job $main::build_object->get_option('Distribution')\n";
 	    } else {
-		print F "$job $main::build_object->{'Distribution'} $main::build_object->{'binNMU Version'} $main::build_object->{'binNMU'}\n";
+		print F "$job " .
+		    $main::build_object->get_option({'Distribution'})
+		    . " " .
+		    $main::build_object->get_option('binNMU Version')
+		    . " " .
+		    $main::build_object->get_option('binNMU') . "\n";
 	    }
 	}
 	close( F );
@@ -433,7 +356,7 @@ sub shutdown ($) {
 
 	$main::build_object->close_build_log(
 	    $main::current_job,
-	    $main::build_object->{'Distribution'},
+	    $main::build_object->get_option('Distribution'),
 	    $main::build_object->{'Pkg Status'},
 	    $main::build_object->{'Pkg Start Time'},
 	    $main::build_object->{'Pkg End Time'},
@@ -472,8 +395,6 @@ sub check_group_membership () {
 }
 
 sub dump_main_state () {
-    my $self = shift;
-
     print STDERR Data::Dumper->Dump([$main::current_job,
 				     $main::DEVNULL,
 				     \%main::job_state],
@@ -500,6 +421,6 @@ check_group_membership();
 
 umask(022);
 
-$main::build_object = Sbuild::Build::new();
+$main::build_object = undef;
 
-main($main::build_object);
+main();

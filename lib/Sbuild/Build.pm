@@ -49,9 +49,10 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ();
+sub new ($);
 sub get (\%$);
 sub set (\%$$);
+sub get_option (\%$);
 sub fetch_source_files (\$$$$$$);
 sub build (\$$$);
 sub analyze_fail_stage (\$$);
@@ -104,26 +105,21 @@ sub close_build_log (\$$$$$$$);
 sub add_time_entry (\$$$);
 sub add_space_entry (\$$$);
 
+
 # TODO: put in all package version data and job ID (for indexing in job list)
-sub new () {
+sub new ($) {
+    my $options = shift;
+
     my $self  = {};
     bless($self);
 
-    $self->{'Distribution'} = 'unstable';
+    # TODO: Set in constuctor:
+    $self->{'Options'} = $options;
+    $self->{'Package'} = '';
+    $self->{'Version'} = '';
     $self->{'Arch'} = $Sbuild::Sysconfig::arch;
-    $self->{'Chroot'} = undef;
     $self->{'Chroot Dir'} = '';
     $self->{'Chroot Build Dir'} = '';
-    $self->{'User Arch'} = '';
-    $self->{'Batch Mode'} = 0;
-    $self->{'Auto Giveback'} = 0;
-    $self->{'Auto Giveback Host'} = 0;
-    $self->{'Auto Giveback Socket'} = 0;
-    $self->{'Auto Giveback User'} = 0;
-    $self->{'Auto Giveback WannaBuild User'} = 0;
-    $self->{'WannaBuild Database'} = 0;
-    $self->{'Build Arch All'} = 0;
-    $self->{'Build Source'} = 0;
     $self->{'Jobs File'} = 'build-progress';
     $self->{'Max Lock Trys'} = 120;
     $self->{'Lock Interval'} = 5;
@@ -136,21 +132,15 @@ sub new () {
     $self->{'This Space'} = 0;
     $self->{'This Watches'} = {};
     $self->{'Toolchain Packages'} = [];
-    $self->{'Override Distribution'} = 0;
     $self->{'Sub Task'} = 'initialisation';
     $self->{'Sub PID'} = undef;
     $self->{'Session'} = undef;
     $self->{'Additional Deps'} = [];
-    $self->{'binNMU'} = undef;
     $self->{'binNMU Name'} = undef;
-    $self->{'binNMU Version'} = undef;
     $self->{'Changes'} = {};
     $self->{'Dependencies'} = {};
     $self->{'Signing Options'} = {};
     $self->{'Have DSC Build Deps'} = [];
-    $self->{'LD_LIBRARY_PATH'} = undef;
-    $self->{'Manual Srcdeps'} = [];
-    $self->{'GCC Snapshot'} = 0;
 
     return $self;
 }
@@ -169,6 +159,14 @@ sub set (\%$$) {
 
     return $self->{$key} = $value;
 }
+
+sub get_option (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->get('Options')->get($key);
+}
+
 
 # sub get_package_status (\$) {
 #     my $self = shift;
@@ -332,7 +330,7 @@ sub fetch_source_files (\$$$$$$) {
     }
     else {
 	if ($dscarchs ne "any" && $dscarchs !~ /\b$self->{'Arch'}\b/ &&
-	    !($dscarchs eq "all" && $self->{'Build Arch All'}) )  {
+	    !($dscarchs eq "all" && $self->get_option('Build Arch All')) )  {
 	    print main::PLOG "$dscbase: $self->{'Arch'} not in arch list: $dscarchs -- ".
 		"skipping\n";
 	    $self->{'Pkg Fail Stage'} = "arch-check";
@@ -435,8 +433,8 @@ sub build (\$$$) {
 	    return 0;
 	}
 	my $tree_version = $1;
-	my $cmp_version = ($self->{'binNMU'} && -f "$dir/debian/.sbuild-binNMU-done") ?
-	    binNMU_version($version,$self->{'binNMU Version'}) : $version;
+	my $cmp_version = ($self->get_option('binNMU') && -f "$dir/debian/.sbuild-binNMU-done") ?
+	    binNMU_version($version,$self->get_option('binNMU Version')) : $version;
 	if ($tree_version ne $cmp_version) {
 	    print main::PLOG "The unpacked source tree $dir is version ".
 		"$tree_version, not wanted $cmp_version!\n";
@@ -461,7 +459,7 @@ sub build (\$$$) {
     }
 
     $self->{'Pkg Fail Stage'} = "hack-binNMU";
-    if ($self->{'binNMU'} && ! -f "$dir/debian/.sbuild-binNMU-done") {
+    if ($self->get_option('binNMU') && ! -f "$dir/debian/.sbuild-binNMU-done") {
 	if (open( F, "<$dir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
@@ -470,17 +468,17 @@ sub build (\$$$) {
 	    close( F );
 	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-	    my $NMUversion = binNMU_version($version,$self->{'binNMU Version'});
+	    my $NMUversion = binNMU_version($version,$self->get_option('binNMU Version'));
 	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dir/debian/changelog" )) {
 		print main::PLOG "Can't open debian/changelog for binNMU hack: $!\n";
 		return 0;
 	    }
-	    $dists = $self->{'Distribution'};
+	    $dists = $self->get_option('Distribution');
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
 	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
 	    "no source changes.\n";
-	    print F "  * ", join( "    ", split( "\n", $self->{'binNMU'} )), "\n\n";
+	    print F "  * ", join( "    ", split( "\n", $self->get_option('binNMU') )), "\n\n";
 	    print F " -- $conf::maintainer_name  $date\n\n";
 
 	    print F $firstline, $text;
@@ -533,9 +531,9 @@ EOF
     }
     if ($self->{'Sub PID'} == 0) {
 	open( STDIN, "</dev/null" );
-	my $binopt = $self->{'Build Source'} ?
+	my $binopt = $self->get_option('Build Source') ?
 	    $conf::force_orig_source ? "-sa" : "" :
-	    $self->{'Build Arch All'} ?	"-b" : "-B";
+	    $self->get_option('Build Arch All') ?	"-b" : "-B";
 
 	my $bdir = $self->{'Session'}->strip_chroot_path($dir);
 	if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
@@ -544,10 +542,11 @@ EOF
 	    print main::PLOG "ld.so.conf was not readable! Fixed.\n";
 	}
 	my $buildcmd = "cd $bdir && PATH=$conf::path ".
-	    (defined($self->{'LD_LIBRARY_PATH'}) ?
-	     "LD_LIBRARY_PATH=".$self->{'LD_LIBRARY_PATH'}." " : "").
+	    (defined($self->get_option('LD_LIBRARY_PATH')) ?
+	     "LD_LIBRARY_PATH=".$self->get_option('LD_LIBRARY_PATH')." " : "").
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
-	     "$binopt $self->{'Signing Options'} -r$conf::fakeroot 2>&1";
+	     "$binopt " . $self->get_option('Signing Options') .
+	     " -r$conf::fakeroot 2>&1";
 	$self->{'Session'}->exec_command($buildcmd, $Sbuild::Conf::username, 1, 0, undef);
     }
     $self->{'Sub Task'} = "dpkg-buildpackage";
@@ -608,7 +607,7 @@ EOF
 		    print main::PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
 		    next;
 		}
-		if (/_all.u?deb$/ and not $self->{'Build Arch All'}) {
+		if (/_all.u?deb$/ and not $self->get_option('Build Arch All')) {
 		    print main::PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
 		    unlink("$self->{'Chroot Build Dir'}/$_");
 		    next;
@@ -617,7 +616,10 @@ EOF
 	}
 
 	$changes = "${pkg}_".
-	    ($self->{'binNMU'} ? binNMU_version($sversion,$self->{'binNMU Version'}) : $sversion).
+	    ($self->get_option('binNMU') ?
+	     binNMU_version($sversion,
+			    $self->get_options('binNMU Version')) :
+	     $sversion).
 	    "_$self->{'Arch'}.changes";
 	my @cfiles;
 	if (-r "$self->{'Chroot Build Dir'}/$changes") {
@@ -626,9 +628,9 @@ EOF
 	    open( F, "<$self->{'Chroot Build Dir'}/$changes" );
 	    if (open( F2, ">$changes.new" )) {
 		while( <F> ) {
-		    if (/^Distribution:\s*(.*)\s*$/ and $self->{'Override Distribution'}) {
-			print main::PLOG "Distribution: $self->{'Distribution'}\n";
-			print F2 "Distribution: $self->{'Distribution'}\n";
+		    if (/^Distribution:\s*(.*)\s*$/ and $self->get_option('Override Distribution')) {
+			print main::PLOG "Distribution: " . $self->get_option('Distribution') . "\n";
+			print F2 "Distribution: " . $self->get_option('Distribution') . "\n";
 		    }
 		    else {
 			print F2 $_;
@@ -724,23 +726,25 @@ sub analyze_fail_stage (\$$) {
     my $pkgv = shift;
 
     return if $self->{'Pkg Status'} ne "failed";
-    return if !$self->{'Auto Giveback'};
+    return if !$self->get_option('Auto Giveback');
     if (isin( $self->{'Pkg Fail Stage'},
 	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
 	$self->{'Pkg Status'} = "given-back";
 	print main::PLOG "Giving back package $pkgv after failure in ".
 	    "$self->{'Pkg Fail Stage'} stage.\n";
 	my $cmd = "";
-	$cmd = "ssh -l$self->{'Auto Giveback User'} $self->{'Auto Giveback Host'} "
-	    if $self->{'Auto Giveback Host'};
-	$cmd .= "-S $self->{'Auto Giveback Socket'} "
-	    if $self->{'Auto Giveback Socket'};
+	$cmd = "ssh -l " . $self->get_option('Auto Giveback User') . " " .
+	    $self->get_option('Auto Giveback Host') . " "
+	    if $self->get_option('Auto Giveback Host');
+	$cmd .= "-S " . $self->get_option('Auto Giveback Socket') . " "
+	    if $self->get_option('Auto Giveback Socket');
 	$cmd .= "wanna-build --give-back --no-down-propagation ".
-	    "--dist=$self->{'Distribution'}";
-	$cmd .= " --database=$self->{'WannaBuild Database'}" if $self->{'WannaBuild Database'};
-	$cmd .= " --user=$self->{'Auto Giveback WannaBuild User'} "
-	    if $self->{'Auto Giveback WannaBuild User'};
-	$cmd .= " $pkgv";
+	    "--dist=" . $self->get_option('Distribution') . " ";
+	$cmd .= "--database=" . $self->get_option('WannaBuild Database') . " "
+	    if $self->get_option('WannaBuild Database');
+	$cmd .= "--user=" . $self->get_option('Auto Giveback WannaBuild User') . " "
+	    if $self->get_option('Auto Giveback WannaBuild User');
+	$cmd .= "$pkgv";
 	system $cmd;
 	if ($?) {
 	    print main::PLOG "wanna-build failed with status $?\n";
@@ -1419,7 +1423,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
     my $old_deps = copy($self->{'Dependencies'}->{$pkg});
 
     # Add gcc-snapshot as an override.
-    if ( $self->{'GCC Snapshot'} ) {
+    if ( $self->get_option('GCC Snapshot') ) {
 	$dep->{'Package'} = "gcc-snapshot";
 	$dep->{'Override'} = 1;
 	push( @{$self->{'Dependencies'}->{$pkg}}, $dep );
@@ -1440,7 +1444,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
     $conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
 
     my $deps = $depends . ", " . $conflicts;
-    $deps .= ", " . $dependsi . ", " . $conflictsi if $self->{'Build Arch All'};
+    $deps .= ", " . $dependsi . ", " . $conflictsi if $self->get_option('Build Arch All');
     @{$self->{'Dependencies'}->{$pkg}} = @l;
     print "Merging pkg deps: $deps\n" if $conf::debug;
     $self->parse_one_srcdep($pkg, $deps);
@@ -1830,7 +1834,7 @@ sub parse_manual_srcdeps (\$@) {
     my $self = shift;
     my @for_pkgs = @_;
 
-    foreach (@{$self->{'Manual Srcdeps'}}) {
+    foreach (@{$self->get_option('Manual Srcdeps')}) {
 	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
 	    warn "Syntax error in manual source dependency: ",
 	    substr( $_, 1 ), "\n";
@@ -1881,7 +1885,7 @@ sub file_for_name (\$$@) {
     return $x[0];
 }
 
-# only called from main loop
+# only called from main loop, but depends on job state.
 sub write_jobs_file (\$$) {
     my $self = shift;
     my $news = shift;
@@ -1891,7 +1895,7 @@ sub write_jobs_file (\$$) {
     $main::job_state{$main::current_job} = $news
 	if $news && $main::current_job;
 
-    return if !$self->{'Batch Mode'};
+    return if !$self->get_option('Batch Mode');
 
     return if !open( F, ">$self->{'Jobs File'}" );
     foreach $job (@ARGV) {
@@ -1915,7 +1919,7 @@ sub append_to_FINISHED (\$$) {
     my $pkg = shift;
     local( *F );
 
-    return if !$self->{'Batch Mode'};
+    return if !$self->get_option('Batch Mode');
 
     open( F, ">>SBUILD-FINISHED" );
     print F "$pkg\n";
