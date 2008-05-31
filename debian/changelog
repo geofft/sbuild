@@ -1,7 +1,6 @@
-sbuild (0.57.3-1) unstable; urgency=low
+sbuild (0.57.4-1) unstable; urgency=low
 
   * New release.
-  * --chroot and --arch now work together (Closes: #479714).
   * Use schroot "Session Purged" flag rather than "Session Cloned"
     (Closes: #482804).  Thanks to Timothy G Abbott.
   * Handle version provides correctly, by using "~*=PROVIDED=*=" in place
@@ -10,7 +9,14 @@ sbuild (0.57.3-1) unstable; urgency=low
   * Don't include epoch version in directory names (Closes: #482456).
     Thanks to Raphael Hertzog.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 25 May 2008 22:42:49 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 31 May 2008 09:30:41 +0100
+
+sbuild (0.57.3-1) unstable; urgency=low
+
+  * New release.
+  * --chroot and --arch now work together (Closes: #479714).
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 11 May 2008 10:49:17 +0100
 
 sbuild (0.57.2-1) unstable; urgency=low
 
