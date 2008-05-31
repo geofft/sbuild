@@ -25,8 +25,9 @@ a chroot by hand using debootstrap.  These are only guidelines; depending upon
 the setup required, several of the steps may be omitted entirely.
 .PP
 A number of the steps below are automatically run by the
-.B buildd.chroot
-script.  See the section \[lq]\fIbuildd.chroot\fP\[rq] below.
+.B sbuild-createchroot
+script.  See the section \[lq]\fIsbuild-createchroot\fP\[rq] below, as well as
+.BR sbuild\-createchroot (1).
 .SH CHROOT SETUP
 This guide sets up a sarge chroot on a powerpc machine.  Adjust the
 names for other suites and architectures.
@@ -206,9 +207,9 @@ each build, so is not required here.
 .SS 8. Finished
 Congratulations!  You should now have a fully configured and operational
 chroot.
-.SH BUILDD.CHROOT
-This script, located in \fI/usr/share/sbuild\fP will automatically do a number
-of the steps described above, including:
+.SH SBUILD-CREATECHROOT
+This script will automatically perform a number of the steps described above,
+including:
 .IP \[bu]
 Running debootstrap.
 .IP \[bu]
@@ -225,7 +226,7 @@ the steps it missed out above, for example.
 .SS 1. Group membership
 As root, run:
 .PP
-\f[CR]# \f[CB]/usr/share/sbuild/add_sbuild_user \f[CBI]user\fP\fP
+\f[CR]# \f[CB]sbuild-adduser \f[CBI]user\fP\fP\fP
 .br
 .PP
 Alternatively, add the user to the \fIsbuild\fP group by hand:
@@ -257,13 +258,6 @@ The user should now be able to run sbuild.
 .br
 \f[CR]$ \f[CB]sbuild ...\fP\fP
 .br
-.SH FILES
-.TP
-.I /usr/share/sbuild/add_sbuild_user
-A script to allow a user to run sbuild by adding them to the sbuild group.
-.TP
-.I /usr/share/sbuild/buildd.chroot
-A script to automatically create and configure a chroot using debootstrap.
 .SH AUTHORS
 Roger Leigh.
 .SH COPYRIGHT
