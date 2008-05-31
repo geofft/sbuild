@@ -134,7 +134,7 @@ sub main () {
 	$main::current_job = $build->{'Package_Version'};
 	$build->{'Additional Deps'} = [];
 	$main::build_object->write_jobs_file("currently building");
-	if ($build->should_skip($build->{'Package_Version'})) {
+	if ($build->should_skip()) {
 	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
@@ -185,7 +185,7 @@ sub main () {
 	}
 
 	$build->{'Pkg Fail Stage'} = "install-deps";
-	if (!$build->install_deps($build->{'Package'})) {
+	if (!$build->install_deps()) {
 	    print PLOG "Source-dependencies not satisfied; skipping " .
 		$build->{'Package'} . "\n";
 	    goto cleanup_packages;
@@ -195,7 +195,7 @@ sub main () {
 	    # TODO: Don't pass version info
 	    if $build->build();
 	$main::build_object->write_jobs_file($build->{'Pkg Status'});
-	$build->append_to_FINISHED($build->{'Package_Version'});
+	$build->append_to_FINISHED();
 
       cleanup_packages:
 	if (defined ($session->{'Session Purged'}) &&
@@ -206,7 +206,7 @@ sub main () {
 	}
 	$build->remove_srcdep_lock_file();
       cleanup_close:
-	$build->analyze_fail_stage($build->{'Package_Version'});
+	$build->analyze_fail_stage();
 	$main::build_object->write_jobs_file($build->{'Pkg Status'});
 
 	$session->end_session();

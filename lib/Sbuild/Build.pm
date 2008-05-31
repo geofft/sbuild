@@ -56,8 +56,8 @@ sub get_option (\%$);
 sub set_dsc (\$$);
 sub fetch_source_files (\$$$$$$);
 sub build (\$$$);
-sub analyze_fail_stage (\$$);
-sub install_deps (\$$);
+sub analyze_fail_stage (\$);
+sub install_deps (\$);
 sub wait_for_srcdep_conflicts (\$@);
 sub uninstall_deps (\$);
 sub uninstall_debs (\$$@);
@@ -80,13 +80,13 @@ sub parse_manual_srcdeps (\$@);
 sub check_space (\$@);
 sub file_for_name (\$$@);
 sub write_jobs_file (\$$);
-sub append_to_FINISHED (\$$);
+sub append_to_FINISHED (\$);
 sub write_srcdep_lock_file (\$\@);
 sub check_srcdep_conflicts (\$\@\@);
 sub remove_srcdep_lock_file (\$);
 sub prepare_watches (\$\@@);
 sub check_watches (\$);
-sub should_skip (\$$);
+sub should_skip (\$);
 sub add_givenback (\$$$);
 sub set_installed (\$@);
 sub set_removed (\$@);
@@ -761,9 +761,10 @@ EOF
     return $rv == 0 ? 1 : 0;
 }
 
-sub analyze_fail_stage (\$$) {
+sub analyze_fail_stage (\$) {
     my $self = shift;
-    my $pkgv = shift;
+
+    my $pkgv = $self->{'Package_Version'};
 
     return if $self->{'Pkg Status'} ne "failed";
     return if !$self->get_option('Auto Giveback');
@@ -796,9 +797,10 @@ sub analyze_fail_stage (\$$) {
     }
 }
 
-sub install_deps (\$$) {
+sub install_deps (\$) {
     my $self = shift;
-    my $pkg = shift;
+
+    my $pkg = $self->{'Package'};
     my( @positive, @negative, @instd, @rmvd );
 
     my $dep = [];
@@ -1956,9 +1958,10 @@ sub write_jobs_file (\$$) {
     close( F );
 }
 
-sub append_to_FINISHED (\$$) {
+sub append_to_FINISHED (\$) {
     my $self = shift;
-    my $pkg = shift;
+
+    my $pkg = $self->{'Package_Version'};
     local( *F );
 
     return if !$self->get_option('Batch Mode');
@@ -2140,9 +2143,10 @@ EOF
     print main::PLOG "\n";
 }
 
-sub should_skip (\$$) {
+sub should_skip (\$) {
     my $self = shift;
-    my $pkgv = shift;
+
+    my $pkgv = $self->{'Package_Version'};
 
     $pkgv = $self->fixup_pkgv($pkgv);
     $self->lock_file("SKIP", 0);
