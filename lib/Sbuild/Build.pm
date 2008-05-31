@@ -53,6 +53,7 @@ sub new ($$);
 sub get (\%$);
 sub set (\%$$);
 sub get_option (\%$);
+sub set_dsc (\$$);
 sub fetch_source_files (\$$$$$$);
 sub build (\$$$);
 sub analyze_fail_stage (\$$);
@@ -92,7 +93,7 @@ sub set_removed (\$@);
 sub unset_installed (\$@);
 sub unset_removed (\$@);
 sub df (\$$);
-sub fixup_pkgv (\$\$);
+sub fixup_pkgv (\$$);
 sub format_deps (\$@);
 sub lock_file (\$$$);
 sub unlock_file (\$$);
@@ -115,19 +116,7 @@ sub new ($$) {
     bless($self);
 
     # DSC, package and version information:
-    $self->{'DSC'} = $dsc;
-    $self->{'Source Dir'} = dirname($dsc);
-    $self->{'DSC Base'} = basename($dsc);
-
-    my $pkgv = $self->{'DSC Base'};
-    $pkgv =~ s/\.dsc$//;
-    $self->{'Package_Version'} = $pkgv;
-    my ($pkg, $version) = split /_/, $self->{'Package_Version'};
-    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
-
-    $self->{'Package'} = $pkg;
-    $self->{'Version'} = $version;
-    $self->{'SVersion'} = $sversion;
+    $self->set_dsc($dsc);
 
     # Do we need to download?
     $self->{'Download'} = 0;
@@ -207,6 +196,24 @@ sub get_option (\%$) {
     return $self->get('Options')->get($key);
 }
 
+sub set_dsc (\$$) {
+    my $self = shift;
+    my $dsc = shift;
+
+    $self->{'DSC'} = $dsc;
+    $self->{'Source Dir'} = dirname($dsc);
+    $self->{'DSC Base'} = basename($dsc);
+
+    my $pkgv = $self->{'DSC Base'};
+    $pkgv =~ s/\.dsc$//;
+    $self->{'Package_Version'} = $pkgv;
+    my ($pkg, $version) = split /_/, $self->{'Package_Version'};
+    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+
+    $self->{'Package'} = $pkg;
+    $self->{'Version'} = $version;
+    $self->{'SVersion'} = $sversion;
+}
 
 # sub get_package_status (\$) {
 #     my $self = shift;
@@ -222,16 +229,11 @@ sub get_option (\%$) {
 
 sub fetch_source_files (\$$$$$$) {
     my $self = shift;
-    my $dscfile_ref = shift;
-    my $dir = shift;
-    my $pkg = shift;
-    my $version = shift;
-    my $download = shift;
 
-    my ($dscbase, $files, @other_files, $dscarchs, @fetched);
+    my $dir = $self->{'Source Dir'};
+    my $dsc = $self->{'DSC Base'};
 
-    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
-    $dscbase = "${pkg}_${sversion}.dsc";
+    my ($files, @other_files, $dscarchs, @fetched);
 
     my $build_depends = "";
     my $build_depends_indep = "";
@@ -241,15 +243,16 @@ sub fetch_source_files (\$$$$$$) {
 
     $self->{'Have DSC Build Deps'} = [];
 
-    if (!defined($pkg) || !defined($version) || !defined($dir) || !defined($dscbase)) {
-	print main::PLOG "Invalid source: $$dscfile_ref\n";
+    if (!defined($self->{'Package'}) ||
+	!defined($self->{'Version'}) ||
+	!defined($self->{'Source Dir'})) {
+	print main::PLOG "Invalid source: $self->{'DSC'}\n";
 	return 0;
     }
 
-    if (-f "${dir}/${dscbase}" && !$download) {
-	print main::PLOG "${dscbase} exists in ${dir}; copying to chroot\n";
-#	my @cwd_files = ("${dir}/${dscbase}");
-	my @cwd_files = $self->dsc_files("${dir}/${dscbase}");
+    if (-f "$dir/$dsc" && !$self->{'Download'}) {
+	print main::PLOG "$dsc exists in $dir; copying to chroot\n";
+	my @cwd_files = $self->dsc_files("$dir/$dsc");
 	foreach (@cwd_files) {
 	    if (system ("cp '$_' '$self->{'Chroot Build Dir'}'")) {
 		print main::PLOG "ERROR: Could not copy $_ to $self->{'Chroot Build Dir'} \n";
@@ -262,7 +265,7 @@ sub fetch_source_files (\$$$$$$) {
 	my $retried = $conf::apt_update;
       retry:
 	print main::PLOG "Checking available source versions...\n";
-	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $pkg", $Sbuild::Conf::username, 0, '/');
+	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $self->{'Package'}", $Sbuild::Conf::username, 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
 	if (!$pid) {
 	    print main::PLOG "Can't open pipe to $conf::apt_cache: $!\n";
@@ -287,7 +290,7 @@ sub fetch_source_files (\$$$$$$) {
 	    }
 
 	    if (! scalar keys %entries) {
-		print main::PLOG "$conf::apt_cache returned no information about $pkg source\n";
+		print main::PLOG "$conf::apt_cache returned no information about $self->{'Package'} source\n";
 		print main::PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
 		return 0;
 
@@ -300,14 +303,14 @@ sub fetch_source_files (\$$$$$$) {
 	    return 0;
 	}
 
-	if (!defined($entries{"$pkg $version"})) {
+	if (!defined($entries{"$self->{'Package'} $self->{'Version'}"})) {
 	    if (!$retried) {
 		# try to update apt's cache if nothing found
 		$self->{'Session'}->run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0, '/');
 		$retried = 1;
 		goto retry;
 	    }
-	    print main::PLOG "Can't find source for ${pkg}_${version}\n";
+	    print main::PLOG "Can't find source for $self->{'Package_Version'}\n";
 	    print main::PLOG "(only different version(s) ",
 	    join( ", ", sort keys %entries), " found)\n"
 		if %entries;
@@ -315,11 +318,11 @@ sub fetch_source_files (\$$$$$$) {
 	}
 
 	print main::PLOG "Fetching source files...\n";
-	foreach (@{$entries{"$pkg $version"}}) {
+	foreach (@{$entries{"$self->{'Package'} $self->{'Version'}"}}) {
 	    push(@fetched, "$self->{'Chroot Build Dir'}/$_");
 	}
 
-	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $pkg=$version 2>&1 </dev/null", $Sbuild::Conf::username, 0, undef);
+	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $self->{'Package'}=$self->{'Version'} 2>&1 </dev/null", $Sbuild::Conf::username, 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
 	    print main::PLOG "Can't open pipe to $conf::apt_get: $!\n";
 	    return 0;
@@ -332,13 +335,11 @@ sub fetch_source_files (\$$$$$$) {
 	    print main::PLOG "$conf::apt_get for sources failed\n";
 	    return 0;
 	}
-	# touch the downloaded files, otherwise buildd-watcher will
-	# complain that they're old :)
-	$$dscfile_ref = (grep { /\.dsc$/ } @fetched)[0];
+	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
     }
 
-    if (!open( F, "<$self->{'Chroot Build Dir'}/${dscbase}" )) {
-	print main::PLOG "Can't open $self->{'Chroot Build Dir'}/${dscbase}: $!\n";
+    if (!open( F, "<$self->{'Chroot Build Dir'}/$dsc" )) {
+	print main::PLOG "Can't open $self->{'Chroot Build Dir'}/$dsc: $!\n";
 	return 0;
     }
     my $dsctext;
@@ -363,15 +364,15 @@ sub fetch_source_files (\$$$$$$) {
 
     $dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
     @other_files = map { (split( /\s+/, $_ ))[3] } split( "\n", $files );
-    $files =~ /(\Q$pkg\E.*orig.tar.gz)/mi and $orig = $1;
+    $files =~ /(\Q$self->{'Package'}\E.*orig.tar.gz)/mi and $orig = $1;
 
     if (!$dscarchs) {
-	print main::PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
+	print main::PLOG "$dsc has no Architecture: field -- skipping arch check!\n";
     }
     else {
 	if ($dscarchs ne "any" && $dscarchs !~ /\b$self->{'Arch'}\b/ &&
 	    !($dscarchs eq "all" && $self->get_option('Build Arch All')) )  {
-	    print main::PLOG "$dscbase: $self->{'Arch'} not in arch list: $dscarchs -- ".
+	    print main::PLOG "$dsc: $self->{'Arch'} not in arch list: $dscarchs -- ".
 		"skipping\n";
 	    $self->{'Pkg Fail Stage'} = "arch-check";
 	    return 0;
@@ -383,7 +384,8 @@ sub fetch_source_files (\$$$$$$) {
     @{$self->{'Have DSC Build Deps'}} =
 	($build_depends, $build_depends_indep,
 	 $build_conflicts,$build_conflicts_indep);
-    $self->merge_pkg_build_deps($pkg, $build_depends, $build_depends_indep,
+    $self->merge_pkg_build_deps($self->{'Package'},
+				$build_depends, $build_depends_indep,
 				$build_conflicts, $build_conflicts_indep);
 
     return 1;
@@ -391,19 +393,19 @@ sub fetch_source_files (\$$$$$$) {
 
 sub build (\$$$) {
     my $self = shift;
-    my $dsc = shift;
-    my $pkgv = shift;
+
+    my $dsc = $self->{'DSC Base'};
+    my $pkgv = $self->{'Package_Version'};
+
     my( $dir, $rv, $changes );
     local( *PIPE, *F, *F2 );
 
-    $self->fixup_pkgv(\$pkgv);
+    $pkgv = $self->fixup_pkgv($pkgv);
     print main::PLOG "-"x78, "\n";
     $self->{'This Space'} = 0;
     $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
     # Note, this version contains ".dsc".
     my ($pkg, $version) = ($1,$2);
-    $version =~ s/\.dsc$//;
-    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
 
     my $tmpunpackdir = $dsc;
     $tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
@@ -423,7 +425,7 @@ sub build (\$$$) {
 	if (-d $tmpunpackdir) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
-	$dir = "$pkg-$sversion";
+	$dir = "$self->{'Package'}-$self->{'SVersion'}";
 	$self->{'Sub Task'} = "dpkg-source";
 	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	if ($?) {
@@ -655,9 +657,9 @@ EOF
 
 	$changes = "${pkg}_".
 	    ($self->get_option('binNMU') ?
-	     binNMU_version($sversion,
+	     binNMU_version($self->{'SVersion'},
 			    $self->get_options('binNMU Version')) :
-	     $sversion).
+	     $self->{'SVersion'}).
 	    "_$self->{'Arch'}.changes";
 	my @cfiles;
 	if (-r "$self->{'Chroot Build Dir'}/$changes") {
@@ -2142,7 +2144,7 @@ sub should_skip (\$$) {
     my $self = shift;
     my $pkgv = shift;
 
-    $self->fixup_pkgv(\$pkgv);
+    $pkgv = $self->fixup_pkgv($pkgv);
     $self->lock_file("SKIP", 0);
     goto unlock if !open( F, "SKIP" );
     my @pkgs = <F>;
@@ -2240,13 +2242,15 @@ sub df (\$$) {
     return $free[3];
 }
 
-sub fixup_pkgv (\$\$) {
+sub fixup_pkgv (\$$) {
     my $self = shift;
     my $pkgv = shift;
 
-    $$pkgv =~ s,^.*/,,; # strip path
-    $$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
-    $$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
+    $pkgv =~ s,^.*/,,; # strip path
+    $pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
+    $pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
+
+    return $pkgv;
 }
 
 sub format_deps (\$@) {

@@ -180,12 +180,7 @@ sub main () {
 	}
 
 	$build->{'Pkg Fail Stage'} = "fetch-src";
-	# TODO: $dscfile should not be altered here
-	if (!$build->fetch_source_files(\$dscfile,
-					$build->{'Source Dir'},
-					$build->{'Package'},
-					$build->{'Version'},
-					$build->{'Download'})) {
+	if (!$build->fetch_source_files()) {
 	    goto cleanup_close;
 	}
 
@@ -198,7 +193,7 @@ sub main () {
 
 	$build->{'Pkg Status'} = "successful"
 	    # TODO: Don't pass version info
-	    if $build->build(basename($dscfile), $build->{'Package_Version'});
+	    if $build->build();
 	$main::build_object->write_jobs_file($build->{'Pkg Status'});
 	$build->append_to_FINISHED($build->{'Package_Version'});
 
@@ -257,7 +252,7 @@ sub shutdown ($) {
     # most important: dump out names of unfinished jobs to REDO
     foreach $job (@ARGV) {
 	my $job2 = $job;
-	$main::build_object->fixup_pkgv(\$job2);
+	$job2 = $main::build_object->fixup_pkgv($job2);
 	push( @npkgs, $job2 )
 	    if !$main::job_state{$job} || $job eq $main::current_job;
     }
@@ -324,7 +319,8 @@ sub shutdown ($) {
 	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
 	}
 
-	$main::build_object->fixup_pkgv(\$main::current_job);
+	$main::current_job =
+	    $main::build_object->fixup_pkgv($main::current_job);
 
 	$main::build_object->{'Session'}->end_session();
 	undef $main::build_object->{'Session'};
