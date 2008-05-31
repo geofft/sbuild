@@ -102,6 +102,8 @@ sub main () {
 	my $build = Sbuild::Build::new($dscfile, $options);
 	$main::build_object = $build;
 
+	$build->{'Pkg Start Time'} = time;
+
 	$main::build_object->write_jobs_file("");
 	$build->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV);
 
@@ -124,7 +126,8 @@ sub main () {
 		$tpkg .= $3;
 	    }
 
-	    next if !$build->open_build_log($tpkg, $options->get('Distribution'), $date );
+	    # TODO: Get package name from build object
+	    next if !$build->open_build_log($tpkg);
 	}
 
 	$build->{'Pkg Status'} = "failed"; # assume for now
@@ -215,12 +218,7 @@ sub main () {
 	$session = undef;
 	$build->{'Session'} = undef;
 
-	$build->close_build_log($main::current_job,
-			       $options->get('Distribution'),
-				$build->{'Pkg Status'},
-			       $build->{'Pkg Start Time'},
-			       $build->{'Pkg End Time'},
-			       $build->{'This Space'} );
+	$build->close_build_log();
 
       cleanup_skip:
 	undef $build->{'binNMU Name'};
@@ -331,13 +329,7 @@ sub shutdown ($) {
 	$main::build_object->{'Session'}->end_session();
 	undef $main::build_object->{'Session'};
 
-	$main::build_object->close_build_log(
-	    $main::current_job,
-	    $main::build_object->get_option('Distribution'),
-	    $main::build_object->{'Pkg Status'},
-	    $main::build_object->{'Pkg Start Time'},
-	    $main::build_object->{'Pkg End Time'},
-	    $main::build_object->{'This Space'});
+	$main::build_object->close_build_log();
 	undef $main::build_object->{'binNMU Name'};
     }
     close_log();

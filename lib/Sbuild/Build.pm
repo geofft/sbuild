@@ -100,7 +100,7 @@ sub write_stats (\$$$);
 sub debian_files_list (\$$);
 sub dsc_files (\$$);
 sub chroot_arch (\$);
-sub open_build_log (\$$$$);
+sub open_build_log (\$);
 sub close_build_log (\$$$$$$$);
 sub add_time_entry (\$$$);
 sub add_space_entry (\$$$);
@@ -167,6 +167,8 @@ sub new ($$) {
     $self->{'Pkg End Time'} = 0;
     $self->{'Pkg Fail Stage'} = 0;
     $self->{'Build Start Time'} = 0;
+    $self->{'Build End Time'} = 0;
+    $self->{'This Time'} = 0;
     $self->{'This Space'} = 0;
     $self->{'This Watches'} = {};
     $self->{'Toolchain Packages'} = [];
@@ -396,9 +398,6 @@ sub build (\$$$) {
 
     $self->fixup_pkgv(\$pkgv);
     print main::PLOG "-"x78, "\n";
-    # count build time from now, ignoring the installation of source
-    # deps
-    $self->{'Pkg Start Time'} = time;
     $self->{'This Space'} = 0;
     $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
     # Note, this version contains ".dsc".
@@ -625,10 +624,11 @@ EOF
 	           " after ", int($timeout_times[$i]/60),
 	           " minutes of inactivity\n";
     }
+    $self->{'Build End Time'} = time;
     $self->{'Pkg End Time'} = time;
     $self->write_stats('build-time',
-		       $self->{'Pkg End Time'}-$self->{'Build Start Time'});
-    my $date = strftime("%Y%m%d-%H%M",localtime($self->{'Pkg End Time'}));
+		       $self->{'Build End Time'}-$self->{'Build Start Time'});
+    my $date = strftime("%Y%m%d-%H%M",localtime($self->{'Build End Time'}));
     print main::PLOG "*"x78, "\n";
     print main::PLOG "Build finished at $date\n";
 
@@ -1912,6 +1912,8 @@ sub check_space (\$@) {
 	close( PIPE );
     }
 
+    $self->{'This Time'} = $self->{'Pkg End Time'} - $self->{'Pkg Start Time'};
+    $self->{'This Time'} = 0 if $self->{'This Time'} < 0;
     $self->{'This Space'} = $sum;
 }
 
@@ -2399,42 +2401,39 @@ sub chroot_arch (\$) {
     return $chroot_arch;
 }
 
-sub open_build_log (\$$$$) {
+sub open_build_log (\$) {
     my $self = shift;
-    my $pkg_name = shift;
-    my $pkg_distribution = shift;
-    my $date = shift;
 
-    open_pkg_log($pkg_name, $pkg_distribution, $date);
-    print main::PLOG "Automatic build of $pkg_name on $hostname by ".
+    open_pkg_log($self->{'Package'}, $self->get_option('Distribution'),
+		 $self->{'Pkg Start Time'});
+    print main::PLOG "Automatic build of $self->{'Package'} on $hostname by " .
 	"sbuild/$arch $version\n";
-    print main::PLOG "Build started at $date\n";
+    print main::PLOG "Build started at $self->{'Pkg Start Time'}\n";
     print main::PLOG "*"x78, "\n";
 }
 
 sub close_build_log (\$$$$$$$) {
     my $self = shift;
-    my $pkg_name = shift;
-    my $pkg_distribution = shift;
-    my $status = shift;
-    my $pkg_start_time = shift;
-    my $pkg_end_time = shift;
-    my $space = shift;
-    my $date = strftime("%Y%m%d-%H%M", localtime($pkg_end_time));
 
-    my $time = $pkg_end_time - $pkg_start_time;
+    my $date = strftime("%Y%m%d-%H%M", localtime($self->{'Pkg End Time'}));
 
-    $time = 0 if $time < 0;
-    if (defined($status) && $status eq "successful") {
-	$self->add_time_entry($pkg_name, $time);
-	$self->add_space_entry($pkg_name, $space);
+    if (defined($self->{'Pkg Status'}) &&
+	$self->{'Pkg Status'} eq "successful") {
+	$self->add_time_entry($self->{'Package_Version'}, $self->{'This Time'});
+	$self->add_space_entry($self->{'Package_Version'}, $self->{'This Space'});
     }
     print main::PLOG "*"x78, "\n";
     printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
-    int($time/3600), int(($time%3600)/60), int($time%60), $space;
+    int($self->{'This Time'}/3600),
+    int(($self->{'This Time'}%3600)/60),
+    int($self->{'This Time'}%60),
+    $self->{'This Space'};
 
-    close_pkg_log ($pkg_name, $pkg_distribution, $status,
-		   $pkg_start_time, $pkg_end_time);
+    close_pkg_log($self->{'Package_Version'},
+		  $self->get_option('Distribution'),
+		  $self->{'Pkg Status'},
+		  $self->{'Pkg Start Time'},
+		  $self->{'Pkg End Time'});
 }
 
 sub add_time_entry (\$$$) {
