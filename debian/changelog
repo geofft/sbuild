@@ -8,8 +8,11 @@ sbuild (0.57.4-1) unstable; urgency=low
     to Niko Tyni for this patch.
   * Don't include epoch version in directory names (Closes: #482456).
     Thanks to Raphael Hertzog.
+  * man/sbuild-setup.7.in: Replace references to buildd.chroot with
+    sbuild-createchroot, and adduser with sbuild-adduser (Closes: #483654).
+    Thanks to Marc Fargas.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 31 May 2008 09:30:41 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 31 May 2008 09:47:41 +0100
 
 sbuild (0.57.3-1) unstable; urgency=low
 

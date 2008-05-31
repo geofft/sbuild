@@ -32,3 +32,5 @@ LOG and PLOG should not be in the main namespace; import directly into
 namespace needed.
 
 Are 'Build Start Time' and 'Pkg Start Time' different?
+
+sbuild-setup references ~/build, even though not required.
