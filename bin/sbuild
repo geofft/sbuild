@@ -99,55 +99,21 @@ sub main () {
     foreach $dscfile (@ARGV) {
 
 	# TODO: Append to build list, to allow parallel builds.
-	my $build = Sbuild::Build::new($options);
+	my $build = Sbuild::Build::new($dscfile, $options);
 	$main::build_object = $build;
 
 	$main::build_object->write_jobs_file("");
 	$build->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV);
 
-	my $dir = dirname($dscfile);
-	my $dscbase = basename($dscfile);
-	my $pkgv = basename($dscfile);
-	$pkgv =~ s/\.dsc$//;
-	my ($pkg, $version) = split /_/, $pkgv;
-	(my $sversion = $version) =~ s/^\d+://; # Strip epoch
-	my $invalid = 0;
-
-	# Download if package does not have a .dsc extension and no
-	# directory was specified.
-	my $download = 1;
-	if ($dscbase =~ m/\.dsc$/) {
-	    $download = 0;
-	    if( ! -f $dscfile ) {
-		$invalid = 1;
-	    }
-	}
-	elsif( ! defined $version ) {
-	    $invalid = 1;
-	}
-
-	print STDERR "D: dscfile = $dscfile\n" if $conf::debug;
-	print STDERR "D: dir = $dir\n" if $conf::debug;
-	print STDERR "D: dscbase = $dscbase\n" if $conf::debug;
-	print STDERR "D: pkgv = $pkgv\n" if $conf::debug;
-	print STDERR "D: pkg = $pkg\n" if $conf::debug;
-	print STDERR "D: version = $version\n" if $conf::debug;
-	print STDERR "D: sversion = $sversion\n" if $conf::debug;
-	print STDERR "D: download = $download\n" if $conf::debug;
-
-	# TODO: Put in Build ctor.
-	$build->{'Package'} = $pkg;
-	$build->{'Version'} = $version;
-
-	if ($invalid || ($download && $dscfile ne $pkgv)) {
+	if ($build->{'Invalid Source'}) {
 	    print PLOG "Invalid source: $dscfile\n";
-	    print PLOG "Skipping $pkg\n";
+	    print PLOG "Skipping " . $build->{'Package'} . " \n";
 	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_skip;
 	}
 
 	{
-	    my $tpkg = basename($pkgv);
+	    my $tpkg = basename($build->{'Package_Version'});
 	    # TODO: This should be 'Pkg Start Time', set in build().
 	    my $date = strftime("%Y%m%d-%H%M",localtime);
 
@@ -162,10 +128,10 @@ sub main () {
 	}
 
 	$build->{'Pkg Status'} = "failed"; # assume for now
-	$main::current_job = $pkgv;
+	$main::current_job = $build->{'Package_Version'};
 	$build->{'Additional Deps'} = [];
 	$main::build_object->write_jobs_file("currently building");
-	if ($build->should_skip($pkgv)) {
+	if ($build->should_skip($build->{'Package_Version'})) {
 	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
@@ -176,12 +142,17 @@ sub main () {
 	$build->{'Session'} = $session;
 
 	if (!$session->begin_session()) {
-	    print PLOG "Error creating schroot session: skipping $pkg\n";
+	    print PLOG "Error creating schroot session: skipping " .
+		$build->{'Package'} . "\n";
 	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
 	}
 	$build->{'Chroot Dir'} = $session->{'Location'};
-	$build->{'Chroot Build Dir'} = tempdir("$Sbuild::Conf::username-${pkg}_$sversion-$arch-XXXXXX" , DIR => $session->{'Build Location'});
+	$build->{'Chroot Build Dir'} =
+	    tempdir("$Sbuild::Conf::username-" . 
+		    $build->{'Package'}. "_" . $build->{'SVersion'} .
+		    "-$arch-XXXXXX",
+		    DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
 	$session->{'Build Location'} = $build->{'Chroot Build Dir'};
@@ -206,21 +177,27 @@ sub main () {
 	}
 
 	$build->{'Pkg Fail Stage'} = "fetch-src";
+	# TODO: $dscfile should not be altered here
 	if (!$build->fetch_source_files(\$dscfile,
-				       $dir, $pkg, $version, $download)) {
+					$build->{'Source Dir'},
+					$build->{'Package'},
+					$build->{'Version'},
+					$build->{'Download'})) {
 	    goto cleanup_close;
 	}
 
 	$build->{'Pkg Fail Stage'} = "install-deps";
-	if (!$build->install_deps($pkg)) {
-	    print PLOG "Source-dependencies not satisfied; skipping $pkg\n";
+	if (!$build->install_deps($build->{'Package'})) {
+	    print PLOG "Source-dependencies not satisfied; skipping " .
+		$build->{'Package'} . "\n";
 	    goto cleanup_packages;
 	}
 
 	$build->{'Pkg Status'} = "successful"
-	    if $build->build(basename($dscfile), $pkgv);
+	    # TODO: Don't pass version info
+	    if $build->build(basename($dscfile), $build->{'Package_Version'});
 	$main::build_object->write_jobs_file($build->{'Pkg Status'});
-	$build->append_to_FINISHED($pkgv);
+	$build->append_to_FINISHED($build->{'Package_Version'});
 
       cleanup_packages:
 	if (defined ($session->{'Session Purged'}) &&
@@ -231,7 +208,7 @@ sub main () {
 	}
 	$build->remove_srcdep_lock_file();
       cleanup_close:
-	$build->analyze_fail_stage($pkgv);
+	$build->analyze_fail_stage($build->{'Package_Version'});
 	$main::build_object->write_jobs_file($build->{'Pkg Status'});
 
 	$session->end_session();

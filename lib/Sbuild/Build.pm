@@ -49,7 +49,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($);
+sub new ($$);
 sub get (\%$);
 sub set (\%$$);
 sub get_option (\%$);
@@ -107,16 +107,54 @@ sub add_space_entry (\$$$);
 
 
 # TODO: put in all package version data and job ID (for indexing in job list)
-sub new ($) {
+sub new ($$) {
+    my $dsc = shift;
     my $options = shift;
 
     my $self  = {};
     bless($self);
 
-    # TODO: Set in constuctor:
+    # DSC, package and version information:
+    $self->{'DSC'} = $dsc;
+    $self->{'Source Dir'} = dirname($dsc);
+    $self->{'DSC Base'} = basename($dsc);
+
+    my $pkgv = $self->{'DSC Base'};
+    $pkgv =~ s/\.dsc$//;
+    $self->{'Package_Version'} = $pkgv;
+    my ($pkg, $version) = split /_/, $self->{'Package_Version'};
+    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+
+    $self->{'Package'} = $pkg;
+    $self->{'Version'} = $version;
+    $self->{'SVersion'} = $sversion;
+
+    # Do we need to download?
+    $self->{'Download'} = 0;
+    $self->{'Download'} = 1
+	if (!($self->{'DSC Base'} =~ m/\.dsc$/));
+
+    # Can sources be obtained?
+    $self->{'Invalid Source'} = 0;
+    $self->{'Invalid Source'} = 1
+	if ((!$self->{'Download'} && ! -f $dsc) ||
+	    ($self->{'Download'} &&
+	     $self->{'DSC'} ne $self->{'Package_Version'}) ||
+	    (!defined $self->{'Version'}));
+
+    if ($conf::debug) {
+	print STDERR "D: DSC = $self->{'DSC'}\n";
+	print STDERR "D: Source Dir = $self->{'Source Dir'}\n";
+	print STDERR "D: DSC Base = $self->{'DSC Base'}\n";
+	print STDERR "D: Package_Version = $self->{'Package_Version'}\n";
+	print STDERR "D: Package = $self->{'Package'}\n";
+	print STDERR "D: Version = $self->{'Version'}\n";
+	print STDERR "D: SVersion = $self->{'SVersion'}\n";
+	print STDERR "D: Download = $self->{'Download'}\n";
+	print STDERR "D: Invalid Source = $self->{'Invalid Source'}\n";
+    }
+
     $self->{'Options'} = $options;
-    $self->{'Package'} = '';
-    $self->{'Version'} = '';
     $self->{'Arch'} = $Sbuild::Sysconfig::arch;
     $self->{'Chroot Dir'} = '';
     $self->{'Chroot Build Dir'} = '';
