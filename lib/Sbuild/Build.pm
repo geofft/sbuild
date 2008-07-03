@@ -54,7 +54,7 @@ sub get (\%$);
 sub set (\%$$);
 sub get_option (\%$);
 sub set_dsc (\$$);
-sub fetch_source_files (\$$$$$$);
+sub fetch_source_files (\$);
 sub build (\$$$);
 sub analyze_fail_stage (\$);
 sub install_deps (\$);
@@ -202,10 +202,12 @@ sub set_dsc (\$$) {
 
     $self->{'DSC'} = $dsc;
     $self->{'Source Dir'} = dirname($dsc);
+
+    # Should this have a .dsc extension?
     $self->{'DSC Base'} = basename($dsc);
+    $self->{'DSC Base'} =~ s/\.dsc$//;
 
     my $pkgv = $self->{'DSC Base'};
-    $pkgv =~ s/\.dsc$//;
     $self->{'Package_Version'} = $pkgv;
     my ($pkg, $version) = split /_/, $self->{'Package_Version'};
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
@@ -227,11 +229,11 @@ sub set_dsc (\$$) {
 #     return $self->set('Package Status', $status);
 # }
 
-sub fetch_source_files (\$$$$$$) {
+sub fetch_source_files (\$) {
     my $self = shift;
 
     my $dir = $self->{'Source Dir'};
-    my $dsc = $self->{'DSC Base'};
+    my $dsc = $self->{'Package'} . '_' . $self->{'SVersion'} . '.dsc';
 
     my ($files, @other_files, $dscarchs, @fetched);
 
