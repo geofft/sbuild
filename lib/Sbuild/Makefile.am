@@ -29,6 +29,7 @@ MODULES =		\
 	ChrootInfo.pm	\
 	Conf.pm		\
 	Log.pm		\
+	Options.pm	\
 	Utility.pm
 
 perlmodsbuild_DATA =	\
