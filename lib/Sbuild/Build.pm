@@ -126,7 +126,7 @@ sub new ($$) {
     # Can sources be obtained?
     $self->{'Invalid Source'} = 0;
     $self->{'Invalid Source'} = 1
-	if ((!$self->{'Download'} && ! -f $dsc) ||
+	if ((!$self->{'Download'} && ! -f $self->{'DSCFile'}) ||
 	    ($self->{'Download'} &&
 	     $self->{'DSC'} ne $self->{'Package_Version'}) ||
 	    (!defined $self->{'Version'}));
@@ -136,6 +136,7 @@ sub new ($$) {
 	print STDERR "D: Source Dir = $self->{'Source Dir'}\n";
 	print STDERR "D: DSC Base = $self->{'DSC Base'}\n";
 	print STDERR "D: Package_Version = $self->{'Package_Version'}\n";
+	print STDERR "D: Package_SVersion = $self->{'Package_SVersion'}\n";
 	print STDERR "D: Package = $self->{'Package'}\n";
 	print STDERR "D: Version = $self->{'Version'}\n";
 	print STDERR "D: SVersion = $self->{'SVersion'}\n";
@@ -203,18 +204,20 @@ sub set_dsc (\$$) {
     $self->{'DSC'} = $dsc;
     $self->{'Source Dir'} = dirname($dsc);
 
-    # Should this have a .dsc extension?
     $self->{'DSC Base'} = basename($dsc);
-    $self->{'DSC Base'} =~ s/\.dsc$//;
 
     my $pkgv = $self->{'DSC Base'};
+    $pkgv =~ s/\.dsc$//;
     $self->{'Package_Version'} = $pkgv;
     my ($pkg, $version) = split /_/, $self->{'Package_Version'};
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+    $self->{'Package_SVersion'} = "${pkg}_$sversion";
 
     $self->{'Package'} = $pkg;
     $self->{'Version'} = $version;
     $self->{'SVersion'} = $sversion;
+    $self->{'DSCFile'} = "${pkg}_${sversion}.dsc";
+    $self->{'DSCDir'} = "${pkg}-${sversion}";
 }
 
 # sub get_package_status (\$) {
@@ -396,10 +399,11 @@ sub fetch_source_files (\$) {
 sub build (\$$$) {
     my $self = shift;
 
-    my $dsc = $self->{'DSC Base'};
+    my $dscfile = $self->{'DSCFile'};
+    my $dscdir = $self->{'DSCDir'};
     my $pkgv = $self->{'Package_Version'};
 
-    my( $dir, $rv, $changes );
+    my( $rv, $changes );
     local( *PIPE, *F, *F2 );
 
     $pkgv = $self->fixup_pkgv($pkgv);
@@ -409,42 +413,41 @@ sub build (\$$$) {
     # Note, this version contains ".dsc".
     my ($pkg, $version) = ($1,$2);
 
-    my $tmpunpackdir = $dsc;
+    my $tmpunpackdir = $dscdir;
     $tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
     $tmpunpackdir =~ s/_/-/;
     $tmpunpackdir = "$self->{'Chroot Build Dir'}/$tmpunpackdir";
 
-    if (-d "$self->{'Chroot Build Dir'}/$dsc" && -l "$self->{'Chroot Build Dir'}/$dsc") {
+    if (-d "$self->{'Chroot Build Dir'}/$dscdir" && -l "$self->{'Chroot Build Dir'}/$dscdir") {
 	# if the package dir already exists but is a symlink, complain
 	print main::PLOG "Cannot unpack source: a symlink to a directory with the\n",
 	"same name already exists.\n";
 	return 0;
     }
-    if (! -d "$self->{'Chroot Build Dir'}/$dsc") {
+    if (! -d "$self->{'Chroot Build Dir'}/$dscdir") {
 	$self->{'Pkg Fail Stage'} = "unpack";
 	# dpkg-source refuses to remove the remanants of an aborted
 	# dpkg-source extraction, so we will if necessary.
 	if (-d $tmpunpackdir) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
-	$dir = "$self->{'Package'}-$self->{'SVersion'}";
 	$self->{'Sub Task'} = "dpkg-source";
-	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dsc $dir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
+	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dscfile $dscdir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	if ($?) {
 	    print main::PLOG "FAILED [dpkg-source died]\n";
 
 	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 	    return 0;
 	}
-	$dir = "$self->{'Chroot Build Dir'}/$dir";
+	$dscdir = "$self->{'Chroot Build Dir'}/$dscdir";
 
-	if (system( "chmod -R g-s,go+rX $dir" ) != 0) {
-	    print main::PLOG "chmod -R g-s,go+rX $dir failed.\n";
+	if (system( "chmod -R g-s,go+rX $dscdir" ) != 0) {
+	    print main::PLOG "chmod -R g-s,go+rX $dscdir failed.\n";
 	    return 0;
 	}
     }
     else {
-	$dir = "$self->{'Chroot Build Dir'}/$dsc";
+	$dscdir = "$self->{'Chroot Build Dir'}/$dscdir";
 
 	$self->{'Pkg Fail Stage'} = "check-unpacked-version";
 	# check if the unpacked tree is really the version we need
@@ -454,8 +457,8 @@ sub build (\$$$) {
 	    return 0;
 	}
 	if ($self->{'Sub PID'} == 0) {
-	    $dir = $self->{'Session'}->strip_chroot_path($dir);
-	    $self->{'Session'}->exec_command("cd '$dir' && dpkg-parsechangelog 2>&1", $Sbuild::Conf::username, 1, 0, undef);
+	    $dscdir = $self->{'Session'}->strip_chroot_path($dscdir);
+	    $self->{'Session'}->exec_command("cd '$dscdir' && dpkg-parsechangelog 2>&1", $Sbuild::Conf::username, 1, 0, undef);
 	}
 	$self->{'Sub Task'} = "dpkg-parsechangelog";
 
@@ -474,21 +477,21 @@ sub build (\$$$) {
 	    return 0;
 	}
 	my $tree_version = $1;
-	my $cmp_version = ($self->get_option('binNMU') && -f "$dir/debian/.sbuild-binNMU-done") ?
+	my $cmp_version = ($self->get_option('binNMU') && -f "$dscdir/debian/.sbuild-binNMU-done") ?
 	    binNMU_version($version,$self->get_option('binNMU Version')) : $version;
 	if ($tree_version ne $cmp_version) {
-	    print main::PLOG "The unpacked source tree $dir is version ".
+	    print main::PLOG "The unpacked source tree $dscdir is version ".
 		"$tree_version, not wanted $cmp_version!\n";
 	    return 0;
 	}
     }
 
     $self->{'Pkg Fail Stage'} = "check-space";
-    my $current_usage = `/usr/bin/du -k -s "$dir"`;
+    my $current_usage = `/usr/bin/du -k -s "$dscdir"`;
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
     if ($current_usage) {
-	my $free = $self->df($dir);
+	my $free = $self->df($dscdir);
 	if ($free < 2*$current_usage) {
 	    print main::PLOG "Disk space is propably not enough for building.\n".
 		"(Source needs $current_usage KB, free are $free KB.)\n";
@@ -500,8 +503,8 @@ sub build (\$$$) {
     }
 
     $self->{'Pkg Fail Stage'} = "hack-binNMU";
-    if ($self->get_option('binNMU') && ! -f "$dir/debian/.sbuild-binNMU-done") {
-	if (open( F, "<$dir/debian/changelog" )) {
+    if ($self->get_option('binNMU') && ! -f "$dscdir/debian/.sbuild-binNMU-done") {
+	if (open( F, "<$dscdir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
 	    $firstline = <F> while $firstline =~ /^$/;
@@ -511,7 +514,7 @@ sub build (\$$$) {
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
 	    my $NMUversion = binNMU_version($version,$self->get_option('binNMU Version'));
 	    chomp( my $date = `date -R` );
-	    if (!open( F, ">$dir/debian/changelog" )) {
+	    if (!open( F, ">$dscdir/debian/changelog" )) {
 		print main::PLOG "Can't open debian/changelog for binNMU hack: $!\n";
 		return 0;
 	    }
@@ -524,7 +527,7 @@ sub build (\$$$) {
 
 	    print F $firstline, $text;
 	    close( F );
-	    system "touch '$dir/debian/.sbuild-binNMU-done'";
+	    system "touch '$dscdir/debian/.sbuild-binNMU-done'";
 	    print main::PLOG "*** Created changelog entry for bin-NMU version $NMUversion\n";
 	}
 	else {
@@ -532,10 +535,10 @@ sub build (\$$$) {
 	}
     }
 
-    if (-f "$dir/debian/files") {
+    if (-f "$dscdir/debian/files") {
 	local( *FILES );
 	my @lines;
-	open( FILES, "<$dir/debian/files" );
+	open( FILES, "<$dscdir/debian/files" );
 	chomp( @lines = <FILES> );
 	close( FILES );
 	@lines = map { my $ind = 68-length($_);
@@ -560,7 +563,7 @@ EOF
 
 EOF
 
-	unlink "$dir/debian/files";
+	unlink "$dscdir/debian/files";
     }
 
     $self->{'Build Start Time'} = time;
@@ -576,7 +579,7 @@ EOF
 	    $conf::force_orig_source ? "-sa" : "" :
 	    $self->get_option('Build Arch All') ?	"-b" : "-B";
 
-	my $bdir = $self->{'Session'}->strip_chroot_path($dir);
+	my $bdir = $self->{'Session'}->strip_chroot_path($dscdir);
 	if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
 	    ! -r "$self->{'Chroot Dir'}/etc/ld.so.conf") {
 	    $self->{'Session'}->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
@@ -636,13 +639,13 @@ EOF
     print main::PLOG "*"x78, "\n";
     print main::PLOG "Build finished at $date\n";
 
-    my @space_files = ("$dir");
+    my @space_files = ("$dscdir");
     if ($rv) {
 	print main::PLOG "FAILED [dpkg-buildpackage died]\n";
     }
     else {
-	if (-r "$dir/debian/files" && $self->{'Chroot Build Dir'}) {
-	    my @files = $self->debian_files_list("$dir/debian/files");
+	if (-r "$dscdir/debian/files" && $self->{'Chroot Build Dir'}) {
+	    my @files = $self->debian_files_list("$dscdir/debian/files");
 
 	    foreach (@files) {
 		if (! -f "$self->{'Chroot Build Dir'}/$_") {
@@ -2416,7 +2419,7 @@ sub open_build_log (\$) {
 
     open_pkg_log($self->{'Package'}, $self->get_option('Distribution'),
 		 $self->{'Pkg Start Time'});
-    print main::PLOG "Automatic build of $self->{'Package'} on $hostname by " .
+    print main::PLOG "Automatic build of $self->{'Package_SVersion'} on $hostname by " .
 	"sbuild/$arch $version\n";
     print main::PLOG "Build started at $self->{'Pkg Start Time'}\n";
     print main::PLOG "*"x78, "\n";

@@ -153,7 +153,7 @@ sub main () {
 	$build->{'Chroot Dir'} = $session->{'Location'};
 	$build->{'Chroot Build Dir'} =
 	    tempdir("$Sbuild::Conf::username-" . 
-		    $build->{'Package'}. "_" . $build->{'SVersion'} .
+		    $build->{'Package_SVersion'} .
 		    "-$arch-XXXXXX",
 		    DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise

@@ -11,8 +11,12 @@ sbuild (0.57.4-1) unstable; urgency=low
   * man/sbuild-setup.7.in: Replace references to buildd.chroot with
     sbuild-createchroot, and adduser with sbuild-adduser (Closes: #483654).
     Thanks to Marc Fargas.
+  * Package name, version, build directory and associated information are
+    now contained within Sbuild::Build objects.  This allows stripping of
+    epoch to construct correct unpack directory location (Closes:
+    #482931).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 31 May 2008 09:47:41 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 06 Jul 2008 12:00:00 +0100
 
 sbuild (0.57.3-1) unstable; urgency=low
 
