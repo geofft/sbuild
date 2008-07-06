@@ -126,7 +126,7 @@ sub new ($$) {
     # Can sources be obtained?
     $self->{'Invalid Source'} = 0;
     $self->{'Invalid Source'} = 1
-	if ((!$self->{'Download'} && ! -f $self->{'DSCFile'}) ||
+	if ((!$self->{'Download'} && ! -f $self->{'DSC File'}) ||
 	    ($self->{'Download'} &&
 	     $self->{'DSC'} ne $self->{'Package_Version'}) ||
 	    (!defined $self->{'Version'}));
@@ -135,6 +135,8 @@ sub new ($$) {
 	print STDERR "D: DSC = $self->{'DSC'}\n";
 	print STDERR "D: Source Dir = $self->{'Source Dir'}\n";
 	print STDERR "D: DSC Base = $self->{'DSC Base'}\n";
+	print STDERR "D: DSC File = $self->{'DSC Base'}\n";
+	print STDERR "D: DSC Dir = $self->{'DSC Base'}\n";
 	print STDERR "D: Package_Version = $self->{'Package_Version'}\n";
 	print STDERR "D: Package_SVersion = $self->{'Package_SVersion'}\n";
 	print STDERR "D: Package = $self->{'Package'}\n";
@@ -216,8 +218,8 @@ sub set_dsc (\$$) {
     $self->{'Package'} = $pkg;
     $self->{'Version'} = $version;
     $self->{'SVersion'} = $sversion;
-    $self->{'DSCFile'} = "${pkg}_${sversion}.dsc";
-    $self->{'DSCDir'} = "${pkg}-${sversion}";
+    $self->{'DSC File'} = "${pkg}_${sversion}.dsc";
+    $self->{'DSC Dir'} = "${pkg}-${sversion}";
 }
 
 # sub get_package_status (\$) {
@@ -236,7 +238,7 @@ sub fetch_source_files (\$) {
     my $self = shift;
 
     my $dir = $self->{'Source Dir'};
-    my $dsc = $self->{'Package'} . '_' . $self->{'SVersion'} . '.dsc';
+    my $dsc = $self->{'DSC File';
 
     my ($files, @other_files, $dscarchs, @fetched);
 
@@ -399,8 +401,8 @@ sub fetch_source_files (\$) {
 sub build (\$$$) {
     my $self = shift;
 
-    my $dscfile = $self->{'DSCFile'};
-    my $dscdir = $self->{'DSCDir'};
+    my $dscfile = $self->{'DSC File'};
+    my $dscdir = $self->{'DSC Dir'};
     my $pkgv = $self->{'Package_Version'};
 
     my( $rv, $changes );
