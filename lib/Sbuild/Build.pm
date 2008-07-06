@@ -238,7 +238,7 @@ sub fetch_source_files (\$) {
     my $self = shift;
 
     my $dir = $self->{'Source Dir'};
-    my $dsc = $self->{'DSC File';
+    my $dsc = $self->{'DSC File'};
 
     my ($files, @other_files, $dscarchs, @fetched);
 
