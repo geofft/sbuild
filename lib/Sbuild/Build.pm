@@ -126,7 +126,7 @@ sub new ($$) {
     # Can sources be obtained?
     $self->{'Invalid Source'} = 0;
     $self->{'Invalid Source'} = 1
-	if ((!$self->{'Download'} && ! -f $self->{'DSC File'}) ||
+	if ((!$self->{'Download'} && ! -f $self->{'DSC'}) ||
 	    ($self->{'Download'} &&
 	     $self->{'DSC'} ne $self->{'Package_Version'}) ||
 	    (!defined $self->{'Version'}));
