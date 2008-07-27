@@ -26,6 +26,7 @@ use strict;
 use warnings;
 
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
+use Sbuild qw(isin);
 use Sbuild::Conf;
 
 BEGIN {
