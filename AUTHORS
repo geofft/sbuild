@@ -4,6 +4,9 @@ principal areas that each contributed to are listed in addition.
 Ben Collins	     	<bcollins@debian.org>
 	the "apt patch" for sbuild for finding source
 
+Enrico Zini             <enrico@debian.org>
+       support for disabling APT package authentication
+
 Roman Hodek   	        <Roman.Hodek@informatik.uni-erlangen.de>
       	wanna-build
 	sbuild

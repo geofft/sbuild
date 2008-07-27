@@ -114,7 +114,10 @@ sub _setup_options (\$\$) {
 				    DIR => $self->get('Location'),
 				    UNLINK => 0) ) {
 
-	    print $F "APT::Get::AllowUnauthenticated true;\n";
+	    if ($Sbuild::Conf::apt_allow_unauthenticated)
+	    {
+	    	print $F "APT::Get::AllowUnauthenticated true;\n";
+	    }
 	    print $F "APT::Install-Recommends false;\n";
 
 	    if (! rename $F->filename, $chroot_aptconf) {

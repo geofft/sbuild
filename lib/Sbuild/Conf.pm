@@ -34,19 +34,20 @@ BEGIN {
     @ISA = qw(Exporter);
 
     @EXPORT = qw($HOME %alternatives $apt_policy $apt_update
-		 $check_watches $cwd $username $verbose $nolog
-		 $mailprog $dpkg $su $schroot $schroot_options
-		 $fakeroot $apt_get $apt_cache $dpkg_source $dcmd
-		 $md5sum $avg_time_db $avg_space_db $stats_dir
-		 $package_checklist $build_env_cmnd $pgp_options
-		 $log_dir $mailto $mailfrom @no_auto_upgrade
-		 $check_depends_algorithm $purge_build_directory
-		 @toolchain_regex $stalled_pkg_timeout
-		 $srcdep_lock_dir $srcdep_lock_wait $max_lock_trys
-		 $lock_interval @ignore_watches_no_build_deps
-		 $build_dir $sbuild_mode $debug $force_orig_source
-		 %individual_stalled_pkg_timeout $path
-		 $maintainer_name $uploader_name %watches $key_id);
+                 $apt_allow_unauthenticated $check_watches $cwd
+                 $username $verbose $nolog $mailprog $dpkg $su
+                 $schroot $schroot_options $fakeroot $apt_get
+                 $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
+                 $avg_space_db $stats_dir $package_checklist
+                 $build_env_cmnd $pgp_options $log_dir $mailto
+                 $mailfrom @no_auto_upgrade $check_depends_algorithm
+                 $purge_build_directory @toolchain_regex
+                 $stalled_pkg_timeout $srcdep_lock_dir
+                 $srcdep_lock_wait $max_lock_trys $lock_interval
+                 @ignore_watches_no_build_deps $build_dir $sbuild_mode
+                 $debug $force_orig_source
+                 %individual_stalled_pkg_timeout $path
+                 $maintainer_name $uploader_name %watches $key_id);
 }
 
 INIT {
@@ -111,6 +112,7 @@ our $maintainer_name;
 our $uploader_name;
 our $key_id;
 our $apt_update = 0;
+our $apt_allow_unauthenticated = 0;
 our %alternatives = ("info-browser"		=> "info",
 		     "httpd"			=> "apache",
 		     "postscript-viewer"	=> "ghostview",
