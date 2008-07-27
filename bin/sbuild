@@ -41,7 +41,7 @@ use Data::Dumper;
 use File::Temp qw(tempdir);
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log open_pkg_log close_pkg_log);
-use Sbuild::Sysconfig qw($arch $hostname $version);
+use Sbuild::Sysconfig qw($arch $version);
 use Sbuild::Options;
 use Sbuild::Build;
 
