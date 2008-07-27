@@ -11,8 +11,8 @@ configuration.
 
   1) sbuild-createchroot now supports most of the options found in
      debootstrap.  It no longer adds main and contrib to
-     /etc/apt/sources.list in the chroot, and no longer adds deb-src
-     lines.
+     /etc/apt/sources.list in the chroot (the components are now
+     specified with --components instead of being hard-coded).
 
 * Major changes in 0.57.4:
 

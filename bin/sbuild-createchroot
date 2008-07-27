@@ -74,7 +74,7 @@ our $bootstrap_arch = $arch;
 our $foreign = 0;
 our $include = '';
 our $exclude = '';
-our $components = '';
+our $components = 'main';
 our $keyring = '';
 our $resolve_deps = 1;
 our $keep_debootstrap_dir = 0;
@@ -143,14 +143,24 @@ if ($verbose) {
 !system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
 
 # Set up minimal /etc/hosts.
-open(HOSTS, ">${target}/etc/hosts")
-    or die "Can't open ${target}/etc/hosts for writing";
+my $hosts = "${target}/etc/hosts";
+open(HOSTS, ">$hosts")
+    or die "Can't open $hosts for writing";
 print HOSTS "127.0.0.1 $hostname localhost";
-close HOSTS or die "Can't close ${target}/etc/hosts";
+close HOSTS or die "Can't close $hosts";
 
 # Display /etc/hosts.
 print "I: Configured /etc/hosts:\n";
-dump_file("${target}/etc/hosts");
+dump_file("$hosts");
+
+# Set up minimal /etc/apt/sources.list
+my $sources = "${target}/etc/apt/sources.list";
+my $comps = join(' ',split(/,/,$components));
+open(SOURCES, ">$sources")
+    or die "Can't open $sources for writing";
+print SOURCES "deb $mirror $suite $comps\n";
+print SOURCES "deb-src $mirror $suite $comps\n";
+close SOURCES or die "Can't close $sources";
 
 # Display /etc/apt/sources.list.
 print "I: Configured APT /etc/apt/sources.list:\n";

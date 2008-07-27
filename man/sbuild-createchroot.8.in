@@ -37,14 +37,14 @@ to create a chroot suitable for building packages with sbuild.  Note that while
 debootstrap may be used directly, sbuild\-createchroot performs additional
 setup tasks such as adding additional packages and configuring various files in
 the chroot.  Invoking sbuild\-createchroot is functionally equivalent to
-running \f[CB]debootstrap\ \-\-variant=buildd\fP, then editing
-\fI/etc/apt/sources.list\fP by hand.  The \fIbuild\-essential\fP and
-\fIfakeroot\fP packages are additionally installed.
+running \f[CB]debootstrap\ \-\-variant=buildd
+\-\-include=fakeroot,build\-essential\fP, then editing
+\fI/etc/apt/sources.list\fP and \fI/etc/hosts\fP by hand.
 .PP
 The newly-created chroot is set up to work with
 .BR schroot (1)
 by creating a chroot definition file under \fI/etc/schroot/chroot.d\fP.  This
-should be edited to complete the chroot configuration after
+should be edited to finish the chroot configuration after
 sbuild\-createchroot has completed.
 .SH OPTIONS
 .SS Actions
@@ -95,7 +95,8 @@ packages to download and extract. Note that this can remove essential packages,
 so use with extreme care.
 .TP
 .BR "\-\-components=\fIcomponent1[,component2,[componentn]]\fP"
-Comma separated list of archive components to use.  Defaults to \[oq]main\[cq].
+Comma separated list of archive components to use (e.g. \[oq]main\[cq],
+\[oq]contrib\[cq], \[oq]non-free\[cq]).  Defaults to \[oq]main\[cq].
 .TP
 .BR "\-\-keyring=\fIkeyring-file\fP"
 Download signatures for retrieved \fIRelease\fP files and check them against
@@ -150,3 +151,4 @@ Copyright \[co] 2007\-2008 Roger Leigh <rleigh@debian.org>.
 .\"# mode:nroff
 .\"# fill-column:79
 .\"# End:
+q
