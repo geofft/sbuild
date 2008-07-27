@@ -23,57 +23,58 @@ sbuild-setup \- sbuild setup procedure
 consistent build environment.  This man page describes the procedure to create
 a chroot by hand using debootstrap.  These are only guidelines; depending upon
 the setup required, several of the steps may be omitted entirely.
-.PP
-A number of the steps below are automatically run by the
+.SH QUICK START
+Simply running 
 .B sbuild-createchroot
-script.  See the section \[lq]\fIsbuild-createchroot\fP\[rq] below, as well as
+will perform all the setup steps described in detail below.  See the section
+\[lq]\fIsbuild-createchroot\fP\[rq] below, as well as
 .BR sbuild\-createchroot (1).
 .SH CHROOT SETUP
-This guide sets up a sarge chroot on a powerpc machine.  Adjust the
+This guide sets up a lenny chroot on a powerpc machine.  Adjust the
 names for other suites and architectures.
 .SS 1. Run debootstrap to create the chroot
-\f[CR]# \f[CB]mkdir \-p /srv/chroot/sarge\fP\fP
+\f[CR]# \f[CB]mkdir \-p /srv/chroot/lenny\fP\fP
 .br
 .PP
 The author has each chroot as a separate LVM logical volume (LV).  Create and
 mount an LV here if required:
 .PP
-\f[CR]# \f[CB]lvcreate \-L 4G \-n sarge_chroot \-Z y hda_vg\fP\fP
+\f[CR]# \f[CB]lvcreate \-L 4G \-n lenny_chroot \-Z y hda_vg\fP\fP
 .br
 .PP
 Add to /etc/fstab and mount (see next section for full fstab example).
 Finally, run debootstrap to create the chroot:
 .PP
-\f[CR]# \f[CB]debootstrap \-\-variant=buildd sarge /srv/chroot/sarge http://ftp.uk.debian.org/debian/\fP\fP
+\f[CR]# \f[CB]debootstrap \-\-variant=buildd lenny /srv/chroot/lenny http://ftp.uk.debian.org/debian/\fP\fP
 .br
 .SS 2. Set up additional mounts
 An example \fI/etc/fstab\fP:
 .PP
 .TS
 lfCR s s s s s.
-/dev//hda_vg/sarge_chroot \[rs]
+/dev//hda_vg/lenny_chroot \[rs]
 .T&
 lfCR lfCR lfCR lfCR lfCR lfCR.
-	/srv/chroot/sarge	ext3	defaults	0	2
-/dev/pts	/srv/chroot/sarge/dev/pts	none	rw,bind	0	0
-tmpfs	/srv/chroot/sarge/dev/shm	tmpfs	defaults	0	0
-proc	/srv/chroot/sarge/proc	proc	defaults	0	0
+	/srv/chroot/lenny	ext3	defaults	0	2
+/dev/pts	/srv/chroot/lenny/dev/pts	none	rw,bind	0	0
+tmpfs	/srv/chroot/lenny/dev/shm	tmpfs	defaults	0	0
+proc	/srv/chroot/lenny/proc	proc	defaults	0	0
 .T&
 lfCR s s s s s.
 /dev/hda_vg/home \[rs]
 .T&
 lfCR lfCR lfCR lfCR lfCR lfCR.
-	/srv/chroot/sarge/home	ext3	quota	0	0
-/tmp	/srv/chroot/sarge/tmp	none	rw,bind	0	0
-/etc/passwd	/srv/chroot/sarge/etc/passwd	none	ro,bind	0	0
-/etc/shadow	/srv/chroot/sarge/etc/shadow	none	ro,bind	0	0
-/etc/group	/srv/chroot/sarge/etc/group	none	ro,bind	0	0
+	/srv/chroot/lenny/home	ext3	quota	0	0
+/tmp	/srv/chroot/lenny/tmp	none	rw,bind	0	0
+/etc/passwd	/srv/chroot/lenny/etc/passwd	none	ro,bind	0	0
+/etc/shadow	/srv/chroot/lenny/etc/shadow	none	ro,bind	0	0
+/etc/group	/srv/chroot/lenny/etc/group	none	ro,bind	0	0
 .T&
 lfCR s s s s s.
 /etc/resolv.conf \[rs]
 .T&
 lfCR lfCR s s s s.
-	/srv/chroot/sarge/etc/resolv.conf \[rs]
+	/srv/chroot/lenny/etc/resolv.conf \[rs]
 .T&
 lfCR lfCR lfCR lfCR lfCR lfCR.
 		none	ro,bind	0	0
@@ -81,7 +82,7 @@ lfCR lfCR lfCR lfCR lfCR lfCR.
 .PP
 If the bind mountpoints don't exist in the chroot, touch them:
 .PP
-\f[CR]# \f[CB]touch /srv/chroot/sarge/etc/resolv.conf\fP\fP
+\f[CR]# \f[CB]touch /srv/chroot/lenny/etc/resolv.conf\fP\fP
 .PP
 Next, mount them all.
 .PP
@@ -91,28 +92,28 @@ is required for bind mounts, and devpts (CONFIG_UNIX98_PTYS) for
 \fI/dev/pts\fP.  Other guides recommend copying the files, but this method
 keeps them up-to-date at no cost.
 .PP
-If using sbuild with schroot, \fIpasswd\fP, \fIshadow\fP, \fIgroup\fP and
-\fIresolv.conf\fP can be updated automatically at the start of each build, so
-no action is required here.  schroot can also automatically mount all of the
-extra filesystems, so all the other mounts may be omitted.
+If using sbuild with schroot, \fIpasswd\fP, \fIshadow\fP, \fIgroup\fP,
+\fIgshadow\fP and \fIresolv.conf\fP can be updated automatically at the start
+of each build, so no action is required here.  schroot can also automatically
+mount all of the extra filesystems, so all the other mounts may be omitted.
 .PP
 To disable networking, don't bind mount \fI/etc/resolv.conf\fP.  This will
 prevent APT from working inside the chroot, but prevents package building from
 having working network access (no nameservers).
 .SS 3. Edit \f[BI]sources.list\fP
-Create or edit \fI/srv/chroot/sarge/etc/apt/sources.list\fP, and add all the
+Create or edit \fI/srv/chroot/lenny/etc/apt/sources.list\fP, and add all the
 APT sources required to obtain binary and source packages for your chosen
 distribution:
 .PP
-\f[CR]deb http://security.debian.org/ sarge/updates main\fP
+\f[CR]deb http://security.debian.org/ lenny/updates main\fP
 .br
-\f[CR]deb\-src http://security.debian.org/ sarge/updates main\fP
+\f[CR]deb\-src http://security.debian.org/ lenny/updates main\fP
 .br
 \f[CR]\fP
 .br
-\f[CR]deb http://ftp.uk.debian.org/debian/ sarge main\fP
+\f[CR]deb http://ftp.uk.debian.org/debian/ lenny main\fP
 .br
-\f[CR]deb\-src http://ftp.uk.debian.org/debian/ sarge main\fP
+\f[CR]deb\-src http://ftp.uk.debian.org/debian/ lenny main\fP
 .br
 .SS 4. Configure dchroot or schroot
 This is entirely optional, but will make the chroot environment easier to
@@ -120,18 +121,18 @@ access and administer.
 .PP
 For dchroot, add the following line to \fI/etc/dchroot.conf\fP:
 .PP
-\f[CR]sarge /srv/chroot/sarge\fP
+\f[CR]lenny /srv/chroot/lenny\fP
 .br
 .PP
 For schroot, add the a group to \fI/etc/schroot/schroot.conf\fP, for example:
 .PP
-\f[CR][sarge]\fP
+\f[CR][lenny]\fP
 .br
-\f[CR]type=plain\fP
+\f[CR]type=directory\fP
 .br
-\f[CR]description=Debian sarge (stable)\fP
+\f[CR]description=Debian lenny (stable)\fP
 .br
-\f[CR]location=/srv/chroot/sarge\fP
+\f[CR]location=/srv/chroot/lenny\fP
 .br
 \f[CR]priority=2\fP
 .br
@@ -146,12 +147,12 @@ For schroot, add the a group to \fI/etc/schroot/schroot.conf\fP, for example:
 \f[CR]run\-session\-scripts=true\fP
 .br
 .SS 5. Log into chroot
-\f[CR]# \f[CB]dchroot \-c sarge\fP\fP
+\f[CR]# \f[CB]dchroot \-c lenny\fP\fP
 .br
 .PP
 or
 .PP
-\f[CR]$ \f[CB]schroot \-c sarge \-u root\fP\fP
+\f[CR]$ \f[CB]schroot \-c lenny \-u root\fP\fP
 .br
 .SS 6. Set up packages for sbuild
 While running as root inside the chroot:
@@ -244,18 +245,16 @@ maintainer name and/or uploader name.
 .PP
 .SS 3. Build directories
 Create directories to contain packages and log files.  (.sbuildrc may have
-configured different locations; the default $build_dir is the current
+configured different locations; the default build directory is the current
 directory, and the default $log_dir is ~/logs):
 .PP
-\f[CR]$ \f[CB]mkdir ~/build ~/logs\fP\fP
+\f[CR]$ \f[CB]mkdir ~/logs\fP\fP
 .br
 .SS 4. Chroot setup
 Chroot setup is handled automatically by schroot.
 .SS 5. Finished
 The user should now be able to run sbuild.
 .PP
-\f[CR]$ \f[CB]cd ~/build\fP\fP
-.br
 \f[CR]$ \f[CB]sbuild ...\fP\fP
 .br
 .SH AUTHORS
