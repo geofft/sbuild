@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/perl
 #
 # Run debootstrap and add a few other files needed to create a working
 # sbuild chroot.
 # Copyright © 2004 Francesco P. Lovergine <frankie@debian.org>.
-# Copyright © 2007 Roger Leigh <rleigh@debian.org>.
+# Copyright © 2007-2008 Roger Leigh <rleigh@debian.org>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,56 +21,211 @@
 #
 #######################################################################
 
-set -e
+use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
+use Sbuild::Sysconfig qw($arch $hostname $version $release_date);
+use File::Temp ();
 
-if [ $(id -u) != 0 ]; then
-    echo "You need to run this command as root"
-    exit 2
-fi
+package main;
 
-if [ $# -ne 3 ]; then
-    echo "$0 <suite> <target-dir> <debian-mirror-url>"
-    echo "	E.g. $0 sarge /path/to/chroot http://http.us.debian.org/debian"
-    exit 1
-fi
+use strict;
+use warnings;
+use POSIX;
 
-SUITE=$1
-TARGET=$2
-MIRROR=$3
+sub usage_error ($);
+sub add_items ($@);
+sub dump_file ($);
 
-/usr/sbin/debootstrap \
-    --variant=buildd \
-    --include=fakeroot,build-essential \
-    "$SUITE" "$TARGET" "$MIRROR"
+# Print an error message about incorrect command-line options
+sub usage_error ($) {
+    my $message = shift;
 
-cat <<EOF >"$TARGET/etc/apt/sources.list"
-# $SUITE
-deb $MIRROR/ $SUITE main contrib non-free
-deb-src $MIRROR/ $SUITE main contrib non-free
+    print STDERR "E: $message\n";
+    print STDERR "I: Run “sbuild-createchroot --help” to list usage example and all available options\n";
+    exit 1;
+}
 
+# Add items to the start of a comma-separated list, and remove the
+# items from later in the list if they were already in the list.
+sub add_items ($@) {
+    my $items = shift;
+    my @add = @_;
+
+    my $ret = '';
+    my %values;
+
+    foreach (@_) {
+	$values{$_} = '';
+	$ret .= "$_,"
+    }
+
+    # Only add if not already used, to eliminate duplicates.
+    foreach (split (/,/,$items)) {
+	$ret .= "$_," if (!defined($values{$_}));
+    }
+
+    # Remove trailing comma.
+    $ret =~ s/,$//;
+
+    return $ret;
+}
+
+sub dump_file ($) {
+    my $file = shift;
+
+    if (-r "$file" &&
+	open(SOURCES, "<$file")) {
+
+	print "   ┌────────────────────────────────────────────────────────────────────────\n";
+	while (<SOURCES>) {
+	    chomp;
+	    print "   │$_\n";
+	}
+	print "   └────────────────────────────────────────────────────────────────────────\n";
+	close(SOURCES) or print "Failed to close $file\n";
+    } else {
+	print "W: Failed to open $file\n";
+    }
+}
+
+our $bootstrap_arch = $arch;
+our $foreign = 0;
+our $include = '';
+our $exclude = '';
+our $components = '';
+our $keyring = '';
+our $resolve_deps = 1;
+our $keep_debootstrap_dir = 0;
+our $verbose = 0;
+
+# Default to using the system keyring
+if (!defined($keyring) && -f '/etc/apt/trusted.gpg') {
+    $keyring='/etc/apt/trusted.gpg';
+}
+
+GetOptions (
+    "h|help" => sub {
+	system("/usr/bin/man", "8", "sbuild-createchroot");
+	exit 0;
+    },
+
+    "V|version" => sub {
+	print <<"EOF";
+sbuild-createchroot (Debian sbuild) $version ($release_date)
+
+Written by Roman Hodek, James Troup, Ben Collins, Ryan Murray, Rick
+Younie, Francesco Paolo Lovergine, Michael Banck, and Roger Leigh
+
+Copyright © 1998-2000 Roman Hodek <roman\@hodek.net>
+          © 1998-1999 James Troup <troup\@debian.org>
+	  © 2003-2006 Ryan Murray <rmurray\@debian.org>
+	  © 2001-2003 Rick Younie <younie\@debian.org>
+	  © 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
+	  © 2005      Michael Banck <mbanck\@debian.org>
+	  © 2005-2008 Roger Leigh <rleigh\@debian.org>
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 EOF
+exit 0;
+    },
 
-echo "I: Configured APT sources.list:"
-echo "────────────────────────────────────────────────────────────────────────"
-cat "$TARGET/etc/apt/sources.list"
-echo "────────────────────────────────────────────────────────────────────────"
+    "foreign" => \$foreign,
+    "resolve-deps" => sub { $resolve_deps = 1; },
+    "no-resolve-deps" => sub { $resolve_deps = 0; },
+    "keep-debootstrap-dir" => \$keep_debootstrap_dir,
+    "arch" => \$bootstrap_arch,
+    "verbose" => \$verbose,
+    "exclude=s" => \$exclude,
+    "include=s" => \$include,
+    "components" => \$components,
+    "keyring=s" => \$keyring)
+or usage_error("Error parsing command-line options");
 
-cat <<EOF
-I: Please add any additional APT sources to $TARGET/etc/apt/sources.list
-I: Successfully set up $SUITE chroot.
-I: Please add the following entry to /etc/schroot/schroot.conf:
-────────────────────────────────────────────────────────────────────────
-[$SUITE-sbuild]
+$include = add_items($include, "fakeroot", "build-essential");
+
+print "AV: $#ARGV\n";
+print "inc: $include\n";
+
+usage_error("Incorrect number of options") if ($#ARGV <2 || $#ARGV >3);
+
+my $suite = $ARGV[0];
+my $target = $ARGV[1];
+my $mirror = $ARGV[2];
+my $script = undef;
+
+$script = $ARGV[3] if $#ARGV == 3;
+
+if ($verbose) {
+    print "I: SUITE: $suite\n";
+    print "I: TARGET: $target\n";
+    print "I: MIRROR: $mirror\n";
+    print "I: SCRIPT: $script\n" if (defined($script));
+}
+
+my @args = ("--arch=$bootstrap_arch",
+	    "--variant=buildd");
+push @args, "--verbose" if $verbose;
+push @args, "--foreign" if $foreign;
+push @args, "--keep-debootstrap-dir" if $keep_debootstrap_dir;
+push @args, "--include=$include" if $include;
+push @args, "--exclude=$exclude" if $exclude;
+push @args, "--components=$components" if $components;
+push @args, "--keyring=$keyring" if $keyring;
+push @args, $resolve_deps ? "--resolve-deps" : "--no-resolve-deps";
+push @args, "$suite", "$target", "$mirror";
+push @args, "$script" if $script;
+
+if ($verbose) {
+    print "I: Running debootstrap " . join(' ',@args) . "\n";
+}
+
+# Run debootstrap with specified options.
+!system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
+
+# Set up minimal /etc/hosts.
+open(HOSTS, ">${target}/etc/hosts")
+    or die "Can't open ${target}/etc/hosts for writing";
+print HOSTS "127.0.0.1 $hostname localhost";
+close HOSTS or die "Can't close ${target}/etc/hosts";
+
+# Display /etc/hosts.
+print "I: Configured /etc/hosts:\n";
+dump_file("${target}/etc/hosts");
+
+# Display /etc/apt/sources.list.
+print "I: Configured APT /etc/apt/sources.list:\n";
+dump_file("${target}/etc/apt/sources.list");
+print "I: Please add any additional APT sources to ${target}/etc/apt/sources.list\n";
+
+# Write out schroot chroot configuration.
+my $chrootname = "${suite}-${bootstrap_arch}-sbuild";
+
+# TODO: Don't hardcode path
+my $SCHROOT_CONF =
+    new File::Temp( TEMPLATE => "$chrootname.XXXXXX",
+		    DIR => "/etc/schroot/chroot.d",
+		    UNLINK => 0)
+    or die "Can't open schroot configuration file: $!\n";
+
+print $SCHROOT_CONF <<"EOF";
+[$chrootname]
 type=directory
-description=Debian $SUITE autobuilder
-location=$TARGET
+description=Debian $suite/$bootstrap_arch autobuilder
+location=$target
 priority=3
 groups=root,sbuild
 root-groups=root,sbuild
 run-setup-scripts=true
 run-exec-scripts=true
-────────────────────────────────────────────────────────────────────────
-I: Run the add_sbuild_user script to add new sbuild users.
 EOF
+    # Needed to display file below.
+    $SCHROOT_CONF->flush();
 
-exit 0
+# Display schroot configuration.
+print "I: schroot chroot configuration written to $SCHROOT_CONF.\n";
+dump_file("$SCHROOT_CONF");
+print "I: Please rename and modify this file as required.\n";
+print "I: Successfully set up $suite chroot.\n";
+print "I: Run sbuild-adduser to add new sbuild users.\n";
+
+exit 0;
