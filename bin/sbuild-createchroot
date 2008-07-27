@@ -23,6 +23,7 @@
 
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild::Sysconfig qw($arch $hostname $version $release_date);
+use Sbuild qw(dump_file help_text version_text);
 use File::Temp ();
 
 package main;
@@ -69,24 +70,6 @@ sub add_items ($@) {
     return $ret;
 }
 
-sub dump_file ($) {
-    my $file = shift;
-
-    if (-r "$file" &&
-	open(SOURCES, "<$file")) {
-
-	print "   ┌────────────────────────────────────────────────────────────────────────\n";
-	while (<SOURCES>) {
-	    chomp;
-	    print "   │$_\n";
-	}
-	print "   └────────────────────────────────────────────────────────────────────────\n";
-	close(SOURCES) or print "Failed to close $file\n";
-    } else {
-	print "W: Failed to open $file\n";
-    }
-}
-
 our $bootstrap_arch = $arch;
 our $foreign = 0;
 our $include = '';
@@ -103,31 +86,8 @@ if (!defined($keyring) && -f '/etc/apt/trusted.gpg') {
 }
 
 GetOptions (
-    "h|help" => sub {
-	system("/usr/bin/man", "8", "sbuild-createchroot");
-	exit 0;
-    },
-
-    "V|version" => sub {
-	print <<"EOF";
-sbuild-createchroot (Debian sbuild) $version ($release_date)
-
-Written by Roman Hodek, James Troup, Ben Collins, Ryan Murray, Rick
-Younie, Francesco Paolo Lovergine, Michael Banck, and Roger Leigh
-
-Copyright © 1998-2000 Roman Hodek <roman\@hodek.net>
-          © 1998-1999 James Troup <troup\@debian.org>
-	  © 2003-2006 Ryan Murray <rmurray\@debian.org>
-	  © 2001-2003 Rick Younie <younie\@debian.org>
-	  © 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
-	  © 2005      Michael Banck <mbanck\@debian.org>
-	  © 2005-2008 Roger Leigh <rleigh\@debian.org>
-
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-EOF
-exit 0;
-    },
+    "h|help" => sub { help_text("8", "sbuild-createchroot"); },
+    "V|version" => sub {version_text("sbuild-createchroot"); },
 
     "foreign" => \$foreign,
     "resolve-deps" => sub { $resolve_deps = 1; },
@@ -137,7 +97,7 @@ exit 0;
     "verbose" => \$verbose,
     "exclude=s" => \$exclude,
     "include=s" => \$include,
-    "components" => \$components,
+    "components=s" => \$components,
     "keyring=s" => \$keyring)
 or usage_error("Error parsing command-line options");
 

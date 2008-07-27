@@ -22,6 +22,7 @@
 package Sbuild;
 
 use Sbuild::Conf;
+use Sbuild::Sysconfig;
 
 use strict;
 use POSIX;
@@ -36,7 +37,7 @@ BEGIN {
 
     @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
 		         version_compare binNMU_version parse_date
-		         isin copy);
+		         isin copy dump_file help_text version_text);
 }
 
 my $opt_correct_version_cmp;
@@ -53,6 +54,9 @@ sub binNMU_version ($$);
 sub parse_date ($);
 sub isin ($@);
 sub copy ($);
+sub dump_file ($);
+sub help_text ($$);
+sub version_text ($);
 
 sub version_less ($$) {
 	my $v1 = shift;
@@ -240,6 +244,55 @@ sub copy ($) {
     }
 
     return $new;
+}
+
+sub dump_file ($) {
+    my $file = shift;
+
+    if (-r "$file" &&
+	open(SOURCES, "<$file")) {
+
+	print "   ┌────────────────────────────────────────────────────────────────────────\n";
+	while (<SOURCES>) {
+	    chomp;
+	    print "   │$_\n";
+	}
+	print "   └────────────────────────────────────────────────────────────────────────\n";
+	close(SOURCES) or print "Failed to close $file\n";
+    } else {
+	print "W: Failed to open $file\n";
+    }
+}
+
+sub help_text ($$) {
+    my $section = shift;
+    my $page = shift;
+
+    system("/usr/bin/man", "$section", "$page");
+    exit 0;
+}
+
+sub version_text ($) {
+    my $program = shift;
+
+    print <<"EOF";
+$program (Debian sbuild) $Sbuild::Sysconfig::version ($Sbuild::Sysconfig::release_date)
+
+Written by Roman Hodek, James Troup, Ben Collins, Ryan Murray, Rick
+Younie, Francesco Paolo Lovergine, Michael Banck, and Roger Leigh
+
+Copyright © 1998-2000 Roman Hodek <roman\@hodek.net>
+          © 1998-1999 James Troup <troup\@debian.org>
+	  © 2003-2006 Ryan Murray <rmurray\@debian.org>
+	  © 2001-2003 Rick Younie <younie\@debian.org>
+	  © 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
+	  © 2005      Michael Banck <mbanck\@debian.org>
+	  © 2005-2008 Roger Leigh <rleigh\@debian.org>
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+EOF
+    exit 0;
 }
 
 1;
