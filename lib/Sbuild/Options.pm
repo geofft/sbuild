@@ -26,7 +26,7 @@ use strict;
 use warnings;
 
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild qw(isin);
+use Sbuild qw(isin help_text version_text usage_error);
 use Sbuild::Conf;
 
 BEGIN {
@@ -67,6 +67,7 @@ sub new () {
     $self->{'GCC Snapshot'} = 0;
 
     if (!$self->parse_options()) {
+	usage_error("sbuild", "Error parsing command-line options");
 	return undef;
     }
     return $self;
@@ -92,7 +93,9 @@ sub set (\%$$) {
 sub parse_options (\%) {
     my $self = shift;
 
-    return GetOptions ("arch=s" => \$self->{'User Arch'},
+    return GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
+		       "V|version" => sub {version_text("sbuild"); },
+		       "arch=s" => \$self->{'User Arch'},
 		       "A|arch-all" => sub {
 			   $self->set('Build Arch All', 1);
 		       },
