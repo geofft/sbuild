@@ -21,16 +21,16 @@
 #
 #######################################################################
 
+use strict;
+use warnings;
+
+use POSIX;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild::Sysconfig qw($arch $hostname $version $release_date);
+use Sbuild::Sysconfig qw($arch $hostname);
 use Sbuild qw(dump_file help_text version_text usage_error);
 use File::Temp ();
 
 package main;
-
-use strict;
-use warnings;
-use POSIX;
 
 sub add_items ($@);
 sub dump_file ($);
@@ -94,7 +94,7 @@ or usage_error("sbuild-createchroot", "Error parsing command-line options");
 $include = add_items($include, "fakeroot", "build-essential");
 
 usage_error("sbuild-createchroot",
-	    "Incorrect number of options") if ($#ARGV <2 || $#ARGV >3);
+	    "Incorrect number of options") if (@ARGV <3 || @ARGV >4);
 
 my $suite = $ARGV[0];
 my $target = $ARGV[1];
