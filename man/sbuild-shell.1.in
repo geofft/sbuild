@@ -1,4 +1,4 @@
-.\" Copyright © 2005-2007  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -18,13 +18,22 @@
 sbuild\-shell \- run a shell in an sbuild chroot
 .SH SYNOPSIS
 .BR sbuild\-shell
-.B chroot
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.B CHROOT
 .SH DESCRIPTION
-\fBsbuild\-shell\fR runs and interactive shell (\fI/bin/sh\fP) inside the
+\fBsbuild\-shell\fR runs an interactive shell (\fI/bin/sh\fP) inside the
 specified chroot.
 .SH OPTIONS
+.SS Actions
 .TP
-.I chroot
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.SS Chroot selection
+.TP
+.I CHROOT
 The chroot to use.  Note that \[oq]o\[cq], \[oq]s\[cq],
 \[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
 \[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
@@ -32,7 +41,7 @@ and \[oq]experimental\[cq], respectively.
 .SH EXAMPLES
 To run a shell in the \fIunstable\fP chroot:
 .PP
-\f[CR]% \f[CB]sbuild\-shell unstable\fP\fP
+\f[CR]% \f[CB]sbuild\-shell unstable\fP\fP\[CR]
 .br
 .SH AUTHORS
 .nf
@@ -40,7 +49,7 @@ Roger Leigh.
 .fi
 .SH COPYRIGHT
 .nf
-Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2006\[en]2008 Roger Leigh <rleigh@debian.org>.
 .fi
 .SH "SEE ALSO"
 .BR sbuild (1).
