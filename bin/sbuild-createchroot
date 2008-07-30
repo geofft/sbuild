@@ -23,7 +23,7 @@
 
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild::Sysconfig qw($arch $hostname $version $release_date);
-use Sbuild qw(dump_file help_text version_text);
+use Sbuild qw(dump_file help_text version_text usage_error);
 use File::Temp ();
 
 package main;
@@ -32,18 +32,8 @@ use strict;
 use warnings;
 use POSIX;
 
-sub usage_error ($);
 sub add_items ($@);
 sub dump_file ($);
-
-# Print an error message about incorrect command-line options
-sub usage_error ($) {
-    my $message = shift;
-
-    print STDERR "E: $message\n";
-    print STDERR "I: Run “sbuild-createchroot --help” to list usage example and all available options\n";
-    exit 1;
-}
 
 # Add items to the start of a comma-separated list, and remove the
 # items from later in the list if they were already in the list.
@@ -99,14 +89,12 @@ GetOptions (
     "include=s" => \$include,
     "components=s" => \$components,
     "keyring=s" => \$keyring)
-or usage_error("Error parsing command-line options");
+or usage_error("sbuild-createchroot", "Error parsing command-line options");
 
 $include = add_items($include, "fakeroot", "build-essential");
 
-print "AV: $#ARGV\n";
-print "inc: $include\n";
-
-usage_error("Incorrect number of options") if ($#ARGV <2 || $#ARGV >3);
+usage_error("sbuild-createchroot",
+	    "Incorrect number of options") if ($#ARGV <2 || $#ARGV >3);
 
 my $suite = $ARGV[0];
 my $target = $ARGV[1];

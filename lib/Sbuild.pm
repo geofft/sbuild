@@ -37,7 +37,8 @@ BEGIN {
 
     @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
 		         version_compare binNMU_version parse_date
-		         isin copy dump_file help_text version_text);
+		         isin copy dump_file help_text version_text
+		         usage_error);
 }
 
 my $opt_correct_version_cmp;
@@ -57,6 +58,7 @@ sub copy ($);
 sub dump_file ($);
 sub help_text ($$);
 sub version_text ($);
+sub usage_error ($$);
 
 sub version_less ($$) {
 	my $v1 = shift;
@@ -294,5 +296,16 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 EOF
     exit 0;
 }
+
+# Print an error message about incorrect command-line options
+sub usage_error ($$) {
+    my $program = shift;
+    my $message = shift;
+
+    print STDERR "E: $message\n";
+    print STDERR "I: Run “$program --help” to list usage example and all available options\n";
+    exit 1;
+}
+
 
 1;
