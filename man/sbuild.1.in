@@ -20,6 +20,7 @@
 sbuild \- build debian packages from source
 .SH SYNOPSIS
 .B sbuild
+[ \-h/\-\-help ] [\-V/\-\-version ]
 [ \-a/\-\-add-depends=<dependency-line> ] [ \-A/\-\-arch\-all ]
 [ \-b/\-\-batch] [\-d/\-\-dist=<distribution> ] [\-\-arch=<architecture> ]
 [ \-D/\-\-debug ]
@@ -72,6 +73,12 @@ of the specified distribution will be used; schroot uses a chroot named
 \fI$distribution\-$arch-sbuild\fP, \fI$distribution\-sbuild\fP,
 \fI$distribution\-$arch\fP or \fI$distribution\fP, in that order of preference.
 .SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
 .TP
 .IR \-a , "\-\-add\-depends=<dependency-line>"
 This option adds some source dependency information for a package. It can be
