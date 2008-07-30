@@ -34,3 +34,9 @@ namespace needed.
 Are 'Build Start Time' and 'Pkg Start Time' different?
 
 sbuild-setup references ~/build, even though not required.
+
+sbuild-abort: rewrite in perl
+
+bin/*: Add --help and --version
+
+All programs must use Getopt::Long for options parsing
