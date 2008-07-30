@@ -21,18 +21,19 @@
 
 use strict;
 use warnings;
+
+use Getopt::Long;
+use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
-sub usage ();
+GetOptions (
+    "h|help" => sub { help_text("1", "sbuild-unhold"); },
+    "V|version" => sub {version_text("sbuild-unhold"); })
+or usage_error("sbuild-unhold", "Error parsing command-line options");
 
-sub usage () {
-    print STDERR "Usage: $0 <chroot> package [package ...]\n";
-    exit 1;
-}
-
-usage() if (@ARGV < 2);
+usage_error("sbuild-unhold", "Incorrect number of options") if (@ARGV < 2);
 
 my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
 

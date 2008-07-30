@@ -18,24 +18,34 @@
 sbuild\-hold \- run a hold in an sbuild chroot
 .SH SYNOPSIS
 .BR sbuild\-hold
-.B chroot
-.RB " [ " package1 " [ " package2 " [ " packagen ]]]]
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.B CHROOT
+.RB " [ " PACKAGE1 " [ " PACKAGE2 " [ " PACKAGE\f[BI]n\fP ]]]]
 .br
 .BR sbuild\-unhold
-.B chroot
-.RB " [ " package1 " [ " package2 " [ " packagen ]]]]
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.B CHROOT
+.RB " [ " PACKAGE1 " [ " PACKAGE2 " [ " PACKAGE\f[BI]n\fP ]]]]
 .SH DESCRIPTION
 \fBsbuild\-hold\fR and \fBsbuild\-unhold\fR set and unset the dpkg hold status
 for the specified packages, respectively.
 .SH OPTIONS
+.SS Actions
 .TP
-.I chroot
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.SS Chroot and package selection
+.TP
+.B CHROOT
 The chroot to use.  Note that \[oq]o\[cq], \[oq]s\[cq],
 \[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
 \[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
 and \[oq]experimental\[cq], respectively.
 .TP
-.I package
+.B PACKAGE
 The packages for which the hold status is to be changed.
 .SH EXAMPLES
 To hold the libc6 package in the \fIunstable\fP chroot:
