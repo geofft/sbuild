@@ -18,8 +18,9 @@
 sbuild\-checkpackages \- check the package list in a sbuild chroot against a reference list
 .SH SYNOPSIS
 .BR sbuild\-checkpackages
-.B chroot
-.BR \-\-list " \[or] " \-\-set
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version
+.RB " \[or] " \-l \[or] \-\-list " \[or] " \-s \[or] \-\-set ]
+.B CHROOT
 .SH DESCRIPTION
 \fBsbuild\-checkpackages\fR compares the package list in an sbuild chroot (dpkg
 status file) against a reference list of packages.  The differences between the
@@ -31,18 +32,26 @@ initially in order to have a baseline reference for comparison.  The chroot
 should only include \fBessential\fP and \fBbuild-essential\fP packages, plus
 the extra packages that sbuild needs such as \fBfakeroot\fP.
 .SH OPTIONS
+.SS Actions
 .TP
-.I chroot
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.TP
+.BR \-l ", " \-\-list
+List the differences between the installed packages and the reference file.
+.TP
+.BR \-s ", " \-\-set
+Set the reference file from the currently installed package list.
+.SS Chroot selection
+.TP
+.B CHROOT
 The chroot to use.  Note that \[oq]o\[cq], \[oq]s\[cq],
 \[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
 \[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
 and \[oq]experimental\[cq], respectively.
-.TP
-.I \-\-list
-List the differences between the installed packages and the reference file.
-.TP
-.I \-\-set
-Set the reference file from the currently installed package list.
 .SH EXAMPLES
 To set the reference file in the \fIunstable\fP chroot:
 .PP

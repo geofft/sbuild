@@ -21,22 +21,27 @@
 
 use strict;
 use warnings;
+
 use locale;
 use POSIX qw(locale_h);
+use Getopt::Long;
+use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Conf qw($package_checklist);
 use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
-sub usage ();
+our $mode = undef;
 
-sub usage () {
-    print STDERR "Usage: $0 <chroot> [--list|--set]\n";
-    exit 1;
-}
+GetOptions (
+    "h|help" => sub { help_text("1", "sbuild-checkpackages"); },
+    "V|version" => sub {version_text("sbuild-checkpackages"); },
+    "l|list" => sub { $mode = "list"; },
+    "s|set" => sub { $mode = "set"; })
+or usage_error("sbuild-checkpackages", "Error parsing command-line options");
 
-usage() if (@ARGV != 2 ||
-	    ($ARGV[1] ne "--list" && $ARGV[1] ne "--set") );
+usage_error("sbuild-checkpackages", "--list or --set must be specified")
+    if (@ARGV != 1 || !defined($mode));
 
 my $chroot = $ARGV[0];
 my $cmd = $ARGV[1];
