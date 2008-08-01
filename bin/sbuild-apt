@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# Copyright © 2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006-2008 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,18 +20,19 @@
 
 use strict;
 use warnings;
+
+use Getopt::Long;
+use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup);
 
 package main;
 
-sub usage ();
+GetOptions (
+    "h|help" => sub { help_text("1", "sbuild-apt"); },
+    "V|version" => sub {version_text("sbuild-apt"); })
+or usage_error("sbuild-apt", "Error parsing command-line options");
 
-sub usage () {
-    print STDERR "Usage: $0 <chroot> apt-get|apt-cache args\n";
-    exit 1;
-}
-
-usage() if ($#ARGV < 2);
+usage_error("sbuild-apt", "Incorrect number of options") if (@ARGV < 2);
 
 my $command = $ARGV[1];
 if ($command eq "apt-get") {
@@ -39,8 +40,8 @@ if ($command eq "apt-get") {
 } elsif ($command eq "apt-cache") {
     $command = $Sbuild::Conf::apt_cache;
 } else {
-    print STDERR "Bad command $command.  Allowed commands: apt-get or apt-cache\n";
-    exit 1;
+    usage_error("sbuild-apt",
+		"Bad command $command.  Allowed commands: apt-get or apt-cache\n");
 }
 
 $Sbuild::Conf::cwd = "/";
