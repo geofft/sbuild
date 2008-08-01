@@ -1,5 +1,5 @@
 .\" Copyright © 1998  James Troup <james@nocrew.org>
-.\" Copyright © 2006  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2006-2008  Roger Leigh <rleigh@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -19,9 +19,12 @@
 sbuild\-stats \- display or alter database of package build times/space
 .SH SYNOPSIS
 .B sbuild\-stats
-.B avg\-pkg\-build\-time
-.B avg\-pkg\-build\-space
-[\-s/\-\-space] [\-a/\-\-add <package name> <time>] [\-\-delete <package name>] [\-\-dump] [\-t/\-\-top]
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version
+.RB " \[or] " "\-a PACKAGE TIME" \[or] "\-\-add PACKAGE TIME"
+.RB " \[or] [" \-d \[or] \-\-delete " \[or] " \-\-dump ]
+.BR PACKAGE1 " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
+.RB [ \-t \[or] \-\-time " \[or] " \-s \[or] \-\-space ]
+.RB [ \-t \[or] \-\-top ]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version is
 maintained by the \fBbuildd-tools\fP project developers on Alioth
@@ -40,7 +43,14 @@ display the entire contents of the database.
 The database files are only used if they already exist.  See
 \fIREADME.Debian\fP for more information.
 .PP
-.SS OPTIONS
+.SH OPTIONS
+.SS Actions
+.TP
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
 .TP
 .IR \-a , "\-\-add <package name> <time>"
 Add an entry for a package. <time> is in the format HH:MM:SS, where
@@ -51,12 +61,14 @@ Remove the data for a package from the database.
 .TP
 .IR "\-\-dump"
 Output the contents of the database in unprocessed form.
+.SS Database selection
 .TP
 .IR \-t , "\-\-time"
 Display build-time database.
 .TP
 .IR \-s , "\-\-space"
 Display build-space database.
+.SS Sorting
 .TP
 .IR "\-\-top"
 Sort the output by build time; longest build first.
@@ -81,7 +93,6 @@ To view the average build space for the \fIkoffice\fP package:
 \f[CR]% \f[CB]sbuild-stats --space koffice\fP\fP
 .br
 koffice:                1597724k (1597724k latest)
-\f[CR]% \f[CB]sbuild\-update unstable\fP\fP
 .br
 .SH AUTHORS
 .nf
@@ -90,7 +101,7 @@ Roger Leigh.
 .fi
 .SH COPYRIGHT
 .nf
-Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2006\[en]2008 Roger Leigh <rleigh@debian.org>.
 Copyright \[co] 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>.
 .fi
 .SH "SEE ALSO"

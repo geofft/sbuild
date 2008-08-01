@@ -2,7 +2,7 @@
 #
 # sbuild-stats: display package build statistics
 # Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
-# Copyright © 2006-2007 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006-2008 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,13 +22,16 @@
 
 package conf;
 use Sbuild::Conf;
+
 package main;
 
 use strict;
 use warnings;
+
 use GDBM_File;
 use File::Basename;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
+use Sbuild qw(help_text version_text usage_error);
 
 package main;
 
@@ -49,16 +52,17 @@ if (basename($0) =~ /avg-pkg-build-time$/) {
     $db = "space";
 }
 
-exit 1 if !GetOptions
-    (
-     "t|time" => sub { $db = "time"; },
-     "s|space" => sub { $db = "space"; },
-     "d|delete" => sub { $mode = "del"; },
-     "dump" => sub { $mode = "dump"; },
-     "a|add" => sub { $mode = "add"; },
-     "top+" => \$topmode,
-     "f|db-file=s" => \$db_file
-    );
+GetOptions (
+    "h|help" => sub { help_text("1", "sbuild-stats"); },
+    "V|version" => sub {version_text("sbuild-stats"); },
+    "t|time" => sub { $db = "time"; },
+    "s|space" => sub { $db = "space"; },
+    "d|delete" => sub { $mode = "del"; },
+    "dump" => sub { $mode = "dump"; },
+    "a|add" => sub { $mode = "add"; },
+    "top+" => \$topmode,
+    "f|db-file=s" => \$db_file)
+or usage_error("sbuild-stats", "Error parsing command-line options");
 
 if ($db eq "time") {
     $db_file = $conf::avg_time_db;
@@ -67,7 +71,7 @@ if ($db eq "time") {
 } elsif ($db_file ne "unspec") {
 # Set by hand.
 } else {
-    die "Database not specified";
+    usage_error("sbuild-stats", "Database not specified");
 }
 
 if ($mode eq "add") {
@@ -84,12 +88,12 @@ if (!tie %db, 'GDBM_File', $db_file, $open_mode, 0664) {
 }
 
 if ($mode eq "del" && !@ARGV) {
-    die "No packages given for --delete.";
+    usage_error("sbuild-stats", "No packages given for --delete");
 }
 
 if ($mode eq "add") {
     if (@ARGV != 2 || $ARGV[1] !~ /^[\d.:]+$/) {
-	die "Args for --add must be package and a build time";
+	usage_error("sbuild-stats", "Arguments for --add must be package and a build time or space");
     }
     my($pkg,$t) = @ARGV;
 
