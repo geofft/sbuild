@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# Copyright © 2006-2007 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006-2008 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,14 +23,15 @@ use warnings;
 
 package main;
 
-sub usage ();
+use Getopt::Long;
+use Sbuild qw(help_text version_text usage_error);
 
-sub usage () {
-    print STDERR "Usage: $0 <username>\n";
-    exit 1;
-}
+GetOptions (
+    "h|help" => sub { help_text("8", "sbuild-adduser"); },
+    "V|version" => sub {version_text("sbuild-adduser"); })
+or usage_error("sbuild-adduser", "Error parsing command-line options");
 
-usage() if (@ARGV < 1);
+usage_error("sbuild-adduser", "Incorrect number of options") if (@ARGV < 1);
 
 my $status = 0;
 

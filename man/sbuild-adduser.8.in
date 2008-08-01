@@ -1,4 +1,4 @@
-.\" Copyright © 2005-2007  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 sbuild\-adduser \- add an sbuild user
 .SH SYNOPSIS
 .B sbuild\-adduser
-.B user1
-.RB "[ " user2 " [ " user\f[BI]n\fP... ]]
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.BR USER1 " [" USER2 " [" USER\f[BI]n\fP... ]]
 .SH DESCRIPTION
 \fBsbuild\-adduser\fR adds the specified users to the \fIsbuild\fP group,
 granting them the privelege to build packages with
@@ -34,8 +34,16 @@ build-dependencies inside the chroot.  This is normally done using the
 grant finer-grained permissions, for example to restrict individual users to
 particular chroots.
 .SH OPTIONS
+.SS Actions
 .TP
-.I user
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.SS User selection
+.TP
+.B USER
 The user to be granted sbuild access.
 .SH EXAMPLES
 To allow user \fIrleigh\fP sbuild access:
@@ -48,7 +56,7 @@ Roger Leigh.
 .fi
 .SH COPYRIGHT
 .nf
-Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2006\[en]2008 Roger Leigh <rleigh@debian.org>.
 .fi
 .SH "SEE ALSO"
 .BR sbuild (1),
