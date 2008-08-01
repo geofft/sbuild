@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# Copyright © 2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006-2008 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,18 +20,19 @@
 
 use strict;
 use warnings;
+
+use Getopt::Long;
+use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup);
 
 package main;
 
-sub usage ();
+GetOptions (
+    "h|help" => sub { help_text("1", "sbuild-update"); },
+    "V|version" => sub {version_text("sbuild-update"); })
+or usage_error("sbuild-update", "Error parsing command-line options");
 
-sub usage () {
-    print STDERR "Usage: $0 <chroot> [<chroot> ...]\n";
-    exit 1;
-}
-
-usage() if (@ARGV < 1);
+usage_error("sbuild-update", "Incorrect number of options") if (@ARGV < 1);
 
 $Sbuild::Conf::cwd = "/";
 
