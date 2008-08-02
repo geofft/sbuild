@@ -84,9 +84,8 @@ sub main () {
     $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
 
     if (!defined($conf::maintainer_name) &&
-	!defined($conf::uploader_name) &&
-	!defined($conf::key_id) ) {
-	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k\n";
+	$options->get('binNMU')) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
 
 # variables for scripts:
@@ -123,7 +122,7 @@ sub main () {
 	    if ($options->get('binNMU')) {
 		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
 		$tpkg = $1 . "_" . binNMU_version($2,$options->get('binNMU Version'));
-		$options->get('binNMU Name') = $tpkg;
+		$options->set('binNMU Name', $tpkg);
 		$tpkg .= $3;
 	    }
 

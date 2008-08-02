@@ -665,7 +665,7 @@ EOF
 	$changes = "${pkg}_".
 	    ($self->get_option('binNMU') ?
 	     binNMU_version($self->{'SVersion'},
-			    $self->get_options('binNMU Version')) :
+			    $self->get_option('binNMU Version')) :
 	     $self->{'SVersion'}).
 	    "_$self->{'Arch'}.changes";
 	my @cfiles;
