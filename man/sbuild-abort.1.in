@@ -1,4 +1,4 @@
-.\" Copyright © 2005-2007  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -18,13 +18,22 @@
 sbuild\-abort \- abort the current sbuild build
 .SH SYNOPSIS
 .BR sbuild\-abort
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .SH DESCRIPTION
 \fBsbuild\-abort\fR kills the currently running \fIdpkg\-buildpackage\fP
 process.  It will not kill if more than one process is found.
+.SH OPTIONS
+.SS Actions
+.TP
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
 .SH EXAMPLES
 To abort the current build:
 .PP
-\f[CR]% \f[CB]sbuild\-abort\fP\fP
+\f[CR]% \f[CB]sbuild\-abort\fP\fP\[CR]
 .br
 .SH AUTHORS
 .nf
@@ -36,7 +45,7 @@ Roger Leigh.
 .nf
 Copyright \[co] 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>.
 Copyright \[co] 2003 Ryan Murray <rmurray@debian.org>.
-Copyright \[co] 2006\[en]2007 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2006\[en]2008 Roger Leigh <rleigh@debian.org>.
 .fi
 .SH "SEE ALSO"
 .BR sbuild (1).
