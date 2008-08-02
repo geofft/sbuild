@@ -134,7 +134,8 @@ sub close_log () {
 sub open_pkg_log ($$$) {
     $pkg_name = shift;
     $pkg_distribution = shift;
-    my $date = shift;
+    my $pkg_start_time = shift;
+    my $date = strftime("%Y%m%d-%H%M", localtime($pkg_start_time));
 
     if (!defined $log_dir_available) {
 	if (! -d $Sbuild::Conf::log_dir &&
@@ -150,7 +151,7 @@ sub open_pkg_log ($$$) {
 	open( main::PLOG, ">&STDOUT" );
     }
     else {
-	$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg_name}_$date";
+	$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg_name}-$date";
 	log_symlink($pkg_logfile,
 		    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
 	log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");

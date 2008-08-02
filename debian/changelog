@@ -8,8 +8,11 @@ sbuild (0.57.5-1) unstable; urgency=low
     to disable APT package authentication, which is now enabled by default
     (Closes: #492327).  Thanks to Enrico Zini for this patch.
   * Sbuild::Options: Use isin from Sbuild.pm (Closes: #492577).
+  * Sbuild::Log: Add version number and correctly-formatted date to the
+    package log name instead of a raw time_t (Closes: #493150).
+    Additionally add user and architecture to the name.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Jul 2008 13:43:51 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 02 Aug 2008 20:17:49 +0100
 
 sbuild (0.57.4-1) unstable; urgency=low
 
