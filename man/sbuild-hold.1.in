@@ -20,12 +20,12 @@ sbuild\-hold \- run a hold in an sbuild chroot
 .BR sbuild\-hold
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .B CHROOT
-.RB " [ " PACKAGE1 " [ " PACKAGE2 " [ " PACKAGE\f[BI]n\fP ]]]]
+.RB "[" PACKAGE1 " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP ]]]
 .br
 .BR sbuild\-unhold
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .B CHROOT
-.RB " [ " PACKAGE1 " [ " PACKAGE2 " [ " PACKAGE\f[BI]n\fP ]]]]
+.RB "[" PACKAGE1 " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP ]]]
 .SH DESCRIPTION
 \fBsbuild\-hold\fR and \fBsbuild\-unhold\fR set and unset the dpkg hold status
 for the specified packages, respectively.

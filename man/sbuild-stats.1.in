@@ -52,25 +52,26 @@ Display this manual.
 .BR \-V ", " \-\-version
 Print version information.
 .TP
-.IR \-a , "\-\-add <package name> <time>"
+.BR \-a ", " "\-\-add PACKAGE TIME"
 Add an entry for a package. <time> is in the format HH:MM:SS, where
 hours and minutes are optional.
 .TP
-.IR "\-\-delete <package name>"
+.BR\-d ", " "\-\-delete PACKAGE1" " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
 Remove the data for a package from the database.
 .TP
-.IR "\-\-dump"
-Output the contents of the database in unprocessed form.
+.BR \-\-dump " [" PACKAGE1 " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
+Output the contents of the database in unprocessed form.  If no packages are
+given, the entire database will be output.
 .SS Database selection
 .TP
-.IR \-t , "\-\-time"
+.BR \-t ", " "\-\-time"
 Display build-time database.
 .TP
-.IR \-s , "\-\-space"
+.BR \-s ", " "\-\-space"
 Display build-space database.
 .SS Sorting
 .TP
-.IR "\-\-top"
+.BR "\-\-top"
 Sort the output by build time; longest build first.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\-stats\fR:

@@ -21,7 +21,7 @@ sbuild\-apt \- run apt-get or apt-cache in an sbuild chroot
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .B CHROOT
 .RB ( apt\-get \[or] apt\-cache )
-.RB " [ " ARG1 " [ " ARG2 " [ " "ARG\f[BI]n\fP..." ]]]
+.RB "[" ARG1 " [" ARG2 " [" "ARG\f[BI]n\fP..." ]]]
 .SH DESCRIPTION
 \fBsbuild\-apt\fR runs
 .BR apt\-get (1)
