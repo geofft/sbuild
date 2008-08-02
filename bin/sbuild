@@ -307,7 +307,7 @@ sub shutdown ($) {
     # next: kill currently running command (if one)
     if ($main::build_object->{'Sub PID'}) {
 	print "Killing $main::build_object->{'Sub Task'} subprocess $main::build_object->{'Sub PID'}\n";
-	run_command("perl -e \"kill( \\\"TERM\\\", $main::build_object->{'Sub PID'} )\"", "root", 1, 0, '/');
+	$main::build_object->{'Session'}->run_command("perl -e \"kill( \\\"TERM\\\", $main::build_object->{'Sub PID'} )\"", "root", 1, 0, '/');
     }
     $main::build_object->remove_srcdep_lock_file();
 
