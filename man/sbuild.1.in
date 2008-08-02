@@ -20,20 +20,25 @@
 sbuild \- build debian packages from source
 .SH SYNOPSIS
 .B sbuild
-[ \-h/\-\-help ] [\-V/\-\-version ]
-[ \-a/\-\-add-depends=<dependency-line> ] [ \-A/\-\-arch\-all ]
-[ \-b/\-\-batch] [\-d/\-\-dist=<distribution> ] [\-\-arch=<architecture> ]
-[ \-D/\-\-debug ]
-[ \-f/\-\-force-depends=<dependency-line> ]
-[ \-m/\-\-maintainer=<maintainer> ]
-[ \-e/\-\-uploader=<uploader> ]
-[ \-k/\-\-keyid=<key> ]
-[ \-\-purge=<mode>] [ \-s/\-\-source ] [ \-\-force\-orig\-source ]
-[ \-v/\-\-verbose ] [ \-q/\-\-quiet ]
-[ \-\-make\-binNMU=<entry> ]
-[ \-\-binNMU=<version> ]
-[ \-\-nolog ]
-package-to-build_x.y-z(.dsc) [ ... ]
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.RB [ \-v \[or] \-\-verbose " \[or] " \-q \[or] \-\-quiet ]
+.RB [ \-D \[or] \-\-debug ]
+.RB [ \-A \[or] \-\-arch\-all ]
+.RB [ \-d \[or] \-\-dist=\fIdistribution\fP ]
+.RB [ \-\-arch=\fIarchitecture\fP ]
+.RB [ \-s \[or] \-\-source ]
+.RB [ \-\-force\-orig\-source ]
+.RB [ \-\-make\-binNMU=\fIchangelog-entry\fP ]
+.RB [ \-\-binNMU=\fINMU-version\fP ]
+.RB [ \-a \[or] \-\-add-depends=\fIdependency-line\fP ]
+.RB [ \-f \[or] \-\-force-depends=\fIdependency-line\fP ]
+.RB [ \-m \[or] \-\-maintainer=\fImaintainer\fP ]
+.RB [ \-e \[or] \-\-uploader=\fIuploader\fP ]
+.RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
+.RB [ \-\-purge=\fPpurge-mode\fP ]
+.RB [ \-b \[or] \-\-batch]
+.RB [ \-\-nolog ]
+.BR PACKAGE1_VERSION[.dsc] " [" PACKAGE2_VERSION[.dsc] " [" PACKAGE\f[BI]n\fP_VERSION[.dsc] ]]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version
 is maintained by the \fBbuildd-tools\fP project developers on Alioth
@@ -80,102 +85,102 @@ Display this manual.
 .BR \-V ", " \-\-version
 Print version information.
 .TP
-.IR \-a , "\-\-add\-depends=<dependency-line>"
+.BR \-a ", " "\-\-add\-depends=\fIdependency-line\fP"
 This option adds some source dependency information for a package. It can be
 given more than one time with accumulating effect. The argument is a line of
 source dependencies in the same format as in
 \fI/var/lib/sbuild/source\-dependencies\fR. The given dependencies are appended
 to the src-deps from source\-dependencies\-* files or package src-deps, resp.
 .TP
-.IR "\-\-arch=<architecture>"
+.BR "\-\-arch=\fIarchitecture\fP"
 Build using the architecture specified.  A chroot named
 \fI$distribution\-$arch-sbuild\fP or \fI$distribution\-arch\fP is searched for,
 in that order of preference.  The chroot must be installed and configured
 appropriately to build as that architecture, e.g. using
 \fIpersonality=linux32\fP to build i386 packages on an amd64 system.
 .TP
-.IR \-A , "\-\-arch\-all"
+.BR \-A ", " "\-\-arch\-all"
 Also build Architecture: all packages, i.e. use dpkg\-buildpackage \-b
 instead of \-B.
 .TP
-.IR \-b , "\-\-batch"
+.BR \-b ", " "\-\-batch"
 Operate in batchmode, i.e. write a build-progress file during execution
 and files on shutdown to facilitate a clean restart.
 .TP
-.IR \-c , "\-\-chroot"
+.BR \-c ", " "\-\-chroot"
 Use the specified chroot. If not specified, the default is the first of
 \fI$distribution\-$arch\-sbuild\fP, \fI$distribution\-sbuild\fP,
 \fI$distribution\-$arch\fP or \fI$distribution\fP that exists.
 .TP
-.IR \-C , "\-\-check\-depends\-algorithm=<algorithm>"
+.BR \-C ", " "\-\-check\-depends\-algorithm=\fIalgorithm\fP"
 Selects the algorithm to check for build dependencies. The default algorithm
 (\[oq]first-only\[cq]) just checks the first package, even if there are
 alternative dependencies available. The second algorithm
 (\[oq]alternatives\[cq]) also tries to satisfy the build dependencies using
 these alternatives.
 .TP
-.IR \-d , "\-\-dist=<distribution>"
+.BR \-d ", " "\-\-dist=\fIdistribution\fP"
 Fetch source packages from specified distribution.
 .TP
-.IR \-f , "\-\-force\-depends=<dependency-line>"
+.BR \-f ", " "\-\-force\-depends=\fIdependency-line\fP"
 This option overrides source dependency information for a package. It
 can be given more than one time with accumulating effect. The argument
 is a line of source dependencies in the same format as in
 \fI/var/lib/sbuild/source\-dependencies\fR.
 .TP
-.IR \-D , "\-\-debug"
+.BR \-D ", " "\-\-debug"
 Enable debug output.
 .TP
-.IR "\-\-apt\-update"
+.BR "\-\-apt\-update"
 Run apt-get update in the chroot before executing the build.
 .TP
-.IR \-m , "\-\-maintainer=<maintainer>"
+.BR \-m ", " "\-\-maintainer=\fImaintainer\fP"
 Passed to dpkg\-genchanges and is used to set the Maintainer: field in
 the .changes file(s).
 .TP
-.IR \-e , "\-\-uploader=<maintainer>"
+.BR \-e ", " "\-\-uploader=\fIuploader\fP"
 Passed to dpkg\-genchanges and is used to set the Changed\-by: field in
 the .changes file(s).
 .TP
-.IR \-k , "\-\-keyid=<maintainer>"
+.BR \-k ", " "\-\-keyid=\fIkey-id\fP"
 Passed to dpkg\-genchanges and is used to set the key to sign the .changes
 file(s).  Default is not using any key.
 .TP
-.IR \-n , "\-\-nolog"
+.BR \-n ", " "\-\-nolog"
 Do not create a package log file in the $log_dir directory and no
 build log file, but print everything to stdout. Also do not send any
 log mails.
 .TP
-.IR \-p , "\-\-purge=<mode>"
-\fImode\fR decides if to delete the build directory. Possible values
-are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
+.BR \-p ", " "\-\-purge=\fIpurge-mode\fP"
+\fIpurge-mode\fR determines if the build directory will be deleted after a
+build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .TP
-.IR \-s , "\-\-source"
+.BR \-s ", " "\-\-source"
 Also build source package, i.e. use dpkg\-buildpackage without \-B.
 .TP
-.IR "\-\-force\-orig\-source"
+.BR "\-\-force\-orig\-source"
 When used with in conjunction with \-s, this option forces the inclusion of the
 orig.tar.gz file in the generated .changes file, even in cases where it would
 not normally be included, i.e. use dpkg\-buildpackage \-sa.
 .TP
-.IR \-v , "\-\-verbose"
+.BR \-v ", " "\-\-verbose"
 Be verbose, i.e. all information goes to stdout as well as to the log files.
 .TP
-.IR \-q , "\-\-quiet"
+.BR \-q ", " "\-\-quiet"
 Be quiet.  This is the opposite of \-\-verbose.
 .TP
-.IR "\-\-make\-binNMU=<entry>"
+.BR "\-\-make\-binNMU=\fIchangelog-entry\fP"
 With this option, \fBsbuild\fR will create a new changelog entry in
 debian/changelog of every package built. The version number will be in the
 format for binary-only NMUs (see \-\-binNMU); the maintainer is set to the
-maintainer name configured for \fBsbuild\fR. The \fIentry\fR parameter will be
-used as a changelog entry after a fixed one \[lq]Binary-only non-maintainer
-upload for ARCH -- no source changes\[rq]. Please note that the versions in the
-\fIpackage-to-build\fR arguments still have to be the unmodified (non-NMU ones)
-so that sources can be found. The version number in log files and mails will be
-modified by \fBsbuild\fR automatically.
+maintainer name configured for \fBsbuild\fR. \fIchangelog-entry\fR will be used
+as the changelog entry following \[lq]Binary-only non-maintainer upload for
+ARCH -- no source changes\[rq]. Please note that the versions in the
+\fIPACKAGE_VERSION[.dsc]\fR arguments still have to be the unmodified (non-NMU
+ones) so that the sources can be found. The version number in log files and
+mails will be modified by \fBsbuild\fR automatically.
 .TP
-.IR "\-\-binNMU=<version>"
+.BR "\-\-binNMU=\fINMU-version\fP"
 The version number of the binary NMU.  This should be used in conjunction with
 \-\-make\-binNMU.  \fIversion\fP is a single number for the (+b\fIn\fR) format
 used for binary NMUs.
@@ -213,6 +218,16 @@ Ryan Murray <rmurray@debian.org>,
 Francesco Paolo Lovergine <frankie@debian.org>,
 Michael Banck <mbanck@debian.org>, and
 Roger Leigh <rleigh@debian.org>
+.fi
+.SH COPYRIGHT
+.nf
+Copyright \[co] 1998-2000 Roman Hodek <roman\@hodek.net>
+Copyright \[co] 1998-1999 James Troup <troup\@debian.org>
+Copyright \[co] 2003-2006 Ryan Murray <rmurray\@debian.org>
+Copyright \[co] 2001-2003 Rick Younie <younie\@debian.org>
+Copyright \[co] 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
+Copyright \[co] 2005      Michael Banck <mbanck\@debian.org>
+Copyright \[co] 2005-2008 Roger Leigh <rleigh\@debian.org>
 .fi
 .SH "SEE ALSO"
 .BR update\-sourcedeps (1),
