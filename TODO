@@ -35,8 +35,15 @@ Are 'Build Start Time' and 'Pkg Start Time' different?
 
 sbuild-setup references ~/build, even though not required.
 
-sbuild-abort: rewrite in perl
-
 bin/*: Add --help and --version
 
 All programs must use Getopt::Long for options parsing
+
+sbuild-stats option formattion and option processing
+  perform more than one action at once?  Only set mode once?
+  actions have multiple args?
+
+run_*_command should not take an arrayref instead of a string for
+running commands.  They can then be passed directly to schroot avoiding quoting issues.
+
+Add a --verbose option to add commands
