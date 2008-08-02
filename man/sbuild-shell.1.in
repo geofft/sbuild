@@ -33,7 +33,7 @@ Display this manual.
 Print version information.
 .SS Chroot selection
 .TP
-.I CHROOT
+.B CHROOT
 The chroot to use.  Note that \[oq]o\[cq], \[oq]s\[cq],
 \[oq]t\[cq], \[oq]u\[cq] and \[oq]e\[cq] may be used as abbreviations for
 \[oq]oldstable\[cq], \[oq]stable\[cq], \[oq]testing\[cq], \[oq]unstable\[cq]
