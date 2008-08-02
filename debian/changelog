@@ -11,6 +11,8 @@ sbuild (0.57.5-1) unstable; urgency=low
   * Sbuild::Log: Add version number and correctly-formatted date to the
     package log name instead of a raw time_t (Closes: #493150).
     Additionally add user and architecture to the name.
+  * Sbuild::Options: --make-binNMU no longer tries to assign an lvalue
+    (Closes: #493325).  Thanks to Greg Hudson for this patch.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 02 Aug 2008 20:17:49 +0100
 

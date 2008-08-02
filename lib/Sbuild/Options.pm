@@ -134,7 +134,7 @@ sub parse_options (\%) {
 		       "make-binNMU=s" => sub {
 			   $self->set('binNMU', $_[1]);
 			   $self->set('binNMU Version',
-				      $self->get('binNMU Version') ||= 1);
+				      $self->get('binNMU Version') || 1);
 		       },
 		       "binNMU=i" => sub {
 			   $self->set('binNMU Version', $_[1]);
