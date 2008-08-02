@@ -63,7 +63,6 @@ binary-indep: build install
 	dh_testroot
 	dh_installdocs debian/cvslogs.old
 	dh_installman
-#	ln -s avg-pkg-build-time.1.gz debian/sbuild/usr/share/man/man1/avg-pkg-build-space.1.gz
 	dh_installchangelogs
 	dh_link
 	dh_compress

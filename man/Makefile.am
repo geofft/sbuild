@@ -37,6 +37,4 @@ man_MANS = \
 	wanna-build.1
 
 install-data-hook:
-	ln -sf sbuild-stats.1 $(DESTDIR)$(man1dir)/avg-pkg-build-time.1
-	ln -sf sbuild-stats.1 $(DESTDIR)$(man1dir)/avg-pkg-build-space.1
 	ln -sf sbuild-hold.1 $(DESTDIR)$(man1dir)/sbuild-unhold.1
