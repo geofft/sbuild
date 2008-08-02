@@ -14,6 +14,12 @@ configuration.
      /etc/apt/sources.list in the chroot (the components are now
      specified with --components instead of being hard-coded).
 
+  2) All sbuild commands now support --help and --version options.
+
+  3) sbuild-abort and sbuild have been updated to work with the
+     current dpkg-buildpackage and handle build termination
+     gracefully.
+
 * Major changes in 0.57.4:
 
   None.
