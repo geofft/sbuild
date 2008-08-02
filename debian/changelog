@@ -18,7 +18,7 @@ sbuild (0.57.5-1) unstable; urgency=low
     entry in debian/changelog (Closes: #489557).
   * debian/sbuild.postrm: Correct use of local to remove bashisms.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 02 Aug 2008 20:17:49 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 02 Aug 2008 21:23:13 +0100
 
 sbuild (0.57.4-1) unstable; urgency=low
 
