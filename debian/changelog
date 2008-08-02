@@ -16,6 +16,7 @@ sbuild (0.57.5-1) unstable; urgency=low
   * $maintainer_name, $uploader_name and $key_id are now optional in
     .sbuildrc; one is only required with performing binary NMUs for the
     entry in debian/changelog (Closes: #489557).
+  * debian/sbuild.postrm: Correct use of local to remove bashisms.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 02 Aug 2008 20:17:49 +0100
 

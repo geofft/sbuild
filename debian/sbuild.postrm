@@ -23,11 +23,11 @@ PACKAGE="sbuild"
 rm_conffile() {
     CONFFILE="$1"
 
-    local delete="false"
+    local delete; delete="false"
 
     if [ -f "$CONFFILE" ]; then
-	local fpkg=""
-	local pkg=""
+	local fpkg; fpkg=""
+	local pkg; pkg=""
 	if fpkg=$(dpkg -S "$CONFFILE" 2>/dev/null); then
 	    # Don't delete, but check which package it came from.
 	    pkg=$(echo $fpkg | sed -e  's/\(^[[:print:]][[:print:]]*\): .*$/\1/')
