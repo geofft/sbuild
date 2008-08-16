@@ -63,8 +63,6 @@ our $verbose = 0;
 our $nolog = 0;
 
 # Defaults.
-# TODO: Remove $source_dependencies after Lenny.
-our $source_dependencies;
 our $mailprog = "/usr/sbin/sendmail";
 our $dpkg = "/usr/bin/dpkg";
 our $sudo;
@@ -93,16 +91,10 @@ our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
 our $srcdep_lock_wait = 1; # minutes
 our $max_lock_trys = 120;
 our $lock_interval = 5;
-# TODO: Remove $chroot_only after Lenny
-our $chroot_only;
-# TODO: Remove $chroot_mode after Lenny
-our $chroot_mode;
 our $apt_policy = 1;
 our $check_watches = 1;
 our @ignore_watches_no_build_deps = qw();
 our %watches;
-# TODO: Remove $build_dir after Lenny
-our $build_dir = undef;
 our $sbuild_mode = "user";
 our $debug = 0;
 our $force_orig_source = 0;
@@ -172,26 +164,6 @@ sub init () {
     if (! -d "$Sbuild::Conf::build_dir") {
 	die "Build directory $Sbuild::Conf::build_dir does not exist";
     }
-
-    # TODO: Remove chroot_mode, chroot_only, sudo and
-    # source_dependencies after Lenny.
-
-    if (defined($chroot_mode)) {
-	die "chroot_mode is obsolete";
-    }
-
-    if (defined($chroot_only)) {
-	die "chroot_only is obsolete";
-    }
-
-    if (defined($sudo)) {
-	die "sudo is obsolete";
-    }
-
-    if (defined($source_dependencies)) {
-	die "Source dependencies are obsolete";
-    }
-
 }
 
 1;

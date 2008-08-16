@@ -137,24 +137,6 @@ sub begin_session (\$) {
     chomp($schroot_session);
     if ($?) {
 	print STDERR "Chroot setup failed\n";
-
-	# TODO: Remove after Lenny.
-	if (-d "chroot-$chroot" || -l "chroot-$chroot") {
-	    print STDERR "\nFound obsolete chroot: ${Sbuild::Conf::build_dir}/chroot-$chroot\n";
-	    print STDERR "Chroot access via sudo has been replaced with schroot chroot management.\n";
-	    print STDERR "To upgrade to schroot, add the following lines to /etc/schroot/schroot.conf:\n\n";
-	    print STDERR "[$chroot]\n";
-	    print STDERR "type=directory\n";
-	    print STDERR "description=Debian $chroot autobuilder\n";
-	    print STDERR "location=${Sbuild::Conf::build_dir}/chroot-$chroot\n";
-	    print STDERR "priority=3\n";
-	    print STDERR "groups=root,sbuild\n";
-	    print STDERR "root-groups=root,sbuild\n";
-	    print STDERR "aliases=$chroot-sbuild\n";
-	    print STDERR "run-setup-scripts=true\n";
-	    print STDERR "run-exec-scripts=true\n\n";
-	    print STDERR "It is preferable to specify location as a directory, not a symbolic link\n\n"
-	}
 	return 0;
     }
 
