@@ -56,7 +56,7 @@ Print version information.
 Add an entry for a package. <time> is in the format HH:MM:SS, where
 hours and minutes are optional.
 .TP
-.BR\-d ", " "\-\-delete PACKAGE1" " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
+.BR \-d ", " "\-\-delete PACKAGE1" " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
 Remove the data for a package from the database.
 .TP
 .BR \-\-dump " [" PACKAGE1 " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
