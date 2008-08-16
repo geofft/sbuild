@@ -22,8 +22,8 @@
 #####################################################################
 pushdef([SBUILD_NAME],              [sbuild])
 pushdef([SBUILD_MAJOR_VERSION],     [0])
-pushdef([SBUILD_MINOR_VERSION],     [57])
-pushdef([SBUILD_MICRO_VERSION],     [5])
+pushdef([SBUILD_MINOR_VERSION],     [58])
+pushdef([SBUILD_MICRO_VERSION],     [0])
 pushdef([SBUILD_EXTRA_VERSION],     [])
 pushdef([SBUILD_VERSION], SBUILD_MAJOR_VERSION.SBUILD_MINOR_VERSION.SBUILD_MICRO_VERSION[]SBUILD_EXTRA_VERSION)
 dnl
