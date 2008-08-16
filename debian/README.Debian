@@ -1,22 +1,24 @@
 sbuild for Debian
 -----------------
 
-setup
-=====
+Initial Setup
+=============
 
-  The full procedure for setting up a chroot and setting up users is
-  documented in sbuild-setup(7).  Existing users may need to review
-  their setup, due to the removal of sudo support. (User setup, part 4).
+The full procedure for setting up a chroot and setting up users is
+documented in sbuild-setup(7).  Existing users may need to review
+their setup, due to the removal of sudo support. (User setup, part 4).
+New users should use sbuild-createchroot(8) to set up a chroot, and
+sbuild-adduser(8) to add users.
 
 
-chroots
+Chroots
 =======
 
-  If you don't have an existing chroot, sbuild-createchroot(8)
-  describes how to set one up.
+If you don't have an existing chroot, sbuild-createchroot(8) describes
+how to set one up.
 
 
-helper scripts
+Helper scripts
 ==============
 
 See sbuild-abort(1), sbuild-apt(1), sbuild-checkpackages(1),
@@ -27,26 +29,21 @@ scripts in /usr/bin.  The symbolic links will be removed following the
 release of Lenny.
 
 
-extras
+Extras
 ======
 
-  sbuild-stats
-  ------------
-  sbuild will keep databases of the time and space that builds
-  require if a couple files exist:
+sbuild-stats
+------------
+sbuild will keep databases of the time and space that builds
+require if a couple files exist:
 
-    touch /var/lib/sbuild/avg-build-{times,space}
-    chmod 664 /var/lib/sbuild/avg-build-{times,space}
-    chgrp sbuild /var/lib/sbuild/avg-build-{times,space}
+  touch /var/lib/sbuild/avg-build-{times,space}
+  chmod 664 /var/lib/sbuild/avg-build-{times,space}
+  chgrp sbuild /var/lib/sbuild/avg-build-{times,space}
 
-  These have limited usefulness outside buildd context.  See
-  the sbuild-stats(1) man page for more info.
+These have limited usefulness outside buildd context.  See
+the sbuild-stats(1) man page for more info.
 
-  src-deps
-  --------
-  Manual source dependencies are obsolete and support has been
-  removed in Lenny.  All packages must now
-  provide Source-Depends[-Indep] in their debian/control file.
 
 
 An schroot chroot with the same name (or alias) as the distribution
@@ -55,4 +52,4 @@ chroot must be named "sbuild-unstable" or "unstable" (in order of
 preference).
 
 
- -- Roger Leigh <rleigh@debian.org>, Sun, 20 Apr 2008 11:46:20 +0100
+ -- Roger Leigh <rleigh@debian.org>, Sat, 16 Aug 2008 16:05:55 +0100
