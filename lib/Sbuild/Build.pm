@@ -1310,6 +1310,10 @@ sub check_dependencies (\$\@) {
 		if (!$dep->{'Rel'}) {
 		    $fail .= "$name(still installed) ";
 		}
+		elsif ($stat->{'Version'} == '~*=PROVIDED=*=') {
+		    # It's a versioned build-conflict, but we installed
+		    # a package that provides the conflicted package. It's ok.
+		}
 		elsif (version_compare($stat->{'Version'}, $dep->{'Rel'},
 				       $dep->{'Version'})) {
 		    $fail .= "$name(inst $stat->{'Version'} $dep->{'Rel'} ".
