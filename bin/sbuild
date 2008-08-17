@@ -59,6 +59,8 @@ sub main () {
 
     my $options = Sbuild::Options::new();
     exit 1 if !defined($options);
+    my $conf = Sbuild::Conf::new();
+    exit 1 if !defined($conf);
 
     print "Selected distribution " . $options->get('Distribution') . "\n"
 	if $conf::debug;
@@ -99,7 +101,7 @@ sub main () {
     foreach $dscfile (@ARGV) {
 
 	# TODO: Append to build list, to allow parallel builds.
-	my $build = Sbuild::Build::new($dscfile, $options);
+	my $build = Sbuild::Build::new($dscfile, $options, $conf);
 	$main::build_object = $build;
 
 	$build->{'Pkg Start Time'} = time;

@@ -49,7 +49,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$);
+sub new ($$$);
 sub get (\%$);
 sub set (\%$$);
 sub get_option (\%$);
@@ -108,9 +108,10 @@ sub add_space_entry (\$$$);
 
 
 # TODO: put in all package version data and job ID (for indexing in job list)
-sub new ($$) {
+sub new ($$$) {
     my $dsc = shift;
     my $options = shift;
+    my $conf = shift;
 
     my $self  = {};
     bless($self);
@@ -147,6 +148,7 @@ sub new ($$) {
     }
 
     $self->{'Options'} = $options;
+    $self->{'Config'} = $conf;
     $self->{'Arch'} = $Sbuild::Sysconfig::arch;
     $self->{'Chroot Dir'} = '';
     $self->{'Chroot Build Dir'} = '';
@@ -197,6 +199,21 @@ sub get_option (\%$) {
     my $key = shift;
 
     return $self->get('Options')->get($key);
+}
+
+sub get_conf (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->get('Config')->get($key);
+}
+
+sub set_conf (\%$$) {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    return $self->set('Config')->set($key,$value);
 }
 
 sub set_dsc (\$$) {
