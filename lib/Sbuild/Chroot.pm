@@ -41,7 +41,10 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$);
+sub new ($$$$);
+sub get (\%$);
+sub set (\%$$);
+sub get_conf (\%$);
 sub _setup_options (\$\$);
 sub begin_session (\$);
 sub end_session (\$);
@@ -55,15 +58,17 @@ sub get_apt_command_internal (\$$$);
 sub get_apt_command (\$$$$$$);
 sub run_apt_command (\$$$$$$);
 
-sub new ($$$) {
+sub new ($$$$) {
 # TODO: specify distribution parameters here...
     my $distribution = shift;
     my $chroot = shift;
     my $arch = shift;
+    my $conf = shift;
 
     my $self  = {};
     bless($self);
 
+    $self->set('CONFIG', $conf);
     $self->set('Session ID', "");
     $self->set('Chroot ID', find_chroot($distribution, $chroot, $arch));
 
@@ -87,6 +92,13 @@ sub set (\%$$) {
     my $value = shift;
 
     return $self->{$key} = $value;
+}
+
+sub get_conf (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->get('CONFIG')->get($key);
 }
 
 sub _setup_options (\$\$) {
@@ -114,8 +126,7 @@ sub _setup_options (\$\$) {
 				    DIR => $self->get('Location'),
 				    UNLINK => 0) ) {
 
-	    if ($Sbuild::Conf::apt_allow_unauthenticated)
-	    {
+	    if ($self->get_conf('APT_ALLOW_UNAUTHENTICATED')) {
 	    	print $F "APT::Get::AllowUnauthenticated true;\n";
 	    }
 	    print $F "APT::Install-Recommends false;\n";

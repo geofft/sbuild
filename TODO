@@ -47,3 +47,5 @@ run_*_command should not take an arrayref instead of a string for
 running commands.  They can then be passed directly to schroot avoiding quoting issues.
 
 Add a --verbose option to add commands
+
+Sbuild::Chroot should be passed Sbuild::Options directly.

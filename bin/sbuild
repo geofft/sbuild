@@ -143,7 +143,8 @@ sub main () {
 
 	my $session = Sbuild::Chroot::new($options->get('Distribution'),
 					  $options->get('Chroot'),
-					  $options->get('User Arch'));
+					  $options->get('User Arch'),
+					  $conf);
 	$build->{'Session'} = $session;
 
 	if (!$session->begin_session()) {

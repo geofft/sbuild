@@ -53,6 +53,8 @@ sub new ($$$);
 sub get (\%$);
 sub set (\%$$);
 sub get_option (\%$);
+sub get_conf (\%$);
+sub set_conf (\%$$);
 sub set_dsc (\$$);
 sub fetch_source_files (\$);
 sub build (\$$$);
