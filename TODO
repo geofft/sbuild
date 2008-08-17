@@ -47,3 +47,19 @@ run_*_command should not take an arrayref instead of a string for
 running commands.  They can then be passed directly to schroot avoiding quoting issues.
 
 Add a --verbose option to add commands
+
+buildd-clean-upload hard-codes $HOME/upload.  Configure location.
+
+All perl programs and modules should
+- use strict
+- use warnings
+- use function prototypes
+
+buildd hard-codes config file locations.  Used in check_reread_config.
+
+buildd hard-codes main::HOME and PATH.  Set in ::Conf.
+
+buildd-watcher should use strftime in place of own functions
+
+sbuild utilities should allow specification of chroot architecture
+
