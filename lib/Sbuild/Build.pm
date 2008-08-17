@@ -1091,8 +1091,8 @@ sub run_apt (\$$\@\@@) {
 	    $selected = $providers[0];
 	    print main::PLOG "Using $selected (only possibility)\n";
 	}
-	elsif (exists $conf::alternatives{$to_replace}) {
-	    $selected = $conf::alternatives{$to_replace};
+	elsif (exists $self->get_conf('ALTERNATIVES')->{$to_replace}) {
+	    $selected = $self->get_conf('ALTERNATIVES')->{$to_replace};
 	    print main::PLOG "Using $selected (selected in sbuildrc)\n";
 	}
 	else {
@@ -1172,7 +1172,7 @@ sub filter_dependencies (\$\@\@\@) {
     my $status = $self->get_dpkg_status(keys %names);
 
     my %policy;
-    if ($conf::apt_policy) {
+    if ($self->get_conf('APT_POLICY')) {
 	%policy = $self->get_apt_policy(keys %names);
     }
 
@@ -1217,7 +1217,7 @@ sub filter_dependencies (\$\@\@\@) {
 	    if (!$stat->{'Installed'}) {
 		print "$name: pos dep, not installed\n" if $conf::debug;
 		print main::PLOG "$name: missing\n";
-		if ($conf::apt_policy && $rel) {
+		if ($self->get_conf('APT_POLICY') && $rel) {
 		    if (!version_compare($policy{$name}->{defversion}, $rel, $vers)) {
 			print main::PLOG "Default version of $name not sufficient, ";
 			foreach my $cvers (@{$policy{$name}->{versions}}) {
@@ -1259,7 +1259,8 @@ sub filter_dependencies (\$\@\@\@) {
 		print main::PLOG "$name: would have to downgrade!\n";
 	    }
 	    else {
-		if ($conf::apt_policy && !version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+		if ($self->get_conf('APT_POLICY') &&
+		    !version_compare($policy{$name}->{defversion}, $rel, $vers)) {
 		    print main::PLOG "Default version of $name not sufficient, ";
 		    foreach my $cvers (@{$policy{$name}->{versions}}) {
 			if(version_compare($cvers, $rel, $vers)) {

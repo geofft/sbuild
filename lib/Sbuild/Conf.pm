@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(%alternatives $apt_policy $apt_update
+    @EXPORT = qw($apt_update
                  $apt_allow_unauthenticated $check_watches $cwd
                  $username $verbose $nolog $mailprog $dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
