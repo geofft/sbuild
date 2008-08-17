@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($apt_update
-                 $apt_allow_unauthenticated $check_watches $cwd
+    @EXPORT = qw($apt_allow_unauthenticated $check_watches $cwd
                  $username $verbose $nolog $mailprog $dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
@@ -222,6 +221,7 @@ sub set_allowed_keys (\%) {
 	'MAINTAINER_NAME'			=> "",
 	'UPLOADER_NAME'				=> "",
 	'KEY_ID'				=> "",
+	'APT_UPDATE'				=> "",
 	'ALTERNATIVES'				=> "",
 	'NO_AUTO_UPGRADE'			=> "",
 	'CHECK_DEPENDS_ALGORITHM'		=> "");
@@ -284,6 +284,7 @@ sub read_config (\%) {
     $self->set('MAINTAINER_NAME', $maintainer_name);
     $self->set('UPLOADER_NAME', $uploader_name);
     $self->set('KEY_ID', $key_id);
+    $self->set('APT_UPDATE', $apt_update);
     $self->set('ALTERNATIVES', \%alternatives);
     $self->set('NO_AUTO_UPGRADE', @no_auto_upgrade);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);

@@ -57,10 +57,10 @@ sub main () {
 	$conf::verbose = 1;
     }
 
-    my $options = Sbuild::Options::new();
-    exit 1 if !defined($options);
     my $conf = Sbuild::Conf::new();
     exit 1 if !defined($conf);
+    my $options = Sbuild::Options::new($conf);
+    exit 1 if !defined($options);
 
     print "Selected distribution " . $options->get('Distribution') . "\n"
 	if $conf::debug;
@@ -165,7 +165,7 @@ sub main () {
 	$build->{'Arch'} = $build->chroot_arch();
 
 	# Update APT cache.
-	if ($conf::apt_update) {
+	if ($conf->get('APT_UPDATE')) {
 	    if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1, '/') . " 2>&1 |")) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
 		return 0;

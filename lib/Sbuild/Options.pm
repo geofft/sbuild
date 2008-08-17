@@ -38,15 +38,18 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ();
+sub new ($);
 sub get (\%$);
 sub set (\%$$);
 sub parse_options (\%);
 
-sub new () {
+sub new ($) {
+    my $conf = shift;
+
     my $self  = {};
     bless($self);
 
+    $self->{'CONFIG'} = $conf;
     $self->{'User Arch'} = '';
     $self->{'Build Arch All'} = 0;
     $self->{'Auto Giveback'} = 0;
@@ -146,7 +149,9 @@ sub parse_options (\%) {
 			   $self->set('WannaBuild Database', $_[1]);
 		       },
 		       "D|debug+" => \$Sbuild::Conf::debug,
-		       "apt-update" => \$Sbuild::Conf::apt_update,
+		       "apt-update" => sub {
+			   $self->get('CONFIG')->set('APT_UPDATE', $_[1]);
+		       },
 		       "d|dist=s" => sub {
 			   $self->set('Distribution', $_[1]);
 			   $self->set('Distribution', "oldstable")

@@ -286,7 +286,7 @@ sub fetch_source_files (\$) {
 	}
     } else {
 	my %entries = ();
-	my $retried = $conf::apt_update;
+	my $retried = $self->get_conf('APT_UPDATE'); # Already updated if set
       retry:
 	print main::PLOG "Checking available source versions...\n";
 	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $self->{'Package'}", $Sbuild::Conf::username, 0, '/');
