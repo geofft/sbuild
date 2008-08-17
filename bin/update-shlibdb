@@ -36,6 +36,7 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 package main;
 
 use strict;
+use warnings;
 use Digest::MD5;
 use File::Basename;
 use DB_File;

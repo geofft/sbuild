@@ -20,6 +20,9 @@
 #
 #######################################################################
 
+use strict;
+use warnings;
+
 # this should use perl or python apt, taking in the chroots to act on
 # for each dist somehow, and then for each chroot, dump all
 # build-deps, and then add them to the *.rev files.  buildd-mail can then

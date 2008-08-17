@@ -37,6 +37,7 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 package main;
 
 use strict;
+use warnings;
 use DB_File;
 use vars qw($verbose %dbold %dbnew %result $HOME);
 

@@ -18,6 +18,8 @@
 #
 #######################################################################
 
+use strict;
+use warnings;
 use File::Basename;
 $progname = basename($0);
 

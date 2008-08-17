@@ -25,6 +25,7 @@ use Sbuild::Conf;
 use Sbuild::Sysconfig;
 
 use strict;
+use warnings;
 use POSIX;
 use FileHandle;
 use Time::Local;

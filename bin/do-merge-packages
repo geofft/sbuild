@@ -28,6 +28,7 @@ package main;
 sub cleanup ($);
 
 use strict;
+use warnings;
 use vars qw($HOME $tmpdir $arch @dists $locked);
 
 $HOME = $ENV{'HOME'}

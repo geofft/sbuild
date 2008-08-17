@@ -26,7 +26,7 @@ use WannaBuild::Conf;
 package main;
 
 use strict;
-no strict 'refs';
+use warnings;
 use IO;
 use POSIX;
 use FileHandle;

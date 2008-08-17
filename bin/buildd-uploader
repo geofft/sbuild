@@ -27,6 +27,7 @@ BEGIN {
 }
 
 use strict;
+use warnings;
 use Buildd;
 use Buildd::Conf;
 $ENV{'PATH'} = "$main::HOME/bin:/usr/local/bin:/usr/bin:/bin";

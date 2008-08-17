@@ -20,6 +20,7 @@
 #######################################################################
 
 use strict;
+use warnings;
 use vars qw($verbose $dist $database);
 
 sub percent (@);

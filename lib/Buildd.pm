@@ -23,6 +23,7 @@
 package Buildd;
 
 use strict;
+use warnings;
 use IO;
 use POSIX;
 use FileHandle;

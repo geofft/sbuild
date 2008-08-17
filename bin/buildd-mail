@@ -28,6 +28,7 @@ BEGIN {
 }
 
 use strict;
+use warnings;
 use Buildd;
 use Buildd::Conf;
 use POSIX;

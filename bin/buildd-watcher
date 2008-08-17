@@ -26,6 +26,7 @@ BEGIN {
 }
 
 use strict;
+use warnings;
 use Buildd;
 use Buildd::Conf;
 use POSIX qw(ESRCH LONG_MAX);
