@@ -2142,7 +2142,7 @@ sub check_watches (\$) {
     my $self = shift;
     my($prg, @st, %used);
 
-    return if (!$conf::check_watches);
+    return if (!$self->get_conf('CHECK_WATCHES'));
 
     foreach $prg (keys %{$self->{'This Watches'}}) {
 	if (!(@st = stat( $prg ))) {

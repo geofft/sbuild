@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($check_watches $cwd
+    @EXPORT = qw($cwd
                  $username $verbose $nolog $mailprog $dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
