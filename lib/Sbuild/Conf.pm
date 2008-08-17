@@ -166,4 +166,186 @@ sub init () {
     }
 }
 
+sub set_allowed_keys (\%);
+sub is_allowed (\%$);
+sub read_config (\%);
+sub check_config (\%);
+sub new ();
+sub get (\%$);
+sub set (\%$$);
+
+sub set_allowed_keys (\%) {
+    my $self = shift;
+
+    my %allowed_keys = (
+	'HOME'					=> "",
+	'USERNAME'				=> "",
+	'CWD'					=> "",
+	'VERBOSE'				=> "",
+	'NOLOG'					=> "",
+	'SOURCE_DEPENDENCIES'			=> "",
+	'MAILPROG'				=> "",
+	'DPKG'					=> "",
+	'SUDO'					=> "",
+	'SU'					=> "",
+	'SCHROOT'				=> "",
+	'SCHROOT_OPTIONS'			=> "",
+	'FAKEROOT'				=> "",
+	'APT_GET'				=> "",
+	'APT_CACHE'				=> "",
+	'DPKG_SOURCE'				=> "",
+	'MD5SUM'				=> "",
+	'AVG_TIME_DB'				=> "",
+	'AVG_SPACE_DB'				=> "",
+	'PACKAGE_CHECKLIST'			=> "",
+	'BUILD_ENV_CMND'			=> "",
+	'PGP_OPTIONS'				=> "",
+	'LOG_DIR'				=> "",
+	'MAILTO'				=> "",
+	'MAILFROM'				=> "",
+	'PURGE_BUILD_DIRECTORY'			=> "",
+	'TOOLCHAIN_REGEX'			=> "",
+	'STALLED_PKG_TIMEOUT'			=> "",
+	'SRCDEP_LOCK_DIR'			=> "",
+	'SRCDEP_LOCK_WAIT'			=> "",
+	'CHROOT_ONLY'				=> "",
+	'CHROOT_MODE'				=> "",
+	'APT_POLICY'				=> "",
+	'CHECK_WATCHES'				=> "",
+	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> "",
+	'WATCHES'				=> "",
+	'BUILD_DIR'				=> "",
+	'SBUILD_MODE'				=> "",
+	'DEBUG'					=> "",
+	'FORCE_ORIG_SOURCE'			=> "",
+	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> "",
+	'PATH'					=> "",
+	'MAINTAINER_NAME'			=> "",
+	'UPLOADER_NAME'				=> "",
+	'KEY_ID'				=> "",
+	'ALTERNATIVES'				=> "",
+	'NO_AUTO_UPGRADE'			=> "",
+	'CHECK_DEPENDS_ALGORITHM'		=> "");
+
+    $self->{'_allowed_keys'} = \%allowed_keys;
+}
+
+sub is_allowed (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return defined($self->{'_allowed_keys'}->{$key});
+}
+
+sub read_config (\%) {
+    my $self = shift;
+
+    ($self->set('HOME', $ENV{'HOME'}))
+	or die "HOME not defined in environment!\n";
+    $self->set('USERNAME',(getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'});
+    $self->set('CWD', cwd());
+    $self->set('VERBOSE', 0);
+    $self->set('NOLOG', 0);
+
+# Insert globals here after transition
+
+    $self->set('MAILPROG', $mailprog);
+    $self->set('DPKG', $dpkg);
+    $self->set('SUDO',  $sudo);
+    $self->set('SU', $su);
+    $self->set('SCHROOT', $schroot);
+    $self->set('SCHROOT_OPTIONS', $schroot_options);
+    $self->set('FAKEROOT', $fakeroot);
+    $self->set('APT_GET', $apt_get);
+    $self->set('APT_CACHE', $apt_cache);
+    $self->set('DPKG_SOURCE', $dpkg_source);
+    $self->set('MD5SUM', $md5sum);
+    $self->set('AVG_TIME_DB', $avg_time_db);
+    $self->set('AVG_SPACE_DB', $avg_space_db);
+    $self->set('PACKAGE_CHECKLIST', $package_checklist);
+    $self->set('BUILD_ENV_CMND', $build_env_cmnd);
+    $self->set('PGP_OPTIONS', $pgp_options);
+    $self->set('LOG_DIR', $log_dir);
+    $self->set('MAILTO', $mailto);
+    $self->set('MAILFROM', $mailfrom);
+    $self->set('PURGE_BUILD_DIRECTORY', $purge_build_directory);
+    $self->set('TOOLCHAIN_REGEX', \@toolchain_regex);
+    $self->set('STALLED_PKG_TIMEOUT', $stalled_pkg_timeout);
+    $self->set('SRCDEP_LOCK_DIR', $srcdep_lock_dir);
+    $self->set('SRCDEP_LOCK_WAIT', $srcdep_lock_wait);
+    $self->set('APT_POLICY', $apt_policy);
+    $self->set('CHECK_WATCHES', $check_watches);
+    $self->set('IGNORE_WATCHES_NO_BUILD_DEPS', \@ignore_watches_no_build_deps);
+    $self->set('WATCHES', \%watches);
+    $self->set('SBUILD_MODE', $sbuild_mode);
+    $self->set('DEBUG', $debug);
+    $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
+    $self->set('INDIVIDUAL_STALLED_PKG_TIMEOUT', \%individual_stalled_pkg_timeout);
+    $self->set('PATH', $path);
+    $self->set('MAINTAINER_NAME', $maintainer_name);
+    $self->set('UPLOADER_NAME', $uploader_name);
+    $self->set('KEY_ID', $key_id);
+    $self->set('ALTERNATIVES', \%alternatives);
+    $self->set('NO_AUTO_UPGRADE', @no_auto_upgrade);
+    $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
+}
+
+sub check_config (\%) {
+    my $self = shift;
+
+    die "mailprog binary " . $self->get('MAILPROG') . " does not exist or isn't executable\n"
+	if !-x $self->get('MAILPROG');
+    die "schroot binary " . $self->get('SCHROOT') . " does not exist or isn't executable\n"
+	if !-x $self->get('SCHROOT');
+    die "apt-get binary " . $self->get('APT_GET') . " does not exist or isn't executable\n"
+	if !-x $self->get('APT_GET');
+    die "apt-cache binary " . $self->get('APT_CACHE') . " does not exist or isn't executable\n"
+	if !-x $self->get('APT_CACHE');
+    die "dpkg-source binary " . $self->get('DPKG_SOURCE') . " does not exist or isn't executable\n"
+	if !-x $self->get('DPKG_SOURCE');
+    die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
+	if ! -d $self->get('SRCDEP_LOCK_DIR');
+
+    die "mailto not set\n" if !$self->get('MAILTO');
+
+    if (!defined($self->get('BUILD_DIR'))) {
+	$self->set('BUILD_DIR', $self->get('CWD'));
+    }
+    if (! -d $self->get('BUILD_DIR')) {
+	die "Build directory " . $self->get('BUILD_DIR') . " does not exist";
+    }
+}
+
+sub new () {
+    my $self  = {};
+    $self->{'config'} = {};
+    bless($self);
+
+    $self->set_allowed_keys();
+    $self->read_config();
+    $self->check_config();
+
+    return $self;
+}
+
+sub get (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->{$key};
+}
+
+sub set (\%$$) {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    if ($self->is_allowed($key)) {
+	return $self->{$key} = $value;
+    } else {
+	warn "W: key \"$key\" is not allowed in sbuild configuration";
+	return undef;
+    }
+}
+
 1;
