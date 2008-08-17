@@ -41,7 +41,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new($$$);
+sub new ($$$);
 sub _setup_options (\$\$);
 sub begin_session (\$);
 sub end_session (\$);
@@ -55,7 +55,7 @@ sub get_apt_command_internal (\$$$);
 sub get_apt_command (\$$$$$$);
 sub run_apt_command (\$$$$$$);
 
-sub new($$$) {
+sub new ($$$) {
 # TODO: specify distribution parameters here...
     my $distribution = shift;
     my $chroot = shift;
