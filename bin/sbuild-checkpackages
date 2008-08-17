@@ -46,7 +46,6 @@ usage_error("sbuild-checkpackages", "--list or --set must be specified")
     if (@ARGV != 1 || !defined($mode));
 
 my $chroot = $ARGV[0];
-my $cmd = $ARGV[1];
 
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
@@ -73,7 +72,7 @@ if (!@status) {
     shutdown("TERM");
 }
 
-if ($cmd eq "--set") {
+if ($mode eq "set") {
     if (! open WREF, "> $chroot_dir/$package_checklist") {
 	print STDERR "Can't write reference status file $chroot_dir/$package_checklist: $!\n";
 	shutdown("TERM");
@@ -85,7 +84,7 @@ if ($cmd eq "--set") {
 	print STDERR "Error writing reference status file: $!\n";
 	shutdown("TERM");
     }
-} else { # --list
+} else { # "list"
 
     if (! open REF, "< $chroot_dir/$package_checklist") {
 	print STDERR "Can't read reference status file $chroot_dir/$package_checklist: $!\n";
