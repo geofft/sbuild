@@ -220,7 +220,7 @@ sub main () {
       cleanup_skip:
 	undef $build->{'binNMU Name'};
 	$main::current_job = "";
-	if ( $options->get('Batch Mode') and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
+	if ( $options->get('Batch Mode') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
 	dump_main_state() if $conf::debug;

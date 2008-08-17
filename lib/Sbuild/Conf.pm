@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME %alternatives $apt_policy $apt_update
+    @EXPORT = qw(%alternatives $apt_policy $apt_update
                  $apt_allow_unauthenticated $check_watches $cwd
                  $username $verbose $nolog $mailprog $dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
@@ -54,7 +54,6 @@ INIT {
     init();
 }
 
-# Originally from the main namespace.
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";
 our $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
