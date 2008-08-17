@@ -23,9 +23,13 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup);
 
 package main;
+
+my $conf = Sbuild::Conf::new();
+$conf->set('CWD', '/');
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-upgrade"); },
@@ -40,7 +44,7 @@ foreach (@ARGV) {
 
     my $chroot = Sbuild::Utility::get_dist($_);
 
-    my $session = setup($_) or die "Chroot setup failed for $chroot chroot";
+    my $session = setup($_, $conf) or die "Chroot setup failed for $chroot chroot";
 
     print STDOUT "Upgrading $chroot chroot...\n";
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";

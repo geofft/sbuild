@@ -33,6 +33,8 @@ package main;
 
 our $mode = undef;
 
+my $conf = Sbuild::Conf::new();
+
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-checkpackages"); },
     "V|version" => sub {version_text("sbuild-checkpackages"); },
@@ -49,7 +51,7 @@ my $cmd = $ARGV[1];
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
 
-my $session = setup($chroot) or die "Chroot setup failed";
+my $session = setup($chroot, $conf) or die "Chroot setup failed";
 my $chroot_dir = $session->{'Location'};
 my (@status, @ref, @install, @remove);
 

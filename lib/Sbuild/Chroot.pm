@@ -245,7 +245,7 @@ sub get_command (\$$$$$$) {
     }
 
     if ($chroot != 0) {
-	chdir($Sbuild::Conf::cwd);
+	chdir($self->get_conf('CWD'));
     }
 
     return $cmdline;
@@ -269,7 +269,7 @@ sub run_command (\$$$$$$) {
     }
 
     if ($chroot != 0) {
-	chdir($Sbuild::Conf::cwd);
+	chdir($self->get_conf('CWD'));
     }
     return system($cmdline);
 }
@@ -290,7 +290,7 @@ sub exec_command (\$$$$$$) {
     }
 
     if ($chroot != 0) {
-	chdir($Sbuild::Conf::cwd);
+	chdir($self->get_conf('CWD'));
     }
     exec $cmdline;
 }
@@ -316,7 +316,7 @@ sub get_apt_command (\$$$$$$) {
 
     my $cmdline = $self->get_command($aptcommand, $user, 1, $priority);
 
-    chdir($Sbuild::Conf::cwd);
+    chdir($self->get_conf('CWD'));
     return $cmdline;
 }
 
@@ -330,7 +330,7 @@ sub run_apt_command (\$$$$$$) {
 
     my $aptcommand = $self->get_apt_command_internal($command, $options);
 
-    chdir($Sbuild::Conf::cwd);
+    chdir($self->get_conf('CWD'));
     return $self->run_command($aptcommand, $user, 1, $priority, $dir);
 }
 

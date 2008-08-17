@@ -42,7 +42,7 @@ use Sbuild::Chroot;
 use Sbuild::Sysconfig qw($arch);
 
 sub get_dist ($);
-sub setup ($);
+sub setup ($$);
 sub cleanup ();
 sub shutdown ($);
 
@@ -74,8 +74,9 @@ sub get_dist ($) {
     return $dist;
 }
 
-sub setup ($) {
+sub setup ($$) {
     my $chroot = shift;
+    my $conf = shift;
 
     $Sbuild::Conf::nolog = 1;
     Sbuild::Log::open_log($chroot);
@@ -83,7 +84,7 @@ sub setup ($) {
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
-    my $session = Sbuild::Chroot::new($chroot, undef, undef);
+    my $session = Sbuild::Chroot::new($chroot, undef, undef, $conf);
     $Sbuild::Utility::current_session = $session;
 
     if (!$session->begin_session()) {

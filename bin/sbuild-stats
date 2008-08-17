@@ -38,7 +38,8 @@ package main;
 sub align ($);
 sub sortfunc ();
 
-$Sbuild::Conf::cwd = "/";
+my $conf = Sbuild::Conf::new();
+$conf->set('CWD', '/');
 
 my $db = "unspec";
 my $mode = "unspec";

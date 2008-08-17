@@ -24,9 +24,12 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
+
+my $conf = Sbuild::Conf::new();
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-unhold"); },
@@ -37,7 +40,7 @@ usage_error("sbuild-unhold", "Incorrect number of options") if (@ARGV < 2);
 
 my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
 
-my $session = setup($ARGV[0]) or die "Chroot setup failed for $chroot chroot";
+my $session = setup($ARGV[0], $conf) or die "Chroot setup failed for $chroot chroot";
 
 print STDOUT "Unholding packages in $chroot chroot:";
 

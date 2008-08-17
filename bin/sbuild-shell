@@ -24,9 +24,12 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup);
 
 package main;
+
+my $conf = Sbuild::Conf::new();
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-shell"); },
@@ -36,7 +39,7 @@ or usage_error("sbuild-shell", "Error parsing command-line options");
 usage_error("sbuild-shell", "Incorrect number of options") if (@ARGV != 1);
 
 
-my $session = setup($ARGV[0]) or die "Chroot setup failed";
+my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
 
 my $status = $session->run_command("/bin/sh", $Sbuild::Conf::username, 1);
 
