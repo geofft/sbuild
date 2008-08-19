@@ -48,19 +48,27 @@ use Sbuild::Build;
 
 sub main ();
 sub shutdown ($);
-sub check_group_membership ();
+sub check_group_membership ($);
 sub dump_main_state ();
+
+my $conf = Sbuild::Conf::new();
+exit 1 if !defined($conf);
+my $options = Sbuild::Options::new($conf);
+exit 1 if !defined($options);
+
+check_group_membership($conf);
+
+umask(022);
+
+$main::build_object = undef;
+
+main();
 
 sub main () {
 # Be verbose by default if on a tty
     if (-t STDIN && -t STDOUT && $Sbuild::Conf::verbose == 0) {
 	$conf::verbose = 1;
     }
-
-    my $conf = Sbuild::Conf::new();
-    exit 1 if !defined($conf);
-    my $options = Sbuild::Options::new($conf);
-    exit 1 if !defined($options);
 
     print "Selected distribution " . $options->get('Distribution') . "\n"
 	if $conf::debug;
@@ -155,7 +163,7 @@ sub main () {
 	}
 	$build->{'Chroot Dir'} = $session->{'Location'};
 	$build->{'Chroot Build Dir'} =
-	    tempdir("$Sbuild::Conf::username-" . 
+	    tempdir($conf->get('USERNAME') . '-' .
 		    $build->{'Package_SVersion'} .
 		    "-$arch-XXXXXX",
 		    DIR => $session->{'Build Location'});
@@ -340,7 +348,9 @@ sub shutdown ($) {
     exit 0;
 }
 
-sub check_group_membership () {
+sub check_group_membership ($) {
+    my $conf = shift;
+
     my $user = getpwuid($<);
     my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
 
@@ -350,7 +360,7 @@ sub check_group_membership () {
 
     my $in_group = 0;
     foreach (split(' ', $members)) {
-	$in_group = 1 if $_ eq $Sbuild::Conf::username;
+	$in_group = 1 if $_ eq $conf->get('USERNAME');
     }
 
     if (!$in_group) {
@@ -384,11 +394,3 @@ $SIG{'HUP'} = 'IGNORE';
 if (!open(main::DEVNULL, '+<', '/dev/null')) {
     die "Cannot open /dev/null: $!\n";;
 }
-
-check_group_membership();
-
-umask(022);
-
-$main::build_object = undef;
-
-main();

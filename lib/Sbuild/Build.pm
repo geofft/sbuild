@@ -291,7 +291,7 @@ sub fetch_source_files (\$) {
 	my $retried = $self->get_conf('APT_UPDATE'); # Already updated if set
       retry:
 	print main::PLOG "Checking available source versions...\n";
-	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $self->{'Package'}", $Sbuild::Conf::username, 0, '/');
+	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $self->{'Package'}", $self->get_conf('USERNAME'), 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
 	if (!$pid) {
 	    print main::PLOG "Can't open pipe to $conf::apt_cache: $!\n";
@@ -348,7 +348,7 @@ sub fetch_source_files (\$) {
 	    push(@fetched, "$self->{'Chroot Build Dir'}/$_");
 	}
 
-	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $self->{'Package'}=$self->{'Version'} 2>&1 </dev/null", $Sbuild::Conf::username, 0, undef);
+	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $self->{'Package'}=$self->{'Version'} 2>&1 </dev/null", $self->get_conf('USERNAME'), 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
 	    print main::PLOG "Can't open pipe to $conf::apt_get: $!\n";
 	    return 0;
@@ -453,7 +453,7 @@ sub build (\$$$) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
 	$self->{'Sub Task'} = "dpkg-source";
-	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dscfile $dscdir 2>&1", $Sbuild::Conf::username, 1, 0, undef);
+	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dscfile $dscdir 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
 	if ($?) {
 	    print main::PLOG "FAILED [dpkg-source died]\n";
 
@@ -479,7 +479,7 @@ sub build (\$$$) {
 	}
 	if ($self->{'Sub PID'} == 0) {
 	    $dscdir = $self->{'Session'}->strip_chroot_path($dscdir);
-	    $self->{'Session'}->exec_command("cd '$dscdir' && dpkg-parsechangelog 2>&1", $Sbuild::Conf::username, 1, 0, undef);
+	    $self->{'Session'}->exec_command("cd '$dscdir' && dpkg-parsechangelog 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
 	}
 	$self->{'Sub Task'} = "dpkg-parsechangelog";
 
@@ -612,7 +612,7 @@ EOF
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 	     "$binopt " . $self->get_option('Signing Options') .
 	     " -r$conf::fakeroot 2>&1";
-	$self->{'Session'}->exec_command($buildcmd, $Sbuild::Conf::username, 1, 0, undef);
+	$self->{'Session'}->exec_command($buildcmd, $self->get_conf('USERNAME'), 1, 0, undef);
     }
     $self->{'Sub Task'} = "dpkg-buildpackage";
 
@@ -1397,7 +1397,7 @@ sub get_apt_policy (\$@) {
     my $command =
 	$self->{'Session'}->get_apt_command("$conf::apt_cache",
 				  "policy @interest",
-				  $Sbuild::Conf::username, 0, '/');
+				  $self->get_conf('USERNAME'), 0, '/');
 
     my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&main::PLOG', "$command" );
     if (!$pid) {
@@ -1766,7 +1766,7 @@ sub get_dependencies (\$@) {
     local(*PIPE);
     my %deps;
 
-    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "show @_", $Sbuild::Conf::username, 0, '/');
+    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "show @_", $self->get_conf('USERNAME'), 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -1794,7 +1794,7 @@ sub get_virtuals (\$@) {
 
     local(*PIPE);
 
-    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "showpkg @_", $Sbuild::Conf::username, 0, '/');
+    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "showpkg @_", $self->get_conf('USERNAME'), 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
     if (!$pid) {
 	die "Cannot start $conf::apt_cache $!\n";
@@ -1933,7 +1933,7 @@ sub check_space (\$@) {
 	    $_ = $self->{'Session'}->strip_chroot_path($_);
 	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
 	} else {
-	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $Sbuild::Conf::username, 0, 0);
+	    $command = $self->{'Session'}->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $self->get_conf('USERNAME'), 0, 0);
 	}
 
 	if (!open( PIPE, "$command |" )) {
@@ -2428,7 +2428,7 @@ sub chroot_arch (\$) {
 	return 0;
     }
     if ($self->{'Sub PID'} == 0) {
-	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $Sbuild::Conf::username, 1, 0, '/');
+	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $self->get_conf('USERNAME'), 1, 0, '/');
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );
@@ -2443,7 +2443,7 @@ sub chroot_arch (\$) {
 sub open_build_log (\$) {
     my $self = shift;
 
-    open_pkg_log("$Sbuild::Conf::username-$self->{'Package_SVersion'}-$self->{'Arch'}",
+    open_pkg_log($self->get_conf('USERNAME') . "-$self->{'Package_SVersion'}-$self->{'Arch'}",
 		 $self->get_option('Distribution'),
 		 $self->{'Pkg Start Time'});
     print main::PLOG "Automatic build of $self->{'Package_SVersion'} on $hostname by " .

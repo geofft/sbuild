@@ -206,7 +206,7 @@ sub get_command_internal (\$$$$$) {
     my $dir = shift;     # Directory to use (optional)
 
     if (!defined $user || $user eq "") {
-	$user = $Sbuild::Conf::username;
+	$user = $self->get_conf('USERNAME');
     }
     if (!defined $chroot) {
 	$chroot = 1;
@@ -220,7 +220,7 @@ sub get_command_internal (\$$$$$) {
 	}
 	$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c " . $self->get('Session ID') . " --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
-	if ($user ne $Sbuild::Conf::username) {
+	if ($user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
 	}
 	$cmdline .= "/bin/sh -c '$command'";

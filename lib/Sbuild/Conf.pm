@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($username $verbose $nolog $mailprog $dpkg $su
+    @EXPORT = qw($verbose $nolog $mailprog $dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
@@ -54,7 +54,6 @@ INIT {
 
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";
-our $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 our $cwd = cwd();
 our $verbose = 0;
 our $nolog = 0;
