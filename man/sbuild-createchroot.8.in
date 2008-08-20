@@ -20,7 +20,7 @@ sbuild\-createchroot \- create sbuild chroot
 .B sbuild\-createchroot
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .RB [ \-\-verbose ]
-.RB [ \-\-arch ]
+.RB [ \-\-arch=\fIarch\fP ]
 .RB [ \-\-foreign ]
 .RB [ \-\-resolve-deps " \[or] " \-\-no-resolve-deps ]
 .RB [ \-\-keep-debootstrap-dir ]
@@ -64,7 +64,7 @@ Note that
 is the canonical reference for the meaning of the options; they are passed
 directly to debootstrap.
 .TP
-.BR \-\-arch
+.BR \-\-arch=\fIarch\fP
 Set the target architecture.  This may be used if dpkg is not already
 installed.  See also \fI\-\-foreign\fP, below.
 .TP

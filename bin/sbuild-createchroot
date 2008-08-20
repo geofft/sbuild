@@ -83,7 +83,7 @@ GetOptions (
     "resolve-deps" => sub { $resolve_deps = 1; },
     "no-resolve-deps" => sub { $resolve_deps = 0; },
     "keep-debootstrap-dir" => \$keep_debootstrap_dir,
-    "arch" => \$bootstrap_arch,
+    "arch=s" => \$bootstrap_arch,
     "verbose" => \$verbose,
     "exclude=s" => \$exclude,
     "include=s" => \$include,

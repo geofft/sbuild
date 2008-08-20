@@ -196,6 +196,8 @@ While running as root inside the chroot:
 .br
 \f[CR]# \f[CB]chown root:sbuild /build\fP\fP
 .br
+\f[CR]# \f[CB]chmod 02775 /build\fP\fP
+.br
 \f[CR]# \f[CB]mkdir \-p /var/lib/sbuild/srcdep\-lock\fP\fP
 .br
 \f[CR]# \f[CB]chown \-R root:sbuild /var/lib/sbuild\fP\fP
