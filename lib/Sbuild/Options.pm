@@ -188,9 +188,14 @@ sub parse_options (\%) {
 			   $Sbuild::Conf::path =
 			       "/usr/lib/gcc-snapshot/bin:$Sbuild::Conf::path";
 		       },
-		       "v|verbose+" => \$Sbuild::Sbuild::Conf::verbose,
+		       "v|verbose" => sub {
+			   $self->get('CONFIG')->set('VERBOSE',
+						     $self->get('CONFIG')->get('VERBOSE') + 1);
+		       },
 		       "q|quiet" => sub {
-			   $Sbuild::Sbuild::Conf::verbose-- if $Sbuild::Conf::verbose;
+			   $self->get('CONFIG')->set('VERBOSE',
+						     $self->get('CONFIG')->get('VERBOSE') - 1)
+			       if $self->get('CONFIG')->get('VERBOSE');
 		       },
 	);
 }

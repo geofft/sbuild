@@ -30,7 +30,11 @@ $ENV{'SHELL'} = "/bin/sh";
 # avoid intermixing of stdout and stderr
 $| = 1;
 
-$Sbuild::Conf::verbose++;
+# TODO: Don't use global.
+if (defined($main::conf)) {
+    $main::conf->set('VERBOSE',
+		     $self->get('CONFIG')->get('VERBOSE') + 1);
+}
 
 package Sbuild::Utility;
 
@@ -43,7 +47,7 @@ use Sbuild::Sysconfig qw($arch);
 
 sub get_dist ($);
 sub setup ($$);
-sub cleanup ();
+sub cleanup ($);
 sub shutdown ($);
 
 my $current_session;
@@ -79,7 +83,7 @@ sub setup ($$) {
     my $conf = shift;
 
     $Sbuild::Conf::nolog = 1;
-    Sbuild::Log::open_log($chroot);
+    Sbuild::Log::open_log($chroot, $conf);
 
     $chroot = get_dist($chroot);
 
@@ -98,7 +102,9 @@ sub setup ($$) {
     return $session;
 }
 
-sub cleanup () {
+sub cleanup ($) {
+    my $conf = shift;
+
     if (defined(&main::local_cleanup)) {
 	main::local_cleanup($Sbuild::Utility::current_session);
     }
@@ -107,7 +113,7 @@ sub cleanup () {
 }
 
 sub shutdown ($) {
-    cleanup();
+    cleanup($main::conf); # FIXME: don't use global
     exit 1;
 }
 

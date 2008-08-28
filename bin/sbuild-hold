@@ -68,6 +68,6 @@ my $packages = join(" ", @ARGV);
 my $status = $session->run_command("$Sbuild::Conf::dpkg --list $packages",
 				   "root", 1, 0);
 
-cleanup();
+cleanup($conf);
 
 exit $status;

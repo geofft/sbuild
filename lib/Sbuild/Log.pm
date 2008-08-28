@@ -30,7 +30,7 @@ use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
 
-sub open_log ($);
+sub open_log ($$);
 sub close_log ();
 sub open_pkg_log ($$$);
 sub close_pkg_log ($$$$$);
@@ -52,9 +52,12 @@ my $pkg_logfile;
 my $pkg_distribution;
 my $pkg_name;
 my $log_dir_available;
+# TODO: Remove global.
+my $conf;
 
-sub open_log ($) {
+sub open_log ($$) {
     my $main_distribution = shift;
+    $conf = shift;
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
@@ -73,7 +76,7 @@ sub open_log ($) {
     $F->autoflush(1);
     $main_logfile = $F->filename;
 
-    if ($Sbuild::Conf::verbose) {
+    if ($conf->get('VERBOSE')) {
 	my $pid;
 	($pid = open( main::LOG, "|-"));
 	if (!defined $pid) {
@@ -99,7 +102,7 @@ sub open_log ($) {
     undef $F;
     main::LOG->autoflush(1);
     select(main::LOG);
-    if ($Sbuild::Conf::verbose) {
+    if ($conf->get('VERBOSE')) {
 	open( SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
 	open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
     }
@@ -108,20 +111,22 @@ sub open_log ($) {
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 }
 
+# TODO: Don't require $conf for cleanup, or store in log object, or pass in as args?
 sub close_log () {
+
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
     close( main::PLOG );
     close( STDERR );
     close( STDOUT );
     close( main::LOG );
-    if ($Sbuild::Conf::verbose) {
+    if ($conf->get('VERBOSE')) {
 	open( STDOUT, ">&SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
 	open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
 	close (SAVED_STDOUT);
 	close (SAVED_STDERR);
     }
-    if (!$Sbuild::Conf::nolog && !$Sbuild::Conf::verbose &&
+    if (!$Sbuild::Conf::nolog && !$conf->get('VERBOSE') &&
 	-s $main_logfile && $Sbuild::Conf::mailto) {
 	send_mail( $Sbuild::Conf::mailto, "Log from sbuild $date",
 		   $main_logfile ) if $Sbuild::Conf::mailto;
@@ -155,7 +160,7 @@ sub open_pkg_log ($$$) {
 	log_symlink($pkg_logfile,
 		    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
 	log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
-	if ($Sbuild::Conf::verbose) {
+	if ($conf->get('VERBOSE')) {
 	    my $pid;
 	    ($pid = open( main::PLOG, "|-"));
 	    if (!defined $pid) {

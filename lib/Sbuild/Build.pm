@@ -1869,7 +1869,7 @@ sub parse_one_srcdep (\$$$) {
 		$neg_seen = 1;
 	    }
 	    if ($conf::srcdep_over{$dep}) {
-		if ($Sbuild::Conf::verbose) {
+		if ($self->get_conf('VERBOSE')) {
 		    print main::PLOG "Replacing source dep $dep";
 		    print main::PLOG " ($rel $relv)" if $relv;
 		    print main::PLOG " with $conf::srcdep_over{$dep}[0]";

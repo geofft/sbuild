@@ -59,6 +59,6 @@ my $cmd = join(' ', @ARGV);
 $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 my $status = $session->run_apt_command($command, $cmd, "root", 1);
 
-cleanup();
+cleanup($conf);
 
 exit $status;

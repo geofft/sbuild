@@ -52,7 +52,7 @@ foreach (@ARGV) {
 					   "-uy upgrade",
 					   "root", 1);
 
-    cleanup();
+    cleanup($conf);
 
     exit $status if ($status);
 }
