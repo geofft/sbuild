@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($mailprog $dpkg $su
+    @EXPORT = qw($dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
@@ -137,8 +137,6 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init () {
     # some checks
-    die "mailprog binary $Sbuild::Conf::mailprog does not exist or isn't executable\n"
-	if !-x $Sbuild::Conf::mailprog;
     die "schroot binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
 	if !-x $Sbuild::Conf::schroot;
     die "apt-get binary $Sbuild::Conf::apt_get does not exist or isn't executable\n"

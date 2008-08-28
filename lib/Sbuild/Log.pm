@@ -224,8 +224,8 @@ sub send_mail ($$$) {
     }
     local $SIG{'PIPE'} = 'IGNORE';
 
-    if (!open( MAIL, "|$Sbuild::Conf::mailprog -oem $to" )) {
-	warn "Could not open pipe to $Sbuild::Conf::mailprog: $!\n";
+    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
 	close( F );
 	return 0;
     }
@@ -240,7 +240,7 @@ sub send_mail ($$$) {
 
     close( F );
     if (!close( MAIL )) {
-	warn "$Sbuild::Conf::mailprog failed (exit status $?)\n";
+	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
 	return 0;
     }
     return 1;
