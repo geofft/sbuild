@@ -170,7 +170,9 @@ sub parse_options (\%) {
 		       "m|maintainer=s" => \$Sbuild::Conf::maintainer_name,
 		       "k|keyid=s" => \$Sbuild::Conf::key_id,
 		       "e|uploader=s" => \$Sbuild::Conf::uploader_name,
-		       "n|nolog" => \$Sbuild::Conf::nolog,
+		       "n|nolog" => sub {
+			   $self->set('NOLOG', 1);
+		       },
 		       "purge=s" => sub {
 			   $Sbuild::Conf::purge_build_directory = $_[1];
 			   die "Bad purge mode\n"

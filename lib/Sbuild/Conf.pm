@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($nolog $mailprog $dpkg $su
+    @EXPORT = qw($mailprog $dpkg $su
                  $schroot $schroot_options $fakeroot $apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
@@ -55,8 +55,6 @@ INIT {
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";
 our $cwd = cwd();
-our $verbose = 0;
-our $nolog = 0;
 
 # Defaults.
 our $mailprog = "/usr/sbin/sendmail";

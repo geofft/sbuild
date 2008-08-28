@@ -61,7 +61,7 @@ sub open_log ($$) {
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
-    if ($Sbuild::Conf::nolog) {
+    if ($conf->get('NOLOG')) {
 	open( main::LOG, ">&STDOUT" );
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	select( main::LOG );
@@ -126,12 +126,12 @@ sub close_log () {
 	close (SAVED_STDOUT);
 	close (SAVED_STDERR);
     }
-    if (!$Sbuild::Conf::nolog && !$conf->get('VERBOSE') &&
+    if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
 	-s $main_logfile && $Sbuild::Conf::mailto) {
 	send_mail( $Sbuild::Conf::mailto, "Log from sbuild $date",
 		   $main_logfile ) if $Sbuild::Conf::mailto;
     }
-    elsif (!$Sbuild::Conf::nolog && ! -s $main_logfile) {
+    elsif (!$conf->get('NOLOG') && ! -s $main_logfile) {
 	unlink( $main_logfile );
     }
 }
@@ -152,7 +152,7 @@ sub open_pkg_log ($$$) {
 	}
     }
 
-    if ($Sbuild::Conf::nolog || !$log_dir_available) {
+    if ($conf->get('NOLOG') || !$log_dir_available) {
 	open( main::PLOG, ">&STDOUT" );
     }
     else {
@@ -209,7 +209,7 @@ sub close_pkg_log ($$$$$) {
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
     send_mail( $Sbuild::Conf::mailto,
 	       "Log for $status build of $pkg_name (dist=$pkg_distribution)",
-	       $pkg_logfile ) if !$Sbuild::Conf::nolog && $log_dir_available && $Sbuild::Conf::mailto;
+	       $pkg_logfile ) if !$conf->get('NOLOG') && $log_dir_available && $Sbuild::Conf::mailto;
 }
 
 sub send_mail ($$$) {

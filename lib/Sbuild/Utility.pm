@@ -30,12 +30,6 @@ $ENV{'SHELL'} = "/bin/sh";
 # avoid intermixing of stdout and stderr
 $| = 1;
 
-# TODO: Don't use global.
-if (defined($main::conf)) {
-    $main::conf->set('VERBOSE',
-		     $self->get('CONFIG')->get('VERBOSE') + 1);
-}
-
 package Sbuild::Utility;
 
 use strict;
@@ -82,7 +76,10 @@ sub setup ($$) {
     my $chroot = shift;
     my $conf = shift;
 
-    $Sbuild::Conf::nolog = 1;
+
+    $main::conf->set('VERBOSE', 1);
+    $main::conf->set('NOLOG', 1);
+
     Sbuild::Log::open_log($chroot, $conf);
 
     $chroot = get_dist($chroot);
