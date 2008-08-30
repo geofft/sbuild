@@ -77,8 +77,8 @@ sub setup ($$) {
     my $conf = shift;
 
 
-    $main::conf->set('VERBOSE', 1);
-    $main::conf->set('NOLOG', 1);
+    $conf->set('VERBOSE', 1);
+    $conf->set('NOLOG', 1);
 
     Sbuild::Log::open_log($chroot, $conf);
 
