@@ -24,7 +24,7 @@ package Sbuild::Chroot;
 
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
-use Sbuild::ChrootInfo qw(find_chroot get_chroot_info);
+use Sbuild::ChrootInfo;
 
 use strict;
 use warnings;
@@ -69,8 +69,9 @@ sub new ($$$$) {
     bless($self);
 
     $self->set('CONFIG', $conf);
+    $self->set('Chroots', Sbuild::ChrootInfo::new($conf));
     $self->set('Session ID', "");
-    $self->set('Chroot ID', find_chroot($distribution, $chroot, $arch));
+    $self->set('Chroot ID', $self->get('Chroots')->find($distribution, $chroot, $arch));
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;
@@ -154,7 +155,7 @@ sub begin_session (\$) {
     $self->set('Session ID', $schroot_session);
     print STDERR "Setting up chroot $chroot (session id $schroot_session)\n"
 	if $Sbuild::Conf::debug;
-    $self->_setup_options(get_chroot_info($schroot_session));
+    $self->_setup_options($self->get('Chroots')->get_info($schroot_session));
     return 1;
 }
 

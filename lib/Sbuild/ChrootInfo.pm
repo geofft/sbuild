@@ -29,9 +29,13 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
-sub get_chroot_info ($);
-sub get_chroot_info_all ();
-sub find_chroot ($$$);
+sub new ($);
+sub get (\%$);
+sub set (\%$$);
+sub get_conf (\%$);
+sub get_info (\%$);
+sub get_info_all (\%);
+sub find (\%$$$);
 
 BEGIN {
     use Exporter ();
@@ -39,18 +43,49 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(%chroots get_chroot_info get_chroot_info_all
-                 find_chroot);
+    @EXPORT = qw();
 }
 
-INIT {
-    get_chroot_info_all();
+sub new ($) {
+    my $conf = shift;
+
+    my $self  = {};
+    bless($self);
+
+    $self->set('Config', $conf);
+    $self->set('Chroots', {});
+
+    $self->get_info_all();
+
+    return $self;
 }
 
-my %chroots = ();
+sub get (\%$) {
+    my $self = shift;
+    my $key = shift;
 
-sub get_chroot_info ($) {
+    return $self->{$key};
+}
+
+sub set (\%$$) {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    return $self->{$key} = $value;
+}
+
+sub get_conf (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->get('Config')->get($key);
+}
+
+sub get_info (\%$) {
+    my $self = shift;
     my $chroot = shift;
+
     my $chroot_type = "";
     my %tmp = ('Priority' => 0,
 	       'Location' => "",
@@ -95,7 +130,12 @@ sub get_chroot_info ($) {
     return \%tmp;
 }
 
-sub get_chroot_info_all () {
+sub get_info_all (\%) {
+    my $self = shift;
+
+    my $chroots = $self->get('Chroots');
+
+    # TODO: Redundant block?  Leave in place for sudo use in the future.
     foreach (glob("${Sbuild::Conf::build_dir}/chroot-*")) {
 	my %tmp = ('Priority' => 0,
 		   'Location' => $_,
@@ -105,27 +145,34 @@ sub get_chroot_info_all () {
 	    $name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;
 	    print STDERR "Found chroot $name\n"
 		if $Sbuild::Conf::debug;
-	    $chroots{$name} = \%tmp;
+	    $chroots->{$name} = \%tmp;
 	}
     }
 
     # Pick up available chroots and dist_order from schroot
-    %chroots = ();
+    $chroots = {};
     open CHROOTS, '-|', $Sbuild::Conf::schroot, '--list' or die "Can't run $Sbuild::Conf::schroot";
     while (<CHROOTS>) {
 	chomp;
 	my $chroot = $_;
 	print STDERR "Getting info for $chroot chroot\n"
 	    if $Sbuild::Conf::debug;
-	$chroots{$chroot} = get_chroot_info($chroot);
+	$chroots->{$chroot} = $self->get_info($chroot);
     }
+
+    $self->set('Chroots', $chroots);
+
     close CHROOTS or die "Can't close schroot pipe";
 }
 
-sub find_chroot ($$$) {
+sub find (\%$$$) {
+    my $self = shift;
     my $distribution = shift;
     my $chroot = shift;
     my $arch = shift;
+
+    my $chroots = $self->get('Chroots');
+
     my $arch_set = 1;
 
     if (!defined($arch) || $arch eq "") {
@@ -137,18 +184,18 @@ sub find_chroot ($$$) {
 
     if (!defined $chroot) {
         if ($arch ne "" &&
-            defined($chroots{"${distribution}-${arch}-sbuild"})) {
+            defined($chroots->{"${distribution}-${arch}-sbuild"})) {
             $chroot = "${distribution}-${arch}-sbuild";
             $arch_found = 1;
         }
-        elsif (defined($chroots{"${distribution}-sbuild"})) {
+        elsif (defined($chroots->{"${distribution}-sbuild"})) {
             $chroot = "${distribution}-sbuild";
         }
         elsif ($arch ne "" &&
-               defined($chroots{"${distribution}-${arch}"})) {
+               defined($chroots->{"${distribution}-${arch}"})) {
             $chroot = "${distribution}-${arch}";
             $arch_found = 1;
-        } elsif (defined($chroots{$distribution})) {
+        } elsif (defined($chroots->{$distribution})) {
             $chroot = $distribution;
 	}
 
