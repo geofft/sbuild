@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($schroot $schroot_options $fakeroot $apt_get
+    @EXPORT = qw($apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
                  $build_env_cmnd $pgp_options $log_dir $mailto
@@ -136,8 +136,6 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init () {
     # some checks
-    die "schroot binary $Sbuild::Conf::schroot does not exist or isn't executable\n"
-	if !-x $Sbuild::Conf::schroot;
     die "apt-get binary $Sbuild::Conf::apt_get does not exist or isn't executable\n"
 	if !-x $Sbuild::Conf::apt_get;
     die "apt-cache binary $Sbuild::Conf::apt_cache does not exist or isn't executable\n"

@@ -89,7 +89,8 @@ sub get_info (\%$) {
     my %tmp = ('Priority' => 0,
 	       'Location' => "",
 	       'Session Purged' => 0);
-    open CHROOT_DATA, '-|', $Sbuild::Conf::schroot, '--info', '--chroot', $chroot or die "Can't run $Sbuild::Conf::schroot to get chroot data";
+    open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot
+	or die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
     while (<CHROOT_DATA>) {
 	chomp;
 	if (/^\s*Type:?\s+(.*)$/) {
@@ -150,7 +151,8 @@ sub get_info_all (\%) {
 
     # Pick up available chroots and dist_order from schroot
     $chroots = {};
-    open CHROOTS, '-|', $Sbuild::Conf::schroot, '--list' or die "Can't run $Sbuild::Conf::schroot";
+    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--list'
+	or die 'Can\'t run ' . $self->get_conf('SCHROOT');
     while (<CHROOTS>) {
 	chomp;
 	my $chroot = $_;

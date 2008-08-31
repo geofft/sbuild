@@ -611,7 +611,7 @@ EOF
 	     "LD_LIBRARY_PATH=".$self->get_option('LD_LIBRARY_PATH')." " : "").
 	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
 	     "$binopt " . $self->get_option('Signing Options') .
-	     " -r$conf::fakeroot 2>&1";
+	     ' -r' . $self->get_conf('FAKEROOT') . ' 2>&1';
 	$self->{'Session'}->exec_command($buildcmd, $self->get_conf('USERNAME'), 1, 0, undef);
     }
     $self->{'Sub Task'} = "dpkg-buildpackage";

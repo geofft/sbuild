@@ -23,7 +23,6 @@
 package Sbuild::Chroot;
 
 use Sbuild::Conf;
-use Sbuild::Sysconfig;
 use Sbuild::ChrootInfo;
 
 use strict;
@@ -145,7 +144,7 @@ sub begin_session (\$) {
     my $self = shift;
     my $chroot = $self->get('Chroot ID');
 
-    my $schroot_session=`$Sbuild::Conf::schroot -c $chroot --begin-session`;
+    my $schroot_session=readpipe($self->get_conf('SCHROOT') . " -c $chroot --begin-session");
     chomp($schroot_session);
     if ($?) {
 	print STDERR "Chroot setup failed\n";
@@ -166,7 +165,7 @@ sub end_session (\$) {
 
     print STDERR "Cleaning up chroot (session id " . $self->get('Session ID') . ")\n"
 	if $Sbuild::Conf::debug;
-    system("$Sbuild::Conf::schroot -c " . $self->get('Session ID') . " --end-session");
+    system($self->get_conf('SCHROOT') . ' -c ' . $self->get('Session ID') . ' --end-session');
     $self->set('Session ID', "");
     if ($?) {
 	print STDERR "Chroot cleanup failed\n";
@@ -219,7 +218,9 @@ sub get_command_internal (\$$$$$) {
 	if (!defined($dir)) {
 	    $dir = $self->strip_chroot_path($self->get('Build Location'));
 	}
-	$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c " . $self->get('Session ID') . " --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
+	$cmdline = $self->get_conf('SCHROOT') . " -d '$dir' -c " . $self->get('Session ID') .
+	    " --run-session " . $self->get_conf('SCHROOT_OPTIONS')  .
+	    " -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
 	if ($user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
