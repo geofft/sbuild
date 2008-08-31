@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($mailto
-                 $mailfrom @no_auto_upgrade $check_depends_algorithm
+    @EXPORT = qw($mailfrom @no_auto_upgrade $check_depends_algorithm
                  $purge_build_directory @toolchain_regex
                  $stalled_pkg_timeout $srcdep_lock_dir
                  $srcdep_lock_wait $max_lock_trys $lock_interval
@@ -73,6 +72,7 @@ our $build_env_cmnd = "";
 our $pgp_options = "-us -uc";
 our $log_dir = "$HOME/logs";
 our $mailto = "";
+our %mailto = ();
 our $mailfrom = "Source Builder <sbuild>";
 our $purge_build_directory = "successful";
 our @toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$', 'linux-libc-dev$', 'gnumach-dev$', 'hurd-dev$', 'kfreebsd-kernel-headers$');
@@ -136,8 +136,6 @@ sub init () {
     die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"
 	if ! -d $Sbuild::Conf::srcdep_lock_dir;
 
-    die "mailto not set\n" if !$Sbuild::Conf::mailto && $sbuild_mode eq "buildd";
-
     if (!defined($Sbuild::Conf::build_dir)) {
 	$Sbuild::Conf::build_dir = $Sbuild::Conf::cwd;
     }
@@ -186,6 +184,7 @@ sub set_allowed_keys (\%) {
 	'PGP_OPTIONS'				=> "",
 	'LOG_DIR'				=> "",
 	'MAILTO'				=> "",
+	'MAILTO_HASH'				=> "",
 	'MAILFROM'				=> "",
 	'PURGE_BUILD_DIRECTORY'			=> "",
 	'TOOLCHAIN_REGEX'			=> "",
@@ -255,6 +254,7 @@ sub read_config (\%) {
     $self->set('PGP_OPTIONS', $pgp_options);
     $self->set('LOG_DIR', $log_dir);
     $self->set('MAILTO', $mailto);
+    $self->set('MAILTO_HASH', \%mailto);
     $self->set('MAILFROM', $mailfrom);
     $self->set('PURGE_BUILD_DIRECTORY', $purge_build_directory);
     $self->set('TOOLCHAIN_REGEX', \@toolchain_regex);
@@ -304,7 +304,7 @@ sub check_config (\%) {
     die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
 	if ! -d $self->get('SRCDEP_LOCK_DIR');
 
-    die "mailto not set\n" if !$self->get('MAILTO');
+    die "mailto not set\n" if !$self->get('MAILTO') && $sbuild_mode eq "buildd";
 
     if (!defined($self->get('BUILD_DIR'))) {
 	$self->set('BUILD_DIR', $self->get('CWD'));

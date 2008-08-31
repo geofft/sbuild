@@ -127,9 +127,9 @@ sub close_log () {
 	close (SAVED_STDERR);
     }
     if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
-	-s $main_logfile && $Sbuild::Conf::mailto) {
-	send_mail( $Sbuild::Conf::mailto, "Log from sbuild $date",
-		   $main_logfile ) if $Sbuild::Conf::mailto;
+	-s $main_logfile && $conf->get('MAILTO')) {
+	send_mail( $conf->get('MAILTO'), "Log from sbuild $date",
+		   $main_logfile ) if $conf->get('MAILTO');
     }
     elsif (!$conf->get('NOLOG') && ! -s $main_logfile) {
 	unlink( $main_logfile );
@@ -207,9 +207,9 @@ sub close_pkg_log ($$$$$) {
 
     close( main::PLOG );
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
-    send_mail( $Sbuild::Conf::mailto,
-	       "Log for $status build of $pkg_name (dist=$pkg_distribution)",
-	       $pkg_logfile ) if !$conf->get('NOLOG') && $log_dir_available && $Sbuild::Conf::mailto;
+    send_mail($conf->get('MAILTO'),
+	      "Log for $status build of $pkg_name (dist=$pkg_distribution)",
+	      $pkg_logfile) if !$conf->get('NOLOG') && $log_dir_available && $conf->get('MAILTO');
 }
 
 sub send_mail ($$$) {

@@ -77,8 +77,9 @@ sub main () {
     print "Selected architecture " . $options->get('User Arch') . "\n"
 	if $conf::debug;
 
-    $conf::mailto = $conf::mailto{$options->get('Distribution')}
-    if $conf::mailto{$options->get('Distribution')};
+    $conf->set('MAILTO',
+	       $conf->get('MAILTO_HASH')->{$options->get('Distribution')})
+	if $conf->get('MAILTO_HASH')->{$options->get('Distribution')};
 
 # see debsign for priorities, we will follow the same order
     $options->set('Signing Options',
