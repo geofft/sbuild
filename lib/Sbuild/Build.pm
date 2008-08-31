@@ -615,7 +615,7 @@ EOF
 	my $buildcmd = "cd $bdir && PATH=$conf::path ".
 	    (defined($self->get_option('LD_LIBRARY_PATH')) ?
 	     "LD_LIBRARY_PATH=".$self->get_option('LD_LIBRARY_PATH')." " : "").
-	     "exec $conf::build_env_cmnd dpkg-buildpackage $conf::pgp_options ".
+	     "exec " . $self->get_conf('BUILD_ENV_CMND') . " dpkg-buildpackage $conf::pgp_options ".
 	     "$binopt " . $self->get_option('Signing Options') .
 	     ' -r' . $self->get_conf('FAKEROOT') . ' 2>&1';
 	$self->{'Session'}->exec_command($buildcmd, $self->get_conf('USERNAME'), 1, 0, undef);
