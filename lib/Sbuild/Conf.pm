@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($apt_get
-                 $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
+    @EXPORT = qw($dpkg_source $dcmd $md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
                  $build_env_cmnd $pgp_options $log_dir $mailto
                  $mailfrom @no_auto_upgrade $check_depends_algorithm
@@ -136,10 +135,6 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init () {
     # some checks
-    die "apt-get binary $Sbuild::Conf::apt_get does not exist or isn't executable\n"
-	if !-x $Sbuild::Conf::apt_get;
-    die "apt-cache binary $Sbuild::Conf::apt_cache does not exist or isn't executable\n"
-	if !-x $Sbuild::Conf::apt_cache;
     die "dpkg-source binary $Sbuild::Conf::dpkg_source does not exist or isn't executable\n"
 	if !-x $Sbuild::Conf::dpkg_source;
     die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"

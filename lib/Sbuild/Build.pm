@@ -291,10 +291,12 @@ sub fetch_source_files (\$) {
 	my $retried = $self->get_conf('APT_UPDATE'); # Already updated if set
       retry:
 	print main::PLOG "Checking available source versions...\n";
-	my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "-q showsrc $self->{'Package'}", $self->get_conf('USERNAME'), 0, '/');
+	my $command = $self->{'Session'}->get_apt_command($self->get_conf('APT_CACHE'),
+							  "-q showsrc $self->{'Package'}",
+							  $self->get_conf('USERNAME'), 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
 	if (!$pid) {
-	    print main::PLOG "Can't open pipe to $conf::apt_cache: $!\n";
+	    print main::PLOG 'Can\'t open pipe to ' . $self->get_conf('APT_CACHE') . ": $!\n";
 	    return 0;
 	}
 	{
@@ -316,7 +318,8 @@ sub fetch_source_files (\$) {
 	    }
 
 	    if (! scalar keys %entries) {
-		print main::PLOG "$conf::apt_cache returned no information about $self->{'Package'} source\n";
+		print main::PLOG $self->get_conf('APT_CACHE') .
+		    " returned no information about $self->{'Package'} source\n";
 		print main::PLOG "Are there any deb-src lines in your /etc/apt/sources.list?\n";
 		return 0;
 
@@ -325,14 +328,15 @@ sub fetch_source_files (\$) {
 	close(PIPE);
 	waitpid $pid, 0;
 	if ($?) {
-	    print main::PLOG "$conf::apt_cache failed\n";
+	    print main::PLOG $self->get_conf('APT_CACHE') . " failed\n";
 	    return 0;
 	}
 
 	if (!defined($entries{"$self->{'Package'} $self->{'Version'}"})) {
 	    if (!$retried) {
 		# try to update apt's cache if nothing found
-		$self->{'Session'}->run_apt_command("$conf::apt_get", "update >/dev/null", "root", 0, '/');
+		$self->{'Session'}->run_apt_command($self->get_conf('APT_GET'),
+						    "update >/dev/null", "root", 0, '/');
 		$retried = 1;
 		goto retry;
 	    }
@@ -348,9 +352,11 @@ sub fetch_source_files (\$) {
 	    push(@fetched, "$self->{'Chroot Build Dir'}/$_");
 	}
 
-	my $command2 = $self->{'Session'}->get_apt_command("$conf::apt_get", "--only-source -q -d source $self->{'Package'}=$self->{'Version'} 2>&1 </dev/null", $self->get_conf('USERNAME'), 0, undef);
+	my $command2 = $self->{'Session'}->get_apt_command($self->get_conf('APT_GET'),
+							   "--only-source -q -d source $self->{'Package'}=$self->{'Version'} 2>&1 </dev/null",
+							   $self->get_conf('USERNAME'), 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
-	    print main::PLOG "Can't open pipe to $conf::apt_get: $!\n";
+	    print main::PLOG 'Can\'t open pipe to ' . $self->get_conf('APT_GET') . ": $!\n";
 	    return 0;
 	}
 	while( <PIPE> ) {
@@ -358,7 +364,7 @@ sub fetch_source_files (\$) {
 	}
 	close( PIPE );
 	if ($?) {
-	    print main::PLOG "$conf::apt_get for sources failed\n";
+	    print main::PLOG $self->get_conf('APT_GET') . " for sources failed\n";
 	    return 0;
 	}
 	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
@@ -1044,13 +1050,13 @@ sub run_apt (\$$\@\@@) {
     # it reads EOF -- hardwire the new --force-confold option to avoid
     # the questions.
     my $command =
-	$self->{'Session'}->get_apt_command("$conf::apt_get", "--purge ".
-				  "-o DPkg::Options::=--force-confold ".
-				  "-q $mode install @to_install ".
-				  "2>&1 </dev/null", "root", 0, '/');
+	$self->{'Session'}->get_apt_command($self->get_conf('APT_GET'), '--purge '.
+					    '-o DPkg::Options::=--force-confold '.
+					    "-q $mode install @to_install ".
+					    "2>&1 </dev/null", "root", 0, '/');
 
     if (!open( PIPE, "$command |" )) {
-	print main::PLOG "Can't open pipe to apt-get: $!\n";
+	print main::PLOG 'Can\'t open pipe to ' . $self->get_conf('APT_GET') . ": $!\n";
 	return 0;
     }
     while( <PIPE> ) {
@@ -1062,8 +1068,9 @@ sub run_apt (\$$\@\@@) {
 
     if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
 	my $command =
-	    $self->{'Session'}->get_apt_command("$conf::apt_get", "-q update 2>&1",
-				      "root", 1, '/');
+	    $self->{'Session'}->get_apt_command($self->get_conf('APT_GET'),
+						"-q update 2>&1",
+						"root", 1, '/');
 	if (!open( PIPE, "$command |" )) {
 	    print main::PLOG "Can't open pipe to apt-get: $!\n";
 	    return 0;
@@ -1395,13 +1402,13 @@ sub get_apt_policy (\$@) {
     $ENV{LC_ALL}='C';
 
     my $command =
-	$self->{'Session'}->get_apt_command("$conf::apt_cache",
-				  "policy @interest",
-				  $self->get_conf('USERNAME'), 0, '/');
+	$self->{'Session'}->get_apt_command($self->get_conf('APT_CACHE'),
+					    "policy @interest",
+					    $self->get_conf('USERNAME'), 0, '/');
 
     my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&main::PLOG', "$command" );
     if (!$pid) {
-	die "Cannot start $conf::apt_cache $!\n";
+	die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
     }
     while(<APTCACHE>) {
 	$package=$1 if /^([0-9a-z+.-]+):$/;
@@ -1411,7 +1418,7 @@ sub get_apt_policy (\$@) {
     }
     close(APTCACHE);
     waitpid $pid, 0;
-    die "$conf::apt_cache exit status $?\n" if $?;
+    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return %packages;
 }
@@ -1766,10 +1773,12 @@ sub get_dependencies (\$@) {
     local(*PIPE);
     my %deps;
 
-    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "show @_", $self->get_conf('USERNAME'), 0, '/');
+    my $command = $self->{'Session'}->get_apt_command($self->get_conf('APT_CACHE'),
+						      "show @_",
+						      $self->get_conf('USERNAME'), 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
     if (!$pid) {
-	die "Cannot start $conf::apt_cache $!\n";
+	die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
     }
     local($/) = "";
     while( <PIPE> ) {
@@ -1784,7 +1793,7 @@ sub get_dependencies (\$@) {
     }
     close( PIPE );
     waitpid $pid, 0;
-    die "$conf::apt_cache exit status $?\n" if $?;
+    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return \%deps;
 }
@@ -1794,10 +1803,12 @@ sub get_virtuals (\$@) {
 
     local(*PIPE);
 
-    my $command = $self->{'Session'}->get_apt_command("$conf::apt_cache", "showpkg @_", $self->get_conf('USERNAME'), 0, '/');
+    my $command = $self->{'Session'}->get_apt_command($self->get_conf('APT_CACHE'),
+						      "showpkg @_",
+						      $self->get_conf('USERNAME'), 0, '/');
     my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
     if (!$pid) {
-	die "Cannot start $conf::apt_cache $!\n";
+	die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
     }
     my $name;
     my $in_rprov = 0;
@@ -1818,7 +1829,7 @@ sub get_virtuals (\$@) {
     }
     close( PIPE );
     waitpid $pid, 0;
-    die "$conf::apt_cache exit status $?\n" if $?;
+    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return \%provided_by;
 }

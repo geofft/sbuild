@@ -175,7 +175,8 @@ sub main () {
 
 	# Update APT cache.
 	if ($conf->get('APT_UPDATE')) {
-	    if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1, '/') . " 2>&1 |")) {
+	    if (!open(PIPE, $session->get_apt_command($conf->get('APT_GET'),
+						      "-q update", "root", 1, '/') . " 2>&1 |")) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
 		return 0;
 	    }

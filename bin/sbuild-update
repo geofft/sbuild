@@ -48,7 +48,7 @@ foreach (@ARGV) {
 
     print STDOUT "Updating $chroot chroot...\n";
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-    my $status = $session->run_apt_command($Sbuild::Conf::apt_get, "update",
+    my $status = $session->run_apt_command($conf->get('APT_GET'), "update",
 					   "root", 1);
 
     cleanup($conf);

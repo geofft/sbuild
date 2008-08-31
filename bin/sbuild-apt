@@ -40,9 +40,9 @@ usage_error("sbuild-apt", "Incorrect number of options") if (@ARGV < 2);
 
 my $command = $ARGV[1];
 if ($command eq "apt-get") {
-    $command = $Sbuild::Conf::apt_get;
+    $command = $conf->get('APT_GET');
 } elsif ($command eq "apt-cache") {
-    $command = $Sbuild::Conf::apt_cache;
+    $command = $conf->get('APT_CACHE');
 } else {
     usage_error("sbuild-apt",
 		"Bad command $command.  Allowed commands: apt-get or apt-cache\n");
