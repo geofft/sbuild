@@ -143,9 +143,9 @@ sub open_pkg_log ($$$) {
     my $date = strftime("%Y%m%d-%H%M", localtime($pkg_start_time));
 
     if (!defined $log_dir_available) {
-	if (! -d $Sbuild::Conf::log_dir &&
-	    !mkdir $Sbuild::Conf::log_dir) {
-	    warn "Could not create $Sbuild::Conf::log_dir: $!\n";
+	if (! -d $conf->get('LOG_DIR') &&
+	    !mkdir $conf->get('LOG_DIR')) {
+	    warn "Could not create " . $conf->get('LOG_DIR') . ": $!\n";
 	    $log_dir_available = 0;
 	} else {
 	    $log_dir_available = 1;
@@ -156,7 +156,7 @@ sub open_pkg_log ($$$) {
 	open( main::PLOG, ">&STDOUT" );
     }
     else {
-	$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg_name}-$date";
+	$pkg_logfile = $conf->get('LOG_DIR') . "/${pkg_name}-$date";
 	log_symlink($pkg_logfile,
 		    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
 	log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
