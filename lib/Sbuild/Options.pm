@@ -182,7 +182,9 @@ sub parse_options (\%) {
 		       "s|source" => sub {
 			   $self->set('Build Source', 1);
 		       },
-		       "stats-dir=s" => \$Sbuild::Conf::stats_dir,
+		       "stats-dir=s" => sub {
+			   $self->get('CONFIG')->set('STATS_DIR', $_[1]);
+		       },
 		       "use-snapshot" => sub {
 			   $self->set('GCC Snapshot', 1);
 			   $self->set('LD_LIBRARY_PATH',

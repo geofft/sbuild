@@ -2369,22 +2369,24 @@ sub unlock_file (\$$) {
 sub write_stats (\$$$) {
     my $self = shift;
 
-    return if not defined $conf::stats_dir;
+    my $stats_dir = $self->get_conf('STATS_DIR');
 
-    if (! -d $conf::stats_dir &&
-	!mkdir $conf::stats_dir) {
-	warn "Could not create $conf::stats_dir: $!\n";
+    return if not defined $stats_dir;
+
+    if (! -d $ &&
+	!mkdir $stats_dir) {
+	warn "Could not create $stats_dir: $!\n";
 	return;
     }
 
     my ($cat, $val) = @_;
     local( *F );
 
-    $self->lock_file($conf::stats_dir, 0);
-    open( F, ">>$conf::stats_dir/$cat" );
+    $self->lock_file($stats_dir, 0);
+    open( F, ">>$stats_dir/$cat" );
     print F "$val\n";
     close( F );
-    $self->unlock_file($conf::stats_dir);
+    $self->unlock_file($stats_dir);
 }
 
 sub debian_files_list (\$$) {

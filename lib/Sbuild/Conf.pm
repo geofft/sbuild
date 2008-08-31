@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($avg_time_db
-                 $avg_space_db $stats_dir $package_checklist
+    @EXPORT = qw($package_checklist
                  $build_env_cmnd $pgp_options $log_dir $mailto
                  $mailfrom @no_auto_upgrade $check_depends_algorithm
                  $purge_build_directory @toolchain_regex
@@ -182,6 +181,7 @@ sub set_allowed_keys (\%) {
 	'MD5SUM'				=> "",
 	'AVG_TIME_DB'				=> "",
 	'AVG_SPACE_DB'				=> "",
+	'STATS_DIR'				=> "",
 	'PACKAGE_CHECKLIST'			=> "",
 	'BUILD_ENV_CMND'			=> "",
 	'PGP_OPTIONS'				=> "",
@@ -250,6 +250,7 @@ sub read_config (\%) {
     $self->set('MD5SUM', $md5sum);
     $self->set('AVG_TIME_DB', $avg_time_db);
     $self->set('AVG_SPACE_DB', $avg_space_db);
+    $self->set('STATS_DIR', $stats_dir);
     $self->set('PACKAGE_CHECKLIST', $package_checklist);
     $self->set('BUILD_ENV_CMND', $build_env_cmnd);
     $self->set('PGP_OPTIONS', $pgp_options);
