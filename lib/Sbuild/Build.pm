@@ -2494,10 +2494,10 @@ sub add_time_entry (\$$$) {
     my $pkg = shift;
     my $t = shift;
 
-    return if !$Sbuild::Conf::avg_time_db;
+    return if !$self->get_conf('AVG_TIME_DB');
     my %db;
-    if (!tie %db, 'GDBM_File', $Sbuild::Conf::avg_time_db, GDBM_WRCREAT, 0664) {
-	print "Can't open average time db $Sbuild::Conf::avg_time_db\n";
+    if (!tie %db, 'GDBM_File', $self->get_conf('AVG_TIME_DB'), GDBM_WRCREAT, 0664) {
+	print "Can't open average time db " . $self->get_conf('AVG_TIME_DB') . '\n';
 	return;
     }
     $pkg =~ s/_.*//;
@@ -2523,10 +2523,10 @@ sub add_space_entry (\$$$) {
 
     my $keepvals = 4;
 
-    return if !$Sbuild::Conf::avg_space_db || $space == 0;
+    return if !$self->get_conf('AVG_SPACE_DB') || $space == 0;
     my %db;
-    if (!tie %db, 'GDBM_File', $Sbuild::Conf::avg_space_db, &GDBM_WRCREAT, 0664) {
-	print "Can't open average space db $Sbuild::Conf::avg_space_db\n";
+    if (!tie %db, 'GDBM_File', $self->get_conf('AVG_SPACE_DB'), &GDBM_WRCREAT, 0664) {
+	print "Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . '\n';
 	return;
     }
     $pkg =~ s/_.*//;

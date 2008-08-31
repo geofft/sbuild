@@ -66,9 +66,9 @@ GetOptions (
 or usage_error("sbuild-stats", "Error parsing command-line options");
 
 if ($db eq "time") {
-    $db_file = $conf::avg_time_db;
+    $db_file = $conf->get('AVG_TIME_DB');
 } elsif ($db eq "space") {
-    $db_file = $conf::avg_space_db;
+    $db_file = $conf->get('AVG_SPACE_DB');
 } elsif ($db_file ne "unspec") {
 # Set by hand.
 } else {
