@@ -22,3 +22,5 @@ INSTALL
 .deps
 .libs
 *.tar.*
+\#*
+.#*
