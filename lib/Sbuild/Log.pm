@@ -230,7 +230,7 @@ sub send_mail ($$$) {
 	return 0;
     }
 
-    print MAIL "From: $Sbuild::Conf::mailfrom\n";
+    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
     print MAIL "To: $to\n";
     print MAIL "Subject: $subject\n\n";
     while( <F> ) {

@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($mailfrom @no_auto_upgrade $check_depends_algorithm
+    @EXPORT = qw(@no_auto_upgrade $check_depends_algorithm
                  $purge_build_directory @toolchain_regex
                  $stalled_pkg_timeout $srcdep_lock_dir
                  $srcdep_lock_wait $max_lock_trys $lock_interval
