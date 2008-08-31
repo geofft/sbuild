@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($su
-                 $schroot $schroot_options $fakeroot $apt_get
+    @EXPORT = qw($schroot $schroot_options $fakeroot $apt_get
                  $apt_cache $dpkg_source $dcmd $md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
                  $build_env_cmnd $pgp_options $log_dir $mailto
