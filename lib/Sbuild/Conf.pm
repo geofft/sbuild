@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($dpkg_source $dcmd $md5sum $avg_time_db
+    @EXPORT = qw($md5sum $avg_time_db
                  $avg_space_db $stats_dir $package_checklist
                  $build_env_cmnd $pgp_options $log_dir $mailto
                  $mailfrom @no_auto_upgrade $check_depends_algorithm
@@ -135,8 +135,6 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init () {
     # some checks
-    die "dpkg-source binary $Sbuild::Conf::dpkg_source does not exist or isn't executable\n"
-	if !-x $Sbuild::Conf::dpkg_source;
     die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"
 	if ! -d $Sbuild::Conf::srcdep_lock_dir;
 
@@ -180,6 +178,7 @@ sub set_allowed_keys (\%) {
 	'APT_GET'				=> "",
 	'APT_CACHE'				=> "",
 	'DPKG_SOURCE'				=> "",
+	'DCMD'					=> "",
 	'MD5SUM'				=> "",
 	'AVG_TIME_DB'				=> "",
 	'AVG_SPACE_DB'				=> "",
@@ -247,6 +246,7 @@ sub read_config (\%) {
     $self->set('APT_GET', $apt_get);
     $self->set('APT_CACHE', $apt_cache);
     $self->set('DPKG_SOURCE', $dpkg_source);
+    $self->set('DCMD', $dcmd);
     $self->set('MD5SUM', $md5sum);
     $self->set('AVG_TIME_DB', $avg_time_db);
     $self->set('AVG_SPACE_DB', $avg_space_db);
@@ -299,6 +299,8 @@ sub check_config (\%) {
 	if !-x $self->get('APT_CACHE');
     die "dpkg-source binary " . $self->get('DPKG_SOURCE') . " does not exist or isn't executable\n"
 	if !-x $self->get('DPKG_SOURCE');
+    die "dpkg-source binary " . $self->get('DCMD') . " does not exist or isn't executable\n"
+	if !-x $self->get('DCMD');
     die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
 	if ! -d $self->get('SRCDEP_LOCK_DIR');
 

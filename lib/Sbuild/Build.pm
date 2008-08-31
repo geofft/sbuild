@@ -2415,7 +2415,7 @@ sub dsc_files (\$$) {
 
     print STDERR "Parsing $dsc\n" if $conf::debug;
 
-    if (-r $dsc && open( DSC, "$conf::dcmd $dsc|" )) {
+    if (-r $dsc && open(DSC, $self->get_conf('DCMD') . " $dsc|")) {
 	while (<DSC>) {
 	    chomp;
 	    push @files, $_;
