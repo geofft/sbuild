@@ -910,7 +910,7 @@ sub install_deps (\$) {
 
     local (*F);
 
-    my $command = $self->{'Session'}->get_command("$conf::dpkg --set-selections", "root", 1, 0, '/');
+    my $command = $self->{'Session'}->get_command($self->get_conf('DPKG') . ' --set-selections', "root", 1, 0, '/');
 
     my $success = open( F, "| $command");
 
@@ -920,7 +920,7 @@ sub install_deps (\$) {
 	}
 	close( F );
 	if ($?) {
-	    print main::PLOG "$conf::dpkg --set-selections failed\n";
+	    print main::PLOG $self->get_conf('DPKG') . ' --set-selections failed\n';
 	}
     }
 
@@ -992,7 +992,7 @@ sub uninstall_debs (\$$@) {
     return 1 if !@_;
     print "Uninstalling packages: @_\n" if $conf::debug;
 
-    my $command = $self->{'Session'}->get_command("$conf::dpkg --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
+    my $command = $self->{'Session'}->get_command($self->get_conf('DPKG') . " --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
   repeat:
     my $output;
     my $remove_start_time = time;
@@ -2428,7 +2428,7 @@ sub chroot_arch (\$) {
 	return 0;
     }
     if ($self->{'Sub PID'} == 0) {
-	$self->{'Session'}->exec_command("$conf::dpkg --print-installation-architecture 2>/dev/null", $self->get_conf('USERNAME'), 1, 0, '/');
+	$self->{'Session'}->exec_command($self->get_conf('DPKG') . ' --print-installation-architecture 2>/dev/null', $self->get_conf('USERNAME'), 1, 0, '/');
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );

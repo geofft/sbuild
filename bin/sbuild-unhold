@@ -44,7 +44,7 @@ my $session = setup($ARGV[0], $conf) or die "Chroot setup failed for $chroot chr
 
 print STDOUT "Unholding packages in $chroot chroot:";
 
-my $command = $session->get_command("$Sbuild::Conf::dpkg --set-selections",
+my $command = $session->get_command($conf->get('DPKG') . ' --set-selections',
 				    "root", 1);
 if (!open(SELECTIONS, "| $command")) {
     print STDERR "Can't run dpkg --set-selections in chroot\n";
@@ -65,7 +65,7 @@ if (!close SELECTIONS) {
 print STDOUT ".\n";
 
 my $packages = join(" ", @ARGV);
-my $status = $session->run_command("$Sbuild::Conf::dpkg --list $packages",
+my $status = $session->run_command($conf->get('DPKG') . " --list $packages",
 				   "root", 1, 0);
 
 cleanup($conf);

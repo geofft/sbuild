@@ -22,7 +22,6 @@ package Sbuild::Sysconfig;
 
 use strict;
 use warnings;
-use Sbuild::Conf qw($dpkg);
 
 BEGIN {
     use Exporter ();
