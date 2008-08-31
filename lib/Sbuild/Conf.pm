@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($package_checklist
-                 $build_env_cmnd $pgp_options $log_dir $mailto
+    @EXPORT = qw($build_env_cmnd $pgp_options $log_dir $mailto
                  $mailfrom @no_auto_upgrade $check_depends_algorithm
                  $purge_build_directory @toolchain_regex
                  $stalled_pkg_timeout $srcdep_lock_dir
