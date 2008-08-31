@@ -459,7 +459,7 @@ sub build (\$$$) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
 	$self->{'Sub Task'} = "dpkg-source";
-	$self->{'Session'}->run_command("$conf::dpkg_source -sn -x $dscfile $dscdir 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
+	$self->{'Session'}->run_command($self->get_conf('DPKG_SOURCE') . " -sn -x $dscfile $dscdir 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
 	if ($?) {
 	    print main::PLOG "FAILED [dpkg-source died]\n";
 
