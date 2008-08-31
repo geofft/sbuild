@@ -170,6 +170,8 @@ sub set_allowed_keys (\%) {
     my $self = shift;
 
     my %allowed_keys = (
+	'ARCH'					=> "",
+	'HOSTNAME'				=> "",
 	'HOME'					=> "",
 	'USERNAME'				=> "",
 	'CWD'					=> "",
@@ -284,6 +286,12 @@ sub read_config (\%) {
     $self->set('ALTERNATIVES', \%alternatives);
     $self->set('NO_AUTO_UPGRADE', @no_auto_upgrade);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
+
+    # Not user-settable.
+    chomp(my $arch = readpipe($self->get('DPKG') . " --print-installation-architecture"));
+    $self->set('ARCH', $arch);
+    chomp(my $hostname = `hostname`);
+    $self->set('HOSTNAME', $hostname);
 }
 
 sub check_config (\%) {

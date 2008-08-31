@@ -42,7 +42,7 @@ use Data::Dumper;
 use File::Temp qw(tempdir);
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log);
-use Sbuild::Sysconfig qw($arch $version);
+use Sbuild::Sysconfig qw($version);
 use Sbuild::Options;
 use Sbuild::Build;
 
@@ -164,8 +164,8 @@ sub main () {
 	$build->{'Chroot Dir'} = $session->{'Location'};
 	$build->{'Chroot Build Dir'} =
 	    tempdir($conf->get('USERNAME') . '-' .
-		    $build->{'Package_SVersion'} .
-		    "-$arch-XXXXXX",
+		    $build->{'Package_SVersion'} . '-' .
+		    $conf->get('ARCH') . '-XXXXXX',
 		    DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.

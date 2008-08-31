@@ -37,7 +37,6 @@ use warnings;
 
 use Sbuild::Conf;
 use Sbuild::Chroot;
-use Sbuild::Sysconfig qw($arch);
 
 sub get_dist ($);
 sub setup ($$);

@@ -30,7 +30,7 @@ use IPC::Open3;
 use Sbuild qw(binNMU_version version_compare copy isin);
 use Sbuild::Chroot qw();
 use Sbuild::Log qw(open_pkg_log close_pkg_log);
-use Sbuild::Sysconfig qw($arch $hostname $version);
+use Sbuild::Sysconfig qw($version);
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
 
@@ -151,7 +151,7 @@ sub new ($$$) {
 
     $self->{'Options'} = $options;
     $self->{'Config'} = $conf;
-    $self->{'Arch'} = $Sbuild::Sysconfig::arch;
+    $self->{'Arch'} = $self->get_conf('ARCH');
     $self->{'Chroot Dir'} = '';
     $self->{'Chroot Build Dir'} = '';
     $self->{'Jobs File'} = 'build-progress';
@@ -2446,8 +2446,9 @@ sub open_build_log (\$) {
     open_pkg_log($self->get_conf('USERNAME') . "-$self->{'Package_SVersion'}-$self->{'Arch'}",
 		 $self->get_option('Distribution'),
 		 $self->{'Pkg Start Time'});
-    print main::PLOG "Automatic build of $self->{'Package_SVersion'} on $hostname by " .
-	"sbuild/$arch $version\n";
+    print main::PLOG "Automatic build of $self->{'Package_SVersion'} on " .
+	$self->get_conf('HOSTNAME'). ' by ' .
+	'sbuild/' . $self->get_conf('ARCH') . " $version\n";
     print main::PLOG "Build started at " .
 	strftime("%Y%m%d-%H%M", localtime($self->{'Pkg Start Time'})) . "\n";
     print main::PLOG "*"x78, "\n";

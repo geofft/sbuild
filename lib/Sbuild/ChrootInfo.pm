@@ -21,7 +21,6 @@
 package Sbuild::ChrootInfo;
 
 use Sbuild::Conf;
-use Sbuild::Sysconfig;
 
 use strict;
 use warnings;
@@ -176,7 +175,7 @@ sub find (\%$$$) {
     my $arch_set = 1;
 
     if (!defined($arch) || $arch eq "") {
-	$arch = $Sbuild::Sysconfig::arch;
+	$arch = $self->get_conf('ARCH');
 	$arch_set = 0;
     }
 
