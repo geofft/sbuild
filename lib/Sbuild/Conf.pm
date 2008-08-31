@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($md5sum $avg_time_db
+    @EXPORT = qw($avg_time_db
                  $avg_space_db $stats_dir $package_checklist
                  $build_env_cmnd $pgp_options $log_dir $mailto
                  $mailfrom @no_auto_upgrade $check_depends_algorithm
