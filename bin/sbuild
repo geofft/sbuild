@@ -326,7 +326,7 @@ sub shutdown ($) {
 
     # close logs and send mails
     if ( $main::current_job && defined($main::build_object->{'Session'})) {
-	if ($conf::purge_build_directory eq "always") {
+	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
 	    print PLOG "Purging $main::build_object->{'Chroot Build Dir'}\n";
 	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::build_object->{'Chroot Build Dir'});
 	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');

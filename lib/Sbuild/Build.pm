@@ -783,8 +783,8 @@ EOF
     $self->check_watches();
     $self->check_space(@space_files);
 
-    if ($conf::purge_build_directory eq "always" ||
-	($conf::purge_build_directory eq "successful" && $rv == 0)) {
+    if ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
+	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' && $rv == 0)) {
 	print main::PLOG "Purging $self->{'Chroot Build Dir'}\n";
 	my $bdir = $self->{'Session'}->strip_chroot_path($self->{'Chroot Build Dir'});
 	$self->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');

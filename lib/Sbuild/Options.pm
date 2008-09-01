@@ -173,10 +173,10 @@ sub parse_options (\%) {
 		       "n|nolog" => sub {
 			   $self->set('NOLOG', 1);
 		       },
-		       "purge=s" => sub {
-			   $Sbuild::Conf::purge_build_directory = $_[1];
-			   die "Bad purge mode\n"
-			       if !isin($Sbuild::Conf::purge_build_directory,
+		       "p|purge=s" => sub {
+			   $self->get('CONFIG')->set('PURGE_BUILD_DIRECTORY', $_[1]);
+			   die "Bad purge mode '$_[1]'\n"
+			       if !isin($self->get('CONFIG')->get('PURGE_BUILD_DIRECTORY'),
 					qw(always successful never));
 		       },
 		       "s|source" => sub {
