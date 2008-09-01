@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($max_lock_trys $lock_interval
-                 @ignore_watches_no_build_deps $build_dir $sbuild_mode
+    @EXPORT = qw(@ignore_watches_no_build_deps $build_dir $sbuild_mode
                  $debug $force_orig_source
                  $path
                  $maintainer_name $uploader_name %watches $key_id);
@@ -184,6 +183,8 @@ sub set_allowed_keys (\%) {
 	'STALLED_PKG_TIMEOUT'			=> "",
 	'SRCDEP_LOCK_DIR'			=> "",
 	'SRCDEP_LOCK_WAIT'			=> "",
+	'MAX_LOCK_TRYS'				=> "",
+	'LOCK_INTERVAL'				=> "",
 	'CHROOT_ONLY'				=> "",
 	'CHROOT_MODE'				=> "",
 	'APT_POLICY'				=> "",
@@ -253,6 +254,8 @@ sub read_config (\%) {
     $self->set('STALLED_PKG_TIMEOUT', $stalled_pkg_timeout);
     $self->set('SRCDEP_LOCK_DIR', $srcdep_lock_dir);
     $self->set('SRCDEP_LOCK_WAIT', $srcdep_lock_wait);
+    $self->set('MAX_LOCK_TRYS', $max_lock_trys);
+    $self->set('LOCK_INTERVAL', $lock_interval);
     $self->set('APT_POLICY', $apt_policy);
     $self->set('CHECK_WATCHES', $check_watches);
     $self->set('IGNORE_WATCHES_NO_BUILD_DEPS', \@ignore_watches_no_build_deps);

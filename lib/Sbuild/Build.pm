@@ -2340,9 +2340,9 @@ sub lock_file (\$$$) {
 		}
 	    }
 	    ++$try;
-	    if (!$for_srcdep && $try > $Sbuild::Conf::max_lock_trys) {
-		warn "Lockfile $lockfile still present after ".
-		    $Sbuild::Conf::max_lock_trys*$Sbuild::Conf::lock_interval.
+	    if (!$for_srcdep && $try > $self->get_conf('MAX_LOCK_TRYS')) {
+		warn "Lockfile $lockfile still present after " .
+		    $self->get_conf('MAX_LOCK_TRYS') * $self->get_conf('LOCK_INTERVAL') .
 		    " seconds -- giving up\n";
 		return;
 	    }
@@ -2350,7 +2350,7 @@ sub lock_file (\$$$) {
 	    "installing or\n",
 	    "removing packages -- waiting...\n"
 		if $for_srcdep && $try == 1;
-	    sleep $Sbuild::Conf::lock_interval;
+	    sleep $self->get_conf('LOCK_INTERVAL');
 	    goto repeat;
 	}
 	warn "Can't create lock file $lockfile: $!\n";
