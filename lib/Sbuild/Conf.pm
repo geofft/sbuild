@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($srcdep_lock_wait $max_lock_trys $lock_interval
+    @EXPORT = qw($max_lock_trys $lock_interval
                  @ignore_watches_no_build_deps $build_dir $sbuild_mode
                  $debug $force_orig_source
                  $path

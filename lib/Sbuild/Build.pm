@@ -942,7 +942,7 @@ sub wait_for_srcdep_conflicts (\$@) {
     my @confl = @_;
 
     for(;;) {
-	sleep( $conf::srcdep_lock_wait*60 );
+	sleep($self->get_conf('SRCDEP_LOCK_WAIT') * 60);
 	my $allgone = 1;
 	for (@confl) {
 	    /^(\d+)-(\d+)$/;
