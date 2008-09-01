@@ -1548,7 +1548,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
     # build-essential packages.
     $self->{'Toolchain Packages'} = [];
     foreach my $tpkg (@$exp_essential) {
-        foreach my $regex (@conf::toolchain_regex) {
+        foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
 	    push @{$self->{'Toolchain Packages'}},$tpkg->{'Package'}
 	        if $tpkg->{'Package'} =~ m,^$regex,;
 	}
