@@ -627,8 +627,8 @@ EOF
     # dpkg-buildpackage could run as root. So we have to use a shell
     # command to send the signal... but /bin/kill can't send to
     # process groups :-( So start another Perl :-)
-    my $timeout = $conf::individual_stalled_pkg_timeout{$pkg} ||
-	$conf::stalled_pkg_timeout;
+    my $timeout = $self->get_conf('INDIVIDUAL_STALLED_PKG_TIMEOUT')->{$pkg} ||
+	$self->get_conf('STALLED_PKG_TIMEOUT');
     $timeout *= 60;
     my $timed_out = 0;
     my(@timeout_times, @timeout_sigs, $last_time);

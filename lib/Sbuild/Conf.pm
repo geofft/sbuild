@@ -33,11 +33,11 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($stalled_pkg_timeout $srcdep_lock_dir
+    @EXPORT = qw($srcdep_lock_dir
                  $srcdep_lock_wait $max_lock_trys $lock_interval
                  @ignore_watches_no_build_deps $build_dir $sbuild_mode
                  $debug $force_orig_source
-                 %individual_stalled_pkg_timeout $path
+                 $path
                  $maintainer_name $uploader_name %watches $key_id);
 }
 
