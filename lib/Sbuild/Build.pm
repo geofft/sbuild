@@ -2374,7 +2374,7 @@ sub write_stats (\$$$) {
 
     return if not defined $stats_dir;
 
-    if (! -d $ &&
+    if (! -d $stats_dir &&
 	!mkdir $stats_dir) {
 	warn "Could not create $stats_dir: $!\n";
 	return;
