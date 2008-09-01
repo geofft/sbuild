@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($srcdep_lock_dir
-                 $srcdep_lock_wait $max_lock_trys $lock_interval
+    @EXPORT = qw($srcdep_lock_wait $max_lock_trys $lock_interval
                  @ignore_watches_no_build_deps $build_dir $sbuild_mode
                  $debug $force_orig_source
                  $path
@@ -130,9 +129,6 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init () {
     # some checks
-    die "$Sbuild::Conf::srcdep_lock_dir is not a directory\n"
-	if ! -d $Sbuild::Conf::srcdep_lock_dir;
-
     if (!defined($Sbuild::Conf::build_dir)) {
 	$Sbuild::Conf::build_dir = $Sbuild::Conf::cwd;
     }

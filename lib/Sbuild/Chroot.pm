@@ -112,7 +112,7 @@ sub _setup_options (\$\$) {
 	$self->set('Location', $info->{'Location'});
 	$self->set('Session Purged', $info->{'Session Purged'});
 	$self->set('Build Location', $self->get('Location') . "/build");
-	$self->set('Srcdep Lock Dir', $self->get('Location') . "/$Sbuild::Conf::srcdep_lock_dir");
+	$self->set('Srcdep Lock Dir', $self->get('Location') . '/' . $self->get_conf('SRCDEP_LOCK_DIR'));
 	$self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
 
 	my $aptconf = "/var/lib/sbuild/apt.conf";
