@@ -127,9 +127,9 @@ sub parse_options (\%) {
 		       },
 		       "check-depends-algorithm=s" => sub {
 			   die "Bad build dependency check algorithm\n"
-			       if( ! ($_[1] eq "first-only" 
+			       if( ! ($_[1] eq "first-only"
 				      || $_[1] eq "alternatives") );
-			   $Sbuild::Conf::check_depends_algorithm = $_[1];
+			   $self->get('CONFIG')->set('CHECK_DEPENDS_ALGORITHM', $_[1]);
 		       },
 		       "b|batch" => sub {
 			   $self->set('Batch Mode', 1);

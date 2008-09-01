@@ -1239,7 +1239,7 @@ sub filter_dependencies (\$\@\@\@) {
 			}
 			if(!$installable) {
 			    print main::PLOG "no suitable version found. Skipping for now, maybe there are alternatives.\n";
-			    next if ($conf::check_depends_algorithm eq "alternatives");
+			    next if ($self->get_conf('CHECK_DEPENDS_ALGORITHM') eq "alternatives");
 			}
 		    } else {
 			print main::PLOG "Using default version " . $policy{$name}->{defversion} . "\n";

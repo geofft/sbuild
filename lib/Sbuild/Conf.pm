@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($check_depends_algorithm
-                 $purge_build_directory @toolchain_regex
+    @EXPORT = qw($purge_build_directory @toolchain_regex
                  $stalled_pkg_timeout $srcdep_lock_dir
                  $srcdep_lock_wait $max_lock_trys $lock_interval
                  @ignore_watches_no_build_deps $build_dir $sbuild_mode
@@ -301,6 +300,11 @@ sub check_config (\%) {
     die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
 	if ! -d $self->get('SRCDEP_LOCK_DIR');
 
+    die 'check_depends_algorithm: Invalid build-dependency checking algorithm \'' .
+	$self->get('CHECK_DEPENDS_ALGORITHM') .
+	"'\nValid algorthms are 'first-only' and 'alternatives'\n"
+	if !($self->get('CHECK_DEPENDS_ALGORITHM') eq 'first-only' ||
+	     $self->get('CHECK_DEPENDS_ALGORITHM') eq 'alternatives');
     die "mailto not set\n" if !$self->get('MAILTO') && $sbuild_mode eq "buildd";
 
     if (!defined($self->get('BUILD_DIR'))) {
