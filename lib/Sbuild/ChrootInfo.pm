@@ -134,15 +134,16 @@ sub get_info_all (\%) {
     my $self = shift;
 
     my $chroots = $self->get('Chroots');
+    my $build_dir = $self->get_conf('BUILD_DIR');
 
     # TODO: Redundant block?  Leave in place for sudo use in the future.
-    foreach (glob("${Sbuild::Conf::build_dir}/chroot-*")) {
+    foreach (glob("$build_dir/chroot-*")) {
 	my %tmp = ('Priority' => 0,
 		   'Location' => $_,
 		   'Session Purged' => 0);
 	if (-d $tmp{'Location'}) {
 	    my $name = $_;
-	    $name =~ s/\Q${Sbuild::Conf::build_dir}\/chroot-\E//;
+	    $name =~ s/\Q${build_dir}\/chroot-\E//;
 	    print STDERR "Found chroot $name\n"
 		if $Sbuild::Conf::debug;
 	    $chroots->{$name} = \%tmp;

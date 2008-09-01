@@ -69,7 +69,7 @@ sub open_log ($$) {
     }
 
     my $F = new File::Temp( TEMPLATE => "build-${main_distribution}-$date.XXXXXX",
-			    DIR => $Sbuild::Conf::build_dir,
+			    DIR => $conf->get('BUILD_DIR'),
 			    SUFFIX => '.log',
 			    UNLINK => 0)
 	or die "Can't open logfile: $!\n";
@@ -158,8 +158,8 @@ sub open_pkg_log ($$$) {
     else {
 	$pkg_logfile = $conf->get('LOG_DIR') . "/${pkg_name}-$date";
 	log_symlink($pkg_logfile,
-		    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
-	log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
+		    $conf->get('BUILD_DIR') . "/current-$pkg_distribution");
+	log_symlink($pkg_logfile,$conf->get('BUILD_DIR') . "/current");
 	if ($conf->get('VERBOSE')) {
 	    my $pid;
 	    ($pid = open( main::PLOG, "|-"));

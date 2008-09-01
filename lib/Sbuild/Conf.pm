@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($build_dir $sbuild_mode
+    @EXPORT = qw($sbuild_mode
                  $debug $force_orig_source
                  $path
                  $maintainer_name $uploader_name %watches $key_id);
@@ -128,12 +128,6 @@ require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
 sub init () {
     # some checks
-    if (!defined($Sbuild::Conf::build_dir)) {
-	$Sbuild::Conf::build_dir = $Sbuild::Conf::cwd;
-    }
-    if (! -d "$Sbuild::Conf::build_dir") {
-	die "Build directory $Sbuild::Conf::build_dir does not exist";
-    }
 }
 
 sub set_allowed_keys (\%);
