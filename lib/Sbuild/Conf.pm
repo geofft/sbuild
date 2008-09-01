@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(@no_auto_upgrade $check_depends_algorithm
+    @EXPORT = qw($check_depends_algorithm
                  $purge_build_directory @toolchain_regex
                  $stalled_pkg_timeout $srcdep_lock_dir
                  $srcdep_lock_wait $max_lock_trys $lock_interval
@@ -124,7 +124,6 @@ our %alternatives = ("info-browser"		=> "info",
 		     "giflib-dev"		=> "libungif4-dev",
 		     "freetype2-dev"		=> "libttf-dev");
 
-our @no_auto_upgrade = qw(dpkg apt bash libc6 libc6-dev dpkg-dev);
 our $check_depends_algorithm = "first-only";
 
 # read conf files
@@ -209,7 +208,6 @@ sub set_allowed_keys (\%) {
 	'APT_UPDATE'				=> "",
 	'APT_ALLOW_UNAUTHENTICATED'		=> "",
 	'ALTERNATIVES'				=> "",
-	'NO_AUTO_UPGRADE'			=> "",
 	'CHECK_DEPENDS_ALGORITHM'		=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
@@ -276,7 +274,6 @@ sub read_config (\%) {
     $self->set('APT_UPDATE', $apt_update);
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
     $self->set('ALTERNATIVES', \%alternatives);
-    $self->set('NO_AUTO_UPGRADE', @no_auto_upgrade);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
 
     # Not user-settable.
