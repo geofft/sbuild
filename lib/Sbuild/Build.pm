@@ -2166,7 +2166,7 @@ sub check_watches (\$) {
 	    my $prg2 = $self->{'Session'}->strip_chroot_path($prg);
 	    push( @{$used{$pkg}}, $prg2 )
 		if @{$self->{'Have DSC Build Deps'}} ||
-		!isin( $pkg, @conf::ignore_watches_no_build_deps );
+		!isin($pkg, @{$self->get_conf('IGNORE_WATCHES_NO_BUILD_DEPS')});
 	}
 	else {
 	    print "Watch: $prg: untouched\n" if $conf::debug;

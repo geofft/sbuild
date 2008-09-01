@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(@ignore_watches_no_build_deps $build_dir $sbuild_mode
+    @EXPORT = qw($build_dir $sbuild_mode
                  $debug $force_orig_source
                  $path
                  $maintainer_name $uploader_name %watches $key_id);
