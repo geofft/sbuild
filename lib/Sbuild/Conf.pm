@@ -295,7 +295,7 @@ sub check_config (\%) {
 	if !-x $self->get('APT_CACHE');
     die "dpkg-source binary " . $self->get('DPKG_SOURCE') . " does not exist or isn't executable\n"
 	if !-x $self->get('DPKG_SOURCE');
-    die "dpkg-source binary " . $self->get('DCMD') . " does not exist or isn't executable\n"
+    die "dcmd binary " . $self->get('DCMD') . " does not exist or isn't executable\n"
 	if !-x $self->get('DCMD');
     die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
 	if ! -d $self->get('SRCDEP_LOCK_DIR');
