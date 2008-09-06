@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($debug $force_orig_source
+    @EXPORT = qw($force_orig_source
                  $path
                  $maintainer_name $uploader_name %watches $key_id);
 }

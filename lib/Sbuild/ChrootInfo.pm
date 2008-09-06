@@ -120,7 +120,7 @@ sub get_info (\%$) {
 
     close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	print STDERR "Found schroot chroot: $chroot\n";
 	foreach (sort keys %tmp) {
 	    print STDERR "  $_ $tmp{$_}\n";
@@ -145,7 +145,7 @@ sub get_info_all (\%) {
 	    my $name = $_;
 	    $name =~ s/\Q${build_dir}\/chroot-\E//;
 	    print STDERR "Found chroot $name\n"
-		if $Sbuild::Conf::debug;
+		if $self->get_conf('DEBUG');
 	    $chroots->{$name} = \%tmp;
 	}
     }
@@ -158,7 +158,7 @@ sub get_info_all (\%) {
 	chomp;
 	my $chroot = $_;
 	print STDERR "Getting info for $chroot chroot\n"
-	    if $Sbuild::Conf::debug;
+	    if $self->get_conf('DEBUG');
 	$chroots->{$chroot} = $self->get_info($chroot);
     }
 

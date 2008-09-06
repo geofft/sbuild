@@ -153,7 +153,7 @@ sub begin_session (\$) {
 
     $self->set('Session ID', $schroot_session);
     print STDERR "Setting up chroot $chroot (session id $schroot_session)\n"
-	if $Sbuild::Conf::debug;
+	if $self->get_conf('DEBUG');
     $self->_setup_options($self->get('Chroots')->get_info($schroot_session));
     return 1;
 }
@@ -164,7 +164,7 @@ sub end_session (\$) {
     return if $self->get('Session ID') eq "";
 
     print STDERR "Cleaning up chroot (session id " . $self->get('Session ID') . ")\n"
-	if $Sbuild::Conf::debug;
+	if $self->get_conf('DEBUG');
     system($self->get_conf('SCHROOT') . ' -c ' . $self->get('Session ID') . ' --end-session');
     $self->set('Session ID', "");
     if ($?) {
@@ -189,7 +189,7 @@ sub log_command (\$$$) {
     my $msg = shift;      # Message to log
     my $priority = shift; # Priority of log message
 
-    if ((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) {
+    if ((defined($priority) && $priority >= 1) || $self->get_conf('DEBUG')) {
 	my $options = $self->get('APT Options');
 	if ($options ne "") {
 	    $msg =~ s/\Q$options\E/CHROOT_APT_OPTIONS/g;
@@ -240,7 +240,7 @@ sub get_command (\$$$$$$) {
     my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	$self->log_command($cmdline, $priority);
     } else {
 	$self->log_command($command, $priority);
@@ -264,7 +264,7 @@ sub run_command (\$$$$$$) {
     my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	$self->log_command($cmdline, $priority);
     } else {
 	$self->log_command($command, $priority);
@@ -285,7 +285,7 @@ sub exec_command (\$$$$$$) {
     my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	$self->log_command($cmdline, $priority);
     } else {
 	$self->log_command($command, $priority);

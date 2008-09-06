@@ -71,11 +71,11 @@ sub main () {
     }
 
     print "Selected distribution " . $options->get('Distribution') . "\n"
-	if $conf::debug;
+	if $conf->get('DEBUG');
     print "Selected chroot " . $options->get('Chroot') . "\n"
-	if $conf::debug and defined $options->get('Chroot');
+	if $conf->get('DEBUG') and defined $options->get('Chroot');
     print "Selected architecture " . $options->get('User Arch') . "\n"
-	if $conf::debug;
+	if $conf->get('DEBUG');
 
     $conf->set('MAILTO',
 	       $conf->get('MAILTO_HASH')->{$options->get('Distribution')})
@@ -234,7 +234,7 @@ sub main () {
 	if ( $options->get('Batch Mode') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
-	dump_main_state() if $conf::debug;
+	dump_main_state() if $conf->get('DEBUG');
 	$main::build_object->write_jobs_file("");
     }
 

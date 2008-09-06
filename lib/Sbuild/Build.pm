@@ -118,6 +118,9 @@ sub new ($$$) {
     my $self  = {};
     bless($self);
 
+    $self->{'Options'} = $options;
+    $self->{'Config'} = $conf;
+
     # DSC, package and version information:
     $self->set_dsc($dsc);
 
@@ -134,7 +137,7 @@ sub new ($$$) {
 	     $self->{'DSC'} ne $self->{'Package_Version'}) ||
 	    (!defined $self->{'Version'}));
 
-    if ($conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	print STDERR "D: DSC = $self->{'DSC'}\n";
 	print STDERR "D: Source Dir = $self->{'Source Dir'}\n";
 	print STDERR "D: DSC Base = $self->{'DSC Base'}\n";
@@ -149,8 +152,6 @@ sub new ($$$) {
 	print STDERR "D: Invalid Source = $self->{'Invalid Source'}\n";
     }
 
-    $self->{'Options'} = $options;
-    $self->{'Config'} = $conf;
     $self->{'Arch'} = $self->get_conf('ARCH');
     $self->{'Chroot Dir'} = '';
     $self->{'Chroot Build Dir'} = '';
@@ -411,7 +412,7 @@ sub fetch_source_files (\$) {
 	}
     }
     print "Arch check ok ($self->{'Arch'} included in $dscarchs)\n"
-	if $conf::debug;
+	if $self->get_conf('DEBUG');
 
     @{$self->{'Have DSC Build Deps'}} =
 	($build_depends, $build_depends_indep,
@@ -840,14 +841,14 @@ sub install_deps (\$) {
     if (exists $self->{'Dependencies'}->{$pkg}) {
 	$dep = $self->{'Dependencies'}->{$pkg};
     }
-    if ($conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	print "Source dependencies of $pkg: ", $self->format_deps(@$dep), "\n";
     }
 
   repeat:
     $self->lock_file($self->{'Session'}->{'Install Lock'}, 1);
 
-    print "Filtering dependencies\n" if $conf::debug;
+    print "Filtering dependencies\n" if $self->get_conf('DEBUG');
     if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
 	print main::PLOG "Package installation not possible\n";
 	$self->unlock_file($self->{'Session'}->{'Install Lock'});
@@ -874,17 +875,17 @@ sub install_deps (\$) {
     $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
-    print "Installing positive dependencies: @positive\n" if $conf::debug;
+    print "Installing positive dependencies: @positive\n" if $self->get_conf('DEBUG');
     if (!$self->run_apt("-y", \@instd, \@rmvd, @positive)) {
 	print main::PLOG "Package installation failed\n";
 	# try to reinstall removed packages
 	print main::PLOG "Trying to reinstall removed packages:\n";
-	print "Reinstalling removed packages: @rmvd\n" if $conf::debug;
+	print "Reinstalling removed packages: @rmvd\n" if $self->get_conf('DEBUG');
 	my (@instd2, @rmvd2);
 	print main::PLOG "Failed to reinstall removed packages!\n"
 	    if !$self->run_apt("-y", \@instd2, \@rmvd2, @rmvd);
-	print "Installed were: @instd2\n" if $conf::debug;
-	print "Removed were: @rmvd2\n" if $conf::debug;
+	print "Installed were: @instd2\n" if $self->get_conf('DEBUG');
+	print "Removed were: @rmvd2\n" if $self->get_conf('DEBUG');
 	# remove additional packages
 	print main::PLOG "Trying to uninstall newly installed packages:\n";
 	$self->uninstall_debs($self->{'Chroot Dir'} ? "purge" : "remove",
@@ -895,7 +896,7 @@ sub install_deps (\$) {
     $self->set_installed(@instd);
     $self->set_removed(@rmvd);
 
-    print "Removing negative dependencies: @negative\n" if $conf::debug;
+    print "Removing negative dependencies: @negative\n" if $self->get_conf('DEBUG');
     if (!$self->uninstall_debs($self->{'Chroot Dir'} ? "purge" : "remove",
 			       @negative)) {
 	print main::PLOG "Removal of packages failed\n";
@@ -971,16 +972,16 @@ sub uninstall_deps (\$) {
     $self->lock_file($self->{'Session'}->{'Install Lock'}, 1);
 
     @pkgs = keys %{$self->{'Changes'}->{'removed'}};
-    print "Reinstalling removed packages: @pkgs\n" if $conf::debug;
+    print "Reinstalling removed packages: @pkgs\n" if $self->get_conf('DEBUG');
     print main::PLOG "Failed to reinstall removed packages!\n"
 	if !$self->run_apt("-y", \@instd, \@rmvd, @pkgs);
-    print "Installed were: @instd\n" if $conf::debug;
-    print "Removed were: @rmvd\n" if $conf::debug;
+    print "Installed were: @instd\n" if $self->get_conf('DEBUG');
+    print "Removed were: @rmvd\n" if $self->get_conf('DEBUG');
     $self->unset_removed(@instd);
     $self->unset_installed(@rmvd);
 
     @pkgs = keys %{$self->{'Changes'}->{'installed'}};
-    print "Removing installed packages: @pkgs\n" if $conf::debug;
+    print "Removing installed packages: @pkgs\n" if $self->get_conf('DEBUG');
     print main::PLOG "Failed to remove installed packages!\n"
 	if !$self->uninstall_debs("purge", @pkgs);
     $self->unset_installed(@pkgs);
@@ -997,7 +998,7 @@ sub uninstall_debs (\$$@) {
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 
     return 1 if !@_;
-    print "Uninstalling packages: @_\n" if $conf::debug;
+    print "Uninstalling packages: @_\n" if $self->get_conf('DEBUG');
 
     my $command = $self->{'Session'}->get_command($self->get_conf('DPKG') . " --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
   repeat:
@@ -1062,7 +1063,7 @@ sub run_apt (\$$\@\@@) {
     }
     while( <PIPE> ) {
 	$msgs .= $_;
-	print main::PLOG $_ if $mode ne "-s" || $conf::debug;
+	print main::PLOG $_ if $mode ne "-s" || $self->get_conf('DEBUG');
     }
     close( PIPE );
     $status = $?;
@@ -1198,7 +1199,7 @@ sub filter_dependencies (\$\@\@\@) {
 		if (!$rel || version_compare( $ivers, $rel, $vers )){
 		    print "$name: neg dep, installed, not versioned or ",
 		          "version relation satisfied --> remove\n"
-			      if $conf::debug;
+			      if $self->get_conf('DEBUG');
 		    print main::PLOG "$name: installed (negative dependency)";
 		    print main::PLOG " (bad version $ivers $rel $vers)"
 			if $rel;
@@ -1211,7 +1212,7 @@ sub filter_dependencies (\$\@\@\@) {
 		}
 	    }
 	    else {
-		print "$name: neg dep, not installed\n" if $conf::debug;
+		print "$name: neg dep, not installed\n" if $self->get_conf('DEBUG');
 		print main::PLOG "$name: already deinstalled\n";
 	    }
 	    next;
@@ -1225,7 +1226,7 @@ sub filter_dependencies (\$\@\@\@) {
 		($d->{'Package'}, $d->{'Rel'}, $d->{'Version'});
 	    my $stat = $status->{$name};
 	    if (!$stat->{'Installed'}) {
-		print "$name: pos dep, not installed\n" if $conf::debug;
+		print "$name: pos dep, not installed\n" if $self->get_conf('DEBUG');
 		print main::PLOG "$name: missing\n";
 		if ($self->get_conf('APT_POLICY') && $rel) {
 		    if (!version_compare($policy{$name}->{defversion}, $rel, $vers)) {
@@ -1251,7 +1252,7 @@ sub filter_dependencies (\$\@\@\@) {
 	    my $ivers = $stat->{'Version'};
 	    if (!$rel || version_compare( $ivers, $rel, $vers )) {
 		print "$name: pos dep, installed, no versioned dep or ",
-		"version ok\n" if $conf::debug;
+		"version ok\n" if $self->get_conf('DEBUG');
 		print main::PLOG "$name: already installed ($ivers";
 		print main::PLOG " $rel $vers is satisfied"
 		    if $rel;
@@ -1260,12 +1261,12 @@ sub filter_dependencies (\$\@\@\@) {
 		last;
 	    }
 	    print "$name: vers dep, installed $ivers ! $rel $vers\n"
-		if $conf::debug;
+		if $self->get_conf('DEBUG');
 	    print main::PLOG "$name: non-matching version installed ",
 	    "($ivers ! $rel $vers)\n";
 	    if ($rel =~ /^</ ||
 		($rel eq '=' && version_compare($ivers, '>>', $vers))) {
-		print "$name: would be a downgrade!\n" if $conf::debug;
+		print "$name: would be a downgrade!\n" if $self->get_conf('DEBUG');
 		print main::PLOG "$name: would have to downgrade!\n";
 	    }
 	    else {
@@ -1289,11 +1290,11 @@ sub filter_dependencies (\$\@\@\@) {
 	}
 	if (!$is_satisfied) {
 	    if ($upgradeable) {
-		print "using $upgradeable for upgrade\n" if $conf::debug;
+		print "using $upgradeable for upgrade\n" if $self->get_conf('DEBUG');
 		push( @$pos_list, $upgradeable );
 	    }
 	    elsif ($installable) {
-		print "using $installable for install\n" if $conf::debug;
+		print "using $installable for install\n" if $self->get_conf('DEBUG');
 		push( @$pos_list, $installable );
 	    }
 	    else {
@@ -1432,7 +1433,7 @@ sub get_dpkg_status (\$@) {
 
     return () if !@_;
     print "Requesting dpkg status for packages: @interest\n"
-	if $conf::debug;
+	if $self->get_conf('DEBUG');
     if (!open( STATUS, "<$self->{'Chroot Dir'}/var/lib/dpkg/status" )) {
 	print main::PLOG "Can't open $self->{'Chroot Dir'}/var/lib/dpkg/status: $!\n";
 	return ();
@@ -1450,9 +1451,9 @@ sub get_dpkg_status (\$@) {
 	    next;
 	}
 	if (defined($version)) {
-	    print "$pkg ($version) status: $status\n" if $conf::debug >= 2;
+	    print "$pkg ($version) status: $status\n" if $self->get_conf('DEBUG') >= 2;
 	} else {
-	    print "$pkg status: $status\n" if $conf::debug >= 2;
+	    print "$pkg status: $status\n" if $self->get_conf('DEBUG') >= 2;
 	}
 	if (!$status) {
 	    print main::PLOG "sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: ",
@@ -1527,7 +1528,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
     my $deps = $depends . ", " . $conflicts;
     $deps .= ", " . $dependsi . ", " . $conflictsi if $self->get_option('Build Arch All');
     @{$self->{'Dependencies'}->{$pkg}} = @l;
-    print "Merging pkg deps: $deps\n" if $conf::debug;
+    print "Merging pkg deps: $deps\n" if $self->get_conf('DEBUG');
     $self->parse_one_srcdep($pkg, $deps);
 
     my $missing = ($self->cmp_dep_lists($old_deps,
@@ -1542,7 +1543,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
     $exp_essential = $self->expand_dependencies($self->{'Dependencies'}->{'ESSENTIAL'});
     print "Dependency-expanded build essential packages:\n",
-    $self->format_deps(@$exp_essential), "\n" if $conf::debug;
+    $self->format_deps(@$exp_essential), "\n" if $self->get_conf('DEBUG');
 
     # populate Toolchain Packages from toolchain_regexes and
     # build-essential packages.
@@ -1567,12 +1568,12 @@ sub merge_pkg_build_deps (\$$$$$$) {
     # alternative over all providing packages
     $exp_pkgdeps = $self->expand_virtuals($self->{'Dependencies'}->{$pkg} );
     print "Provided-expanded build deps:\n",
-	  $self->format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
+	  $self->format_deps(@$exp_pkgdeps), "\n" if $self->get_conf('DEBUG');
 
     # now expand dependencies of package build deps
     $exp_pkgdeps = $self->expand_dependencies($exp_pkgdeps);
     print "Dependency-expanded build deps:\n",
-	  $self->format_deps(@$exp_pkgdeps), "\n" if $conf::debug;
+	  $self->format_deps(@$exp_pkgdeps), "\n" if $self->get_conf('DEBUG');
     # NOTE: Was $main::additional_deps, not @main::additional_deps.
     # They may be separate?
     @{$self->{'Additional Deps'}} = @$exp_pkgdeps;
@@ -2025,15 +2026,15 @@ sub write_srcdep_lock_file (\$\@) {
 	print "Warning: cannot create srcdep lock file $f: $!\n";
 	return;
     }
-    print "Writing srcdep lock file $f:\n" if $conf::debug;
+    print "Writing srcdep lock file $f:\n" if $self->get_conf('DEBUG');
 
     my $user = getpwuid($<);
     print F "$main::current_job $$ $user\n";
-    print "Job $main::current_job pid $$ user $user\n" if $conf::debug;
+    print "Job $main::current_job pid $$ user $user\n" if $self->get_conf('DEBUG');
     foreach (@$deps) {
 	my $name = $_->{'Package'};
 	print F ($_->{'Neg'} ? "!" : ""), "$name\n";
-	print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $conf::debug;
+	print "  ", ($_->{'Neg'} ? "!" : ""), "$name\n" if $self->get_conf('DEBUG');
     }
     close( F );
 }
@@ -2074,12 +2075,12 @@ sub check_srcdep_conflicts (\$\@\@) {
 	}
 
 	print "Reading srclock file $file by job $job user $user\n"
-	    if $conf::debug;
+	    if $self->get_conf('DEBUG');
 
 	while( <F> ) {
 	    my ($neg, $pkg) = /^(!?)(\S+)/;
 	    print "Found ", ($neg ? "neg " : ""), "entry $pkg\n"
-		if $conf::debug;
+		if $self->get_conf('DEBUG');
 
 	    if (isin( $pkg, @$to_inst, @$to_remove )) {
 		print main::PLOG "Source dependency conflict with build of ",
@@ -2097,10 +2098,10 @@ sub check_srcdep_conflicts (\$\@\@) {
 
     my @conflict_builds = keys %conflict_builds;
     if (@conflict_builds) {
-	print "Srcdep conflicts with: @conflict_builds\n" if $conf::debug;
+	print "Srcdep conflicts with: @conflict_builds\n" if $self->get_conf('DEBUG');
     }
     else {
-	print "No srcdep conflicts\n" if $conf::debug;
+	print "No srcdep conflicts\n" if $self->get_conf('DEBUG');
     }
     return @conflict_builds;
 }
@@ -2110,7 +2111,7 @@ sub remove_srcdep_lock_file (\$) {
 
     my $f = "$self->{'Session'}->{'Srcdep Lock Dir'}/$$-$self->{'Srcdep Lock Count'}";
 
-    print "Removing srcdep lock file $f\n" if $conf::debug;
+    print "Removing srcdep lock file $f\n" if $self->get_conf('DEBUG');
     if (!unlink( $f )) {
 	print "Warning: cannot remove srcdep lock file $f: $!\n"
 	    if $! != ENOENT;
@@ -2139,13 +2140,13 @@ sub prepare_watches (\$\@@) {
     $self->{'This Watches'} = {};
     foreach $pkg (keys %conf::watches) {
 	if (isin( $pkg, @dep_on )) {
-	    print "Excluding from watch: $pkg\n" if $conf::debug;
+	    print "Excluding from watch: $pkg\n" if $self->get_conf('DEBUG');
 	    next;
 	}
 	foreach $prg (@{$conf::watches{$pkg}}) {
 	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
 	    $self->{'This Watches'}->{"$self->{'Chroot Dir'}$prg"} = $pkg;
-	    print "Will watch for $prg ($pkg)\n" if $conf::debug;
+	    print "Will watch for $prg ($pkg)\n" if $self->get_conf('DEBUG');
 	}
     }
 }
@@ -2158,7 +2159,7 @@ sub check_watches (\$) {
 
     foreach $prg (keys %{$self->{'This Watches'}}) {
 	if (!(@st = stat( $prg ))) {
-	    print "Watch: $prg: stat failed\n" if $conf::debug;
+	    print "Watch: $prg: stat failed\n" if $self->get_conf('DEBUG');
 	    next;
 	}
 	if ($st[8] > $self->{'Build Start Time'}) {
@@ -2169,7 +2170,7 @@ sub check_watches (\$) {
 		!isin($pkg, @{$self->get_conf('IGNORE_WATCHES_NO_BUILD_DEPS')});
 	}
 	else {
-	    print "Watch: $prg: untouched\n" if $conf::debug;
+	    print "Watch: $prg: untouched\n" if $self->get_conf('DEBUG');
 	}
     }
     return if !%used;
@@ -2243,7 +2244,7 @@ sub set_installed (\$@) {
     foreach (@_) {
 	$self->{'Changes'}->{'installed'}->{$_} = 1;
     }
-    print "Added to installed list: @_\n" if $conf::debug;
+    print "Added to installed list: @_\n" if $self->get_conf('DEBUG');
 }
 
 sub set_removed (\$@) {
@@ -2253,10 +2254,10 @@ sub set_removed (\$@) {
 	if (exists $self->{'Changes'}->{'installed'}->{$_}) {
 	    delete $self->{'Changes'}->{'installed'}->{$_};
 	    $self->{'Changes'}->{'auto-removed'}->{$_} = 1;
-	    print "Note: $_ was installed\n" if $conf::debug;
+	    print "Note: $_ was installed\n" if $self->get_conf('DEBUG');
 	}
     }
-    print "Added to removed list: @_\n" if $conf::debug;
+    print "Added to removed list: @_\n" if $self->get_conf('DEBUG');
 }
 
 sub unset_installed (\$@) {
@@ -2264,7 +2265,7 @@ sub unset_installed (\$@) {
     foreach (@_) {
 	delete $self->{'Changes'}->{'installed'}->{$_};
     }
-    print "Removed from installed list: @_\n" if $conf::debug;
+    print "Removed from installed list: @_\n" if $self->get_conf('DEBUG');
 }
 
 sub unset_removed (\$@) {
@@ -2274,10 +2275,10 @@ sub unset_removed (\$@) {
 	if (exists $self->{'Changes'}->{'auto-removed'}->{$_}) {
 	    delete $self->{'Changes'}->{'auto-removed'}->{$_};
 	    $self->{'Changes'}->{'installed'}->{$_} = 1;
-	    print "Note: revived $_ to installed list\n" if $conf::debug;
+	    print "Note: revived $_ to installed list\n" if $self->get_conf('DEBUG');
 	}
     }
-    print "Removed from removed list: @_\n" if $conf::debug;
+    print "Removed from removed list: @_\n" if $self->get_conf('DEBUG');
 }
 
 sub df (\$$) {
@@ -2396,14 +2397,14 @@ sub debian_files_list (\$$) {
 
     my @list;
 
-    print STDERR "Parsing $files\n" if $conf::debug;
+    print STDERR "Parsing $files\n" if $self->get_conf('DEBUG');
 
     if (-r $files && open( FILES, "<$files" )) {
 	while (<FILES>) {
 	    chomp;
 	    my $f = (split( /\s+/, $_ ))[0];
 	    push( @list, "$f" );
-	    print STDERR "  $f\n" if $conf::debug;
+	    print STDERR "  $f\n" if $self->get_conf('DEBUG');
 	}
 	close( FILES ) or print main::PLOG "Failed to close $files\n" && return 1;
     }
@@ -2416,13 +2417,13 @@ sub dsc_files (\$$) {
     my $dsc = shift;
     my @files;
 
-    print STDERR "Parsing $dsc\n" if $conf::debug;
+    print STDERR "Parsing $dsc\n" if $self->get_conf('DEBUG');
 
     if (-r $dsc && open(DSC, $self->get_conf('DCMD') . " $dsc|")) {
 	while (<DSC>) {
 	    chomp;
 	    push @files, $_;
-	    print STDERR "  $_\n" if $conf::debug;
+	    print STDERR "  $_\n" if $self->get_conf('DEBUG');
 	}
 	close( DSC ) or print main::PLOG "Failed to close $dsc\n";
     } else {

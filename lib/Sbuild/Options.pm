@@ -148,7 +148,10 @@ sub parse_options (\%) {
 		       "database=s" => sub {
 			   $self->set('WannaBuild Database', $_[1]);
 		       },
-		       "D|debug+" => \$Sbuild::Conf::debug,
+		       "D|debug" => sub {
+			   $self->get('CONFIG')->set('DEBUG',
+						     $self->get('CONFIG')->get('DEBUG') + 1);
+		       },
 		       "apt-update" => sub {
 			   $self->get('CONFIG')->set('APT_UPDATE', $_[1]);
 		       },
