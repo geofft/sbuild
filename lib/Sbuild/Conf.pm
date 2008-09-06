@@ -34,89 +34,6 @@ BEGIN {
     @EXPORT = qw();
 }
 
-(our $HOME = $ENV{'HOME'})
-    or die "HOME not defined in environment!\n";
-our $cwd = cwd();
-
-# Defaults.
-our $mailprog = "/usr/sbin/sendmail";
-our $dpkg = "/usr/bin/dpkg";
-our $sudo;
-our $su = "/bin/su";
-our $schroot = "/usr/bin/schroot";
-our $schroot_options = "-q";
-our $fakeroot = "/usr/bin/fakeroot";
-our $apt_get = "/usr/bin/apt-get";
-our $apt_cache = "/usr/bin/apt-cache";
-our $dpkg_source = "/usr/bin/dpkg-source";
-our $dcmd = "/usr/bin/dcmd";
-our $md5sum = "/usr/bin/md5sum";
-our $avg_time_db = "/var/lib/sbuild/avg-build-times";
-our $avg_space_db = "/var/lib/sbuild/avg-build-space";
-our $stats_dir = "$HOME/stats";
-our $package_checklist = "/var/lib/sbuild/package-checklist";
-our $build_env_cmnd = "";
-our $pgp_options = "-us -uc";
-our $log_dir = "$HOME/logs";
-our $mailto = "";
-our %mailto = ();
-our $mailfrom = "Source Builder <sbuild>";
-our $purge_build_directory = "successful";
-our @toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$', 'linux-libc-dev$', 'gnumach-dev$', 'hurd-dev$', 'kfreebsd-kernel-headers$');
-our $stalled_pkg_timeout = 150; # minutes
-our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
-our $srcdep_lock_wait = 1; # minutes
-our $max_lock_trys = 120;
-our $lock_interval = 5;
-our $apt_policy = 1;
-our $check_watches = 1;
-our @ignore_watches_no_build_deps = qw();
-our %watches;
-our $sbuild_mode = "user";
-our $debug = 0;
-our $force_orig_source = 0;
-our %individual_stalled_pkg_timeout = ();
-our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
-our $maintainer_name;
-our $uploader_name;
-our $key_id;
-our $apt_update = 0;
-our $apt_allow_unauthenticated = 0;
-our %alternatives = ("info-browser"		=> "info",
-		     "httpd"			=> "apache",
-		     "postscript-viewer"	=> "ghostview",
-		     "postscript-preview"	=> "psutils",
-		     "www-browser"		=> "lynx",
-		     "awk"			=> "gawk",
-		     "c-shell"			=> "tcsh",
-		     "wordlist"			=> "wenglish",
-		     "tclsh"			=> "tcl8.4",
-		     "wish"			=> "tk8.4",
-		     "c-compiler"		=> "gcc",
-		     "fortran77-compiler"	=> "g77",
-		     "java-compiler"		=> "jikes",
-		     "libc-dev"			=> "libc6-dev",
-		     "libgl-dev"		=> "xlibmesa-gl-dev",
-		     "libglu-dev"		=> "xlibmesa-glu-dev",
-		     "libncurses-dev"		=> "libncurses5-dev",
-		     "libz-dev"			=> "zlib1g-dev",
-		     "libg++-dev"		=> "libstdc++6-4.0-dev",
-		     "emacsen"			=> "emacs21",
-		     "mail-transport-agent"	=> "ssmtp",
-		     "mail-reader"		=> "mailx",
-		     "news-transport-system"	=> "inn",
-		     "news-reader"		=> "nn",
-		     "xserver"			=> "xvfb",
-		     "mysql-dev"		=> "libmysqlclient-dev",
-		     "giflib-dev"		=> "libungif4-dev",
-		     "freetype2-dev"		=> "libttf-dev");
-
-our $check_depends_algorithm = "first-only";
-
-# read conf files
-require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
-require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
-
 sub set_allowed_keys (\%);
 sub is_allowed (\%$);
 sub read_config (\%);
@@ -206,7 +123,100 @@ sub read_config (\%) {
     $self->set('VERBOSE', 0);
     $self->set('NOLOG', 0);
 
-# Insert globals here after transition
+    (our $HOME = $ENV{'HOME'})
+	or die "HOME not defined in environment!\n";
+    our $cwd = cwd();
+
+    # Defaults.
+    our $mailprog = "/usr/sbin/sendmail";
+    our $dpkg = "/usr/bin/dpkg";
+    our $sudo;
+    our $su = "/bin/su";
+    our $schroot = "/usr/bin/schroot";
+    our $schroot_options = "-q";
+    our $fakeroot = "/usr/bin/fakeroot";
+    our $apt_get = "/usr/bin/apt-get";
+    our $apt_cache = "/usr/bin/apt-cache";
+    our $dpkg_source = "/usr/bin/dpkg-source";
+    our $dcmd = "/usr/bin/dcmd";
+    our $md5sum = "/usr/bin/md5sum";
+    our $avg_time_db = "/var/lib/sbuild/avg-build-times";
+    our $avg_space_db = "/var/lib/sbuild/avg-build-space";
+    our $stats_dir = "$HOME/stats";
+    our $package_checklist = "/var/lib/sbuild/package-checklist";
+    our $build_env_cmnd = "";
+    our $pgp_options = "-us -uc";
+    our $log_dir = "$HOME/logs";
+    our $mailto = "";
+    our %mailto = ();
+    our $mailfrom = "Source Builder <sbuild>";
+    our $purge_build_directory = "successful";
+    our @toolchain_regex = (
+	'binutils$',
+	'gcc-[\d.]+$',
+	'g\+\+-[\d.]+$',
+	'libstdc\+\+',
+	'libc[\d.]+-dev$',
+	'linux-kernel-headers$',
+	'linux-libc-dev$',
+	'gnumach-dev$',
+	'hurd-dev$',
+	'kfreebsd-kernel-headers$'
+	);
+    our $stalled_pkg_timeout = 150; # minutes
+    our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
+    our $srcdep_lock_wait = 1; # minutes
+    our $max_lock_trys = 120;
+our $lock_interval = 5;
+    our $apt_policy = 1;
+    our $check_watches = 1;
+    our @ignore_watches_no_build_deps = qw();
+    our %watches;
+    our $sbuild_mode = "user";
+    our $debug = 0;
+    our $force_orig_source = 0;
+    our %individual_stalled_pkg_timeout = ();
+    our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
+    our $maintainer_name;
+    our $uploader_name;
+    our $key_id;
+    our $apt_update = 0;
+    our $apt_allow_unauthenticated = 0;
+    our %alternatives = (
+	"info-browser"		=> "info",
+	"httpd"			=> "apache",
+	"postscript-viewer"	=> "ghostview",
+	"postscript-preview"	=> "psutils",
+	"www-browser"		=> "lynx",
+	"awk"			=> "gawk",
+	"c-shell"		=> "tcsh",
+	"wordlist"		=> "wenglish",
+	"tclsh"			=> "tcl8.4",
+	"wish"			=> "tk8.4",
+	"c-compiler"		=> "gcc",
+	"fortran77-compiler"	=> "g77",
+	"java-compiler"		=> "jikes",
+	"libc-dev"		=> "libc6-dev",
+	"libgl-dev"		=> "xlibmesa-gl-dev",
+	"libglu-dev"		=> "xlibmesa-glu-dev",
+	"libncurses-dev"	=> "libncurses5-dev",
+	"libz-dev"		=> "zlib1g-dev",
+	"libg++-dev"		=> "libstdc++6-4.0-dev",
+	"emacsen"		=> "emacs21",
+	"mail-transport-agent"	=> "ssmtp",
+	"mail-reader"		=> "mailx",
+	"news-transport-system"	=> "inn",
+	"news-reader"		=> "nn",
+	"xserver"		=> "xvfb",
+	"mysql-dev"		=> "libmysqlclient-dev",
+	"giflib-dev"		=> "libungif4-dev",
+	"freetype2-dev"		=> "libttf-dev"
+	);
+    our $check_depends_algorithm = "first-only";
+
+    # read conf files
+    require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
+    require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
     $self->set('MAILPROG', $mailprog);
     $self->set('DPKG', $dpkg);
