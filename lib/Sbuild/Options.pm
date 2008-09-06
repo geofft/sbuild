@@ -172,9 +172,15 @@ sub parse_options (\%) {
 		       "force-orig-source" => sub {
 			   $self->get('CONFIG')->set('FORCE_ORIG_SOURCE', 1);
 		       },
-		       "m|maintainer=s" => \$Sbuild::Conf::maintainer_name,
-		       "k|keyid=s" => \$Sbuild::Conf::key_id,
-		       "e|uploader=s" => \$Sbuild::Conf::uploader_name,
+		       "m|maintainer=s" => sub {
+			   $self->get('CONFIG')->set('MAINTAINER_NAME', $_[1]);
+		       },
+		       "k|keyid=s" => sub {
+			   $self->get('CONFIG')->set('KEY_ID', $_[1]);
+		       },
+		       "e|uploader=s" => sub {
+			   $self->get('CONFIG')->set('UPLOADER_NAME', $_[1]);
+		       },
 		       "n|nolog" => sub {
 			   $self->set('NOLOG', 1);
 		       },

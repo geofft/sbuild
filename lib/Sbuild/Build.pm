@@ -551,7 +551,7 @@ sub build (\$$$) {
 	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
 	    "no source changes.\n";
 	    print F "  * ", join( "    ", split( "\n", $self->get_option('binNMU') )), "\n\n";
-	    print F " -- $conf::maintainer_name  $date\n\n";
+	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
 
 	    print F $firstline, $text;
 	    close( F );
