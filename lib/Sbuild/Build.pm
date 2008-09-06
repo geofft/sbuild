@@ -2138,12 +2138,12 @@ sub prepare_watches (\$\@@) {
     # init %this_watches to names of packages which have not been
     # installed as source dependencies
     $self->{'This Watches'} = {};
-    foreach $pkg (keys %conf::watches) {
+    foreach $pkg (keys %{$self->get_conf('WATCHES')}) {
 	if (isin( $pkg, @dep_on )) {
 	    print "Excluding from watch: $pkg\n" if $self->get_conf('DEBUG');
 	    next;
 	}
-	foreach $prg (@{$conf::watches{$pkg}}) {
+	foreach $prg (@{$self->get_conf('WATCHES')->{$pkg}}) {
 	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
 	    $self->{'This Watches'}->{"$self->{'Chroot Dir'}$prg"} = $pkg;
 	    print "Will watch for $prg ($pkg)\n" if $self->get_conf('DEBUG');

@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(%watches);
+    @EXPORT = qw();
 }
 
 INIT {
