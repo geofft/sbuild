@@ -194,8 +194,9 @@ sub parse_options (\%) {
 			   $self->set('GCC Snapshot', 1);
 			   $self->set('LD_LIBRARY_PATH',
 				      "/usr/lib/gcc-snapshot/lib");
-			   $Sbuild::Conf::path =
-			       "/usr/lib/gcc-snapshot/bin:$Sbuild::Conf::path";
+			   $self->get('CONFIG')->set('PATH',
+						     "/usr/lib/gcc-snapshot/bin:" .
+						     $self->get('CONFIG')->get('PATH'))
 		       },
 		       "v|verbose" => sub {
 			   $self->get('CONFIG')->set('VERBOSE',

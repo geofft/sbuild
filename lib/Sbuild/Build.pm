@@ -613,7 +613,7 @@ EOF
 	    $self->{'Session'}->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
 	    print main::PLOG "ld.so.conf was not readable! Fixed.\n";
 	}
-	my $buildcmd = "cd $bdir && PATH=$conf::path ".
+	my $buildcmd = "cd $bdir && PATH=" . $self->get_conf('PATH') . " " .
 	    (defined($self->get_option('LD_LIBRARY_PATH')) ?
 	     "LD_LIBRARY_PATH=".$self->get_option('LD_LIBRARY_PATH')." " : "").
 	     "exec " . $self->get_conf('BUILD_ENV_CMND') . " dpkg-buildpackage " .

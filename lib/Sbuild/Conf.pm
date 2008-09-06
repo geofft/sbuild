@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($path
-                 $maintainer_name $uploader_name %watches $key_id);
+    @EXPORT = qw($maintainer_name $uploader_name %watches $key_id);
 }
 
 INIT {
