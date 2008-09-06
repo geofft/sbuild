@@ -23,8 +23,7 @@
 package Sbuild::Chroot;
 
 use Sbuild::Conf;
-use Sbuild::Sysconfig;
-use Sbuild::ChrootInfo qw(find_chroot get_chroot_info);
+use Sbuild::ChrootInfo;
 
 use strict;
 use warnings;
@@ -41,7 +40,10 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$);
+sub new ($$$$);
+sub get (\%$);
+sub set (\%$$);
+sub get_conf (\%$);
 sub _setup_options (\$\$);
 sub begin_session (\$);
 sub end_session (\$);
@@ -55,17 +57,20 @@ sub get_apt_command_internal (\$$$);
 sub get_apt_command (\$$$$$$);
 sub run_apt_command (\$$$$$$);
 
-sub new ($$$) {
+sub new ($$$$) {
 # TODO: specify distribution parameters here...
     my $distribution = shift;
     my $chroot = shift;
     my $arch = shift;
+    my $conf = shift;
 
     my $self  = {};
     bless($self);
 
+    $self->set('CONFIG', $conf);
+    $self->set('Chroots', Sbuild::ChrootInfo::new($conf));
     $self->set('Session ID', "");
-    $self->set('Chroot ID', find_chroot($distribution, $chroot, $arch));
+    $self->set('Chroot ID', $self->get('Chroots')->find($distribution, $chroot, $arch));
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;
@@ -89,6 +94,13 @@ sub set (\%$$) {
     return $self->{$key} = $value;
 }
 
+sub get_conf (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->get('CONFIG')->get($key);
+}
+
 sub _setup_options (\$\$) {
     my $self = shift;
     my $info = shift;
@@ -100,7 +112,7 @@ sub _setup_options (\$\$) {
 	$self->set('Location', $info->{'Location'});
 	$self->set('Session Purged', $info->{'Session Purged'});
 	$self->set('Build Location', $self->get('Location') . "/build");
-	$self->set('Srcdep Lock Dir', $self->get('Location') . "/$Sbuild::Conf::srcdep_lock_dir");
+	$self->set('Srcdep Lock Dir', $self->get('Location') . '/' . $self->get_conf('SRCDEP_LOCK_DIR'));
 	$self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
 
 	my $aptconf = "/var/lib/sbuild/apt.conf";
@@ -114,8 +126,7 @@ sub _setup_options (\$\$) {
 				    DIR => $self->get('Location'),
 				    UNLINK => 0) ) {
 
-	    if ($Sbuild::Conf::apt_allow_unauthenticated)
-	    {
+	    if ($self->get_conf('APT_ALLOW_UNAUTHENTICATED')) {
 	    	print $F "APT::Get::AllowUnauthenticated true;\n";
 	    }
 	    print $F "APT::Install-Recommends false;\n";
@@ -133,7 +144,7 @@ sub begin_session (\$) {
     my $self = shift;
     my $chroot = $self->get('Chroot ID');
 
-    my $schroot_session=`$Sbuild::Conf::schroot -c $chroot --begin-session`;
+    my $schroot_session=readpipe($self->get_conf('SCHROOT') . " -c $chroot --begin-session");
     chomp($schroot_session);
     if ($?) {
 	print STDERR "Chroot setup failed\n";
@@ -142,8 +153,8 @@ sub begin_session (\$) {
 
     $self->set('Session ID', $schroot_session);
     print STDERR "Setting up chroot $chroot (session id $schroot_session)\n"
-	if $Sbuild::Conf::debug;
-    $self->_setup_options(get_chroot_info($schroot_session));
+	if $self->get_conf('DEBUG');
+    $self->_setup_options($self->get('Chroots')->get_info($schroot_session));
     return 1;
 }
 
@@ -153,8 +164,8 @@ sub end_session (\$) {
     return if $self->get('Session ID') eq "";
 
     print STDERR "Cleaning up chroot (session id " . $self->get('Session ID') . ")\n"
-	if $Sbuild::Conf::debug;
-    system("$Sbuild::Conf::schroot -c " . $self->get('Session ID') . " --end-session");
+	if $self->get_conf('DEBUG');
+    system($self->get_conf('SCHROOT') . ' -c ' . $self->get('Session ID') . ' --end-session');
     $self->set('Session ID', "");
     if ($?) {
 	print STDERR "Chroot cleanup failed\n";
@@ -178,7 +189,7 @@ sub log_command (\$$$) {
     my $msg = shift;      # Message to log
     my $priority = shift; # Priority of log message
 
-    if ((defined($priority) && $priority >= 1) || $Sbuild::Conf::debug) {
+    if ((defined($priority) && $priority >= 1) || $self->get_conf('DEBUG')) {
 	my $options = $self->get('APT Options');
 	if ($options ne "") {
 	    $msg =~ s/\Q$options\E/CHROOT_APT_OPTIONS/g;
@@ -195,7 +206,7 @@ sub get_command_internal (\$$$$$) {
     my $dir = shift;     # Directory to use (optional)
 
     if (!defined $user || $user eq "") {
-	$user = $Sbuild::Conf::username;
+	$user = $self->get_conf('USERNAME');
     }
     if (!defined $chroot) {
 	$chroot = 1;
@@ -207,9 +218,11 @@ sub get_command_internal (\$$$$$) {
 	if (!defined($dir)) {
 	    $dir = $self->strip_chroot_path($self->get('Build Location'));
 	}
-	$cmdline = "$Sbuild::Conf::schroot -d '$dir' -c " . $self->get('Session ID') . " --run-session $Sbuild::Conf::schroot_options -u $user -p -- /bin/sh -c '$command'";
+	$cmdline = $self->get_conf('SCHROOT') . " -d '$dir' -c " . $self->get('Session ID') .
+	    " --run-session " . $self->get_conf('SCHROOT_OPTIONS')  .
+	    " -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
-	if ($user ne $Sbuild::Conf::username) {
+	if ($user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
 	}
 	$cmdline .= "/bin/sh -c '$command'";
@@ -227,14 +240,14 @@ sub get_command (\$$$$$$) {
     my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	$self->log_command($cmdline, $priority);
     } else {
 	$self->log_command($command, $priority);
     }
 
     if ($chroot != 0) {
-	chdir($Sbuild::Conf::cwd);
+	chdir($self->get_conf('CWD'));
     }
 
     return $cmdline;
@@ -251,14 +264,14 @@ sub run_command (\$$$$$$) {
     my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	$self->log_command($cmdline, $priority);
     } else {
 	$self->log_command($command, $priority);
     }
 
     if ($chroot != 0) {
-	chdir($Sbuild::Conf::cwd);
+	chdir($self->get_conf('CWD'));
     }
     return system($cmdline);
 }
@@ -272,14 +285,14 @@ sub exec_command (\$$$$$$) {
     my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($Sbuild::Conf::debug) {
+    if ($self->get_conf('DEBUG')) {
 	$self->log_command($cmdline, $priority);
     } else {
 	$self->log_command($command, $priority);
     }
 
     if ($chroot != 0) {
-	chdir($Sbuild::Conf::cwd);
+	chdir($self->get_conf('CWD'));
     }
     exec $cmdline;
 }
@@ -305,7 +318,7 @@ sub get_apt_command (\$$$$$$) {
 
     my $cmdline = $self->get_command($aptcommand, $user, 1, $priority);
 
-    chdir($Sbuild::Conf::cwd);
+    chdir($self->get_conf('CWD'));
     return $cmdline;
 }
 
@@ -319,7 +332,7 @@ sub run_apt_command (\$$$$$$) {
 
     my $aptcommand = $self->get_apt_command_internal($command, $options);
 
-    chdir($Sbuild::Conf::cwd);
+    chdir($self->get_conf('CWD'));
     return $self->run_command($aptcommand, $user, 1, $priority, $dir);
 }
 

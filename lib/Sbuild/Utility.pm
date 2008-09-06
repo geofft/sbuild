@@ -30,8 +30,6 @@ $ENV{'SHELL'} = "/bin/sh";
 # avoid intermixing of stdout and stderr
 $| = 1;
 
-$Sbuild::Conf::verbose++;
-
 package Sbuild::Utility;
 
 use strict;
@@ -39,11 +37,10 @@ use warnings;
 
 use Sbuild::Conf;
 use Sbuild::Chroot;
-use Sbuild::Sysconfig qw($arch);
 
 sub get_dist ($);
-sub setup ($);
-sub cleanup ();
+sub setup ($$);
+sub cleanup ($);
 sub shutdown ($);
 
 my $current_session;
@@ -74,16 +71,20 @@ sub get_dist ($) {
     return $dist;
 }
 
-sub setup ($) {
+sub setup ($$) {
     my $chroot = shift;
+    my $conf = shift;
 
-    $Sbuild::Conf::nolog = 1;
-    Sbuild::Log::open_log($chroot);
+
+    $conf->set('VERBOSE', 1);
+    $conf->set('NOLOG', 1);
+
+    Sbuild::Log::open_log($chroot, $conf);
 
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
-    my $session = Sbuild::Chroot::new($chroot, undef, undef);
+    my $session = Sbuild::Chroot::new($chroot, undef, undef, $conf);
     $Sbuild::Utility::current_session = $session;
 
     if (!$session->begin_session()) {
@@ -97,7 +98,9 @@ sub setup ($) {
     return $session;
 }
 
-sub cleanup () {
+sub cleanup ($) {
+    my $conf = shift;
+
     if (defined(&main::local_cleanup)) {
 	main::local_cleanup($Sbuild::Utility::current_session);
     }
@@ -106,7 +109,7 @@ sub cleanup () {
 }
 
 sub shutdown ($) {
-    cleanup();
+    cleanup($main::conf); # FIXME: don't use global
     exit 1;
 }
 

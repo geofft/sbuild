@@ -9,7 +9,9 @@ configuration.
 
 * Major changes in 0.58.0:
 
-  None.
+  1) The configuration option @no_auto_upgrade, which was no longer
+     used, has been removed.  To prevent packages being upgraded
+     automatically, please use sbuild-hold.  See sbuild-hold(1).
 
 * Major changes in 0.57.5:
 

@@ -23,9 +23,13 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup);
 
 package main;
+
+my $conf = Sbuild::Conf::new();
+$conf->set('CWD', '/');
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-apt"); },
@@ -36,9 +40,9 @@ usage_error("sbuild-apt", "Incorrect number of options") if (@ARGV < 2);
 
 my $command = $ARGV[1];
 if ($command eq "apt-get") {
-    $command = $Sbuild::Conf::apt_get;
+    $command = $conf->get('APT_GET');
 } elsif ($command eq "apt-cache") {
-    $command = $Sbuild::Conf::apt_cache;
+    $command = $conf->get('APT_CACHE');
 } else {
     usage_error("sbuild-apt",
 		"Bad command $command.  Allowed commands: apt-get or apt-cache\n");
@@ -46,7 +50,7 @@ if ($command eq "apt-get") {
 
 $Sbuild::Conf::cwd = "/";
 
-my $session = setup($ARGV[0]) or die "Chroot setup failed";
+my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
 
 shift @ARGV;
 shift @ARGV;
@@ -55,6 +59,6 @@ my $cmd = join(' ', @ARGV);
 $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 my $status = $session->run_apt_command($command, $cmd, "root", 1);
 
-cleanup();
+cleanup($conf);
 
 exit $status;

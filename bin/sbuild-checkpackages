@@ -26,12 +26,14 @@ use locale;
 use POSIX qw(locale_h);
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Conf qw($package_checklist);
+use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
 our $mode = undef;
+
+my $conf = Sbuild::Conf::new();
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-checkpackages"); },
@@ -48,7 +50,8 @@ my $chroot = $ARGV[0];
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
 
-my $session = setup($chroot) or die "Chroot setup failed";
+my $package_checklist = $conf->get('PACKAGE_CHECKLIST');
+my $session = setup($chroot, $conf) or die "Chroot setup failed";
 my $chroot_dir = $session->{'Location'};
 my (@status, @ref, @install, @remove);
 
@@ -136,5 +139,5 @@ if ($mode eq "set") {
     }
 }
 
-cleanup();
+cleanup($conf);
 exit 0;

@@ -22,7 +22,6 @@ package Sbuild::Sysconfig;
 
 use strict;
 use warnings;
-use Sbuild::Conf qw($dpkg);
 
 BEGIN {
     use Exporter ();
@@ -30,12 +29,10 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($arch $hostname $version $release_date);
+    @EXPORT = qw($version $release_date);
 }
 
 our $version = "@VERSION@";
 our $release_date = "@RELEASE_DATE@";
-chomp(our $hostname = `hostname`);
-chomp(our $arch = `$dpkg --print-installation-architecture`);
 
 1;

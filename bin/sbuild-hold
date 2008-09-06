@@ -24,9 +24,12 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
+
+my $conf = Sbuild::Conf::new();
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-hold"); },
@@ -37,11 +40,11 @@ usage_error("sbuild-hold", "Incorrect number of options") if (@ARGV < 2);
 
 my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
 
-my $session = setup($ARGV[0]) or die "Chroot setup failed for $chroot chroot";
+my $session = setup($ARGV[0], $conf) or die "Chroot setup failed for $chroot chroot";
 
 print STDOUT "Holding packages in $chroot chroot:";
 
-my $command = $session->get_command("$Sbuild::Conf::dpkg --set-selections",
+my $command = $session->get_command($conf->get('DPKG') . ' --set-selections',
 				    "root", 1);
 if (!open(SELECTIONS, "| $command")) {
     print STDERR "Can't run dpkg --set-selections in chroot\n";
@@ -62,9 +65,9 @@ if (!close SELECTIONS) {
 print STDOUT ".\n";
 
 my $packages = join(" ", @ARGV);
-my $status = $session->run_command("$Sbuild::Conf::dpkg --list $packages",
+my $status = $session->run_command($conf->get('DPKG') . " --list $packages",
 				   "root", 1, 0);
 
-cleanup();
+cleanup($conf);
 
 exit $status;

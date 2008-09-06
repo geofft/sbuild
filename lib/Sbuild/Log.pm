@@ -30,7 +30,7 @@ use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
 
-sub open_log ($);
+sub open_log ($$);
 sub close_log ();
 sub open_pkg_log ($$$);
 sub close_pkg_log ($$$$$);
@@ -52,13 +52,16 @@ my $pkg_logfile;
 my $pkg_distribution;
 my $pkg_name;
 my $log_dir_available;
+# TODO: Remove global.
+my $conf;
 
-sub open_log ($) {
+sub open_log ($$) {
     my $main_distribution = shift;
+    $conf = shift;
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
-    if ($Sbuild::Conf::nolog) {
+    if ($conf->get('NOLOG')) {
 	open( main::LOG, ">&STDOUT" );
 	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	select( main::LOG );
@@ -66,14 +69,14 @@ sub open_log ($) {
     }
 
     my $F = new File::Temp( TEMPLATE => "build-${main_distribution}-$date.XXXXXX",
-			    DIR => $Sbuild::Conf::build_dir,
+			    DIR => $conf->get('BUILD_DIR'),
 			    SUFFIX => '.log',
 			    UNLINK => 0)
 	or die "Can't open logfile: $!\n";
     $F->autoflush(1);
     $main_logfile = $F->filename;
 
-    if ($Sbuild::Conf::verbose) {
+    if ($conf->get('VERBOSE')) {
 	my $pid;
 	($pid = open( main::LOG, "|-"));
 	if (!defined $pid) {
@@ -99,7 +102,7 @@ sub open_log ($) {
     undef $F;
     main::LOG->autoflush(1);
     select(main::LOG);
-    if ($Sbuild::Conf::verbose) {
+    if ($conf->get('VERBOSE')) {
 	open( SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
 	open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
     }
@@ -108,25 +111,27 @@ sub open_log ($) {
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 }
 
+# TODO: Don't require $conf for cleanup, or store in log object, or pass in as args?
 sub close_log () {
+
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
     close( main::PLOG );
     close( STDERR );
     close( STDOUT );
     close( main::LOG );
-    if ($Sbuild::Conf::verbose) {
+    if ($conf->get('VERBOSE')) {
 	open( STDOUT, ">&SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
 	open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
 	close (SAVED_STDOUT);
 	close (SAVED_STDERR);
     }
-    if (!$Sbuild::Conf::nolog && !$Sbuild::Conf::verbose &&
-	-s $main_logfile && $Sbuild::Conf::mailto) {
-	send_mail( $Sbuild::Conf::mailto, "Log from sbuild $date",
-		   $main_logfile ) if $Sbuild::Conf::mailto;
+    if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
+	-s $main_logfile && $conf->get('MAILTO')) {
+	send_mail( $conf->get('MAILTO'), "Log from sbuild $date",
+		   $main_logfile ) if $conf->get('MAILTO');
     }
-    elsif (!$Sbuild::Conf::nolog && ! -s $main_logfile) {
+    elsif (!$conf->get('NOLOG') && ! -s $main_logfile) {
 	unlink( $main_logfile );
     }
 }
@@ -138,24 +143,24 @@ sub open_pkg_log ($$$) {
     my $date = strftime("%Y%m%d-%H%M", localtime($pkg_start_time));
 
     if (!defined $log_dir_available) {
-	if (! -d $Sbuild::Conf::log_dir &&
-	    !mkdir $Sbuild::Conf::log_dir) {
-	    warn "Could not create $Sbuild::Conf::log_dir: $!\n";
+	if (! -d $conf->get('LOG_DIR') &&
+	    !mkdir $conf->get('LOG_DIR')) {
+	    warn "Could not create " . $conf->get('LOG_DIR') . ": $!\n";
 	    $log_dir_available = 0;
 	} else {
 	    $log_dir_available = 1;
 	}
     }
 
-    if ($Sbuild::Conf::nolog || !$log_dir_available) {
+    if ($conf->get('NOLOG') || !$log_dir_available) {
 	open( main::PLOG, ">&STDOUT" );
     }
     else {
-	$pkg_logfile = "$Sbuild::Conf::log_dir/${pkg_name}-$date";
+	$pkg_logfile = $conf->get('LOG_DIR') . "/${pkg_name}-$date";
 	log_symlink($pkg_logfile,
-		    "$Sbuild::Conf::build_dir/current-$pkg_distribution");
-	log_symlink($pkg_logfile, "$Sbuild::Conf::build_dir/current");
-	if ($Sbuild::Conf::verbose) {
+		    $conf->get('BUILD_DIR') . "/current-$pkg_distribution");
+	log_symlink($pkg_logfile,$conf->get('BUILD_DIR') . "/current");
+	if ($conf->get('VERBOSE')) {
 	    my $pid;
 	    ($pid = open( main::PLOG, "|-"));
 	    if (!defined $pid) {
@@ -202,9 +207,9 @@ sub close_pkg_log ($$$$$) {
 
     close( main::PLOG );
     open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
-    send_mail( $Sbuild::Conf::mailto,
-	       "Log for $status build of $pkg_name (dist=$pkg_distribution)",
-	       $pkg_logfile ) if !$Sbuild::Conf::nolog && $log_dir_available && $Sbuild::Conf::mailto;
+    send_mail($conf->get('MAILTO'),
+	      "Log for $status build of $pkg_name (dist=$pkg_distribution)",
+	      $pkg_logfile) if !$conf->get('NOLOG') && $log_dir_available && $conf->get('MAILTO');
 }
 
 sub send_mail ($$$) {
@@ -219,13 +224,13 @@ sub send_mail ($$$) {
     }
     local $SIG{'PIPE'} = 'IGNORE';
 
-    if (!open( MAIL, "|$Sbuild::Conf::mailprog -oem $to" )) {
-	warn "Could not open pipe to $Sbuild::Conf::mailprog: $!\n";
+    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
 	close( F );
 	return 0;
     }
 
-    print MAIL "From: $Sbuild::Conf::mailfrom\n";
+    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
     print MAIL "To: $to\n";
     print MAIL "Subject: $subject\n\n";
     while( <F> ) {
@@ -235,7 +240,7 @@ sub send_mail ($$$) {
 
     close( F );
     if (!close( MAIL )) {
-	warn "$Sbuild::Conf::mailprog failed (exit status $?)\n";
+	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
 	return 0;
     }
     return 1;

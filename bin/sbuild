@@ -42,54 +42,65 @@ use Data::Dumper;
 use File::Temp qw(tempdir);
 use Sbuild::Chroot;
 use Sbuild::Log qw(open_log close_log);
-use Sbuild::Sysconfig qw($arch $version);
+use Sbuild::Sysconfig qw($version);
 use Sbuild::Options;
 use Sbuild::Build;
 
 sub main ();
 sub shutdown ($);
-sub check_group_membership ();
+sub check_group_membership ($);
 sub dump_main_state ();
+
+my $conf = Sbuild::Conf::new();
+exit 1 if !defined($conf);
+my $options = Sbuild::Options::new($conf);
+exit 1 if !defined($options);
+
+check_group_membership($conf);
+
+umask(022);
+
+$main::build_object = undef;
+
+main();
 
 sub main () {
 # Be verbose by default if on a tty
-    if (-t STDIN && -t STDOUT && $Sbuild::Conf::verbose == 0) {
-	$conf::verbose = 1;
+    if (-t STDIN && -t STDOUT && $conf->get('VERBOSE') == 0) {
+	$conf->set('VERBOSE', 1);
     }
 
-    my $options = Sbuild::Options::new();
-    exit 1 if !defined($options);
-
     print "Selected distribution " . $options->get('Distribution') . "\n"
-	if $conf::debug;
+	if $conf->get('DEBUG');
     print "Selected chroot " . $options->get('Chroot') . "\n"
-	if $conf::debug and defined $options->get('Chroot');
+	if $conf->get('DEBUG') and defined $options->get('Chroot');
     print "Selected architecture " . $options->get('User Arch') . "\n"
-	if $conf::debug;
+	if $conf->get('DEBUG');
 
-    $conf::mailto = $conf::mailto{$options->get('Distribution')}
-    if $conf::mailto{$options->get('Distribution')};
+    $conf->set('MAILTO',
+	       $conf->get('MAILTO_HASH')->{$options->get('Distribution')})
+	if $conf->get('MAILTO_HASH')->{$options->get('Distribution')};
 
 # see debsign for priorities, we will follow the same order
     $options->set('Signing Options',
-		  "-m\"".$conf::maintainer_name."\"")
-	if defined $conf::maintainer_name;
+		  "-m\"".$conf->get('MAINTAINER_NAME')."\"")
+	if defined $conf->get('MAINTAINER_NAME');
     $options->set('Signing Options',
-		  "-e\"".$conf::uploader_name."\"")
-	if defined $conf::uploader_name;
+		  "-e\"".$conf->get('UPLOADER_NAME')."\"")
+	if defined $conf->get('UPLOADER_NAME');
     $options->set('Signing Options',
-		  "-k\"".$conf::key_id."\"")
-	if defined $conf::key_id;
-    $conf::maintainer_name=$conf::uploader_name if defined $conf::uploader_name;
-    $conf::maintainer_name=$conf::key_id if defined $conf::key_id;
+		  "-k\"".$conf->get('KEY_ID')."\"")
+	if defined $conf->get('KEY_ID');
+    $conf->set('MAINTAINER_NAME', $conf->get('UPLOADER_NAME')) if defined $conf->get('UPLOADER_NAME');
+    $conf->set('MAINTAINER_NAME', $conf->get('KEY_ID')) if defined $conf->get('KEY_ID');
 
-    if (!defined($conf::maintainer_name) &&
+    if (!defined($conf->get('MAINTAINER_NAME')) &&
 	$options->get('binNMU')) {
 	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
 
 # variables for scripts:
-    open_log($options->get('Distribution'));
+    open_log($options->get('Distribution'), $conf);
     $SIG{'INT'} = \&shutdown;
     $SIG{'TERM'} = \&shutdown;
     $SIG{'ALRM'} = \&shutdown;
@@ -99,7 +110,7 @@ sub main () {
     foreach $dscfile (@ARGV) {
 
 	# TODO: Append to build list, to allow parallel builds.
-	my $build = Sbuild::Build::new($dscfile, $options);
+	my $build = Sbuild::Build::new($dscfile, $options, $conf);
 	$main::build_object = $build;
 
 	$build->{'Pkg Start Time'} = time;
@@ -141,7 +152,8 @@ sub main () {
 
 	my $session = Sbuild::Chroot::new($options->get('Distribution'),
 					  $options->get('Chroot'),
-					  $options->get('User Arch'));
+					  $options->get('User Arch'),
+					  $conf);
 	$build->{'Session'} = $session;
 
 	if (!$session->begin_session()) {
@@ -152,9 +164,9 @@ sub main () {
 	}
 	$build->{'Chroot Dir'} = $session->{'Location'};
 	$build->{'Chroot Build Dir'} =
-	    tempdir("$Sbuild::Conf::username-" . 
-		    $build->{'Package_SVersion'} .
-		    "-$arch-XXXXXX",
+	    tempdir($conf->get('USERNAME') . '-' .
+		    $build->{'Package_SVersion'} . '-' .
+		    $conf->get('ARCH') . '-XXXXXX',
 		    DIR => $session->{'Build Location'});
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
@@ -163,8 +175,9 @@ sub main () {
 	$build->{'Arch'} = $build->chroot_arch();
 
 	# Update APT cache.
-	if ($conf::apt_update) {
-	    if (!open(PIPE, $session->get_apt_command("$conf::apt_get", "-q update", "root", 1, '/') . " 2>&1 |")) {
+	if ($conf->get('APT_UPDATE')) {
+	    if (!open(PIPE, $session->get_apt_command($conf->get('APT_GET'),
+						      "-q update", "root", 1, '/') . " 2>&1 |")) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
 		return 0;
 	    }
@@ -218,10 +231,10 @@ sub main () {
       cleanup_skip:
 	undef $build->{'binNMU Name'};
 	$main::current_job = "";
-	if ( $options->get('Batch Mode') and (-f "$conf::HOME/EXIT-DAEMON-PLEASE") ) {
+	if ( $options->get('Batch Mode') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
-	dump_main_state() if $conf::debug;
+	dump_main_state() if $conf->get('DEBUG');
 	$main::build_object->write_jobs_file("");
     }
 
@@ -229,7 +242,7 @@ sub main () {
     unlink( $main::build_object->{'Jobs File'} )
 	if $options->get('Batch Mode');
     unlink( "SBUILD-FINISHED" ) if $options->get('Batch Mode');
-    if ($conf::sbuild_mode eq "user" && defined($main::build_object)) {
+    if ($conf->get('SBUILD_MODE') eq "user" && defined($main::build_object)) {
 	    exit ($main::build_object->{'Pkg Status'} ne "successful") ? 1 : 0;
     }
     exit 0;
@@ -313,7 +326,7 @@ sub shutdown ($) {
 
     # close logs and send mails
     if ( $main::current_job && defined($main::build_object->{'Session'})) {
-	if ($conf::purge_build_directory eq "always") {
+	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
 	    print PLOG "Purging $main::build_object->{'Chroot Build Dir'}\n";
 	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::build_object->{'Chroot Build Dir'});
 	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
@@ -331,13 +344,15 @@ sub shutdown ($) {
     close_log();
     unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
     $? = 0; $! = 0;
-    if ($conf::sbuild_mode eq "user") {
+    if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;
     }
     exit 0;
 }
 
-sub check_group_membership () {
+sub check_group_membership ($) {
+    my $conf = shift;
+
     my $user = getpwuid($<);
     my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
 
@@ -347,7 +362,7 @@ sub check_group_membership () {
 
     my $in_group = 0;
     foreach (split(' ', $members)) {
-	$in_group = 1 if $_ eq $Sbuild::Conf::username;
+	$in_group = 1 if $_ eq $conf->get('USERNAME');
     }
 
     if (!$in_group) {
@@ -381,11 +396,3 @@ $SIG{'HUP'} = 'IGNORE';
 if (!open(main::DEVNULL, '+<', '/dev/null')) {
     die "Cannot open /dev/null: $!\n";;
 }
-
-check_group_membership();
-
-umask(022);
-
-$main::build_object = undef;
-
-main();

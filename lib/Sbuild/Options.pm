@@ -38,15 +38,18 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ();
+sub new ($);
 sub get (\%$);
 sub set (\%$$);
 sub parse_options (\%);
 
-sub new () {
+sub new ($) {
+    my $conf = shift;
+
     my $self  = {};
     bless($self);
 
+    $self->{'CONFIG'} = $conf;
     $self->{'User Arch'} = '';
     $self->{'Build Arch All'} = 0;
     $self->{'Auto Giveback'} = 0;
@@ -124,9 +127,9 @@ sub parse_options (\%) {
 		       },
 		       "check-depends-algorithm=s" => sub {
 			   die "Bad build dependency check algorithm\n"
-			       if( ! ($_[1] eq "first-only" 
+			       if( ! ($_[1] eq "first-only"
 				      || $_[1] eq "alternatives") );
-			   $Sbuild::Conf::check_depends_algorithm = $_[1];
+			   $self->get('CONFIG')->set('CHECK_DEPENDS_ALGORITHM', $_[1]);
 		       },
 		       "b|batch" => sub {
 			   $self->set('Batch Mode', 1);
@@ -145,8 +148,13 @@ sub parse_options (\%) {
 		       "database=s" => sub {
 			   $self->set('WannaBuild Database', $_[1]);
 		       },
-		       "D|debug+" => \$Sbuild::Conf::debug,
-		       "apt-update" => \$Sbuild::Conf::apt_update,
+		       "D|debug" => sub {
+			   $self->get('CONFIG')->set('DEBUG',
+						     $self->get('CONFIG')->get('DEBUG') + 1);
+		       },
+		       "apt-update" => sub {
+			   $self->get('CONFIG')->set('APT_UPDATE', $_[1]);
+		       },
 		       "d|dist=s" => sub {
 			   $self->set('Distribution', $_[1]);
 			   $self->set('Distribution', "oldstable")
@@ -161,31 +169,49 @@ sub parse_options (\%) {
 			       if $self->{'Distribution'} eq "e";
 			   $self->set('Override Distribution', 1);
 		       },
-		       "force-orig-source" => \$Sbuild::Conf::force_orig_source,
-		       "m|maintainer=s" => \$Sbuild::Conf::maintainer_name,
-		       "k|keyid=s" => \$Sbuild::Conf::key_id,
-		       "e|uploader=s" => \$Sbuild::Conf::uploader_name,
-		       "n|nolog" => \$Sbuild::Conf::nolog,
-		       "purge=s" => sub {
-			   $Sbuild::Conf::purge_build_directory = $_[1];
-			   die "Bad purge mode\n"
-			       if !isin($Sbuild::Conf::purge_build_directory,
+		       "force-orig-source" => sub {
+			   $self->get('CONFIG')->set('FORCE_ORIG_SOURCE', 1);
+		       },
+		       "m|maintainer=s" => sub {
+			   $self->get('CONFIG')->set('MAINTAINER_NAME', $_[1]);
+		       },
+		       "k|keyid=s" => sub {
+			   $self->get('CONFIG')->set('KEY_ID', $_[1]);
+		       },
+		       "e|uploader=s" => sub {
+			   $self->get('CONFIG')->set('UPLOADER_NAME', $_[1]);
+		       },
+		       "n|nolog" => sub {
+			   $self->set('NOLOG', 1);
+		       },
+		       "p|purge=s" => sub {
+			   $self->get('CONFIG')->set('PURGE_BUILD_DIRECTORY', $_[1]);
+			   die "Bad purge mode '$_[1]'\n"
+			       if !isin($self->get('CONFIG')->get('PURGE_BUILD_DIRECTORY'),
 					qw(always successful never));
 		       },
 		       "s|source" => sub {
 			   $self->set('Build Source', 1);
 		       },
-		       "stats-dir=s" => \$Sbuild::Conf::stats_dir,
+		       "stats-dir=s" => sub {
+			   $self->get('CONFIG')->set('STATS_DIR', $_[1]);
+		       },
 		       "use-snapshot" => sub {
 			   $self->set('GCC Snapshot', 1);
 			   $self->set('LD_LIBRARY_PATH',
 				      "/usr/lib/gcc-snapshot/lib");
-			   $Sbuild::Conf::path =
-			       "/usr/lib/gcc-snapshot/bin:$Sbuild::Conf::path";
+			   $self->get('CONFIG')->set('PATH',
+						     "/usr/lib/gcc-snapshot/bin:" .
+						     $self->get('CONFIG')->get('PATH'))
 		       },
-		       "v|verbose+" => \$Sbuild::Sbuild::Conf::verbose,
+		       "v|verbose" => sub {
+			   $self->get('CONFIG')->set('VERBOSE',
+						     $self->get('CONFIG')->get('VERBOSE') + 1);
+		       },
 		       "q|quiet" => sub {
-			   $Sbuild::Sbuild::Conf::verbose-- if $Sbuild::Conf::verbose;
+			   $self->get('CONFIG')->set('VERBOSE',
+						     $self->get('CONFIG')->get('VERBOSE') - 1)
+			       if $self->get('CONFIG')->get('VERBOSE');
 		       },
 	);
 }
