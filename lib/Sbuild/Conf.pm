@@ -33,8 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($sbuild_mode
-                 $debug $force_orig_source
+    @EXPORT = qw($debug $force_orig_source
                  $path
                  $maintainer_name $uploader_name %watches $key_id);
 }
@@ -297,7 +296,7 @@ sub check_config (\%) {
 	"'\nValid algorthms are 'first-only' and 'alternatives'\n"
 	if !($self->get('CHECK_DEPENDS_ALGORITHM') eq 'first-only' ||
 	     $self->get('CHECK_DEPENDS_ALGORITHM') eq 'alternatives');
-    die "mailto not set\n" if !$self->get('MAILTO') && $sbuild_mode eq "buildd";
+    die "mailto not set\n" if !$self->get('MAILTO') && $self->get('SBUILD_MODE') eq "buildd";
 
     if (!defined($self->get('BUILD_DIR'))) {
 	$self->set('BUILD_DIR', $self->get('CWD'));

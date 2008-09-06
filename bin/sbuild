@@ -242,7 +242,7 @@ sub main () {
     unlink( $main::build_object->{'Jobs File'} )
 	if $options->get('Batch Mode');
     unlink( "SBUILD-FINISHED" ) if $options->get('Batch Mode');
-    if ($conf::sbuild_mode eq "user" && defined($main::build_object)) {
+    if ($conf->get('SBUILD_MODE') eq "user" && defined($main::build_object)) {
 	    exit ($main::build_object->{'Pkg Status'} ne "successful") ? 1 : 0;
     }
     exit 0;
@@ -344,7 +344,7 @@ sub shutdown ($) {
     close_log();
     unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
     $? = 0; $! = 0;
-    if ($conf::sbuild_mode eq "user") {
+    if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;
     }
     exit 0;
