@@ -41,6 +41,8 @@ BEGIN {
 sub new ($);
 sub get (\%$);
 sub set (\%$$);
+sub get_conf (\%$);
+sub set_conf (\%$$);
 sub parse_options (\%);
 
 sub new ($) {
@@ -93,6 +95,21 @@ sub set (\%$$) {
     return $self->{$key} = $value;
 }
 
+sub get_conf (\%$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->get('CONFIG')->get($key);
+}
+
+sub set_conf (\%$$) {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    return $self->get('CONFIG')->set($key,$value);
+}
+
 sub parse_options (\%) {
     my $self = shift;
 
@@ -129,7 +146,7 @@ sub parse_options (\%) {
 			   die "Bad build dependency check algorithm\n"
 			       if( ! ($_[1] eq "first-only"
 				      || $_[1] eq "alternatives") );
-			   $self->get('CONFIG')->set('CHECK_DEPENDS_ALGORITHM', $_[1]);
+			   $self->set_conf('CHECK_DEPENDS_ALGORITHM', $_[1]);
 		       },
 		       "b|batch" => sub {
 			   $self->set('Batch Mode', 1);
@@ -149,11 +166,11 @@ sub parse_options (\%) {
 			   $self->set('WannaBuild Database', $_[1]);
 		       },
 		       "D|debug" => sub {
-			   $self->get('CONFIG')->set('DEBUG',
-						     $self->get('CONFIG')->get('DEBUG') + 1);
+			   $self->set_conf('DEBUG',
+					   $self->get_conf('DEBUG') + 1);
 		       },
 		       "apt-update" => sub {
-			   $self->get('CONFIG')->set('APT_UPDATE', $_[1]);
+			   $self->set_conf('APT_UPDATE', $_[1]);
 		       },
 		       "d|dist=s" => sub {
 			   $self->set('Distribution', $_[1]);
@@ -170,48 +187,48 @@ sub parse_options (\%) {
 			   $self->set('Override Distribution', 1);
 		       },
 		       "force-orig-source" => sub {
-			   $self->get('CONFIG')->set('FORCE_ORIG_SOURCE', 1);
+			   $self->set_conf('FORCE_ORIG_SOURCE', 1);
 		       },
 		       "m|maintainer=s" => sub {
-			   $self->get('CONFIG')->set('MAINTAINER_NAME', $_[1]);
+			   $self->set_conf('MAINTAINER_NAME', $_[1]);
 		       },
 		       "k|keyid=s" => sub {
-			   $self->get('CONFIG')->set('KEY_ID', $_[1]);
+			   $self->set_conf('KEY_ID', $_[1]);
 		       },
 		       "e|uploader=s" => sub {
-			   $self->get('CONFIG')->set('UPLOADER_NAME', $_[1]);
+			   $self->set_conf('UPLOADER_NAME', $_[1]);
 		       },
 		       "n|nolog" => sub {
 			   $self->set('NOLOG', 1);
 		       },
 		       "p|purge=s" => sub {
-			   $self->get('CONFIG')->set('PURGE_BUILD_DIRECTORY', $_[1]);
+			   $self->set_conf('PURGE_BUILD_DIRECTORY', $_[1]);
 			   die "Bad purge mode '$_[1]'\n"
-			       if !isin($self->get('CONFIG')->get('PURGE_BUILD_DIRECTORY'),
+			       if !isin($self->get_conf('PURGE_BUILD_DIRECTORY'),
 					qw(always successful never));
 		       },
 		       "s|source" => sub {
 			   $self->set('Build Source', 1);
 		       },
 		       "stats-dir=s" => sub {
-			   $self->get('CONFIG')->set('STATS_DIR', $_[1]);
+			   $self->set_conf('STATS_DIR', $_[1]);
 		       },
 		       "use-snapshot" => sub {
 			   $self->set('GCC Snapshot', 1);
 			   $self->set('LD_LIBRARY_PATH',
 				      "/usr/lib/gcc-snapshot/lib");
-			   $self->get('CONFIG')->set('PATH',
-						     "/usr/lib/gcc-snapshot/bin:" .
-						     $self->get('CONFIG')->get('PATH'))
+			   $self->set_conf('PATH',
+					   "/usr/lib/gcc-snapshot/bin:" .
+					   $self->get_conf('PATH'))
 		       },
 		       "v|verbose" => sub {
-			   $self->get('CONFIG')->set('VERBOSE',
-						     $self->get('CONFIG')->get('VERBOSE') + 1);
+			   $self->set_conf('VERBOSE',
+					  $self->get_conf('VERBOSE') + 1);
 		       },
 		       "q|quiet" => sub {
-			   $self->get('CONFIG')->set('VERBOSE',
-						     $self->get('CONFIG')->get('VERBOSE') - 1)
-			       if $self->get('CONFIG')->get('VERBOSE');
+			   $self->set_conf('VERBOSE',
+					   $self->get_conf('VERBOSE') - 1)
+			       if $self->get_conf('VERBOSE');
 		       },
 	);
 }
