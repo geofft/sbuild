@@ -49,3 +49,13 @@ running commands.  They can then be passed directly to schroot avoiding quoting 
 Add a --verbose option to add commands
 
 Sbuild::Chroot should be passed Sbuild::Options directly.
+
+Directory passed to dpkg-source includes Debian version.  Should be upstream only.
+
+Document and add examples for %mailto.
+
+All options should be stored in Sbuild::Conf.
+
+Move options checking from Sbuild::Options to Sbuild::Conf.
+This will allow checking of all configuration options, no matter how
+they are set.
