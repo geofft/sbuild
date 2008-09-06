@@ -74,7 +74,7 @@ sub main () {
 	if $conf->get('DEBUG');
     print "Selected chroot " . $options->get('Chroot') . "\n"
 	if $conf->get('DEBUG') and defined $options->get('Chroot');
-    print "Selected architecture " . $options->get('User Arch') . "\n"
+    print "Selected architecture " . $conf->get('USER_ARCH') . "\n"
 	if $conf->get('DEBUG');
 
     $conf->set('MAILTO',
@@ -152,7 +152,7 @@ sub main () {
 
 	my $session = Sbuild::Chroot::new($options->get('Distribution'),
 					  $options->get('Chroot'),
-					  $options->get('User Arch'),
+					  $conf->get('USER_ARCH'),
 					  $conf);
 	$build->{'Session'} = $session;
 

@@ -47,6 +47,7 @@ sub set_allowed_keys (\%) {
 
     my %allowed_keys = (
 	'ARCH'					=> "",
+	'USER_ARCH'				=> "",
 	'HOSTNAME'				=> "",
 	'HOME'					=> "",
 	'USERNAME'				=> "",
@@ -267,6 +268,7 @@ our $lock_interval = 5;
     # Not user-settable.
     chomp(my $arch = readpipe($self->get('DPKG') . " --print-installation-architecture"));
     $self->set('ARCH', $arch);
+    $self->set('USER_ARCH', $arch);
     chomp(my $hostname = `hostname`);
     $self->set('HOSTNAME', $hostname);
 }

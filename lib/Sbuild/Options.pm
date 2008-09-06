@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'User Arch'} = '';
     $self->{'Build Arch All'} = 0;
     $self->{'Auto Giveback'} = 0;
     $self->{'Auto Giveback Host'} = 0;
@@ -115,7 +114,9 @@ sub parse_options (\%) {
 
     return GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
 		       "V|version" => sub {version_text("sbuild"); },
-		       "arch=s" => \$self->{'User Arch'},
+		       "arch=s" => sub {
+			   $self->set_conf('USER_ARCH', $_[1]);
+		       },
 		       "A|arch-all" => sub {
 			   $self->set('Build Arch All', 1);
 		       },
