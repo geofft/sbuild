@@ -25,8 +25,6 @@ use strict;
 use warnings;
 use Cwd qw(cwd);
 
-sub init ();
-
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -34,10 +32,6 @@ BEGIN {
     @ISA = qw(Exporter);
 
     @EXPORT = qw();
-}
-
-INIT {
-    init();
 }
 
 (our $HOME = $ENV{'HOME'})
@@ -122,10 +116,6 @@ our $check_depends_algorithm = "first-only";
 # read conf files
 require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
-
-sub init () {
-    # some checks
-}
 
 sub set_allowed_keys (\%);
 sub is_allowed (\%$);
