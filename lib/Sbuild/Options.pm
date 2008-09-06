@@ -169,7 +169,9 @@ sub parse_options (\%) {
 			       if $self->{'Distribution'} eq "e";
 			   $self->set('Override Distribution', 1);
 		       },
-		       "force-orig-source" => \$Sbuild::Conf::force_orig_source,
+		       "force-orig-source" => sub {
+			   $self->get('CONFIG')->set('FORCE_ORIG_SOURCE', 1);
+		       },
 		       "m|maintainer=s" => \$Sbuild::Conf::maintainer_name,
 		       "k|keyid=s" => \$Sbuild::Conf::key_id,
 		       "e|uploader=s" => \$Sbuild::Conf::uploader_name,

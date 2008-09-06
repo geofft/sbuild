@@ -604,7 +604,7 @@ EOF
     if ($self->{'Sub PID'} == 0) {
 	open( STDIN, "</dev/null" );
 	my $binopt = $self->get_option('Build Source') ?
-	    $conf::force_orig_source ? "-sa" : "" :
+	    $self->get_conf('FORCE_ORIG_SOURCE') ? "-sa" : "" :
 	    $self->get_option('Build Arch All') ?	"-b" : "-B";
 
 	my $bdir = $self->{'Session'}->strip_chroot_path($dscdir);
