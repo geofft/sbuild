@@ -231,7 +231,7 @@ sub main () {
       cleanup_skip:
 	undef $build->{'binNMU Name'};
 	$main::current_job = "";
-	if ( $options->get('Batch Mode') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
+	if ($conf->get('BATCH_MODE') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
 	dump_main_state() if $conf->get('DEBUG');
@@ -240,8 +240,8 @@ sub main () {
 
     close_log();
     unlink( $main::build_object->{'Jobs File'} )
-	if $options->get('Batch Mode');
-    unlink( "SBUILD-FINISHED" ) if $options->get('Batch Mode');
+	if $conf->get('BATCH_MODE');
+    unlink( "SBUILD-FINISHED" ) if $conf->get('BATCH_MODE');
     if ($conf->get('SBUILD_MODE') eq "user" && defined($main::build_object)) {
 	    exit ($main::build_object->{'Pkg Status'} ne "successful") ? 1 : 0;
     }
@@ -260,7 +260,7 @@ sub shutdown ($) {
     $SIG{'PIPE'} = 'IGNORE';
     print PLOG "sbuild received SIG$signame -- shutting down\n";
 
-    goto not_ni_shutdown if !$main::build_object->get_option('Batch Mode');
+    goto not_ni_shutdown if !$conf->get('BATCH_MODE');
 
     # most important: dump out names of unfinished jobs to REDO
     foreach $job (@ARGV) {
@@ -343,7 +343,7 @@ sub shutdown ($) {
 	undef $main::build_object->{'binNMU Name'};
     }
     close_log();
-    unlink( $main::build_object->{'Jobs File'} ) if $main::build_object->{'Batch Mode'};
+    unlink( $main::build_object->{'Jobs File'} ) if $conf->get('BATCH_MODE');
     $? = 0; $! = 0;
     if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;

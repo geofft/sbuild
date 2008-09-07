@@ -53,7 +53,6 @@ sub new ($) {
 
     $self->{'CONFIG'} = $conf;
     $self->{'Manual Srcdeps'} = [];
-    $self->{'Batch Mode'} = 0;
     $self->{'Build Source'} = 0;
     $self->{'binNMU'} = undef;
     $self->{'binNMU Version'} = undef;
@@ -141,7 +140,7 @@ sub parse_options (\%) {
 			   $self->set_conf('CHECK_DEPENDS_ALGORITHM', $_[1]);
 		       },
 		       "b|batch" => sub {
-			   $self->set('Batch Mode', 1);
+			   $self->set_conf('BATCH_MODE', 1);
 		       },
 		       "make-binNMU=s" => sub {
 			   $self->set('binNMU', $_[1]);

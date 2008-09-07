@@ -1984,23 +1984,24 @@ sub write_jobs_file (\$$) {
     $main::job_state{$main::current_job} = $news
 	if $news && $main::current_job;
 
-    return if !$self->get_option('Batch Mode');
+    if ($self->get_conf('BATCH_MODE')) {
 
-    return if !open( F, ">$self->{'Jobs File'}" );
-    foreach $job (@ARGV) {
-	my $jobname;
+	return if !open( F, ">$self->{'Jobs File'}" );
+	foreach $job (@ARGV) {
+	    my $jobname;
 
-	if ($job eq $main::current_job and $self->{'binNMU Name'}) {
-	    $jobname = $self->{'binNMU Name'};
-	} else {
-	    $jobname = $job;
+	    if ($job eq $main::current_job and $self->{'binNMU Name'}) {
+		$jobname = $self->{'binNMU Name'};
+	    } else {
+		$jobname = $job;
+	    }
+	    print F ($job eq $main::current_job) ? "" : "  ",
+	    $jobname,
+	    ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
+	    "\n";
 	}
-	print F ($job eq $main::current_job) ? "" : "  ",
-	        $jobname,
-	        ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
-	        "\n";
+	close( F );
     }
-    close( F );
 }
 
 sub append_to_FINISHED (\$) {
@@ -2009,11 +2010,11 @@ sub append_to_FINISHED (\$) {
     my $pkg = $self->{'Package_Version'};
     local( *F );
 
-    return if !$self->get_option('Batch Mode');
-
-    open( F, ">>SBUILD-FINISHED" );
-    print F "$pkg\n";
-    close( F );
+    if ($self->get_conf('BATCH_MODE')) {
+	open( F, ">>SBUILD-FINISHED" );
+	print F "$pkg\n";
+	close( F );
+    }
 }
 
 sub write_srcdep_lock_file (\$\@) {
