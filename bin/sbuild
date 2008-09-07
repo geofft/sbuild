@@ -110,7 +110,7 @@ sub main () {
     foreach $dscfile (@ARGV) {
 
 	# TODO: Append to build list, to allow parallel builds.
-	my $build = Sbuild::Build::new($dscfile, $options, $conf);
+	my $build = Sbuild::Build::new($dscfile, $conf);
 	$main::build_object = $build;
 
 	$build->{'Pkg Start Time'} = time;

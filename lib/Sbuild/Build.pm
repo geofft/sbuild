@@ -49,10 +49,9 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$);
+sub new ($$);
 sub get (\%$);
 sub set (\%$$);
-sub get_option (\%$);
 sub get_conf (\%$);
 sub set_conf (\%$$);
 sub set_dsc (\$$);
@@ -110,15 +109,13 @@ sub add_space_entry (\$$$);
 
 
 # TODO: put in all package version data and job ID (for indexing in job list)
-sub new ($$$) {
+sub new ($$) {
     my $dsc = shift;
-    my $options = shift;
     my $conf = shift;
 
     my $self  = {};
     bless($self);
 
-    $self->{'Options'} = $options;
     $self->{'Config'} = $conf;
 
     # DSC, package and version information:
@@ -194,13 +191,6 @@ sub set (\%$$) {
     my $value = shift;
 
     return $self->{$key} = $value;
-}
-
-sub get_option (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->get('Options')->get($key);
 }
 
 sub get_conf (\%$) {
@@ -817,7 +807,7 @@ sub analyze_fail_stage (\$) {
 	$cmd .= "--database=" . $self->get_conf('WANNABUILD_DATABASE') . " "
 	    if $self->get_conf('WANNABUILD_DATABASE');
 	$cmd .= "--user=" . $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER') . " "
-	    if $self->get_option('AUTO_GIVEBACK_WANNABUILD_USER');
+	    if $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER');
 	$cmd .= "$pkgv";
 	system $cmd;
 	if ($?) {
