@@ -23,7 +23,9 @@ package Sbuild::Conf;
 
 use strict;
 use warnings;
+
 use Cwd qw(cwd);
+use Sbuild qw(isin);
 
 BEGIN {
     use Exporter ();
@@ -327,6 +329,14 @@ sub check_config (\%) {
 	if !-x $self->get('DCMD');
     die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
 	if ! -d $self->get('SRCDEP_LOCK_DIR');
+
+    die "Bad purge mode \'" . $self->get('PURGE_BUILD_DIRECTORY') . "\'"
+	if !isin($self->get('PURGE_BUILD_DIRECTORY'),
+		 qw(always successful never));
+
+    die "Bad build dependency check algorithm \'" . $self->get('CHECK_DEPENDS_ALGORITHM') . "\'"
+	if !isin($self->get('CHECK_DEPENDS_ALGORITHM'),
+		 qw(first-only alternatives));
 
     die 'check_depends_algorithm: Invalid build-dependency checking algorithm \'' .
 	$self->get('CHECK_DEPENDS_ALGORITHM') .

@@ -26,7 +26,7 @@ use strict;
 use warnings;
 
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild qw(isin help_text version_text usage_error);
+use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Conf;
 
 BEGIN {
@@ -71,8 +71,6 @@ sub set (\%$$) {
     my $self = shift;
     my $key = shift;
     my $value = shift;
-
-# TODO: Check if key exists before setting it.
 
     return $self->{$key} = $value;
 }
@@ -129,9 +127,6 @@ sub parse_options (\%) {
 				"a".$_[1] );
 		       },
 		       "check-depends-algorithm=s" => sub {
-			   die "Bad build dependency check algorithm\n"
-			       if( ! ($_[1] eq "first-only"
-				      || $_[1] eq "alternatives") );
 			   $self->set_conf('CHECK_DEPENDS_ALGORITHM', $_[1]);
 		       },
 		       "b|batch" => sub {
@@ -190,9 +185,6 @@ sub parse_options (\%) {
 		       },
 		       "p|purge=s" => sub {
 			   $self->set_conf('PURGE_BUILD_DIRECTORY', $_[1]);
-			   die "Bad purge mode '$_[1]'\n"
-			       if !isin($self->get_conf('PURGE_BUILD_DIRECTORY'),
-					qw(always successful never));
 		       },
 		       "s|source" => sub {
 			   $self->set_conf('BUILD_SOURCE', 1);
