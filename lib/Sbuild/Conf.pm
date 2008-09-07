@@ -105,7 +105,13 @@ sub set_allowed_keys (\%) {
 	'APT_UPDATE'				=> "",
 	'APT_ALLOW_UNAUTHENTICATED'		=> "",
 	'ALTERNATIVES'				=> "",
-	'CHECK_DEPENDS_ALGORITHM'		=> "");
+	'CHECK_DEPENDS_ALGORITHM'		=> "",
+	'AUTO_GIVEBACK'				=> "",
+	'AUTO_GIVEBACK_HOST'			=> "",
+	'AUTO_GIVEBACK_SOCKET'			=> "",
+	'AUTO_GIVEBACK_USER'			=> "",
+	'AUTO_GIVEBACK_WANNABUILD_USER'		=> "",
+	'WANNABUILD_DATABASE'			=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
 }
@@ -279,6 +285,12 @@ our $lock_interval = 5;
     $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');
     chomp(my $hostname = `hostname`);
     $self->set('HOSTNAME', $hostname);
+    $self->set('AUTO_GIVEBACK', 0);
+    $self->set('AUTO_GIVEBACK_HOST', 0);
+    $self->set('AUTO_GIVEBACK_SOCKET', 0);
+    $self->set('AUTO_GIVEBACK_USER', 0);
+    $self->set('AUTO_GIVEBACK_WANNABUILD_USER', 0);
+    $self->set('WANNABUILD_DATABASE', 0);
 }
 
 sub check_config (\%) {

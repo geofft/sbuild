@@ -52,14 +52,8 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'Auto Giveback'} = 0;
-    $self->{'Auto Giveback Host'} = 0;
-    $self->{'Auto Giveback Socket'} = 0;
-    $self->{'Auto Giveback User'} = 0;
-    $self->{'Auto Giveback WannaBuild User'} = 0;
     $self->{'Manual Srcdeps'} = [];
     $self->{'Batch Mode'} = 0;
-    $self->{'WannaBuild Database'} = 0;
     $self->{'Build Source'} = 0;
     $self->{'binNMU'} = undef;
     $self->{'binNMU Version'} = undef;
@@ -118,19 +112,19 @@ sub parse_options (\%) {
 			   $self->set_conf('BUILD_ARCH_ALL', 1);
 		       },
 		       "auto-give-back=s" => sub {
-			   $self->set('Auto Giveback', 1);
+			   $self->set_conf('AUTO_GIVEBACK', 1);
 			   if ($_[1]) {
 			       my @parts = split( '@', $_[1] );
-			       $self->set('Auto Giveback Socket',
+			       $self->set_conf('AUTO_GIVEBACK_SOCKET',
 					  $parts[$#parts-3])
 				   if @parts > 3;
-			       $self->set('Auto Giveback WannaBuild User',
+			       $self->set_conf('AUTO_GIVEBACK_WANNABUILD_USER',
 					  $parts[$#parts-2])
 				   if @parts > 2;
-			       $self->set('Auto Giveback User',
+			       $self->set_conf('AUTO_GIVEBACK_USER',
 					  $parts[$#parts-1])
 				   if @parts > 1;
-			       $self->set('Auto Giveback Host',
+			       $self->set_conf('AUTO_GIVEBACK_HOST',
 					  $parts[$#parts]);
 			   }
 		       },
@@ -161,7 +155,7 @@ sub parse_options (\%) {
 			   $self->set('Chroot', $_[1]);
 		       },
 		       "database=s" => sub {
-			   $self->set('WannaBuild Database', $_[1]);
+			   $self->set_conf('WANNABUILD_DATABASE', $_[1]);
 		       },
 		       "D|debug" => sub {
 			   $self->set_conf('DEBUG',

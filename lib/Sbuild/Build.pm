@@ -801,24 +801,24 @@ sub analyze_fail_stage (\$) {
     my $pkgv = $self->{'Package_Version'};
 
     return if $self->{'Pkg Status'} ne "failed";
-    return if !$self->get_option('Auto Giveback');
+    return if !$self->get_conf('AUTO_GIVEBACK');
     if (isin( $self->{'Pkg Fail Stage'},
 	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
 	$self->{'Pkg Status'} = "given-back";
 	print main::PLOG "Giving back package $pkgv after failure in ".
 	    "$self->{'Pkg Fail Stage'} stage.\n";
 	my $cmd = "";
-	$cmd = "ssh -l " . $self->get_option('Auto Giveback User') . " " .
-	    $self->get_option('Auto Giveback Host') . " "
-	    if $self->get_option('Auto Giveback Host');
-	$cmd .= "-S " . $self->get_option('Auto Giveback Socket') . " "
-	    if $self->get_option('Auto Giveback Socket');
+	$cmd = "ssh -l " . $self->get_conf('AUTO_GIVEBACK_USER') . " " .
+	    $self->get_conf('AUTO_GIVEBACK_HOST') . " "
+	    if $self->get_conf('AUTO_GIVEBACK_HOST');
+	$cmd .= "-S " . $self->get_conf('AUTO_GIVEBACK_SOCKET') . " "
+	    if $self->get_conf('AUTO_GIVEBACK_SOCKET');
 	$cmd .= "wanna-build --give-back --no-down-propagation ".
 	    "--dist=" . $self->get_conf('DISTRIBUTION') . " ";
-	$cmd .= "--database=" . $self->get_option('WannaBuild Database') . " "
-	    if $self->get_option('WannaBuild Database');
-	$cmd .= "--user=" . $self->get_option('Auto Giveback WannaBuild User') . " "
-	    if $self->get_option('Auto Giveback WannaBuild User');
+	$cmd .= "--database=" . $self->get_conf('WANNABUILD_DATABASE') . " "
+	    if $self->get_conf('WANNABUILD_DATABASE');
+	$cmd .= "--user=" . $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER') . " "
+	    if $self->get_option('AUTO_GIVEBACK_WANNABUILD_USER');
 	$cmd .= "$pkgv";
 	system $cmd;
 	if ($?) {
