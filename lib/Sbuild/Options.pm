@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'GCC Snapshot'} = 0;
 
     if (!$self->parse_options()) {
 	usage_error("sbuild", "Error parsing command-line options");
@@ -202,13 +201,13 @@ sub parse_options (\%) {
 			   $self->set_conf('STATS_DIR', $_[1]);
 		       },
 		       "use-snapshot" => sub {
-			   $self->set('GCC Snapshot', 1);
+			   $self->set_conf('GCC_SNAPSHOT', 1);
 			   $self->set_conf('LD_LIBRARY_PATH',
 					   '/usr/lib/gcc-snapshot/lib' .
-					   defined($self->get_conf('LD_LIBRARY_PATH')) ? ':' . $self->get_conf('LD_LIBRARY_PATH') : '');
+					   $self->get_conf('LD_LIBRARY_PATH') ne '' ? ':' . $self->get_conf('LD_LIBRARY_PATH') : '');
 			   $self->set_conf('PATH',
 					   '/usr/lib/gcc-snapshot/bin' .
-					   defined($self->get_conf('PATH')) ? ':' . $self->get_conf('PATH') : '');
+					   $self->get_conf('PATH') ne '' ? ':' . $self->get_conf('PATH') : '');
 		       },
 		       "v|verbose" => sub {
 			   $self->set_conf('VERBOSE',

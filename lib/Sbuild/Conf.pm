@@ -100,6 +100,7 @@ sub set_allowed_keys (\%) {
 	'FORCE_ORIG_SOURCE'			=> "",
 	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> "",
 	'PATH'					=> "",
+	'LD_LIBRARY_PATH'			=> "",
 	'MAINTAINER_NAME'			=> "",
 	'UPLOADER_NAME'				=> "",
 	'KEY_ID'				=> "",
@@ -118,7 +119,7 @@ sub set_allowed_keys (\%) {
 	'BUILD_SOURCE'				=> "",
 	'BIN_NMU'				=> "",
 	'BIN_NMU_VERSION'			=> "",
-	'LD_LIBRARY_PATH'			=> "");
+	'GCC_SNAPSHOT'				=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
 }
@@ -194,6 +195,7 @@ our $lock_interval = 5;
     our $force_orig_source = 0;
     our %individual_stalled_pkg_timeout = ();
     our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
+    our $ld_library_path = "";
     our $maintainer_name;
     our $uploader_name;
     our $key_id;
@@ -279,6 +281,7 @@ our $lock_interval = 5;
     $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
     $self->set('INDIVIDUAL_STALLED_PKG_TIMEOUT', \%individual_stalled_pkg_timeout);
     $self->set('PATH', $path);
+    $self->set('LD_LIBRARY_PATH', $ld_library_path);
     $self->set('MAINTAINER_NAME', $maintainer_name);
     $self->set('UPLOADER_NAME', $uploader_name);
     $self->set('KEY_ID', $key_id);
@@ -304,8 +307,7 @@ our $lock_interval = 5;
     $self->set('MANUAL_SRCDEPS', []);
     $self->set('BUILD_SOURCE', 0);
     $self->set('BIN_NMU', undef);
-    $self->set('BIN_NMU_VERSION', undef);
-    $self->set('LD_LIBRARY_PATH', undef);
+    $self->set('GCC_SNAPSHOT', 1);
 }
 
 sub check_config (\%) {

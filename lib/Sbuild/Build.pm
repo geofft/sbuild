@@ -1505,7 +1505,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
     my $old_deps = copy($self->{'Dependencies'}->{$pkg});
 
     # Add gcc-snapshot as an override.
-    if ( $self->get_option('GCC Snapshot') ) {
+    if ($self->get_conf('GCC_SNAPSHOT')) {
 	$dep->{'Package'} = "gcc-snapshot";
 	$dep->{'Override'} = 1;
 	push( @{$self->{'Dependencies'}->{$pkg}}, $dep );
