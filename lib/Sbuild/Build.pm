@@ -614,8 +614,8 @@ EOF
 	    print main::PLOG "ld.so.conf was not readable! Fixed.\n";
 	}
 	my $buildcmd = "cd $bdir && PATH=" . $self->get_conf('PATH') . " " .
-	    (defined($self->get_option('LD_LIBRARY_PATH')) ?
-	     "LD_LIBRARY_PATH=".$self->get_option('LD_LIBRARY_PATH')." " : "").
+	    (defined($self->get_conf('LD_LIBRARY_PATH')) ?
+	     "LD_LIBRARY_PATH=".$self->get_conf('LD_LIBRARY_PATH')." " : "").
 	     "exec " . $self->get_conf('BUILD_ENV_CMND') . " dpkg-buildpackage " .
 	     $self->get_conf('PGP_OPTIONS') .
 	     " $binopt " . $self->get_option('Signing Options') .

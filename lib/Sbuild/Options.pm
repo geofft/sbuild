@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'LD_LIBRARY_PATH'} = undef;
     $self->{'GCC Snapshot'} = 0;
 
     if (!$self->parse_options()) {
@@ -204,11 +203,12 @@ sub parse_options (\%) {
 		       },
 		       "use-snapshot" => sub {
 			   $self->set('GCC Snapshot', 1);
-			   $self->set('LD_LIBRARY_PATH',
-				      "/usr/lib/gcc-snapshot/lib");
+			   $self->set_conf('LD_LIBRARY_PATH',
+					   '/usr/lib/gcc-snapshot/lib' .
+					   defined($self->get_conf('LD_LIBRARY_PATH')) ? ':' . $self->get_conf('LD_LIBRARY_PATH') : '');
 			   $self->set_conf('PATH',
-					   "/usr/lib/gcc-snapshot/bin:" .
-					   $self->get_conf('PATH'))
+					   '/usr/lib/gcc-snapshot/bin' .
+					   defined($self->get_conf('PATH')) ? ':' . $self->get_conf('PATH') : '');
 		       },
 		       "v|verbose" => sub {
 			   $self->set_conf('VERBOSE',

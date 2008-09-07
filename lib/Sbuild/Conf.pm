@@ -117,7 +117,8 @@ sub set_allowed_keys (\%) {
 	'MANUAL_SRCDEPS'			=> "",
 	'BUILD_SOURCE'				=> "",
 	'BIN_NMU'				=> "",
-	'BIN_NMU_VERSION'			=> "");
+	'BIN_NMU_VERSION'			=> "",
+	'LD_LIBRARY_PATH'			=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
 }
@@ -304,6 +305,7 @@ our $lock_interval = 5;
     $self->set('BUILD_SOURCE', 0);
     $self->set('BIN_NMU', undef);
     $self->set('BIN_NMU_VERSION', undef);
+    $self->set('LD_LIBRARY_PATH', undef);
 }
 
 sub check_config (\%) {
