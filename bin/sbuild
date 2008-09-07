@@ -82,13 +82,13 @@ sub main () {
 	if $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')};
 
 # see debsign for priorities, we will follow the same order
-    $options->set('Signing Options',
+    $conf->set('SIGNING_OPTIONS',
 		  "-m\"".$conf->get('MAINTAINER_NAME')."\"")
 	if defined $conf->get('MAINTAINER_NAME');
-    $options->set('Signing Options',
+    $conf->set('SIGNING_OPTIONS',
 		  "-e\"".$conf->get('UPLOADER_NAME')."\"")
 	if defined $conf->get('UPLOADER_NAME');
-    $options->set('Signing Options',
+    $conf->set('SIGNING_OPTIONS',
 		  "-k\"".$conf->get('KEY_ID')."\"")
 	if defined $conf->get('KEY_ID');
     $conf->set('MAINTAINER_NAME', $conf->get('UPLOADER_NAME')) if defined $conf->get('UPLOADER_NAME');
@@ -133,7 +133,7 @@ sub main () {
 	    if ($conf->get('BIN_NMU')) {
 		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
 		$tpkg = $1 . "_" . binNMU_version($2,$conf->get('BIN_NMU_VERSION'));
-		$options->set('binNMU Name', $tpkg);
+		$build->set('binNMU Name', $tpkg);
 		$tpkg .= $3;
 	    }
 

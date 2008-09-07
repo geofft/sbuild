@@ -106,6 +106,7 @@ sub set_allowed_keys (\%) {
 	'MAINTAINER_NAME'			=> "",
 	'UPLOADER_NAME'				=> "",
 	'KEY_ID'				=> "",
+	'SIGNING_OPTIONS'			=> "",
 	'APT_UPDATE'				=> "",
 	'APT_ALLOW_UNAUTHENTICATED'		=> "",
 	'ALTERNATIVES'				=> "",
@@ -310,6 +311,7 @@ our $lock_interval = 5;
     $self->set('BUILD_SOURCE', 0);
     $self->set('BIN_NMU', undef);
     $self->set('GCC_SNAPSHOT', 1);
+    $self->set('SIGNING_OPTIONS', "");
 }
 
 sub check_config (\%) {

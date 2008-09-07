@@ -176,7 +176,6 @@ sub new ($$$) {
     $self->{'binNMU Name'} = undef;
     $self->{'Changes'} = {};
     $self->{'Dependencies'} = {};
-    $self->{'Signing Options'} = {};
     $self->{'Have DSC Build Deps'} = [];
 
     return $self;
@@ -618,7 +617,7 @@ EOF
 	     "LD_LIBRARY_PATH=".$self->get_conf('LD_LIBRARY_PATH')." " : "").
 	     "exec " . $self->get_conf('BUILD_ENV_CMND') . " dpkg-buildpackage " .
 	     $self->get_conf('PGP_OPTIONS') .
-	     " $binopt " . $self->get_option('Signing Options') .
+	     " $binopt " . $self->get_conf('SIGNING_OPTIONS') .
 	     ' -r' . $self->get_conf('FAKEROOT') . ' 2>&1';
 	$self->{'Session'}->exec_command($buildcmd, $self->get_conf('USERNAME'), 1, 0, undef);
     }
