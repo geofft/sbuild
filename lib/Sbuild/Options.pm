@@ -52,8 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'binNMU'} = undef;
-    $self->{'binNMU Version'} = undef;
     $self->{'Chroot'} = undef;
     $self->{'LD_LIBRARY_PATH'} = undef;
     $self->{'GCC Snapshot'} = 0;
@@ -143,12 +141,13 @@ sub parse_options (\%) {
 			   $self->set_conf('BATCH_MODE', 1);
 		       },
 		       "make-binNMU=s" => sub {
-			   $self->set('binNMU', $_[1]);
-			   $self->set('binNMU Version',
-				      $self->get('binNMU Version') || 1);
+			   $self->set_conf('BIN_NMU', $_[1]);
+			   $self->set_conf(
+			       'BIN_NMU_VERSION',
+			       $self->set_conf('BIN_NMU_VERSION') || 1);
 		       },
 		       "binNMU=i" => sub {
-			   $self->set('binNMU Version', $_[1]);
+			   $self->set_conf('BIN_NMU_VERSION', $_[1]);
 		       },
 		       "c|chroot=s" => sub {
 			   $self->set('Chroot', $_[1]);

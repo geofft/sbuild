@@ -95,7 +95,7 @@ sub main () {
     $conf->set('MAINTAINER_NAME', $conf->get('KEY_ID')) if defined $conf->get('KEY_ID');
 
     if (!defined($conf->get('MAINTAINER_NAME')) &&
-	$options->get('binNMU')) {
+	$conf->get('BIN_NMU')) {
 	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
 
@@ -130,9 +130,9 @@ sub main () {
 	    # TODO: This should be 'Pkg Start Time', set in build().
 	    my $date = strftime("%Y%m%d-%H%M",localtime);
 
-	    if ($options->get('binNMU')) {
+	    if ($conf->get('BIN_NMU')) {
 		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-		$tpkg = $1 . "_" . binNMU_version($2,$options->get('binNMU Version'));
+		$tpkg = $1 . "_" . binNMU_version($2,$conf->get('BIN_NMU_VERSION'));
 		$options->set('binNMU Name', $tpkg);
 		$tpkg .= $3;
 	    }
@@ -284,16 +284,16 @@ sub shutdown ($) {
     if (open( F, ">>$f" )) {
 	foreach $job (@npkgs) {
 	    next if grep( /^\Q$job\E\s/, @pkgs );
-	    if (not defined $main::build_object->get_option('binNMU Version')) {
+	    if (not defined $main::build_object->get_conf('BIN_NMU_VERSION')) {
 		print F "$job " .
 		    $main::build_object->get_conf('DISTRIBUTION') . "\n";
 	    } else {
 		print F "$job " .
 		    $main::build_object->get_conf('DISTRIBUTION')
 		    . " " .
-		    $main::build_object->get_option('binNMU Version')
+		    $main::build_object->get_conf('BIN_NMU_VERSION')
 		    . " " .
-		    $main::build_object->get_option('binNMU') . "\n";
+		    $main::build_object->get_conf('BIN_NMU') . "\n";
 	    }
 	}
 	close( F );

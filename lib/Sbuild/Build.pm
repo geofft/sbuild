@@ -505,8 +505,8 @@ sub build (\$$$) {
 	    return 0;
 	}
 	my $tree_version = $1;
-	my $cmp_version = ($self->get_option('binNMU') && -f "$dscdir/debian/.sbuild-binNMU-done") ?
-	    binNMU_version($version,$self->get_option('binNMU Version')) : $version;
+	my $cmp_version = ($self->get_conf('BIN_NMU') && -f "$dscdir/debian/.sbuild-binNMU-done") ?
+	    binNMU_version($version,$self->get_conf('BIN_NMU_VERSION')) : $version;
 	if ($tree_version ne $cmp_version) {
 	    print main::PLOG "The unpacked source tree $dscdir is version ".
 		"$tree_version, not wanted $cmp_version!\n";
@@ -531,7 +531,7 @@ sub build (\$$$) {
     }
 
     $self->{'Pkg Fail Stage'} = "hack-binNMU";
-    if ($self->get_option('binNMU') && ! -f "$dscdir/debian/.sbuild-binNMU-done") {
+    if ($self->get_conf('BIN_NMU') && ! -f "$dscdir/debian/.sbuild-binNMU-done") {
 	if (open( F, "<$dscdir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
@@ -540,7 +540,7 @@ sub build (\$$$) {
 	    close( F );
 	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-	    my $NMUversion = binNMU_version($version,$self->get_option('binNMU Version'));
+	    my $NMUversion = binNMU_version($version,$self->get_conf('BIN_NMU_VERSION'));
 	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dscdir/debian/changelog" )) {
 		print main::PLOG "Can't open debian/changelog for binNMU hack: $!\n";
@@ -550,7 +550,7 @@ sub build (\$$$) {
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
 	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
 	    "no source changes.\n";
-	    print F "  * ", join( "    ", split( "\n", $self->get_option('binNMU') )), "\n\n";
+	    print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n\n";
 	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
 
 	    print F $firstline, $text;
@@ -690,9 +690,9 @@ EOF
 	}
 
 	$changes = "${pkg}_".
-	    ($self->get_option('binNMU') ?
+	    ($self->get_conf('BIN_NMU') ?
 	     binNMU_version($self->{'SVersion'},
-			    $self->get_option('binNMU Version')) :
+			    $self->get_conf('BIN_NMU_VERSION')) :
 	     $self->{'SVersion'}).
 	    "_$self->{'Arch'}.changes";
 	my @cfiles;

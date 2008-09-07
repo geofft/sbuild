@@ -115,7 +115,8 @@ sub set_allowed_keys (\%) {
 	'BATCH_MODE'				=> "",
 	'MANUAL_SRCDEPS'			=> "",
 	'BUILD_SOURCE'				=> "",
-	);
+	'BIN_NMU'				=> "",
+	'BIN_NMU_VERSION'			=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
 }
@@ -298,6 +299,8 @@ our $lock_interval = 5;
     $self->set('BATCH_MODE', 0);
     $self->set('MANUAL_SRCDEPS', []);
     $self->set('BUILD_SOURCE', 0);
+    $self->set('BIN_NMU', undef);
+    $self->set('BIN_NMU_VERSION', undef);
 }
 
 sub check_config (\%) {
