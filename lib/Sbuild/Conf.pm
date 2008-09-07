@@ -46,6 +46,8 @@ sub set_allowed_keys (\%) {
     my $self = shift;
 
     my %allowed_keys = (
+	'DISTRIBUTION'				=> "",
+	'OVERRIDE_DISTRIBUTION'			=> "",
 	'ARCH'					=> "",
 	'USER_ARCH'				=> "",
 	'HOSTNAME'				=> "",
@@ -214,11 +216,13 @@ our $lock_interval = 5;
 	"freetype2-dev"		=> "libttf-dev"
 	);
     our $check_depends_algorithm = "first-only";
+    our $distribution = 'unstable';
 
     # read conf files
     require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
+    $self->set('DISTRIBUTION', $distribution);
     $self->set('MAILPROG', $mailprog);
     $self->set('DPKG', $dpkg);
     $self->set('SUDO',  $sudo);
@@ -269,6 +273,7 @@ our $lock_interval = 5;
     chomp(my $arch = readpipe($self->get('DPKG') . " --print-installation-architecture"));
     $self->set('ARCH', $arch);
     $self->set('USER_ARCH', $arch);
+    $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');
     chomp(my $hostname = `hostname`);
     $self->set('HOSTNAME', $hostname);
 }

@@ -62,8 +62,6 @@ sub new ($) {
     $self->{'Batch Mode'} = 0;
     $self->{'WannaBuild Database'} = 0;
     $self->{'Build Source'} = 0;
-    $self->{'Distribution'} = 'unstable';
-    $self->{'Override Distribution'} = 0;
     $self->{'binNMU'} = undef;
     $self->{'binNMU Version'} = undef;
     $self->{'Chroot'} = undef;
@@ -174,18 +172,18 @@ sub parse_options (\%) {
 			   $self->set_conf('APT_UPDATE', $_[1]);
 		       },
 		       "d|dist=s" => sub {
-			   $self->set('Distribution', $_[1]);
-			   $self->set('Distribution', "oldstable")
-			       if $self->{'Distribution'} eq "o";
-			   $self->set('Distribution', "stable")
-			       if $self->{'Distribution'} eq "s";
-			   $self->set('Distribution', "testing")
-			       if $self->{'Distribution'} eq "t";
-			   $self->set('Distribution', "unstable")
-			       if $self->{'Distribution'} eq "u";
-			   $self->set('Distribution', "experimental")
-			       if $self->{'Distribution'} eq "e";
-			   $self->set('Override Distribution', 1);
+			   $self->set_conf('DISTRIBUTION', $_[1]);
+			   $self->set_conf('DISTRIBUTION', "oldstable")
+			       if $self->get_conf('DISTRIBUTION') eq "o";
+			   $self->set_conf('DISTRIBUTION', "stable")
+			       if $self->get_conf('DISTRIBUTION') eq "s";
+			   $self->set_conf('DISTRIBUTION', "testing")
+			       if $self->get_conf('DISTRIBUTION') eq "t";
+			   $self->set_conf('DISTRIBUTION', "unstable")
+			       if $self->get_conf('DISTRIBUTION') eq "u";
+			   $self->set_conf('DISTRIBUTION', "experimental")
+			       if $self->get_conf('DISTRIBUTION') eq "e";
+			   $self->set_conf('OVERRIDE_DISTRIBUTION', 1);
 		       },
 		       "force-orig-source" => sub {
 			   $self->set_conf('FORCE_ORIG_SOURCE', 1);

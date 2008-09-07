@@ -546,7 +546,7 @@ sub build (\$$$) {
 		print main::PLOG "Can't open debian/changelog for binNMU hack: $!\n";
 		return 0;
 	    }
-	    $dists = $self->get_option('Distribution');
+	    $dists = $self->get_conf('DISTRIBUTION');
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
 	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
 	    "no source changes.\n";
@@ -702,9 +702,9 @@ EOF
 	    open( F, "<$self->{'Chroot Build Dir'}/$changes" );
 	    if (open( F2, ">$changes.new" )) {
 		while( <F> ) {
-		    if (/^Distribution:\s*(.*)\s*$/ and $self->get_option('Override Distribution')) {
-			print main::PLOG "Distribution: " . $self->get_option('Distribution') . "\n";
-			print F2 "Distribution: " . $self->get_option('Distribution') . "\n";
+		    if (/^Distribution:\s*(.*)\s*$/ and $self->get_conf('OVERRIDE_DISTRIBUTION')) {
+			print main::PLOG "Distribution: " . $self->get_conf('DISTRIBUTION') . "\n";
+			print F2 "Distribution: " . $self->get_conf('DISTRIBUTION') . "\n";
 		    }
 		    else {
 			print F2 $_;
@@ -814,7 +814,7 @@ sub analyze_fail_stage (\$) {
 	$cmd .= "-S " . $self->get_option('Auto Giveback Socket') . " "
 	    if $self->get_option('Auto Giveback Socket');
 	$cmd .= "wanna-build --give-back --no-down-propagation ".
-	    "--dist=" . $self->get_option('Distribution') . " ";
+	    "--dist=" . $self->get_conf('DISTRIBUTION') . " ";
 	$cmd .= "--database=" . $self->get_option('WannaBuild Database') . " "
 	    if $self->get_option('WannaBuild Database');
 	$cmd .= "--user=" . $self->get_option('Auto Giveback WannaBuild User') . " "
@@ -2459,7 +2459,7 @@ sub open_build_log (\$) {
     my $self = shift;
 
     open_pkg_log($self->get_conf('USERNAME') . "-$self->{'Package_SVersion'}-$self->{'Arch'}",
-		 $self->get_option('Distribution'),
+		 $self->get_conf('DISTRIBUTION'),
 		 $self->{'Pkg Start Time'});
     print main::PLOG "Automatic build of $self->{'Package_SVersion'} on " .
 	$self->get_conf('HOSTNAME'). ' by ' .
@@ -2487,7 +2487,7 @@ sub close_build_log (\$$$$$$$) {
     $self->{'This Space'};
 
     close_pkg_log($self->{'Package_Version'},
-		  $self->get_option('Distribution'),
+		  $self->get_conf('DISTRIBUTION'),
 		  $self->{'Pkg Status'},
 		  $self->{'Pkg Start Time'},
 		  $self->{'Pkg End Time'});

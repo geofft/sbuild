@@ -70,7 +70,7 @@ sub main () {
 	$conf->set('VERBOSE', 1);
     }
 
-    print "Selected distribution " . $options->get('Distribution') . "\n"
+    print "Selected distribution " . $conf->get('DISTRIBUTION') . "\n"
 	if $conf->get('DEBUG');
     print "Selected chroot " . $options->get('Chroot') . "\n"
 	if $conf->get('DEBUG') and defined $options->get('Chroot');
@@ -78,8 +78,8 @@ sub main () {
 	if $conf->get('DEBUG');
 
     $conf->set('MAILTO',
-	       $conf->get('MAILTO_HASH')->{$options->get('Distribution')})
-	if $conf->get('MAILTO_HASH')->{$options->get('Distribution')};
+	       $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')})
+	if $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')};
 
 # see debsign for priorities, we will follow the same order
     $options->set('Signing Options',
@@ -100,7 +100,7 @@ sub main () {
     }
 
 # variables for scripts:
-    open_log($options->get('Distribution'), $conf);
+    open_log($conf->get('DISTRIBUTION'), $conf);
     $SIG{'INT'} = \&shutdown;
     $SIG{'TERM'} = \&shutdown;
     $SIG{'ALRM'} = \&shutdown;
@@ -150,7 +150,7 @@ sub main () {
 	    goto cleanup_close;
 	}
 
-	my $session = Sbuild::Chroot::new($options->get('Distribution'),
+	my $session = Sbuild::Chroot::new($conf->get('DISTRIBUTION'),
 					  $options->get('Chroot'),
 					  $conf->get('USER_ARCH'),
 					  $conf);
@@ -285,10 +285,11 @@ sub shutdown ($) {
 	foreach $job (@npkgs) {
 	    next if grep( /^\Q$job\E\s/, @pkgs );
 	    if (not defined $main::build_object->get_option('binNMU Version')) {
-		print F "$job $main::build_object->get_option('Distribution')\n";
+		print F "$job " .
+		    $main::build_object->get_conf('DISTRIBUTION') . "\n";
 	    } else {
 		print F "$job " .
-		    $main::build_object->get_option({'Distribution'})
+		    $main::build_object->get_conf('DISTRIBUTION')
 		    . " " .
 		    $main::build_object->get_option('binNMU Version')
 		    . " " .
