@@ -72,8 +72,8 @@ sub main () {
 
     print "Selected distribution " . $conf->get('DISTRIBUTION') . "\n"
 	if $conf->get('DEBUG');
-    print "Selected chroot " . $options->get('Chroot') . "\n"
-	if $conf->get('DEBUG') and defined $options->get('Chroot');
+    print "Selected chroot " . $conf->get('CHROOT') . "\n"
+	if $conf->get('DEBUG') and defined $conf->get('CHROOT');
     print "Selected architecture " . $conf->get('USER_ARCH') . "\n"
 	if $conf->get('DEBUG');
 
@@ -151,7 +151,7 @@ sub main () {
 	}
 
 	my $session = Sbuild::Chroot::new($conf->get('DISTRIBUTION'),
-					  $options->get('Chroot'),
+					  $conf->get('CHROOT'),
 					  $conf->get('USER_ARCH'),
 					  $conf);
 	$build->{'Session'} = $session;

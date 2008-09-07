@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'Chroot'} = undef;
     $self->{'LD_LIBRARY_PATH'} = undef;
     $self->{'GCC Snapshot'} = 0;
 
@@ -150,7 +149,7 @@ sub parse_options (\%) {
 			   $self->set_conf('BIN_NMU_VERSION', $_[1]);
 		       },
 		       "c|chroot=s" => sub {
-			   $self->set('Chroot', $_[1]);
+			   $self->set_conf('CHROOT', $_[1]);
 		       },
 		       "database=s" => sub {
 			   $self->set_conf('WANNABUILD_DATABASE', $_[1]);

@@ -47,6 +47,7 @@ sub set_allowed_keys (\%) {
 
     my %allowed_keys = (
 	'DISTRIBUTION'				=> "",
+	'CHROOT'				=> "",
 	'BUILD_ARCH_ALL'			=> "",
 	'OVERRIDE_DISTRIBUTION'			=> "",
 	'ARCH'					=> "",
@@ -229,6 +230,7 @@ our $lock_interval = 5;
 	);
     our $check_depends_algorithm = "first-only";
     our $distribution = 'unstable';
+    our $chroot = undef;
     our $build_arch_all = 0;
 
     # read conf files
@@ -236,6 +238,7 @@ our $lock_interval = 5;
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
     $self->set('DISTRIBUTION', $distribution);
+    $self->set('CHROOT', $chroot);
     $self->set('BUILD_ARCH_ALL', $build_arch_all);
     $self->set('MAILPROG', $mailprog);
     $self->set('DPKG', $dpkg);

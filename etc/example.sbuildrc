@@ -48,6 +48,9 @@
 # Default distribution
 #$distribution = 'unstable';
 
+# Default chroot (defaults to distribution[-arch][-sbuild])
+#$chroot = 'unstable-powerpc-sbuild';
+
 # When to purge the build directory afterwards; possible values are "never",
 # "successful", and "always"
 #$purge_build_directory="successful";
