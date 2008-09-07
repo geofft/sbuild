@@ -112,7 +112,8 @@ sub set_allowed_keys (\%) {
 	'AUTO_GIVEBACK_USER'			=> "",
 	'AUTO_GIVEBACK_WANNABUILD_USER'		=> "",
 	'WANNABUILD_DATABASE'			=> "",
-	'BATCH_MODE'				=> "");
+	'BATCH_MODE'				=> "",
+	'MANUAL_SRCDEPS'			=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
 }
@@ -293,6 +294,7 @@ our $lock_interval = 5;
     $self->set('AUTO_GIVEBACK_WANNABUILD_USER', 0);
     $self->set('WANNABUILD_DATABASE', 0);
     $self->set('BATCH_MODE', 0);
+    $self->set('MANUAL_SRCDEPS', []);
 }
 
 sub check_config (\%) {

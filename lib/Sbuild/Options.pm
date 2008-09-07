@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'Manual Srcdeps'} = [];
     $self->{'Build Source'} = 0;
     $self->{'binNMU'} = undef;
     $self->{'binNMU Version'} = undef;
@@ -128,10 +127,12 @@ sub parse_options (\%) {
 			   }
 		       },
 		       "f|force-depends=s" => sub {
-			   push( @{$self->get('Manual Srcdeps')}, "f".$_[1] );
+			   push(@{$self->get_conf('MANUAL_SRCDEPS')},
+				"f".$_[1]);
 		       },
 		       "a|add-depends=s" => sub {
-			   push( @{$self->get('Manual Srcdeps')}, "a".$_[1] );
+			   push(@{$self->get_conf('MANUAL_SRCDEPS')},
+				"a".$_[1] );
 		       },
 		       "check-depends-algorithm=s" => sub {
 			   die "Bad build dependency check algorithm\n"

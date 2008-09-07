@@ -1921,7 +1921,7 @@ sub parse_manual_srcdeps (\$@) {
     my $self = shift;
     my @for_pkgs = @_;
 
-    foreach (@{$self->get_option('Manual Srcdeps')}) {
+    foreach (@{$self->get_conf('MANUAL_SRCDEPS')}) {
 	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
 	    warn "Syntax error in manual source dependency: ",
 	    substr( $_, 1 ), "\n";
