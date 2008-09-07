@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'Build Arch All'} = 0;
     $self->{'Auto Giveback'} = 0;
     $self->{'Auto Giveback Host'} = 0;
     $self->{'Auto Giveback Socket'} = 0;
@@ -116,7 +115,7 @@ sub parse_options (\%) {
 			   $self->set_conf('USER_ARCH', $_[1]);
 		       },
 		       "A|arch-all" => sub {
-			   $self->set('Build Arch All', 1);
+			   $self->set_conf('BUILD_ARCH_ALL', 1);
 		       },
 		       "auto-give-back=s" => sub {
 			   $self->set('Auto Giveback', 1);

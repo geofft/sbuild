@@ -404,7 +404,7 @@ sub fetch_source_files (\$) {
     }
     else {
 	if ($dscarchs ne "any" && $dscarchs !~ /\b$self->{'Arch'}\b/ &&
-	    !($dscarchs eq "all" && $self->get_option('Build Arch All')) )  {
+	    !($dscarchs eq "all" && $self->get_conf('BUILD_ARCH_ALL')) )  {
 	    print main::PLOG "$dsc: $self->{'Arch'} not in arch list: $dscarchs -- ".
 		"skipping\n";
 	    $self->{'Pkg Fail Stage'} = "arch-check";
@@ -605,7 +605,7 @@ EOF
 	open( STDIN, "</dev/null" );
 	my $binopt = $self->get_option('Build Source') ?
 	    $self->get_conf('FORCE_ORIG_SOURCE') ? "-sa" : "" :
-	    $self->get_option('Build Arch All') ?	"-b" : "-B";
+	    $self->get_conf('BUILD_ARCH_ALL') ?	"-b" : "-B";
 
 	my $bdir = $self->{'Session'}->strip_chroot_path($dscdir);
 	if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
@@ -681,7 +681,7 @@ EOF
 		    print main::PLOG "ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n";
 		    next;
 		}
-		if (/_all.u?deb$/ and not $self->get_option('Build Arch All')) {
+		if (/_all.u?deb$/ and not $self->get_conf('BUILD_ARCH_ALL')) {
 		    print main::PLOG "ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n";
 		    unlink("$self->{'Chroot Build Dir'}/$_");
 		    next;
@@ -1526,7 +1526,8 @@ sub merge_pkg_build_deps (\$$$$$$) {
     $conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
 
     my $deps = $depends . ", " . $conflicts;
-    $deps .= ", " . $dependsi . ", " . $conflictsi if $self->get_option('Build Arch All');
+    $deps .= ", " . $dependsi . ", " . $conflictsi
+	if $self->get_conf('BUILD_ARCH_ALL');
     @{$self->{'Dependencies'}->{$pkg}} = @l;
     print "Merging pkg deps: $deps\n" if $self->get_conf('DEBUG');
     $self->parse_one_srcdep($pkg, $deps);

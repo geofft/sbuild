@@ -45,6 +45,9 @@
 ## SBUILD BEHAVIOUR
 ##
 
+# Default distribution
+#$distribution = 'unstable';
+
 # When to purge the build directory afterwards; possible values are "never",
 # "successful", and "always"
 #$purge_build_directory="successful";
