@@ -52,7 +52,6 @@ sub new ($) {
     bless($self);
 
     $self->{'CONFIG'} = $conf;
-    $self->{'Build Source'} = 0;
     $self->{'binNMU'} = undef;
     $self->{'binNMU Version'} = undef;
     $self->{'Chroot'} = undef;
@@ -200,7 +199,7 @@ sub parse_options (\%) {
 					qw(always successful never));
 		       },
 		       "s|source" => sub {
-			   $self->set('Build Source', 1);
+			   $self->set_conf('BUILD_SOURCE', 1);
 		       },
 		       "stats-dir=s" => sub {
 			   $self->set_conf('STATS_DIR', $_[1]);

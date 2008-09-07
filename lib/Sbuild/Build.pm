@@ -603,7 +603,7 @@ EOF
     }
     if ($self->{'Sub PID'} == 0) {
 	open( STDIN, "</dev/null" );
-	my $binopt = $self->get_option('Build Source') ?
+	my $binopt = $self->get_conf('BUILD_SOURCE') ?
 	    $self->get_conf('FORCE_ORIG_SOURCE') ? "-sa" : "" :
 	    $self->get_conf('BUILD_ARCH_ALL') ?	"-b" : "-B";
 
