@@ -38,18 +38,19 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($);
+sub new ($$);
 sub get (\%$);
 sub set (\%$$);
 sub get_conf (\%$);
 sub set_conf (\%$$);
 sub parse_options (\%);
 
-sub new ($) {
+sub new ($$) {
+    my $class = shift;
     my $conf = shift;
 
     my $self  = {};
-    bless($self);
+    bless($self, $class);
 
     $self->{'CONFIG'} = $conf;
 

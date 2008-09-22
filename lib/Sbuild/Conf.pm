@@ -40,7 +40,7 @@ sub set_allowed_keys (\%);
 sub is_allowed (\%$);
 sub read_config (\%);
 sub check_config (\%);
-sub new ();
+sub new ($);
 sub get (\%$);
 sub set (\%$$);
 
@@ -355,10 +355,12 @@ sub check_config (\%) {
     }
 }
 
-sub new () {
+sub new ($) {
+    my $class = shift;
+
     my $self  = {};
     $self->{'config'} = {};
-    bless($self);
+    bless($self, $class);
 
     $self->set_allowed_keys();
     $self->read_config();

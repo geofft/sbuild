@@ -28,7 +28,7 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
-sub new ($);
+sub new ($$);
 sub get (\%$);
 sub set (\%$$);
 sub get_conf (\%$);
@@ -45,11 +45,12 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($) {
+sub new ($$) {
+    my $class = shift;
     my $conf = shift;
 
     my $self  = {};
-    bless($self);
+    bless($self, $class);
 
     $self->set('Config', $conf);
     $self->set('Chroots', {});

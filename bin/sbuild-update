@@ -28,7 +28,7 @@ use Sbuild::Utility qw(setup cleanup);
 
 package main;
 
-my $conf = Sbuild::Conf::new();
+my $conf = Sbuild::Conf->new();
 $conf->set('CWD', '/');
 
 GetOptions (

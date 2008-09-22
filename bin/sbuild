@@ -51,9 +51,9 @@ sub shutdown ($);
 sub check_group_membership ($);
 sub dump_main_state ();
 
-my $conf = Sbuild::Conf::new();
+my $conf = Sbuild::Conf->new();
 exit 1 if !defined($conf);
-my $options = Sbuild::Options::new($conf);
+my $options = Sbuild::Options->new($conf);
 exit 1 if !defined($options);
 
 check_group_membership($conf);
@@ -110,7 +110,7 @@ sub main () {
     foreach $dscfile (@ARGV) {
 
 	# TODO: Append to build list, to allow parallel builds.
-	my $build = Sbuild::Build::new($dscfile, $conf);
+	my $build = Sbuild::Build->new($dscfile, $conf);
 	$main::build_object = $build;
 
 	$build->{'Pkg Start Time'} = time;
@@ -150,7 +150,7 @@ sub main () {
 	    goto cleanup_close;
 	}
 
-	my $session = Sbuild::Chroot::new($conf->get('DISTRIBUTION'),
+	my $session = Sbuild::Chroot->new($conf->get('DISTRIBUTION'),
 					  $conf->get('CHROOT'),
 					  $conf->get('USER_ARCH'),
 					  $conf);

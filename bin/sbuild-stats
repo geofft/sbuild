@@ -38,7 +38,7 @@ package main;
 sub align ($);
 sub sortfunc ();
 
-my $conf = Sbuild::Conf::new();
+my $conf = Sbuild::Conf->new();
 $conf->set('CWD', '/');
 
 my $db = "unspec";

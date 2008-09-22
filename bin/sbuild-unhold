@@ -29,7 +29,7 @@ use Sbuild::Utility qw(setup cleanup shutdown);
 
 package main;
 
-my $conf = Sbuild::Conf::new();
+my $conf = Sbuild::Conf->new();
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-unhold"); },

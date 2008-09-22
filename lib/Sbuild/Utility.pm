@@ -84,7 +84,7 @@ sub setup ($$) {
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
-    my $session = Sbuild::Chroot::new($chroot, undef, undef, $conf);
+    my $session = Sbuild::Chroot->new($chroot, undef, undef, $conf);
     $Sbuild::Utility::current_session = $session;
 
     if (!$session->begin_session()) {

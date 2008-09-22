@@ -49,7 +49,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$);
+sub new ($$$);
 sub get (\%$);
 sub set (\%$$);
 sub get_conf (\%$);
@@ -109,7 +109,8 @@ sub add_space_entry (\$$$);
 
 
 # TODO: put in all package version data and job ID (for indexing in job list)
-sub new ($$) {
+sub new ($$$) {
+    my $class = shift;
     my $dsc = shift;
     my $conf = shift;
 
