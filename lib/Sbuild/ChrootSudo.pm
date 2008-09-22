@@ -23,7 +23,7 @@
 package Sbuild::ChrootSudo;
 
 use Sbuild::Conf;
-use Sbuild::ChrootInfo;
+use Sbuild::ChrootInfoSudo;
 
 use strict;
 use warnings;
@@ -51,7 +51,9 @@ sub new ($$$$$) {
     my $arch = shift;
     my $conf = shift;
 
-    my $self = $class->SUPER::new($distribution, $chroot, $arch, $conf);
+    my $info = Sbuild::ChrootInfoSudo->new($conf);
+
+    my $self = $class->SUPER::new($distribution, $chroot, $arch, $conf, $info);
     bless($self, $class);
 
     return $self;
