@@ -144,14 +144,12 @@ sub read_config (\%) {
     $self->set('VERBOSE', 0);
     $self->set('NOLOG', 0);
 
-    (our $HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
-    our $cwd = cwd();
+    my $HOME = $self->get('HOME');
 
     # Defaults.
     our $mailprog = "/usr/sbin/sendmail";
     our $dpkg = "/usr/bin/dpkg";
-    our $sudo;
+    our $sudo = "/usr/bin/sudo";
     our $su = "/bin/su";
     our $schroot = "/usr/bin/schroot";
     our $schroot_options = "-q";
@@ -321,8 +319,6 @@ sub check_config (\%) {
 
     die "mailprog binary " . $self->get('MAILPROG') . " does not exist or isn't executable\n"
 	if !-x $self->get('MAILPROG');
-    die "schroot binary " . $self->get('SCHROOT') . " does not exist or isn't executable\n"
-	if !-x $self->get('SCHROOT');
     die "apt-get binary " . $self->get('APT_GET') . " does not exist or isn't executable\n"
 	if !-x $self->get('APT_GET');
     die "apt-cache binary " . $self->get('APT_CACHE') . " does not exist or isn't executable\n"
@@ -337,6 +333,32 @@ sub check_config (\%) {
     die "Bad chroot mode \'" . $self->get('CHROOT_MODE') . "\'"
 	if !isin($self->get('CHROOT_MODE'),
 		 qw(schroot split));
+    if ($self->get('CHROOT_MODE') eq 'split') {
+	die "sudo binary " . $self->get('SUDO') . " does not exist or isn't executable\n"
+	    if !-x $self->get('SUDO');
+
+	local (%ENV) = %ENV; # make local environment
+	$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+	$ENV{'APT_CONFIG'} = "test_apt_config";
+	$ENV{'SHELL'} = "/bin/sh";
+
+	my $sudo = $self->get('SUDO');
+	chomp( my $test_df = `$sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
+	chomp( my $test_ac = `$sudo sh -c 'echo \$APT_CONFIG'` );
+	chomp( my $test_sh = `$sudo sh -c 'echo \$SHELL'` );
+
+	if ($test_df ne "noninteractive" ||
+	    $test_ac ne "test_apt_config" ||
+	    $test_sh ne "/bin/sh") {
+	    print STDERR "$sudo is stripping APT_CONFIG, DEBIAN_FRONTEND and/or SHELL from the environment\n";
+	    print STDERR "'Defaults:" . $self->get('USERNAME') . " env_keep+=\"APT_CONFIG DEBIAN_FRONTEND SHELL\"' is not set in /etc/sudoers\n";
+	    die "$sudo is incorrectly configured"
+	}
+
+    } elsif ($self->get('CHROOT_MODE') eq 'schroot') {
+	die "schroot binary " . $self->get('SCHROOT') . " does not exist or isn't executable\n"
+	    if !-x $self->get('SCHROOT');
+    }
 
     die "Bad purge mode \'" . $self->get('PURGE_BUILD_DIRECTORY') . "\'"
 	if !isin($self->get('PURGE_BUILD_DIRECTORY'),
