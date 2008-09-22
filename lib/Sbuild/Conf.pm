@@ -193,6 +193,7 @@ our $lock_interval = 5;
     our $check_watches = 1;
     our @ignore_watches_no_build_deps = qw();
     our %watches;
+    our $chroot_mode = 'schroot';
     our $sbuild_mode = "user";
     our $debug = 0;
     our $force_orig_source = 0;
@@ -279,6 +280,7 @@ our $lock_interval = 5;
     $self->set('CHECK_WATCHES', $check_watches);
     $self->set('IGNORE_WATCHES_NO_BUILD_DEPS', \@ignore_watches_no_build_deps);
     $self->set('WATCHES', \%watches);
+    $self->set('CHROOT_MODE', $chroot_mode);
     $self->set('SBUILD_MODE', $sbuild_mode);
     $self->set('DEBUG', $debug);
     $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
@@ -331,6 +333,10 @@ sub check_config (\%) {
 	if !-x $self->get('DCMD');
     die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
 	if ! -d $self->get('SRCDEP_LOCK_DIR');
+
+    die "Bad chroot mode \'" . $self->get('CHROOT_MODE') . "\'"
+	if !isin($self->get('CHROOT_MODE'),
+		 qw(schroot split));
 
     die "Bad purge mode \'" . $self->get('PURGE_BUILD_DIRECTORY') . "\'"
 	if !isin($self->get('PURGE_BUILD_DIRECTORY'),
