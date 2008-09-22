@@ -22,6 +22,7 @@
 
 package Sbuild::Chroot;
 
+use Sbuild::Base;
 use Sbuild::Conf;
 use Sbuild::ChrootInfo;
 
@@ -35,15 +36,12 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter);
+    @ISA = qw(Exporter Sbuild::Base);
 
     @EXPORT = qw();
 }
 
 sub new ($$$$$);
-sub get (\%$);
-sub set (\%$$);
-sub get_conf (\%$);
 sub _setup_options (\$\$);
 sub begin_session (\$);
 sub end_session (\$);
@@ -65,10 +63,9 @@ sub new ($$$$$) {
     my $arch = shift;
     my $conf = shift;
 
-    my $self  = {};
+    my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
-    $self->set('CONFIG', $conf);
     $self->set('Chroots', Sbuild::ChrootInfo->new($conf));
     $self->set('Session ID', "");
     $self->set('Chroot ID', $self->get('Chroots')->find($distribution, $chroot, $arch));
@@ -78,28 +75,6 @@ sub new ($$$$$) {
     }
 
     return $self;
-}
-
-sub get (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->{$key};
-}
-
-sub set (\%$$) {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-
-    return $self->{$key} = $value;
-}
-
-sub get_conf (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->get('CONFIG')->get($key);
 }
 
 sub _setup_options (\$\$) {

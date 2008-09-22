@@ -27,68 +27,33 @@ use warnings;
 
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Base;
 use Sbuild::Conf;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter);
+    @ISA = qw(Exporter Sbuild::Base);
 
     @EXPORT = qw();
 }
 
 sub new ($$);
-sub get (\%$);
-sub set (\%$$);
-sub get_conf (\%$);
-sub set_conf (\%$$);
 sub parse_options (\%);
 
 sub new ($$) {
     my $class = shift;
     my $conf = shift;
 
-    my $self  = {};
+    my $self = $class->SUPER::new($conf);
     bless($self, $class);
-
-    $self->{'CONFIG'} = $conf;
 
     if (!$self->parse_options()) {
 	usage_error("sbuild", "Error parsing command-line options");
 	return undef;
     }
     return $self;
-}
-
-sub get (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->{$key};
-}
-
-sub set (\%$$) {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-
-    return $self->{$key} = $value;
-}
-
-sub get_conf (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->get('CONFIG')->get($key);
-}
-
-sub set_conf (\%$$) {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-
-    return $self->get('CONFIG')->set($key,$value);
 }
 
 sub parse_options (\%) {

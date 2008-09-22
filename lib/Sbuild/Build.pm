@@ -28,6 +28,7 @@ use File::Basename qw(basename dirname);
 use GDBM_File;
 use IPC::Open3;
 use Sbuild qw(binNMU_version version_compare copy isin);
+use Sbuild::Base;
 use Sbuild::Chroot qw();
 use Sbuild::Log qw(open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($version);
@@ -44,16 +45,12 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter);
+    @ISA = qw(Exporter Sbuild::Base);
 
     @EXPORT = qw();
 }
 
 sub new ($$$);
-sub get (\%$);
-sub set (\%$$);
-sub get_conf (\%$);
-sub set_conf (\%$$);
 sub set_dsc (\$$);
 sub fetch_source_files (\$);
 sub build (\$$$);
@@ -114,10 +111,8 @@ sub new ($$$) {
     my $dsc = shift;
     my $conf = shift;
 
-    my $self  = {};
-    bless($self);
-
-    $self->{'Config'} = $conf;
+    my $self = $class->SUPER::new($conf);
+    bless($self, $class);
 
     # DSC, package and version information:
     $self->set_dsc($dsc);
@@ -177,36 +172,6 @@ sub new ($$$) {
     $self->{'Have DSC Build Deps'} = [];
 
     return $self;
-}
-
-sub get (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->{$key};
-}
-
-sub set (\%$$) {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-
-    return $self->{$key} = $value;
-}
-
-sub get_conf (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->get('Config')->get($key);
-}
-
-sub set_conf (\%$$) {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-
-    return $self->set('Config')->set($key,$value);
 }
 
 sub set_dsc (\$$) {

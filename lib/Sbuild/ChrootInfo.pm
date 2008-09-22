@@ -20,6 +20,7 @@
 
 package Sbuild::ChrootInfo;
 
+use Sbuild::Base;
 use Sbuild::Conf;
 
 use strict;
@@ -29,9 +30,6 @@ use FileHandle;
 use File::Temp ();
 
 sub new ($$);
-sub get (\%$);
-sub set (\%$$);
-sub get_conf (\%$);
 sub get_info (\%$);
 sub get_info_all (\%);
 sub find (\%$$$);
@@ -40,7 +38,7 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter);
+    @ISA = qw(Exporter Sbuild::Base);
 
     @EXPORT = qw();
 }
@@ -49,37 +47,14 @@ sub new ($$) {
     my $class = shift;
     my $conf = shift;
 
-    my $self  = {};
+    my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
-    $self->set('Config', $conf);
     $self->set('Chroots', {});
 
     $self->get_info_all();
 
     return $self;
-}
-
-sub get (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->{$key};
-}
-
-sub set (\%$$) {
-    my $self = shift;
-    my $key = shift;
-    my $value = shift;
-
-    return $self->{$key} = $value;
-}
-
-sub get_conf (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return $self->get('Config')->get($key);
 }
 
 sub get_info (\%$) {
