@@ -1,6 +1,6 @@
 .\" t
 .\"
-.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2006  Roger Leigh <rleigh@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ consistent build environment.  This man page describes the procedure to create
 a chroot by hand using debootstrap.  These are only guidelines; depending upon
 the setup required, several of the steps may be omitted entirely.
 .SH QUICK START
-Simply running
+Simply running 
 .B sbuild-createchroot
 will perform all the setup steps described in detail below.  See the section
 \[lq]\fIsbuild-createchroot\fP\[rq] below, as well as
@@ -39,7 +39,7 @@ names for other suites and architectures.
 The author has each chroot as a separate LVM logical volume (LV).  Create and
 mount an LV here if required:
 .PP
-\f[CR]# \f[CB]lvcreate \-L 4G \-n lenny_chroot \-Z y volume-group\fP\fP
+\f[CR]# \f[CB]lvcreate \-L 4G \-n lenny_chroot \-Z y hda_vg\fP\fP
 .br
 .PP
 Add to /etc/fstab and mount (see next section for full fstab example).
@@ -52,7 +52,7 @@ An example \fI/etc/fstab\fP:
 .PP
 .TS
 lfCR s s s s s.
-/dev/volume-group/lenny_chroot \[rs]
+/dev//hda_vg/lenny_chroot \[rs]
 .T&
 lfCR lfCR lfCR lfCR lfCR lfCR.
 	/srv/chroot/lenny	ext3	defaults	0	2
@@ -61,7 +61,7 @@ tmpfs	/srv/chroot/lenny/dev/shm	tmpfs	defaults	0	0
 proc	/srv/chroot/lenny/proc	proc	defaults	0	0
 .T&
 lfCR s s s s s.
-/dev/volume-group/home \[rs]
+/dev/hda_vg/home \[rs]
 .T&
 lfCR lfCR lfCR lfCR lfCR lfCR.
 	/srv/chroot/lenny/home	ext3	quota	0	0
@@ -69,7 +69,6 @@ lfCR lfCR lfCR lfCR lfCR lfCR.
 /etc/passwd	/srv/chroot/lenny/etc/passwd	none	ro,bind	0	0
 /etc/shadow	/srv/chroot/lenny/etc/shadow	none	ro,bind	0	0
 /etc/group	/srv/chroot/lenny/etc/group	none	ro,bind	0	0
-/etc/gshadow	/srv/chroot/lenny/etc/gshadow	none	ro,bind	0	0
 .T&
 lfCR s s s s s.
 /etc/resolv.conf \[rs]
@@ -125,8 +124,7 @@ For dchroot, add the following line to \fI/etc/dchroot.conf\fP:
 \f[CR]lenny /srv/chroot/lenny\fP
 .br
 .PP
-For schroot, add a group to \fI/etc/schroot/schroot.conf\fP (or a new file
-\fI/etc/schroot/chroot.d/lenny\fP), for example:
+For schroot, add the a group to \fI/etc/schroot/schroot.conf\fP, for example:
 .PP
 \f[CR][lenny]\fP
 .br
@@ -254,19 +252,8 @@ directory, and the default $log_dir is ~/logs):
 .PP
 \f[CR]$ \f[CB]mkdir ~/logs\fP\fP
 .br
-.SS 4. sudo setup
-This step not required if schroot is used (which is the default, set in
-\fIsbuild.conf\fP).  If using sbuild with sudo (chroot_mode \[lq]split\[rq]),
-sudo needs configuring to give the user permission to install and remove
-packages in the chroot, which requires root priveleges.  Add the following
-lines to \fI/etc/sudoers\fP:
-.PP
-\f[CR]\f[CI]username\fP  ALL=NOPASSWD: ALL\fP
-.br
-\f[CR]Defaults:\f[CI]username\fP env_keep+="APT_CONFIG DEBIAN_FRONTEND SHELL"\fP
-.br
-.PP
-where \fIusername\fP is the name of the user who will run sbuild.
+.SS 4. Chroot setup
+Chroot setup is handled automatically by schroot.
 .SS 5. Finished
 The user should now be able to run sbuild.
 .PP
@@ -275,7 +262,7 @@ The user should now be able to run sbuild.
 .SH AUTHORS
 Roger Leigh.
 .SH COPYRIGHT
-Copyright \(co 2005-2008  Roger Leigh <rleigh@debian.org>
+Copyright \(co 2005-2006  Roger Leigh <rleigh@debian.org>
 .PP
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
