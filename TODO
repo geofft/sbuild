@@ -35,18 +35,21 @@ Are 'Build Start Time' and 'Pkg Start Time' different?
 
 sbuild-setup references ~/build, even though not required.
 
+sbuild-setup should documend gshadow bind mount, as well as all other
+files copied by schroot setup scripts.
+
 bin/*: Add --help and --version
 
 All programs must use Getopt::Long for options parsing
 
-sbuild-stats option formattion and option processing
-  perform more than one action at once?  Only set mode once?
-  actions have multiple args?
+sbuild-stats option formattion and option processing perform more than
+one action at once?  Only set mode once?  actions have multiple args?
 
-run_*_command should not take an arrayref instead of a string for
-running commands.  They can then be passed directly to schroot avoiding quoting issues.
+run_*_command should take an arrayref instead of a string for running
+commands.  They can then be passed directly to schroot avoiding
+quoting issues.
 
-Add a --verbose option to add commands
+Add a --verbose option to all commands
 
 buildd-clean-upload hard-codes $HOME/upload.  Configure location.
 
@@ -69,9 +72,14 @@ Directory passed to dpkg-source includes Debian version.  Should be upstream onl
 
 Document and add examples for %mailto.
 
-All options should be stored in Sbuild::Conf.
+Use DEBEMAIL as a maintainer name fallback.
 
-Move options checking from Sbuild::Options to Sbuild::Conf.
-This will allow checking of all configuration options, no matter how
-they are set.
+debian/control: Move schroot/sudo to Recommended?
+
+sbuild-adduser should do schroot/sudo-specific setup depending on
+$chroot_mode.
+
+sbuild-createchroot should do schroot/sudo-specific setup depending on
+$chroot_mode, e.g. creating global chroot symlinks under
+/etc/sbuild/chroots.
 
