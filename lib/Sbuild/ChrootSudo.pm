@@ -51,17 +51,8 @@ sub new ($$$$$) {
     my $arch = shift;
     my $conf = shift;
 
-    my $self  = {};
+    my $self = $class->SUPER::new($distribution, $chroot, $arch, $conf);
     bless($self, $class);
-
-    $self->set('CONFIG', $conf);
-    $self->set('Chroots', Sbuild::ChrootInfo->new($conf));
-    $self->set('Session ID', "");
-    $self->set('Chroot ID', $self->get('Chroots')->find($distribution, $chroot, $arch));
-
-    if (!defined($self->get('Chroot ID'))) {
-	return undef;
-    }
 
     return $self;
 }
