@@ -230,7 +230,8 @@ sub get_command (\$$$$$$) {
 }
 
 # Note, do not run with $user="root", and $chroot=0, because root
-# access to the host system is not allowed.
+# access to the host system is not allowed by schroot, nor required
+# via sudo.
 sub run_command (\$$$$$$) {
     my $self = shift;
     my $command = shift;  # Command to run
