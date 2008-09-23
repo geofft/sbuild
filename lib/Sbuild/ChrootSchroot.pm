@@ -145,32 +145,26 @@ sub get_command_internal (\$$$$$) {
 	    " --run-session " . $self->get_conf('SCHROOT_OPTIONS')  .
 	    " -u $user -p -- /bin/sh -c '$command'";
     } else { # Run command outside chroot
+	if (!defined($dir)) {
+	    $dir = $self->get('Build Location');
+	}
 	if ($user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
 	}
-	$cmdline .= "/bin/sh -c '$command'";
+	my $chdir = "";
+	if (defined($dir)) {
+	    $chdir = "cd \"$dir\" && ";
+	}
+	$cmdline .= "/bin/sh -c '$chdir$command'";
     }
 
     return $cmdline;
 }
 
-sub _get_apt_command (\$$$$) {
+sub apt_chroot (\$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $user = shift;     # User to run command under
-    my $priority = shift; # Priority of log message
 
-    return $self->get_command($command, $user, 1, $priority);
-}
-
-sub _run_apt_command (\$$$$$$) {
-    my $self = shift;
-    my $command = shift;  # Command to run
-    my $user = shift;     # User to run command under
-    my $priority = shift; # Priority of log message
-    my $dir = shift;      # Directory to use (optional)
-
-    return $self->run_command($command, $user, 1, $priority, $dir);
+    return 1;
 }
 
 1;

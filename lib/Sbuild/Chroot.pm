@@ -225,7 +225,8 @@ sub get_apt_command (\$$$$$$) {
 
     my $aptcommand = $self->get_apt_command_internal($command, $options);
 
-    my $cmdline = $self->_get_apt_command($aptcommand, $user, $priority);
+    my $cmdline = $self->get_command($aptcommand, $user,
+				     $self->apt_chroot(), $priority, $dir);
 
     chdir($self->get_conf('CWD'));
     return $cmdline;
@@ -242,7 +243,8 @@ sub run_apt_command (\$$$$$$) {
     my $aptcommand = $self->get_apt_command_internal($command, $options);
 
     chdir($self->get_conf('CWD'));
-    return $self->_run_apt_command($aptcommand, $user, $priority, $dir);
+    return $self->run_command($aptcommand, $user,
+			      $self->apt_chroot(), $priority, $dir);
 }
 
 1;
