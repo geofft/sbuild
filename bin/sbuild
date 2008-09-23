@@ -76,7 +76,7 @@ sub main () {
     print "Selected chroot " . $conf->get('CHROOT') . "\n"
 	if $conf->get('DEBUG') and defined $conf->get('CHROOT');
     print "Selected architecture " . $conf->get('USER_ARCH') . "\n"
-	if $conf->get('DEBUG');
+	if $conf->get('DEBUG' && defined($conf->get('USER_ARCH')));
 
     $conf->set('MAILTO',
 	       $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')})
