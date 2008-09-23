@@ -296,7 +296,7 @@ our $lock_interval = 5;
     # Not user-settable.
     chomp(my $arch = readpipe($self->get('DPKG') . " --print-installation-architecture"));
     $self->set('ARCH', $arch);
-    $self->set('USER_ARCH', $arch);
+    $self->set('USER_ARCH', undef); # Defaults to $arch in Sbuild::Chroot code
     $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');
     chomp(my $hostname = `hostname`);
     $self->set('HOSTNAME', $hostname);
