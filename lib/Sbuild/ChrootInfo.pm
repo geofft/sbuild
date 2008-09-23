@@ -20,11 +20,12 @@
 
 package Sbuild::ChrootInfo;
 
+use strict;
+use warnings;
+
 use Sbuild::Base;
 use Sbuild::Conf;
 
-use strict;
-use warnings;
 use POSIX;
 use FileHandle;
 use File::Temp ();
@@ -55,92 +56,6 @@ sub new ($$) {
     $self->get_info_all();
 
     return $self;
-}
-
-sub get_info (\%$) {
-    my $self = shift;
-    my $chroot = shift;
-
-    my $chroot_type = "";
-    my %tmp = ('Priority' => 0,
-	       'Location' => "",
-	       'Session Purged' => 0);
-    open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot
-	or die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
-    while (<CHROOT_DATA>) {
-	chomp;
-	if (/^\s*Type:?\s+(.*)$/) {
-	    $chroot_type = $1;
-	}
-	if (/^\s*Location:?\s+(.*)$/ &&
-	    $tmp{'Location'} eq "") {
-	    $tmp{'Location'} = $1;
-	}
-	if (/^\s*Mount Location:?\s+(.*)$/ &&
-	    $tmp{'Location'} eq "") {
-	    $tmp{'Location'} = $1;
-	}
-	# Path takes priority over Location and Mount Location.
-	if (/^\s*Path:?\s+(.*)$/) {
-	    $tmp{'Location'} = $1;
-	}
-	if (/^\s*Priority:?\s+(\d+)$/) {
-	    $tmp{'Priority'} = $1;
-	}
-	if (/^\s*Session Purged\s+(.*)$/) {
-	    if ($1 eq "true") {
-		$tmp{'Session Purged'} = 1;
-	    }
-	}
-    }
-
-    close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
-
-    if ($self->get_conf('DEBUG')) {
-	print STDERR "Found schroot chroot: $chroot\n";
-	foreach (sort keys %tmp) {
-	    print STDERR "  $_ $tmp{$_}\n";
-	}
-    }
-
-    return \%tmp;
-}
-
-sub get_info_all (\%) {
-    my $self = shift;
-
-    my $chroots = $self->get('Chroots');
-    my $build_dir = $self->get_conf('BUILD_DIR');
-
-    # TODO: Redundant block?  Leave in place for sudo use in the future.
-    foreach (glob("$build_dir/chroot-*")) {
-	my %tmp = ('Priority' => 0,
-		   'Location' => $_,
-		   'Session Purged' => 0);
-	if (-d $tmp{'Location'}) {
-	    my $name = $_;
-	    $name =~ s/\Q${build_dir}\/chroot-\E//;
-	    print STDERR "Found chroot $name\n"
-		if $self->get_conf('DEBUG');
-	    $chroots->{$name} = \%tmp;
-	}
-    }
-
-    # Pick up available chroots and dist_order from schroot
-    $chroots = {};
-    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--list'
-	or die 'Can\'t run ' . $self->get_conf('SCHROOT');
-    while (<CHROOTS>) {
-	chomp;
-	my $chroot = $_;
-	print STDERR "Getting info for $chroot chroot\n"
-	    if $self->get_conf('DEBUG');
-	$chroots->{$chroot} = $self->get_info($chroot);
-    }
-
-    $self->set('Chroots', $chroots);
-
-    close CHROOTS or die "Can't close schroot pipe";
 }
 
 sub find (\%$$$) {

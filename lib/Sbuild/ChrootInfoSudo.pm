@@ -46,4 +46,32 @@ sub new ($$) {
     return $self;
 }
 
+sub get_info_all (\%) {
+    my $self = shift;
+
+    my $chroots = {};
+    my $build_dir = $self->get_conf('BUILD_DIR');
+
+    # TODO: Configure $build_dir as $sudo_chroot_dir
+    foreach (glob("$build_dir/chroot-*")) {
+	my %tmp = ('Priority' => 0,
+		   'Location' => $_,
+		   'Session Purged' => 0);
+	if (-d $tmp{'Location'}) {
+	    my $name = $_;
+	    $name =~ s/\Q${build_dir}\/chroot-\E//;
+	    if ($self->get_conf('DEBUG')) {
+		print STDERR "Found chroot $name\n";
+		foreach (sort keys %tmp) {
+		    print STDERR "  $_ $tmp{$_}\n";
+		}
+	    }
+
+	    $chroots->{$name} = \%tmp;
+	}
+    }
+
+    $self->set('Chroots', $chroots);
+}
+
 1;
