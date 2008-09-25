@@ -154,10 +154,6 @@ sub get_command (\$$$$$$) {
 	$self->log_command($command, $priority);
     }
 
-    if ($chroot != 0) {
-	chdir($self->get_conf('CWD'));
-    }
-
     return $cmdline;
 }
 
@@ -179,9 +175,6 @@ sub run_command (\$$$$$$) {
 	$self->log_command($command, $priority);
     }
 
-    if ($chroot != 0) {
-	chdir($self->get_conf('CWD'));
-    }
     return system($cmdline);
 }
 
@@ -200,9 +193,6 @@ sub exec_command (\$$$$$$) {
 	$self->log_command($command, $priority);
     }
 
-    if ($chroot != 0) {
-	chdir($self->get_conf('CWD'));
-    }
     exec $cmdline;
 }
 
@@ -228,7 +218,6 @@ sub get_apt_command (\$$$$$$) {
     my $cmdline = $self->get_command($aptcommand, $user,
 				     $self->apt_chroot(), $priority, $dir);
 
-    chdir($self->get_conf('CWD'));
     return $cmdline;
 }
 
@@ -242,7 +231,6 @@ sub run_apt_command (\$$$$$$) {
 
     my $aptcommand = $self->get_apt_command_internal($command, $options);
 
-    chdir($self->get_conf('CWD'));
     return $self->run_command($aptcommand, $user,
 			      $self->apt_chroot(), $priority, $dir);
 }
