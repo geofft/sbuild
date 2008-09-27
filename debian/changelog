@@ -1,8 +1,10 @@
 sbuild (0.58.0-1) unstable; urgency=low
 
   * New release.
+  * debian/control: Depend on schroot or sudo, and update minimum schroot
+    version. 
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 16 Aug 2008 11:43:14 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 27 Sep 2008 22:47:26 +0100
 
 sbuild (0.57.5-1) unstable; urgency=low
 
