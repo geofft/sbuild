@@ -132,7 +132,7 @@ sub log_command (\$$$) {
 
     if ((defined($priority) && $priority >= 1) || $self->get_conf('DEBUG')) {
 	my $options = $self->get('APT Options');
-	if ($options ne "") {
+	if ($options ne "" && !$self->get_conf('DEBUG')) {
 	    $msg =~ s/\Q$options\E/CHROOT_APT_OPTIONS/g;
 	}
 	print STDERR "$msg\n";
