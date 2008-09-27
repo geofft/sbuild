@@ -7,9 +7,6 @@ valid.
 sbuild-createchroot should import most of buildd-make-chroot.
 (note: only needed for buildd use--accounts and passwords needed for access)
 
-sbuild-createchroot should update schroot config
-(need /etc/schroot/conf.d)
-
 sbuild-createchroot should update the package reference list
 (sbuild-checkpackages --set)
 
@@ -35,8 +32,7 @@ Are 'Build Start Time' and 'Pkg Start Time' different?
 
 sbuild-setup references ~/build, even though not required.
 
-sbuild-setup should documend gshadow bind mount, as well as all other
-files copied by schroot setup scripts.
+sbuild-setup should document all files copied by schroot setup scripts.
 
 bin/*: Add --help and --version
 
@@ -71,10 +67,6 @@ Sbuild::Chroot should be passed Sbuild::Options directly.
 Directory passed to dpkg-source includes Debian version.  Should be upstream only.
 
 Document and add examples for %mailto.
-
-Use DEBEMAIL as a maintainer name fallback.
-
-debian/control: Move schroot/sudo to Recommended?
 
 sbuild-adduser should do schroot/sudo-specific setup depending on
 $chroot_mode.
