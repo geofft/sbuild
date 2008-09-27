@@ -10,7 +10,8 @@
 ##
 
 # Name to use as override in .changes files for the Maintainer: field
-# (mandatory, no default!).
+# Defaults to the DEBEMAIL environment variable, if set, or else the
+# Maintainer: field will not be overridden unless set here.
 #$maintainer_name='Francesco Paolo Lovergine <frankie@debian.org>';
 
 # Name to use as override in .changes file for the Changed-By: field.
