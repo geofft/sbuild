@@ -13,6 +13,15 @@ configuration.
      used, has been removed.  To prevent packages being upgraded
      automatically, please use sbuild-hold.  See sbuild-hold(1).
 
+  2) The configuration option $chroot_mode has been restored, allowing
+     chroot access by both schroot (which remains the default) and
+     sudo.
+
+  3) A new configuration option $chroot_split has been added.  This
+     allows both schroot and sudo chroot access to be modified to run
+     apt/dpkg on the host system.  Note that schroot needs sudo to run
+     commands as root on the host system.
+
 * Major changes in 0.57.5:
 
   1) sbuild-createchroot now supports most of the options found in
