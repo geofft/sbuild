@@ -244,6 +244,10 @@ our $lock_interval = 5;
     require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
+    # Modify defaults if needed.
+    $maintainer_name = $ENV{'DEBEMAIL'}
+	if (defined($ENV{'DEBEMAIL'}));
+
     $self->set('DISTRIBUTION', $distribution);
     $self->set('CHROOT', $chroot);
     $self->set('BUILD_ARCH_ALL', $build_arch_all);
