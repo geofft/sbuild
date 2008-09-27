@@ -107,20 +107,6 @@ sub end_session (\$) {
     return 1;
 }
 
-sub _setup_options (\$\$) {
-    my $self = shift;
-    my $info = shift;
-
-    $self->SUPER::_setup_options($info);
-
-    $self->set('APT Options', "");
-
-    # TODO: Don't alter environment in parent process.
-    # schroot uses an absolute path inside the chroot, rather than on
-    # the host system.
-    $ENV{'APT_CONFIG'} = $self->get('APT Conf');
-}
-
 sub get_command_internal (\$$$$$) {
     my $self = shift;
     my $command = shift; # Command to run
@@ -148,8 +134,13 @@ sub get_command_internal (\$$$$$) {
 	if (!defined($dir)) {
 	    $dir = $self->get('Build Location');
 	}
-	if ($user ne $self->get_conf('USERNAME')) {
-	    print main::LOG "Command \"$command\" cannot be run as root or any other user on the host system\n";
+	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
+	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
+	} elsif ($user eq 'root') {
+	    $cmdline = $self->get_conf('SUDO') . ' ';
+#	    if ($user ne "root") {
+#		$cmdline .= "-u $Sbuild::Conf::username ";
+#	    }
 	}
 	my $chdir = "";
 	if (defined($dir)) {
@@ -159,12 +150,6 @@ sub get_command_internal (\$$$$$) {
     }
 
     return $cmdline;
-}
-
-sub apt_chroot (\$) {
-    my $self = shift;
-
-    return 1;
 }
 
 1;

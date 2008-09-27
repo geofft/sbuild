@@ -86,40 +86,6 @@ sub end_session (\$) {
     return 1;
 }
 
-sub _setup_aptconf (\$$) {
-    my $self = shift;
-    my $aptconf = shift;
-
-    $self->SUPER::_setup_aptconf($aptconf);
-
-    my $chroot_dir = $self->get('Location');
-
-    print $aptconf "Dir \"$chroot_dir\";\n";
-
-# Set in 'APT Options'
-#    print $aptconf "Dir::State::status \"$chroot_dir/var/lib/dpkg/status\";\n";
-#    print $aptconf "DPkg::Options \"--root=$chroot_dir\";\n";
-#    print $aptconf "DPkg::Run-Directory \"$chroot_dir\";\n";
-}
-
-sub _setup_options (\$\$) {
-    my $self = shift;
-    my $info = shift;
-
-    $self->SUPER::_setup_options($info);
-
-    my $chroot_dir = $self->get('Location');
-
-    $self->set('APT Options',
-	       "-o Dir::State::status=$chroot_dir/var/lib/dpkg/status".
-	       " -o DPkg::Options::=--root=$chroot_dir".
-	       " -o DPkg::Run-Directory=$chroot_dir");
-
-    # TODO: Don't alter environment in parent process.
-    # sudo uses an absolute path on the host system.
-    $ENV{'APT_CONFIG'} = $self->get('Chroot APT Conf');
-}
-
 sub get_command_internal (\$$$$$) {
     my $self = shift;
     my $command = shift; # Command to run
@@ -164,12 +130,6 @@ sub get_command_internal (\$$$$$) {
     }
 
     return $cmdline;
-}
-
-sub apt_chroot (\$) {
-    my $self = shift;
-
-    return 0;
 }
 
 1;

@@ -92,6 +92,7 @@ sub set_allowed_keys (\%) {
 	'LOCK_INTERVAL'				=> "",
 	'CHROOT_ONLY'				=> "",
 	'CHROOT_MODE'				=> "",
+	'CHROOT_SPLIT'				=> "",
 	'APT_POLICY'				=> "",
 	'CHECK_WATCHES'				=> "",
 	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> "",
@@ -192,6 +193,7 @@ our $lock_interval = 5;
     our @ignore_watches_no_build_deps = qw();
     our %watches;
     our $chroot_mode = 'schroot';
+    our $chroot_split = 0;
     our $sbuild_mode = "user";
     our $debug = 0;
     our $force_orig_source = 0;
@@ -279,6 +281,7 @@ our $lock_interval = 5;
     $self->set('IGNORE_WATCHES_NO_BUILD_DEPS', \@ignore_watches_no_build_deps);
     $self->set('WATCHES', \%watches);
     $self->set('CHROOT_MODE', $chroot_mode);
+    $self->set('CHROOT_SPLIT', $chroot_split);
     $self->set('SBUILD_MODE', $sbuild_mode);
     $self->set('DEBUG', $debug);
     $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
@@ -332,8 +335,9 @@ sub check_config (\%) {
 
     die "Bad chroot mode \'" . $self->get('CHROOT_MODE') . "\'"
 	if !isin($self->get('CHROOT_MODE'),
-		 qw(schroot split));
-    if ($self->get('CHROOT_MODE') eq 'split') {
+		 qw(schroot sudo));
+    if ($self->get('CHROOT_MODE') eq 'split' ||
+	($self->get('CHROOT_MODE') eq 'chroot' && $self->get('CHROOT_SPLIT'))) {
 	die "sudo binary " . $self->get('SUDO') . " does not exist or isn't executable\n"
 	    if !-x $self->get('SUDO');
 
