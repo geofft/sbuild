@@ -21,7 +21,6 @@
 
 package Sbuild;
 
-use Sbuild::Conf;
 use Sbuild::Sysconfig;
 
 use strict;
