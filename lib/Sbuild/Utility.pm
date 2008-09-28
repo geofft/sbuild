@@ -22,7 +22,8 @@
 package main;
 use Sbuild::Conf;
 use Sbuild::Log qw(open_log close_log);
-use Sbuild::Chroot;
+use Sbuild::ChrootSchroot;
+use Sbuild::ChrootSudo;
 
 $ENV{'LC_ALL'} = "POSIX";
 $ENV{'SHELL'} = "/bin/sh";
@@ -84,7 +85,20 @@ sub setup ($$) {
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
-    my $session = Sbuild::Chroot->new($chroot, undef, undef, $conf);
+    my $session;
+
+    if ($conf->get('CHROOT_MODE') eq 'schroot') {
+	$session = Sbuild::ChrootSchroot->new($chroot,
+					      $conf->get('CHROOT'),
+					      $conf->get('USER_ARCH'),
+					      $conf);
+    } else {
+	$session = Sbuild::ChrootSudo->new($chroot,
+					   $conf->get('CHROOT'),
+					   $conf->get('USER_ARCH'),
+					   $conf);
+    }
+
     $Sbuild::Utility::current_session = $session;
 
     if (!$session->begin_session()) {
