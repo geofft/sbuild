@@ -120,7 +120,6 @@ sub _setup_options (\$\$) {
     # unsplit mode uses an absolute path inside the chroot, rather
     # than on the host system.
     if ($self->get_conf('CHROOT_SPLIT')) {
-	print STDERR "USE HOST\n";
 	my $chroot_dir = $self->get('Location');
 
 	$self->set('APT Options',
@@ -132,14 +131,8 @@ sub _setup_options (\$\$) {
 	# sudo uses an absolute path on the host system.
 	$ENV{'APT_CONFIG'} = $self->get('Chroot APT Conf');
     } else { # no split
-	print STDERR "USE CHROOT\n";
 	$self->set('APT Options', "");
 	$ENV{'APT_CONFIG'} = $self->get('APT Conf');
-    }
-
-    print STDERR "ENV:\n";
-    foreach (sort keys %ENV) {
-	print "  $_: $ENV{$_}\n";
     }
 }
 
