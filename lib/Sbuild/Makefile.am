@@ -23,13 +23,18 @@ include $(top_srcdir)/scripts/global.mk
 
 perlmodsbuilddir = $(perlmoddir)/Sbuild
 
-MODULES =		\
-	Build.pm	\
-	Chroot.pm	\
-	ChrootInfo.pm	\
-	Conf.pm		\
-	Log.pm		\
-	Options.pm	\
+MODULES =			\
+	Base.pm			\
+	Build.pm		\
+	Chroot.pm		\
+	ChrootSchroot.pm	\
+	ChrootSudo.pm		\
+	ChrootInfo.pm		\
+	ChrootInfoSchroot.pm	\
+	ChrootInfoSudo.pm	\
+	Conf.pm			\
+	Log.pm			\
+	Options.pm		\
 	Utility.pm
 
 perlmodsbuild_DATA =	\
