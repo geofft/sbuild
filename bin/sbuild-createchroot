@@ -28,12 +28,13 @@ use POSIX;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(dump_file help_text version_text usage_error);
 use Sbuild::Conf;
+use File::Path qw(mkpath);
 use File::Temp ();
 
 package main;
 
 sub add_items ($@);
-sub makedir ($);
+sub makedir ($$);
 
 my $conf = Sbuild::Conf->new();
 my $hostname = $conf->get('HOSTNAME');
@@ -63,11 +64,20 @@ sub add_items ($@) {
     return $ret;
 }
 
-sub makedir ($) {
+sub makedir ($$) {
     my $dir = shift;
+    my $perms = shift;
 
-    !system("mkdir", "-p", $dir)
-	or die "E: Error running mkdir -p $dir";
+    mkpath($dir,
+	   { mode => $perms,
+	     verbose => 1,
+	     error => \my $error
+	   });
+
+    for my $diag (@$error) {
+	my ($file, $message) = each %$diag;
+	print "E: Can't make directory $file: $message\n";
+    }
 }
 
 our $bootstrap_arch = $conf->get('ARCH');
@@ -138,7 +148,7 @@ if ($verbose) {
 }
 
 # Run debootstrap with specified options.
-!system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
+#!system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
 
 # Set up minimal /etc/hosts.
 my $hosts = "${target}/etc/hosts";
@@ -197,15 +207,29 @@ print "I: Please rename and modify this file as required.\n";
 }
 
 if (! -d "/etc/sbuild/chroot") {
-    makedir("/etc/sbuild/chroot");
+    makedir("/etc/sbuild/chroot", 0775);
 }
-!system("ln", "-sf", $target, "/etc/sbuild/chroot/$chrootname" )
-    or die "E: Error running mkdir -p /etc/sbuild/chroot";
-print "I: sudo chroot configuration linked as /etc/sbuild/chroot/$chrootname.\n";
+
+my $chrootlink = "/etc/sbuild/chroot/$chrootname";
+if (-l $chrootlink) {
+    unlink($chrootlink) or die "Can't unlink $chrootlink: $!";
+} else {
+    print STDERR "E: Can't remove $chrootlink: not a symbolic link\n";
+}
+
+if (! -f $chrootlink) {
+    if (symlink($target, $chrootlink)) {
+	print "I: sudo chroot configuration linked as /etc/sbuild/chroot/$chrootname.\n";
+    } else {
+	print STDERR "E: Failed to symlink $target to $chrootlink: $!\n";
+    }
+} else {
+    print "W: Failed to symlink $target to $chrootlink: \n"
+}
 
 if (! -d "$target/build") {
     print "I: Creating build directory: /build\n";
-    makedir("$target/build");
+    makedir("$target/build", 0775);
 }
 !system("chown", "root:sbuild", "$target/build")
     or die "E: Failed to set root:sbuild ownership on $target/build";
@@ -214,11 +238,11 @@ if (! -d "$target/build") {
 
 if (! -d "$target/var/lib/sbuild") {
     print "I: Creating sbuild directory: /var/lib/sbuild\n";
-    makedir("$target/var/lib/sbuild/srcdep");
+    makedir("$target/var/lib/sbuild/srcdep", 02775);
 }
 if (! -d "$target/var/lib/sbuild/srcdep-lock") {
     print "I: Creating sbuild lock directory: /var/lib/sbuild/srcdep-lock\n";
-    makedir("$target/var/lib/sbuild/srcdep-lock");
+    makedir("$target/var/lib/sbuild/srcdep-lock", 02775);
 }
 !system("chown", "-R", "root:sbuild", "$target/var/lib/sbuild")
     or die "E: Failed to set root:sbuild ownership on $target/var/lib/sbuild";
