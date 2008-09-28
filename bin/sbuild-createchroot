@@ -26,14 +26,17 @@ use warnings;
 
 use POSIX;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild::Sysconfig qw($arch $hostname);
 use Sbuild qw(dump_file help_text version_text usage_error);
+use Sbuild::Conf;
 use File::Temp ();
 
 package main;
 
 sub add_items ($@);
-sub dump_file ($);
+sub makedir ($);
+
+my $conf = Sbuild::Conf->new();
+my $hostname = $conf->get('HOSTNAME');
 
 # Add items to the start of a comma-separated list, and remove the
 # items from later in the list if they were already in the list.
@@ -60,7 +63,14 @@ sub add_items ($@) {
     return $ret;
 }
 
-our $bootstrap_arch = $arch;
+sub makedir ($) {
+    my $dir = shift;
+
+    !system("mkdir", "-p", $dir)
+	or die "E: Error running mkdir -p $dir";
+}
+
+our $bootstrap_arch = $conf->get('ARCH');
 our $foreign = 0;
 our $include = '';
 our $exclude = '';
@@ -158,14 +168,15 @@ print "I: Please add any additional APT sources to ${target}/etc/apt/sources.lis
 # Write out schroot chroot configuration.
 my $chrootname = "${suite}-${bootstrap_arch}-sbuild";
 
-# TODO: Don't hardcode path
-my $SCHROOT_CONF =
-    new File::Temp( TEMPLATE => "$chrootname.XXXXXX",
-		    DIR => "/etc/schroot/chroot.d",
-		    UNLINK => 0)
-    or die "Can't open schroot configuration file: $!\n";
+if (-d "/etc/schroot/chroot.d") {
+    # TODO: Don't hardcode path
+    my $SCHROOT_CONF =
+	new File::Temp( TEMPLATE => "$chrootname.XXXXXX",
+			DIR => "/etc/schroot/chroot.d",
+			UNLINK => 0)
+	or die "Can't open schroot configuration file: $!\n";
 
-print $SCHROOT_CONF <<"EOF";
+    print $SCHROOT_CONF <<"EOF";
 [$chrootname]
 type=directory
 description=Debian $suite/$bootstrap_arch autobuilder
@@ -183,6 +194,37 @@ EOF
 print "I: schroot chroot configuration written to $SCHROOT_CONF.\n";
 dump_file("$SCHROOT_CONF");
 print "I: Please rename and modify this file as required.\n";
+}
+
+if (! -d "/etc/sbuild/chroot") {
+    makedir("/etc/sbuild/chroot");
+}
+!system("ln", "-sf", $target, "/etc/sbuild/chroot/$chrootname" )
+    or die "E: Error running mkdir -p /etc/sbuild/chroot";
+print "I: sudo chroot configuration linked as /etc/sbuild/chroot/$chrootname.\n";
+
+if (! -d "$target/build") {
+    print "I: Creating build directory: /build\n";
+    makedir("$target/build");
+}
+!system("chown", "root:sbuild", "$target/build")
+    or die "E: Failed to set root:sbuild ownership on $target/build";
+!system("chmod", "0775", "$target/build")
+    or die "E: Failed to set 0755 permissions on $target/build";
+
+if (! -d "$target/var/lib/sbuild") {
+    print "I: Creating sbuild directory: /var/lib/sbuild\n";
+    makedir("$target/var/lib/sbuild/srcdep");
+}
+if (! -d "$target/var/lib/sbuild/srcdep-lock") {
+    print "I: Creating sbuild lock directory: /var/lib/sbuild/srcdep-lock\n";
+    makedir("$target/var/lib/sbuild/srcdep-lock");
+}
+!system("chown", "-R", "root:sbuild", "$target/var/lib/sbuild")
+    or die "E: Failed to set root:sbuild ownership on $target/var/lib/sbuild";
+!system("chmod", "-R", "02775", "$target/var/lib/sbuild")
+    or die "E: Failed to set 02755 permissions on $target/var/lib/sbuild";
+
 print "I: Successfully set up $suite chroot.\n";
 print "I: Run sbuild-adduser to add new sbuild users.\n";
 
