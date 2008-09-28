@@ -157,9 +157,11 @@ sub open_pkg_log ($$$) {
     }
     else {
 	$pkg_logfile = $conf->get('LOG_DIR') . "/${pkg_name}-$date";
-	log_symlink($pkg_logfile,
-		    $conf->get('BUILD_DIR') . "/current-$pkg_distribution");
-	log_symlink($pkg_logfile,$conf->get('BUILD_DIR') . "/current");
+	if ($conf->get('SBUILD_MODE') eq 'buildd') {
+	    log_symlink($pkg_logfile,
+			$conf->get('BUILD_DIR') . "/current-$pkg_distribution");
+	    log_symlink($pkg_logfile,$conf->get('BUILD_DIR') . "/current");
+	}
 	if ($conf->get('VERBOSE')) {
 	    my $pid;
 	    ($pid = open( main::PLOG, "|-"));
