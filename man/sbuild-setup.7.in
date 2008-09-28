@@ -148,6 +148,14 @@ For schroot, add a group to \fI/etc/schroot/schroot.conf\fP (or a new file
 .br
 \f[CR]run\-session\-scripts=true\fP
 .br
+.PP
+For sudo, add a symbolic link to the directory \fI/etc/sbuild/chroot\fP, for
+example:
+.PP
+\f[CR]# \f[CB]mkdir \-p /etc/sbuild/chroot\fP\fP
+.br
+\f[CR]# \f[CB]mkdir \-p /srv/chroot/lenny /etc/sbuild/chroot/lenny\fP\fP
+.br
 .SS 5. Log into chroot
 \f[CR]# \f[CB]dchroot \-c lenny\fP\fP
 .br

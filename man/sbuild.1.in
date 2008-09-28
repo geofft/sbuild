@@ -205,6 +205,10 @@ source-dependencies.
 Configuration, maintained by the system administrator.  This may be used to
 override the defaults.
 .TP
+.I /etc/sbuild/chroot
+Directory containing symbolic links to chroots.  This is only used for sudo
+chroot access; schroot access uses the schroot chroot configuration.
+.TP
 .I ~/.sbuildrc
 User-specific configuration.
 .TP
