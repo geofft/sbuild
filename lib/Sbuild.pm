@@ -33,12 +33,11 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @Sbuild::ISA = qw(Exporter);
+    @ISA = qw(Exporter);
 
-    @Sbuild::EXPORT = qw(version_less version_lesseq version_eq
-		         version_compare binNMU_version parse_date
-		         isin copy dump_file help_text version_text
-		         usage_error);
+    @EXPORT = qw(version_less version_lesseq version_eq
+		 version_compare binNMU_version parse_date isin copy
+		 dump_file help_text version_text usage_error);
 }
 
 my $opt_correct_version_cmp;
