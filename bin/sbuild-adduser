@@ -49,6 +49,13 @@ foreach (@ARGV) {
 if ($status == 0) {
     print STDOUT <<EOF;
 
+# Setup tasks for sudo users:
+
+# BUILD
+# HOME directory in chroot, user:sbuild, 0770 perms, from
+# passwd/group copying to chroot, filtered
+# Maybe source 50sbuild, or move into common location.
+
 Next, copy the example sbuildrc file to the home directory of each user and
 set the variables for your system:
 
@@ -63,9 +70,9 @@ EOF
 Now try a build:
 
   cd /path/to/source
-  /usr/share/sbuild/chrapt <distribution> apt-get update
-  /usr/share/sbuild/chrapt <distribution> apt-get upgrade
-  (or "/usr/share/sbuild/chrapt <distribution> apt-get -f install"
+  sbuild-update <distribution>
+  sbuild-upgrade <distribution> apt-get upgrade
+  (or "sbuild-apt <distribution> apt-get -f install"
        first if the chroot is broken)
   sbuild -d <distribution> <package>_<version>
 EOF
