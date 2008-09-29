@@ -21,6 +21,7 @@
 package Sbuild::ChrootInfoSchroot;
 
 use Sbuild::ChrootInfo;
+use Sbuild::ChrootSchroot;
 
 use strict;
 use warnings;
@@ -113,6 +114,19 @@ sub get_info_all (\%) {
     close CHROOTS or die "Can't close schroot pipe";
 
     $self->set('Chroots', $chroots);
+}
+
+sub _create (\%$) {
+    my $self = shift;
+    my $chroot_id = shift;
+
+    my $chroot = undef;
+
+    if (defined($chroot_id)) {
+	$chroot = Sbuild::ChrootSchroot->new($self->get('Config'), $chroot_id);
+    }
+
+    return $chroot;
 }
 
 1;

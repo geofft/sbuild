@@ -21,6 +21,7 @@
 package Sbuild::ChrootInfoSudo;
 
 use Sbuild::ChrootInfo;
+use Sbuild::ChrootSudo;
 
 use strict;
 use warnings;
@@ -78,6 +79,19 @@ sub get_info_all (\%) {
     }
 
     $self->set('Chroots', $chroots);
+}
+
+sub _create (\%$) {
+    my $self = shift;
+    my $chroot_id = shift;
+
+    my $chroot = undef;
+
+    if (defined($chroot_id)) {
+	$chroot = Sbuild::ChrootSudo->new($self->get('Config'), $chroot_id);
+    }
+
+    return $chroot;
 }
 
 1;

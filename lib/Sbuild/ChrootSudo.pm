@@ -23,7 +23,6 @@
 package Sbuild::ChrootSudo;
 
 use Sbuild::Conf;
-use Sbuild::ChrootInfoSudo;
 
 use strict;
 use warnings;
@@ -47,16 +46,13 @@ sub end_session (\$);
 sub get_command_internal (\$$$$$);
 
 sub new ($$$$$) {
-# TODO: specify distribution parameters here...
     my $class = shift;
-    my $distribution = shift;
-    my $chroot = shift;
-    my $arch = shift;
     my $conf = shift;
+    my $chroot_id = shift;
 
     my $info = Sbuild::ChrootInfoSudo->new($conf);
 
-    my $self = $class->SUPER::new($distribution, $chroot, $arch, $conf, $info);
+    my $self = $class->SUPER::new($conf, $chroot_id);
     bless($self, $class);
 
     return $self;

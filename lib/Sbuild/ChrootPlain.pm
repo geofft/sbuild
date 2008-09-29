@@ -20,7 +20,7 @@
 #
 #######################################################################
 
-package Sbuild::ChrootSchroot;
+package Sbuild::ChrootSudo;
 
 use Sbuild::Conf;
 
@@ -50,6 +50,8 @@ sub new ($$$$$) {
     my $conf = shift;
     my $chroot_id = shift;
 
+    my $info = Sbuild::ChrootInfoSudo->new($conf);
+
     my $self = $class->SUPER::new($conf, $chroot_id);
     bless($self, $class);
 
@@ -58,46 +60,24 @@ sub new ($$$$$) {
 
 sub begin_session (\$) {
     my $self = shift;
-    my $chroot = $self->get('Chroot ID');
 
-    my $schroot_session=readpipe($self->get_conf('SCHROOT') . " -c $chroot --begin-session");
-    chomp($schroot_session);
-    if ($?) {
-	print STDERR "Chroot setup failed\n";
-	return 0;
-    }
+    # TODO: Abstract by adding method to get specific chroot info from
+    # ChrootInfo.
 
-    $self->set('Session ID', $schroot_session);
-    print STDERR "Setting up chroot $chroot (session id $schroot_session)\n"
-	if $self->get_conf('DEBUG');
-
-    my $info = $self->get('Chroots')->get_info($schroot_session);
-	if (defined($info) &&
-	    defined($info->{'Location'}) && -d $info->{'Location'}) {
-	    $self->set('Priority', $info->{'Priority'});
-	    $self->set('Location', $info->{'Location'});
-	    $self->set('Session Purged', $info->{'Session Purged'});
-    } else {
-	die $self->get('Chroot ID') . " chroot does not exist\n";
-    }
+    $self->set('Priority', 0);
+    $self->set('Location', $self->get('Chroot ID'));
+    $self->set('Session Purged', 0);
 
     $self->_setup_options();
+
     return 1;
 }
 
 sub end_session (\$) {
     my $self = shift;
 
-    return if $self->get('Session ID') eq "";
+    # No-op for plain.
 
-    print STDERR "Cleaning up chroot (session id " . $self->get('Session ID') . ")\n"
-	if $self->get_conf('DEBUG');
-    system($self->get_conf('SCHROOT') . ' -c ' . $self->get('Session ID') . ' --end-session');
-    $self->set('Session ID', "");
-    if ($?) {
-	print STDERR "Chroot cleanup failed\n";
-	return 0;
-    }
     return 1;
 }
 
@@ -121,20 +101,16 @@ sub get_command_internal (\$$$$$) {
 	if (!defined($dir)) {
 	    $dir = $self->strip_chroot_path($self->get('Build Location'));
 	}
-	$cmdline = $self->get_conf('SCHROOT') . " -d '$dir' -c " . $self->get('Session ID') .
-	    " --run-session " . $self->get_conf('SCHROOT_OPTIONS')  .
-	    " -u $user -p -- /bin/sh -c '$command'";
+
+	$cmdline = "/usr/sbin/chroot " .
+	    $self->get('Location') . ' ' . $self->get_conf('SU') .
+	    " -p $user -s /bin/sh -c 'cd $dir && $command'";
     } else { # Run command outside chroot
 	if (!defined($dir)) {
 	    $dir = $self->get('Build Location');
 	}
 	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
-	} elsif ($user eq 'root') {
-	    $cmdline = $self->get_conf('SUDO') . ' ';
-#	    if ($user ne "root") {
-#		$cmdline .= "-u $Sbuild::Conf::username ";
-#	    }
 	}
 	my $chdir = "";
 	if (defined($dir)) {

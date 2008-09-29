@@ -41,7 +41,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$$$$);
+sub new ($$$);
 sub _setup_options (\$\$);
 sub strip_chroot_path (\$$);
 sub log_command (\$$$);
@@ -52,21 +52,16 @@ sub get_apt_command_internal (\$$$);
 sub get_apt_command (\$$$$$$);
 sub run_apt_command (\$$$$$$);
 
-sub new ($$$$$$) {
-# TODO: specify distribution parameters here...
+sub new ($$$) {
     my $class = shift;
-    my $distribution = shift;
-    my $chroot = shift;
-    my $arch = shift;
     my $conf = shift;
-    my $info = shift;
+    my $chroot_id = shift;
 
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
-    $self->set('Chroots', $info);
     $self->set('Session ID', "");
-    $self->set('Chroot ID', $self->get('Chroots')->find($distribution, $chroot, $arch));
+    $self->set('Chroot ID', $chroot_id);
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;

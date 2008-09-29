@@ -40,8 +40,8 @@ use FileHandle;
 use Sbuild qw(binNMU_version version_compare copy);
 use Data::Dumper;
 use File::Temp qw(tempdir);
-use Sbuild::ChrootSchroot;
-use Sbuild::ChrootSudo;
+use Sbuild::ChrootInfoSchroot;
+use Sbuild::ChrootInfoSudo;
 use Sbuild::Log qw(open_log close_log);
 use Sbuild::Sysconfig qw($version);
 use Sbuild::Options;
@@ -151,18 +151,16 @@ sub main () {
 	    goto cleanup_close;
 	}
 
-	my $session;
+	my $chroot_info;
 	if ($conf->get('CHROOT_MODE') eq 'schroot') {
-	    $session = Sbuild::ChrootSchroot->new($conf->get('DISTRIBUTION'),
-						  $conf->get('CHROOT'),
-						  $conf->get('USER_ARCH'),
-						  $conf);
+	    $chroot_info = Sbuild::ChrootInfoSchroot->new($conf);
 	} else {
-	    $session = Sbuild::ChrootSudo->new($conf->get('DISTRIBUTION'),
-					       $conf->get('CHROOT'),
-					       $conf->get('USER_ARCH'),
-					       $conf);
+	    $chroot_info = Sbuild::ChrootInfoSudo->new($conf);
 	}
+
+	my $session = $chroot_info->create($conf->get('DISTRIBUTION'),
+					   $conf->get('CHROOT'),
+					   $conf->get('USER_ARCH'));
 
 	$build->{'Session'} = $session;
 

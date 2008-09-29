@@ -58,6 +58,26 @@ sub new ($$) {
     return $self;
 }
 
+
+
+sub create (\%$$$) {
+    my $self = shift;
+    my $distribution = shift;
+    my $chroot = shift;
+    my $arch = shift;
+
+    my $chrootid = $self->find($distribution, $chroot, $arch);
+
+    my $newchroot = $self->_create($chrootid);
+
+    if (defined($newchroot)) {
+	$newchroot->set('Chroots', $self);
+    }
+
+    return $newchroot;
+}
+
+
 sub find (\%$$$) {
     my $self = shift;
     my $distribution = shift;
