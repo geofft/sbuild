@@ -165,7 +165,7 @@ sub main () {
 	$build->{'Session'} = $session;
 
 	if (!$session->begin_session()) {
-	    print PLOG "Error creating schroot session: skipping " .
+	    print PLOG "Error creating chroot session: skipping " .
 		$build->{'Package'} . "\n";
 	    $build->{'Pkg Status'} = "skipped";
 	    goto cleanup_close;
