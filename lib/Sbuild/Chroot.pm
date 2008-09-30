@@ -62,6 +62,7 @@ sub new ($$$) {
 
     $self->set('Session ID', "");
     $self->set('Chroot ID', $chroot_id);
+    $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;
@@ -79,7 +80,7 @@ sub _setup_aptconf (\$$) {
     }
     print $aptconf "APT::Install-Recommends false;\n";
 
-    if ($self->get_conf('CHROOT_SPLIT')) {
+    if ($self->get('Split')) {
 	my $chroot_dir = $self->get('Location');
 	print $aptconf "Dir \"$chroot_dir\";\n";
     }
@@ -114,7 +115,7 @@ sub _setup_options (\$\$) {
     # TODO: Don't alter environment in parent process.
     # unsplit mode uses an absolute path inside the chroot, rather
     # than on the host system.
-    if ($self->get_conf('CHROOT_SPLIT')) {
+    if ($self->get('Split')) {
 	my $chroot_dir = $self->get('Location');
 
 	$self->set('APT Options',
@@ -254,7 +255,7 @@ sub run_apt_command (\$$$$$$) {
 sub apt_chroot (\$) {
     my $self = shift;
 
-    my $chroot =  $self->get_conf('CHROOT_SPLIT') ? 0 : 1;
+    my $chroot =  $self->get('Split') ? 0 : 1;
 
     return $chroot
 }

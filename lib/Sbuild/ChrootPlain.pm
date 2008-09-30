@@ -54,6 +54,10 @@ sub new ($$$) {
     my $self = $class->SUPER::new($conf, $chroot_id);
     bless($self, $class);
 
+    # Only run split, because plain makes no guarantee that networking
+    # works inside the chroot.
+    $self->set('Split', 1);
+
     return $self;
 }
 
