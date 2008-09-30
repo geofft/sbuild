@@ -50,8 +50,6 @@ sub new ($$$$$) {
     my $conf = shift;
     my $chroot_id = shift;
 
-    my $info = Sbuild::ChrootInfoSudo->new($conf);
-
     my $self = $class->SUPER::new($conf, $chroot_id);
     bless($self, $class);
 
