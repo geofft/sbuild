@@ -25,7 +25,7 @@ use warnings;
 use locale;
 use POSIX qw(locale_h);
 use Getopt::Long;
-use Sbuild qw(help_text version_text usage_error);
+use Sbuild qw(help_text version_text usage_error check_packages);
 use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
 
@@ -50,94 +50,10 @@ my $chroot = $ARGV[0];
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
 
-my $package_checklist = $conf->get('PACKAGE_CHECKLIST');
 my $session = setup($chroot, $conf) or die "Chroot setup failed";
 my $chroot_dir = $session->{'Location'};
-my (@status, @ref, @install, @remove);
 
-if (! open STATUS, "grep-status -F Status -s Package ' installed' '$chroot_dir/var/lib/dpkg/status' | awk '{print \$2}' |" ) {
-    print STDERR "Can't read dpkg status file in chroot: $!\n";
-    shutdown("TERM");
-}
-while (<STATUS>) {
-    chomp;
-    push @status, $_;
-}
-if (! close STATUS) {
-    print STDERR "Error reading dpkg status file in chroot: $!\n";
-    shutdown("TERM");
-}
-@status = sort @status;
-if (!@status) {
-    print STDERR "dpkg status file is empty\n";
-    shutdown("TERM");
-}
-
-if ($mode eq "set") {
-    if (! open WREF, "> $chroot_dir/$package_checklist") {
-	print STDERR "Can't write reference status file $chroot_dir/$package_checklist: $!\n";
-	shutdown("TERM");
-    }
-    foreach (@status) {
-	print WREF "$_\n";
-    }
-    if (! close WREF) {
-	print STDERR "Error writing reference status file: $!\n";
-	shutdown("TERM");
-    }
-} else { # "list"
-
-    if (! open REF, "< $chroot_dir/$package_checklist") {
-	print STDERR "Can't read reference status file $chroot_dir/$package_checklist: $!\n";
-	shutdown("TERM");
-    }
-    while (<REF>) {
-	chomp;
-	push @ref, $_;
-    }
-    if (! close REF) {
-	print STDERR "Error reading reference status file: $!\n";
-	shutdown("TERM");
-    }
-
-    @ref = sort @ref;
-    if (!@ref) {
-	print STDERR "Reference status file is empty\n";
-	shutdown("TERM");
-    }
-
-    print "DELETE             ADD\n";
-    print "======================================\n";
-    my $i = 0;
-    my $j = 0;
-
-    while ($i < scalar @status && $j < scalar @ref) {
-
-	my $c = $status[$i] cmp $ref[$j];
-	if ($c < 0) {
-	    # In status, not reference; remove.
-	    print "$status[$i]\n";
-	    $i++;
-	} elsif ($c > 0) {
-	    # In reference, not status; install.
-	    print "                   $ref[$j]\n";
-	    $j++;
-	} else {
-	    # Identical; skip.
-	    $i++; $j++;
-	}
-    }
-
-# Print any remaining elements
-    while ($i < scalar @status) {
-	print "$status[$i]\n";
-	$i++;
-    }
-    while ($j < scalar @ref) {
-	print "                   $ref[$j]\n";
-	$j++;
-    }
-}
+check_packages($conf, $chroot_dir, $mode);
 
 cleanup($conf);
 exit 0;

@@ -26,7 +26,7 @@ use warnings;
 
 use POSIX;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild qw(dump_file help_text version_text usage_error);
+use Sbuild qw(dump_file help_text version_text usage_error check_packages);
 use Sbuild::Conf;
 use Sbuild::ChrootPlain;
 use File::Path qw(mkpath);
@@ -149,7 +149,7 @@ if ($verbose) {
 }
 
 # Run debootstrap with specified options.
-#!system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
+!system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
 
 # Set up minimal /etc/hosts.
 my $hosts = "${target}/etc/hosts";
@@ -250,11 +250,14 @@ if (! -d "$target/var/lib/sbuild/srcdep-lock") {
 !system("chmod", "-R", "02775", "$target/var/lib/sbuild")
     or die "E: Failed to set 02755 permissions on $target/var/lib/sbuild";
 
+print "I: Setting reference package list.\n";
+check_packages($conf, $target, "set");
+
 my $session = Sbuild::ChrootPlain->new($conf, $target);
 if (defined($session)) {
 
     if (!$session->begin_session()) {
-	print ERROR "E: Error creating chroot session: skipping apt update\n";
+	print STDERR "E: Error creating chroot session: skipping apt update\n";
     } else {
 	print "I: Updating chroot.\n";
 	my $status = $session->run_apt_command($conf->get('APT_GET'), "update",

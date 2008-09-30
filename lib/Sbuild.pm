@@ -37,7 +37,8 @@ BEGIN {
 
     @EXPORT = qw(version_less version_lesseq version_eq
 		 version_compare binNMU_version parse_date isin copy
-		 dump_file help_text version_text usage_error);
+		 dump_file check_packages help_text version_text
+		 usage_error);
 }
 
 my $opt_correct_version_cmp;
@@ -55,6 +56,7 @@ sub parse_date ($);
 sub isin ($@);
 sub copy ($);
 sub dump_file ($);
+sub check_packages ($$$);
 sub help_text ($$);
 sub version_text ($);
 sub usage_error ($$);
@@ -262,6 +264,100 @@ sub dump_file ($) {
 	close(SOURCES) or print "Failed to close $file\n";
     } else {
 	print "W: Failed to open $file\n";
+    }
+}
+
+# set and list saved package list (used by sbuild-checkpackages)
+sub check_packages ($$$) {
+    my $conf = shift;
+    my $chroot_dir = shift;
+    my $mode = shift;
+
+    my $package_checklist = $conf->get('PACKAGE_CHECKLIST');
+
+    my (@status, @ref, @install, @remove);
+
+    if (! open STATUS, "grep-status -F Status -s Package ' installed' '$chroot_dir/var/lib/dpkg/status' | awk '{print \$2}' |" ) {
+	print STDERR "Can't read dpkg status file in chroot: $!\n";
+	return 1;
+    }
+    while (<STATUS>) {
+	chomp;
+	push @status, $_;
+    }
+    if (! close STATUS) {
+	print STDERR "Error reading dpkg status file in chroot: $!\n";
+	return 1;
+    }
+    @status = sort @status;
+    if (!@status) {
+	print STDERR "dpkg status file is empty\n";
+	return 1;
+    }
+
+    if ($mode eq "set") {
+	if (! open WREF, "> $chroot_dir/$package_checklist") {
+	    print STDERR "Can't write reference status file $chroot_dir/$package_checklist: $!\n";
+	    return 1;
+	}
+	foreach (@status) {
+	    print WREF "$_\n";
+	}
+	if (! close WREF) {
+	    print STDERR "Error writing reference status file: $!\n";
+	    return 1;
+	}
+    } else { # "list"
+	if (! open REF, "< $chroot_dir/$package_checklist") {
+	    print STDERR "Can't read reference status file $chroot_dir/$package_checklist: $!\n";
+	    return 1;
+	}
+	while (<REF>) {
+	    chomp;
+	    push @ref, $_;
+	}
+	if (! close REF) {
+	    print STDERR "Error reading reference status file: $!\n";
+	    return 1;
+	}
+
+	@ref = sort @ref;
+	if (!@ref) {
+	    print STDERR "Reference status file is empty\n";
+	    return 1;
+	}
+
+	print "DELETE             ADD\n";
+	print "──────────────────────────────────────\n";
+	my $i = 0;
+	my $j = 0;
+
+	while ($i < scalar @status && $j < scalar @ref) {
+
+	    my $c = $status[$i] cmp $ref[$j];
+	    if ($c < 0) {
+		# In status, not reference; remove.
+		print "$status[$i]\n";
+		$i++;
+	    } elsif ($c > 0) {
+		# In reference, not status; install.
+		print "                   $ref[$j]\n";
+		$j++;
+	    } else {
+		# Identical; skip.
+		$i++; $j++;
+	    }
+	}
+
+        # Print any remaining elements
+	while ($i < scalar @status) {
+	    print "$status[$i]\n";
+	    $i++;
+	}
+	while ($j < scalar @ref) {
+	    print "                   $ref[$j]\n";
+	    $j++;
+	}
     }
 }
 
