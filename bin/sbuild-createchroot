@@ -250,15 +250,15 @@ if (! -d "$target/var/lib/sbuild/srcdep-lock") {
 !system("chmod", "-R", "02775", "$target/var/lib/sbuild")
     or die "E: Failed to set 02755 permissions on $target/var/lib/sbuild";
 
-print "I: Setting reference package list.\n";
-check_packages($conf, $target, "set");
-
 my $session = Sbuild::ChrootPlain->new($conf, $target);
 if (defined($session)) {
 
     if (!$session->begin_session()) {
 	print STDERR "E: Error creating chroot session: skipping apt update\n";
     } else {
+	print "I: Setting reference package list.\n";
+	check_packages($session, "set");
+
 	print "I: Updating chroot.\n";
 	my $status = $session->run_apt_command($conf->get('APT_GET'), "update",
 					       "root", 1);

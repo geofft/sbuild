@@ -56,7 +56,7 @@ sub parse_date ($);
 sub isin ($@);
 sub copy ($);
 sub dump_file ($);
-sub check_packages ($$$);
+sub check_packages ($$);
 sub help_text ($$);
 sub version_text ($);
 sub usage_error ($$);
@@ -268,12 +268,12 @@ sub dump_file ($) {
 }
 
 # set and list saved package list (used by sbuild-checkpackages)
-sub check_packages ($$$) {
-    my $conf = shift;
-    my $chroot_dir = shift;
+sub check_packages ($$) {
+    my $chroot = shift;
     my $mode = shift;
 
-    my $package_checklist = $conf->get('PACKAGE_CHECKLIST');
+    my $package_checklist = $chroot->get_conf('PACKAGE_CHECKLIST');
+    my $chroot_dir = $chroot->get('Location');
 
     my (@status, @ref, @install, @remove);
 
