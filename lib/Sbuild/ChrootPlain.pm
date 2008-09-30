@@ -20,9 +20,10 @@
 #
 #######################################################################
 
-package Sbuild::ChrootSudo;
+package Sbuild::ChrootPlain;
 
 use Sbuild::Conf;
+use Sbuild::Log;
 
 use strict;
 use warnings;
@@ -40,17 +41,15 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$$$);
+sub new ($$$);
 sub begin_session (\$);
 sub end_session (\$);
 sub get_command_internal (\$$$$$);
 
-sub new ($$$$$) {
+sub new ($$$) {
     my $class = shift;
     my $conf = shift;
     my $chroot_id = shift;
-
-    my $info = Sbuild::ChrootInfoSudo->new($conf);
 
     my $self = $class->SUPER::new($conf, $chroot_id);
     bless($self, $class);
@@ -60,9 +59,6 @@ sub new ($$$$$) {
 
 sub begin_session (\$) {
     my $self = shift;
-
-    # TODO: Abstract by adding method to get specific chroot info from
-    # ChrootInfo.
 
     $self->set('Priority', 0);
     $self->set('Location', $self->get('Chroot ID'));
@@ -76,7 +72,7 @@ sub begin_session (\$) {
 sub end_session (\$) {
     my $self = shift;
 
-    # No-op for plain.
+    # No-op for sudo.
 
     return 1;
 }

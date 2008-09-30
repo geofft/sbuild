@@ -28,6 +28,7 @@ use POSIX;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(dump_file help_text version_text usage_error);
 use Sbuild::Conf;
+use Sbuild::ChrootPlain;
 use File::Path qw(mkpath);
 use File::Temp ();
 
@@ -248,6 +249,27 @@ if (! -d "$target/var/lib/sbuild/srcdep-lock") {
     or die "E: Failed to set root:sbuild ownership on $target/var/lib/sbuild";
 !system("chmod", "-R", "02775", "$target/var/lib/sbuild")
     or die "E: Failed to set 02755 permissions on $target/var/lib/sbuild";
+
+my $session = Sbuild::ChrootPlain->new($conf, $target);
+if (defined($session)) {
+
+    if (!$session->begin_session()) {
+	print ERROR "E: Error creating chroot session: skipping apt update\n";
+    } else {
+	print "I: Updating chroot.\n";
+	my $status = $session->run_apt_command($conf->get('APT_GET'), "update",
+					       "root", 1);
+	print "W: Failed to update APT package lists\n"
+	    if ($status != 0);
+	$status = $session->run_apt_command($conf->get('APT_GET'),
+					    "-uy upgrade",
+					    "root", 1);
+	print "W: Failed to upgrade chroot\n"
+	    if ($status != 0);
+	$session->end_session();
+	$session = undef;
+    }
+}
 
 print "I: Successfully set up $suite chroot.\n";
 print "I: Run sbuild-adduser to add new sbuild users.\n";
