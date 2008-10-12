@@ -456,7 +456,7 @@ sub build (\$$$) {
 	    $clog .= $_;
 	}
 	close( PIPE );
-	undef $self->{'Sub PID'};
+	$self->set('Sub PID', undef);
 	if ($?) {
 	    $self->log("FAILED [dpkg-parsechangelog died]\n");
 	    return 0;
@@ -611,7 +611,7 @@ EOF
 	$self->log($_);
     }
     close( PIPE );
-    undef $self->{'Sub PID'};
+    $self->set('Sub PID', undef);
     alarm( 0 );
     $rv = $?;
 
@@ -2398,7 +2398,7 @@ sub chroot_arch (\$) {
     }
     chomp( my $chroot_arch = <PIPE> );
     close( PIPE );
-    undef $self->{'Sub PID'};
+    $self->set('Sub PID', undef);
 
     die "Can't determine architecture of chroot: $!\n"
 	if ($? || !defined($chroot_arch));
