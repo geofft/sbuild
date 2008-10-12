@@ -26,6 +26,7 @@ use warnings;
 
 use Cwd qw(cwd);
 use Sbuild qw(isin);
+use Sbuild::Log;
 
 BEGIN {
     use Exporter ();
@@ -416,6 +417,10 @@ sub set (\%$$) {
     my $self = shift;
     my $key = shift;
     my $value = shift;
+
+    # Set global debug level.
+    $Sbuild::debug_level = $value
+	if ($key eq 'DEBUG');
 
     if ($self->is_allowed($key)) {
 	return $self->{$key} = $value;

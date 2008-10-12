@@ -35,13 +35,14 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(version_less version_lesseq version_eq
+    @EXPORT = qw($debug_level version_less version_lesseq version_eq
 		 version_compare binNMU_version parse_date isin copy
 		 dump_file check_packages help_text version_text
-		 usage_error);
+		 usage_error debug);
 }
 
 my $opt_correct_version_cmp;
+our $debug_level = 0;
 
 sub version_less ($$);
 sub version_lesseq ($$);
@@ -60,6 +61,7 @@ sub check_packages ($$);
 sub help_text ($$);
 sub version_text ($);
 sub usage_error ($$);
+sub debug (@);
 
 sub version_less ($$) {
 	my $v1 = shift;
@@ -402,5 +404,13 @@ sub usage_error ($$) {
     exit 1;
 }
 
+# Note: split to stderr
+sub debug (@) {
+
+    # TODO: Add debug level checking.
+    if ($debug_level) {
+	print STDERR "D: ", @_;
+    }
+}
 
 1;

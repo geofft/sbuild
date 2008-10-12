@@ -21,8 +21,6 @@
 
 package Sbuild::Log;
 
-use Sbuild::Conf;
-
 use strict;
 use warnings;
 use File::Temp ();
