@@ -176,6 +176,8 @@ sub set_dsc (\$$) {
     my $self = shift;
     my $dsc = shift;
 
+    $self->debug("Setting DSC: $dsc\n");
+
     $self->set('DSC', $dsc);
     $self->set('Source Dir', dirname($dsc));
 
