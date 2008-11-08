@@ -29,7 +29,7 @@ use FileHandle;
 use File::Basename qw(basename);
 
 sub open_log ($$);
-sub close_log ();
+sub close_log ($);
 
 BEGIN {
     use Exporter ();
@@ -41,22 +41,15 @@ BEGIN {
 }
 
 my $main_logfile;
-my $pkg_logfile;
-my $pkg_distribution;
-my $pkg_name;
-my $log_dir_available;
-# TODO: Remove global.
-my $conf;
 
 sub open_log ($$) {
     my $main_distribution = shift;
-    $conf = shift;
+    my $conf = shift;
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
     if ($conf->get('NOLOG')) {
 	open( main::LOG, ">&STDOUT" );
-	open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 	select( main::LOG );
 	return;
     }
@@ -101,15 +94,13 @@ sub open_log ($$) {
     }
     open( STDOUT, ">&main::LOG" ) or warn "Can't redirect stdout\n";
     open( STDERR, ">&main::LOG" ) or warn "Can't redirect stderr\n";
-    open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
 }
 
-# TODO: Don't require $conf for cleanup, or store in log object, or pass in as args?
-sub close_log () {
+sub close_log ($) {
+    my $conf = shift;
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
-    close( main::PLOG );
     close( STDERR );
     close( STDOUT );
     close( main::LOG );

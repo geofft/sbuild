@@ -240,7 +240,7 @@ sub main () {
 	$main::build_object->write_jobs_file("");
     }
 
-    close_log();
+    close_log($conf);
     unlink($main::build_object->get('Jobs File'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
@@ -345,7 +345,7 @@ sub shutdown ($) {
 	$main::build_object->close_build_log();
 	$main::build_object->set('binNMU Name', undef);
     }
-    close_log();
+    close_log($conf);
     unlink( $main::build_object->get('Jobs File') ) if $conf->get('BATCH_MODE');
     $? = 0; $! = 0;
     if ($conf->get('SBUILD_MODE') eq "user") {

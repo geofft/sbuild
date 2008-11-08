@@ -118,7 +118,7 @@ sub cleanup ($) {
 	main::local_cleanup($Sbuild::Utility::current_session);
     }
     $Sbuild::Utility::current_session->end_session();
-    Sbuild::Log::close_log();
+    Sbuild::Log::close_log($conf);
 }
 
 sub shutdown ($) {
