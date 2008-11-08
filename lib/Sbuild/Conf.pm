@@ -147,6 +147,11 @@ sub read_config (\%) {
     $self->set('VERBOSE', 0);
     $self->set('NOLOG', 0);
 
+    # Set here to allow user to override.
+    if (-t STDIN && -t STDOUT && $self->get('VERBOSE') == 0) {
+	$self->set('VERBOSE', 1);
+    }
+
     my $HOME = $self->get('HOME');
 
     # Defaults.

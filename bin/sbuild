@@ -66,11 +66,6 @@ $main::build_object = undef;
 main();
 
 sub main () {
-# Be verbose by default if on a tty
-    if (-t STDIN && -t STDOUT && $conf->get('VERBOSE') == 0) {
-	$conf->set('VERBOSE', 1);
-    }
-
     print "Selected distribution " . $conf->get('DISTRIBUTION') . "\n"
 	if $conf->get('DEBUG');
     print "Selected chroot " . $conf->get('CHROOT') . "\n"
