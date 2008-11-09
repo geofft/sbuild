@@ -3,23 +3,25 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-VERSION = $(shell dpkg-parsechangelog | grep ^Version: | sed "s/.* //" | sed "s/-[^-]*$$//")
-DATE = $(shell date -d "$$(dpkg-parsechangelog | grep ^Date: | sed -n '/^Date: /s///p')" "+%d %b %Y")
-
-%: %.in
-	sed -e 's/\$$Revision: [0-9.]* \$$/$(VERSION)/g' \
-	    -e 's/@VERSION@/$(VERSION)/g' \
-	    -e 's/@DATE@/$(DATE)/g' <$< >$@
-
-INSTALL=/usr/bin/install
-DESTDIR=$(CURDIR)/debian/sbuild
-
 debian/build/config.status: configure
 	dh_testdir
 
+	[ -r scripts/config.sub.orig ] || \
+	  cp -f scripts/config.sub scripts/config.sub.orig
+	[ -r scripts/config.guess.orig ] || \
+	  cp -f scripts/config.guess scripts/config.guess.orig
+
+	[ ! -r /usr/share/misc/config.sub ] || \
+	  cp -f /usr/share/misc/config.sub scripts/config.sub
+	[ ! -r /usr/share/misc/config.guess ] || \
+	  cp -f /usr/share/misc/config.guess scripts/config.guess
+
 	mkdir debian/build; \
 	cd debian/build; \
-	CFLAGS="$(CFLAGS)" ../../configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/share --localstatedir=/var --mandir=\$${prefix}/share/man
+	CFLAGS="$(CFLAGS)" ../../configure \
+	  --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
+	  --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/share \
+	  --localstatedir=/var --mandir=\$${prefix}/share/man
 
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status
@@ -33,16 +35,15 @@ debian/build-stamp:  debian/build/config.status
 clean:
 	dh_testdir
 	dh_testroot
+
 	rm -rf debian/build
 	rm -rf debian/install
 	rm -f debian/build-stamp
 
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	cp -f /usr/share/misc/config.sub scripts/config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	cp -f /usr/share/misc/config.guess scripts/config.guess
-endif
+	[ ! -r scripts/config.guess.orig ] || \
+	  mv -f scripts/config.guess.orig scripts/config.guess || :
+	[ ! -r scripts/config.sub.orig ] || \
+	  mv -f scripts/config.sub.orig scripts/config.sub || :
 
 	dh_clean
 
@@ -54,8 +55,8 @@ install: build
 
 	cd debian/build; \
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/install
-	dh_install
 
+	dh_install
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -66,7 +67,6 @@ binary-indep: build install
 	dh_installchangelogs
 	dh_link
 	dh_compress
-# -Xbuildd.chroot -XREADME-buildd.chroot
 	dh_fixperms
 	dh_installdeb
 	dh_perl
