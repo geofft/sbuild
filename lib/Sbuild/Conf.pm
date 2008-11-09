@@ -248,7 +248,7 @@ our $lock_interval = 5;
 
     # Modify defaults if needed.
     $maintainer_name = $ENV{'DEBEMAIL'}
-	if (defined($ENV{'DEBEMAIL'}));
+	if (!defined($maintainer_name) && defined($ENV{'DEBEMAIL'}));
 
     $self->set('DISTRIBUTION', $distribution);
     $self->set('CHROOT', $chroot);
