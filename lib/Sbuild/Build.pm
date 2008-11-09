@@ -30,7 +30,6 @@ use IPC::Open3;
 use Sbuild qw(binNMU_version version_compare copy isin debug);
 use Sbuild::Base;
 use Sbuild::Chroot qw();
-use Sbuild::Log qw(open_pkg_log close_pkg_log);
 use Sbuild::Sysconfig qw($version);
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
@@ -2416,9 +2415,61 @@ sub chroot_arch (\$) {
 sub open_build_log (\$) {
     my $self = shift;
 
-    open_pkg_log($self->get_conf('USERNAME') . "-$self->{'Package_SVersion'}-$self->{'Arch'}",
-		 $self->get_conf('DISTRIBUTION'),
-		 $self->get('Pkg Start Time'));
+    my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time')));
+
+    my $filename = $self->get_conf('LOG_DIR') . '/' .
+	$self->get_conf('USERNAME') . '-' .
+	$self->get('Package_SVersion') . '-' .
+	$self->get('Arch') .
+	"-$date";
+
+    my $PLOG;
+
+    my $pid;
+    ($pid = open($PLOG, "|-"));
+    if (!defined $pid) {
+	warn "Cannot open pipe to '$filename': $!\n";
+    }
+    elsif ($pid == 0) {
+	$SIG{'INT'} = 'IGNORE';
+#	$SIG{'TERM'} = 'IGNORE';
+#	$SIG{'QUIT'} = 'IGNORE';
+	$SIG{'PIPE'} = 'IGNORE';
+
+	if (!$self->get_conf('NOLOG') &&
+	    $self->get_conf('LOG_DIR_AVAILABLE')) {
+	    open( CPLOG, ">$filename" ) or
+		die "Can't open logfile $filename: $!\n";
+	    CPLOG->autoflush(1);
+	}
+
+	while (<STDIN>) {
+	    if (!$self->get_conf('NOLOG') &&
+		$self->get_conf('LOG_DIR_AVAILABLE')) {
+		print CPLOG $_;
+	    }
+	    if ($self->get_conf('NOLOG') || $self->get_conf('VERBOSE')) {
+		print main::SAVED_STDOUT $_;
+	    }
+	}
+
+	close CPLOG;
+	exit 0;
+    }
+
+    # Create 'current' symlinks
+    if (-f $filename &&
+	$self->get_conf('SBUILD_MODE') eq 'buildd') {
+	$self->log_symlink($filename,
+			   $self->get_conf('BUILD_DIR') . '/current-' .
+			   $self->get_conf('DISTRIBUTION'));
+	$self->log_symlink($filename,
+			   $self->get_conf('BUILD_DIR') . '/current');
+    }
+
+    $PLOG->autoflush(1);
+    $self->set('Log File', $filename);
+    $self->set('Log Stream', $PLOG);
 
     $self->log_section('sbuild/' . $self->get_conf('ARCH') . " $version");
     $self->log("Automatic build of $self->{'Package_SVersion'} on " .
@@ -2446,11 +2497,28 @@ sub close_build_log (\$$$$$$$) {
     int($self->get('This Time')%60),
     $self->get('This Space');
 
-    close_pkg_log($self->get('Package_Version'),
-		  $self->get_conf('DISTRIBUTION'),
-		  $self->get('Pkg Status'),
-		  $self->get('Pkg Start Time'),
-		  $self->get('Pkg End Time'));
+    my $filename = $self->get('Log File');
+
+    $self->send_mail($self->get_conf('MAILTO'),
+		     "Log for " . $self->get('Pkg Status') .
+		     " build of " . $self->get('Package_Version') .
+		     " (dist=" . $self->get_conf('DISTRIBUTION') . ")",
+		     $filename)
+	if (defined($filename) && -f $filename &&
+	    $self->get_conf('MAILTO'));
+
+    $self->set('Log File', undef);
+    $self->get('Log Stream')->close();
+    $self->set('Log Stream', undef);
+}
+
+sub log_symlink (\$$$) {
+    my $self = shift;
+    my $log = shift;
+    my $dest = shift;
+
+    unlink $dest || return;
+    symlink $log, $dest || return;
 }
 
 sub add_time_entry (\$$$) {
@@ -2514,11 +2582,13 @@ sub add_space_entry (\$$$) {
     untie %db;
 }
 
-# Note: split to stdout
 sub log ($) {
     my $self = shift;
 
-    print main::PLOG @_;
+    my $logfile = $self->get('Log Stream');
+    if (defined($logfile)) {
+	print $logfile @_;
+    }
 }
 
 sub log_info ($) {
@@ -2570,6 +2640,41 @@ sub log_sep(\$) {
     my $self = shift;
 
     $self->log('─' x 80, "\n");
+}
+
+sub send_mail {
+    my $self = shift;
+    my $to = shift;
+    my $subject = shift;
+    my $file = shift;
+    local( *MAIL, *F );
+
+    if (!open( F, "<$file" )) {
+	warn "Cannot open $file for mailing: $!\n";
+	return 0;
+    }
+    local $SIG{'PIPE'} = 'IGNORE';
+
+    if (!open( MAIL, "|" . $self->get_conf('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $self->get_conf('MAILPROG') . ": $!\n";
+	close( F );
+	return 0;
+    }
+
+    print MAIL "From: " . $self->get_conf('MAILFROM') . "\n";
+    print MAIL "To: $to\n";
+    print MAIL "Subject: $subject\n\n";
+    while( <F> ) {
+	print MAIL "." if $_ eq ".\n";
+	print MAIL $_;
+    }
+
+    close( F );
+    if (!close( MAIL )) {
+	warn $self->get_conf('MAILPROG') . " failed (exit status $?)\n";
+	return 0;
+    }
+    return 1;
 }
 
 1;

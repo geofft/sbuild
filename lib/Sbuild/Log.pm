@@ -101,7 +101,7 @@ sub open_log ($$) {
     main::LOG->autoflush(1);
     select(main::LOG);
     if ($conf->get('VERBOSE')) {
-	open( SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
+	open( main::SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
 	open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
     }
     open( STDOUT, ">&main::LOG" ) or warn "Can't redirect stdout\n";
@@ -119,9 +119,9 @@ sub close_log () {
     close( STDOUT );
     close( main::LOG );
     if ($conf->get('VERBOSE')) {
-	open( STDOUT, ">&SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
+	open( STDOUT, ">&main::SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
 	open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
-	close (SAVED_STDOUT);
+	close (main::SAVED_STDOUT);
 	close (SAVED_STDERR);
     }
     if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
@@ -178,7 +178,7 @@ sub open_pkg_log ($$$) {
 
 		while (<STDIN>) {
 		    print CPLOG $_;
-		    print SAVED_STDOUT $_;
+		    print main::SAVED_STDOUT $_;
 		}
 		close CPLOG;
 		exit 0;
