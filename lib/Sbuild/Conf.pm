@@ -81,6 +81,7 @@ sub set_allowed_keys (\%) {
 	'BUILD_ENV_CMND'			=> "",
 	'PGP_OPTIONS'				=> "",
 	'LOG_DIR'				=> "",
+	'LOG_DIR_AVAILABLE'			=> "",
 	'MAILTO'				=> "",
 	'MAILTO_HASH'				=> "",
 	'MAILFROM'				=> "",
@@ -271,6 +272,16 @@ our $lock_interval = 5;
     $self->set('BUILD_ENV_CMND', $build_env_cmnd);
     $self->set('PGP_OPTIONS', $pgp_options);
     $self->set('LOG_DIR', $log_dir);
+
+    my $log_dir_available = 1;
+    if ($self->get('LOG_DIR') &&
+	! -d $self->get('LOG_DIR') &&
+	!mkdir $self->get('LOG_DIR')) {
+	warn "Could not create " . $self->get('LOG_DIR') . ": $!\n";
+	$log_dir_available = 0;
+    }
+
+    $self->set('LOG_DIR_AVAILABLE', $log_dir_available);
     $self->set('MAILTO', $mailto);
     $self->set('MAILTO_HASH', \%mailto);
     $self->set('MAILFROM', $mailfrom);
