@@ -26,10 +26,8 @@ use Errno qw(:POSIX);
 use Fcntl;
 use File::Basename qw(basename dirname);
 use GDBM_File;
-use IPC::Open3;
 use Sbuild qw(binNMU_version version_compare copy isin send_mail debug);
 use Sbuild::Base;
-use Sbuild::Chroot qw();
 use Sbuild::Sysconfig qw($version);
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
@@ -256,20 +254,16 @@ sub fetch_source_files (\$) {
 	my $retried = $self->get_conf('APT_UPDATE'); # Already updated if set
       retry:
 	$self->log("Checking available source versions...\n");
-	my $command = $self->get('Session')->get_apt_command($self->get_conf('APT_CACHE'),
-							  "-q showsrc $pkg",
-							  $self->get_conf('USERNAME'), 0, '/');
-	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
-	if (!$pid) {
-	    $self->log('Can\'t open pipe to ' . $self->get_conf('APT_CACHE') . ": $!\n");
-	    return 0;
-	}
+
+	my $pipe = $self->get('Session')->pipe_apt_command($self->get_conf('APT_CACHE'), "-q showsrc $pkg",
+							   $self->get_conf('USERNAME'), 0, '/');
+
 	{
 	    local($/) = "";
 	    my $package;
 	    my $ver;
 	    my $tfile;
-	    while( <PIPE> ) {
+	    while( <$pipe> ) {
 		$package = $1 if /^Package:\s+(\S+)\s*$/mi;
 		$ver = $1 if /^Version:\s+(\S+)\s*$/mi;
 		$tfile = $1 if /^Files:\s*\n((\s+.*\s*\n)+)/mi;
@@ -290,10 +284,10 @@ sub fetch_source_files (\$) {
 
 	    }
 	}
-	close(PIPE);
-	waitpid $pid, 0;
+	close($pipe);
+
 	if ($?) {
-	    $self->log($self->get_conf('APT_CACHE') . " failed\n");
+	    $self->log($self->get_conf('APT_CACHE') . " exit status $?: $!\n");
 	    return 0;
 	}
 
@@ -320,17 +314,13 @@ sub fetch_source_files (\$) {
 	    push(@fetched, "$build_dir/$_");
 	}
 
-	my $command2 = $self->get('Session')->get_apt_command($self->get_conf('APT_GET'),
-							      "--only-source -q -d source $pkg=$ver 2>&1 </dev/null",
-							      $self->get_conf('USERNAME'), 0, undef);
-	if (!open( PIPE, "$command2 |" )) {
-	    $self->log('Can\'t open pipe to ' . $self->get_conf('APT_GET') . ": $!\n");
-	    return 0;
-	}
-	while( <PIPE> ) {
+	my $pipe2 = $self->get('Session')->pipe_apt_command($self->get_conf('APT_GET'),
+							   "--only-source -q -d source $pkg=$ver 2>&1 </dev/null",
+							   $self->get_conf('USERNAME'), 0, undef);
+	while(<$pipe2>) {
 	    $self->log($_);
 	}
-	close( PIPE );
+	close($pipe2);
 	if ($?) {
 	    $self->log($self->get_conf('APT_GET') . " for sources failed\n");
 	    return 0;
@@ -430,7 +420,7 @@ sub build (\$$$) {
 	    system ("rm -fr '$tmpunpackdir'");
 	}
 	$self->set('Sub Task', "dpkg-source");
-	$self->get('Session')->run_command($self->get_conf('DPKG_SOURCE') . " -sn -x $dscfile $dscdir 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
+	$self->get('Session')->run_command($self->get_conf('DPKG_SOURCE') . " -sn -x $dscfile $dscdir", $self->get_conf('USERNAME'), 1, 0, undef);
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
 
@@ -450,22 +440,15 @@ sub build (\$$$) {
 	$self->log_subsubsection("Check unpacked source");
 	$self->set('Pkg Fail Stage', "check-unpacked-version");
 	# check if the unpacked tree is really the version we need
-	$self->set('Sub PID', open( PIPE, "-|" ));
-	if (!defined $self->get('Sub PID')) {
-	    $self->log("Can't spawn dpkg-parsechangelog: $!\n");
-	    return 0;
-	}
-	if ($self->get('Sub PID') == 0) {
-	    $dscdir = $self->get('Session')->strip_chroot_path($dscdir);
-	    $self->get('Session')->exec_command("cd '$dscdir' && dpkg-parsechangelog 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
-	}
+	$dscdir = $self->get('Session')->strip_chroot_path($dscdir);
+	my $pipe = $self->get('Session')->pipe_command("cd '$dscdir' && dpkg-parsechangelog 2>&1", $self->get_conf('USERNAME'), 1, 0, undef);
 	$self->set('Sub Task', "dpkg-parsechangelog");
 
 	my $clog = "";
-	while( <PIPE> ) {
+	while(<$pipe>) {
 	    $clog .= $_;
 	}
-	close( PIPE );
+	close($pipe);
 	$self->set('Sub PID', undef);
 	if ($?) {
 	    $self->log("FAILED [dpkg-parsechangelog died]\n");
@@ -563,32 +546,26 @@ sub build (\$$$) {
     $self->log_subsubsection("dpkg-buildpackage");
     $self->set('Build Start Time', time);
     $self->set('Pkg Fail Stage', "build");
-    $self->set('Sub PID', open( PIPE, "-|" ));
-    if (!defined $self->get('Sub PID')) {
-	$self->log("Can't spawn dpkg-buildpackage: $!\n");
-	return 0;
-    }
-    if ($self->get('Sub PID') == 0) {
-	open( STDIN, "</dev/null" );
-	my $binopt = $self->get_conf('BUILD_SOURCE') ?
-	    $self->get_conf('FORCE_ORIG_SOURCE') ? "-sa" : "" :
-	    $self->get_conf('BUILD_ARCH_ALL') ?	"-b" : "-B";
 
-	my $bdir = $self->get('Session')->strip_chroot_path($dscdir);
-	if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
-	    ! -r "$self->{'Chroot Dir'}/etc/ld.so.conf") {
-	    $self->get('Session')->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
-	    $self->log("ld.so.conf was not readable! Fixed.\n");
-	}
-	my $buildcmd = "cd $bdir && PATH=" . $self->get_conf('PATH') . " " .
-	    (defined($self->get_conf('LD_LIBRARY_PATH')) ?
-	     "LD_LIBRARY_PATH=".$self->get_conf('LD_LIBRARY_PATH')." " : "").
-	     "exec " . $self->get_conf('BUILD_ENV_CMND') . " dpkg-buildpackage " .
-	     $self->get_conf('PGP_OPTIONS') .
-	     " $binopt " . $self->get_conf('SIGNING_OPTIONS') .
-	     ' -r' . $self->get_conf('FAKEROOT') . ' 2>&1';
-	$self->get('Session')->exec_command($buildcmd, $self->get_conf('USERNAME'), 1, 0, undef);
+    my $binopt = $self->get_conf('BUILD_SOURCE') ?
+	$self->get_conf('FORCE_ORIG_SOURCE') ? "-sa" : "" :
+	$self->get_conf('BUILD_ARCH_ALL') ?	"-b" : "-B";
+
+    my $bdir = $self->get('Session')->strip_chroot_path($dscdir);
+    if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
+	! -r "$self->{'Chroot Dir'}/etc/ld.so.conf") {
+	$self->get('Session')->run_command("chmod a+r /etc/ld.so.conf", "root", 1, 0, '/');
+	$self->log("ld.so.conf was not readable! Fixed.\n");
     }
+    my $buildcmd = "cd $bdir && PATH=" . $self->get_conf('PATH') . " " .
+	(defined($self->get_conf('LD_LIBRARY_PATH')) ?
+	 "LD_LIBRARY_PATH=".$self->get_conf('LD_LIBRARY_PATH')." " : "").
+	 "exec " . $self->get_conf('BUILD_ENV_CMND') . " dpkg-buildpackage " .
+	 $self->get_conf('PGP_OPTIONS') .
+	 " $binopt " . $self->get_conf('SIGNING_OPTIONS') .
+	 ' -r' . $self->get_conf('FAKEROOT') . ' 2>&1';
+
+    my $pipe = $self->get('Session')->pipe_command($buildcmd, $self->get_conf('USERNAME'), 1, 0, undef);
     $self->set('Sub Task', "dpkg-buildpackage");
 
     # We must send the signal as root, because some subprocesses of
@@ -610,15 +587,15 @@ sub build (\$$$) {
 	$timeout = 5*60; # only wait 5 minutes until next signal
     };
 
-    alarm( $timeout );
-    while( <PIPE> ) {
-	alarm( $timeout );
+    alarm($timeout);
+    while(<$pipe>) {
+	alarm($timeout);
 	$last_time = time;
 	$self->log($_);
     }
-    close( PIPE );
+    close($pipe);
     $self->set('Sub PID', undef);
-    alarm( 0 );
+    alarm(0);
     $rv = $?;
 
     my $i;
@@ -883,17 +860,25 @@ sub install_deps (\$) {
 	return 0;
     }
 
-    local (*F);
+    my $pid = open(my $pipe, "|-");
+    if (!defined $pid) {
+	warn "Cannot open pipe: $!\n";
+	return 0;
+    } elsif ($pid == 0) { # child
+	my $log = $self->get('Log Stream');
+	open(STDOUT, '>&', $log)
+	    or warn "Can't redirect stdout\n";
+	open(STDERR, '>&', $log)
+	    or warn "Can't redirect stderr\n";
 
-    my $command = $self->get('Session')->get_command($self->get_conf('DPKG') . ' --set-selections', "root", 1, 0, '/');
+	$self->get('Session')->exec_command($self->get_conf('DPKG') . ' --set-selections', "root", 1, 0, '/');
+    }
 
-    my $success = open( F, "| $command");
-
-    if ($success) {
+    if ($pid) {
 	foreach my $tpkg (@instd) {
-	    print F $tpkg . " purge\n";
+	    print $pipe $tpkg . " purge\n";
 	}
-	close( F );
+	close($pipe);
 	if ($?) {
 	    $self->log($self->get_conf('DPKG') . ' --set-selections failed\n');
 	}
@@ -963,24 +948,22 @@ sub uninstall_debs (\$$@) {
     local (%ENV) = %ENV; # make local environment hardwire frontend
 			 # for debconf to non-interactive
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+    my $status;
 
     return 1 if !@_;
     debug("Uninstalling packages: @_\n");
 
-    my $command = $self->get('Session')->get_command($self->get_conf('DPKG') . " --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/');
   repeat:
     my $output;
     my $remove_start_time = time;
 
-    if (!open( PIPE, "$command |")) {
-	$self->log("Can't open pipe to dpkg: $!\n");
-	return 0;
-    }
-    while ( <PIPE> ) {
+    my $pipe = $self->get('Session')->pipe_command($self->get_conf('DPKG') . " --$mode @_ 2>&1 </dev/null", "root", 1, 0, '/') || return 0;
+    while (<$pipe>) {
 	$output .= $_;
 	$self->log($_);
     }
-    close( PIPE );
+    close($pipe);
+    $status = $?;
 
     if ($output =~ /status database area is locked/mi) {
 	$self->log("Another dpkg is running -- retrying later\n");
@@ -992,7 +975,7 @@ sub uninstall_debs (\$$@) {
     $self->write_stats('remove-time',
 		       $remove_end_time - $remove_start_time);
     $self->log("dpkg run to remove packages (@_) failed!\n") if $?;
-    return $? == 0;
+    return $status == 0;
 }
 
 sub run_apt (\$$\@\@@) {
@@ -1018,40 +1001,30 @@ sub run_apt (\$$\@\@@) {
     # dpkg since 1.4.1.18 issues an error on the conffile question if
     # it reads EOF -- hardwire the new --force-confold option to avoid
     # the questions.
-    my $command =
-	$self->get('Session')->get_apt_command($self->get_conf('APT_GET'), '--purge '.
-					    '-o DPkg::Options::=--force-confold '.
-					    "-q $mode install @to_install ".
-					    "2>&1 </dev/null", "root", 0, '/');
-
-    if (!open( PIPE, "$command |" )) {
-	$self->log('Can\'t open pipe to ' . $self->get_conf('APT_GET') .
-		   ": $!\n");
-	return 0;
-    }
-    while( <PIPE> ) {
+    my $pipe =
+	$self->get('Session')->pipe_apt_command($self->get_conf('APT_GET'), '--purge '.
+						'-o DPkg::Options::=--force-confold '.
+						"-q $mode install @to_install ".
+						"2>&1 </dev/null", "root", 0, '/') || return 0;
+    while(<$pipe>) {
 	$msgs .= $_;
 	$self->log($_) if $mode ne "-s" || debug($_);
     }
-    close( PIPE );
+    close($pipe);
     $status = $?;
 
     if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-	my $command =
-	    $self->get('Session')->get_apt_command($self->get_conf('APT_GET'),
-						"-q update 2>&1",
-						"root", 1, '/');
-	if (!open( PIPE, "$command |" )) {
-	    $self->log("Can't open pipe to apt-get: $!\n");
-	    return 0;
-	}
+	my $pipe =
+	    $self->get('Session')->pipe_apt_command($self->get_conf('APT_GET'),
+						    "-q update 2>&1",
+						    "root", 1, '/') || return 0;
 
 	$msgs = "";
-	while( <PIPE> ) {
+	while(<$pipe>) {
 	    $msgs .= $_;
 	    $self->log($_);
 	}
-	close( PIPE );
+	close($pipe);
 	$self->log("apt-get update failed\n") if $?;
 	$msgs = "";
 	goto repeat;
@@ -1370,23 +1343,18 @@ sub get_apt_policy (\$@) {
 
     $ENV{LC_ALL}='C';
 
-    my $command =
-	$self->get('Session')->get_apt_command($self->get_conf('APT_CACHE'),
-					    "policy @interest",
-					    $self->get_conf('USERNAME'), 0, '/');
+    my $pipe =
+	$self->get('Session')->pipe_apt_command($self->get_conf('APT_CACHE'),
+						"policy @interest",
+						$self->get_conf('USERNAME'), 0, '/') || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
 
-    my $pid = open3(\*main::DEVNULL, \*APTCACHE, '>&main::PLOG', "$command" );
-    if (!$pid) {
-	die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
-    }
-    while(<APTCACHE>) {
+    while(<$pipe>) {
 	$package=$1 if /^([0-9a-z+.-]+):$/;
 	$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
 	$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
 	push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/;
     }
-    close(APTCACHE);
-    waitpid $pid, 0;
+    close($pipe);
     die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return %packages;
@@ -1735,18 +1703,14 @@ sub expand_virtuals (\$\@) {
 sub get_dependencies (\$@) {
     my $self = shift;
 
-    local(*PIPE);
     my %deps;
 
-    my $command = $self->get('Session')->get_apt_command($self->get_conf('APT_CACHE'),
-						      "show @_",
-						      $self->get_conf('USERNAME'), 0, '/');
-    my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
-    if (!$pid) {
-	die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
-    }
+    my $pipe = $self->get('Session')->pipe_apt_command($self->get_conf('APT_CACHE'),
+						       "show @_",
+						       $self->get_conf('USERNAME'), 0, '/') || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
+
     local($/) = "";
-    while( <PIPE> ) {
+    while( <$pipe> ) {
 	my ($name, $dep, $predep);
 	/^Package:\s*(.*)\s*$/mi and $name = $1;
 	next if !$name || $deps{$name};
@@ -1756,8 +1720,7 @@ sub get_dependencies (\$@) {
 	$dep .= $predep if defined($predep);
 	$deps{$name} = $dep;
     }
-    close( PIPE );
-    waitpid $pid, 0;
+    close($pipe);
     die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return \%deps;
@@ -1766,19 +1729,14 @@ sub get_dependencies (\$@) {
 sub get_virtuals (\$@) {
     my $self = shift;
 
-    local(*PIPE);
+    my $pipe = $self->get('Session')->pipe_apt_command($self->get_conf('APT_CACHE'),
+						       "showpkg @_",
+						       $self->get_conf('USERNAME'), 0, '/') || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
 
-    my $command = $self->get('Session')->get_apt_command($self->get_conf('APT_CACHE'),
-						      "showpkg @_",
-						      $self->get_conf('USERNAME'), 0, '/');
-    my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
-    if (!$pid) {
-	die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
-    }
     my $name;
     my $in_rprov = 0;
     my %provided_by;
-    while( <PIPE> ) {
+    while(<$pipe>) {
 	if (/^Package:\s*(\S+)\s*$/) {
 	    $name = $1;
 	}
@@ -1792,8 +1750,7 @@ sub get_virtuals (\$@) {
 	    $provided_by{$name}->{$1} = 1;
 	}
     }
-    close( PIPE );
-    waitpid $pid, 0;
+    close($pipe);
     die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return \%provided_by;
@@ -1901,24 +1858,24 @@ sub check_space (\$@) {
     local( *PIPE );
 
     foreach (@files) {
-	my $command;
+	my $pipe;
 
 	if (/^\Q$self->{'Chroot Dir'}\E/) {
 	    $_ = $self->get('Session')->strip_chroot_path($_);
-	    $command = $self->get('Session')->get_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0);
+	    $pipe = $self->get('Session')->pipe_command("/usr/bin/du -k -s $_ 2>/dev/null", "root", 1, 0, undef);
 	} else {
-	    $command = $self->get('Session')->get_command("/usr/bin/du -k -s $_ 2>/dev/null", $self->get_conf('USERNAME'), 0, 0);
+	    $pipe = $self->get('Session')->pipe_command("/usr/bin/du -k -s $_ 2>/dev/null", $self->get_conf('USERNAME'), 0, 0, undef);
 	}
 
-	if (!open( PIPE, "$command |" )) {
+	if (!$pipe) {
 	    $self->log("Cannot determine space needed (du failed): $!\n");
 	    return;
 	}
-	while( <PIPE> ) {
+	while(<$pipe>) {
 	    next if !/^(\d+)/;
 	    $sum += $1;
 	}
-	close( PIPE );
+	close($pipe);
     }
 
     $self->set('This Time', $self->get('Pkg End Time') - $self->get('Pkg Start Time'));
@@ -2135,11 +2092,7 @@ sub check_watches (\$) {
     }
     return if !%used;
 
-    print main::PLOG <<EOF;
-
-NOTE: The package could have used binaries from the following packages
-(access time changed) without a source dependency:
-EOF
+    $self->log_warning("NOTE: Binaries from the following packages (access time changed) used\nwithout a source dependency:");
 
     foreach (keys %used) {
 	$self->log("  $_: @{$used{$_}}\n");
@@ -2396,16 +2349,10 @@ sub dsc_files (\$$) {
 sub chroot_arch (\$) {
     my $self = shift;
 
-    $self->set('Sub PID', open( PIPE, "-|" ));
-    if (!defined $self->get('Sub PID')) {
-	$self->log("Can't spawn dpkg: $!\n");
-	return 0;
-    }
-    if ($self->get('Sub PID') == 0) {
-	$self->get('Session')->exec_command($self->get_conf('DPKG') . ' --print-installation-architecture 2>/dev/null', $self->get_conf('USERNAME'), 1, 0, '/');
-    }
-    chomp( my $chroot_arch = <PIPE> );
-    close( PIPE );
+    my $pipe = $self->get('Session')->pipe_command($self->get_conf('DPKG') . ' --print-installation-architecture 2>/dev/null', $self->get_conf('USERNAME'), 1, 0, '/') || return undef;
+
+    chomp(my $chroot_arch = <$pipe>);
+    close($pipe);
     $self->set('Sub PID', undef);
 
     die "Can't determine architecture of chroot: $!\n"
@@ -2431,8 +2378,7 @@ sub open_build_log (\$) {
     ($pid = open($PLOG, "|-"));
     if (!defined $pid) {
 	warn "Cannot open pipe to '$filename': $!\n";
-    }
-    elsif ($pid == 0) {
+    } elsif ($pid == 0) {
 	$SIG{'INT'} = 'IGNORE';
 #	$SIG{'TERM'} = 'IGNORE';
 #	$SIG{'QUIT'} = 'IGNORE';
@@ -2492,12 +2438,17 @@ sub close_build_log (\$$$$$$$) {
 	$self->add_time_entry($self->get('Package_Version'), $self->get('This Time'));
 	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
     }
+
     $self->log_sep();
-    printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disc space\n",
-    int($self->get('This Time')/3600),
-    int(($self->get('This Time')%3600)/60),
-    int($self->get('This Time')%60),
-    $self->get('This Space');
+    $self->log("Finished at ${date}\n");
+
+    my $hours = int($self->get('This Time')/3600);
+    my $minutes = int(($self->get('This Time')%3600)/60),
+    my $seconds = int($self->get('This Time')%60),
+    my $space = $self->get('This Space');
+
+    $self->log(sprintf("Build needed %02d:%02d:%02d, %dk disc space\n",
+	       $hours, $minutes, $seconds, $space));
 
     my $filename = $self->get('Log File');
 

@@ -384,11 +384,9 @@ sub check_group_membership ($) {
 sub dump_main_state () {
     print STDERR Data::Dumper->Dump([$main::build_object,
 				     $main::current_job,
-				     $main::DEVNULL,
 				     \%main::job_state],
 				    [qw($main::build_object
 					$main::current_job
-					$main::DEVNULL
 					%main::job_state)] );
 }
 
@@ -400,8 +398,3 @@ $ENV{'SHELL'} = "/bin/sh";
 $| = 1;
 # in case the terminal disappears, the build should continue
 $SIG{'HUP'} = 'IGNORE';
-
-# A file representing /dev/null
-if (!open(main::DEVNULL, '+<', '/dev/null')) {
-    die "Cannot open /dev/null: $!\n";;
-}
