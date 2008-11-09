@@ -229,6 +229,8 @@ sub fetch_source_files (\$) {
 
     $self->set('Have DSC Build Deps', []);
 
+    $self->log_subsection("Fetch source files");
+
     if (!defined($self->get('Package')) ||
 	!defined($self->get('Version')) ||
 	!defined($self->get('Source Dir'))) {
@@ -237,16 +239,18 @@ sub fetch_source_files (\$) {
     }
 
     if (-f "$dir/$dsc" && !$self->get('Download')) {
+	$self->log_subsubsection("Local sources");
 	$self->log("$dsc exists in $dir; copying to chroot\n");
 	my @cwd_files = $self->dsc_files("$dir/$dsc");
 	foreach (@cwd_files) {
 	    if (system ("cp '$_' '$build_dir'")) {
-		$self->log("ERROR: Could not copy $_ to $build_dir \n");
+		$self->log_error("Could not copy $_ to $build_dir\n");
 		return 0;
 	    }
 	    push(@fetched, "$build_dir/" . basename($_));
 	}
     } else {
+	$self->log_subsubsection("Check APT");
 	my %entries = ();
 	my $retried = $self->get_conf('APT_UPDATE'); # Already updated if set
       retry:
@@ -294,6 +298,7 @@ sub fetch_source_files (\$) {
 
 	if (!defined($entries{"$pkg $ver"})) {
 	    if (!$retried) {
+		$self->log_subsubsection("Update APT");
 		# try to update apt's cache if nothing found
 		$self->get('Session')->run_apt_command($self->get_conf('APT_GET'),
 						    "update >/dev/null", "root", 0, '/');
@@ -308,7 +313,8 @@ sub fetch_source_files (\$) {
 	    return 0;
 	}
 
-	$self->log("Fetching source files...\n");
+	$self->log_subsubsection("Download source files with APT");
+
 	foreach (@{$entries{"$pkg $ver"}}) {
 	    push(@fetched, "$build_dir/$_");
 	}
@@ -359,6 +365,7 @@ sub fetch_source_files (\$) {
     @other_files = map { (split( /\s+/, $_ ))[3] } split( "\n", $files );
     $files =~ /(\Q$pkg\E.*orig.tar.gz)/mi and $orig = $1;
 
+    $self->log_subsubsection("Check arch");
     if (!$dscarchs) {
 	$self->log("$dsc has no Architecture: field -- skipping arch check!\n");
     }
@@ -396,7 +403,7 @@ sub build (\$$$) {
     local( *PIPE, *F, *F2 );
 
     $pkgv = $self->fixup_pkgv($pkgv);
-    $self->log("-"x78, "\n");
+    $self->log_subsection("Build");
     $self->set('This Space', 0);
     $pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
     # Note, this version contains ".dsc".
@@ -407,6 +414,7 @@ sub build (\$$$) {
     $tmpunpackdir =~ s/_/-/;
     $tmpunpackdir = "$build_dir/$tmpunpackdir";
 
+    $self->log_subsubsection("Unpack source");
     if (-d "$build_dir/$dscdir" && -l "$build_dir/$dscdir") {
 	# if the package dir already exists but is a symlink, complain
 	$self->log("Cannot unpack source: a symlink to a directory with the\n".
@@ -438,6 +446,7 @@ sub build (\$$$) {
     else {
 	$dscdir = "$build_dir/$dscdir";
 
+	$self->log_subsubsection("Check unpacked source");
 	$self->set('Pkg Fail Stage', "check-unpacked-version");
 	# check if the unpacked tree is really the version we need
 	$self->set('Sub PID', open( PIPE, "-|" ));
@@ -475,6 +484,7 @@ sub build (\$$$) {
 	}
     }
 
+    $self->log_subsubsection("Check disc space");
     $self->set('Pkg Fail Stage', "check-space");
     my $current_usage = `/usr/bin/du -k -s "$dscdir"`;
     $current_usage =~ /^(\d+)/;
@@ -482,7 +492,7 @@ sub build (\$$$) {
     if ($current_usage) {
 	my $free = $self->df($dscdir);
 	if ($free < 2*$current_usage) {
-	    $self->log("Disk space is propably not enough for building.\n".
+	    $self->log("Disc space is propably not enough for building.\n".
 		       "(Source needs $current_usage KB, free are $free KB.)\n");
 	    # TODO: Only purge in a single place.
 	    $self->log("Purging $build_dir\n");
@@ -491,6 +501,7 @@ sub build (\$$$) {
 	}
     }
 
+    $self->log_subsubsection("Hack binNMU version");
     $self->set('Pkg Fail Stage', "hack-binNMU");
     if ($self->get_conf('BIN_NMU') && ! -f "$dscdir/debian/.sbuild-binNMU-done") {
 	if (open( F, "<$dscdir/debian/changelog" )) {
@@ -530,31 +541,25 @@ sub build (\$$$) {
 	open( FILES, "<$dscdir/debian/files" );
 	chomp( @lines = <FILES> );
 	close( FILES );
-	@lines = map { my $ind = 68-length($_);
+	@lines = map { my $ind = 76-length($_);
 		       $ind = 0 if $ind < 0;
-		       "│ $_".(" " x $ind)." │\n"; } @lines;
+		       "│ $_".(" " x $ind). " │\n"; } @lines;
 
-	print main::PLOG <<"EOF";
+	$self->log_warning("After unpacking, there exists a file debian/files with the contents:\n");
 
-┌──────────────────────────────────────────────────────────────────────┐
-│ sbuild Warning:                                                      │
-│ ---------------                                                      │
-│ After unpacking, there exists a file debian/files with the contents: │
-│                                                                      │
-EOF
+	$self->log('┌', '─'x78, '┐', "\n");
+	foreach (@lines) {
+	    $self->log($_);
+	}
+	$self->log('└', '─'x78, '┘', "\n");
 
-	print main::PLOG @lines;
-	print main::PLOG <<"EOF";
-│                                                                      │
-│ This should be reported as a bug.                                    │
-│ The file has been removed to avoid dpkg-genchanges errors.           │
-└──────────────────────────────────────────────────────────────────────┘
-
-EOF
+	$self->log_info("This should be reported as a bug.\n");
+	$self->log_info("The file has been removed to avoid dpkg-genchanges errors.\n");
 
 	unlink "$dscdir/debian/files";
     }
 
+    $self->log_subsubsection("dpkg-buildpackage");
     $self->set('Build Start Time', time);
     $self->set('Pkg Fail Stage', "build");
     $self->set('Sub PID', open( PIPE, "-|" ));
@@ -626,7 +631,7 @@ EOF
     $self->write_stats('build-time',
 		       $self->get('Build End Time')-$self->get('Build Start Time'));
     my $date = strftime("%Y%m%d-%H%M",localtime($self->get('Build End Time')));
-    $self->log("*"x78, "\n");
+    $self->log_sep();
     $self->log("Build finished at $date\n");
 
     my @space_files = ("$dscdir");
@@ -639,11 +644,11 @@ EOF
 
 	    foreach (@files) {
 		if (! -f "$build_dir/$_") {
-		    $self->log("ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n");
+		    $self->log_error("Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n");
 		    next;
 		}
 		if (/_all.u?deb$/ and not $self->get_conf('BUILD_ARCH_ALL')) {
-		    $self->log("ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n");
+		    $self->log_error("Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n");
 		    unlink("$build_dir/$_");
 		    next;
 		}
@@ -692,7 +697,7 @@ EOF
 		$self->log("Distribution field may be wrong!!!\n");
 		if ($build_dir) {
 		    system "mv", "-f", "$build_dir/$changes", "."
-			and $self->log("ERROR: Could not move ".basename($_)." to .\n");
+			and $self->log_error("Could not move ".basename($_)." to .\n");
 		}
 	    }
 	    close( F );
@@ -700,6 +705,8 @@ EOF
 	else {
 	    $self->log("Can't find $changes -- can't dump info\n");
 	}
+
+	$self->log_subsection("Package contents");
 
 	my @debcfiles = @cfiles;
 	foreach (@debcfiles) {
@@ -734,10 +741,9 @@ EOF
 	foreach (@cfiles) {
 	    push( @space_files, $_ );
 	    system "mv", "-f", "$build_dir/$_", "."
-		and $self->log("ERROR: Could not move $_ to .\n");
+		and $self->log_error("Could not move $_ to .\n");
 	}
-	$self->log("\n");
-	$self->log("*"x78, "\n");
+	$self->log_subsection("Finished");
 	$self->log("Built successfully\n");
     }
 
@@ -751,7 +757,7 @@ EOF
 	$self->get('Session')->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
     }
 
-    $self->log("-"x78, "\n");
+    $self->log_sep();
     return $rv == 0 ? 1 : 0;
 }
 
@@ -793,6 +799,8 @@ sub analyze_fail_stage (\$) {
 
 sub install_deps (\$) {
     my $self = shift;
+
+    $self->log_subsection("Install build dependencies");
 
     my $pkg = $self->get('Package');
     my( @positive, @negative, @instd, @rmvd );
@@ -1089,7 +1097,7 @@ sub run_apt (\$$\@\@@) {
 	(($msgs =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
 	 ($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
 	 ($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
-	$self->log("Build environment unusable, giving back\n");
+	$self->log_error("Build environment unusable, giving back\n");
 	$self->set('Pkg Fail Stage', "install-deps-env");
     }
 
@@ -1403,7 +1411,7 @@ sub get_dpkg_status (\$@) {
 	/^Version:\s*(.*)\s*$/mi and $version = $1;
 	/^Provides:\s*(.*)\s*$/mi and $provides = $1;
 	if (!$pkg) {
-	    $self->log("sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: no Package: field\n");
+	    $self->log_error("parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: no Package: field\n");
 	    next;
 	}
 	if (defined($version)) {
@@ -1412,7 +1420,7 @@ sub get_dpkg_status (\$@) {
 	    debug("$pkg status: $status\n") if $self->get_conf('DEBUG') >= 2;
 	}
 	if (!$status) {
-	    $self->log("sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: no Status: field for package $pkg\n");
+	    $self->log_error("parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: no Status: field for package $pkg\n");
 	    next;
 	}
 	if ($status !~ /\sinstalled$/) {
@@ -1422,7 +1430,7 @@ sub get_dpkg_status (\$@) {
 	    next;
 	}
 	if (!defined $version || $version eq "") {
-	    $self->log("sbuild: parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: no Version: field for package $pkg\n");
+	    $self->log_error("parse error in $self->{'Chroot Dir'}/var/lib/dpkg/status: no Version: field for package $pkg\n");
 	    next;
 	}
 	$result{$pkg} = { Installed => 1, Version => $version }
@@ -1807,7 +1815,7 @@ sub parse_one_srcdep (\$$$) {
 	my $neg_seen = 0;
 	foreach (@alts) {
 	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
-		warn "Warning: syntax error in dependency '$_' of $pkg\n";
+		$self->log_warning("syntax error in dependency '$_' of $pkg\n");
 		next;
 	    }
 	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
@@ -1824,8 +1832,7 @@ sub parse_one_srcdep (\$$$) {
 			$include = 1;
 		    }
 		}
-		warn "Warning: inconsistent arch restriction on ",
-		"$pkg: $dep depedency\n"
+		$self->log_warning("inconsistent arch restriction on $pkg: $dep depedency\n")
 		    if $ignore_it && $use_it;
 		next if $ignore_it || ($include && !$use_it);
 	    }
@@ -1857,8 +1864,7 @@ sub parse_one_srcdep (\$$$) {
 	    push( @l, $h );
 	}
 	if (@alts > 1 && $neg_seen) {
-	    warn "Warning: $pkg: alternatives with negative dependencies ",
-	    "forbidden -- skipped\n";
+	    $self->log_warning("$pkg: alternatives with negative dependencies forbidden -- skipped\n");
 	}
 	elsif (@l) {
 	    my $l = shift @l;
@@ -1876,8 +1882,8 @@ sub parse_manual_srcdeps (\$@) {
 
     foreach (@{$self->get_conf('MANUAL_SRCDEPS')}) {
 	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-	    warn "Syntax error in manual source dependency: ",
-	    substr( $_, 1 ), "\n";
+	    $self->log_warning("Syntax error in manual source dependency: ",
+			       substr( $_, 1 ), "\n");
 	    next;
 	}
 	my ($mode, $pkg, $deps) = ($1, $2, $3);
@@ -1978,7 +1984,7 @@ sub write_srcdep_lock_file (\$\@) {
     ++$self->{'Srcdep Lock Count'};
     my $f = "$self->{'Session'}->{'Srcdep Lock Dir'}/$$-$self->{'Srcdep Lock Count'}";
     if (!open( F, ">$f" )) {
-	print "Warning: cannot create srcdep lock file $f: $!\n";
+	$self->log_warning("cannot create srcdep lock file $f: $!\n");
 	return;
     }
     debug("Writing srcdep lock file $f:\n");
@@ -2066,7 +2072,7 @@ sub remove_srcdep_lock_file (\$) {
 
     debug("Removing srcdep lock file $f\n");
     if (!unlink( $f )) {
-	print "Warning: cannot remove srcdep lock file $f: $!\n"
+	$self->log_warning("cannot remove srcdep lock file $f: $!\n")
 	    if $! != ENOENT;
     }
 }
@@ -2281,23 +2287,24 @@ sub lock_file (\$$$) {
 	    my ($pid, $user);
 	    close( F );
 	    if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
-		warn "Bad lock file contents ($lockfile) -- still trying\n";
+		$self->log_warning("Bad lock file contents ($lockfile) -- still trying\n");
 	    }
 	    else {
 		($pid, $user) = ($1, $2);
 		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
 		    # process doesn't exist anymore, remove stale lock
-		    warn "Removing stale lock file $lockfile ".
-			" (pid $pid, user $user)\n";
+		    $self->log_warning("Removing stale lock file $lockfile ".
+				       "(pid $pid, user $user)\n");
 		    unlink( $lockfile );
 		    goto repeat;
 		}
 	    }
 	    ++$try;
 	    if (!$for_srcdep && $try > $self->get_conf('MAX_LOCK_TRYS')) {
-		warn "Lockfile $lockfile still present after " .
-		    $self->get_conf('MAX_LOCK_TRYS') * $self->get_conf('LOCK_INTERVAL') .
-		    " seconds -- giving up\n";
+		$self->log_warning("Lockfile $lockfile still present after " .
+				   $self->get_conf('MAX_LOCK_TRYS') *
+				   $self->get_conf('LOCK_INTERVAL') .
+				   " seconds -- giving up\n");
 		return;
 	    }
 	    $self->log("Another sbuild process ($pid by $user) is currently installing or removing packages -- waiting...\n")
@@ -2305,7 +2312,7 @@ sub lock_file (\$$$) {
 	    sleep $self->get_conf('LOCK_INTERVAL');
 	    goto repeat;
 	}
-	warn "Can't create lock file $lockfile: $!\n";
+	$self->log_warning("Can't create lock file $lockfile: $!\n");
     }
     F->print("$$ $ENV{'LOGNAME'}\n");
     F->close();
@@ -2328,7 +2335,7 @@ sub write_stats (\$$$) {
 
     if (! -d $stats_dir &&
 	!mkdir $stats_dir) {
-	warn "Could not create $stats_dir: $!\n";
+	$self->log_warning("Could not create $stats_dir: $!\n");
 	return;
     }
 
@@ -2412,13 +2419,14 @@ sub open_build_log (\$) {
     open_pkg_log($self->get_conf('USERNAME') . "-$self->{'Package_SVersion'}-$self->{'Arch'}",
 		 $self->get_conf('DISTRIBUTION'),
 		 $self->get('Pkg Start Time'));
+
+    $self->log_section('sbuild/' . $self->get_conf('ARCH') . " $version");
     $self->log("Automatic build of $self->{'Package_SVersion'} on " .
-	       $self->get_conf('HOSTNAME'). ' by ' .
-	       'sbuild/' . $self->get_conf('ARCH') . " $version\n");
+	       $self->get_conf('HOSTNAME') . "\n");
     $self->log("Build started at " .
 	       strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) .
 	       "\n");
-    $self->log("*"x78, "\n");
+    $self->log_sep();
 }
 
 sub close_build_log (\$$$$$$$) {
@@ -2431,8 +2439,8 @@ sub close_build_log (\$$$$$$$) {
 	$self->add_time_entry($self->get('Package_Version'), $self->get('This Time'));
 	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
     }
-    $self->log("*"x78, "\n");
-    printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disk space\n",
+    $self->log_sep();
+    printf main::PLOG "Finished at ${date}\nBuild needed %02d:%02d:%02d, %dk disc space\n",
     int($self->get('This Time')/3600),
     int(($self->get('This Time')%3600)/60),
     int($self->get('This Time')%60),
@@ -2506,20 +2514,62 @@ sub add_space_entry (\$$$) {
     untie %db;
 }
 
-# Note: split to stderr
-sub debug (\$$) {
-    my $self = shift;
-
-    if ($self->get_conf('DEBUG')) {
-	print STDERR "D: ", @_;
-    }
-}
-
 # Note: split to stdout
-sub log (\$$) {
+sub log ($) {
     my $self = shift;
 
     print main::PLOG @_;
+}
+
+sub log_info ($) {
+    my $self = shift;
+
+    $self->log("I: ", @_);
+}
+
+sub log_warning ($) {
+    my $self = shift;
+
+    $self->log("W: ", @_);
+}
+
+sub log_error ($) {
+    my $self = shift;
+
+    $self->log("E: ", @_);
+}
+
+sub log_section(\$$) {
+    my $self = shift;
+    my $section = shift;
+
+    $self->log('╔', '═' x 78, '╗', "\n");
+    $self->log('║', " $section ", ' ' x (80 - length($section) - 4), '║', "\n");
+    $self->log('╚', '═' x 78, '╝', "\n\n");
+}
+
+sub log_subsection(\$$) {
+    my $self = shift;
+    my $section = shift;
+
+    $self->log('┌', '─' x 78, '┐', "\n");
+    $self->log('│', " $section ", ' ' x (80 - length($section) - 4), '│', "\n");
+    $self->log('└', '─' x 78, '┘', "\n\n");
+}
+
+sub log_subsubsection(\$$) {
+    my $self = shift;
+    my $section = shift;
+
+    $self->log('─' x 80, "\n");
+    $self->log(" $section\n");
+    $self->log('─' x (length($section) + 1), "\n\n");
+}
+
+sub log_sep(\$) {
+    my $self = shift;
+
+    $self->log('─' x 80, "\n");
 }
 
 1;
