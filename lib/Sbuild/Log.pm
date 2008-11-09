@@ -30,10 +30,6 @@ use File::Basename qw(basename);
 
 sub open_log ($$);
 sub close_log ();
-sub open_pkg_log ($$$);
-sub close_pkg_log ($$$$$);
-sub send_mail ($$$);
-sub log_symlink ($$);
 
 BEGIN {
     use Exporter ();
@@ -41,8 +37,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(open_log close_log
-		 open_pkg_log close_pkg_log);
+    @EXPORT = qw(open_log close_log);
 }
 
 my $main_logfile;
@@ -132,126 +127,6 @@ sub close_log () {
     elsif (!$conf->get('NOLOG') && ! -s $main_logfile) {
 	unlink( $main_logfile );
     }
-}
-
-sub open_pkg_log ($$$) {
-    $pkg_name = shift;
-    $pkg_distribution = shift;
-    my $pkg_start_time = shift;
-    my $date = strftime("%Y%m%d-%H%M", localtime($pkg_start_time));
-
-    if (!defined $log_dir_available) {
-	if (! -d $conf->get('LOG_DIR') &&
-	    !mkdir $conf->get('LOG_DIR')) {
-	    warn "Could not create " . $conf->get('LOG_DIR') . ": $!\n";
-	    $log_dir_available = 0;
-	} else {
-	    $log_dir_available = 1;
-	}
-    }
-
-    if ($conf->get('NOLOG') || !$log_dir_available) {
-	open( main::PLOG, ">&STDOUT" );
-    }
-    else {
-	$pkg_logfile = $conf->get('LOG_DIR') . "/${pkg_name}-$date";
-	if ($conf->get('SBUILD_MODE') eq 'buildd') {
-	    log_symlink($pkg_logfile,
-			$conf->get('BUILD_DIR') . "/current-$pkg_distribution");
-	    log_symlink($pkg_logfile,$conf->get('BUILD_DIR') . "/current");
-	}
-	if ($conf->get('VERBOSE')) {
-	    my $pid;
-	    ($pid = open( main::PLOG, "|-"));
-	    if (!defined $pid) {
-		warn "Cannot open pipe to '$pkg_logfile': $!\n";
-	    }
-	    elsif ($pid == 0) {
-		$SIG{'INT'} = 'IGNORE';
-		$SIG{'QUIT'} = 'IGNORE';
-		$SIG{'TERM'} = 'IGNORE';
-		$SIG{'PIPE'} = 'IGNORE';
-
-		open( CPLOG, ">$pkg_logfile" ) or
-		    die "Can't open logfile $pkg_logfile: $!\n";
-		CPLOG->autoflush(1);
-
-		while (<STDIN>) {
-		    print CPLOG $_;
-		    print main::SAVED_STDOUT $_;
-		}
-		close CPLOG;
-		exit 0;
-	    }
-	}
-	else {
-	    if (!open( main::PLOG, ">$pkg_logfile" )) {
-		warn "Can't open logfile $pkg_logfile: $!\n";
-		return 0;
-	    }
-	}
-    }
-    main::PLOG->autoflush(1);
-    select(main::PLOG);
-
-    return 1;
-}
-
-sub close_pkg_log ($$$$$) {
-    my $pkg_name = shift;
-    my $pkg_distribution = shift;
-    my $status = shift;
-    my $pkg_start_time = shift;
-    my $pkg_end_time = shift;
-    my $date = strftime("%Y%m%d-%H%M", localtime($pkg_end_time));
-
-    close( main::PLOG );
-    open( main::PLOG, ">&main::LOG" ) or warn "Can't redirect PLOG\n";
-    send_mail($conf->get('MAILTO'),
-	      "Log for $status build of $pkg_name (dist=$pkg_distribution)",
-	      $pkg_logfile) if !$conf->get('NOLOG') && $log_dir_available && $conf->get('MAILTO');
-}
-
-sub send_mail ($$$) {
-    my $to = shift;
-    my $subject = shift;
-    my $file = shift;
-    local( *MAIL, *F );
-
-    if (!open( F, "<$file" )) {
-	warn "Cannot open $file for mailing: $!\n";
-	return 0;
-    }
-    local $SIG{'PIPE'} = 'IGNORE';
-
-    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
-	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
-	close( F );
-	return 0;
-    }
-
-    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
-    print MAIL "To: $to\n";
-    print MAIL "Subject: $subject\n\n";
-    while( <F> ) {
-	print MAIL "." if $_ eq ".\n";
-	print MAIL $_;
-    }
-
-    close( F );
-    if (!close( MAIL )) {
-	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
-	return 0;
-    }
-    return 1;
-}
-
-sub log_symlink ($$) {
-    my $log = shift;
-    my $dest = shift;
-
-    unlink $dest || return;
-    symlink $log, $dest || return;
 }
 
 1;
