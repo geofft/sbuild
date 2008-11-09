@@ -91,7 +91,7 @@ sub open_log ($$) {
     select(main::LOG);
     if ($conf->get('VERBOSE')) {
 	open( main::SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
-	open( SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
+	open( main::SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
     }
     open( STDOUT, ">&main::LOG" ) or warn "Can't redirect stdout\n";
     open( STDERR, ">&main::LOG" ) or warn "Can't redirect stderr\n";
@@ -107,9 +107,9 @@ sub close_log ($) {
     close( main::LOG );
     if ($conf->get('VERBOSE')) {
 	open( STDOUT, ">&main::SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
-	open( STDERR, ">&SAVED_STDERR" ) or warn "Can't redirect stderr\n";
+	open( STDERR, ">&main::SAVED_STDERR" ) or warn "Can't redirect stderr\n";
 	close (main::SAVED_STDOUT);
-	close (SAVED_STDERR);
+	close (main::SAVED_STDERR);
     }
     if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
 	-s $main_logfile && $conf->get('MAILTO')) {
