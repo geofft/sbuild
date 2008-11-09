@@ -114,20 +114,20 @@ sub main () {
 	my $build = Sbuild::Build->new($dscfile, $conf);
 	$main::build_object = $build;
 
-	$build->{'Pkg Start Time'} = time;
+	$build->set('Pkg Start Time', time);
 
 	$main::build_object->write_jobs_file("");
 	$build->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV);
 
-	if ($build->{'Invalid Source'}) {
-	    print PLOG "Invalid source: $dscfile\n";
-	    print PLOG "Skipping " . $build->{'Package'} . " \n";
-	    $build->{'Pkg Status'} = "skipped";
+	if ($build->get('Invalid Source')) {
+	    $build->log("Invalid source: $dscfile\n");
+	    $build->log("Skipping " . $build->get('Package') . " \n");
+	    $build->set('Pkg Status', 'skipped');
 	    goto cleanup_skip;
 	}
 
 	{
-	    my $tpkg = basename($build->{'Package_Version'});
+	    my $tpkg = basename($build->get('Package_Version'));
 	    # TODO: This should be 'Pkg Start Time', set in build().
 	    my $date = strftime("%Y%m%d-%H%M",localtime);
 
@@ -142,12 +142,12 @@ sub main () {
 	    next if !$build->open_build_log($tpkg);
 	}
 
-	$build->{'Pkg Status'} = "failed"; # assume for now
-	$main::current_job = $build->{'Package_Version'};
-	$build->{'Additional Deps'} = [];
+	$build->set('Pkg Status', 'failed'); # assume for now
+	$main::current_job = $build->get('Package_Version');
+	$build->set('Additional Deps', []);
 	$main::build_object->write_jobs_file("currently building");
 	if ($build->should_skip()) {
-	    $build->{'Pkg Status'} = "skipped";
+	    $build->set('Pkg Status', 'skipped');
 	    goto cleanup_close;
 	}
 
@@ -162,82 +162,81 @@ sub main () {
 					   $conf->get('CHROOT'),
 					   $conf->get('USER_ARCH'));
 
-	$build->{'Session'} = $session;
+	$build->set('Session', $session);
 
 	if (!$session->begin_session()) {
-	    print PLOG "Error creating chroot session: skipping " .
-		$build->{'Package'} . "\n";
-	    $build->{'Pkg Status'} = "skipped";
+	    $build->log("Error creating chroot session: skipping " .
+		$build->get('Package') . "\n");
+	    $build->set('Pkg Status', 'skipped');
 	    goto cleanup_close;
 	}
-	$build->{'Chroot Dir'} = $session->{'Location'};
-	$build->{'Chroot Build Dir'} =
-	    tempdir($conf->get('USERNAME') . '-' .
-		    $build->{'Package_SVersion'} . '-' .
-		    $conf->get('ARCH') . '-XXXXXX',
-		    DIR => $session->{'Build Location'});
+	$build->set('Chroot Dir', $session->get('Location'));
+	$build->set('Chroot Build Dir',
+		    tempdir($conf->get('USERNAME') . '-' .
+			    $build->get('Package_SVersion') . '-' .
+			    $conf->get('ARCH') . '-XXXXXX',
+			    DIR => $session->get('Build Location')));
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.
-	$session->{'Build Location'} = $build->{'Chroot Build Dir'};
+	$session->set('Build Location', $build->get('Chroot Build Dir'));
 
-	$build->{'Arch'} = $build->chroot_arch();
+	$build->set('Arch', $build->chroot_arch());
 
 	# Update APT cache.
 	if ($conf->get('APT_UPDATE')) {
 	    if (!open(PIPE, $session->get_apt_command($conf->get('APT_GET'),
 						      "-q update", "root", 1, '/') . " 2>&1 |")) {
-		print PLOG "Can't open pipe to apt-get: $!\n";
+		$build->log("Can't open pipe to apt-get: $!\n");
 		return 0;
 	    }
 	    while(<PIPE>) {
-		print PLOG $_;
+		$build->log($_);
 	    }
 	    close(PIPE);
 	    if ($?) {
-		print PLOG "apt-get update failed\n" ;
-		$build->{'Pkg Status'} = "skipped";
+		$build->log("apt-get update failed\n");
+		$build->set('Pkg Status', 'skipped');
 		goto cleanup_close;
 	    }
 	}
 
-	$build->{'Pkg Fail Stage'} = "fetch-src";
+	$build->set('Pkg Fail Stage', 'fetch-src');
 	if (!$build->fetch_source_files()) {
 	    goto cleanup_close;
 	}
 
-	$build->{'Pkg Fail Stage'} = "install-deps";
+	$build->set('Pkg Fail Stage', 'install-deps');
 	if (!$build->install_deps()) {
-	    print PLOG "Source-dependencies not satisfied; skipping " .
-		$build->{'Package'} . "\n";
+	    $build->log("Source-dependencies not satisfied; skipping " .
+		$build->get('Package') . "\n");
 	    goto cleanup_packages;
 	}
 
-	$build->{'Pkg Status'} = "successful"
-	    # TODO: Don't pass version info
+	$build->set('Pkg Status', 'successful')
 	    if $build->build();
-	$main::build_object->write_jobs_file($build->{'Pkg Status'});
+	$build->write_jobs_file($build->get('Pkg Status'));
 	$build->append_to_FINISHED();
 
       cleanup_packages:
-	if (defined ($session->{'Session Purged'}) &&
-	    $session->{'Session Purged'} == 1) {
-	    print PLOG "Not removing build depends: cloned chroot in use\n";
+	if (defined ($session->get('Session Purged')) &&
+	    $session->get('Session Purged') == 1) {
+	    $build->log("Not removing build depends: cloned chroot in use\n");
 	} else {
 	    $build->uninstall_deps();
 	}
 	$build->remove_srcdep_lock_file();
       cleanup_close:
 	$build->analyze_fail_stage();
-	$main::build_object->write_jobs_file($build->{'Pkg Status'});
+	$main::build_object->write_jobs_file($build->get('Pkg Status'));
 
 	$session->end_session();
 	$session = undef;
-	$build->{'Session'} = undef;
+	$build->set('Session', undef);
 
 	$build->close_build_log();
 
       cleanup_skip:
-	undef $build->{'binNMU Name'};
+	$build->set('binNMU Name', undef);
 	$main::current_job = "";
 	if ($conf->get('BATCH_MODE') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
 	    main::shutdown("NONE (flag file exit)");
@@ -247,11 +246,11 @@ sub main () {
     }
 
     close_log();
-    unlink( $main::build_object->{'Jobs File'} )
+    unlink($main::build_object->get('Jobs File'))
 	if $conf->get('BATCH_MODE');
-    unlink( "SBUILD-FINISHED" ) if $conf->get('BATCH_MODE');
+    unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
     if ($conf->get('SBUILD_MODE') eq "user" && defined($main::build_object)) {
-	    exit ($main::build_object->{'Pkg Status'} ne "successful") ? 1 : 0;
+	    exit ($main::build_object->get('Pkg Status') ne "successful") ? 1 : 0;
     }
     exit 0;
 }
@@ -266,7 +265,7 @@ sub shutdown ($) {
     $SIG{'TERM'} = 'IGNORE';
     $SIG{'ALRM'} = 'IGNORE';
     $SIG{'PIPE'} = 'IGNORE';
-    print PLOG "sbuild received SIG$signame -- shutting down\n";
+    $main::build_object->log("sbuild received SIG$signame -- shutting down\n");
 
     goto not_ni_shutdown if !$conf->get('BATCH_MODE');
 
@@ -315,7 +314,7 @@ sub shutdown ($) {
     unlink( "SBUILD-FINISHED" );
 
     # next: say which packages should be uninstalled
-    @pkgs = keys %{$main::build_object->{'Changes'}->{'installed'}};
+    @pkgs = keys %{$main::build_object->get('Changes')->{'installed'}};
     if (@pkgs) {
 	if (open( F, ">>NEED-TO-UNINSTALL" )) {
 	    print F "@pkgs\n";
@@ -327,31 +326,32 @@ sub shutdown ($) {
 
   not_ni_shutdown:
     # next: kill currently running command (if one)
-    if ($main::build_object->{'Sub PID'}) {
-	print "Killing $main::build_object->{'Sub Task'} subprocess $main::build_object->{'Sub PID'}\n";
-	$main::build_object->{'Session'}->run_command("perl -e \"kill( \\\"TERM\\\", $main::build_object->{'Sub PID'} )\"", "root", 1, 0, '/');
+    if ($main::build_object->get('Sub PID')) {
+	print "Killing " . $main::build_object->get('Sub Task') .
+	    " subprocess " . $main::build_object->get('Sub PID') . "\n";
+	$main::build_object->get('Session')->run_command("perl -e \"kill( \\\"TERM\\\", " . $main::build_object->get('Sub PID') . " )\"", "root", 1, 0, '/');
     }
     $main::build_object->remove_srcdep_lock_file();
 
     # close logs and send mails
-    if ( $main::current_job && defined($main::build_object->{'Session'})) {
+    if ( $main::current_job && defined($main::build_object->get('Session'))) {
 	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
-	    print PLOG "Purging $main::build_object->{'Chroot Build Dir'}\n";
-	    my $bdir = $main::build_object->{'Session'}->strip_chroot_path($main::build_object->{'Chroot Build Dir'});
-	    $main::build_object->{'Session'}->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
+	    $main::build_object->log("Purging " . $main::build_object->get('Chroot Build Dir') . "\n");
+	    my $bdir = $main::build_object->get('Session')->strip_chroot_path($main::build_object->get('Chroot Build Dir'));
+	    $main::build_object->get('Session')->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
 	}
 
 	$main::current_job =
 	    $main::build_object->fixup_pkgv($main::current_job);
 
-	$main::build_object->{'Session'}->end_session();
-	undef $main::build_object->{'Session'};
+	$main::build_object->get('Session')->end_session();
+	$main::build_object->set('Session', undef);
 
 	$main::build_object->close_build_log();
-	undef $main::build_object->{'binNMU Name'};
+	$main::build_object->set('binNMU Name', undef);
     }
     close_log();
-    unlink( $main::build_object->{'Jobs File'} ) if $conf->get('BATCH_MODE');
+    unlink( $main::build_object->get('Jobs File') ) if $conf->get('BATCH_MODE');
     $? = 0; $! = 0;
     if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;
@@ -384,10 +384,12 @@ sub check_group_membership ($) {
 }
 
 sub dump_main_state () {
-    print STDERR Data::Dumper->Dump([$main::current_job,
+    print STDERR Data::Dumper->Dump([$main::build_object,
+				     $main::current_job,
 				     $main::DEVNULL,
 				     \%main::job_state],
-				    [qw($main::current_job
+				    [qw($main::build_object
+					$main::current_job
 					$main::DEVNULL
 					%main::job_state)] );
 }
