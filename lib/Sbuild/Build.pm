@@ -212,6 +212,10 @@ sub fetch_source_files (\$) {
 
     my $dir = $self->get('Source Dir');
     my $dsc = $self->get('DSC File');
+    my $build_dir = $self->get('Chroot Build Dir');
+    my $pkg = $self->get('Package');
+    my $ver = $self->get('Version');
+    my $arch = $self->get('Arch');
 
     my ($files, @other_files, $dscarchs, @fetched);
 
@@ -234,11 +238,11 @@ sub fetch_source_files (\$) {
 	$self->log("$dsc exists in $dir; copying to chroot\n");
 	my @cwd_files = $self->dsc_files("$dir/$dsc");
 	foreach (@cwd_files) {
-	    if (system ("cp '$_' '$self->{'Chroot Build Dir'}'")) {
-		$self->log("ERROR: Could not copy $_ to $self->{'Chroot Build Dir'} \n");
+	    if (system ("cp '$_' '$build_dir'")) {
+		$self->log("ERROR: Could not copy $_ to $build_dir \n");
 		return 0;
 	    }
-	    push(@fetched, "$self->{'Chroot Build Dir'}/" . basename($_));
+	    push(@fetched, "$build_dir/" . basename($_));
 	}
     } else {
 	my %entries = ();
@@ -246,7 +250,7 @@ sub fetch_source_files (\$) {
       retry:
 	$self->log("Checking available source versions...\n");
 	my $command = $self->get('Session')->get_apt_command($self->get_conf('APT_CACHE'),
-							  "-q showsrc $self->{'Package'}",
+							  "-q showsrc $pkg",
 							  $self->get_conf('USERNAME'), 0, '/');
 	my $pid = open3(\*main::DEVNULL, \*PIPE, '>&main::PLOG', "$command" );
 	if (!$pid) {
@@ -273,7 +277,7 @@ sub fetch_source_files (\$) {
 
 	    if (! scalar keys %entries) {
 		$self->log($self->get_conf('APT_CACHE') .
-			   " returned no information about $self->{'Package'} source\n");
+			   " returned no information about $pkg source\n");
 		$self->log("Are there any deb-src lines in your /etc/apt/sources.list?\n");
 		return 0;
 
@@ -286,7 +290,7 @@ sub fetch_source_files (\$) {
 	    return 0;
 	}
 
-	if (!defined($entries{"$self->{'Package'} $self->{'Version'}"})) {
+	if (!defined($entries{"$pkg $ver"})) {
 	    if (!$retried) {
 		# try to update apt's cache if nothing found
 		$self->get('Session')->run_apt_command($self->get_conf('APT_GET'),
@@ -294,7 +298,8 @@ sub fetch_source_files (\$) {
 		$retried = 1;
 		goto retry;
 	    }
-	    $self->log("Can't find source for $self->{'Package_Version'}\n");
+	    $self->log("Can't find source for " .
+		       $self->get('Package_Version') . "\n");
 	    $self->log("(only different version(s) ",
 	    join( ", ", sort keys %entries), " found)\n")
 		if %entries;
@@ -302,13 +307,13 @@ sub fetch_source_files (\$) {
 	}
 
 	$self->log("Fetching source files...\n");
-	foreach (@{$entries{"$self->{'Package'} $self->{'Version'}"}}) {
-	    push(@fetched, "$self->{'Chroot Build Dir'}/$_");
+	foreach (@{$entries{"$pkg $ver"}}) {
+	    push(@fetched, "$build_dir/$_");
 	}
 
 	my $command2 = $self->get('Session')->get_apt_command($self->get_conf('APT_GET'),
-							   "--only-source -q -d source $self->{'Package'}=$self->{'Version'} 2>&1 </dev/null",
-							   $self->get_conf('USERNAME'), 0, undef);
+							      "--only-source -q -d source $pkg=$ver 2>&1 </dev/null",
+							      $self->get_conf('USERNAME'), 0, undef);
 	if (!open( PIPE, "$command2 |" )) {
 	    $self->log('Can\'t open pipe to ' . $self->get_conf('APT_GET') . ": $!\n");
 	    return 0;
@@ -324,8 +329,8 @@ sub fetch_source_files (\$) {
 	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
     }
 
-    if (!open( F, "<$self->{'Chroot Build Dir'}/$dsc" )) {
-	$self->log("Can't open $self->{'Chroot Build Dir'}/$dsc: $!\n");
+    if (!open( F, "<$build_dir/$dsc" )) {
+	$self->log("Can't open $build_dir/$dsc: $!\n");
 	return 0;
     }
     my $dsctext;
@@ -350,21 +355,21 @@ sub fetch_source_files (\$) {
 
     $dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
     @other_files = map { (split( /\s+/, $_ ))[3] } split( "\n", $files );
-    $files =~ /(\Q$self->{'Package'}\E.*orig.tar.gz)/mi and $orig = $1;
+    $files =~ /(\Q$pkg\E.*orig.tar.gz)/mi and $orig = $1;
 
     if (!$dscarchs) {
 	$self->log("$dsc has no Architecture: field -- skipping arch check!\n");
     }
     else {
-	if ($dscarchs ne "any" && $dscarchs !~ /\b$self->{'Arch'}\b/ &&
+	if ($dscarchs ne "any" && $dscarchs !~ /\b$arch\b/ &&
 	    !($dscarchs eq "all" && $self->get_conf('BUILD_ARCH_ALL')) )  {
-	    $self->log("$dsc: $self->{'Arch'} not in arch list: $dscarchs -- skipping\n");
+	    $self->log("$dsc: $arch not in arch list: $dscarchs -- skipping\n");
 	    $self->set('Pkg Fail Stage', "arch-check");
 	    return 0;
 	}
     }
 
-    $self->debug("Arch check ok ($self->{'Arch'} included in $dscarchs)\n");
+    $self->debug("Arch check ok ($arch included in $dscarchs)\n");
 
     @{$self->get('Have DSC Build Deps')} =
 	($build_depends, $build_depends_indep,
@@ -382,6 +387,8 @@ sub build (\$$$) {
     my $dscfile = $self->get('DSC File');
     my $dscdir = $self->get('DSC Dir');
     my $pkgv = $self->get('Package_Version');
+    my $build_dir = $self->get('Chroot Build Dir');
+    my $arch = $self->get('Arch');
 
     my( $rv, $changes );
     local( *PIPE, *F, *F2 );
@@ -396,15 +403,15 @@ sub build (\$$$) {
     my $tmpunpackdir = $dscdir;
     $tmpunpackdir =~ s/-.*$/.orig.tmp-nest/;
     $tmpunpackdir =~ s/_/-/;
-    $tmpunpackdir = "$self->{'Chroot Build Dir'}/$tmpunpackdir";
+    $tmpunpackdir = "$build_dir/$tmpunpackdir";
 
-    if (-d "$self->{'Chroot Build Dir'}/$dscdir" && -l "$self->{'Chroot Build Dir'}/$dscdir") {
+    if (-d "$build_dir/$dscdir" && -l "$build_dir/$dscdir") {
 	# if the package dir already exists but is a symlink, complain
 	$self->log("Cannot unpack source: a symlink to a directory with the\n".
 		   "same name already exists.\n");
 	return 0;
     }
-    if (! -d "$self->{'Chroot Build Dir'}/$dscdir") {
+    if (! -d "$build_dir/$dscdir") {
 	$self->set('Pkg Fail Stage', "unpack");
 	# dpkg-source refuses to remove the remanants of an aborted
 	# dpkg-source extraction, so we will if necessary.
@@ -419,7 +426,7 @@ sub build (\$$$) {
 	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 	    return 0;
 	}
-	$dscdir = "$self->{'Chroot Build Dir'}/$dscdir";
+	$dscdir = "$build_dir/$dscdir";
 
 	if (system( "chmod -R g-s,go+rX $dscdir" ) != 0) {
 	    $self->log("chmod -R g-s,go+rX $dscdir failed.\n");
@@ -427,7 +434,7 @@ sub build (\$$$) {
 	}
     }
     else {
-	$dscdir = "$self->{'Chroot Build Dir'}/$dscdir";
+	$dscdir = "$build_dir/$dscdir";
 
 	$self->set('Pkg Fail Stage', "check-unpacked-version");
 	# check if the unpacked tree is really the version we need
@@ -476,8 +483,8 @@ sub build (\$$$) {
 	    $self->log("Disk space is propably not enough for building.\n".
 		       "(Source needs $current_usage KB, free are $free KB.)\n");
 	    # TODO: Only purge in a single place.
-	    $self->log("Purging $self->{'Chroot Build Dir'}\n");
-	    $self->get('Session')->run_command("rm -rf '$self->{'Chroot Build Dir'}'", "root", 1, 0, '/');
+	    $self->log("Purging $build_dir\n");
+	    $self->get('Session')->run_command("rm -rf '$build_dir'", "root", 1, 0, '/');
 	    return 0;
 	}
     }
@@ -500,7 +507,7 @@ sub build (\$$$) {
 	    }
 	    $dists = $self->get_conf('DISTRIBUTION');
 	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
-	    print F "  * Binary-only non-maintainer upload for $self->{'Arch'}; ",
+	    print F "  * Binary-only non-maintainer upload for $arch; ",
 	    "no source changes.\n";
 	    print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n\n";
 	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
@@ -629,13 +636,13 @@ EOF
 	    my @files = $self->debian_files_list("$dscdir/debian/files");
 
 	    foreach (@files) {
-		if (! -f "$self->{'Chroot Build Dir'}/$_") {
+		if (! -f "$build_dir/$_") {
 		    $self->log("ERROR: Package claims to have built ".basename($_).", but did not.  This is a bug in the packaging.\n");
 		    next;
 		}
 		if (/_all.u?deb$/ and not $self->get_conf('BUILD_ARCH_ALL')) {
 		    $self->log("ERROR: Package builds ".basename($_)." when binary-indep target is not called.  This is a bug in the packaging.\n");
-		    unlink("$self->{'Chroot Build Dir'}/$_");
+		    unlink("$build_dir/$_");
 		    next;
 		}
 	    }
@@ -646,12 +653,12 @@ EOF
 	     binNMU_version($self->get('SVersion'),
 			    $self->get_conf('BIN_NMU_VERSION')) :
 	     $self->get('SVersion')).
-	    "_$self->{'Arch'}.changes";
+	    "_$arch.changes";
 	my @cfiles;
-	if (-r "$self->{'Chroot Build Dir'}/$changes") {
+	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
 	    $self->log("\n$changes:\n");
-	    open( F, "<$self->{'Chroot Build Dir'}/$changes" );
+	    open( F, "<$build_dir/$changes" );
 	    if (open( F2, ">$changes.new" )) {
 		while( <F> ) {
 		    if (/^Distribution:\s*(.*)\s*$/ and $self->get_conf('OVERRIDE_DISTRIBUTION')) {
@@ -673,16 +680,16 @@ EOF
 		    }
 		}
 		close( F2 );
-		rename( "$changes.new", "$changes" )
+		rename("$changes.new", "$changes")
 		    or $self->log("$changes.new could not be renamed to $changes: $!\n");
-		unlink( "$self->{'Chroot Build Dir'}/$changes" )
-		    if $self->{'Chroot Build Dir'};
+		unlink("$build_dir/$changes")
+		    if $build_dir;
 	    }
 	    else {
 		$self->log("Cannot create $changes.new: $!\n");
 		$self->log("Distribution field may be wrong!!!\n");
-		if ($self->get('Chroot Build Dir')) {
-		    system "mv", "-f", "$self->{'Chroot Build Dir'}/$changes", "."
+		if ($build_dir) {
+		    system "mv", "-f", "$build_dir/$changes", "."
 			and $self->log("ERROR: Could not move ".basename($_)." to .\n");
 		}
 	    }
@@ -694,8 +701,8 @@ EOF
 
 	my @debcfiles = @cfiles;
 	foreach (@debcfiles) {
-	    my $deb = "$self->{'Chroot Build Dir'}/$_";
-	    next if $deb !~ /($self->{'Arch'}|all)\.[\w\d.-]*$/;
+	    my $deb = "$build_dir/$_";
+	    next if $deb !~ /(\Q$arch\E|all)\.[\w\d.-]*$/;
 
 	    $self->log("\n$deb:\n");
 	    if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
@@ -709,8 +716,8 @@ EOF
 
 	@debcfiles = @cfiles;
 	foreach (@debcfiles) {
-	    my $deb = "$self->{'Chroot Build Dir'}/$_";
-	    next if $deb !~ /($self->{'Arch'}|all)\.[\w\d.-]*$/;
+	    my $deb = "$build_dir/$_";
+	    next if $deb !~ /(\Q$arch\E|all)\.[\w\d.-]*$/;
 
 	    $self->log("\n$deb:\n");
 	    if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
@@ -724,7 +731,7 @@ EOF
 
 	foreach (@cfiles) {
 	    push( @space_files, $_ );
-	    system "mv", "-f", "$self->{'Chroot Build Dir'}/$_", "."
+	    system "mv", "-f", "$build_dir/$_", "."
 		and $self->log("ERROR: Could not move $_ to .\n");
 	}
 	$self->log("\n");
@@ -737,7 +744,7 @@ EOF
 
     if ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
 	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' && $rv == 0)) {
-	$self->log("Purging $self->{'Chroot Build Dir'}\n");
+	$self->log("Purging $build_dir\n");
 	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
 	$self->get('Session')->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
     }
@@ -1326,7 +1333,9 @@ sub check_dependencies (\$\@) {
     $fail =~ s/\s+$//;
     if (!$fail && @{$self->get('Toolchain Packages')}) {
 	my ($sysname, $nodename, $release, $version, $machine) = uname();
-	$self->log("Kernel: $sysname $release $self->{'Arch'} ($machine)\n");
+	my $arch = $self->get('Arch');
+
+	$self->log("Kernel: $sysname $release $arch ($machine)\n");
 	$self->log("Toolchain package versions:");
 	foreach $name (@{$self->get('Toolchain Packages')}) {
 	    if (defined($status->{$name}->{'Version'})) {
