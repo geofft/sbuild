@@ -167,6 +167,8 @@ sub new ($$$) {
     $self->set('Changes', {});
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
+    $self->set('Log File', undef);
+    $self->set('Log Stream', undef);
 
     return $self;
 }
@@ -2580,33 +2582,6 @@ sub add_space_entry (\$$$) {
 	$db{$pkg} = "$space $space";
     }
     untie %db;
-}
-
-sub log ($) {
-    my $self = shift;
-
-    my $logfile = $self->get('Log Stream');
-    if (defined($logfile)) {
-	print $logfile @_;
-    }
-}
-
-sub log_info ($) {
-    my $self = shift;
-
-    $self->log("I: ", @_);
-}
-
-sub log_warning ($) {
-    my $self = shift;
-
-    $self->log("W: ", @_);
-}
-
-sub log_error ($) {
-    my $self = shift;
-
-    $self->log("E: ", @_);
 }
 
 sub log_section(\$$) {

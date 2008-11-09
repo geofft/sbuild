@@ -1,7 +1,7 @@
 #
 # Chroot.pm: chroot library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,6 +22,7 @@
 
 package Sbuild::Chroot;
 
+use Sbuild qw(debug);
 use Sbuild::Base;
 use Sbuild::Conf;
 use Sbuild::ChrootInfo;
@@ -32,6 +33,8 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
+my $devnull;
+
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -39,6 +42,12 @@ BEGIN {
     @ISA = qw(Exporter Sbuild::Base);
 
     @EXPORT = qw();
+
+    # A file representing /dev/null
+    if (!open($devnull, '+<', '/dev/null')) {
+	die "Cannot open /dev/null: $!\n";;
+    }
+
 }
 
 sub new ($$$);
@@ -152,7 +161,7 @@ sub log_command (\$$$) {
 	if ($options ne "" && !$self->get_conf('DEBUG')) {
 	    $msg =~ s/\Q$options\E/CHROOT_APT_OPTIONS/g;
 	}
-	print STDERR "$msg\n";
+	$self->log_info($msg)
     }
 }
 
@@ -184,15 +193,56 @@ sub run_command (\$$$$$$) {
     my $chroot = shift;   # Run in chroot?
     my $priority = shift; # Priority of log message
     my $dir = shift;     # Directory to use (optional)
+
+    my $pipe = $self->pipe_command($command,
+				   $user,
+				   $chroot,
+				   $priority,
+				   $dir);
+
+    if (defined($pipe)) {
+	while (<$pipe>) {
+	    $self->log("$_");
+	}
+	return close($pipe);
+    } else {
+	return 1;
+    }
+}
+
+# Note, do not run with $user="root", and $chroot=0, because root
+# access to the host system is not allowed by schroot, nor required
+# via sudo.
+sub pipe_command (\$$$$$$) {
+    my $self = shift;
+    my $command = shift;  # Command to run
+    my $user = shift;     # User to run command under
+    my $chroot = shift;   # Run in chroot?
+    my $priority = shift; # Priority of log message
+    my $dir = shift;     # Directory to use (optional)
     my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
 
-    if ($self->get_conf('DEBUG')) {
-	$self->log_command($cmdline, $priority);
-    } else {
-	$self->log_command($command, $priority);
+    my $pipe = undef;
+    my $pid = open($pipe, "-|");
+    if (!defined $pid) {
+	warn "Cannot open pipe: $!\n";
+    } elsif ($pid == 0) { # child
+	my $log = $self->get('Log Stream');
+	open(STDIN, '<&', $devnull)
+	    or warn "Can't redirect stdin\n";
+	open(STDERR, '>&', $log)
+	    or warn "Can't redirect stderr\n";
+
+	$self->exec_command($command,
+			    $user,
+			    $chroot,
+			    $priority,
+			    $dir);
     }
 
-    return system($cmdline);
+    debug("Pipe (PID $pid, $pipe) created for: $cmdline\n");
+
+    return $pipe;
 }
 
 sub exec_command (\$$$$$$) {
@@ -210,6 +260,7 @@ sub exec_command (\$$$$$$) {
 	$self->log_command($command, $priority);
     }
 
+    debug("Running command: $cmdline\n");
     exec $cmdline;
 }
 
@@ -250,6 +301,20 @@ sub run_apt_command (\$$$$$$) {
 
     return $self->run_command($aptcommand, $user,
 			      $self->apt_chroot(), $priority, $dir);
+}
+
+sub pipe_apt_command (\$$$$$$) {
+    my $self = shift;
+    my $command = shift;  # Command to run
+    my $options = shift;  # Command options
+    my $user = shift;     # User to run command under
+    my $priority = shift; # Priority of log message
+    my $dir = shift;      # Directory to use (optional)
+
+    my $aptcommand = $self->get_apt_command_internal($command, $options);
+
+    return $self->pipe_command($aptcommand, $user,
+			       $self->apt_chroot(), $priority, $dir);
 }
 
 sub apt_chroot (\$) {

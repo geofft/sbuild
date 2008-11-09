@@ -80,4 +80,36 @@ sub set_conf (\%$$) {
     return $self->get('Config')->set($key,$value);
 }
 
+sub log ($) {
+    my $self = shift;
+
+    my $logfile = $self->get('Log Stream');
+    if (defined($logfile)) {
+	print $logfile @_;
+    } else {
+	print STDERR "E: Attempt to log to nonexistent log stream\n"
+	    if (!defined($self->get('Log Stream Error')) ||
+		!$self->get('Log Stream Error'));
+	$self->set('Log Stream Error', 1)
+    }
+}
+
+sub log_info ($) {
+    my $self = shift;
+
+    $self->log("I: ", @_);
+}
+
+sub log_warning ($) {
+    my $self = shift;
+
+    $self->log("W: ", @_);
+}
+
+sub log_error ($) {
+    my $self = shift;
+
+    $self->log("E: ", @_);
+}
+
 1;

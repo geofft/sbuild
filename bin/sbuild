@@ -157,6 +157,9 @@ sub main () {
 					   $conf->get('CHROOT'),
 					   $conf->get('USER_ARCH'));
 
+	# Needed so chroot commands log to build log
+	$session->set('Log Stream', $build->get('Log Stream'));
+
 	$build->set('Session', $session);
 
 	if (!$session->begin_session()) {
