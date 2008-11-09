@@ -27,6 +27,7 @@ use File::Temp ();
 use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
+use Sbuild qw(send_mail);
 
 sub open_log ($$);
 sub close_log ($);
@@ -112,7 +113,8 @@ sub close_log ($) {
     }
     if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
 	-s $main_logfile && $conf->get('MAILTO')) {
-	send_mail( $conf->get('MAILTO'), "Log from sbuild $date",
+	send_mail( $conf,
+		   $conf->get('MAILTO'), "Log from sbuild $date",
 		   $main_logfile ) if $conf->get('MAILTO');
     }
     elsif (!$conf->get('NOLOG') && ! -s $main_logfile) {

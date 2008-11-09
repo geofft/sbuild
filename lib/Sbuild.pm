@@ -38,7 +38,7 @@ BEGIN {
     @EXPORT = qw($debug_level version_less version_lesseq version_eq
 		 version_compare binNMU_version parse_date isin copy
 		 dump_file check_packages help_text version_text
-		 usage_error debug);
+		 usage_error send_mail debug);
 }
 
 my $opt_correct_version_cmp;
@@ -402,6 +402,41 @@ sub usage_error ($$) {
     print STDERR "E: $message\n";
     print STDERR "I: Run “$program --help” to list usage example and all available options\n";
     exit 1;
+}
+
+sub send_mail {
+    my $conf = shift;
+    my $to = shift;
+    my $subject = shift;
+    my $file = shift;
+    local( *MAIL, *F );
+
+    if (!open( F, "<$file" )) {
+	warn "Cannot open $file for mailing: $!\n";
+	return 0;
+    }
+    local $SIG{'PIPE'} = 'IGNORE';
+
+    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
+	close( F );
+	return 0;
+    }
+
+    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
+    print MAIL "To: $to\n";
+    print MAIL "Subject: $subject\n\n";
+    while( <F> ) {
+	print MAIL "." if $_ eq ".\n";
+	print MAIL $_;
+    }
+
+    close( F );
+    if (!close( MAIL )) {
+	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
+	return 0;
+    }
+    return 1;
 }
 
 # Note: split to stderr

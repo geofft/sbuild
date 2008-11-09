@@ -27,7 +27,7 @@ use Fcntl;
 use File::Basename qw(basename dirname);
 use GDBM_File;
 use IPC::Open3;
-use Sbuild qw(binNMU_version version_compare copy isin debug);
+use Sbuild qw(binNMU_version version_compare copy isin send_mail debug);
 use Sbuild::Base;
 use Sbuild::Chroot qw();
 use Sbuild::Sysconfig qw($version);
@@ -2499,16 +2499,16 @@ sub close_build_log (\$$$$$$$) {
 
     my $filename = $self->get('Log File');
 
-    $self->send_mail($self->get_conf('MAILTO'),
-		     "Log for " . $self->get('Pkg Status') .
-		     " build of " . $self->get('Package_Version') .
-		     " (dist=" . $self->get_conf('DISTRIBUTION') . ")",
-		     $filename)
+    send_mail($self->get('Config'), $self->get_conf('MAILTO'),
+	      "Log for " . $self->get('Pkg Status') .
+	      " build of " . $self->get('Package_Version') .
+	      " (dist=" . $self->get_conf('DISTRIBUTION') . ")",
+	      $filename)
 	if (defined($filename) && -f $filename &&
 	    $self->get_conf('MAILTO'));
 
     $self->set('Log File', undef);
-    $self->get('Log Stream')->close();
+    $self->get('Log Stream')->close(); # Close child logger process
     $self->set('Log Stream', undef);
 }
 
@@ -2640,41 +2640,6 @@ sub log_sep(\$) {
     my $self = shift;
 
     $self->log('─' x 80, "\n");
-}
-
-sub send_mail {
-    my $self = shift;
-    my $to = shift;
-    my $subject = shift;
-    my $file = shift;
-    local( *MAIL, *F );
-
-    if (!open( F, "<$file" )) {
-	warn "Cannot open $file for mailing: $!\n";
-	return 0;
-    }
-    local $SIG{'PIPE'} = 'IGNORE';
-
-    if (!open( MAIL, "|" . $self->get_conf('MAILPROG') . " -oem $to" )) {
-	warn "Could not open pipe to " . $self->get_conf('MAILPROG') . ": $!\n";
-	close( F );
-	return 0;
-    }
-
-    print MAIL "From: " . $self->get_conf('MAILFROM') . "\n";
-    print MAIL "To: $to\n";
-    print MAIL "Subject: $subject\n\n";
-    while( <F> ) {
-	print MAIL "." if $_ eq ".\n";
-	print MAIL $_;
-    }
-
-    close( F );
-    if (!close( MAIL )) {
-	warn $self->get_conf('MAILPROG') . " failed (exit status $?)\n";
-	return 0;
-    }
-    return 1;
 }
 
 1;
