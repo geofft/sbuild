@@ -691,7 +691,7 @@ sub build (\$$$) {
 	    my $deb = "$build_dir/$_";
 	    next if $deb !~ /(\Q$arch\E|all)\.[\w\d.-]*$/;
 
-	    $self->log("\n$deb:\n");
+	    $self->log_subsubsection("$_");
 	    if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
 		$self->log("Can't spawn dpkg: $! -- can't dump info\n");
 	    }
@@ -699,14 +699,7 @@ sub build (\$$$) {
 		$self->log($_) while( <PIPE> );
 		close( PIPE );
 	    }
-	}
-
-	@debcfiles = @cfiles;
-	foreach (@debcfiles) {
-	    my $deb = "$build_dir/$_";
-	    next if $deb !~ /(\Q$arch\E|all)\.[\w\d.-]*$/;
-
-	    $self->log("\n$deb:\n");
+	    $self->log("\n");
 	    if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
 		$self->log("Can't spawn dpkg: $! -- can't dump info\n");
 	    }
@@ -714,6 +707,7 @@ sub build (\$$$) {
 		$self->log($_) while( <PIPE> );
 		close( PIPE );
 	    }
+	    $self->log("\n");
 	}
 
 	foreach (@cfiles) {
@@ -2419,13 +2413,20 @@ sub open_build_log (\$) {
     $self->set('Log File', $filename);
     $self->set('Log Stream', $PLOG);
 
-    $self->log_section('sbuild/' . $self->get_conf('ARCH') . " $version");
-    $self->log("Automatic build of $self->{'Package_SVersion'} on " .
-	       $self->get_conf('HOSTNAME') . "\n");
-    $self->log("Build started at " .
-	       strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) .
-	       "\n");
-    $self->log_sep();
+    $self->log("sbuild (Debian sbuild) $version ($release_date)\n");
+
+    my $head1 = $self->get('Package') . ' ' . $self->get('Version') .
+	' (' . $self->get_conf('ARCH') . ') ';
+    my $head2 = strftime("%d %b %Y %H:%M",
+			 localtime($self->get('Pkg Start Time')));
+    my $head = $head1 . ' ' x (80 - 4 - length($head1) - length($head2)) .
+	$head2;
+    $self->log_section($head);
+
+    $self->log("Package: " . $self->get('Package') . "\n");
+    $self->log("Version: " . $self->get('Version') . "\n");
+    $self->log("Architecture: " . $self->get_conf('ARCH') . "\n");
+    $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");
 }
 
 sub close_build_log (\$$$$$$$) {
@@ -2539,6 +2540,7 @@ sub log_section(\$$) {
     my $self = shift;
     my $section = shift;
 
+    $self->log("\n");
     $self->log('╔', '═' x 78, '╗', "\n");
     $self->log('║', " $section ", ' ' x (80 - length($section) - 4), '║', "\n");
     $self->log('╚', '═' x 78, '╝', "\n\n");
@@ -2548,6 +2550,7 @@ sub log_subsection(\$$) {
     my $self = shift;
     my $section = shift;
 
+    $self->log("\n");
     $self->log('┌', '─' x 78, '┐', "\n");
     $self->log('│', " $section ", ' ' x (80 - length($section) - 4), '│', "\n");
     $self->log('└', '─' x 78, '┘', "\n\n");
@@ -2557,9 +2560,9 @@ sub log_subsubsection(\$$) {
     my $self = shift;
     my $section = shift;
 
-    $self->log('─' x 80, "\n");
-    $self->log(" $section\n");
-    $self->log('─' x (length($section) + 1), "\n\n");
+    $self->log("\n");
+    $self->log("$section\n");
+    $self->log('─' x (length($section)), "\n\n");
 }
 
 sub log_sep(\$) {
