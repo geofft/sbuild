@@ -22,7 +22,7 @@
 
 package Sbuild::Chroot;
 
-use Sbuild qw(debug);
+use Sbuild qw(copy debug);
 use Sbuild::Base;
 use Sbuild::Conf;
 use Sbuild::ChrootInfo;
@@ -72,6 +72,7 @@ sub new ($$$) {
     $self->set('Session ID', "");
     $self->set('Chroot ID', $chroot_id);
     $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
+    $self->set('Environment', copy(\%ENV));
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;
@@ -121,23 +122,23 @@ sub _setup_options (\$\$) {
 	die "Can't create $chroot_aptconf: $!";
     }
 
-    # TODO: Don't alter environment in parent process.
     # unsplit mode uses an absolute path inside the chroot, rather
     # than on the host system.
     if ($self->get('Split')) {
 	my $chroot_dir = $self->get('Location');
 
 	$self->set('APT Options',
-		   "-o Dir::State::status=$chroot_dir/var/lib/dpkg/status".
-		   " -o DPkg::Options::=--root=$chroot_dir".
-		   " -o DPkg::Run-Directory=$chroot_dir");
+		   ['-o', "Dir::State::status=$chroot_dir/var/lib/dpkg/status",
+		    '-o', "DPkg::Options::=--root=$chroot_dir",
+		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
 
-	# TODO: Don't alter environment in parent process.
 	# sudo uses an absolute path on the host system.
-	$ENV{'APT_CONFIG'} = $self->get('Chroot APT Conf');
+	$self->get('Environment')->{'APT_CONFIG'} =
+	    $self->get('Chroot APT Conf');
     } else { # no split
-	$self->set('APT Options', "");
-	$ENV{'APT_CONFIG'} = $self->get('APT Conf');
+	$self->set('APT Options', []);
+	$self->get('Environment')->{'APT_CONFIG'} =
+	    $self->get('APT Conf');
     }
 }
 
@@ -153,34 +154,30 @@ sub strip_chroot_path (\$$) {
 
 sub log_command (\$$$) {
     my $self = shift;
-    my $msg = shift;      # Message to log
-    my $priority = shift; # Priority of log message
+    my $options = shift;
+
+    my $priority = $options->{'PRIORITY'};
 
     if ((defined($priority) && $priority >= 1) || $self->get_conf('DEBUG')) {
-	my $options = $self->get('APT Options');
-	if ($options ne "" && !$self->get_conf('DEBUG')) {
-	    $msg =~ s/\Q$options\E/CHROOT_APT_OPTIONS/g;
+	my $command;
+	if ($self->get_conf('DEBUG')) {
+	    $command = $options->{'EXPCOMMAND'};
+	} else {
+	    $command = $options->{'COMMAND'};
 	}
-	$self->log_info($msg)
+
+	$self->log_info(join(" ", @$command), "\n");
     }
 }
 
 sub get_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $user = shift;     # User to run command under
-    my $chroot = shift;   # Run in chroot?
-    my $priority = shift; # Priority of log message
-    my $dir = shift;     # Directory to use (optional)
-    my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
+    my $options = shift;
 
-    if ($self->get_conf('DEBUG')) {
-	$self->log_command($cmdline, $priority);
-    } else {
-	$self->log_command($command, $priority);
-    }
+    $options->{'INTCOMMAND'} = copy($options->{'COMMAND'});
+    $self->get_command_internal($options);
 
-    return $cmdline;
+    $self->log_command($options);
 }
 
 # Note, do not run with $user="root", and $chroot=0, because root
@@ -188,17 +185,9 @@ sub get_command (\$$$$$$) {
 # via sudo.
 sub run_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $user = shift;     # User to run command under
-    my $chroot = shift;   # Run in chroot?
-    my $priority = shift; # Priority of log message
-    my $dir = shift;     # Directory to use (optional)
+    my $options = shift;
 
-    my $pipe = $self->pipe_command($command,
-				   $user,
-				   $chroot,
-				   $priority,
-				   $dir);
+    my $pipe = $self->pipe_command($options);
 
     if (defined($pipe)) {
 	while (<$pipe>) {
@@ -215,106 +204,125 @@ sub run_command (\$$$$$$) {
 # via sudo.
 sub pipe_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $user = shift;     # User to run command under
-    my $chroot = shift;   # Run in chroot?
-    my $priority = shift; # Priority of log message
-    my $dir = shift;     # Directory to use (optional)
-    my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
+    my $options = shift;
 
     my $pipe = undef;
     my $pid = open($pipe, "-|");
     if (!defined $pid) {
 	warn "Cannot open pipe: $!\n";
     } elsif ($pid == 0) { # child
+# TODO: Set up streams from options
 	my $log = $self->get('Log Stream');
 	open(STDIN, '<&', $devnull)
 	    or warn "Can't redirect stdin\n";
 	open(STDERR, '>&', $log)
 	    or warn "Can't redirect stderr\n";
 
-	$self->exec_command($command,
-			    $user,
-			    $chroot,
-			    $priority,
-			    $dir);
+	$self->exec_command($options);
     }
 
-    debug("Pipe (PID $pid, $pipe) created for: $cmdline\n");
+    debug("Pipe (PID $pid, $pipe) created for: ",
+	  join(" ", @{$options->{'COMMAND'}}),
+	  "\n");
+
+    $options->{'PID'} = $pid;
 
     return $pipe;
 }
 
 sub exec_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $user = shift;     # User to run command under
-    my $chroot = shift;   # Run in chroot?
-    my $priority = shift; # Priority of log message
-    my $dir = shift;     # Directory to use (optional)
-    my $cmdline = $self->get_command_internal($command, $user, $chroot, $dir);
+    my $options = shift;
 
-    if ($self->get_conf('DEBUG')) {
-	$self->log_command($cmdline, $priority);
-    } else {
-	$self->log_command($command, $priority);
+    $options->{'INTCOMMAND'} = copy($options->{'COMMAND'});
+    $self->get_command_internal($options);
+
+    $self->log_command($options);
+
+    my $dir = $options->{'CHDIR'};
+    my $command = $options->{'EXPCOMMAND'};
+
+    # Set environment.
+    local (%ENV);
+
+    my $chrootenv = $self->get('Environment');
+    foreach (keys %$chrootenv) {
+	$ENV->{$_} = $chrootenv->{$_};
     }
 
-    debug("Running command: $cmdline\n");
-    exec $cmdline;
+    my $commandenv = $options->{'ENV'};
+    foreach (keys %$commandenv) {
+	$ENV->{$_} = $commandenv->{$_};
+    }
+
+    if (defined($dir) && $dir) {
+	debug("Changing to directory: $dir\n");
+	chdir($dir) or die "Can't change directory to $dir: $!";
+    }
+
+    debug("Running command: ", join(" ", @$command), "\n");
+    exec @$command;
+    die "Failed to exec: $command->[0]: $!";
 }
 
 sub get_apt_command_internal (\$$$) {
     my $self = shift;
-    my $aptcommand = shift; # Command to run
-    my $options = shift;    # Command options
-    $aptcommand .= ' ' . $self->get('APT Options') . " $options";
+    my $options = shift;
 
-    return $aptcommand;
+    my $command = $options->{'COMMAND'};
+    my $apt_options = $self->get('APT Options');
+
+    my @aptcommand = ();
+    if (defined($apt_options)) {
+	push(@aptcommand, $command->[0]);
+	push(@aptcommand, @$apt_options);
+	if ($#$command > 0) {
+	    push(@aptcommand, @{$command}[1 .. $#$command]);
+	}
+    } else {
+	@aptcommand = @$command;
+    }
+
+    $options->{'INTCOMMAND'} = \@aptcommand;
 }
 
 sub get_apt_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $options = shift;  # Command options
-    my $user = shift;     # User to run command under
-    my $priority = shift; # Priority of log message
-    my $dir = shift;      # Directory to use (optional)
+    my $options = shift;
 
-    my $aptcommand = $self->get_apt_command_internal($command, $options);
+    $options->{'CHROOT'} = $self->apt_chroot();
 
-    my $cmdline = $self->get_command($aptcommand, $user,
-				     $self->apt_chroot(), $priority, $dir);
+    $self->get_apt_command_internal($options);
 
-    return $cmdline;
+    $self->get_command_internal($options);
+
+    $self->log_command($options);
+
+    return $options;
 }
 
 sub run_apt_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $options = shift;  # Command options
-    my $user = shift;     # User to run command under
-    my $priority = shift; # Priority of log message
-    my $dir = shift;      # Directory to use (optional)
+    my $options = shift;
 
-    my $aptcommand = $self->get_apt_command_internal($command, $options);
+# Set modfied command
+    $self->get_apt_command_internal($options);
 
-    return $self->run_command($aptcommand, $user,
-			      $self->apt_chroot(), $priority, $dir);
+    $options->{'CHROOT'} = $self->apt_chroot();
+
+    return $self->run_command($options);
 }
 
 sub pipe_apt_command (\$$$$$$) {
     my $self = shift;
-    my $command = shift;  # Command to run
-    my $options = shift;  # Command options
-    my $user = shift;     # User to run command under
-    my $priority = shift; # Priority of log message
-    my $dir = shift;      # Directory to use (optional)
+    my $options = shift;
 
-    my $aptcommand = $self->get_apt_command_internal($command, $options);
+# Set modfied command
+    my $aptcommand = $self->get_apt_command_internal($options);
 
-    return $self->pipe_command($aptcommand, $user,
-			       $self->apt_chroot(), $priority, $dir);
+    $options->{'CHROOT'} = $self->apt_chroot();
+
+    return $self->pipe_command($options);
 }
 
 sub apt_chroot (\$) {

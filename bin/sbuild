@@ -79,13 +79,13 @@ sub main () {
 
 # see debsign for priorities, we will follow the same order
     $conf->set('SIGNING_OPTIONS',
-		  "-m\"".$conf->get('MAINTAINER_NAME')."\"")
+	       "-m".$conf->get('MAINTAINER_NAME')."")
 	if defined $conf->get('MAINTAINER_NAME');
     $conf->set('SIGNING_OPTIONS',
-		  "-e\"".$conf->get('UPLOADER_NAME')."\"")
+	       "-e".$conf->get('UPLOADER_NAME')."")
 	if defined $conf->get('UPLOADER_NAME');
     $conf->set('SIGNING_OPTIONS',
-		  "-k\"".$conf->get('KEY_ID')."\"")
+	       "-k".$conf->get('KEY_ID')."")
 	if defined $conf->get('KEY_ID');
     $conf->set('MAINTAINER_NAME', $conf->get('UPLOADER_NAME')) if defined $conf->get('UPLOADER_NAME');
     $conf->set('MAINTAINER_NAME', $conf->get('KEY_ID')) if defined $conf->get('KEY_ID');

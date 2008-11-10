@@ -103,10 +103,12 @@ sub end_session (\$) {
 
 sub get_command_internal (\$$$$$) {
     my $self = shift;
-    my $command = shift; # Command to run
-    my $user = shift;    # User to run command under
-    my $chroot = shift;  # Run in chroot?
-    my $dir = shift;     # Directory to use (optional)
+    my $options = shift;
+
+    my $command = $options->{'INTCOMMAND'}; # Command to run
+    my $user = $options->{'USER'};          # User to run command under
+    my $chroot = $options->{'CHROOT'};      # Run in chroot?
+    my $dir = $options->{'DIR'};            # Directory to use (optional)
 
     if (!defined $user || $user eq "") {
 	$user = $self->get_conf('USERNAME');
@@ -115,15 +117,20 @@ sub get_command_internal (\$$$$$) {
 	$chroot = 1;
     }
 
-    my $cmdline;
+    my @cmdline;
+    my $chdir = undef;
     if ($chroot != 0) { # Run command inside chroot
 	# TODO: Allow user to set build location
 	if (!defined($dir)) {
 	    $dir = $self->strip_chroot_path($self->get('Build Location'));
 	}
-	$cmdline = $self->get_conf('SCHROOT') . " -d '$dir' -c " . $self->get('Session ID') .
-	    " --run-session " . $self->get_conf('SCHROOT_OPTIONS')  .
-	    " -u $user -p -- /bin/sh -c '$command'";
+	@cmdline = ($self->get_conf('SCHROOT'),
+		    '-d', "$dir",
+		    '-c', $self->get('Session ID'),
+		    '--run-session',
+		    @{$self->get_conf('SCHROOT_OPTIONS')},
+		    '-u', "$user", '-p', '--',
+		    @$command);
     } else { # Run command outside chroot
 	if (!defined($dir)) {
 	    $dir = $self->get('Build Location');
@@ -131,19 +138,18 @@ sub get_command_internal (\$$$$$) {
 	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
 	} elsif ($user eq 'root') {
-	    $cmdline = $self->get_conf('SUDO') . ' ';
-#	    if ($user ne "root") {
-#		$cmdline .= "-u $Sbuild::Conf::username ";
-#	    }
+	    @cmdline = ($self->get_conf('SUDO'));
 	}
-	my $chdir = "";
-	if (defined($dir)) {
-	    $chdir = "cd \"$dir\" && ";
-	}
-	$cmdline .= "/bin/sh -c '$chdir$command'";
+	$chdir = $dir if defined($dir);
+	@cmdline = @$command;
     }
 
-    return $cmdline;
+    $options->{'CHROOT'} = $chroot;
+    $options->{'USER'} = $user;
+    $options->{'COMMAND'} = $command;
+    $options->{'EXPCOMMAND'} = \@cmdline;
+    $options->{'CHDIR'} = $chdir;
+    $options->{'DIR'} = $dir;
 }
 
 1;

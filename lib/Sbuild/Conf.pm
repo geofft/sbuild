@@ -160,7 +160,7 @@ sub read_config (\%) {
     our $sudo = "/usr/bin/sudo";
     our $su = "/bin/su";
     our $schroot = "/usr/bin/schroot";
-    our $schroot_options = "-q";
+    our $schroot_options = ['-q'];
     our $fakeroot = "/usr/bin/fakeroot";
     our $apt_get = "/usr/bin/apt-get";
     our $apt_cache = "/usr/bin/apt-cache";
@@ -172,7 +172,7 @@ sub read_config (\%) {
     our $stats_dir = "$HOME/stats";
     our $package_checklist = "/var/lib/sbuild/package-checklist";
     our $build_env_cmnd = "";
-    our $pgp_options = "-us -uc";
+    our $pgp_options = ['-us', '-uc'];
     our $log_dir = "$HOME/logs";
     our $mailto = "";
     our %mailto = ();
