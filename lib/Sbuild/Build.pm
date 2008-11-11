@@ -932,33 +932,25 @@ sub install_deps (\$) {
 	return 0;
     }
 
-    my $pid = open(my $pipe, "|-");
-    if (!defined $pid) {
-	warn "Cannot open pipe: $!\n";
-	return 0;
-    } elsif ($pid == 0) { # child
-	my $log = $self->get('Log Stream');
-	open(STDOUT, '>&', $log)
-	    or warn "Can't redirect stdout\n";
-	open(STDERR, '>&', $log)
-	    or warn "Can't redirect stderr\n";
-
-	$self->get('Session')->exec_command(
-	    { COMMAND => [$self->get_conf('DPKG'), '--set-selections' ],
+    my $pipe = $self->get('Session')->pipe_command(
+	    { COMMAND => [$self->get_conf('DPKG'), '--set-selections'],
+	      PIPE => 'out',
 	      USER => 'root',
 	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
+
+    if (!$pipe) {
+	warn "Cannot open pipe: $!\n";
+	return 0;
     }
 
-    if ($pid) {
-	foreach my $tpkg (@instd) {
-	    print $pipe $tpkg . " purge\n";
-	}
-	close($pipe);
-	if ($?) {
-	    $self->log($self->get_conf('DPKG') . ' --set-selections failed\n');
-	}
+    foreach my $tpkg (@instd) {
+	print $pipe $tpkg . " purge\n";
+    }
+    close($pipe);
+    if ($?) {
+	$self->log($self->get_conf('DPKG') . ' --set-selections failed\n');
     }
 
     $self->unlock_file($self->get('Session')->get('Install Lock'));

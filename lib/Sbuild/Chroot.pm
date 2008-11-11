@@ -187,6 +187,7 @@ sub run_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
+    $options->{PIPE} = 'in';
     my $pipe = $self->pipe_command($options);
 
     if (defined($pipe)) {
@@ -206,16 +207,31 @@ sub pipe_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
+    my $pipetype = "-|";
+    $pipetype = "|-" if (defined $options->{PIPE} &&
+			 $options->{PIPE} eq 'out');
+
     my $pipe = undef;
-    my $pid = open($pipe, "-|");
+    my $pid = open($pipe, $pipetype);
     if (!defined $pid) {
 	warn "Cannot open pipe: $!\n";
     } elsif ($pid == 0) { # child
-# TODO: Set up streams from options
-	my $log = $self->get('Log Stream');
+	if (!defined $options->{PIPE} ||
+	    $options->{PIPE} ne 'out') { # redirect stdin
+	    my $in = $devnull;
+	    $in = $options->{STREAMIN} if defined($options->{STREAMIN});
 	open(STDIN, '<&', $devnull)
 	    or warn "Can't redirect stdin\n";
-	open(STDERR, '>&', $log)
+	} else { # redirect stdout
+	    my $out = $self->get('Log Stream');
+	    $out = $options->{STREAMOUT} if defined($options->{STREAMOUT});
+	    open(STDOUT, '>&', $out)
+		or warn "Can't redirect stdout\n";
+	}
+	# redirect stderr
+	my $err = $self->get('Log Stream');
+	$err = $options->{STREAMERR} if defined($options->{STREAMERR});
+	open(STDERR, '>&', $err)
 	    or warn "Can't redirect stderr\n";
 
 	$self->exec_command($options);
