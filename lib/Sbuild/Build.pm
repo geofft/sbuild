@@ -688,8 +688,7 @@ sub build (\$$$) {
     my @space_files = ("$dscdir");
     if ($rv) {
 	$self->log("FAILED [dpkg-buildpackage died]\n");
-    }
-    else {
+    } else {
 	if (-r "$dscdir/debian/files" && $self->get('Chroot Build Dir')) {
 	    my @files = $self->debian_files_list("$dscdir/debian/files");
 
@@ -784,8 +783,8 @@ sub build (\$$$) {
 	}
 
 	foreach (@cfiles) {
-	    push( @space_files, $_ );
-	    system "mv", "-f", "$build_dir/$_", "."
+	    push( @space_files, $self->get_conf('BUILD_DIR') . "/$_");
+	    system "mv", "-f", "$build_dir/$_", $self->get_conf('BUILD_DIR')
 		and $self->log_error("Could not move $_ to .\n");
 	}
 	$self->log_subsection("Finished");
@@ -1960,22 +1959,12 @@ sub check_space (\$@) {
     my $sum = 0;
 
     foreach (@files) {
-	my $pipe;
-
-	if (/^\Q$self->{'Chroot Dir'}\E/) {
-	    $_ = $self->get('Session')->strip_chroot_path($_);
-	    $pipe = $self->get('Session')->pipe_command(
-		{ COMMAND => ['/usr/bin/du', '-k', '-s', $_],
-		  USER => 'root',
-		  CHROOT => 1,
-		  PRIORITY => 0});
-	} else {
-	    $pipe = $self->get('Session')->pipe_command(
-		{ COMMAND => ['/usr/bin/du', '-k', '-s', $_],
-		  USER => $self->get_conf('USERNAME'),
-		  CHROOT => 0,
-		  PRIORITY => 0});
-	}
+	my $pipe = $self->get('Session')->pipe_command(
+	    { COMMAND => ['/usr/bin/du', '-k', '-s', $_],
+	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 0,
+	      PRIORITY => 0,
+	      DIR => '/'});
 
 	if (!$pipe) {
 	    $self->log("Cannot determine space needed (du failed): $!\n");
