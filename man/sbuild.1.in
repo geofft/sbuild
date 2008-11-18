@@ -164,6 +164,10 @@ When used with in conjunction with \-s, this option forces the inclusion of the
 orig.tar.gz file in the generated .changes file, even in cases where it would
 not normally be included, i.e. use dpkg\-buildpackage \-sa.
 .TP
+.BR "\-\-use\-snapshot"
+Installs the latest snapshot gcc compiler from the \fIgcc-snapshot\fP package,
+and alters the build environment to use the snapshot compiler for the build.
+.TP
 .BR \-v ", " "\-\-verbose"
 Be verbose, i.e. all information goes to stdout as well as to the log files.
 .TP
