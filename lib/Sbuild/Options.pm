@@ -156,7 +156,7 @@ sub parse_options (\%) {
 			   $self->set_conf('BUILD_SOURCE', 1);
 		       },
 		       "archive" => sub {
-			   $self->set_conf{'ARCHIVE', $_[1]);
+			   $self->set_conf('ARCHIVE', $_[1]);
 		       },
 		       "stats-dir=s" => sub {
 			   $self->set_conf('STATS_DIR', $_[1]);
