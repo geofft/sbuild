@@ -245,6 +245,7 @@ our $lock_interval = 5;
 	);
     our $check_depends_algorithm = "first-only";
     our $distribution = 'unstable';
+    our $archive = undef;
     our $chroot = undef;
     our $build_arch_all = 0;
 
