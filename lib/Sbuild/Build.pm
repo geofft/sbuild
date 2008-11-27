@@ -2453,11 +2453,15 @@ sub close_build_log (\$$$$$$$) {
 
     my $filename = $self->get('Log File');
 
-    send_mail($self->get('Config'), $self->get_conf('MAILTO'),
-	      "Log for " . $self->get('Pkg Status') .
-	      " build of " . $self->get('Package_Version') .
-	      " (dist=" . $self->get_conf('DISTRIBUTION') . ")",
-	      $filename)
+    my $subject = "Log for " . $self->get('Pkg Status') .
+                  " build of " . $self->get('Package_Version');
+    if($self->get_conf('ARCHIVE')) {
+	    $subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+    }
+    else {
+	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
+    }
+    send_mail($self->get('Config'), $self->get_conf('MAILTO'), $subject, $filename)
 	if (defined($filename) && -f $filename &&
 	    $self->get_conf('MAILTO'));
 

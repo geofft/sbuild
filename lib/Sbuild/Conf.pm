@@ -123,6 +123,7 @@ sub set_allowed_keys (\%) {
 	'BATCH_MODE'				=> "",
 	'MANUAL_SRCDEPS'			=> "",
 	'BUILD_SOURCE'				=> "",
+	'ARCHIVE'				=> "",
 	'BIN_NMU'				=> "",
 	'BIN_NMU_VERSION'			=> "",
 	'GCC_SNAPSHOT'				=> "");
@@ -256,6 +257,7 @@ our $lock_interval = 5;
 	if (!defined($maintainer_name) && defined($ENV{'DEBEMAIL'}));
 
     $self->set('DISTRIBUTION', $distribution);
+    $self->set('ARCHIVE', $archive) if (defined $archive);
     $self->set('CHROOT', $chroot);
     $self->set('BUILD_ARCH_ALL', $build_arch_all);
     $self->set('MAILPROG', $mailprog);
