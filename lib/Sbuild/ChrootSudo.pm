@@ -1,7 +1,7 @@
 #
 # Chroot.pm: chroot library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -58,14 +58,21 @@ sub new ($$$$$) {
 
 sub begin_session (\$) {
     my $self = shift;
+    my $chroot = $self->get('Chroot ID');
 
-    # TODO: Abstract by adding method to get specific chroot info from
-    # ChrootInfo.
-    my $chroot = $self->get('Chroots')->get('Chroots')->{$self->get('Chroot ID')};
+    my $info = $self->get('Chroots')->get_info($chroot);
 
-    $self->set('Priority', $chroot->{'Priority'});
-    $self->set('Location', $chroot->{'Location'});
-    $self->set('Session Purged', $chroot->{'Session Purged'});
+    print STDERR "Setting up chroot $chroot\n"
+	if $self->get_conf('DEBUG');
+
+    if (defined($info) &&
+	defined($info->{'Location'}) && -d $info->{'Location'}) {
+	$self->set('Priority', $info->{'Priority'});
+	$self->set('Location', $info->{'Location'});
+	$self->set('Session Purged', $info->{'Session Purged'});
+    } else {
+	die $self->get('Chroot ID') . " chroot does not exist\n";
+    }
 
     $self->_setup_options();
 

@@ -47,6 +47,13 @@ sub new ($$) {
     return $self;
 }
 
+sub get_info (\%$) {
+    my $self = shift;
+    my $chroot = shift;
+
+    return $self->get('Chroots')->{$chroot};
+}
+
 sub get_info_all (\%) {
     my $self = shift;
 
