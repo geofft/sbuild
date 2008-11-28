@@ -37,7 +37,7 @@ use POSIX;
 use File::Basename qw(basename dirname);
 use IO::Handle;
 use FileHandle;
-use Sbuild qw(binNMU_version version_compare copy);
+use Sbuild qw($devnull binNMU_version version_compare copy);
 use Data::Dumper;
 use File::Temp qw(tempdir);
 use Sbuild::ChrootInfoSchroot;
@@ -132,9 +132,6 @@ sub main () {
 					   $conf->get('CHROOT'),
 					   $conf->get('ARCH'));
 
-	# Default until build log is open.
-	$session->set('Log Stream', \*STDERR);
-
 	if (!$session->begin_session()) {
 	    $build->log("Error creating chroot session: skipping " .
 		$build->get('Package') . "\n");
@@ -173,6 +170,16 @@ sub main () {
 
 	# Needed so chroot commands log to build log
 	$session->set('Log Stream', $build->get('Log Stream'));
+
+	# Chroot execution defaults
+	my $chroot_defaults = $session->get('Defaults');
+	$chroot_defaults->{'DIR'} =
+	    $session->strip_chroot_path($session->get('Build Location'));
+	$chroot_defaults->{'STREAMIN'} = $devnull;
+	$chroot_defaults->{'STREAMOUT'} = $build->get('Log Stream');
+	$chroot_defaults->{'STREAMERR'} = $build->get('Log Stream');
+
+	$build->set('Session', $session);
 
 	$build->set('Pkg Status', 'failed'); # assume for now
 	$main::current_job = $build->get('Package_Version');
