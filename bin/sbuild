@@ -70,8 +70,8 @@ sub main () {
 	if $conf->get('DEBUG');
     print "Selected chroot " . $conf->get('CHROOT') . "\n"
 	if $conf->get('DEBUG') and defined $conf->get('CHROOT');
-    print "Selected architecture " . $conf->get('USER_ARCH') . "\n"
-	if $conf->get('DEBUG' && defined($conf->get('USER_ARCH')));
+    print "Selected architecture " . $conf->get('ARCH') . "\n"
+	if $conf->get('DEBUG' && defined($conf->get('ARCH')));
 
     $conf->set('MAILTO',
 	       $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')})
@@ -130,7 +130,7 @@ sub main () {
 
 	my $session = $chroot_info->create($conf->get('DISTRIBUTION'),
 					   $conf->get('CHROOT'),
-					   $conf->get('USER_ARCH'));
+					   $conf->get('ARCH'));
 
 	# Needed so chroot commands log to build log
 	$session->set('Log Stream', $build->get('Log Stream'));
