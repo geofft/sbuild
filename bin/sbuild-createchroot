@@ -81,7 +81,7 @@ sub makedir ($$) {
     }
 }
 
-our $bootstrap_arch = $conf->get('ARCH');
+our $bootstrap_arch = $conf->get('HOST_ARCH');
 our $foreign = 0;
 our $include = '';
 our $exclude = '';
