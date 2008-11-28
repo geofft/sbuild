@@ -20,6 +20,7 @@
 
 # Import default modules into main
 package main;
+use Sbuild qw($devnull);
 use Sbuild::Conf;
 use Sbuild::Log qw(open_log close_log);
 use Sbuild::ChrootInfoSchroot;
@@ -95,8 +96,16 @@ sub setup ($$) {
     my $session;
 
     $session = $chroot_info->create($chroot,
-				    $conf->get('CHROOT'),
+				    undef, # TODO: Add --chroot option
 				    $conf->get('ARCH'));
+
+    $session->set('Log Stream', \*STDOUT);
+
+    my $chroot_defaults = $session->get('Defaults');
+    $chroot_defaults->{'DIR'} = '/';
+    $chroot_defaults->{'STREAMIN'} = $Sbuild::devnull;
+    $chroot_defaults->{'STREAMOUT'} = \*STDOUT;
+    $chroot_defaults->{'STREAMERR'} =\*STDOUT;
 
     $Sbuild::Utility::current_session = $session;
 

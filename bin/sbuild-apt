@@ -38,7 +38,9 @@ or usage_error("sbuild-apt", "Error parsing command-line options");
 
 usage_error("sbuild-apt", "Incorrect number of options") if (@ARGV < 2);
 
-my $command = $ARGV[1];
+my $chroot = shift @ARGV;
+my $command = shift @ARGV;
+
 if ($command eq "apt-get") {
     $command = $conf->get('APT_GET');
 } elsif ($command eq "apt-cache") {
@@ -48,16 +50,14 @@ if ($command eq "apt-get") {
 		"Bad command $command.  Allowed commands: apt-get or apt-cache\n");
 }
 
-$Sbuild::Conf::cwd = "/";
+my $session = setup($chroot, $conf) or die "Chroot setup failed";
 
-my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
-
-shift @ARGV;
-shift @ARGV;
-my $cmd = join(' ', @ARGV);
-
-$ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-my $status = $session->run_apt_command($command, $cmd, "root", 1);
+my $status = $session->run_apt_command(
+    { COMMAND => [$command, @ARGV],
+      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+      USER => 'root',
+      PRIORITY => 1,
+      DIR => '/' });
 
 cleanup($conf);
 

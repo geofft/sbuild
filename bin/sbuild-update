@@ -29,7 +29,6 @@ use Sbuild::Utility qw(setup cleanup);
 package main;
 
 my $conf = Sbuild::Conf->new();
-$conf->set('CWD', '/');
 
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-update"); },
@@ -37,8 +36,6 @@ GetOptions (
 or usage_error("sbuild-update", "Error parsing command-line options");
 
 usage_error("sbuild-update", "Incorrect number of options") if (@ARGV < 1);
-
-$Sbuild::Conf::cwd = "/";
 
 foreach (@ARGV) {
 
@@ -48,8 +45,12 @@ foreach (@ARGV) {
 
     print STDOUT "Updating $chroot chroot...\n";
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-    my $status = $session->run_apt_command($conf->get('APT_GET'), "update",
-					   "root", 1);
+    my $status = $session->run_apt_command(
+    { COMMAND => [$conf->get('APT_GET'), 'update'],
+      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+      USER => 'root',
+      PRIORITY => 1,
+      DIR => '/' });
 
     cleanup($conf);
 

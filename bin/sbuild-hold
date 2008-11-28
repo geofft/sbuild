@@ -44,29 +44,36 @@ my $session = setup($ARGV[0], $conf) or die "Chroot setup failed for $chroot chr
 
 print STDOUT "Holding packages in $chroot chroot:";
 
-my $command = $session->get_command($conf->get('DPKG') . ' --set-selections',
-				    "root", 1);
-if (!open(SELECTIONS, "| $command")) {
+my $pipe = $session->pipe_command(
+    {COMMAND => [$conf->get('DPKG'), '--set-selections'],
+     PIPE => 'out',
+     USER => 'root',
+     CHROOT => 1,
+     PRIORITY => 0});
+
+if (!$pipe) {
     print STDERR "Can't run dpkg --set-selections in chroot\n";
     shutdown("TERM");
 }
 
 shift @ARGV;
 foreach (@ARGV) {
-    print SELECTIONS "$_        hold\n";
+    print $pipe "$_        hold\n";
     print STDOUT " $_";
 }
 
-if (!close SELECTIONS) {
+if (!close $pipe) {
     print STDERR "Can't run dpkg --set-selections in chroot\n";
     shutdown("TERM");
 }
 
-print STDOUT ".\n";
+print STDOUT ".\n\n";
 
-my $packages = join(" ", @ARGV);
-my $status = $session->run_command($conf->get('DPKG') . " --list $packages",
-				   "root", 1, 0);
+my $status = $session->run_command(
+    {COMMAND => [$conf->get('DPKG'), '--list', @ARGV],
+     USER => 'root',
+     CHROOT => 1,
+     PRIORITY => 0});
 
 cleanup($conf);
 
