@@ -35,14 +35,22 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($debug_level version_less version_lesseq version_eq
-		 version_compare binNMU_version parse_date isin copy
-		 dump_file check_packages help_text version_text
-		 usage_error send_mail debug);
+    @EXPORT = qw($debug_level $devnull version_less version_lesseq
+		 version_eq version_compare binNMU_version parse_date
+		 isin copy dump_file check_packages help_text
+		 version_text usage_error send_mail debug);
 }
 
+our $devnull;
 my $opt_correct_version_cmp;
 our $debug_level = 0;
+
+BEGIN {
+    # A file representing /dev/null
+    if (!open($devnull, '+<', '/dev/null')) {
+	die "Cannot open /dev/null: $!\n";;
+    }
+}
 
 sub version_less ($$);
 sub version_lesseq ($$);
