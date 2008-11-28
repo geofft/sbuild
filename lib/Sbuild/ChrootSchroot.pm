@@ -1,7 +1,7 @@
 #
 # Chroot.pm: chroot library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -82,6 +82,7 @@ sub begin_session (\$) {
     }
 
     $self->_setup_options();
+
     return 1;
 }
 
@@ -98,6 +99,7 @@ sub end_session (\$) {
 	print STDERR "Chroot cleanup failed\n";
 	return 0;
     }
+
     return 1;
 }
 
@@ -108,7 +110,12 @@ sub get_command_internal (\$$$$$) {
     my $command = $options->{'INTCOMMAND'}; # Command to run
     my $user = $options->{'USER'};          # User to run command under
     my $chroot = $options->{'CHROOT'};      # Run in chroot?
-    my $dir = $options->{'DIR'};            # Directory to use (optional)
+    my $dir;                                # Directory to use (optional)
+    $dir = $self->get('Defaults')->{'DIR'} if
+	(defined($self->get('Defaults')) &&
+	 defined($self->get('Defaults')->{'DIR'}));
+    $dir = $options->{'DIR'} if
+	defined($options->{'DIR'}) && $options->{'DIR'};
 
     if (!defined $user || $user eq "") {
 	$user = $self->get_conf('USERNAME');
@@ -117,23 +124,24 @@ sub get_command_internal (\$$$$$) {
 	$chroot = 1;
     }
 
-    my @cmdline;
+    my @cmdline = ();
     my $chdir = undef;
     if ($chroot != 0) { # Run command inside chroot
-	# TODO: Allow user to set build location
 	if (!defined($dir)) {
-	    $dir = $self->strip_chroot_path($self->get('Build Location'));
+	    $dir = '/';
 	}
 	@cmdline = ($self->get_conf('SCHROOT'),
-		    '-d', "$dir",
+		    '-d', $dir,
 		    '-c', $self->get('Session ID'),
 		    '--run-session',
 		    @{$self->get_conf('SCHROOT_OPTIONS')},
 		    '-u', "$user", '-p', '--',
 		    @$command);
     } else { # Run command outside chroot
-	if (!defined($dir)) {
-	    $dir = $self->get('Build Location');
+	if ($options->{'CHDIR_CHROOT'}) {
+	    my $tmpdir = $self->get('Location');
+	    $tmpdir = $tmpdir . $dir if defined($dir);
+	    $dir = $tmpdir;
 	}
 	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
@@ -141,7 +149,7 @@ sub get_command_internal (\$$$$$) {
 	    @cmdline = ($self->get_conf('SUDO'));
 	}
 	$chdir = $dir if defined($dir);
-	@cmdline = @$command;
+	push(@cmdline, @$command);
     }
 
     $options->{'CHROOT'} = $chroot;

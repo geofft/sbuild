@@ -33,8 +33,6 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
-my $devnull;
-
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -42,12 +40,6 @@ BEGIN {
     @ISA = qw(Exporter Sbuild::Base);
 
     @EXPORT = qw();
-
-    # A file representing /dev/null
-    if (!open($devnull, '+<', '/dev/null')) {
-	die "Cannot open /dev/null: $!\n";;
-    }
-
 }
 
 sub new ($$$);
@@ -73,6 +65,18 @@ sub new ($$$) {
     $self->set('Chroot ID', $chroot_id);
     $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
     $self->set('Environment', copy(\%ENV));
+    $self->set('Defaults', {
+	'COMMAND' => [],
+	'INTCOMMAND' => [], # Private
+	'EXPCOMMAND' => [], # Private
+	'ENV' => {},
+	'USER' => 'root',
+	'CHROOT' => 1,
+	'PRIORITY' => 0,
+	'DIR' => '/',
+	'STREAMIN' => undef,
+	'STREAMOUT' => undef,
+	'STREAMERR' => undef});
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;
@@ -170,16 +174,6 @@ sub log_command (\$$$) {
     }
 }
 
-sub get_command (\$$$$$$) {
-    my $self = shift;
-    my $options = shift;
-
-    $options->{'INTCOMMAND'} = copy($options->{'COMMAND'});
-    $self->get_command_internal($options);
-
-    $self->log_command($options);
-}
-
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed by schroot, nor required
 # via sudo.
@@ -187,7 +181,7 @@ sub run_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
-    $options->{PIPE} = 'in';
+    $options->{'PIPE'} = 'in';
     my $pipe = $self->pipe_command($options);
 
     if (defined($pipe)) {
@@ -208,32 +202,43 @@ sub pipe_command (\$$$$$$) {
     my $options = shift;
 
     my $pipetype = "-|";
-    $pipetype = "|-" if (defined $options->{PIPE} &&
-			 $options->{PIPE} eq 'out');
+    $pipetype = "|-" if (defined $options->{'PIPE'} &&
+			 $options->{'PIPE'} eq 'out');
 
     my $pipe = undef;
     my $pid = open($pipe, $pipetype);
     if (!defined $pid) {
 	warn "Cannot open pipe: $!\n";
     } elsif ($pid == 0) { # child
-	if (!defined $options->{PIPE} ||
-	    $options->{PIPE} ne 'out') { # redirect stdin
-	    my $in = $devnull;
-	    $in = $options->{STREAMIN} if defined($options->{STREAMIN});
-	open(STDIN, '<&', $devnull)
-	    or warn "Can't redirect stdin\n";
+	if (!defined $options->{'PIPE'} ||
+	    $options->{'PIPE'} ne 'out') { # redirect stdin
+	    my $in = undef;
+	    $in = $self->get('Defaults')->{'STREAMIN'} if
+		(defined($self->get('Defaults')) &&
+		 defined($self->get('Defaults')->{'STREAMIN'}));
+	    $in = $options->{'STREAMIN'} if defined($options->{'STREAMIN'});
+	    if (defined($in) && $in && \*STDIN != $in) {
+		open(STDIN, '<&', $in)
+		    or warn "Can't redirect stdin\n";
+	    }
 	} else { # redirect stdout
-	    my $out = $self->get('Log Stream');
-	    $out = $options->{STREAMOUT} if defined($options->{STREAMOUT});
-	    open(STDOUT, '>&', $out)
-		or warn "Can't redirect stdout\n";
+	    my $out = undef;
+	    $out = $self->get('Defaults')->{'STREAMOUT'} if
+		(defined($self->get('Defaults')) &&
+		 defined($self->get('Defaults')->{'STREAMOUT'}));
+	    $out = $options->{'STREAMOUT'} if defined($options->{'STREAMOUT'});
+	    if (defined($out) && $out && \*STDOUT != $out) {
+		open(STDOUT, '>&', $out)
+		    or warn "Can't redirect stdout\n";
+	    }
 	}
 	# redirect stderr
-	my $err = $self->get('Log Stream');
-	$err = $options->{STREAMERR} if defined($options->{STREAMERR});
-	open(STDERR, '>&', $err)
-	    or warn "Can't redirect stderr\n";
-	if ($err) {
+	my $err = undef;
+	$err = $self->get('Defaults')->{'STREAMERR'} if
+	    (defined($self->get('Defaults')) &&
+	     defined($self->get('Defaults')->{'STREAMERR'}));
+	$err = $options->{'STREAMERR'} if defined($options->{'STREAMERR'});
+	if (defined($err) && $err && \*STDERR != $err) {
 	    open(STDERR, '>&', $err)
 		or warn "Can't redirect stderr\n";
 	}
@@ -254,8 +259,11 @@ sub exec_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
-    $options->{'INTCOMMAND'} = copy($options->{'COMMAND'});
     $self->get_command_internal($options);
+
+    debug("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
+    debug("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
+    debug("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
 
     $self->log_command($options);
 
@@ -263,17 +271,22 @@ sub exec_command (\$$$$$$) {
     my $command = $options->{'EXPCOMMAND'};
 
     # Set environment.
-    local (%ENV);
-
     my $chrootenv = $self->get('Environment');
     foreach (keys %$chrootenv) {
-	$ENV->{$_} = $chrootenv->{$_};
+	$ENV{$_} = $chrootenv->{$_};
     }
 
     my $commandenv = $options->{'ENV'};
     foreach (keys %$commandenv) {
-	$ENV->{$_} = $commandenv->{$_};
+	$ENV{$_} = $commandenv->{$_};
     }
+
+    debug("Environment set:\n");
+    foreach (keys %ENV) {
+	debug("  $_=$ENV{$_}\n");
+    }
+    debug("  NEEDED APT_CONFIG=$ENV{'APT_CONFIG'}\n");
+    debug("  NEEDED DEBIAN_FRONTEND=$ENV{'DEBIAN_FRONTEND'}\n");
 
     if (defined($dir) && $dir) {
 	debug("Changing to directory: $dir\n");
@@ -292,9 +305,11 @@ sub get_apt_command_internal (\$$$) {
     my $command = $options->{'COMMAND'};
     my $apt_options = $self->get('APT Options');
 
+    debug("APT Options: ", join(" ", @$apt_options), "\n");
+
     my @aptcommand = ();
     if (defined($apt_options)) {
-	push(@aptcommand, $command->[0]);
+	push(@aptcommand, @{$command}[0]);
 	push(@aptcommand, @$apt_options);
 	if ($#$command > 0) {
 	    push(@aptcommand, @{$command}[1 .. $#$command]);
@@ -303,32 +318,20 @@ sub get_apt_command_internal (\$$$) {
 	@aptcommand = @$command;
     }
 
-    $options->{'INTCOMMAND'} = \@aptcommand;
-}
-
-sub get_apt_command (\$$$$$$) {
-    my $self = shift;
-    my $options = shift;
+    debug("APT Command: ", join(" ", @aptcommand), "\n");
 
     $options->{'CHROOT'} = $self->apt_chroot();
+    $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
 
-    $self->get_apt_command_internal($options);
-
-    $self->get_command_internal($options);
-
-    $self->log_command($options);
-
-    return $options;
+    $options->{'INTCOMMAND'} = \@aptcommand;
 }
 
 sub run_apt_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
-# Set modfied command
+    # Set modfied command
     $self->get_apt_command_internal($options);
-
-    $options->{'CHROOT'} = $self->apt_chroot();
 
     return $self->run_command($options);
 }
@@ -337,10 +340,8 @@ sub pipe_apt_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
-# Set modfied command
-    my $aptcommand = $self->get_apt_command_internal($options);
-
-    $options->{'CHROOT'} = $self->apt_chroot();
+    # Set modfied command
+    $self->get_apt_command_internal($options);
 
     return $self->pipe_command($options);
 }
