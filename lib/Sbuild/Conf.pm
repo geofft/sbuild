@@ -362,7 +362,7 @@ sub check_config (\%) {
 	if !isin($self->get('CHROOT_MODE'),
 		 qw(schroot sudo));
     if ($self->get('CHROOT_MODE') eq 'split' ||
-	($self->get('CHROOT_MODE') eq 'chroot' && $self->get('CHROOT_SPLIT'))) {
+	($self->get('CHROOT_MODE') eq 'schroot' && $self->get('CHROOT_SPLIT'))) {
 	die "sudo binary " . $self->get('SUDO') . " does not exist or isn't executable\n"
 	    if !-x $self->get('SUDO');
 
