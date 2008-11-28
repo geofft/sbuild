@@ -321,7 +321,7 @@ our $lock_interval = 5;
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
 
     # Not user-settable.
-    chomp(my $arch = readpipe($self->get('DPKG') . " --print-installation-architecture"));
+    chomp(our $arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $arch);
     $self->set('ARCH', $arch);
     $self->set('USER_ARCH', undef); # Defaults to $arch in Sbuild::Chroot code
     $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');
