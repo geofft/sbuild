@@ -140,7 +140,7 @@ sub new ($$$) {
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
-    $self->set('Arch', $self->get('Arch'));
+    $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
     $self->set('Jobs File', 'build-progress');
