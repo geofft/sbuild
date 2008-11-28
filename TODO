@@ -1,5 +1,3 @@
-Add the ability to disable the current symlinks.
-
 Check packages in the alternatives and stalled_pkg_timeout lists in
 the configuration file and Conf.pm.  Make sure they are current and
 valid.
@@ -10,17 +8,9 @@ sbuild-createchroot should import most of buildd-make-chroot.
 Split utility programs into library functions. Functions should operate on
 chroot objects, or plain files where appropriate.
 
-Log.pm: Handle nolog case by always opening LOG and PLOG.
-
-Log.pm: Log functions should be generic (writeout of sbuild version/build info
-and symlink creation should be customisable).
-
 */Conf.pm need to be classes.
 
 Chroot.pm: Move chroot naming out of begin_session.
-
-LOG and PLOG should not be in the main namespace; import directly into
-namespace needed.
 
 Are 'Build Start Time' and 'Pkg Start Time' different?
 
@@ -30,16 +20,16 @@ sbuild-setup should document all files copied by schroot setup scripts.
 
 bin/*: Add --help and --version
 
+Add a --verbose option to all commands
+
 All programs must use Getopt::Long for options parsing
 
-sbuild-stats option formattion and option processing perform more than
+sbuild-stats option formatting and option processing perform more than
 one action at once?  Only set mode once?  actions have multiple args?
 
 run_*_command should take an arrayref instead of a string for running
 commands.  They can then be passed directly to schroot avoiding
 quoting issues.
-
-Add a --verbose option to all commands
 
 buildd-clean-upload hard-codes $HOME/upload.  Configure location.
 
@@ -56,8 +46,6 @@ buildd-watcher should use strftime in place of own functions
 
 sbuild utilities should allow specification of chroot architecture
 
-Sbuild::Chroot should be passed Sbuild::Options directly.
-
 Directory passed to dpkg-source includes Debian version.  Should be upstream only.
 
 Document and add examples for %mailto.
@@ -66,3 +54,9 @@ sbuild-adduser should do schroot/sudo-specific setup depending on
 $chroot_mode.
 
 Use 'dcmd cp' to copy build files
+
+Buildd.pm: *_command use:
+ - Split host only chroot use only into ChrootHost object.  No root.
+
+Unify utility command-line options (help, version) and add verbose/debug
+options.
