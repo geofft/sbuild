@@ -33,6 +33,8 @@ use Buildd;
 use Buildd::Conf;
 use POSIX;
 use File::Basename;
+use MIME::QuotedPrint;
+use MIME::Base64;
 
 sub get_next_file ();
 sub process_mail ();
@@ -205,6 +207,11 @@ sub process_mail () {
 	# reply to a build log
 	my( $package, $dist ) = ( $1, $2 );
 	$body_text =~ /^(\S+)/;
+	if ($header{'content-transfer-encoding'} =~ /quoted-printable/) {
+		$body_text = decode_qp($body_text);
+	} elsif ($header{'content-transfer-encoding'} =~ /base64/) {
+		$body_text = decode_base64($body_text);
+	}
 	my $keyword = $1;
 	my $from = $header{'from'};
 	$from = $1 if $from =~ /<(.+)>/;

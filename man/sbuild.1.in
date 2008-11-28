@@ -24,6 +24,7 @@ sbuild \- build debian packages from source
 .RB [ \-v \[or] \-\-verbose " \[or] " \-q \[or] \-\-quiet ]
 .RB [ \-D \[or] \-\-debug ]
 .RB [ \-A \[or] \-\-arch\-all ]
+.RB [ \-\-archive=\fIarchive\fP ]
 .RB [ \-d \[or] \-\-dist=\fIdistribution\fP ]
 .RB [ \-\-arch=\fIarchitecture\fP ]
 .RB [ \-s \[or] \-\-source ]
@@ -122,6 +123,9 @@ these alternatives.
 .BR \-d ", " "\-\-dist=\fIdistribution\fP"
 Fetch source packages from specified distribution.
 .TP
+.BR \-\-archive=\fIarchive\fP
+Communicate with specified archive.
+.TP
 .BR \-f ", " "\-\-force\-depends=\fIdependency-line\fP"
 This option overrides source dependency information for a package. It
 can be given more than one time with accumulating effect. The argument
@@ -163,6 +167,10 @@ Also build source package, i.e. use dpkg\-buildpackage without \-B.
 When used with in conjunction with \-s, this option forces the inclusion of the
 orig.tar.gz file in the generated .changes file, even in cases where it would
 not normally be included, i.e. use dpkg\-buildpackage \-sa.
+.TP
+.BR "\-\-use\-snapshot"
+Installs the latest snapshot gcc compiler from the \fIgcc-snapshot\fP package,
+and alters the build environment to use the snapshot compiler for the build.
 .TP
 .BR \-v ", " "\-\-verbose"
 Be verbose, i.e. all information goes to stdout as well as to the log files.

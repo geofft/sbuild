@@ -123,6 +123,7 @@ sub set_allowed_keys (\%) {
 	'BATCH_MODE'				=> "",
 	'MANUAL_SRCDEPS'			=> "",
 	'BUILD_SOURCE'				=> "",
+	'ARCHIVE'				=> "",
 	'BIN_NMU'				=> "",
 	'BIN_NMU_VERSION'			=> "",
 	'GCC_SNAPSHOT'				=> "");
@@ -244,6 +245,7 @@ our $lock_interval = 5;
 	);
     our $check_depends_algorithm = "first-only";
     our $distribution = 'unstable';
+    our $archive = undef;
     our $chroot = undef;
     our $build_arch_all = 0;
 
@@ -256,6 +258,7 @@ our $lock_interval = 5;
 	if (!defined($maintainer_name) && defined($ENV{'DEBEMAIL'}));
 
     $self->set('DISTRIBUTION', $distribution);
+    $self->set('ARCHIVE', $archive) if (defined $archive);
     $self->set('CHROOT', $chroot);
     $self->set('BUILD_ARCH_ALL', $build_arch_all);
     $self->set('MAILPROG', $mailprog);
@@ -318,7 +321,7 @@ our $lock_interval = 5;
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
 
     # Not user-settable.
-    chomp(my $arch = readpipe($self->get('DPKG') . " --print-installation-architecture"));
+    chomp(our $arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $arch);
     $self->set('ARCH', $arch);
     $self->set('USER_ARCH', undef); # Defaults to $arch in Sbuild::Chroot code
     $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');

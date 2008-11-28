@@ -1998,12 +1998,12 @@ sub write_jobs_file (\$$) {
 	foreach $job (@ARGV) {
 	    my $jobname;
 
-	    if ($job eq $main::current_job and $self->get('binNMU Name')) {
+	    if ($main::current_job and $job eq $main::current_job and $self->get('binNMU Name')) {
 		$jobname = $self->get('binNMU Name');
 	    } else {
 		$jobname = $job;
 	    }
-	    print F ($job eq $main::current_job) ? "" : "  ",
+	    print F ($main::current_job and $job eq $main::current_job) ? "" : "  ",
 	    $jobname,
 	    ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
 	    "\n";
@@ -2557,11 +2557,20 @@ sub close_build_log (\$$$$$$$) {
 
     my $filename = $self->get('Log File');
 
-    send_mail($self->get('Config'), $self->get_conf('MAILTO'),
-	      "Log for " . $self->get('Pkg Status') .
-	      " build of " . $self->get('Package_Version') .
-	      " (dist=" . $self->get_conf('DISTRIBUTION') . ")",
-	      $filename)
+    my $subject = "Log for " . $self->get('Pkg Status') .
+                  " build of " . $self->get('Package_Version');
+    if ($self->get_conf('ARCHIVE')) {
+	    if ($self->get_conf('ARCH')) {
+		$subject .= " on " . $self->get_conf('ARCH') . " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+	    }
+	    else {
+		$subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+	    }
+    }
+    else {
+	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
+    }
+    send_mail($self->get('Config'), $self->get_conf('MAILTO'), $subject, $filename)
 	if (defined($filename) && -f $filename &&
 	    $self->get_conf('MAILTO'));
 
