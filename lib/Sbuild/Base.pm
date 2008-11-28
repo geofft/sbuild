@@ -90,6 +90,7 @@ sub log ($) {
 	print STDERR "E: Attempt to log to nonexistent log stream\n"
 	    if (!defined($self->get('Log Stream Error')) ||
 		!$self->get('Log Stream Error'));
+	print STDERR @_;
 	$self->set('Log Stream Error', 1)
     }
 }
