@@ -132,8 +132,8 @@ sub main () {
 					   $conf->get('CHROOT'),
 					   $conf->get('ARCH'));
 
-	# Needed so chroot commands log to build log
-	$session->set('Log Stream', $build->get('Log Stream'));
+	# Default until build log is open.
+	$session->set('Log Stream', \*STDERR);
 
 	if (!$session->begin_session()) {
 	    $build->log("Error creating chroot session: skipping " .
@@ -170,6 +170,9 @@ sub main () {
 	    # TODO: Get package name from build object
 	    next if !$build->open_build_log($tpkg);
 	}
+
+	# Needed so chroot commands log to build log
+	$session->set('Log Stream', $build->get('Log Stream'));
 
 	$build->set('Pkg Status', 'failed'); # assume for now
 	$main::current_job = $build->get('Package_Version');
