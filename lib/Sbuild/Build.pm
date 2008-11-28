@@ -1901,12 +1901,12 @@ sub write_jobs_file (\$$) {
 	foreach $job (@ARGV) {
 	    my $jobname;
 
-	    if ($job eq $main::current_job and $self->get('binNMU Name')) {
+	    if ($main::current_job and $job eq $main::current_job and $self->get('binNMU Name')) {
 		$jobname = $self->get('binNMU Name');
 	    } else {
 		$jobname = $job;
 	    }
-	    print F ($job eq $main::current_job) ? "" : "  ",
+	    print F ($main::current_job and $job eq $main::current_job) ? "" : "  ",
 	    $jobname,
 	    ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
 	    "\n";
