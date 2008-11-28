@@ -96,7 +96,7 @@ sub setup ($$) {
 
     $session = $chroot_info->create($chroot,
 				    $conf->get('CHROOT'),
-				    $conf->get('USER_ARCH'));
+				    $conf->get('ARCH'));
 
     $Sbuild::Utility::current_session = $session;
 

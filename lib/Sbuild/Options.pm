@@ -62,7 +62,7 @@ sub parse_options (\%) {
     return GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
 		       "V|version" => sub {version_text("sbuild"); },
 		       "arch=s" => sub {
-			   $self->set_conf('USER_ARCH', $_[1]);
+			   $self->set_conf('ARCH', $_[1]);
 		       },
 		       "A|arch-all" => sub {
 			   $self->set_conf('BUILD_ARCH_ALL', 1);

@@ -70,8 +70,8 @@ sub main () {
 	if $conf->get('DEBUG');
     print "Selected chroot " . $conf->get('CHROOT') . "\n"
 	if $conf->get('DEBUG') and defined $conf->get('CHROOT');
-    print "Selected architecture " . $conf->get('USER_ARCH') . "\n"
-	if $conf->get('DEBUG' && defined($conf->get('USER_ARCH')));
+    print "Selected architecture " . $conf->get('ARCH') . "\n"
+	if $conf->get('DEBUG' && defined($conf->get('ARCH')));
 
     $conf->set('MAILTO',
 	       $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')})
@@ -121,6 +121,40 @@ sub main () {
 	    goto cleanup_skip;
 	}
 
+	my $chroot_info;
+	if ($conf->get('CHROOT_MODE') eq 'schroot') {
+	    $chroot_info = Sbuild::ChrootInfoSchroot->new($conf);
+	} else {
+	    $chroot_info = Sbuild::ChrootInfoSudo->new($conf);
+	}
+
+	my $session = $chroot_info->create($conf->get('DISTRIBUTION'),
+					   $conf->get('CHROOT'),
+					   $conf->get('ARCH'));
+
+	# Default until build log is open.
+	$session->set('Log Stream', \*STDERR);
+
+	if (!$session->begin_session()) {
+	    $build->log("Error creating chroot session: skipping " .
+		$build->get('Package') . "\n");
+	    $build->set('Pkg Status', 'skipped');
+	    goto cleanup_close;
+	}
+
+	$build->set('Session', $session);
+	$build->set('Arch', $build->chroot_arch());
+
+	$build->set('Chroot Dir', $session->get('Location'));
+	$build->set('Chroot Build Dir',
+		    tempdir($conf->get('USERNAME') . '-' .
+			    $build->get('Package_SVersion') . '-' .
+			    $build->get('Arch') . '-XXXXXX',
+			    DIR => $session->get('Build Location')));
+	# TODO: Don't hack the build location in; add a means to customise
+	# the chroot directly.
+	$session->set('Build Location', $build->get('Chroot Build Dir'));
+
 	{
 	    my $tpkg = basename($build->get('Package_Version'));
 	    # TODO: This should be 'Pkg Start Time', set in build().
@@ -137,6 +171,9 @@ sub main () {
 	    next if !$build->open_build_log($tpkg);
 	}
 
+	# Needed so chroot commands log to build log
+	$session->set('Log Stream', $build->get('Log Stream'));
+
 	$build->set('Pkg Status', 'failed'); # assume for now
 	$main::current_job = $build->get('Package_Version');
 	$build->set('Additional Deps', []);
@@ -146,39 +183,6 @@ sub main () {
 	    goto cleanup_close;
 	}
 
-	my $chroot_info;
-	if ($conf->get('CHROOT_MODE') eq 'schroot') {
-	    $chroot_info = Sbuild::ChrootInfoSchroot->new($conf);
-	} else {
-	    $chroot_info = Sbuild::ChrootInfoSudo->new($conf);
-	}
-
-	my $session = $chroot_info->create($conf->get('DISTRIBUTION'),
-					   $conf->get('CHROOT'),
-					   $conf->get('USER_ARCH'));
-
-	# Needed so chroot commands log to build log
-	$session->set('Log Stream', $build->get('Log Stream'));
-
-	$build->set('Session', $session);
-
-	if (!$session->begin_session()) {
-	    $build->log("Error creating chroot session: skipping " .
-		$build->get('Package') . "\n");
-	    $build->set('Pkg Status', 'skipped');
-	    goto cleanup_close;
-	}
-	$build->set('Chroot Dir', $session->get('Location'));
-	$build->set('Chroot Build Dir',
-		    tempdir($conf->get('USERNAME') . '-' .
-			    $build->get('Package_SVersion') . '-' .
-			    $conf->get('ARCH') . '-XXXXXX',
-			    DIR => $session->get('Build Location')));
-	# TODO: Don't hack the build location in; add a means to customise
-	# the chroot directly.
-	$session->set('Build Location', $build->get('Chroot Build Dir'));
-
-	$build->set('Arch', $build->chroot_arch());
 
 	# Update APT cache.
 	if ($conf->get('APT_UPDATE')) {

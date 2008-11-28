@@ -233,6 +233,10 @@ sub pipe_command (\$$$$$$) {
 	$err = $options->{STREAMERR} if defined($options->{STREAMERR});
 	open(STDERR, '>&', $err)
 	    or warn "Can't redirect stderr\n";
+	if ($err) {
+	    open(STDERR, '>&', $err)
+		or warn "Can't redirect stderr\n";
+	}
 
 	$self->exec_command($options);
     }

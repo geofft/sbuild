@@ -140,7 +140,7 @@ sub new ($$$) {
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
-    $self->set('Arch', $self->get_conf('ARCH'));
+    $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
     $self->set('Jobs File', 'build-progress');
@@ -2520,7 +2520,7 @@ sub open_build_log (\$) {
     $self->log("sbuild (Debian sbuild) $version ($release_date)\n");
 
     my $head1 = $self->get('Package') . ' ' . $self->get('Version') .
-	' (' . $self->get_conf('ARCH') . ') ';
+	' (' . $self->get('Arch') . ') ';
     my $head2 = strftime("%d %b %Y %H:%M",
 			 localtime($self->get('Pkg Start Time')));
     my $head = $head1 . ' ' x (80 - 4 - length($head1) - length($head2)) .
@@ -2529,7 +2529,7 @@ sub open_build_log (\$) {
 
     $self->log("Package: " . $self->get('Package') . "\n");
     $self->log("Version: " . $self->get('Version') . "\n");
-    $self->log("Architecture: " . $self->get_conf('ARCH') . "\n");
+    $self->log("Architecture: " . $self->get('Arch') . "\n");
     $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");
 }
 
@@ -2560,8 +2560,8 @@ sub close_build_log (\$$$$$$$) {
     my $subject = "Log for " . $self->get('Pkg Status') .
                   " build of " . $self->get('Package_Version');
     if ($self->get_conf('ARCHIVE')) {
-	    if ($self->get_conf('ARCH')) {
-		$subject .= " on " . $self->get_conf('ARCH') . " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+	    if ($self->get('Arch')) {
+		$subject .= " on " . $self->get('Arch') . " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
 	    }
 	    else {
 		$subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";

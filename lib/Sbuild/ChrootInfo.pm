@@ -89,7 +89,7 @@ sub find (\%$$$) {
     my $arch_set = 1;
 
     if (!defined($arch) || $arch eq "") {
-	$arch = $self->get_conf('ARCH');
+	$arch = $self->get_conf('HOST_ARCH');
 	$arch_set = 0;
     }
 

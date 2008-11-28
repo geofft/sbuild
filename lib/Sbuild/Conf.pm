@@ -53,8 +53,8 @@ sub set_allowed_keys (\%) {
 	'CHROOT'				=> "",
 	'BUILD_ARCH_ALL'			=> "",
 	'OVERRIDE_DISTRIBUTION'			=> "",
+	'HOST_ARCH'				=> "",
 	'ARCH'					=> "",
-	'USER_ARCH'				=> "",
 	'HOSTNAME'				=> "",
 	'HOME'					=> "",
 	'USERNAME'				=> "",
@@ -248,6 +248,7 @@ our $lock_interval = 5;
     our $archive = undef;
     our $chroot = undef;
     our $build_arch_all = 0;
+    our $arch = undef;
 
     # read conf files
     require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
@@ -321,9 +322,9 @@ our $lock_interval = 5;
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
 
     # Not user-settable.
-    chomp(our $arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $arch);
+    chomp(our $host_arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $host_arch);
+    $self->set('HOST_ARCH', $host_arch);
     $self->set('ARCH', $arch);
-    $self->set('USER_ARCH', undef); # Defaults to $arch in Sbuild::Chroot code
     $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');
     chomp(my $hostname = `hostname`);
     $self->set('HOSTNAME', $hostname);
