@@ -248,6 +248,7 @@ our $lock_interval = 5;
     our $archive = undef;
     our $chroot = undef;
     our $build_arch_all = 0;
+    our $arch = undef;
 
     # read conf files
     require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
@@ -323,7 +324,7 @@ our $lock_interval = 5;
     # Not user-settable.
     chomp(our $host_arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $host_arch);
     $self->set('HOST_ARCH', $host_arch);
-    $self->set('ARCH', undef);
+    $self->set('ARCH', $arch);
     $self->set('OVERRIDE_DISTRIBUTION', 1) if $self->get('DISTRIBUTION');
     chomp(my $hostname = `hostname`);
     $self->set('HOSTNAME', $hostname);
