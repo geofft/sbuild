@@ -230,8 +230,10 @@ sub pipe_command (\$$$$$$) {
 	my $log = $self->get('Log Stream');
 	open(STDIN, '<&', $devnull)
 	    or warn "Can't redirect stdin\n";
-	open(STDERR, '>&', $log)
-	    or warn "Can't redirect stderr\n";
+	if ($log) {
+	    open(STDERR, '>&', $log)
+		or warn "Can't redirect stderr\n";
+	}
 
 	$self->exec_command($command,
 			    $user,
