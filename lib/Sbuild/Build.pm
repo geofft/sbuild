@@ -2455,8 +2455,13 @@ sub close_build_log (\$$$$$$$) {
 
     my $subject = "Log for " . $self->get('Pkg Status') .
                   " build of " . $self->get('Package_Version');
-    if($self->get_conf('ARCHIVE')) {
-	    $subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+    if ($self->get_conf('ARCHIVE')) {
+	    if ($self->get_conf('ARCH')) {
+		$subject .= " on " . $self->get_conf('ARCH') . " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+	    }
+	    else {
+		$subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
+	    }
     }
     else {
 	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
