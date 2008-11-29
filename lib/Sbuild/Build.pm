@@ -2509,6 +2509,7 @@ sub open_build_log (\$) {
 	$self->log_symlink($filename,
 			   $self->get_conf('BUILD_DIR') . '/current-' .
 			   $self->get_conf('DISTRIBUTION'));
+    } else {
 	$self->log_symlink($filename,
 			   $self->get_conf('BUILD_DIR') . '/current');
     }
