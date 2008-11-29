@@ -1023,7 +1023,7 @@ sub uninstall_debs (\$$@) {
     my $remove_start_time = time;
 
     my $pipe = $self->get('Session')->pipe_command(
-	{ COMMAND => [$self->get_conf('DPKG'). "--$mode", @_],
+	{ COMMAND => [$self->get_conf('DPKG'), "--$mode", @_],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
 	  CHROOT => 1,
