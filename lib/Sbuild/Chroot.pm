@@ -177,27 +177,7 @@ sub log_command (\$$$) {
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed by schroot, nor required
 # via sudo.
-sub run_command (\$$$$$$) {
-    my $self = shift;
-    my $options = shift;
-
-    $options->{'PIPE'} = 'in';
-    my $pipe = $self->pipe_command($options);
-
-    if (defined($pipe)) {
-	while (<$pipe>) {
-	    $self->log("$_");
-	}
-	return close($pipe);
-    } else {
-	return 1;
-    }
-}
-
-# Note, do not run with $user="root", and $chroot=0, because root
-# access to the host system is not allowed by schroot, nor required
-# via sudo.
-sub pipe_command (\$$$$$$) {
+sub pipe_command_internal (\$$$$$$) {
     my $self = shift;
     my $options = shift;
 
@@ -255,6 +235,50 @@ sub pipe_command (\$$$$$$) {
     return $pipe;
 }
 
+# Note, do not run with $user="root", and $chroot=0, because root
+# access to the host system is not allowed by schroot, nor required
+# via sudo.
+sub run_command_internal (\$$$$$$) {
+    my $self = shift;
+    my $options = shift;
+
+    $options->{'PIPE'} = 'in';
+    my $pipe = $self->pipe_command($options);
+
+    if (defined($pipe)) {
+	while (<$pipe>) {
+	    $self->log("$_");
+	}
+	return close($pipe);
+    } else {
+	return 1;
+    }
+}
+
+# Note, do not run with $user="root", and $chroot=0, because root
+# access to the host system is not allowed by schroot, nor required
+# via sudo.
+sub run_command (\$$$$$$) {
+    my $self = shift;
+    my $options = shift;
+
+    $options->{'INTCOMMAND'} = copy($options->{'COMMAND'});
+
+    return $self->run_command_internal($options);
+}
+
+# Note, do not run with $user="root", and $chroot=0, because root
+# access to the host system is not allowed by schroot, nor required
+# via sudo.
+sub pipe_command (\$$$$$$) {
+    my $self = shift;
+    my $options = shift;
+
+    $options->{'INTCOMMAND'} = copy($options->{'COMMAND'});
+
+    return $self->pipe_command_internal($options);
+}
+
 sub exec_command (\$$$$$$) {
     my $self = shift;
     my $options = shift;
@@ -285,8 +309,6 @@ sub exec_command (\$$$$$$) {
     foreach (keys %ENV) {
 	debug("  $_=$ENV{$_}\n");
     }
-    debug("  NEEDED APT_CONFIG=$ENV{'APT_CONFIG'}\n");
-    debug("  NEEDED DEBIAN_FRONTEND=$ENV{'DEBIAN_FRONTEND'}\n");
 
     if (defined($dir) && $dir) {
 	debug("Changing to directory: $dir\n");
@@ -333,7 +355,7 @@ sub run_apt_command (\$$$$$$) {
     # Set modfied command
     $self->get_apt_command_internal($options);
 
-    return $self->run_command($options);
+    return $self->run_command_internal($options);
 }
 
 sub pipe_apt_command (\$$$$$$) {
@@ -343,7 +365,7 @@ sub pipe_apt_command (\$$$$$$) {
     # Set modfied command
     $self->get_apt_command_internal($options);
 
-    return $self->pipe_command($options);
+    return $self->pipe_command_internal($options);
 }
 
 sub apt_chroot (\$) {
