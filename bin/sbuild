@@ -178,6 +178,10 @@ sub main () {
 	$chroot_defaults->{'STREAMIN'} = $devnull;
 	$chroot_defaults->{'STREAMOUT'} = $build->get('Log Stream');
 	$chroot_defaults->{'STREAMERR'} = $build->get('Log Stream');
+	$chroot_defaults->{'ENV'} = {
+	    'LC_ALL' => 'POSIX',
+	    'SHELL' => "/bin/sh"
+	};
 
 	$build->set('Session', $session);
 
@@ -400,10 +404,6 @@ sub dump_main_state () {
 					$main::current_job
 					%main::job_state)] );
 }
-
-
-$ENV{'LC_ALL'} = "POSIX";
-$ENV{'SHELL'} = "/bin/sh";
 
 # avoid intermixing of stdout and stderr
 $| = 1;

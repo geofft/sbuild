@@ -64,7 +64,6 @@ sub new ($$$) {
     $self->set('Session ID', "");
     $self->set('Chroot ID', $chroot_id);
     $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
-    $self->set('Environment', copy(\%ENV));
     $self->set('Defaults', {
 	'COMMAND' => [],
 	'INTCOMMAND' => [], # Private
@@ -137,11 +136,11 @@ sub _setup_options (\$\$) {
 		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
 
 	# sudo uses an absolute path on the host system.
-	$self->get('Environment')->{'APT_CONFIG'} =
+	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('Chroot APT Conf');
     } else { # no split
 	$self->set('APT Options', []);
-	$self->get('Environment')->{'APT_CONFIG'} =
+	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('APT Conf');
     }
 }
@@ -294,8 +293,7 @@ sub exec_command (\$$$$$$) {
     my $dir = $options->{'CHDIR'};
     my $command = $options->{'EXPCOMMAND'};
 
-    # Set environment.
-    my $chrootenv = $self->get('Environment');
+    my $chrootenv = $self->get('Defaults')->{'ENV'};
     foreach (keys %$chrootenv) {
 	$ENV{$_} = $chrootenv->{$_};
     }
