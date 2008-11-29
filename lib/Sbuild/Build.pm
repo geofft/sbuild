@@ -510,9 +510,10 @@ sub build (\$$$) {
 	}
     }
 
-    $self->log_subsubsection("Hack binNMU version");
-    $self->set('Pkg Fail Stage', "hack-binNMU");
-    if ($self->get_conf('BIN_NMU') && ! -f "$dscdir/debian/.sbuild-binNMU-done") {
+    if ($self->get_conf('BIN_NMU') &&
+	! -f "$dscdir/debian/.sbuild-binNMU-done") {
+	$self->log_subsubsection("Hack binNMU version");
+	$self->set('Pkg Fail Stage', "hack-binNMU");
 	if (open( F, "<$dscdir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
