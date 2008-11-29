@@ -2560,6 +2560,9 @@ sub close_build_log (\$$$$$$$) {
 
     my $subject = "Log for " . $self->get('Pkg Status') .
                   " build of " . $self->get('Package_Version');
+    if (defined($self->get_conf('BIN_NMU_VERSION'))) {
+	    $subject .= "+b" . $self->get_conf('BIN_NMU_VERSION');
+    }
     if ($self->get_conf('ARCHIVE')) {
 	    if ($self->get('Arch')) {
 		$subject .= " on " . $self->get('Arch') . " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
