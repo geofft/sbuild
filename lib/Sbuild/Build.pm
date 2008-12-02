@@ -1213,9 +1213,9 @@ sub filter_dependencies (\$\@\@\@) {
     }
     my $status = $self->get_dpkg_status(keys %names);
 
-    my %policy;
+    my $policy = undef;
     if ($self->get_conf('APT_POLICY')) {
-	%policy = $self->get_apt_policy(keys %names);
+	$policy = $self->get_apt_policy(keys %names);
     }
 
     foreach $dep (@$dependencies) {
@@ -1257,10 +1257,13 @@ sub filter_dependencies (\$\@\@\@) {
 	    if (!$stat->{'Installed'}) {
 		debug("$name: pos dep, not installed\n");
 		$self->log("$name: missing\n");
-		if ($self->get_conf('APT_POLICY') && $rel) {
-		    if (!version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+
+		if ($self->get_conf('APT_POLICY') &&
+		    defined($policy->{$name}) &&
+		    $rel) {
+		    if (!version_compare($policy->{$name}->{defversion}, $rel, $vers)) {
 			$self->log("Default version of $name not sufficient, ");
-			foreach my $cvers (@{$policy{$name}->{versions}}) {
+			foreach my $cvers (@{$policy->{$name}->{versions}}) {
 			    if (version_compare($cvers, $rel, $vers)) {
 				$self->log("using version $cvers\n");
 				$installable = $name . "=" . $cvers if !$installable;
@@ -1272,7 +1275,7 @@ sub filter_dependencies (\$\@\@\@) {
 			    next if ($self->get_conf('CHECK_DEPENDS_ALGORITHM') eq "alternatives");
 			}
 		    } else {
-			$self->log("Using default version " . $policy{$name}->{defversion} . "\n");
+			$self->log("Using default version " . $policy->{$name}->{defversion} . "\n");
 		    }
 		}
 		$installable = $name if !$installable;
@@ -1296,12 +1299,11 @@ sub filter_dependencies (\$\@\@\@) {
 		($rel eq '=' && version_compare($ivers, '>>', $vers))) {
 		debug("$name: would be a downgrade!\n");
 		$self->log("$name: would have to downgrade!\n");
-	    }
-	    else {
-		if ($self->get_conf('APT_POLICY') &&
-		    !version_compare($policy{$name}->{defversion}, $rel, $vers)) {
+	    } elsif ($self->get_conf('APT_POLICY') &&
+		     defined($policy->{$name})) {
+		if (!version_compare($policy->{$name}->{defversion}, $rel, $vers)) {
 		    $self->log("Default version of $name not sufficient, ");
-		    foreach my $cvers (@{$policy{$name}->{versions}}) {
+		    foreach my $cvers (@{$policy->{$name}->{versions}}) {
 			if(version_compare($cvers, $rel, $vers)) {
 			    $self->log("using version $cvers\n");
 			    $upgradeable = $name if ! $upgradeable;
@@ -1311,7 +1313,7 @@ sub filter_dependencies (\$\@\@\@) {
 		    $self->log("no suitable alternative found. I probably should dep-wait this one.\n") if !$upgradeable;
 		    return 0;
 		} else {
-		    $self->log("Using default version " . $policy{$name}->{defversion} . "\n");
+		    $self->log("Using default version " . $policy->{$name}->{defversion} . "\n");
 		}
 		$upgradeable = $name if !$upgradeable;
 	    }
@@ -1448,7 +1450,7 @@ sub get_apt_policy (\$@) {
     close($pipe);
     die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
-    return %packages;
+    return \%packages;
 }
 
 sub get_dpkg_status (\$@) {

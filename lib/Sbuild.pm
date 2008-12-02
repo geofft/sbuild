@@ -42,7 +42,7 @@ BEGIN {
 }
 
 our $devnull;
-my $opt_correct_version_cmp;
+my $opt_correct_version_cmp = 1;
 our $debug_level = 0;
 
 BEGIN {
