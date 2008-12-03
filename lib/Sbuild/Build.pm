@@ -380,7 +380,7 @@ sub fetch_source_files (\$) {
     $build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
 
     $dsctext =~ /^Architecture:\s*(.*)$/mi and $dscarchs = $1;
-    $dsctext =~ /^Package:\s*(.*)$/mi and $dscpkg = $1;
+    $dsctext =~ /^Source:\s*(.*)$/mi and $dscpkg = $1;
     $dsctext =~ /^Version:\s*(.*)$/mi and $dscver = $1;
     $self->set_version("${dscpkg}_${dscver}");
 
