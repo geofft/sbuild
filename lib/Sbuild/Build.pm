@@ -113,6 +113,10 @@ sub new ($$$) {
 
     # DSC, package and version information:
     $self->set_dsc($dsc);
+    my $ver = $self->get('DSC Base');
+    $ver =~ s/\.dsc$//;
+    # Note, will be overwritten by Version: in DSC.
+    $self->set_version($ver);
 
     # Do we need to download?
     $self->set('Download', 0);
@@ -183,9 +187,14 @@ sub set_dsc (\$$) {
     $self->set('Source Dir', dirname($dsc));
 
     $self->set('DSC Base', basename($dsc));
+}
 
-    my $pkgv = $self->get('DSC Base');
-    $pkgv =~ s/\.dsc$//;
+sub set_version (\$$) {
+    my $self = shift;
+    my $pkgv = shift;
+
+    debug("Setting package version: $pkgv\n");
+
     $self->set('Package_Version', $pkgv);
     my ($pkg, $version) = split /_/, $self->get('Package_Version');
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
@@ -225,7 +234,7 @@ sub fetch_source_files (\$) {
     my $ver = $self->get('Version');
     my $arch = $self->get('Arch');
 
-    my ($files, @other_files, $dscarchs, @fetched);
+    my ($files, @other_files, $dscarchs, $dscpkg, $dscver, @fetched);
 
     my $build_depends = "";
     my $build_depends_indep = "";
@@ -371,6 +380,9 @@ sub fetch_source_files (\$) {
     $build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
 
     $dsctext =~ /^Architecture:\s*(.*)$/mi and $dscarchs = $1;
+    $dsctext =~ /^Package:\s*(.*)$/mi and $dscpkg = $1;
+    $dsctext =~ /^Version:\s*(.*)$/mi and $dscver = $1;
+    $self->set_version("${dscpkg}_${dscver}");
 
     $dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
     @other_files = map { (split( /\s+/, $_ ))[3] } split( "\n", $files );
