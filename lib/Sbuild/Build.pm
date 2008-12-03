@@ -26,7 +26,7 @@ use Errno qw(:POSIX);
 use Fcntl;
 use File::Basename qw(basename dirname);
 use GDBM_File;
-use Sbuild qw(binNMU_version version_compare copy isin send_mail debug);
+use Sbuild qw(binNMU_version version_compare split_version copy isin send_mail debug);
 use Sbuild::Base;
 use Sbuild::Sysconfig qw($version);
 use Sbuild::Conf;
@@ -136,6 +136,9 @@ sub new ($$$) {
     debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
     debug("Package = " . $self->get('Package') . "\n");
     debug("Version = " . $self->get('Version') . "\n");
+    debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
+    debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
+    debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
     debug("SVersion = " . $self->get('SVersion') . "\n");
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
@@ -188,11 +191,16 @@ sub set_dsc (\$$) {
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
     $self->set('Package_SVersion', "${pkg}_$sversion");
 
+    my ($epoch, $uversion, $dversion) = split_version($version);
+
     $self->set('Package', $pkg);
     $self->set('Version', $version);
     $self->set('SVersion', $sversion);
+    $self->set('VersionEpoch', $epoch);
+    $self->set('VersionUpstream', $uversion);
+    $self->set('VersionDebian', $dversion);
     $self->set('DSC File', "${pkg}_${sversion}.dsc");
-    $self->set('DSC Dir', "${pkg}-${sversion}");
+    $self->set('DSC Dir', "${pkg}-${uversion}");
 }
 
 # sub get_package_status (\$) {

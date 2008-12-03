@@ -36,9 +36,10 @@ BEGIN {
     @ISA = qw(Exporter);
 
     @EXPORT = qw($debug_level $devnull version_less version_lesseq
-		 version_eq version_compare binNMU_version parse_date
-		 isin copy dump_file check_packages help_text
-		 version_text usage_error send_mail debug);
+		 version_eq version_compare split_version
+		 binNMU_version parse_date isin copy dump_file
+		 check_packages help_text version_text usage_error
+		 send_mail debug);
 }
 
 our $devnull;
