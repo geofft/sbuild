@@ -2541,7 +2541,8 @@ sub open_build_log (\$) {
     $self->set('Log File', $filename);
     $self->set('Log Stream', $PLOG);
 
-    $self->log("sbuild (Debian sbuild) $version ($release_date)\n");
+    my $hostname = $self->get_conf('HOSTNAME');
+    $self->log("sbuild (Debian sbuild) $version ($release_date) on $hostname\n");
 
     my $head1 = $self->get('Package') . ' ' . $self->get('Version') .
 	' (' . $self->get('Arch') . ') ';
