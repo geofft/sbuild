@@ -475,11 +475,19 @@ sub process () {
   }
     if (not -t and $user =~ /-/) {
 	my $userinfo = $db{'_userinfo'};
+	$userinfo = {} if (!defined($userinfo));
+
 	my $ui = $userinfo->{$user};
+	$ui = {} if (!defined($ui));
 
 	$ui->{'Last-Seen'} = $curr_date;
+	$ui->{'User'} = $user;
+
+	$userinfo->{$user} = $ui;
+
 	$db{'_userinfo'} = $userinfo;
     }
+
 }
 
 sub add_packages ($@) {
@@ -2011,31 +2019,41 @@ sub waitfor_maintlock () {
 
 
 sub read_db ($) {
-    my $file = shift;
+         my $file = shift;
 
-    print "Reading ASCII database from $file..." if $verbose >= 1;
-    open( F, "<$file" ) or
-	die "Can't open database $file: $!\n";
+         print "Reading ASCII database from $file..." if $verbose >= 1;
+         open( F, "<$file" ) or
+                 die "Can't open database $file: $!\n";
 
-    local($/) = ""; # read in paragraph mode
-    while( <F> ) {
-	my( %thispkg, $name );
-	s/[\s\n]+$//;
-	s/\n[ \t]+/\376\377/g;  # fix continuation lines
-	s/\376\377\s*\376\377/\376\377/og;
+         local($/) = ""; # read in paragraph mode
+         while( <F> ) {
+                 my( %thispkg, $name );
+                 s/[\s\n]+$//;
+                 s/\n[ \t]+/\376\377/g;  # fix continuation lines
+                 s/\376\377\s*\376\377/\376\377/og;
 
-	while( /^(\S+):[ \t]*(.*)[ \t]*$/mg ) {
-	    my ($key, $val) = ($1, $2);
-	    $val =~ s/\376\377/\n/g;
-	    $thispkg{$key} = $val;
-	}
-	check_entry( \%thispkg );
-	# add to db
-	$name = $thispkg{'Package'};
-	$db{$name} = \%thispkg;
-    }
-    close( F );
-    print "done\n" if $verbose >= 1;
+                 while( /^(\S+):[ \t]*(.*)[ \t]*$/mg ) {
+                         my ($key, $val) = ($1, $2);
+                         $val =~ s/\376\377/\n/g;
+                         $thispkg{$key} = $val;
+                 }
+                 check_entry( \%thispkg );
+                 # add to db
+		 if (exists($thispkg{'Package'})) {
+		     $name = $thispkg{'Package'};
+		     $db{$name} = \%thispkg;
+		 } elsif(exists($thispkg{'User'})) {
+		     	my $userinfo = $db{'_userinfo'};
+			$userinfo = {} if (!defined($userinfo));
+
+			$name = $thispkg{'User'};
+			$userinfo->{$name} = \%thispkg;
+
+			$db{'_userinfo'} = $userinfo;
+		 }
+         }
+         close( F );
+         print "done\n" if $verbose >= 1;
 }
 
 sub check_entry ($) {
@@ -2045,25 +2063,33 @@ sub check_entry ($) {
     return if $op_mode eq "manual-edit"; # no checks then
 
     # check for required fields
-    if (!exists $pkg->{'Package'}) {
+    if (!exists $pkg->{'Package'} && !exists $pkg->{'User'}) {
 	print STDERR "Bad entry: ",
 	join( "\n", map { "$_: $pkg->{$_}" } keys %$pkg ), "\n";
-	die "Database entry lacks Package: field\n";
+	die "Database entry lacks Package or User: field\n";
     }
-    if (!exists $pkg->{'Version'}) {
-	die "Database entry for $pkg->{'Package'} lacks Version: field\n";
-    }
-    # if no State: field, generate one (for old db compat)
-    if (!exists($pkg->{'State'})) {
-	$pkg->{'State'} =
-	    exists $pkg->{'Failed'} ? 'Failed' : 'Building';
-    }
-    # check state field
-    die "Bad state $pkg->{'State'} of package $pkg->{Package}\n"
-	if !isin( $pkg->{'State'},
-		  qw(Needs-Build Building Uploaded Installed Dep-Wait
+
+    if (exists $pkg->{'Package'}) {
+	if (!exists $pkg->{'Version'}) {
+	    die "Database entry for package $pkg->{'Package'} lacks Version: field\n";
+	}
+	# if no State: field, generate one (for old db compat)
+	if (!exists($pkg->{'State'})) {
+	    $pkg->{'State'} =
+		exists $pkg->{'Failed'} ? 'Failed' : 'Building';
+	}
+	# check state field
+	die "Bad state $pkg->{'State'} of package $pkg->{Package}\n"
+	    if !isin( $pkg->{'State'},
+		      qw(Needs-Build Building Uploaded Installed Dep-Wait
 					 Dep-Wait-Removed Failed Failed-Removed Not-For-Us
 					 ) );
+    }
+    if (exists $pkg->{'User'}) {
+	if (!exists $pkg->{'Last-Seen'}) {
+	    die "Database entry for user $pkg->{'User'} lacks Last-Seen: field\n";
+	}
+    }
 }
 
 sub write_db ($) {
@@ -2076,13 +2102,28 @@ sub write_db ($) {
 
     foreach $name (sort keys %db) {
 	my $pkg = $db{$name};
-	foreach $key (keys %{$pkg}) {
-	    my $val = $pkg->{$key};
-	    chomp( $val );
-	    $val =~ s/\n/\n /g;
-	    print F "$key: $val\n";
+	if ($name eq '_userinfo') {
+		foreach $user (sort keys %{$pkg}) {
+		    my $ui = $pkg->{$user};
+		    print F "User: $user\n"
+			if (!defined($ui->{'User'}));
+		    foreach $key (keys %{$ui}) {
+			my $val = $ui->{$key};
+			chomp($val);
+			$val =~ s/\n/\n /g;
+			print F "$key: $val\n";
+		}
+		    print F "\n";
+	    }
+	} else {
+	    foreach $key (keys %{$pkg}) {
+		my $val = $pkg->{$key};
+		chomp( $val );
+		$val =~ s/\n/\n /g;
+		print F "$key: $val\n";
+	    }
+	    print F "\n";
 	}
-	print F "\n";
     }
     close( F );
     print "done\n" if $verbose >= 1;
