@@ -31,7 +31,7 @@ use POSIX;
 use FileHandle;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
-use Sbuild;
+use Sbuild qw(isin);
 
 sub process ();
 sub add_packages ($@);
