@@ -62,6 +62,9 @@ install-exec-hook:
 	$(MKDIR_P) "$(DESTDIR)$(wblibexecdir)"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/wanna-build"
 
+	ln -sf "$(bindir)/wanna-build-catdb" "$(DESTDIR)$(bindir)/wanna-build-catgdbm"
+	ln -sf "$(bindir)/wanna-build-catdb" "$(DESTDIR)$(bindir)/wanna-build-catmldbm"
+
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/wanna-build"
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/uploaded-build"
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/failed-build"
