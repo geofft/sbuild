@@ -1379,11 +1379,11 @@ sub parse_quinn_diff ($) {
 
     while( <> ) {
 	my $change = 0;
-	next if !m,^([\w\d-/]*)/			# section
-			       ([\w\d.+-]+)_			# package name
-				   ([\w\d:.~+-]+)\.dsc\s*	# version
-				   \[([^:]*):				# priority
-				   ([^]]+)\]\s*$,x;			# rest of notes
+	next if !m,^([\w\d/-]*)/			# section
+		   ([\w\d.+-]+)_			# package name
+		   ([\w\d:.~+-]+)\.dsc\s*		# version
+		   \[([^:]*):				# priority
+		   ([^]]+)\]\s*$,x;			# rest of notes
 	my($section,$name,$version,$priority,$notes) = ($1, $2, $3, $4, $5);
 	$quinn_pkgs{$name}++;
 	$section ||= "unknown";
