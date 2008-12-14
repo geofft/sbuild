@@ -60,19 +60,7 @@ install-exec-hook:
 # Links for compatibility.
 	$(MKDIR_P) "$(DESTDIR)$(sbuildlibexecdir)"
 	$(MKDIR_P) "$(DESTDIR)$(wblibexecdir)"
-
-	ln -sf "$(sbindir)/sbuild-adduser" "$(DESTDIR)$(sbuildlibexecdir)/add_sbuild_user"
-	ln -sf "$(sbindir)/sbuild-createchroot" "$(DESTDIR)$(sbuildlibexecdir)/buildd.chroot"
-	ln -sf "$(bindir)/sbuild-apt" "$(DESTDIR)$(sbuildlibexecdir)/chrapt"
-	ln -sf "$(bindir)/sbuild-upgrade" "$(DESTDIR)$(sbuildlibexecdir)/upgradechroot"
-	ln -sf "$(bindir)/sbuild-update" "$(DESTDIR)$(sbuildlibexecdir)/updatechroot"
-	ln -sf "$(bindir)/sbuild-shell" "$(DESTDIR)$(sbuildlibexecdir)/gochroot"
-	ln -sf "$(bindir)/sbuild-hold" "$(DESTDIR)$(sbuildlibexecdir)/chr-hold"
-	ln -sf "$(bindir)/sbuild-unhold" "$(DESTDIR)$(sbuildlibexecdir)/chr-unhold"
-	ln -sf "$(bindir)/sbuild-abort" "$(DESTDIR)$(sbuildlibexecdir)/abort-current-build"
-	ln -sf "$(bindir)/sbuild-checkpackages" "$(DESTDIR)$(sbuildlibexecdir)/checkchroot"
-	ln -sf "sbuild-stats" "$(DESTDIR)$(bindir)/avg-pkg-build-time"
-	ln -sf "sbuild-stats" "$(DESTDIR)$(bindir)/avg-pkg-build-space"
+	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/wanna-build"
 
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/wanna-build"
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/uploaded-build"

@@ -47,12 +47,6 @@ my $topmode = 0;
 my $open_mode = GDBM_READER;
 my $db_file = "unspec";
 
-if (basename($0) =~ /avg-pkg-build-time$/) {
-    $db = "time";
-} elsif (basename($0) =~ /avg-pkg-build-space$/) {
-    $db = "space";
-}
-
 GetOptions (
     "h|help" => sub { help_text("1", "sbuild-stats"); },
     "V|version" => sub {version_text("sbuild-stats"); },
