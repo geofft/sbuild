@@ -24,20 +24,22 @@ include $(top_srcdir)/scripts/global.mk
 sbuildlibexecdir = $(SBUILD_LIBEXEC_DIR)
 wblibexecdir = $(WANNABUILD_LIBEXEC_DIR)
 
-bin_SCRIPTS = 			\
-	sbuild			\
-	sbuild-abort		\
-	sbuild-apt		\
-	sbuild-checkpackages	\
-	sbuild-update		\
-	sbuild-upgrade		\
-	sbuild-shell		\
-	sbuild-stats		\
-	sbuild-hold		\
-	sbuild-unhold		\
-	wanna-build		\
-	wanna-build-catdb	\
-	wanna-build-mail	\
+bin_SCRIPTS = 				\
+	sbuild				\
+	sbuild-abort			\
+	sbuild-apt			\
+	sbuild-checkpackages		\
+	sbuild-update			\
+	sbuild-upgrade			\
+	sbuild-shell			\
+	sbuild-stats			\
+	sbuild-hold			\
+	sbuild-unhold			\
+	wanna-build			\
+	wanna-build-catdb		\
+	wanna-build-mail		\
+	wanna-build-merge-packages	\
+	wanna-build-merge-quinn		\
 	wanna-build-statistics
 
 sbin_SCRIPTS = 			\
