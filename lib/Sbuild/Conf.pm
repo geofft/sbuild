@@ -1,7 +1,7 @@
 #
 # Conf.pm: configuration library for sbuild
-# Copyright © 2005 Ryan Murray <rmurray@debian.org>
-# Copyright © 2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005      Ryan Murray <rmurray@debian.org>
+# Copyright © 2006-2008 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -126,7 +126,21 @@ sub set_allowed_keys (\%) {
 	'ARCHIVE'				=> "",
 	'BIN_NMU'				=> "",
 	'BIN_NMU_VERSION'			=> "",
-	'GCC_SNAPSHOT'				=> "");
+	'GCC_SNAPSHOT'				=> "",
+	'DB_BASE_DIR'				=> "",
+	'DB_BASE_NAME'				=> "",
+	'DB_TRANSACTION_LOG'			=> "",
+	'DB_DISTRIBUTIONS'			=> "",
+	'DB_DISTRIBUTION_ORDER'			=> "",
+	'DB_SECTIONS'				=> "",
+	'DB_PACKAGES_SOURCE'			=> "",
+	'DB_QUINN_SOURCE'			=> "",
+	'DB_ADMIN_USERS'			=> "",
+	'DB_MAINTAINER_EMAIL'			=> "",
+	'DB_NOTFORUS_MAINTAINER_EMAIL'		=> "",
+	'DB_LOG_MAIL'				=> "",
+	'DB_STAT_MAIL'				=> "",
+	'DB_WEB_STATS'				=> "");
 
     $self->{'_allowed_keys'} = \%allowed_keys;
 }
@@ -250,6 +264,29 @@ our $lock_interval = 5;
     our $build_arch_all = 0;
     our $arch = undef;
 
+    # TODO: Parse old file (wanna-build.conf)
+    our $db_base_dir = '/var/lib/wanna-build';
+    our $db_base_name = 'build-db';
+    our $db_transaction_log = 'transactions.log';
+    our @db_distributions = qw(oldstable-security stable testing
+                               unstable stable-security
+                               testing-security);
+    our %db_distribution_order = ('oldstable-security' => 0,
+				  'stable' => 1,
+				  'stable-security' => 1,
+				  'testing' => 2,
+				  'testing-security' => 2,
+				  'unstable' => 3);
+    our @db_sections = qw(main contrib non-free);
+    our $db_packages_source = "ftp://ftp.debian.org/debian";
+    our $db_quinn_source = "http://buildd.debian.org/quinn-diff/output";
+    our @db_admin_users = qw(buildd);
+    our $db_maintainer_email = "buildd";
+    our $db_notforus_maintainer_email = "buildd";
+    our $db_log_mail = undef;
+    our $db_stat_mail = undef;
+    our $db_web_stats = undef;
+
     # read conf files
     require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
@@ -320,6 +357,21 @@ our $lock_interval = 5;
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
     $self->set('ALTERNATIVES', \%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
+    $self->set('DB_BASE_DIR', $db_base_dir);
+    $self->set('DB_BASE_NAME', $db_base_name);
+    $self->set('DB_TRANSACTION_LOG', $db_transaction_log);
+    $self->set('DB_DISTRIBUTIONS', \@db_distributions);
+    $self->set('DB_DISTRIBUTION_ORDER', \%db_distribution_order);
+    $self->set('DB_SECTIONS', \@db_sections);
+    $self->set('DB_PACKAGES_SOURCE', $db_packages_source);
+    $self->set('DB_QUINN_SOURCE', $db_quinn_source);
+    $self->set('DB_ADMIN_USERS', \@db_admin_users);
+    $self->set('DB_MAINTAINER_EMAIL', $db_maintainer_email);
+    $self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $db_notforus_maintainer_email);
+    $self->set('DB_LOG_MAIL', $db_log_mail);
+    $self->set('DB_STAT_MAIL', $db_stat_mail);
+    $self->set('DB_WEB_STATS', $db_web_stats);
+
 
     # Not user-settable.
     chomp(our $host_arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $host_arch);
@@ -410,6 +462,17 @@ sub check_config (\%) {
     if (! -d $self->get('BUILD_DIR')) {
 	die "Build directory " . $self->get('BUILD_DIR') . " does not exist";
     }
+
+    if (! -d $self->get('DB_BASE_DIR')) {
+	die "Database base directory " . $self->get('DB_BASE_DIR') .
+	    " is not a directory\n";
+    }
+
+    die "Database base name is not defined"
+	if !defined($self->get('DB_BASE_NAME'));
+
+    die "Database transaction log is not defined"
+	if !defined($self->get('DB_TRANSACTION_LOG'));
 }
 
 sub new ($) {
