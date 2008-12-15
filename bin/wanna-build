@@ -32,6 +32,10 @@ use FileHandle;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use Sbuild qw(isin);
+use Sbuild::Conf;
+use Sbuild::Sysconfig qw($version $release_date);
+use Sbuild::DBInfo;
+use WannaBuild::Options;
 
 sub process ();
 sub add_packages ($@);
@@ -83,17 +87,48 @@ our ($verbose, $mail_logs, $list_order, $list_state, $curr_date,
      $opt_override, $import_from, $export_to, $opt_create_db,
      $transactlog, %db, %otherdb, %otherdb_lock, %prioval, %sectval,
      $info_all_dists, $hostname, $arch, $opt_no_propagation,
-     $opt_no_down_propagation, $category, %catval, %short_category,
-     $short_date, $list_min_age, $dbbase, $host_set, $build_priority,
+     $opt_no_down_propagation, $category, %catval,
+     $short_date, $list_min_age, $dbbase, $build_priority,
      %new_vers, $binNMUver, %merge_srcvers);
 $list_state = "failed";
 
-# global vars
-$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
-$verbose = 0;
+my $conf = Sbuild::Conf->new('db');
+exit 1 if !defined($conf);
+my $options = WannaBuild::Options->new($conf);
+exit 1 if !defined($options);
+
+# Temporarily set globals from conf object:
+$verbose = $conf->get('VERBOSE');
 $mail_logs = "";
+$list_order = $conf->get('DB_LIST_ORDER');
+$list_state = $conf->get('DB_LIST_STATE');
 $curr_date = strftime("%Y %b %d %H:%M:%S",localtime);
 $short_date = strftime("%m/%d/%y",localtime);
+$op_mode = $conf->get('DB_OPERATION');
+$user = $conf->get('DB_USER');
+$real_user = $conf->get('USERNAME');
+$distribution = $conf->get('DISTRIBUTION');
+$fail_reason = $conf->get('DB_FAIL_REASON');
+$opt_override = $conf->get('DB_OVERRIDE');
+$import_from = $conf->get('DB_IMPORT_FILE');
+$export_to = $conf->get('DB_EXPORT_FILE');
+$opt_create_db = $conf->get('DB_CREATE');
+$transactlog = $conf->get('DB_TRANSACTION_LOG');
+$info_all_dists = $conf->get('DB_INFO_ALL_DISTS');
+$hostname = $conf->get('HOSTNAME');
+$arch = $conf->get('ARCH');
+$opt_no_propagation = $conf->get('DB_NO_PROPAGATION');
+$opt_no_down_propagation = $conf->get('DB_NO_DOWN_PROPAGATION');
+$category = $conf->get('DB_CATEGORY');
+$list_min_age = $conf->get('DB_LIST_MIN_AGE');
+$dbbase = $conf->get('DB_BASE_NAME');
+$build_priority = $conf->get('DB_BUILD_PRIORITY');
+$binNMUver = $conf->get('DB_BIN_NMU_VERSION');
+
+# Undefined: %db %new_vers %merge_srcvers
+
+# global vars
+$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $| = 1;
 
 # map program invocation names to operation modes
@@ -108,15 +143,6 @@ my %prognames = ( "uploaded-build"  => "set-uploaded",
 		  "merge-sources"   => "merge-sources",
 		  "build-info"		=> "info" );
 
-%short_category = ( u => "uploaded-fixed-pkg",
-		    f => "fix-expected",
-		    r => "reminder-sent",
-		    n => "nmu-offered",
-		    e => "easy",
-		    m => "medium",
-					h => "hard",
-		    c => "compiler-error",
-		    "" => "none" );
 
 my $progname;
 ($progname = $0) =~ s,.*/,,;
@@ -126,141 +152,6 @@ if ($prognames{$progname}) {
 elsif ($progname =~ /^list-(.*)$/) {
     $op_mode = "list";
     $list_state = ($1 eq "all") ? "" : $1;
-}
-
-my %options =
-    (# flags
-     verbose        => { short => "v", flag => \$verbose },
-     override		=> { short => "o", flag => \$opt_override },
-     "create-db"	=> { flag => \$opt_create_db },
-     "correct-compare" => { flag => \$Sbuild::opt_correct_version_cmp },
-     "no-propagation" => { short => "N", flag => \$opt_no_propagation },
-     "no-down-propagation" => { short => "D", flag => \$opt_no_down_propagation },
-     # normal actions
-     take			=> { mode => "set-building" },
-     failed			=> { short => "f", mode => "set-failed" },
-     uploaded		=> { short => "u", mode => "set-uploaded" },
-     "no-build"		=> { short => "n", mode => "set-not-for-us" },
-     "give-back"	=> { mode => "set-needs-build" },
-     "dep-wait"		=> { mode => "set-dep-wait" },
-     forget			=> { mode => "forget" },
-     'forget-user' => { mode => 'forget-user' },
-     "merge-quinn"  => { mode => "merge-quinn" },
-     "merge-partial-quinn" => { mode => "merge-partial-quinn" },
-     "merge-packages" => { mode => "merge-packages" },
-     "merge-sources" => { mode => "merge-sources" },
-     "pretend-avail" => { short => "p", mode => "pretend-avail" },
-     "merge-all"     => { mode => "merge-all" },
-     info			=> { short => "i", mode => "info" },
-     'binNMU' => { mode => 'set-binary-nmu', arg => \$binNMUver, 
-		   code => sub { die "Invalid binNMU version: $binNMUver\n"
-				     if $binNMUver !~ /^([\d]*)$/ and $1 >= 0; } },
-     'perm-build-priority'    => { mode => "set-permanent-build-priority", arg => \$build_priority,
-				   code => sub { die "Invalid build priority: $build_priority\n"
-						     if $build_priority !~ /^-?[\d]+$/; } },
-     'build-priority'    => { mode => "set-build-priority", arg => \$build_priority,
-	 		      code => sub { die "Invalid build priority: $build_priority\n"
-						if $build_priority !~ /^-?[\d]+$/; } },
-     list			=>
-     { short => "l", mode => "list", arg => \$list_state,
-       code => sub {
-	   die "Unknown state to list: $list_state\n"
-	       if !isin( $list_state, qw(needs-build building uploaded
-						 failed installed dep-wait
-						 not-for-us all failed-removed
-						 dep-wait-removed install-wait
-						 reupload-wait));} },
-     # options with args
-     dist           =>
-     { short => "d", arg => \$distribution,
-       code => sub {
-	   if ($distribution eq "a" || $distribution eq "all") {
-	       $info_all_dists = 1;
-	       $distribution = "";
-	   }
-	   else {
-	       $distribution = "stable"   if $distribution eq "s";
-	       $distribution = "testing"  if $distribution eq "t";
-	       $distribution = "unstable" if $distribution eq "u";
-	   }
-       } },
-     order          =>
-     { short => "O", arg => \$list_order,
-       code => sub {
-	   die "Bad ordering character\n"
-	       if $list_order !~ /^[PSpsncb]+$/;
-       } },
-     message        => { short => "m", arg => \$fail_reason },
-     database       => { short => "b", arg => \$conf::dbbase },
-     arch           => { short => "A", arg => \$arch },
-     user           => { short => "U", arg => \$user },
-     category		=> { short => "c", arg => \$category,
-			     code => sub {
-				 $category = $short_category{$category}
-				 if exists $short_category{$category};
-				 die "Unknown category: $category\n"
-				     if !isin( $category, values %short_category );
-			     } },
-     "min-age"      => { short => "a", arg => \$list_min_age,
-			 code => sub {
-			     die "Argument of --min-age must be a non-zero number\n"
-				 if $list_min_age == 0;
-			     $list_min_age *= 24*60*60;
-			 } },
-     "max-age"      => { arg => \$list_min_age,
-			 code => sub {
-			     die "Argument of --max-age must be a non-zero number\n"
-				 if $list_min_age == 0;
-			     $list_min_age *= -24*60*60;
-			 } },
-     # special actions
-     import         => { arg => \$import_from, mode => "import" },
-     export         => { arg => \$export_to, mode => "export" },
-     "manual-edit"  => { mode => "manual-edit" },
-     "create-maintenance-lock" => { mode => "maintlock-create" },
-     "remove-maintenance-lock" => { mode => "maintlock-remove" },
-     "clean-db" => { mode => "clean-db" },
-    );
-
-while( @ARGV && $ARGV[0] =~ /^-/ ) {
-    $_ = shift @ARGV;
-    last if $_ eq "--";
-    my($opt, $optname, $arg);
-    if (/^--([^=]+)(=|$)/) {
-	$optname = $1;
-	$opt = $options{$optname};
-	$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
-    }
-    else {
-	$optname = substr( $_, 1, 1 );
-	$opt = (grep { $_->{short} eq $optname } values %options)[0];
-	$arg = $1 if /^-$optname(.+)$/;
-    }
-    if (!$opt) {
-	warn "Unknown option: --$1\n";
-	usage();
-    }
-    if ($opt->{arg}) {
-	if (!defined $arg) {
-	    die "$optname option missing argument\n" if !@ARGV;
-	    $arg = shift @ARGV;
-	}
-	${$opt->{arg}} = $arg;
-    }
-    elsif (defined $arg) {
-	die "Option $optname takes no argument\n";
-    }
-
-    if ($opt->{mode}) {
-	die "Conflicting operation modes\n" if $op_mode;
-	$op_mode = $opt->{mode};
-    }
-    if ($opt->{flag}) {
-	${$opt->{flag}}++;
-    }
-    if ($opt->{code}) {
-	&{$opt->{code}};
-    }
 }
 
 $op_mode = $category ? "set-failed" : "set-building"
@@ -274,9 +165,8 @@ $conf::dbbase =~ m#^([^/]+/)#;
 $transactlog = "$conf::basedir/$conf::transactlog";
 
 if ($verbose) {
-    my $version = '$Revision$ $Date$ $Author$';
-    $version =~ s/(^\$| \$ .*$)//g;
-    print "wanna-build $version on $conf::dbbase\n";
+    print "wanna-build (Debian sbuild) $version ($release_date) on $hostname\n";
+    print "Using database $conf::dbbase\n" if defined($conf::dbbase);
 }
 
 if (!@ARGV && !isin( $op_mode, qw(list merge-quinn merge-partial-quinn import export
@@ -285,11 +175,6 @@ if (!@ARGV && !isin( $op_mode, qw(list merge-quinn merge-partial-quinn import ex
     warn "No packages given.\n";
     usage();
 }
-
-$real_user = (getpwuid($<))[0];
-die "Can't determine your user name\n"
-    if $op_mode ne "list" && !$user &&
-    !($user = $real_user);
 
 if (!$fail_reason) {
     if ($op_mode eq "set-failed" && !$category) {
@@ -772,11 +657,8 @@ sub add_one_failed ($$) {
     $cat = $category;
     if (!$cat && $fail_reason =~ /^\[([^\]]+)\]/) {
 	$cat = $1;
-	$cat = $short_category{$cat} if exists $short_category{$cat};
-	if (!isin( $cat, values %short_category )) {
-	    print "$name: Warning: unknown category $cat; discarded\n";
-	    $cat = "";
-	}
+	$cat = category($cat);
+	$cat = "" if !defined($cat);
 	$fail_reason =~ s/^\[[^\]]+\][ \t]*\n*//;
     }
 
@@ -2298,10 +2180,6 @@ sub send_mail ($$$) {
 
     my $from = $conf::db_maint;
 
-    if ($host_set != 1) {
-	chomp( $hostname = `/bin/hostname -f` );
-	$host_set = 1;
-    }
     $from .= "\@$hostname" if $from !~ /\@/;
 
     $to .= '@' . $hostname if $to !~ /\@/;

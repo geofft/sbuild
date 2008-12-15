@@ -52,6 +52,7 @@ sub set_allowed_keys (\%$) {
     my %common_keys = (
 	'_ROLE'					=> "",
 	'DISTRIBUTION'				=> "",
+	'OVERRIDE_DISTRIBUTION'			=> "",
 	'MAILPROG'				=> "",
 	'ARCH'					=> "",
 	'HOST_ARCH'				=> "",
@@ -67,7 +68,6 @@ sub set_allowed_keys (\%$) {
     my %sbuild_keys = (
 	'CHROOT'				=> "",
 	'BUILD_ARCH_ALL'			=> "",
-	'OVERRIDE_DISTRIBUTION'			=> "",
 	'NOLOG'					=> "",
 	'SOURCE_DEPENDENCIES'			=> "",
 	'SUDO'					=> "",
@@ -148,7 +148,25 @@ sub set_allowed_keys (\%$) {
 	'DB_NOTFORUS_MAINTAINER_EMAIL'		=> "",
 	'DB_LOG_MAIL'				=> "",
 	'DB_STAT_MAIL'				=> "",
-	'DB_WEB_STATS'				=> ""
+	'DB_WEB_STATS'				=> "",
+	# Not settable in config file:
+	'DB_BIN_NMU_VERSION'			=> "",
+	'DB_BUILD_PRIORITY'			=> "",
+	'DB_CATEGORY'				=> "",
+	'DB_CREATE'				=> "",
+	'DB_EXPORT_FILE'			=> "",
+	'DB_FAIL_REASON'			=> "",
+	'DB_IMPORT_FILE'			=> "",
+	'DB_INFO_ALL_DISTS'			=> "",
+	'DB_LIST_MIN_AGE'			=> "",
+	'DB_LIST_ORDER'				=> "",
+	'DB_LIST_STATE'				=> "",
+	'DB_NO_DOWN_PROPAGATION'		=> "",
+	'DB_NO_PROPAGATION'			=> "",
+	# TODO: Don't allow setting if already set.
+	'DB_OPERATION'				=> "",
+	'DB_OVERRIDE'				=> "",
+	'DB_USER'				=> ""
     );
 
     my %allowed_keys = (%common_keys);
@@ -461,13 +479,31 @@ our $lock_interval = 5;
 	    $self->set('DB_STAT_MAIL', $db_stat_mail);
 	    $self->set('DB_WEB_STATS', $db_web_stats);
 	}
+
+	# Not settable in config file:
+	$self->set('DB_BIN_NMU_VERSION', undef);
+	$self->set('DB_BUILD_PRIORITY', 0);
+	$self->set('DB_CATEGORY', undef);
+	$self->set('DB_CREATE', 0);
+	$self->set('DB_EXPORT_FILE', undef);
+	$self->set('DB_FAIL_REASON', undef);
+	$self->set('DB_IMPORT_FILE', undef);
+	$self->set('DB_INFO_ALL_DISTS', 0);
+	$self->set('DB_LIST_MIN_AGE', 0);
+	$self->set('DB_LIST_ORDER', 'PScpsn');
+	$self->set('DB_LIST_STATE', undef);
+	$self->set('DB_NO_DOWN_PROPAGATION', 0);
+	$self->set('DB_NO_PROPAGATION', 0);
+	$self->set('DB_OPERATION', undef);
+	$self->set('DB_OVERRIDE', 0);
+	$self->set('DB_USER', $self->get('USERNAME'));
     }
 
     # Not user-settable.
     chomp(our $host_arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $host_arch);
     $self->set('HOST_ARCH', $host_arch);
     $self->set('ARCH', $arch);
-    chomp(my $hostname = `hostname`);
+    chomp(my $hostname = `hostname -f`);
     $self->set('HOSTNAME', $hostname);
 }
 
