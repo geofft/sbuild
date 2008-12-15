@@ -450,6 +450,7 @@ our $lock_interval = 5;
     } elsif ($self->get('_ROLE') eq 'db') { # Database settings
 	if ($legacy_db) { # Using old wanna-build.conf
 	    $self->set('DB_BASE_DIR', $basedir);
+	    # TODO: Don't allow slash in name
 	    $self->set('DB_BASE_NAME', $dbbase);
 	    $self->set('DB_TRANSACTION_LOG', $transactlog);
 	    $self->set('DB_DISTRIBUTIONS', \@distributions);
