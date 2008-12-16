@@ -607,16 +607,20 @@ sub get (\%$) {
 
     my $entry = $self->{'KEYS'}->{$key};
 
-    my $val = undef;
+    my $value = undef;
     if ($entry) {
-	if (defined($entry->{'VALUE'})) {
-	    $val = $entry->{'VALUE'};
-	} elsif (defined($entry->{'DEFAULT'})) {
-	    $val = $entry->{'DEFAULT'};
+	if (defined($entry->{'GET'})) {
+	    $value = $entry->{'GET'}->($self, $entry);
+	} else {
+	    if (defined($entry->{'VALUE'})) {
+		$value = $entry->{'VALUE'};
+	    } elsif (defined($entry->{'DEFAULT'})) {
+		$value = $entry->{'DEFAULT'};
+	    }
 	}
     }
 
-    return $val;
+    return $value;
 }
 
 sub set (\%$$) {
@@ -631,7 +635,15 @@ sub set (\%$$) {
     my $entry = $self->{'KEYS'}->{$key};
 
     if (defined($entry)) {
-	return $entry->{'VALUE'} = $value;
+	if (defined($entry->{'SET'})) {
+	    $value = $entry->{'SET'}->($self, $entry, $value);
+	} else {
+	    $entry->{'VALUE'} = $value;
+	}
+	if (defined($entry->{'CHECK'})) {
+	    $entry->{'CHECK'}->($self, $entry);
+	}
+	return $value;
     } else {
 	warn "W: key \"$key\" is not allowed in sbuild configuration";
 	return undef;
