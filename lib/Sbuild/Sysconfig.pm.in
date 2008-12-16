@@ -29,10 +29,82 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($version $release_date);
+    @EXPORT = qw($version $release_date %paths %progams);
 }
 
-our $version = "@VERSION@";
+our $version = "@PACKAGE_VERSION@";
 our $release_date = "@RELEASE_DATE@";
+
+# Paths
+my $prefix = '@prefix@';
+my $exec_prefix = '@exec_prefix@';
+# Depend on prefix
+my $includedir = '@includedir@';
+my $localstatedir = '@localstatedir@';
+my $sharedstatedir = '@sharedstatedir@';
+my $sysconfdir = '@sysconfdir@';
+# Depend on exec_prefix
+my $bindir = '@bindir@';
+my $libdir = '@libdir@';
+my $libexecdir = '@libexecdir@';
+my $sbindir = '@sbindir@';
+# Data directories
+my $datarootdir = '@datarootdir@';
+my $datadir = '@datadir@';
+my $localedir = '@localedir@';
+my $mandir = '@mandir@';
+
+our %paths = (
+    'PREFIX' => $prefix,
+    'EXEC_PREFIX' => $exec_prefix,
+    'INCLUDEDIR' => $includedir,
+    'LOCALSTATEDIR' => $localstatedir,
+    'SHAREDSTATEDIR' => $sharedstatedir,
+    'SYSCONFDIR' => $sysconfdir,
+    'BINDIR' => $bindir,
+    'LIBDIR' => $libdir,
+    'LIBEXECDIR' => $libexecdir,
+    'SBINDIR' => $sbindir,
+    'DATAROOTDIR' => $datarootdir,
+    'DATADIR' => $datadir,
+    'LOCALEDIR' => $localedir,
+    'MANDIR' => $mandir,
+    'BUILDD_CONF' => '@BUILDD_CONF@',
+    'BUILDD_SYSCONF_DIR' => '@BUILDD_SYSCONF_DIR@',
+    'SBUILD_CONF' => '@SBUILD_CONF@',
+    'SBUILD_LIBEXEC_DIR' => '@SBUILD_LIBEXEC_DIR@',
+    'SBUILD_SYSCONF_DIR' => '@SBUILD_SYSCONF_DIR@',
+    'SCHROOT_CONF' => '@SCHROOT_CONF@',
+    'SCHROOT_SYSCONF_DIR' => '@SCHROOT_SYSCONF_DIR@',
+    'WANNABUILD_LIBEXEC_DIR' => '@WANNABUILD_LIBEXEC_DIR@',
+    'WANNA_BUILD_CONF' => '@WANNA_BUILD_CONF@'
+);
+
+# Programs:
+our %programs = (
+    'APT_CACHE' => '@APT_CACHE@',
+    'APT_GET' => '@APT_GET@',
+    'CHMOD' => '@CHMOD@',
+    'DATE' => '@DATE@',
+    'DCMD' => '@DCMD@',
+    'DF' => '@DF@',
+    'DPKG' => '@DPKG@',
+    'DPKG_BUILDPACKAGE' => '@DPKG_BUILDPACKAGE@',
+    'DPKG_PARSECHANGELOG' => '@DPKG_PARSECHANGELOG@',
+    'DPKG_SOURCE' => '@DPKG_SOURCE@',
+    'DU' => '@DU@',
+    'GPG' => '@GPG@',
+    'HOSTNAME' => '@HOSTNAME@',
+    'MAN' => '@MAN@',
+    'MD5SUM' => '@MD5SUM@',
+    'PGP' => '@PGP@',
+    'PS' => '@PS@',
+    'RM' => '@RM@',
+    'SCHROOT' => '@SCHROOT@',
+    'SHELL' => '@SHELL@',
+    'SU' => '@SU@',
+    'SUDO' => '@SUDO@',
+    'TEMPFILE' => '@TEMPFILE@'
+);
 
 1;
