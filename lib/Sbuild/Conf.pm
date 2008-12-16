@@ -39,7 +39,6 @@ BEGIN {
 
 sub set_allowed_keys (\%$);
 sub read_config (\%);
-sub check_config (\%);
 sub new ($$);
 sub get (\%$);
 sub set (\%$$);
@@ -48,11 +47,39 @@ sub set_allowed_keys (\%$) {
     my $self = shift;
     my $role = shift;
 
+    my $validate_program = sub {
+	my $self = shift;
+	my $entry = shift;
+	my $key = $entry->{'NAME'};
+	my $program = $self->get($key);
+
+	die "$key binary is not defined"
+	    if !defined($program);
+
+	die "$key binary $program does not exist or is not executable"
+	    if !-x $program;
+    };
+
+    my $validate_directory = sub {
+	my $self = shift;
+	my $entry = shift;
+	my $key = $entry->{'NAME'};
+	my $directory = $self->get($key);
+
+	die "$key directory is not defined"
+	    if !defined($directory);
+
+	die "$key directory $directory does not exist"
+	    if !-d $directory;
+    };
+
     my %common_keys = (
 	'_ROLE'					=> {},
 	'DISTRIBUTION'				=> {},
 	'OVERRIDE_DISTRIBUTION'			=> {},
-	'MAILPROG'				=> {},
+	'MAILPROG'				=> {
+	    CHECK => $validate_program
+	},
 	'ARCH'					=> {},
 	'HOST_ARCH'				=> {},
 	'HOSTNAME'				=> {},
@@ -61,7 +88,9 @@ sub set_allowed_keys (\%$) {
 	'CWD'					=> {},
 	'VERBOSE'				=> {},
 	'DEBUG'					=> {},
-	'DPKG'					=> {},
+	'DPKG'					=> {
+	    CHECK => $validate_program
+	},
     );
 
     my %sbuild_keys = (
@@ -69,16 +98,72 @@ sub set_allowed_keys (\%$) {
 	'BUILD_ARCH_ALL'			=> {},
 	'NOLOG'					=> {},
 	'SOURCE_DEPENDENCIES'			=> {},
-	'SUDO'					=> {},
-	'SU'					=> {},
-	'SCHROOT'				=> {},
+	'SUDO'					=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('CHROOT_MODE') eq 'split' ||
+		    ($self->get('CHROOT_MODE') eq 'schroot' &&
+		     $self->get('CHROOT_SPLIT'))) {
+		    $validate_program->($self, $entry);
+
+		    local (%ENV) = %ENV; # make local environment
+		    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
+		    $ENV{'APT_CONFIG'} = "test_apt_config";
+		    $ENV{'SHELL'} = "/bin/sh";
+
+		    my $sudo = $self->get('SUDO');
+		    chomp( my $test_df = `$sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
+		    chomp( my $test_ac = `$sudo sh -c 'echo \$APT_CONFIG'` );
+		    chomp( my $test_sh = `$sudo sh -c 'echo \$SHELL'` );
+
+		    if ($test_df ne "noninteractive" ||
+			$test_ac ne "test_apt_config" ||
+			$test_sh ne "/bin/sh") {
+			print STDERR "$sudo is stripping APT_CONFIG, DEBIAN_FRONTEND and/or SHELL from the environment\n";
+			print STDERR "'Defaults:" . $self->get('USERNAME') . " env_keep+=\"APT_CONFIG DEBIAN_FRONTEND SHELL\"' is not set in /etc/sudoers\n";
+			die "$sudo is incorrectly configured"
+		    }
+		}
+	    }
+	},
+	'SU'					=> {
+	    CHECK => $validate_program
+	},
+	'SCHROOT'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('CHROOT_MODE') eq 'schroot') {
+		    $validate_program->($self, $entry);
+		}
+	    }
+	},
 	'SCHROOT_OPTIONS'			=> {},
-	'FAKEROOT'				=> {},
-	'APT_GET'				=> {},
-	'APT_CACHE'				=> {},
-	'DPKG_SOURCE'				=> {},
-	'DCMD'					=> {},
-	'MD5SUM'				=> {},
+	'FAKEROOT'				=> {
+	    CHECK => $validate_program
+	},
+	'APT_GET'				=> {
+	    CHECK => $validate_program
+	},
+	'APT_CACHE'				=> {
+	    CHECK => $validate_program
+	},
+	'DPKG_SOURCE'				=> {
+	    CHECK => $validate_program
+	},
+	'DCMD'					=> {
+	    CHECK => $validate_program
+	},
+	'MD5SUM'				=> {
+	    CHECK => $validate_program
+	},
 	'AVG_TIME_DB'				=> {},
 	'AVG_SPACE_DB'				=> {},
 	'STATS_DIR'				=> {},
@@ -87,24 +172,78 @@ sub set_allowed_keys (\%$) {
 	'PGP_OPTIONS'				=> {},
 	'LOG_DIR'				=> {},
 	'LOG_DIR_AVAILABLE'			=> {},
-	'MAILTO'				=> {},
+	'MAILTO'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'sbuild') {
+		    die "mailto not set\n"
+			if !$self->get('MAILTO') &&
+			$self->get('SBUILD_MODE') eq "buildd";
+		}
+	    }
+	},
 	'MAILTO_HASH'				=> {},
 	'MAILFROM'				=> {},
-	'PURGE_BUILD_DIRECTORY'			=> {},
+	'PURGE_BUILD_DIRECTORY'			=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'sbuild') {
+		    die "Bad purge mode \'" .
+			$self->get('PURGE_BUILD_DIRECTORY') . "\'"
+			if !isin($self->get('PURGE_BUILD_DIRECTORY'),
+				 qw(always successful never));
+		}
+	    }
+	},
 	'TOOLCHAIN_REGEX'			=> {},
 	'STALLED_PKG_TIMEOUT'			=> {},
-	'SRCDEP_LOCK_DIR'			=> {},
+	'SRCDEP_LOCK_DIR'			=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'sbuild') {
+		    die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
+			if ! -d $self->get('SRCDEP_LOCK_DIR');
+		}
+	    }
+	},
 	'SRCDEP_LOCK_WAIT'			=> {},
 	'MAX_LOCK_TRYS'				=> {},
 	'LOCK_INTERVAL'				=> {},
 	'CHROOT_ONLY'				=> {},
-	'CHROOT_MODE'				=> {},
-	'CHROOT_SPLIT'				=> {},
+	'CHROOT_MODE'				=> {
+	    DEFAULT => 'schroot',
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'sbuild') {
+		    die "Bad chroot mode \'" . $self->get('CHROOT_MODE') . "\'"
+			if !isin($self->get('CHROOT_MODE'),
+				 qw(schroot sudo));
+		}
+	    }
+	},
+	'CHROOT_SPLIT'				=> {
+	    DEFAULT => 0
+	},
 	'APT_POLICY'				=> {},
 	'CHECK_WATCHES'				=> {},
 	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> {},
 	'WATCHES'				=> {},
-	'BUILD_DIR'				=> {},
+	'BUILD_DIR'				=> {
+	    DEFAULT => cwd(),
+	    CHECK => $validate_directory
+	},
 	'SBUILD_MODE'				=> {},
 	'FORCE_ORIG_SOURCE'			=> {},
 	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> {},
@@ -117,7 +256,21 @@ sub set_allowed_keys (\%$) {
 	'APT_UPDATE'				=> {},
 	'APT_ALLOW_UNAUTHENTICATED'		=> {},
 	'ALTERNATIVES'				=> {},
-	'CHECK_DEPENDS_ALGORITHM'		=> {},
+	'CHECK_DEPENDS_ALGORITHM'		=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'sbuild') {
+		    die 'check_depends_algorithm: Invalid build-dependency checking algorithm \'' .
+			$self->get('CHECK_DEPENDS_ALGORITHM') .
+			"'\nValid algorthms are 'first-only' and 'alternatives'\n"
+			if !isin($self->get('CHECK_DEPENDS_ALGORITHM'),
+				 qw(first-only alternatives));
+		}
+	    }
+	},
 	'AUTO_GIVEBACK'				=> {},
 	'AUTO_GIVEBACK_HOST'			=> {},
 	'AUTO_GIVEBACK_SOCKET'			=> {},
@@ -134,9 +287,41 @@ sub set_allowed_keys (\%$) {
     );
 
     my %db_keys = (
-	'DB_BASE_DIR'				=> {},
-	'DB_BASE_NAME'				=> {},
-	'DB_TRANSACTION_LOG'			=> {},
+	'DB_BASE_DIR'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'db') {
+		    $validate_directory->($self, $entry);
+		}
+	    }
+	},
+	'DB_BASE_NAME'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'db') {
+		    die "Database base name is not defined"
+			if !defined($self->get($key));
+		}
+	    }
+	},
+	'DB_TRANSACTION_LOG'			=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		if ($self->get('_ROLE') eq 'db') {
+		    die "Database transaction log is not defined"
+			if !defined($self->get($key));
+		}
+	    }
+	},
 	'DB_DISTRIBUTIONS'			=> {},
 	'DB_DISTRIBUTION_ORDER'			=> {},
 	'DB_SECTIONS'				=> {},
@@ -173,6 +358,10 @@ sub set_allowed_keys (\%$) {
 	@all_keys{keys %sbuild_keys} = values %sbuild_keys;
     } elsif ($role eq 'db') {
 	@all_keys{keys %db_keys} = values %db_keys;
+    }
+
+    foreach (keys %all_keys) {
+	$all_keys{$_}->{'NAME'} = $_;
     }
 
     $self->{'KEYS'} = \%all_keys;
@@ -500,90 +689,6 @@ our $lock_interval = 5;
     $self->set('HOSTNAME', $hostname);
 }
 
-sub check_config (\%) {
-    my $self = shift;
-
-    die "mailprog binary " . $self->get('MAILPROG') . " does not exist or isn't executable\n"
-	if !-x $self->get('MAILPROG');
-
-    if ($self->get('_ROLE') eq 'sbuild') {
-	die "apt-get binary " . $self->get('APT_GET') . " does not exist or isn't executable\n"
-	    if !-x $self->get('APT_GET');
-	die "apt-cache binary " . $self->get('APT_CACHE') . " does not exist or isn't executable\n"
-	    if !-x $self->get('APT_CACHE');
-	die "dpkg-source binary " . $self->get('DPKG_SOURCE') . " does not exist or isn't executable\n"
-	    if !-x $self->get('DPKG_SOURCE');
-	die "dcmd binary " . $self->get('DCMD') . " does not exist or isn't executable\n"
-	    if !-x $self->get('DCMD');
-	die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
-	    if ! -d $self->get('SRCDEP_LOCK_DIR');
-
-	die "Bad chroot mode \'" . $self->get('CHROOT_MODE') . "\'"
-	    if !isin($self->get('CHROOT_MODE'),
-		     qw(schroot sudo));
-	if ($self->get('CHROOT_MODE') eq 'split' ||
-	    ($self->get('CHROOT_MODE') eq 'schroot' && $self->get('CHROOT_SPLIT'))) {
-	    die "sudo binary " . $self->get('SUDO') . " does not exist or isn't executable\n"
-		if !-x $self->get('SUDO');
-
-	    local (%ENV) = %ENV; # make local environment
-	    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-	    $ENV{'APT_CONFIG'} = "test_apt_config";
-	    $ENV{'SHELL'} = "/bin/sh";
-
-	    my $sudo = $self->get('SUDO');
-	    chomp( my $test_df = `$sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
-	    chomp( my $test_ac = `$sudo sh -c 'echo \$APT_CONFIG'` );
-	    chomp( my $test_sh = `$sudo sh -c 'echo \$SHELL'` );
-
-	    if ($test_df ne "noninteractive" ||
-		$test_ac ne "test_apt_config" ||
-		$test_sh ne "/bin/sh") {
-		print STDERR "$sudo is stripping APT_CONFIG, DEBIAN_FRONTEND and/or SHELL from the environment\n";
-		print STDERR "'Defaults:" . $self->get('USERNAME') . " env_keep+=\"APT_CONFIG DEBIAN_FRONTEND SHELL\"' is not set in /etc/sudoers\n";
-		die "$sudo is incorrectly configured"
-	    }
-
-	} elsif ($self->get('CHROOT_MODE') eq 'schroot') {
-	    die "schroot binary " . $self->get('SCHROOT') . " does not exist or isn't executable\n"
-		if !-x $self->get('SCHROOT');
-	}
-
-	die "Bad purge mode \'" . $self->get('PURGE_BUILD_DIRECTORY') . "\'"
-	    if !isin($self->get('PURGE_BUILD_DIRECTORY'),
-		     qw(always successful never));
-
-	die "Bad build dependency check algorithm \'" . $self->get('CHECK_DEPENDS_ALGORITHM') . "\'"
-	    if !isin($self->get('CHECK_DEPENDS_ALGORITHM'),
-		     qw(first-only alternatives));
-
-	die 'check_depends_algorithm: Invalid build-dependency checking algorithm \'' .
-	    $self->get('CHECK_DEPENDS_ALGORITHM') .
-	    "'\nValid algorthms are 'first-only' and 'alternatives'\n"
-	    if !($self->get('CHECK_DEPENDS_ALGORITHM') eq 'first-only' ||
-		 $self->get('CHECK_DEPENDS_ALGORITHM') eq 'alternatives');
-	die "mailto not set\n" if !$self->get('MAILTO') && $self->get('SBUILD_MODE') eq "buildd";
-
-	if (!defined($self->get('BUILD_DIR'))) {
-	    $self->set('BUILD_DIR', $self->get('CWD'));
-	}
-	if (! -d $self->get('BUILD_DIR')) {
-	    die "Build directory " . $self->get('BUILD_DIR') . " does not exist";
-	}
-    } elsif ($self->get('_ROLE') eq 'db') {
-	if (! -d $self->get('DB_BASE_DIR')) {
-	    die "Database base directory " . $self->get('DB_BASE_DIR') .
-		" is not a directory\n";
-	}
-
-	die "Database base name is not defined"
-	    if !defined($self->get('DB_BASE_NAME'));
-
-	die "Database transaction log is not defined"
-	    if !defined($self->get('DB_TRANSACTION_LOG'));
-    }
-}
-
 sub new ($$) {
     my $class = shift;
     my $role = shift;
@@ -596,7 +701,6 @@ sub new ($$) {
     $self->set_allowed_keys($role);
     $self->set('_ROLE', $role);
     $self->read_config();
-    $self->check_config();
 
     return $self;
 }
@@ -643,6 +747,7 @@ sub set (\%$$) {
 	if (defined($entry->{'CHECK'})) {
 	    $entry->{'CHECK'}->($self, $entry);
 	}
+	$entry->{'NAME'} = $key;
 	return $value;
     } else {
 	warn "W: key \"$key\" is not allowed in sbuild configuration";
