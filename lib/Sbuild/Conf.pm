@@ -38,7 +38,6 @@ BEGIN {
 }
 
 sub set_allowed_keys (\%$);
-sub is_allowed (\%$);
 sub read_config (\%);
 sub check_config (\%);
 sub new ($$);
@@ -50,140 +49,133 @@ sub set_allowed_keys (\%$) {
     my $role = shift;
 
     my %common_keys = (
-	'_ROLE'					=> "",
-	'DISTRIBUTION'				=> "",
-	'OVERRIDE_DISTRIBUTION'			=> "",
-	'MAILPROG'				=> "",
-	'ARCH'					=> "",
-	'HOST_ARCH'				=> "",
-	'HOSTNAME'				=> "",
-	'HOME'					=> "",
-	'USERNAME'				=> "",
-	'CWD'					=> "",
-	'VERBOSE'				=> "",
-	'DEBUG'					=> "",
-	'DPKG'					=> "",
+	'_ROLE'					=> {},
+	'DISTRIBUTION'				=> {},
+	'OVERRIDE_DISTRIBUTION'			=> {},
+	'MAILPROG'				=> {},
+	'ARCH'					=> {},
+	'HOST_ARCH'				=> {},
+	'HOSTNAME'				=> {},
+	'HOME'					=> {},
+	'USERNAME'				=> {},
+	'CWD'					=> {},
+	'VERBOSE'				=> {},
+	'DEBUG'					=> {},
+	'DPKG'					=> {},
     );
 
     my %sbuild_keys = (
-	'CHROOT'				=> "",
-	'BUILD_ARCH_ALL'			=> "",
-	'NOLOG'					=> "",
-	'SOURCE_DEPENDENCIES'			=> "",
-	'SUDO'					=> "",
-	'SU'					=> "",
-	'SCHROOT'				=> "",
-	'SCHROOT_OPTIONS'			=> "",
-	'FAKEROOT'				=> "",
-	'APT_GET'				=> "",
-	'APT_CACHE'				=> "",
-	'DPKG_SOURCE'				=> "",
-	'DCMD'					=> "",
-	'MD5SUM'				=> "",
-	'AVG_TIME_DB'				=> "",
-	'AVG_SPACE_DB'				=> "",
-	'STATS_DIR'				=> "",
-	'PACKAGE_CHECKLIST'			=> "",
-	'BUILD_ENV_CMND'			=> "",
-	'PGP_OPTIONS'				=> "",
-	'LOG_DIR'				=> "",
-	'LOG_DIR_AVAILABLE'			=> "",
-	'MAILTO'				=> "",
-	'MAILTO_HASH'				=> "",
-	'MAILFROM'				=> "",
-	'PURGE_BUILD_DIRECTORY'			=> "",
-	'TOOLCHAIN_REGEX'			=> "",
-	'STALLED_PKG_TIMEOUT'			=> "",
-	'SRCDEP_LOCK_DIR'			=> "",
-	'SRCDEP_LOCK_WAIT'			=> "",
-	'MAX_LOCK_TRYS'				=> "",
-	'LOCK_INTERVAL'				=> "",
-	'CHROOT_ONLY'				=> "",
-	'CHROOT_MODE'				=> "",
-	'CHROOT_SPLIT'				=> "",
-	'APT_POLICY'				=> "",
-	'CHECK_WATCHES'				=> "",
-	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> "",
-	'WATCHES'				=> "",
-	'BUILD_DIR'				=> "",
-	'SBUILD_MODE'				=> "",
-	'FORCE_ORIG_SOURCE'			=> "",
-	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> "",
-	'PATH'					=> "",
-	'LD_LIBRARY_PATH'			=> "",
-	'MAINTAINER_NAME'			=> "",
-	'UPLOADER_NAME'				=> "",
-	'KEY_ID'				=> "",
-	'SIGNING_OPTIONS'			=> "",
-	'APT_UPDATE'				=> "",
-	'APT_ALLOW_UNAUTHENTICATED'		=> "",
-	'ALTERNATIVES'				=> "",
-	'CHECK_DEPENDS_ALGORITHM'		=> "",
-	'AUTO_GIVEBACK'				=> "",
-	'AUTO_GIVEBACK_HOST'			=> "",
-	'AUTO_GIVEBACK_SOCKET'			=> "",
-	'AUTO_GIVEBACK_USER'			=> "",
-	'AUTO_GIVEBACK_WANNABUILD_USER'		=> "",
-	'WANNABUILD_DATABASE'			=> "",
-	'BATCH_MODE'				=> "",
-	'MANUAL_SRCDEPS'			=> "",
-	'BUILD_SOURCE'				=> "",
-	'ARCHIVE'				=> "",
-	'BIN_NMU'				=> "",
-	'BIN_NMU_VERSION'			=> "",
-	'GCC_SNAPSHOT'				=> ""
+	'CHROOT'				=> {},
+	'BUILD_ARCH_ALL'			=> {},
+	'NOLOG'					=> {},
+	'SOURCE_DEPENDENCIES'			=> {},
+	'SUDO'					=> {},
+	'SU'					=> {},
+	'SCHROOT'				=> {},
+	'SCHROOT_OPTIONS'			=> {},
+	'FAKEROOT'				=> {},
+	'APT_GET'				=> {},
+	'APT_CACHE'				=> {},
+	'DPKG_SOURCE'				=> {},
+	'DCMD'					=> {},
+	'MD5SUM'				=> {},
+	'AVG_TIME_DB'				=> {},
+	'AVG_SPACE_DB'				=> {},
+	'STATS_DIR'				=> {},
+	'PACKAGE_CHECKLIST'			=> {},
+	'BUILD_ENV_CMND'			=> {},
+	'PGP_OPTIONS'				=> {},
+	'LOG_DIR'				=> {},
+	'LOG_DIR_AVAILABLE'			=> {},
+	'MAILTO'				=> {},
+	'MAILTO_HASH'				=> {},
+	'MAILFROM'				=> {},
+	'PURGE_BUILD_DIRECTORY'			=> {},
+	'TOOLCHAIN_REGEX'			=> {},
+	'STALLED_PKG_TIMEOUT'			=> {},
+	'SRCDEP_LOCK_DIR'			=> {},
+	'SRCDEP_LOCK_WAIT'			=> {},
+	'MAX_LOCK_TRYS'				=> {},
+	'LOCK_INTERVAL'				=> {},
+	'CHROOT_ONLY'				=> {},
+	'CHROOT_MODE'				=> {},
+	'CHROOT_SPLIT'				=> {},
+	'APT_POLICY'				=> {},
+	'CHECK_WATCHES'				=> {},
+	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> {},
+	'WATCHES'				=> {},
+	'BUILD_DIR'				=> {},
+	'SBUILD_MODE'				=> {},
+	'FORCE_ORIG_SOURCE'			=> {},
+	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> {},
+	'PATH'					=> {},
+	'LD_LIBRARY_PATH'			=> {},
+	'MAINTAINER_NAME'			=> {},
+	'UPLOADER_NAME'				=> {},
+	'KEY_ID'				=> {},
+	'SIGNING_OPTIONS'			=> {},
+	'APT_UPDATE'				=> {},
+	'APT_ALLOW_UNAUTHENTICATED'		=> {},
+	'ALTERNATIVES'				=> {},
+	'CHECK_DEPENDS_ALGORITHM'		=> {},
+	'AUTO_GIVEBACK'				=> {},
+	'AUTO_GIVEBACK_HOST'			=> {},
+	'AUTO_GIVEBACK_SOCKET'			=> {},
+	'AUTO_GIVEBACK_USER'			=> {},
+	'AUTO_GIVEBACK_WANNABUILD_USER'		=> {},
+	'WANNABUILD_DATABASE'			=> {},
+	'BATCH_MODE'				=> {},
+	'MANUAL_SRCDEPS'			=> {},
+	'BUILD_SOURCE'				=> {},
+	'ARCHIVE'				=> {},
+	'BIN_NMU'				=> {},
+	'BIN_NMU_VERSION'			=> {},
+	'GCC_SNAPSHOT'				=> {}
     );
 
     my %db_keys = (
-	'DB_BASE_DIR'				=> "",
-	'DB_BASE_NAME'				=> "",
-	'DB_TRANSACTION_LOG'			=> "",
-	'DB_DISTRIBUTIONS'			=> "",
-	'DB_DISTRIBUTION_ORDER'			=> "",
-	'DB_SECTIONS'				=> "",
-	'DB_PACKAGES_SOURCE'			=> "",
-	'DB_QUINN_SOURCE'			=> "",
-	'DB_ADMIN_USERS'			=> "",
-	'DB_MAINTAINER_EMAIL'			=> "",
-	'DB_NOTFORUS_MAINTAINER_EMAIL'		=> "",
-	'DB_LOG_MAIL'				=> "",
-	'DB_STAT_MAIL'				=> "",
-	'DB_WEB_STATS'				=> "",
+	'DB_BASE_DIR'				=> {},
+	'DB_BASE_NAME'				=> {},
+	'DB_TRANSACTION_LOG'			=> {},
+	'DB_DISTRIBUTIONS'			=> {},
+	'DB_DISTRIBUTION_ORDER'			=> {},
+	'DB_SECTIONS'				=> {},
+	'DB_PACKAGES_SOURCE'			=> {},
+	'DB_QUINN_SOURCE'			=> {},
+	'DB_ADMIN_USERS'			=> {},
+	'DB_MAINTAINER_EMAIL'			=> {},
+	'DB_NOTFORUS_MAINTAINER_EMAIL'		=> {},
+	'DB_LOG_MAIL'				=> {},
+	'DB_STAT_MAIL'				=> {},
+	'DB_WEB_STATS'				=> {},
 	# Not settable in config file:
-	'DB_BIN_NMU_VERSION'			=> "",
-	'DB_BUILD_PRIORITY'			=> "",
-	'DB_CATEGORY'				=> "",
-	'DB_CREATE'				=> "",
-	'DB_EXPORT_FILE'			=> "",
-	'DB_FAIL_REASON'			=> "",
-	'DB_IMPORT_FILE'			=> "",
-	'DB_INFO_ALL_DISTS'			=> "",
-	'DB_LIST_MIN_AGE'			=> "",
-	'DB_LIST_ORDER'				=> "",
-	'DB_LIST_STATE'				=> "",
-	'DB_NO_DOWN_PROPAGATION'		=> "",
-	'DB_NO_PROPAGATION'			=> "",
+	'DB_BIN_NMU_VERSION'			=> {},
+	'DB_BUILD_PRIORITY'			=> {},
+	'DB_CATEGORY'				=> {},
+	'DB_CREATE'				=> {},
+	'DB_EXPORT_FILE'			=> {},
+	'DB_FAIL_REASON'			=> {},
+	'DB_IMPORT_FILE'			=> {},
+	'DB_INFO_ALL_DISTS'			=> {},
+	'DB_LIST_MIN_AGE'			=> {},
+	'DB_LIST_ORDER'				=> {},
+	'DB_LIST_STATE'				=> {},
+	'DB_NO_DOWN_PROPAGATION'		=> {},
+	'DB_NO_PROPAGATION'			=> {},
 	# TODO: Don't allow setting if already set.
-	'DB_OPERATION'				=> "",
-	'DB_OVERRIDE'				=> "",
-	'DB_USER'				=> ""
+	'DB_OPERATION'				=> {},
+	'DB_OVERRIDE'				=> {},
+	'DB_USER'				=> {}
     );
 
-    my %allowed_keys = (%common_keys);
+    my %all_keys = (%common_keys);
     if ($role eq 'sbuild') {
-	@allowed_keys{keys %sbuild_keys} = values %sbuild_keys;
+	@all_keys{keys %sbuild_keys} = values %sbuild_keys;
     } elsif ($role eq 'db') {
-	@allowed_keys{keys %db_keys} = values %db_keys;
+	@all_keys{keys %db_keys} = values %db_keys;
     }
 
-    $self->{'_allowed_keys'} = \%allowed_keys;
-}
-
-sub is_allowed (\%$) {
-    my $self = shift;
-    my $key = shift;
-
-    return defined($self->{'_allowed_keys'}->{$key});
+    $self->{'KEYS'} = \%all_keys;
 }
 
 sub read_config (\%) {
@@ -613,7 +605,18 @@ sub get (\%$) {
     my $self = shift;
     my $key = shift;
 
-    return $self->{$key};
+    my $entry = $self->{'KEYS'}->{$key};
+
+    my $val = undef;
+    if ($entry) {
+	if (defined($entry->{'VALUE'})) {
+	    $val = $entry->{'VALUE'};
+	} elsif (defined($entry->{'DEFAULT'})) {
+	    $val = $entry->{'DEFAULT'};
+	}
+    }
+
+    return $val;
 }
 
 sub set (\%$$) {
@@ -625,8 +628,10 @@ sub set (\%$$) {
     $Sbuild::debug_level = $value
 	if ($key eq 'DEBUG');
 
-    if ($self->is_allowed($key)) {
-	return $self->{$key} = $value;
+    my $entry = $self->{'KEYS'}->{$key};
+
+    if (defined($entry)) {
+	return $entry->{'VALUE'} = $value;
     } else {
 	warn "W: key \"$key\" is not allowed in sbuild configuration";
 	return undef;
