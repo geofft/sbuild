@@ -29,7 +29,7 @@ use FileHandle;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use Sbuild qw(isin);
-use Sbuild::Conf;
+use WannaBuild::Conf;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::DBInfo;
 use WannaBuild::Options;
@@ -82,7 +82,7 @@ sub pkg_version_eq ($$);
 our ($mail_logs, $curr_date, %db, %otherdb, %otherdb_lock, %prioval,
      %sectval, %catval, $short_date, %new_vers, %merge_srcvers);
 
-my $conf = Sbuild::Conf->new('db');
+my $conf = WannaBuild::Conf->new();
 exit 1 if !defined($conf);
 my $options = WannaBuild::Options->new($conf);
 exit 1 if !defined($options);
