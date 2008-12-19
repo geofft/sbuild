@@ -271,7 +271,7 @@ $distribution ||= "unstable";
 die "Bad distribution '$distribution'\n"
     if !isin($distribution, @conf::distributions);
 $conf::dbbase =~ m#^([^/]+/)#;
-$transactlog = "$conf::basedir/$conf::transactlog";
+$transactlog = "$conf::basedir/$1$conf::transactlog";
 
 if ($verbose) {
     my $version = '$Revision$ $Date$ $Author$';
