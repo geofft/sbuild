@@ -2125,7 +2125,10 @@ sub log_ta ($$;$) {
 	"changed from $prevstate to $pkg->{'State'} ".
 	"by " . $conf->get('USERNAME'). " as " . $conf->get('DB_USER') . ".";
 
-    my $transactlog = $conf->get('DB_BASE_DIR') . '/' .
+    my $dbbase = $conf->get('DB_BASE_NAME');
+    $dbbase =~ m#^([^/]+/)#;
+
+    my $transactlog = $conf->get('DB_BASE_DIR') . "/$1" .
 	$conf->get('DB_TRANSACTION_LOG');
     if (!open( LOG, ">>$transactlog" )) {
 	warn "Can't open log file $transactlog: $!\n";
