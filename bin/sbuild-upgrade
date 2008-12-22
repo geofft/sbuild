@@ -45,12 +45,13 @@ foreach (@ARGV) {
 
     print STDOUT "Upgrading $chroot chroot...\n";
     $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-    my $status = $session->run_apt_command(
-    { COMMAND => [$conf->get('APT_GET'), '-uy', 'upgrade'],
-      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-      USER => 'root',
-      PRIORITY => 1,
-      DIR => '/' });
+    $session->run_apt_command(
+	{ COMMAND => [$conf->get('APT_GET'), '-uy', 'upgrade'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  PRIORITY => 1,
+	  DIR => '/' });
+    my $status = $? >> 8;
 
     cleanup($conf);
 

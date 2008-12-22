@@ -52,12 +52,13 @@ if ($command eq "apt-get") {
 
 my $session = setup($chroot, $conf) or die "Chroot setup failed";
 
-my $status = $session->run_apt_command(
+$session->run_apt_command(
     { COMMAND => [$command, @ARGV],
       ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
       USER => 'root',
       PRIORITY => 1,
       DIR => '/' });
+my $status = $? >> 8;
 
 cleanup($conf);
 

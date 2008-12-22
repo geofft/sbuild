@@ -29,6 +29,7 @@ use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(dump_file help_text version_text usage_error check_packages);
 use Sbuild::Conf;
 use Sbuild::ChrootPlain;
+use Sbuild::Sysconfig;
 use File::Path qw(mkpath);
 use File::Temp ();
 
@@ -207,11 +208,11 @@ dump_file("$SCHROOT_CONF");
 print "I: Please rename and modify this file as required.\n";
 }
 
-if (! -d "/etc/sbuild/chroot") {
-    makedir("/etc/sbuild/chroot", 0775);
+if (! -d "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot") {
+    makedir("$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot", 0775);
 }
 
-my $chrootlink = "/etc/sbuild/chroot/$chrootname";
+my $chrootlink = "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname";
 if (-l $chrootlink) {
     unlink($chrootlink) or die "Can't unlink $chrootlink: $!";
 } else {
@@ -220,7 +221,7 @@ if (-l $chrootlink) {
 
 if (! -f $chrootlink) {
     if (symlink($target, $chrootlink)) {
-	print "I: sudo chroot configuration linked as /etc/sbuild/chroot/$chrootname.\n";
+	print "I: sudo chroot configuration linked as $Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname.\n";
     } else {
 	print STDERR "E: Failed to symlink $target to $chrootlink: $!\n";
     }
@@ -252,6 +253,7 @@ if (! -d "$target/var/lib/sbuild/srcdep-lock") {
 
 my $session = Sbuild::ChrootPlain->new($conf, $target);
 if (defined($session)) {
+    $session->set('Log Stream', \*STDOUT);
 
     if (!$session->begin_session()) {
 	print STDERR "E: Error creating chroot session: skipping apt update\n";
@@ -260,15 +262,24 @@ if (defined($session)) {
 	check_packages($session, "set");
 
 	print "I: Updating chroot.\n";
-	my $status = $session->run_apt_command($conf->get('APT_GET'), "update",
-					       "root", 1);
+	$session->run_apt_command(
+	    { COMMAND => [$conf->get('APT_GET'), 'update'],
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      PRIORITY => 1,
+	      DIR => '/'});
 	print "W: Failed to update APT package lists\n"
-	    if ($status != 0);
-	$status = $session->run_apt_command($conf->get('APT_GET'),
-					    "-uy upgrade",
-					    "root", 1);
+	    if ($?);
+
+
+	$session->run_apt_command(
+	    { COMMAND => [$conf->get('APT_GET'), '-uy', 'upgrade'],
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      PRIORITY => 1,
+	      DIR => '/' });
 	print "W: Failed to upgrade chroot\n"
-	    if ($status != 0);
+	    if ($?);
 	$session->end_session();
 	$session = undef;
     }

@@ -70,11 +70,12 @@ if (!close $pipe) {
 print STDOUT ".\n\n";
 
 
-my $status = $session->run_command(
+$session->run_command(
     {COMMAND => [$conf->get('DPKG'), '--list', @ARGV],
      USER => 'root',
      CHROOT => 1,
      PRIORITY => 0});
+my $status = $? >> 8;
 
 cleanup($conf);
 

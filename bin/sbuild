@@ -43,7 +43,7 @@ use File::Temp qw(tempdir);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Log qw(open_log close_log);
-use Sbuild::Sysconfig qw($version);
+use Sbuild::Sysconfig;
 use Sbuild::Options;
 use Sbuild::Build;
 
@@ -180,7 +180,7 @@ sub main () {
 	$chroot_defaults->{'STREAMERR'} = $build->get('Log Stream');
 	$chroot_defaults->{'ENV'} = {
 	    'LC_ALL' => 'POSIX',
-	    'SHELL' => "/bin/sh"
+	    'SHELL' => $Sbuild::Sysconfig::programs{'SHELL'}
 	};
 
 	$build->set('Session', $session);
