@@ -28,7 +28,7 @@ use File::Basename qw(basename dirname);
 use GDBM_File;
 use Sbuild qw(binNMU_version version_compare split_version copy isin send_mail debug);
 use Sbuild::Base;
-use Sbuild::Sysconfig qw($version);
+use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
 
@@ -479,7 +479,7 @@ sub build (\$$$) {
 	# check if the unpacked tree is really the version we need
 	$dscdir = $self->get('Session')->strip_chroot_path($dscdir);
 	my $pipe = $self->get('Session')->pipe_command(
-	    { COMMAND => ['/usr/bin/dpkg-parsechangelog'],
+	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'}],
 	      USER => $self->get_conf('USERNAME'),
 	      PRIORITY => 0,
 	      DIR => $dscdir});
@@ -510,7 +510,8 @@ sub build (\$$$) {
 
     $self->log_subsubsection("Check disc space");
     $self->set('Pkg Fail Stage', "check-space");
-    my $current_usage = `/usr/bin/du -k -s "$dscdir"`;
+    my $du = $Sbuild::Sysconfig::programs{'DU'};
+    my $current_usage = `"$du" -k -s "$dscdir"`;
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
     if ($current_usage) {
@@ -521,7 +522,8 @@ sub build (\$$$) {
 	    # TODO: Only purge in a single place.
 	    $self->log("Purging $build_dir\n");
 	    $self->get('Session')->run_command(
-		{ COMMAND => ['/bin/rm', '-rf', $build_dir],
+		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
+			      '-rf', $build_dir],
 		  USER => 'root',
 		  CHROOT => 1,
 		  PRIORITY => 0,
@@ -601,7 +603,8 @@ sub build (\$$$) {
     if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
 	! -r "$self->{'Chroot Dir'}/etc/ld.so.conf") {
 	$self->get('Session')->run_command(
-	    { COMMAND => ['/bin/chmod', 'a+r', '/etc/ld.so.conf'],
+	    { COMMAND => [$Sbuild::Sysconfig::programs{'CHMOD'},
+			  'a+r', '/etc/ld.so.conf'],
 	      USER => 'root',
 	      CHROOT => 1,
 	      PRIORITY => 0,
@@ -1975,7 +1978,7 @@ sub check_space (\$@) {
 
     foreach (@files) {
 	my $pipe = $self->get('Session')->pipe_command(
-	    { COMMAND => ['/usr/bin/du', '-k', '-s', $_],
+	    { COMMAND => [$Sbuild::Sysconfig::programs{'DU'}, '-k', '-s', $_],
 	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 0,
 	      PRIORITY => 0,
@@ -2175,6 +2178,7 @@ sub prepare_watches (\$\@@) {
 	    next;
 	}
 	foreach $prg (@{$self->get_conf('WATCHES')->{$pkg}}) {
+	    # Add /usr/bin to programs without a path
 	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
 	    $self->get('This Watches')->{"$self->{'Chroot Dir'}$prg"} = $pkg;
 	    debug("Will watch for $prg ($pkg)\n");
@@ -2312,7 +2316,8 @@ sub df (\$$) {
     my $self = shift;
     my $dir = shift;
 
-    my $free = `/bin/df $dir | tail -n 1`;
+    my $df = $Sbuild::Sysconfig::programs{'DF'};
+    my $free = `"$df" $dir | tail -n 1`;
     my @free = split( /\s+/, $free );
     return $free[3];
 }
