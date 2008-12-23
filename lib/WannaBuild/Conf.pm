@@ -26,6 +26,7 @@ use warnings;
 
 use Cwd qw(cwd);
 use Sbuild qw(isin);
+use Sbuild::ConfBase;
 use Sbuild::Log;
 
 BEGIN {
@@ -57,7 +58,8 @@ sub init_allowed_keys () {
 
     my %db_keys = (
 	'DB_BASE_DIR'				=> {
-	    CHECK => $validate_directory
+	    CHECK => $validate_directory,
+	    DEFAULT => $Sbuild::Sysconfig::paths{'WANNA_BUILD_LOCALSTATE_DIR'}
 	},
 	'DB_BASE_NAME'				=> {
 	    CHECK => sub {
@@ -67,7 +69,8 @@ sub init_allowed_keys () {
 
 		die "Database base name is not defined"
 		    if !defined($self->get($key));
-	    }
+	    },
+	    DEFAULT => 'build-db'
 	},
 	'DB_TRANSACTION_LOG'			=> {
 	    CHECK => sub {
@@ -77,37 +80,124 @@ sub init_allowed_keys () {
 
 		die "Database transaction log is not defined"
 		    if !defined($self->get($key));
+	    },
+	    DEFAULT => 'transactions.log'
+	},
+	'DB_DISTRIBUTIONS'			=> {
+	    DEFAULT => [
+		'oldstable-security',
+		'stable',
+		'testing',
+		'unstable',
+		'stable-security',
+		'testing-security'
+		]
+	},
+	'DB_DISTRIBUTION_ORDER'			=> {
+	    DEFAULT => {
+		'oldstable-security'	=> 0,
+		'stable'		=> 1,
+		'stable-security'	=> 1,
+		'testing'		=> 2,
+		'testing-security'	=> 2,
+		'unstable'		=> 3
 	    }
 	},
-	'DB_DISTRIBUTIONS'			=> {},
-	'DB_DISTRIBUTION_ORDER'			=> {},
-	'DB_SECTIONS'				=> {},
-	'DB_PACKAGES_SOURCE'			=> {},
-	'DB_QUINN_SOURCE'			=> {},
-	'DB_ADMIN_USERS'			=> {},
-	'DB_MAINTAINER_EMAIL'			=> {},
-	'DB_NOTFORUS_MAINTAINER_EMAIL'		=> {},
-	'DB_LOG_MAIL'				=> {},
-	'DB_STAT_MAIL'				=> {},
-	'DB_WEB_STATS'				=> {},
+	'DB_SECTIONS'				=> {
+	    DEFAULT => [
+		'main',
+		'contrib',
+		'non-free'
+		]
+	},
+	'DB_PACKAGES_SOURCE'			=> {
+	    DEFAULT => 'ftp://ftp.debian.org/debian'
+	},
+	'DB_QUINN_SOURCE'			=> {
+	    DEFAULT => 'http://buildd.debian.org/quinn-diff/output'
+	},
+	'DB_ADMIN_USERS'			=> {
+	    DEFAULT => [
+		'buildd'
+		]
+	},
+	'DB_MAINTAINER_EMAIL'			=> {
+	    DEFAULT => 'buildd'
+	},
+	'DB_NOTFORUS_MAINTAINER_EMAIL'		=> {
+	    DEFAULT => 'buildd'
+	},
+	'DB_LOG_MAIL'				=> {
+	    DEFAULT => undef
+	},
+	'DB_STAT_MAIL'				=> {
+	    DEFAULT => undef
+	},
+	'DB_WEB_STATS'				=> {
+	    DEFAULT => undef
+	},
 	# Not settable in config file:
-	'DB_BIN_NMU_VERSION'			=> {},
-	'DB_BUILD_PRIORITY'			=> {},
-	'DB_CATEGORY'				=> {},
-	'DB_CREATE'				=> {},
-	'DB_EXPORT_FILE'			=> {},
-	'DB_FAIL_REASON'			=> {},
-	'DB_IMPORT_FILE'			=> {},
-	'DB_INFO_ALL_DISTS'			=> {},
-	'DB_LIST_MIN_AGE'			=> {},
-	'DB_LIST_ORDER'				=> {},
-	'DB_LIST_STATE'				=> {},
-	'DB_NO_DOWN_PROPAGATION'		=> {},
-	'DB_NO_PROPAGATION'			=> {},
+	'DB_BIN_NMU_VERSION'			=> {
+	    DEFAULT => undef
+	},
+	'DB_BUILD_PRIORITY'			=> {
+	    DEFAULT => 0
+	},
+	'DB_CATEGORY'				=> {
+	    DEFAULT => undef
+	},
+	'DB_CREATE'				=> {
+	    DEFAULT => 0
+	},
+	'DB_EXPORT_FILE'			=> {
+	    DEFAULT => undef
+	},
+	'DB_FAIL_REASON'			=> {
+	    DEFAULT => undef
+	},
+	'DB_IMPORT_FILE'			=> {
+	    DEFAULT => undef
+	},
+	'DB_INFO_ALL_DISTS'			=> {
+	    DEFAULT => 0
+	},
+	'DB_LIST_MIN_AGE'			=> {
+	    DEFAULT => 0
+	},
+	'DB_LIST_ORDER'				=> {
+	    DEFAULT => 'PScpsn'
+	},
+	'DB_LIST_STATE'				=> {
+	    DEFAULT => undef
+	},
+	'DB_NO_DOWN_PROPAGATION'		=> {
+	    DEFAULT => 0
+	},
+	'DB_NO_PROPAGATION'			=> {
+	    DEFAULT => 0
+	},
 	# TODO: Don't allow setting if already set.
-	'DB_OPERATION'				=> {},
-	'DB_OVERRIDE'				=> {},
-	'DB_USER'				=> {}
+	'DB_OPERATION'				=> {
+	    DEFAULT => undef,
+	    SET => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $value = shift;
+		my $key = $entry->{'NAME'};
+
+		if (!$self->_get_value($key)) {
+		    $self->_set_value($key, $value);
+		} else {
+		    die "Only one operation may be specified";
+		}
+	    }
+	},
+	'DB_OVERRIDE'				=> {
+	    DEFAULT => 0
+	},
+	'DB_USER'				=> {
+	    DEFAULT => $self->get('USERNAME')
+	}
     );
 
     $self->set_allowed_keys(\%db_keys);
@@ -116,12 +206,6 @@ sub init_allowed_keys () {
 sub read_config () {
     my $self = shift;
 
-    ($self->set('HOME', $ENV{'HOME'}))
-	or die "HOME not defined in environment!\n";
-    $self->set('USERNAME',(getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'});
-    $self->set('CWD', cwd());
-    $self->set('VERBOSE', 0);
-
     # Set here to allow user to override.
     if (-t STDIN && -t STDOUT && $self->get('VERBOSE') == 0) {
 	$self->set('VERBOSE', 1);
@@ -129,170 +213,65 @@ sub read_config () {
 
     my $HOME = $self->get('HOME');
 
-    # Defaults.
-    our $mailprog = "/usr/sbin/sendmail";
-    our $dpkg = "/usr/bin/dpkg";
-    our $sudo = "/usr/bin/sudo";
-    our $su = "/bin/su";
-    our $schroot = "/usr/bin/schroot";
-    our $schroot_options = ['-q'];
-    our $fakeroot = "/usr/bin/fakeroot";
-    our $apt_get = "/usr/bin/apt-get";
-    our $apt_cache = "/usr/bin/apt-cache";
-    our $dpkg_source = "/usr/bin/dpkg-source";
-    our $dcmd = "/usr/bin/dcmd";
-    our $md5sum = "/usr/bin/md5sum";
-    our $avg_time_db = "/var/lib/sbuild/avg-build-times";
-    our $avg_space_db = "/var/lib/sbuild/avg-build-space";
-    our $stats_dir = "$HOME/stats";
-    our $package_checklist = "/var/lib/sbuild/package-checklist";
-    our $build_env_cmnd = "";
-    our $pgp_options = ['-us', '-uc'];
-    our $log_dir = "$HOME/logs";
-    our $mailto = "";
-    our %mailto = ();
-    our $mailfrom = "Source Builder <sbuild>";
-    our $purge_build_directory = "successful";
-    our @toolchain_regex = (
-	'binutils$',
-	'gcc-[\d.]+$',
-	'g\+\+-[\d.]+$',
-	'libstdc\+\+',
-	'libc[\d.]+-dev$',
-	'linux-kernel-headers$',
-	'linux-libc-dev$',
-	'gnumach-dev$',
-	'hurd-dev$',
-	'kfreebsd-kernel-headers$'
-	);
-    our $stalled_pkg_timeout = 150; # minutes
-    our $srcdep_lock_dir = "/var/lib/sbuild/srcdep-lock";
-    our $srcdep_lock_wait = 1; # minutes
-    our $max_lock_trys = 120;
-our $lock_interval = 5;
-    our $apt_policy = 1;
-    our $check_watches = 1;
-    our @ignore_watches_no_build_deps = qw();
-    our %watches;
-    our $chroot_mode = 'schroot';
-    our $chroot_split = 0;
-    our $sbuild_mode = "user";
-    our $debug = 0;
-    our $force_orig_source = 0;
-    our %individual_stalled_pkg_timeout = ();
-    our $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games";
-    our $ld_library_path = "";
-    our $maintainer_name;
-    our $uploader_name;
-    our $key_id;
-    our $apt_update = 0;
-    our $apt_allow_unauthenticated = 0;
-    our %alternatives = (
-	"info-browser"		=> "info",
-	"httpd"			=> "apache",
-	"postscript-viewer"	=> "ghostview",
-	"postscript-preview"	=> "psutils",
-	"www-browser"		=> "lynx",
-	"awk"			=> "gawk",
-	"c-shell"		=> "tcsh",
-	"wordlist"		=> "wenglish",
-	"tclsh"			=> "tcl8.4",
-	"wish"			=> "tk8.4",
-	"c-compiler"		=> "gcc",
-	"fortran77-compiler"	=> "g77",
-	"java-compiler"		=> "jikes",
-	"libc-dev"		=> "libc6-dev",
-	"libgl-dev"		=> "xlibmesa-gl-dev",
-	"libglu-dev"		=> "xlibmesa-glu-dev",
-	"libncurses-dev"	=> "libncurses5-dev",
-	"libz-dev"		=> "zlib1g-dev",
-	"libg++-dev"		=> "libstdc++6-4.0-dev",
-	"emacsen"		=> "emacs21",
-	"mail-transport-agent"	=> "ssmtp",
-	"mail-reader"		=> "mailx",
-	"news-transport-system"	=> "inn",
-	"news-reader"		=> "nn",
-	"xserver"		=> "xvfb",
-	"mysql-dev"		=> "libmysqlclient-dev",
-	"giflib-dev"		=> "libungif4-dev",
-	"freetype2-dev"		=> "libttf-dev"
-	);
-    our $check_depends_algorithm = "first-only";
-    our $distribution = 'unstable';
-    our $archive = undef;
-    our $chroot = undef;
-    our $build_arch_all = 0;
-    our $arch = undef;
+    # Variables are undefined, so config will default to DEFAULT if unset.
 
     # NOTE: For legacy wanna-build.conf format parsing
-    our $basedir = '/var/lib/wanna-build';
-    our $dbbase = 'build-db';
-    our $transactlog = 'transactions.log';
-    our @distributions = qw(oldstable-security stable testing unstable
-                            stable-security testing-security);
-    our %dist_order = ('oldstable-security' => 0,
-		       'stable' => 1,
-		       'stable-security' => 1,
-		       'testing' => 2,
-		       'testing-security' => 2,
-		       'unstable' => 3);
-    our @sections = qw(main contrib non-free);
-    our $pkgs_source = "ftp://ftp.debian.org/debian";
-    our $quinn_source = "http://buildd.debian.org/quinn-diff/output";
-    our @admin_users = qw(buildd);
-    our $maint = "buildd";
-    our $notforus_maint = "buildd";
+    our $basedir = undef;
+    our $dbbase = undef;
+    our $transactlog = undef;
+    our @distributions;
+    undef @distributions;
+    our %dist_order;
+    undef %dist_order;
+    our @sections;
+    undef @sections;
+    our $pkgs_source = undef;
+    our $quinn_source = undef;
+    our @admin_users;
+    undef @admin_users;
+    our $maint = undef;
+    our $notforus_maint = undef;
     our $log_mail = undef;
     our $stat_mail = undef;
     our $web_stats = undef;
 
     # New sbuild.conf format
-    our $db_base_dir = '/var/lib/wanna-build';
-    our $db_base_name = 'build-db';
-    our $db_transaction_log = 'transactions.log';
-    our @db_distributions = qw(oldstable-security stable testing
-                               unstable stable-security
-                               testing-security);
-    our %db_distribution_order = ('oldstable-security' => 0,
-				  'stable' => 1,
-				  'stable-security' => 1,
-				  'testing' => 2,
-				  'testing-security' => 2,
-				  'unstable' => 3);
-    our @db_sections = qw(main contrib non-free);
-    our $db_packages_source = "ftp://ftp.debian.org/debian";
-    our $db_quinn_source = "http://buildd.debian.org/quinn-diff/output";
-    our @db_admin_users = qw(buildd);
-    our $db_maintainer_email = "buildd";
-    our $db_notforus_maintainer_email = "buildd";
+    our $db_base_dir = undef;
+    our $db_base_name = undef;
+    our $db_transaction_log = undef;
+    our @db_distributions;
+    undef @db_distributions;
+    our %db_distribution_order;
+    undef %db_distribution_order;
+    our @db_sections;
+    undef @db_sections;
+    our $db_packages_source = undef;
+    our $db_quinn_source = undef;
+    our @db_admin_users;
+    undef @db_admin_users;
+    our $db_maintainer_email = undef;
+    our $db_notforus_maintainer_email = undef;
     our $db_log_mail = undef;
     our $db_stat_mail = undef;
     our $db_web_stats = undef;
 
     # read conf files
     my $legacy_db = 0;
-    if (-r "/etc/buildd/wanna-build.conf") {
-	warn "W: Reading obsolete configuration file /etc/buildd/wanna-build.conf";
-	warn "I: This file has been merged with /etc/sbuildrc";
+    if (-r $Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'}) {
+	warn "W: Reading obsolete configuration file $Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'}";
+	warn "I: This file has been merged with $Sbuild::Sysconfig::paths{'SBUILD_CONF'}";
 	$legacy_db = 1;
-	require "/etc/buildd/wanna-build.conf" if -r "/etc/buildd/wanna-build.conf";
+	require $Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'};
     }
     if (-r "$HOME/.wanna-buildrc") {
 	warn "W: Reading obsolete configuration file $HOME/.wanna-buildrc";
 	warn "W: This file has been merged with $HOME/.sbuildrc";
 	$legacy_db = 1;
-	require "$HOME/.wanna-buildrc" if -r "$HOME/.wanna-buildrc";
+	require "$HOME/.wanna-buildrc";
     }
-    require "/etc/sbuild/sbuild.conf" if -r "/etc/sbuild/sbuild.conf";
+    require $Sbuild::Sysconfig::paths{'SBUILD_CONF'}
+        if -r $Sbuild::Sysconfig::paths{'SBUILD_CONF'};
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
-    # Modify defaults if needed.
-    $maintainer_name = $ENV{'DEBEMAIL'}
-	if (!defined($maintainer_name) && defined($ENV{'DEBEMAIL'}));
-
-    $self->set('DISTRIBUTION', $distribution);
-    $self->set('DEBUG', $debug);
-    $self->set('DPKG', $dpkg);
-    $self->set('MAILPROG', $mailprog);
 
     if ($legacy_db) { # Using old wanna-build.conf
 	$self->set('DB_BASE_DIR', $basedir);
@@ -326,31 +305,6 @@ our $lock_interval = 5;
 	$self->set('DB_STAT_MAIL', $db_stat_mail);
 	$self->set('DB_WEB_STATS', $db_web_stats);
     }
-
-    # Not settable in config file:
-    $self->set('DB_BIN_NMU_VERSION', undef);
-    $self->set('DB_BUILD_PRIORITY', 0);
-    $self->set('DB_CATEGORY', undef);
-    $self->set('DB_CREATE', 0);
-    $self->set('DB_EXPORT_FILE', undef);
-    $self->set('DB_FAIL_REASON', undef);
-    $self->set('DB_IMPORT_FILE', undef);
-    $self->set('DB_INFO_ALL_DISTS', 0);
-    $self->set('DB_LIST_MIN_AGE', 0);
-    $self->set('DB_LIST_ORDER', 'PScpsn');
-    $self->set('DB_LIST_STATE', undef);
-    $self->set('DB_NO_DOWN_PROPAGATION', 0);
-    $self->set('DB_NO_PROPAGATION', 0);
-    $self->set('DB_OPERATION', undef);
-    $self->set('DB_OVERRIDE', 0);
-    $self->set('DB_USER', $self->get('USERNAME'));
-
-    # Not user-settable.
-    chomp(our $host_arch = readpipe($self->get('DPKG') . " --print-installation-architecture")) if(!defined $host_arch);
-    $self->set('HOST_ARCH', $host_arch);
-    $self->set('ARCH', $arch);
-    chomp(my $hostname = `hostname -f`);
-    $self->set('HOSTNAME', $hostname);
 }
 
 1;

@@ -66,22 +66,66 @@ sub init_allowed_keys (\%$) {
 	    if !-d $directory;
     };
 
+    my $home = $ENV{'HOME'}
+        or die "HOME not defined in environment!\n";
+    my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
+
+    chomp(my $hostname = `$Sbuild::Sysconfig::programs{'HOSTNAME'} -f`);
+
+    # Not user-settable.
+    chomp(my $host_arch =
+	  readpipe("$Sbuild::Sysconfig::programs{'DPKG'} --print-installation-architecture"));
+
     my %common_keys = (
-	'DISTRIBUTION'				=> {},
-	'OVERRIDE_DISTRIBUTION'			=> {},
-	'MAILPROG'				=> {
-	    CHECK => $validate_program
+	'DISTRIBUTION'				=> {
+	    DEFAULT => 'unstable',
+	    SET => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $value = shift;
+		my $key = $entry->{'NAME'};
+
+		$self->_set_value($key, $value);
+
+		my $override = ($self->get($key)) ? 1 : 0;
+		$self->set('OVERRIDE_DISTRIBUTION', $override);
+	    }
 	},
-	'ARCH'					=> {},
-	'HOST_ARCH'				=> {},
-	'HOSTNAME'				=> {},
-	'HOME'					=> {},
-	'USERNAME'				=> {},
-	'CWD'					=> {},
-	'VERBOSE'				=> {},
-	'DEBUG'					=> {},
+	'OVERRIDE_DISTRIBUTION'			=> {
+	    DEFAULT => 0
+	},
+	'MAILPROG'				=> {
+	    CHECK => $validate_program,
+	    DEFAULT => $Sbuild::Sysconfig::programs{'SENDMAIL'}
+	},
+	# TODO: Check if defaulted in code assuming undef
+	'ARCH'					=> {
+	    DEFAULT => $host_arch
+	},
+	'HOST_ARCH'				=> {
+	    DEFAULT => $host_arch
+	},
+	'HOSTNAME'				=> {
+	    DEFAULT => $hostname
+	},
+	'HOME'					=> {
+	    DEFAULT => $home
+	},
+	'USERNAME'				=> {
+	    DEFAULT => $username
+	},
+	'CWD'					=> {
+	    DEFAULT => cwd()
+	},
+	'VERBOSE'				=> {
+	    DEFAULT => 0
+	},
+	'DEBUG'					=> {
+	    DEFAULT => 0
+	},
 	'DPKG'					=> {
-	    CHECK => $validate_program
+	    CHECK => $validate_program,
+	    DEFAULT => $Sbuild::Sysconfig::programs{'DPKG'}
 	},
     );
 
@@ -101,6 +145,37 @@ sub new ($$) {
     return $self;
 }
 
+sub is_default (\%$$) {
+    my $self = shift;
+    my $key = shift;
+
+    return ($self->_get_value($key) == undef);
+}
+
+sub _get_property_value (\%$$$) {
+    my $self = shift;
+    my $key = shift;
+    my $property = shift;
+
+    my $entry = $self->{'KEYS'}->{$key};
+
+    return $entry->{$property};
+}
+
+sub _get_value (\%$$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'VALUE');
+}
+
+sub _get_default (\%$$) {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'DEFAULT');
+}
+
 sub get (\%$) {
     my $self = shift;
     my $key = shift;
@@ -112,15 +187,40 @@ sub get (\%$) {
 	if (defined($entry->{'GET'})) {
 	    $value = $entry->{'GET'}->($self, $entry);
 	} else {
-	    if (defined($entry->{'VALUE'})) {
-		$value = $entry->{'VALUE'};
-	    } elsif (defined($entry->{'DEFAULT'})) {
-		$value = $entry->{'DEFAULT'};
-	    }
+	    $value = $self->_get_value($key);
+	    $value = $self->_get_default($key)
+		if (!defined($value));
 	}
     }
 
     return $value;
+}
+
+sub _set_property_value (\%$$$) {
+    my $self = shift;
+    my $key = shift;
+    my $property = shift;
+    my $value = shift;
+
+    my $entry = $self->{'KEYS'}->{$key};
+
+    return $entry->{$property} = $value;
+}
+
+sub _set_value (\%$$) {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    return $self->_set_property_value($key, 'VALUE', $value);
+}
+
+sub _set_default (\%$$) {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    return $self->_set_property_value($key, 'DEFAULT', $value);
 }
 
 sub set (\%$$) {
@@ -138,7 +238,7 @@ sub set (\%$$) {
 	if (defined($entry->{'SET'})) {
 	    $value = $entry->{'SET'}->($self, $entry, $value);
 	} else {
-	    $entry->{'VALUE'} = $value;
+	    $value = $self->_set_value($key, $value);
 	}
 	if (defined($entry->{'CHECK'})) {
 	    $entry->{'CHECK'}->($self, $entry);
