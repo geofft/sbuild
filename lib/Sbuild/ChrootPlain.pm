@@ -22,14 +22,16 @@
 
 package Sbuild::ChrootPlain;
 
-use Sbuild::Conf;
-use Sbuild::Log;
-
 use strict;
 use warnings;
+
 use POSIX;
 use FileHandle;
 use File::Temp ();
+
+use Sbuild::Conf;
+use Sbuild::Log;
+use Sbuild::Sysconfig;
 
 BEGIN {
     use Exporter ();
@@ -83,10 +85,17 @@ sub end_session (\$) {
 
 sub get_command_internal (\$$$$$) {
     my $self = shift;
-    my $command = shift; # Command to run
-    my $user = shift;    # User to run command under
-    my $chroot = shift;  # Run in chroot?
-    my $dir = shift;     # Directory to use (optional)
+    my $options = shift;
+
+    my $command = $options->{'INTCOMMAND'}; # Command to run
+    my $user = $options->{'USER'};          # User to run command under
+    my $chroot = $options->{'CHROOT'};      # Run in chroot?
+    my $dir;                                # Directory to use (optional)
+    $dir = $self->get('Defaults')->{'DIR'} if
+	(defined($self->get('Defaults')) &&
+	 defined($self->get('Defaults')->{'DIR'}));
+    $dir = $options->{'DIR'} if
+	defined($options->{'DIR'}) && $options->{'DIR'};
 
     if (!defined $user || $user eq "") {
 	$user = $self->get_conf('USERNAME');
@@ -95,31 +104,50 @@ sub get_command_internal (\$$$$$) {
 	$chroot = 1;
     }
 
-    my $cmdline;
+    my @cmdline;
+    my $chdir = undef;
     if ($chroot != 0) { # Run command inside chroot
-	# TODO: Allow user to set build location
 	if (!defined($dir)) {
-	    $dir = $self->strip_chroot_path($self->get('Build Location'));
+	    $dir = '/';
 	}
 
-	$cmdline = "/usr/sbin/chroot " .
-	    $self->get('Location') . ' ' . $self->get_conf('SU') .
-	    " -p $user -s /bin/sh -c 'cd $dir && $command'";
-    } else { # Run command outside chroot
-	if (!defined($dir)) {
-	    $dir = $self->get('Build Location');
+	my $shellcommand;
+	foreach (@$command) {
+	    my $tmp = $_;
+	    $tmp =~ s/'//g; # Strip any single quotes for security
+	    if ($_ ne $tmp) {
+		$self->log_warning("Stripped single quote from command for security: $_\n");
+	    }
+	    if ($shellcommand) {
+		$shellcommand .= " '$tmp'";
+	    } else {
+		$shellcommand = "'$tmp'";
+	    }
 	}
-	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
+
+	@cmdline = ('/usr/sbin/chroot', $self->get('Location'),
+		    $self->get_conf('SU'), '-p', "$user", '-s',
+		    $Sbuild::Sysconfig::programs{'SHELL'}, '-c',
+		    "cd '$dir' && $shellcommand");
+    } else { # Run command outside chroot
+	if ($options->{'CHDIR_CHROOT'}) {
+	    my $tmpdir = $self->get('Location');
+	    $tmpdir = $tmpdir . $dir if defined($dir);
+	    $dir = $tmpdir;
+	}
+	if ($user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
 	}
-	my $chdir = "";
-	if (defined($dir)) {
-	    $chdir = "cd \"$dir\" && ";
-	}
-	$cmdline .= "/bin/sh -c '$chdir$command'";
+	$chdir = $dir if defined($dir);
+	push(@cmdline, @$command);
     }
 
-    return $cmdline;
+    $options->{'CHROOT'} = $chroot;
+    $options->{'USER'} = $user;
+    $options->{'COMMAND'} = $command;
+    $options->{'EXPCOMMAND'} = \@cmdline;
+    $options->{'CHDIR'} = $chdir;
+    $options->{'DIR'} = $dir;
 }
 
 1;
