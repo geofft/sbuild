@@ -22,6 +22,8 @@
 
 set -e
 
+# TODO: Convert to perl and read configuration directly.
+
 if [ ! -f debian/rules ]; then
     echo "This directory doesn't seem to contain a Debian source tree" 1>&2
     exit 1
