@@ -28,7 +28,6 @@ use warnings;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Base;
-use Sbuild::Conf;
 use Sbuild::DBInfo;
 
 BEGIN {
@@ -51,7 +50,7 @@ sub new ($$) {
     bless($self, $class);
 
     if (!$self->parse_options()) {
-	usage_error("sbuild", "Error parsing command-line options");
+	usage_error("wanna-build", "Error parsing command-line options");
 	return undef;
     }
     return $self;
