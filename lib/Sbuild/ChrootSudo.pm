@@ -22,13 +22,10 @@
 
 package Sbuild::ChrootSudo;
 
-use Sbuild::Conf;
-
 use strict;
 use warnings;
-use POSIX;
-use FileHandle;
-use File::Temp ();
+
+use Sbuild::Sysconfig;
 
 BEGIN {
     use Exporter ();
@@ -130,7 +127,8 @@ sub get_command_internal (\$$$$$) {
 	}
 
 	@cmdline = ($self->get_conf('SUDO'), '/usr/sbin/chroot', $self->get('Location'),
-		    $self->get_conf('SU'), '-p', "$user", '-s', '/bin/sh', '-c',
+		    $self->get_conf('SU'), '-p', "$user", '-s',
+		    $Sbuild::Sysconfig::programs{'SHELL'}, '-c',
 		    "cd '$dir' && $shellcommand");
     } else { # Run command outside chroot
 	if ($options->{'CHDIR_CHROOT'}) {
