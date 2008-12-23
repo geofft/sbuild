@@ -22,13 +22,8 @@
 
 package Sbuild::ChrootSchroot;
 
-use Sbuild::Conf;
-
 use strict;
 use warnings;
-use POSIX;
-use FileHandle;
-use File::Temp ();
 
 BEGIN {
     use Exporter ();
