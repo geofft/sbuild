@@ -25,9 +25,10 @@ use Sbuild::Conf;
 use Sbuild::Log qw(open_log close_log);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
+use Sbuild::Sysconfig;
 
 $ENV{'LC_ALL'} = "POSIX";
-$ENV{'SHELL'} = "/bin/sh";
+$ENV{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
 
 # avoid intermixing of stdout and stderr
 $| = 1;
