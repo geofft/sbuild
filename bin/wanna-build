@@ -20,9 +20,6 @@
 #
 #######################################################################
 
-package conf;
-use WannaBuild::Conf;
-
 package main;
 
 use strict;
@@ -32,6 +29,10 @@ use FileHandle;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use Sbuild qw(isin);
+use WannaBuild::Conf;
+use Sbuild::Sysconfig qw($version $release_date);
+use Sbuild::DBInfo;
+use WannaBuild::Options;
 
 sub process ();
 sub add_packages ($@);
@@ -78,22 +79,23 @@ sub set_dep_wait ($$);
 sub usage ();
 sub pkg_version_eq ($$);
 
-our ($verbose, $mail_logs, $list_order, $list_state, $curr_date,
-     $op_mode, $user, $real_user, $distribution, $fail_reason,
-     $opt_override, $import_from, $export_to, $opt_create_db,
-     $transactlog, %db, %otherdb, %otherdb_lock, %prioval, %sectval,
-     $info_all_dists, $hostname, $arch, $opt_no_propagation,
-     $opt_no_down_propagation, $category, %catval, %short_category,
-     $short_date, $list_min_age, $dbbase, $host_set, $build_priority,
-     %new_vers, $binNMUver, %merge_srcvers);
-$list_state = "failed";
+our ($mail_logs, $curr_date, %db, %otherdb, %otherdb_lock, %prioval,
+     %sectval, %catval, $short_date, %new_vers, %merge_srcvers);
 
-# global vars
-$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
-$verbose = 0;
+my $conf = WannaBuild::Conf->new();
+exit 1 if !defined($conf);
+my $options = WannaBuild::Options->new($conf);
+exit 1 if !defined($options);
+
+# Temporarily set globals from conf object:
 $mail_logs = "";
 $curr_date = strftime("%Y %b %d %H:%M:%S",localtime);
 $short_date = strftime("%m/%d/%y",localtime);
+
+# Undefined: %db %new_vers %merge_srcvers
+
+# global vars
+$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $| = 1;
 
 # map program invocation names to operation modes
@@ -108,252 +110,106 @@ my %prognames = ( "uploaded-build"  => "set-uploaded",
 		  "merge-sources"   => "merge-sources",
 		  "build-info"		=> "info" );
 
-%short_category = ( u => "uploaded-fixed-pkg",
-		    f => "fix-expected",
-		    r => "reminder-sent",
-		    n => "nmu-offered",
-		    e => "easy",
-		    m => "medium",
-					h => "hard",
-		    c => "compiler-error",
-		    "" => "none" );
 
 my $progname;
 ($progname = $0) =~ s,.*/,,;
 if ($prognames{$progname}) {
-    $op_mode = $prognames{$progname};
+    $conf->set('DB_OPERATION',  $prognames{$progname});
 }
 elsif ($progname =~ /^list-(.*)$/) {
-    $op_mode = "list";
-    $list_state = ($1 eq "all") ? "" : $1;
+    $conf->set('DB_OPERATION', 'list');
+    $conf->set('DB_LIST_STATE', ($1 eq "all") ? "" : $1);
 }
 
-my %options =
-    (# flags
-     verbose        => { short => "v", flag => \$verbose },
-     override		=> { short => "o", flag => \$opt_override },
-     "create-db"	=> { flag => \$opt_create_db },
-     "correct-compare" => { flag => \$Sbuild::opt_correct_version_cmp },
-     "no-propagation" => { short => "N", flag => \$opt_no_propagation },
-     "no-down-propagation" => { short => "D", flag => \$opt_no_down_propagation },
-     # normal actions
-     take			=> { mode => "set-building" },
-     failed			=> { short => "f", mode => "set-failed" },
-     uploaded		=> { short => "u", mode => "set-uploaded" },
-     "no-build"		=> { short => "n", mode => "set-not-for-us" },
-     "give-back"	=> { mode => "set-needs-build" },
-     "dep-wait"		=> { mode => "set-dep-wait" },
-     forget			=> { mode => "forget" },
-     'forget-user' => { mode => 'forget-user' },
-     "merge-quinn"  => { mode => "merge-quinn" },
-     "merge-partial-quinn" => { mode => "merge-partial-quinn" },
-     "merge-packages" => { mode => "merge-packages" },
-     "merge-sources" => { mode => "merge-sources" },
-     "pretend-avail" => { short => "p", mode => "pretend-avail" },
-     "merge-all"     => { mode => "merge-all" },
-     info			=> { short => "i", mode => "info" },
-     'binNMU' => { mode => 'set-binary-nmu', arg => \$binNMUver, 
-		   code => sub { die "Invalid binNMU version: $binNMUver\n"
-				     if $binNMUver !~ /^([\d]*)$/ and $1 >= 0; } },
-     'perm-build-priority'    => { mode => "set-permanent-build-priority", arg => \$build_priority,
-				   code => sub { die "Invalid build priority: $build_priority\n"
-						     if $build_priority !~ /^-?[\d]+$/; } },
-     'build-priority'    => { mode => "set-build-priority", arg => \$build_priority,
-	 		      code => sub { die "Invalid build priority: $build_priority\n"
-						if $build_priority !~ /^-?[\d]+$/; } },
-     list			=>
-     { short => "l", mode => "list", arg => \$list_state,
-       code => sub {
-	   die "Unknown state to list: $list_state\n"
-	       if !isin( $list_state, qw(needs-build building uploaded
-						 failed installed dep-wait
-						 not-for-us all failed-removed
-						 dep-wait-removed install-wait
-						 reupload-wait));} },
-     # options with args
-     dist           =>
-     { short => "d", arg => \$distribution,
-       code => sub {
-	   if ($distribution eq "a" || $distribution eq "all") {
-	       $info_all_dists = 1;
-	       $distribution = "";
-	   }
-	   else {
-	       $distribution = "stable"   if $distribution eq "s";
-	       $distribution = "testing"  if $distribution eq "t";
-	       $distribution = "unstable" if $distribution eq "u";
-	   }
-       } },
-     order          =>
-     { short => "O", arg => \$list_order,
-       code => sub {
-	   die "Bad ordering character\n"
-	       if $list_order !~ /^[PSpsncb]+$/;
-       } },
-     message        => { short => "m", arg => \$fail_reason },
-     database       => { short => "b", arg => \$conf::dbbase },
-     arch           => { short => "A", arg => \$arch },
-     user           => { short => "U", arg => \$user },
-     category		=> { short => "c", arg => \$category,
-			     code => sub {
-				 $category = $short_category{$category}
-				 if exists $short_category{$category};
-				 die "Unknown category: $category\n"
-				     if !isin( $category, values %short_category );
-			     } },
-     "min-age"      => { short => "a", arg => \$list_min_age,
-			 code => sub {
-			     die "Argument of --min-age must be a non-zero number\n"
-				 if $list_min_age == 0;
-			     $list_min_age *= 24*60*60;
-			 } },
-     "max-age"      => { arg => \$list_min_age,
-			 code => sub {
-			     die "Argument of --max-age must be a non-zero number\n"
-				 if $list_min_age == 0;
-			     $list_min_age *= -24*60*60;
-			 } },
-     # special actions
-     import         => { arg => \$import_from, mode => "import" },
-     export         => { arg => \$export_to, mode => "export" },
-     "manual-edit"  => { mode => "manual-edit" },
-     "create-maintenance-lock" => { mode => "maintlock-create" },
-     "remove-maintenance-lock" => { mode => "maintlock-remove" },
-     "clean-db" => { mode => "clean-db" },
-    );
+$conf->set('DB_OPERATION', $conf->get('DB_CATEGORY') ? "set-failed" : "set-building")
+    if !$conf->get('DB_OPERATION'); # default operation
+$conf->set('DB_LIST_ORDER', $conf->get('DB_LIST_STATE') eq "failed" ? 'fPcpsn' : 'PScpsn')
+    if !defined($conf->get('DB_LIST_ORDER')) || !$conf->get('DB_LIST_ORDER');
+$conf->set('DISTRIBUTION', 'unstable')
+    if !defined($conf->get('DISTRIBUTION'));
+die "Bad distribution '$conf->get('DISTRIBUTION')'\n"
+    if !isin($conf->get('DISTRIBUTION'), @{$conf->get('DB_DISTRIBUTIONS')});
 
-while( @ARGV && $ARGV[0] =~ /^-/ ) {
-    $_ = shift @ARGV;
-    last if $_ eq "--";
-    my($opt, $optname, $arg);
-    if (/^--([^=]+)(=|$)/) {
-	$optname = $1;
-	$opt = $options{$optname};
-	$arg = $1 if /^--\Q$optname\E=((.|\n)*)$/;
-    }
-    else {
-	$optname = substr( $_, 1, 1 );
-	$opt = (grep { $_->{short} eq $optname } values %options)[0];
-	$arg = $1 if /^-$optname(.+)$/;
-    }
-    if (!$opt) {
-	warn "Unknown option: --$1\n";
-	usage();
-    }
-    if ($opt->{arg}) {
-	if (!defined $arg) {
-	    die "$optname option missing argument\n" if !@ARGV;
-	    $arg = shift @ARGV;
-	}
-	${$opt->{arg}} = $arg;
-    }
-    elsif (defined $arg) {
-	die "Option $optname takes no argument\n";
-    }
-
-    if ($opt->{mode}) {
-	die "Conflicting operation modes\n" if $op_mode;
-	$op_mode = $opt->{mode};
-    }
-    if ($opt->{flag}) {
-	${$opt->{flag}}++;
-    }
-    if ($opt->{code}) {
-	&{$opt->{code}};
-    }
+if ($conf->get('VERBOSE')) {
+    print "wanna-build (Debian sbuild) $version ($release_date) on " . $conf->get('HOSTNAME') . "\n";
+    print "Using database " . $conf->get('DB_BASE_NAME') . "\n"
+	if defined($conf->get('DB_BASE_NAME'));
 }
 
-$op_mode = $category ? "set-failed" : "set-building"
-    if !$op_mode; # default operation
-$list_order = $list_state eq "failed" ? 'fPcpsn' : 'PScpsn'
-    if !defined($list_order) || !$list_order;
-$distribution ||= "unstable";
-die "Bad distribution '$distribution'\n"
-    if !isin($distribution, @conf::distributions);
-$conf::dbbase =~ m#^([^/]+/)#;
-$transactlog = "$conf::basedir/$1$conf::transactlog";
-
-if ($verbose) {
-    my $version = '$Revision$ $Date$ $Author$';
-    $version =~ s/(^\$| \$ .*$)//g;
-    print "wanna-build $version on $conf::dbbase\n";
-}
-
-if (!@ARGV && !isin( $op_mode, qw(list merge-quinn merge-partial-quinn import export
+if (!@ARGV && !isin( $conf->get('DB_OPERATION'), qw(list merge-quinn merge-partial-quinn import export
 				  merge-packages manual-edit maintlock-create
 				  merge-sources maintlock-remove clean-db))) {
     warn "No packages given.\n";
     usage();
 }
 
-$real_user = (getpwuid($<))[0];
-die "Can't determine your user name\n"
-    if $op_mode ne "list" && !$user &&
-    !($user = $real_user);
-
-if (!$fail_reason) {
-    if ($op_mode eq "set-failed" && !$category) {
+if (!$conf->get('DB_FAIL_REASON')) {
+    if ($conf->get('DB_OPERATION') eq "set-failed" && !$conf->get('DB_CATEGORY')) {
 	print "Enter reason for failing (end with '.' alone on ".
 	    "its line):\n";
+	my $log = "";
 	my $line;
 	while(!eof(STDIN)) {
 	    $line = <STDIN>;
 	    last if $line eq ".\n";
 	    $line = ".\n" if $line eq "\n";
-	    $fail_reason .= $line;
+	    $log .= $line;
 	}
-	chomp( $fail_reason );
-    } elsif ($op_mode eq "set-dep-wait") {
+	chomp($log);
+	$conf->set('DB_FAIL_REASON', $log);
+    } elsif ($conf->get('DB_OPERATION') eq "set-dep-wait") {
 	print "Enter dependencies (one line):\n";
 	my $line;
 	while( !$line && !eof(STDIN) ) {
 	    chomp( $line = <STDIN> );
 	}
 	die "No dependencies given\n" if !$line;
-	$fail_reason = $line;
-    } elsif ($op_mode eq "set-binary-nmu" and $binNMUver > 0) {
+	$conf->set('DB_FAIL_REASON'. $line);
+    } elsif ($conf->get('DB_OPERATION') eq "set-binary-nmu" and $conf->get('DB_BIN_NMU_VERSION') > 0) {
 	print "Enter changelog entry (one line):\n";
 	my $line;
 	while( !$line && !eof(STDIN) ) {
 	    chomp( $line = <STDIN> );
 	}
 	die "No changelog entry given\n" if !$line;
-	$fail_reason = $line;
+	$conf->set('DB_FAIL_REASON', $line);
     }
 }
-if ($op_mode eq "maintlock-create") {
+if ($conf->get('DB_OPERATION') eq "maintlock-create") {
     create_maintlock();
     exit 0;
 }
-if ($op_mode eq "maintlock-remove") {
+if ($conf->get('DB_OPERATION') eq "maintlock-remove") {
     remove_maintlock();
     exit 0;
 }
-waitfor_maintlock() if $op_mode !~ /^(?:merge-|clean-db$)/;
+waitfor_maintlock() if $conf->get('DB_OPERATION') !~ /^(?:merge-|clean-db$)/;
 
-if (!-f db_filename( $distribution ) && !$opt_create_db) {
-    die "Database for $distribution doesn't exist\n";
+if (!-f db_filename( $conf->get('DISTRIBUTION') ) && !$conf->get('DB_CREATE')) {
+    die "Database for " . $conf->get('DISTRIBUTION') . " doesn't exist\n";
 }
-lock_db( $distribution );
+lock_db( $conf->get('DISTRIBUTION') );
 END {
     untie %db;
-    unlock_db( $distribution );
-    foreach (@conf::distributions) {
+    unlock_db($conf->get('DISTRIBUTION'));
+    foreach (@{$conf->get('DB_DISTRIBUTIONS')}) {
 	untie %{$otherdb{$_}} if tied(%{$otherdb{$_}});
 	unlock_db( $_ ) if $otherdb_lock{$_};
     }
 }
 
-tie %db, 'MLDBM', db_filename( $distribution ), GDBM_WRCREAT, 0664
+tie %db, 'MLDBM', db_filename( $conf->get('DISTRIBUTION') ), GDBM_WRCREAT, 0664
     or die "FATAL: Cannot open database\n";
 
 process();
 
-if ($mail_logs && defined($conf::log_mail) && $conf::log_mail) {
-    send_mail( $conf::log_mail,
-	       "wanna-build $distribution state changes $curr_date",
+if ($mail_logs &&
+    defined($conf->get('DB_LOG_MAIL')) && $conf->get('DB_LOG_MAIL')) {
+    send_mail( $conf->get('DB_LOG_MAIL'),
+	       "wanna-build " . $conf->get('DISTRIBUTION') .
+	       " state changes $curr_date",
 	       "State changes at $curr_date for distribution ".
-	       "$distribution:\n\n$mail_logs\n" );
+	       $conf->get('DISTRIBUTION') . ":\n\n$mail_logs\n" );
 }
 
 exit 0;
@@ -361,13 +217,13 @@ exit 0;
 
 sub process () {
 
-  SWITCH: foreach ($op_mode) {
+  SWITCH: foreach ($conf->get('DB_OPERATION')) {
       /^set-(.+)/ && do {
 	  add_packages( $1, @ARGV );
 	  last SWITCH;
       };
       /^list/ && do {
-	  list_packages( $list_state );
+	  list_packages($conf->get('DB_LIST_STATE'));
 	  last SWITCH;
       };
       /^info/ && do {
@@ -376,8 +232,8 @@ sub process () {
       };
       /^forget-user/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  forget_users( @ARGV );
 	  last SWITCH;
       };
@@ -387,29 +243,29 @@ sub process () {
       };
       /^merge-partial-quinn/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  parse_quinn_diff(1);
 	  last SWITCH;
       };
       /^merge-quinn/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  parse_quinn_diff(0);
 	  last SWITCH;
       };
       /^merge-packages/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  parse_packages();
 	  last SWITCH;
       };
       /^merge-sources/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  parse_sources(0);
 	  last SWITCH;
       };
@@ -419,8 +275,8 @@ sub process () {
       };
       /^merge-all/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  my @ARGS = @ARGV;
 	  @ARGV = ( $ARGS[0] );
 	  my $pkgs = parse_packages();
@@ -434,21 +290,21 @@ sub process () {
       };
       /^import/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  %db = (); # clear all current contents
-	  read_db( $import_from );
+	  read_db($conf->get('DB_IMPORT_FILE'));
 	  last SWITCH;
       };
       /^export/ && do {
-	  write_db( $export_to );
+	  write_db($conf->get('DB_EXPORT_FILE'));
 	  last SWITCH;
       };
       /^manual-edit/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
-	  my $tmpfile_pattern = "/tmp/wanna-build-$distribution.$$-";
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
+	  my $tmpfile_pattern = "/tmp/wanna-build-" . $conf->get('DISTRIBUTION') . ".$$-";
 	  my ($tmpfile, $i);
 	  for( $i = 0;; ++$i ) {
 	      $tmpfile = $tmpfile_pattern . $i;
@@ -465,25 +321,25 @@ sub process () {
       };
       /^clean-db/ && do {
 	  die "This operation is restricted to admin users\n"
-	      if (defined @conf::admin_users and
-		  !isin( $real_user, @conf::admin_users));
+	      if (defined @{$conf->get('DB_ADMIN_USERS')} and
+		  !isin( $conf->get('USERNAME'), @{$conf->get('DB_ADMIN_USERS')}));
 	  clean_db();
 	  last SWITCH;
       };
 
-      die "Unexpected operation mode $op_mode\n";
+      die "Unexpected operation mode " . $conf->get('DB_OPERATION') . "\n";
   }
-    if (not -t and $user =~ /-/) {
+    if (not -t and $conf->get('DB_USER') =~ /-/) {
 	my $userinfo = $db{'_userinfo'};
 	$userinfo = {} if (!defined($userinfo));
 
-	my $ui = $userinfo->{$user};
+	my $ui = $userinfo->{$conf->get('DB_USER')};
 	$ui = {} if (!defined($ui));
 
 	$ui->{'Last-Seen'} = $curr_date;
-	$ui->{'User'} = $user;
+	$ui->{'User'} = $conf->get('DB_USER');
 
-	$userinfo->{$user} = $ui;
+	$userinfo->{$conf->get('DB_USER')} = $ui;
 
 	$db{'_userinfo'} = $userinfo;
     }
@@ -507,31 +363,31 @@ sub add_packages ($@) {
 	    next;
 	}
 
-	if ($op_mode eq "set-building") {
+	if ($conf->get('DB_OPERATION') eq "set-building") {
 	    add_one_building( $name, $version );
 	}
-	elsif ($op_mode eq "set-uploaded") {
+	elsif ($conf->get('DB_OPERATION') eq "set-uploaded") {
 	    add_one_uploaded( $name, $version );
 	}
-	elsif ($op_mode eq "set-failed") {
+	elsif ($conf->get('DB_OPERATION') eq "set-failed") {
 	    add_one_failed( $name, $version );
 	}
-	elsif ($op_mode eq "set-not-for-us") {
+	elsif ($conf->get('DB_OPERATION') eq "set-not-for-us") {
 	    add_one_notforus( $name, $version );
 	}
-	elsif ($op_mode eq "set-needs-build") {
+	elsif ($conf->get('DB_OPERATION') eq "set-needs-build") {
 	    add_one_needsbuild( $name, $version );
 	}
-	elsif ($op_mode eq "set-dep-wait") {
+	elsif ($conf->get('DB_OPERATION') eq "set-dep-wait") {
 	    add_one_depwait( $name, $version );
 	}
-	elsif ($op_mode eq "set-build-priority") {
+	elsif ($conf->get('DB_OPERATION') eq "set-build-priority") {
 	    set_one_buildpri( $name, $version, 'BuildPri' );
 	}
-	elsif ($op_mode eq "set-permanent-build-priority") {
+	elsif ($conf->get('DB_OPERATION') eq "set-permanent-build-priority") {
 	    set_one_buildpri( $name, $version, 'PermBuildPri' );
 	}
-	elsif ($op_mode eq "set-binary-nmu") {
+	elsif ($conf->get('DB_OPERATION') eq "set-binary-nmu") {
 	    set_one_binnmu( $name, $version );
 	}
     }
@@ -564,7 +420,7 @@ sub add_one_building ($$) {
 	}
 	elsif ($pkg->{'State'} eq "Installed" &&
 	       version_less($version,$pkg->{'Version'})) {
-	    if ($opt_override) {
+	    if ($conf->get('DB_OVERRIDE')) {
 		print "$name: Warning: newer version $pkg->{'Version'} ".
 		    "already installed, but overridden.\n";
 	    }
@@ -583,7 +439,7 @@ sub add_one_building ($$) {
 	}
 	elsif ($pkg->{'State'} eq "Needs-Build" &&
 	       version_less($version,$pkg->{'Version'})) {
-	    if ($opt_override) {
+	    if ($conf->get('DB_OVERRIDE')) {
 		print "$name: Warning: newer version $pkg->{'Version'} ".
 		    "needs building, but overridden.";
 	    }
@@ -597,30 +453,30 @@ sub add_one_building ($$) {
 	    if (version_less($pkg->{'Version'},$version)) {
 		print "$name: Warning: Older version $pkg->{'Version'} ",
 		"is being built by $pkg->{'Builder'}\n";
-		if ($pkg->{'Builder'} ne $user) {
+		if ($pkg->{'Builder'} ne $conf->get('DB_USER')) {
 		    send_mail( $pkg->{'Builder'},
 			       "package takeover in newer version",
 			       "You are building package '$name' in ".
 			       "version $version\n".
 			       "(as far as I'm informed).\n".
-			       "$user now has taken the newer ".
+			       $conf->get('DB_USER') . " now has taken the newer ".
 			       "version $version for building.".
 			       "You can abort the build if you like.\n" );
 		}
 	    }
 	    else {
-		if ($opt_override) {
+		if ($conf->get('DB_OVERRIDE')) {
 		    print "User $pkg->{'Builder'} had already ",
 		    "taken the following package,\n",
 		    "but overriding this as you request:\n";
 		    send_mail( $pkg->{'Builder'}, "package takeover",
 			       "The package '$name' (version $version) that ".
 			       "was locked by you\n".
-			       "has been taken over by $user\n" );
+			       "has been taken over by " . $conf->get('DB_USER') . "\n" );
 		}
-		elsif ($pkg->{'Builder'} eq $user) {
+		elsif ($pkg->{'Builder'} eq $conf->get('DB_USER')) {
 		    print "$name: Note: already taken by you.\n";
-		    print "$name: ok\n" if $verbose;
+		    print "$name: ok\n" if $conf->get('VERBOSE');
 		    return;
 		}
 		else {
@@ -633,7 +489,7 @@ sub add_one_building ($$) {
 	}
 	elsif ($pkg->{'State'} =~ /^Failed/ &&
 	       pkg_version_eq($pkg, $version)) {
-	    if ($opt_override) {
+	    if ($conf->get('DB_OVERRIDE')) {
 		print "The following package previously failed ",
 		"(by $pkg->{'Builder'})\n",
 		"but overriding this as you request:\n";
@@ -641,8 +497,8 @@ sub add_one_building ($$) {
 			   "The package '$name' (version $version) that ".
 			   "is locked by you\n".
 			   "and has failed previously has been taken over ".
-			   "by $user\n" )
-		    if $pkg->{'Builder'} ne $user;
+			   "by " . $conf->get('DB_USER') . "\n" )
+		    if $pkg->{'Builder'} ne $conf->get('DB_USER');
 	    }
 	    else {
 		$ok = 0;
@@ -667,11 +523,11 @@ sub add_one_building ($$) {
 	change_state( \$pkg, 'Building' );
 	$pkg->{'Package'} = $name;
 	$pkg->{'Version'} = $version;
-	$pkg->{'Builder'} = $user;
+	$pkg->{'Builder'} = $conf->get('DB_USER');
 	log_ta( $pkg, "--take" );
 	propagate_ta( $pkg, "--take" );
 	$db{$name} = $pkg;
-	print "$name: $ok\n" if $verbose;
+	print "$name: $ok\n" if $conf->get('VERBOSE');
     }
     else {
 	print "$name: NOT OK!\n  $reason\n";
@@ -698,7 +554,7 @@ sub add_one_uploaded ($$) {
 	"Skipping.\n";
 	return;
     }
-    if ($pkg->{'Builder'} ne $user) {
+    if ($pkg->{'Builder'} ne $conf->get('DB_USER')) {
 	print "$name: not taken by you, but by $pkg->{'Builder'}. Skipping.\n";
 	return;
     }
@@ -724,7 +580,7 @@ sub add_one_uploaded ($$) {
     log_ta( $pkg, "--uploaded" );
     propagate_ta( $pkg, "--uploaded" );
     $db{$name} = $pkg;
-    print "$name: registered as uploaded\n" if $verbose;
+    print "$name: registered as uploaded\n" if $conf->get('VERBOSE');
 }
 
 sub add_one_failed ($$) {
@@ -756,8 +612,8 @@ sub add_one_failed ($$) {
 	return;
     }
     elsif ($pkg->{'Builder'} &&
-	   (($user ne $pkg->{'Builder'}) &&
-	    !($pkg->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $user))) {
+	   (($conf->get('DB_USER') ne $pkg->{'Builder'}) &&
+	    !($pkg->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $conf->get('DB_USER')))) {
 	print "$name: not taken by you, but by ".
 	    "$pkg->{'Builder'}. Skipping.\n";
 	return;
@@ -769,15 +625,14 @@ sub add_one_failed ($$) {
 	return;
     }
 
-    $cat = $category;
-    if (!$cat && $fail_reason =~ /^\[([^\]]+)\]/) {
+    $cat = $conf->get('DB_CATEGORY');
+    if (!$cat && $conf->get('DB_FAIL_REASON') =~ /^\[([^\]]+)\]/) {
 	$cat = $1;
-	$cat = $short_category{$cat} if exists $short_category{$cat};
-	if (!isin( $cat, values %short_category )) {
-	    print "$name: Warning: unknown category $cat; discarded\n";
-	    $cat = "";
-	}
+	$cat = category($cat);
+	$cat = "" if !defined($cat);
+	my $fail_reason = $conf->get('DB_FAIL_REASON');
 	$fail_reason =~ s/^\[[^\]]+\][ \t]*\n*//;
+	$conf->set('DB_FAIL_REASON', $fail_reason);
     }
 
     if ($state eq "Needs-Build") {
@@ -794,7 +649,7 @@ sub add_one_failed ($$) {
     }
     elsif ($state eq "Failed") {
 	print "$name: already registered as failed; will append new message\n"
-	    if $fail_reason;
+	    if $conf->get('DB_FAIL_REASON');
 	print "$name: already registered as failed; changing category\n"
 	    if $cat;
     }
@@ -803,13 +658,14 @@ sub add_one_failed ($$) {
 	exists $pkg->{'Failed-Category'} &&
 	$pkg->{'Failed-Category'} ne $cat) {
 	(my $action = $cat) =~ s/-/ /;
-	$fail_reason .= "\n$short_date: $action";
+	$conf->set('DB_FAIL_REASON',
+		   $conf->get('DB_FAIL_REASON') . "\n$short_date: $action");
     }
 
     change_state( \$pkg, 'Failed' );
-    $pkg->{'Builder'} = $user;
+    $pkg->{'Builder'} = $conf->get('DB_USER');
     $pkg->{'Failed'} .= "\n" if $pkg->{'Failed'};
-    $pkg->{'Failed'} .= $fail_reason;
+    $pkg->{'Failed'} .= $conf->get('DB_FAIL_REASON');
     $pkg->{'Failed-Category'} = $cat if $cat;
     if (defined $pkg->{'PermBuildPri'}) {
 	$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
@@ -819,7 +675,7 @@ sub add_one_failed ($$) {
     log_ta( $pkg, "--failed" );
     propagate_ta( $pkg, "--failed" );
     $db{$name} = $pkg;
-    print "$name: registered as failed\n" if $verbose;
+    print "$name: registered as failed\n" if $conf->get('VERBOSE');
 }
 
 sub add_one_notforus ($$) {
@@ -841,14 +697,14 @@ sub add_one_notforus ($$) {
 	propagate_ta( $pkg, "--no-build(rev)" );
 	print "$name: now not unsuitable anymore\n";
 
-	send_mail( $conf::notforus_maint,
+	send_mail( $conf->get('DB_NOTFORUS_MAINTAINER_EMAIL'),
 		   "$name moved out of Not-For-Us state",
 		   "The package '$name' has been moved out of the Not-For-Us ".
-		   "state by $user.\n".
+		   "state by " . $conf->get('DB_USER') . ".\n".
 		   "It should probably also be removed from ".
 		   "Packages-arch-specific or\n".
 		   "the action was wrong.\n" )
-	    if $conf::notforus_maint;
+	    if $conf->get('DB_NOTFORUS_MAINTAINER_EMAIL');
     }
     else {
 	change_state( \$pkg, 'Not-For-Us' );
@@ -860,16 +716,16 @@ sub add_one_notforus ($$) {
 	delete $pkg->{'Binary-NMU-Changelog'};
 	log_ta( $pkg, "--no-build" );
 	propagate_ta( $pkg, "--no-build" );
-	print "$name: registered as unsuitable\n" if $verbose;
+	print "$name: registered as unsuitable\n" if $conf->get('VERBOSE');
 
-	send_mail( $conf::notforus_maint,
+	send_mail( $conf->get('DB_NOTFORUS_MAINTAINER_EMAIL'),
 		   "$name set to Not-For-Us",
 		   "The package '$name' has been set to state Not-For-Us ".
-		   "by $user.\n".
+		   "by " . $conf->get('DB_USER') . ".\n".
 		   "It should probably also be added to ".
 		   "Packages-arch-specific or\n".
 		   "the Not-For-Us state is wrong.\n" )
-	    if $conf::notforus_maint;
+	    if $conf->get('DB_NOTFORUS_MAINTAINER_EMAIL');
     }
     $db{$name} = $pkg;
 }
@@ -887,7 +743,7 @@ sub add_one_needsbuild ($$) {
     $state = $pkg->{'State'};
 
     if ($state eq "Dep-Wait") {
-	if ($opt_override) {
+	if ($conf->get('DB_OVERRIDE')) {
 	    print "$name: Forcing source dependency list to be cleared\n";
 	}
 	else {
@@ -899,7 +755,7 @@ sub add_one_needsbuild ($$) {
     }
     elsif ($state ne "Building") {
 	print "$name: not taken for building (state is $state).";
-	if ($opt_override) {
+	if ($conf->get('DB_OVERRIDE')) {
 	    print "\n$name: Forcing give-back\n";
 	}
 	else {
@@ -907,8 +763,8 @@ sub add_one_needsbuild ($$) {
 	    return;
 	}
     }
-    if (defined ($pkg->{'Builder'}) && $user ne $pkg->{'Builder'} &&
-	!($pkg->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $user)) {
+    if (defined ($pkg->{'Builder'}) && $conf->get('DB_USER') ne $pkg->{'Builder'} &&
+	!($pkg->{'Builder'} =~ /^(\w+)-\w+/ && $1 eq $conf->get('DB_USER'))) {
 	print "$name: not taken by you, but by ".
 	    "$pkg->{'Builder'}. Skipping.\n";
 	return;
@@ -924,7 +780,7 @@ sub add_one_needsbuild ($$) {
     log_ta( $pkg, "--give-back" );
     propagate_ta( $pkg, "--give-back" );
     $db{$name} = $pkg;
-    print "$name: given back\n" if $verbose;
+    print "$name: given back\n" if $conf->get('VERBOSE');
 }
 
 sub set_one_binnmu ($$) {
@@ -947,18 +803,18 @@ sub set_one_binnmu ($$) {
     $state = $pkg->{'State'};
 
     if (defined $pkg->{'Binary-NMU-Version'}) {
-	if ($binNMUver == 0) {
+	if ($conf->get('DB_BIN_NMU_VERSION') == 0) {
 	    change_state( \$pkg, 'Installed' );
 	    delete $pkg->{'Builder'};
 	    delete $pkg->{'Depends'};
 	    delete $pkg->{'Binary-NMU-Version'};
 	    delete $pkg->{'Binary-NMU-Changelog'};
-	} elsif ($binNMUver <= $pkg->{'Binary-NMU-Version'}) {
+	} elsif ($conf->get('DB_BIN_NMU_VERSION') <= $pkg->{'Binary-NMU-Version'}) {
 	    print "$name: already building binNMU $pkg->{'Binary-NMU-Version'}\n";
 	    return;
 	} else {
-	    $pkg->{'Binary-NMU-Version'} = $binNMUver;
-	    $pkg->{'Binary-NMU-Changelog'} = $fail_reason;
+	    $pkg->{'Binary-NMU-Version'} = $conf->get('DB_BIN_NMU_VERSION');
+	    $pkg->{'Binary-NMU-Changelog'} = $conf->get('DB_FAIL_REASON');
 	    $pkg->{'BuildPri'} = $pkg->{'PermBuildPri'}
 	    if (defined $pkg->{'PermBuildPri'});
 	}
@@ -972,7 +828,7 @@ sub set_one_binnmu ($$) {
 	return;
     }
 
-    my $fullver = binNMU_version($version,$binNMUver);
+    my $fullver = binNMU_version($version,$conf->get('DB_BIN_NMU_VERSION'));
     if ( version_lesseq( $fullver, $pkg->{'Installed-Version'} ) )
     {
 	print "$name: binNMU $fullver is not newer than current version $pkg->{'Installed-Version'}\n";
@@ -982,11 +838,11 @@ sub set_one_binnmu ($$) {
     change_state( \$pkg, 'Needs-Build' );
     delete $pkg->{'Builder'};
     delete $pkg->{'Depends'};
-    $pkg->{'Binary-NMU-Version'} = $binNMUver;
-    $pkg->{'Binary-NMU-Changelog'} = $fail_reason;
+    $pkg->{'Binary-NMU-Version'} = $conf->get('DB_BIN_NMU_VERSION');
+    $pkg->{'Binary-NMU-Changelog'} = $conf->get('DB_FAIL_REASON');
     log_ta( $pkg, "--binNMU" );
     $db{$name} = $pkg;
-    print "${name}: registered for binNMU $fullver\n" if $verbose;
+    print "${name}: registered for binNMU $fullver\n" if $conf->get('VERBOSE');
 }
 
 sub set_one_buildpri ($$$) {
@@ -1017,18 +873,19 @@ sub set_one_buildpri ($$$) {
 	"Skipping.\n";
 	return;
     }
-    if ( $build_priority == 0 ) {
+    if ( $conf->get('DB_BUILD_PRIORITY') == 0 ) {
 	delete $pkg->{'BuildPri'}
 	if $key eq 'PermBuildPri' and defined $pkg->{'BuildPri'}
 	and $pkg->{'BuildPri'} == $pkg->{$key};
 	delete $pkg->{$key};
     } else {
-	$pkg->{'BuildPri'} = $build_priority
+	$pkg->{'BuildPri'} = $conf->get('DB_BUILD_PRIORITY')
 	    if $key eq 'PermBuildPri';
-	$pkg->{$key} = $build_priority;
+	$pkg->{$key} = $conf->get('DB_BUILD_PRIORITY');
     }
     $db{$name} = $pkg;
-    print "$name: set to build priority $build_priority\n" if $verbose;
+    print "$name: set to build priority " .
+	$conf->get('DB_BUILD_PRIORITY') . "\n" if $conf->get('VERBOSE');
 }
 
 sub add_one_depwait ($$) {
@@ -1072,7 +929,7 @@ sub add_one_depwait ($$) {
 	return;
     }
     elsif ($pkg->{'Builder'} &&
-	   $user ne $pkg->{'Builder'}) {
+	   $conf->get('DB_USER') ne $pkg->{'Builder'}) {
 	print "$name: not taken by you, but by ".
 	    "$pkg->{'Builder'}. Skipping.\n";
 	return;
@@ -1083,20 +940,20 @@ sub add_one_depwait ($$) {
 	    "by $pkg->{'Builder'})\n";
 	return;
     }
-    elsif ($fail_reason =~ /^\s*$/ ||
-	   !parse_deplist( $fail_reason, 1 )) {
+    elsif ($conf->get('DB_FAIL_REASON') =~ /^\s*$/ ||
+	   !parse_deplist( $conf->get('DB_FAIL_REASON'), 1 )) {
 	print "$name: Bad dependency list\n";
 	return;
     }
     change_state( \$pkg, 'Dep-Wait' );
-    $pkg->{'Builder'} = $user;
+    $pkg->{'Builder'} = $conf->get('DB_USER');
     if (defined $pkg->{'PermBuildPri'}) {
 	$pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
     } else {
 	delete $pkg->{'BuildPri'};
     }
     my $deplist = parse_deplist( $pkg->{'Depends'}, 0 );
-    my $new_deplist = parse_deplist( $fail_reason, 0 );
+    my $new_deplist = parse_deplist( $conf->get('DB_FAIL_REASON'), 0 );
     # add new dependencies, maybe overwriting old entries
     foreach (keys %$new_deplist) {
 	$deplist->{$_} = $new_deplist->{$_};
@@ -1105,7 +962,7 @@ sub add_one_depwait ($$) {
     log_ta( $pkg, "--dep-wait" );
     propagate_ta( $pkg, "--dep-wait" );
     $db{$name} = $pkg;
-    print "$name: registered as waiting for dependencies\n" if $verbose;
+    print "$name: registered as waiting for dependencies\n" if $conf->get('VERBOSE');
 }
 
 
@@ -1149,7 +1006,7 @@ sub parse_sources ($) {
 		log_ta( $pkg, "--merge-sources" );
 		print "$name ($pkg->{'Version'}): deleted ".
 		    "from database, because now Arch: all\n"
-		    if $verbose;
+		    if $conf->get('VERBOSE');
 		delete $db{$name};
 		next;
 	    }
@@ -1180,7 +1037,7 @@ sub parse_sources ($) {
 	    print "$name ($pkg->{'Version'}): ".
 		"deleted from database, because ".
 		"not in Sources anymore\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	    delete $db{$name};
 	} elsif ($full && not defined $merge_srcvers{$name}) {
 	    change_state( \$pkg, 'deleted' );
@@ -1188,13 +1045,13 @@ sub parse_sources ($) {
 	    print "$name ($pkg->{'Version'}): ".
 		"deleted from database, because ".
 		"binaries don't exist anymore\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	    delete $db{$name};
 	} elsif ($full && version_less( $merge_srcvers{$name}, $pkg->{'Version'})) {
 	    print "$name ($pkg->{'Version'}): ".
 		"package is Installed but binaries are from ".
 		$merge_srcvers{$name}. "\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	}
     }
     return \%pkgs;
@@ -1214,7 +1071,7 @@ sub parse_packages () {
 	/^Architecture:\s*(\S+)\s*$/mi and $architecture = $1;
 	/^Provides:\s*(\S+)\s*$/mi and $provides = $1;
 	next if !$name || !$version;
-	next if ($arch ne $architecture and $architecture ne "all");
+	next if ($conf->get('ARCH') ne $architecture and $architecture ne "all");
 	next if (defined ($installed->{$name}) and $installed->{$name} ne "" and
 		 version_lesseq( $version, $installed->{$name} ));
 	$installed->{$name} = $version;
@@ -1225,7 +1082,7 @@ sub parse_packages () {
 	    }
 	}
 	$version = $sourcev if $sourcev;
-	next if $architecture ne $arch;
+	next if $architecture ne $conf->get('ARCH');
 	$name = $source if $source;
 	next if $merge_srcvers{$name} eq $version;
 	$merge_srcvers{$name} = $version;
@@ -1237,7 +1094,7 @@ sub parse_packages () {
 		(isin($pkg->{'State'}, qw(Installed)) &&
 		 version_lesseq($version, $pkg->{'Installed-Version'}))) {
 		print "Skipping $name because State == $pkg->{'State'}\n"
-		    if $verbose >= 2;
+		    if $conf->get('VERBOSE') >= 2;
 		next;
 	    }
 	    if ($pkg->{'Binary-NMU-Version'} ) {
@@ -1245,13 +1102,13 @@ sub parse_packages () {
 		if (version_less( $version, $nmuver )) {
 		    print "Skipping $name ($version) because have newer ".
 			"version ($nmuver) in db.\n"
-			if $verbose >= 2;
+			if $conf->get('VERBOSE') >= 2;
 		    next;
 		}
 	    } elsif (version_less($version, $pkg->{'Version'})) {
 		print "Skipping $name ($version) because have newer ".
 		    "version ($pkg->{'Version'}) in db.\n"
-		    if $verbose >= 2;
+		    if $conf->get('VERBOSE') >= 2;
 		next;
 	    }
 
@@ -1286,7 +1143,7 @@ sub parse_packages () {
 	delete $pkg->{'Binary-NMU-Changelog'};
 	log_ta( $pkg, "--merge-packages" );
 	$db{$name} = $pkg;
-	print "$name ($version) is up-to-date now.\n" if $verbose;
+	print "$name ($version) is up-to-date now.\n" if $conf->get('VERBOSE');
     }
 
     check_dep_wait( "--merge-packages", $installed );
@@ -1355,7 +1212,7 @@ sub check_dep_wait ($$) {
 	    delete $pkg->{'Depends'};
 	    propagate_ta( $pkg, $action ) if $action ne "--merge-packages";
 	    print "$name ($pkg->{'Version'}) has all ",
-	    "dependencies available now\n" if $verbose;
+	    "dependencies available now\n" if $conf->get('VERBOSE');
 	    $new_vers{$name}++;
 	    $db{$name} = $pkg;
 	}
@@ -1363,7 +1220,7 @@ sub check_dep_wait ($$) {
 	    $pkg->{'Depends'} = build_deplist( $new_deplist );
 	    print "$name ($pkg->{'Version'}): some dependencies ",
 	    "(@removed_deps) available now, but not all yet\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	    $db{$name} = $pkg;
 	}
     }
@@ -1412,7 +1269,7 @@ sub parse_quinn_diff ($) {
 	    log_ta( $pkg, "--merge-quinn" );
 	    $change++;
 	    print "$name ($version) still waiting for dependencies.\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	}
 	elsif (defined($pkg) &&
 	       $pkg->{'State'} =~ /-Removed$/ &&
@@ -1427,7 +1284,7 @@ sub parse_quinn_diff ($) {
 	    log_ta( $pkg, "--merge-quinn" );
 	    $change++;
 	    print "$name ($version) reinstantiated to $newstate.\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	}
 	elsif (defined($pkg) &&
 	       $pkg->{'State'} eq "Not-For-Us" &&
@@ -1441,7 +1298,7 @@ sub parse_quinn_diff ($) {
 	    delete $pkg->{'Builder'};
 	    log_ta( $pkg, "--merge-quinn" );
 	    $change++;
-	    print "$name ($version) still Not-For-Us.\n" if $verbose;
+	    print "$name ($version) still Not-For-Us.\n" if $conf->get('VERBOSE');
 	}
 	elsif (!defined($pkg) ||
 	       $pkg->{'State'} ne "Not-For-Us" &&
@@ -1449,7 +1306,7 @@ sub parse_quinn_diff ($) {
 		($pkg->{'State'} eq "Installed" && version_less($pkg->{'Installed-Version'}, $version)))) {
 	    if ($pkg->{'State'} eq 'Building') {
 		send_mail( $pkg->{'Builder'},
-			   "new version of $name (dist=$distribution)",
+			   "new version of $name (dist=" . $conf->get('DISTRIBUTION') . ")",
 			   "As far as I'm informed, you're currently ".
 			   "building the package $name\n".
 			   "in version $pkg->{'Version'}.\n\n".
@@ -1462,14 +1319,14 @@ sub parse_quinn_diff ($) {
 		print "$name: new version ($version) while building ".
 		    "$pkg->{'Version'} -- sending mail ".
 		    "to builder ($pkg->{'Builder'})\n"
-		    if $verbose;
+		    if $conf->get('VERBOSE');
 	    }
 	    my $oth_ent;
 	    if ($oth_ent = exists_in_other_dist( $name, $version, 1 )) {
 		my $newstate = '';
 		my $text;
 		my $builder = exists($oth_ent->{'Builder'}) ?
-		    $oth_ent->{'Builder'} : $conf::db_maint;
+		    $oth_ent->{'Builder'} : $conf->get('DB_MAINTAINER_EMAIL');
 		if ($oth_ent->{'State'} eq 'Failed') {
 		    $newstate = 'Failed';
 		    $text = "already set to Failed in dist ".
@@ -1500,7 +1357,7 @@ sub parse_quinn_diff ($) {
 		    }
 		    log_ta( $pkg, "--merge-quinn" );
 		    $db{$name} = $pkg;
-		    print "$name ($version) $text\n" if $verbose;
+		    print "$name ($version) $text\n" if $conf->get('VERBOSE');
 		    next;
 		}
 	    }
@@ -1516,7 +1373,7 @@ sub parse_quinn_diff ($) {
 	    log_ta( $pkg, "--merge-quinn" );
 	    $new_vers{$name}++;
 	    $change++;
-	    print "$name ($version) needs rebuilding now.\n" if $verbose;
+	    print "$name ($version) needs rebuilding now.\n" if $conf->get('VERBOSE');
 	}
 	elsif (defined($pkg) &&
 	       !version_eq( $pkg->{'Version'}, $version ) &&
@@ -1525,12 +1382,12 @@ sub parse_quinn_diff ($) {
 		"($pkg->{'Version'}) is >> than ".
 		"what quinn-diff says ($version) ".
 		"(state is $pkg->{'State'}\n"
-		if $verbose;
+		if $conf->get('VERBOSE');
 	    $dubious .= "$pkg->{'State'}: ".
 		"db ${name}_$pkg->{'Version'} >> ".
 		"quinn $version\n" if !$partial;
 	}
-	elsif ($verbose >= 2) {
+	elsif ($conf->get('VERBOSE') >= 2) {
 	    if ($pkg->{'State'} eq "Not-For-Us") {
 		print "Skipping $name because State == ".
 		    "$pkg->{'State'}\n";
@@ -1545,8 +1402,9 @@ sub parse_quinn_diff ($) {
     }
 
     if ($dubious) {
-	send_mail( $conf::db_maint,
-		   "Dubious versions in $distribution $conf::dbbase database",
+	send_mail( $conf->get('DB_MAINTAINER_EMAIL'),
+		   "Dubious versions in " . $conf->get('DISTRIBUTION') . " " .
+		   $conf->get('DB_BASE_NAME') . " database",
 		   "The following packages have a newer version in the ".
 		   "wanna-build database\n".
 		   "than what quinn-diff says, and this is strange for ".
@@ -1577,7 +1435,7 @@ sub parse_quinn_diff ($) {
 		print "$name ($pkg->{'Version'}): ".
 		    ($virtual_delete ? "(virtually) " : "") . "deleted ".
 		    "from database, because not in quinn-diff anymore\n"
-		    if $verbose;
+		    if $conf->get('VERBOSE');
 		if ($virtual_delete) {
 		    $db{$name} = $pkg;
 		} else {
@@ -1669,7 +1527,7 @@ BEGIN {
 sub sort_list_func () {
     my( $letter, $x, $ax, $bx );
 
-    foreach $letter (split( "", $list_order )) {
+    foreach $letter (split( "", $conf->get('DB_LIST_ORDER') )) {
       SWITCH: foreach ($letter) {
 	  /P/ && do {
 	      $x = $b->{'BuildPri'} <=> $a->{'BuildPri'};
@@ -1739,15 +1597,15 @@ sub list_packages ($) {
 	next if $name =~ /^_/;
 	$pkg = $db{$name};
 	next if $state ne "all" && $pkg->{'State'} !~ /^\Q$state\E$/i;
-	next if $user && ((lc($state) eq 'needs-build' and
-			   ((exists($pkg->{'Builder'})) && ($pkg->{'Builder'} ne $user))) ||
-			  (lc($state) ne 'needs-build' and $pkg->{'Builder'} ne $user));
-	next if $category && $pkg->{'State'} eq "Failed" &&
-	    $pkg->{'Failed-Category'} ne $category;
-	next if ($list_min_age > 0 &&
-		 ($ctime-parse_date($pkg->{'State-Change'})) < $list_min_age)||
-		 ($list_min_age < 0 &&
-		  ($ctime-parse_date($pkg->{'State-Change'})) > -$list_min_age);
+	next if $conf->get('DB_USER') && ((lc($state) eq 'needs-build' and
+			   ((exists($pkg->{'Builder'})) && ($pkg->{'Builder'} ne $conf->get('DB_USER')))) ||
+			  (lc($state) ne 'needs-build' and $pkg->{'Builder'} ne $conf->get('DB_USER')));
+	next if $conf->get('DB_CATEGORY') && $pkg->{'State'} eq "Failed" &&
+	    $pkg->{'Failed-Category'} ne $conf->get('DB_CATEGORY');
+	next if ($conf->get('DB_LIST_MIN_AGE') > 0 &&
+		 ($ctime-parse_date($pkg->{'State-Change'})) < $conf->get('DB_LIST_MIN_AGE'))||
+		 ($conf->get('DB_LIST_MIN_AGE') < 0 &&
+		  ($ctime-parse_date($pkg->{'State-Change'})) > -$conf->get('DB_LIST_MIN_AGE'));
 	push( @list, $pkg );
     }
 
@@ -1775,10 +1633,10 @@ sub list_packages ($) {
 	    if $pkg->{'State'} eq "Dep-Wait";
 	print "  Previous state was $pkg->{'Previous-State'} until ",
 	"$pkg->{'State-Change'}\n"
-	    if $verbose && $pkg->{'Previous-State'};
+	    if $conf->get('VERBOSE') && $pkg->{'Previous-State'};
 	print "  Previous failing reasons:\n    ",
 	join("\n    ",split("\n",$pkg->{'Old-Failed'})), "\n"
-	    if $verbose && $pkg->{'Old-Failed'};
+	    if $conf->get('VERBOSE') && $pkg->{'Old-Failed'};
 	++$cnt;
 	$scnt{$pkg->{'State'}}++ if $state eq "all";
     }
@@ -1794,11 +1652,11 @@ sub list_packages ($) {
 sub info_packages (@) {
     my( $name, $pkg, $key, $dist );
     my @firstkeys = qw(Package Version Builder State Section Priority
-					   Installed-Version Previous-State State-Change);
-    my @dists = $info_all_dists ? @conf::distributions : ($distribution);
+		       Installed-Version Previous-State State-Change);
+    my @dists = $conf->get('DB_INFO_ALL_DISTS') ? @{$conf->get('DB_DISTRIBUTIONS')} : ($conf->get('DISTRIBUTION'));
 
     foreach $dist (@dists) {
-	if ($dist ne $distribution) {
+	if ($dist ne $conf->get('DISTRIBUTION')) {
 	    if (!-f db_filename( $dist ) || !open_other_db( $dist )) {
 		warn "Cannot open database for $dist!\n";
 		@dists = grep { $_ ne $dist } @dists;
@@ -1809,8 +1667,8 @@ sub info_packages (@) {
     foreach $name (@_) {
 	$name =~ s/_.*$//; # strip version
 	foreach $dist (@dists) {
-	    my $db = $dist ne $distribution ? $otherdb{$dist} : \%db;
-	    my $pname = "$name" . ($info_all_dists ? "($dist)" : "");
+	    my $db = $dist ne $conf->get('DISTRIBUTION') ? $otherdb{$dist} : \%db;
+	    my $pname = "$name" . ($conf->get('DB_INFO_ALL_DISTS') ? "($dist)" : "");
 
 	    $pkg = $db->{$name};
 	    if (!defined( $pkg )) {
@@ -1857,16 +1715,16 @@ sub forget_packages (@) {
 	    $val =~ s/\n/\n /g;
 	    $data .= sprintf "  %-20s: %s\n", $key, $val;
 	}
-	send_mail( $conf::db_maint,
-		   "$name deleted from DB $conf::dbbase",
+	send_mail( $conf->get('DB_MAINTAINER_EMAIL'),
+		   "$name deleted from DB " . $conf->get('DB_BASE_NAME'),
 		   "The package '$name' has been deleted from the database ".
-		   "by $user.\n\n".
+		   "by " . $conf->get('DB_USER') . ".\n\n".
 		   "Data registered about the deleted package:\n".
-		   "$data\n" ) if $conf::db_maint;
+		   "$data\n" ) if $conf->get('DB_MAINTAINER_EMAIL');
 	change_state( \$pkg, 'deleted' );
 	log_ta( $pkg, "--forget" );
 	delete $db{$name};
-	print "$name: deleted from database\n" if $verbose;
+	print "$name: deleted from database\n" if $conf->get('VERBOSE');
     }
 }
 
@@ -1883,7 +1741,7 @@ sub forget_users (@) {
 
 	delete $ui->{$name};
 	$change++;
-	print "$name: deleted from database\n" if $verbose;
+	print "$name: deleted from database\n" if $conf->get('VERBOSE');
     }
     $db{'_userinfo'} = $ui if $change;
 }
@@ -1894,7 +1752,7 @@ sub lock_db ($) {
     my $lockfile = db_filename($dist) . ".lock";
     local( *F );
 
-    print "Locking $dist database\n" if $verbose >= 2;
+    print "Locking $dist database\n" if $conf->get('VERBOSE') >= 2;
   repeat:
     if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
 	if ($! == EEXIST) {
@@ -1925,7 +1783,7 @@ sub lock_db ($) {
 	}
 	die "Can't create lock file $lockfile: $!\n";
     }
-    F->print("$$ $real_user\n");
+    F->print("$$ " . $conf->get('USERNAME') . "\n");
     F->close();
 }
 
@@ -1934,7 +1792,7 @@ sub unlock_db ($) {
     my $lockfile = db_filename($dist) . ".lock";
 
     if (!$main::keep_lock{$dist}) {
-	print "Unlocking $dist database\n" if $verbose >= 2;
+	print "Unlocking $dist database\n" if $conf->get('VERBOSE') >= 2;
 	unlink $lockfile;
     }
 }
@@ -1944,7 +1802,7 @@ sub create_maintlock () {
     my $try = 0;
     local( *F );
 
-    print "Creating maintenance lock\n" if $verbose >= 2;
+    print "Creating maintenance lock\n" if $conf->get('VERBOSE') >= 2;
   repeat:
     if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
 	if ($! == EEXIST) {
@@ -1974,14 +1832,14 @@ sub create_maintlock () {
 	}
 	die "Can't create maintenance lock $lockfile: $!\n";
     }
-    F->print(getppid(), " $real_user\n");
+    F->print(getppid(), " " . $conf->get('USERNAME') . "\n");
     F->close();
 }
 
 sub remove_maintlock () {
     my $lockfile = db_filename("maintenance") . ".lock";
 
-    print "Removing maintenance lock\n" if $verbose >= 2;
+    print "Removing maintenance lock\n" if $conf->get('VERBOSE') >= 2;
     unlink $lockfile;
 }
 
@@ -1990,7 +1848,7 @@ sub waitfor_maintlock () {
     my $try = 0;
     local( *F );
 
-    print "Checking for maintenance lock\n" if $verbose >= 2;
+    print "Checking for maintenance lock\n" if $conf->get('VERBOSE') >= 2;
   repeat:
     if (open( F, "<$lockfile" )) {
 	my $line = <F>;
@@ -2021,7 +1879,7 @@ sub waitfor_maintlock () {
 sub read_db ($) {
          my $file = shift;
 
-         print "Reading ASCII database from $file..." if $verbose >= 1;
+         print "Reading ASCII database from $file..." if $conf->get('VERBOSE') >= 1;
          open( F, "<$file" ) or
                  die "Can't open database $file: $!\n";
 
@@ -2053,14 +1911,14 @@ sub read_db ($) {
 		 }
          }
          close( F );
-         print "done\n" if $verbose >= 1;
+         print "done\n" if $conf->get('VERBOSE') >= 1;
 }
 
 sub check_entry ($) {
     my $pkg = shift;
     my $field;
 
-    return if $op_mode eq "manual-edit"; # no checks then
+    return if $conf->get('DB_OPERATION') eq "manual-edit"; # no checks then
 
     # check for required fields
     if (!exists $pkg->{'Package'} && !exists $pkg->{'User'}) {
@@ -2096,14 +1954,14 @@ sub write_db ($) {
     my $file = shift;
     my($name,$pkg,$key);
 
-    print "Writing ASCII database to $file..." if $verbose >= 1;
+    print "Writing ASCII database to $file..." if $conf->get('VERBOSE') >= 1;
     open( F, ">$file" ) or
 	die "Can't open database $file: $!\n";
 
     foreach $name (sort keys %db) {
 	my $pkg = $db{$name};
 	if ($name eq '_userinfo') {
-		foreach $user (sort keys %{$pkg}) {
+		foreach my $user (sort keys %{$pkg}) {
 		    my $ui = $pkg->{$user};
 		    print F "User: $user\n"
 			if (!defined($ui->{'User'}));
@@ -2126,7 +1984,7 @@ sub write_db ($) {
 	}
     }
     close( F );
-    print "done\n" if $verbose >= 1;
+    print "done\n" if $conf->get('VERBOSE') >= 1;
 }
 
 sub change_state ($$;$) {
@@ -2169,12 +2027,12 @@ sub propagate_ta ($$) {
     my $action = shift;
     my $dist;
 
-    return if $opt_no_propagation;
+    return if $conf->get('DB_NO_PROPAGATION');
 
-    foreach $dist (@conf::distributions) {
-	next if $dist eq $distribution;
-	next if dist_cmp ($dist, $distribution) == 0;
-	next if $opt_no_down_propagation && dist_cmp($dist, $distribution) < 0;
+    foreach $dist (@{$conf->get('DB_DISTRIBUTIONS')}) {
+	next if $dist eq $conf->get('DISTRIBUTION');
+	next if dist_cmp ($dist, $conf->get('DISTRIBUTION')) == 0;
+	next if $conf->get('DB_NO_DOWN_PROPAGATION') && dist_cmp($dist, $conf->get('DISTRIBUTION')) < 0;
 	next if ! -f db_filename( $dist );
 	next if !open_other_db( $dist );
 	my $odb = $otherdb{$dist};
@@ -2206,8 +2064,8 @@ sub exists_in_other_dist ($$$) {
     my $inst_v_ok = shift;
     my $dist;
 
-    foreach $dist (@conf::distributions) {
-	next if $dist eq $distribution;
+    foreach $dist (@{$conf->get('DB_DISTRIBUTIONS')}) {
+	next if $dist eq $conf->get('DISTRIBUTION');
 	next if ! -f db_filename( $dist );
 	next if !open_other_db( $dist );
 	my $odb = $otherdb{$dist};
@@ -2256,7 +2114,7 @@ sub log_ta ($$;$) {
 	$pkg = $db{$pkg->{'Package'}};
     }
     else {
-	$dist = $distribution;
+	$dist = $conf->get('DISTRIBUTION');
 	$db = \%db;
     }
     my $str;
@@ -2265,8 +2123,13 @@ sub log_ta ($$;$) {
     $prevstate = $pkg->{'Previous-State'};
     $str = "$action($dist): $pkg->{'Package'}_$pkg->{'Version'} ".
 	"changed from $prevstate to $pkg->{'State'} ".
-	"by $real_user as $user";
+	"by " . $conf->get('USERNAME'). " as " . $conf->get('DB_USER') . ".";
 
+    my $dbbase = $conf->get('DB_BASE_NAME');
+    $dbbase =~ m#^([^/]+/)#;
+
+    my $transactlog = $conf->get('DB_BASE_DIR') . "/$1" .
+	$conf->get('DB_TRANSACTION_LOG');
     if (!open( LOG, ">>$transactlog" )) {
 	warn "Can't open log file $transactlog: $!\n";
 	return;
@@ -2276,7 +2139,7 @@ sub log_ta ($$;$) {
 
     if (!($prevstate eq 'Failed' && $pkg->{'State'} eq 'Failed')) {
 	$str .= " (with --override)"
-	    if $opt_override;
+	    if $conf->get('DB_OVERRIDE');
 	$mail_logs .= "$str\n";
     }
 }
@@ -2286,7 +2149,9 @@ sub dist_cmp ($$) {
     my $d1 = shift;
     my $d2 = shift;
 
-    return $conf::dist_order{$d1} <=> $conf::dist_order{$d2};
+    my $dist_order = $conf->get('DB_DISTRIBUTION_ORDER');
+
+    return $dist_order->{$d1} <=> $dist_order->{$d2};
 }
 
 
@@ -2296,19 +2161,15 @@ sub send_mail ($$$) {
     my $subject = shift;
     my $text = shift;
 
-    my $from = $conf::db_maint;
+    my $from = $conf->get('DB_MAINTAINER_EMAIL');
 
-    if ($host_set != 1) {
-	chomp( $hostname = `/bin/hostname -f` );
-	$host_set = 1;
-    }
-    $from .= "\@$hostname" if $from !~ /\@/;
+    $from .= "\@" . $conf->get('HOSTNAME') if $from !~ /\@/;
 
-    $to .= '@' . $hostname if $to !~ /\@/;
+    $to .= '@' . $conf->get('HOSTNAME') if $to !~ /\@/;
     $text =~ s/^\.$/../mg;
     local $SIG{'PIPE'} = 'IGNORE';
-    open( PIPE,  "| $conf::mailprog -oem $to" )
-	or die "Can't open pipe to $conf::mailprog: $!\n";
+    open( PIPE,  "| " . $conf->get('MAILPROG') . " -oem $to" )
+	or die "Can't open pipe to " . $conf->get('MAILPROG') . ": $!\n";
     chomp $text;
     print PIPE "From: $from\n";
     print PIPE "Subject: $subject\n\n";
@@ -2318,7 +2179,7 @@ sub send_mail ($$$) {
 
 sub db_filename ($) {
     my $dist = shift;
-    return "$conf::basedir/$conf::dbbase-$dist";
+    return $conf->get('DB_BASE_DIR') . '/' . $conf->get('DB_BASE_NAME') . "-$dist";
 }
 
 # for parsing input to dep-wait
@@ -2413,14 +2274,14 @@ sub build_deplist ($) {
 
 sub clean_db () {
     my %new_db;
-    tie %new_db, 'MLDBM', db_filename( $distribution ) . ".new", GDBM_WRCREAT, 0664
+    tie %new_db, 'MLDBM', db_filename( $conf->get('DISTRIBUTION') ) . ".new", GDBM_WRCREAT, 0664
 	or die "FATAL: Cannot create new database\n";
     %new_db = %db;
     untie %db or die "FATAL: Cannot untie old database\n";
-    system ("cp " . db_filename( $distribution ) . ".new " .
-	    db_filename( $distribution ) ) == 0
+    system ("cp " . db_filename( $conf->get('DISTRIBUTION') ) . ".new " .
+	    db_filename( $conf->get('DISTRIBUTION') ) ) == 0
 	    or die "FATAL: Cannot overwrite old database";
-    unlink db_filename( $distribution ) . ".new";
+    unlink db_filename( $conf->get('DISTRIBUTION') ) . ".new";
     %db = %new_db;
 }
 
@@ -2436,7 +2297,7 @@ sub set_dep_wait ($$) {
 	next
 	    if defined $pkg and $pkg->{'State'} ne "Needs-Build";
 	my $deps;
-	$deps = parse_srcdeplist($key,$bd->{$key},$arch);
+	$deps = parse_srcdeplist($key,$bd->{$key},$conf->get('ARCH'));
 	my $change = 0;
 	foreach $dep (@$deps) {
 	    if ($dep->{'Rel'} and $pkgs->{$dep->{'Package'}} ne "") {
@@ -2457,7 +2318,7 @@ sub set_dep_wait ($$) {
 	    change_state( \$pkg, 'Dep-Wait' );
 	    log_ta( $pkg, "--merge-all" );
 	    $db{$key} = $pkg;
-	    print "Auto-Dep-Waiting ${key}_$pkg->{'Version'}\n" if $verbose;
+	    print "Auto-Dep-Waiting ${key}_$pkg->{'Version'}\n" if $conf->get('VERBOSE');
 	}
     }
 }

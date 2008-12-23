@@ -32,13 +32,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$);
-sub get (\%$);
-sub set (\%$$);
-sub get_conf (\%$);
-sub set_conf (\%$$);
-
-sub new ($$) {
+sub new {
     my $class = shift;
     my $conf = shift;
 
@@ -50,14 +44,14 @@ sub new ($$) {
     return $self;
 }
 
-sub get (\%$) {
+sub get {
     my $self = shift;
     my $key = shift;
 
     return $self->{$key};
 }
 
-sub set (\%$$) {
+sub set {
     my $self = shift;
     my $key = shift;
     my $value = shift;
@@ -65,14 +59,14 @@ sub set (\%$$) {
     return $self->{$key} = $value;
 }
 
-sub get_conf (\%$) {
+sub get_conf {
     my $self = shift;
     my $key = shift;
 
     return $self->get('Config')->get($key);
 }
 
-sub set_conf (\%$$) {
+sub set_conf {
     my $self = shift;
     my $key = shift;
     my $value = shift;
@@ -80,7 +74,7 @@ sub set_conf (\%$$) {
     return $self->get('Config')->set($key,$value);
 }
 
-sub log ($) {
+sub log {
     my $self = shift;
 
     my $logfile = $self->get('Log Stream');
@@ -95,19 +89,19 @@ sub log ($) {
     }
 }
 
-sub log_info ($) {
+sub log_info {
     my $self = shift;
 
     $self->log("I: ", @_);
 }
 
-sub log_warning ($) {
+sub log_warning {
     my $self = shift;
 
     $self->log("W: ", @_);
 }
 
-sub log_error ($) {
+sub log_error {
     my $self = shift;
 
     $self->log("E: ", @_);

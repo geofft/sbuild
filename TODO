@@ -60,3 +60,6 @@ Buildd.pm: *_command use:
 
 Unify utility command-line options (help, version) and add verbose/debug
 options.
+
+Sbuild::Conf: Remove _ROLE by splitting out different roles into
+derived classes.

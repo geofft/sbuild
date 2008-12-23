@@ -22,11 +22,15 @@
 use strict;
 use warnings;
 
+use Sbuild::Sysconfig;
+
 sub read_users ();
 sub pgp_check ($);
 sub reply (@);
 sub fatal (@);
 sub logger (@);
+
+# TODO: Convert to use WannaBuild::Conf and Sbuild::Sysconfig
 
 $ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $main::tempfile = "/bin/tempfile";

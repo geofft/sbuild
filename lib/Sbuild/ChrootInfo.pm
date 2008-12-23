@@ -1,6 +1,6 @@
 #
 # ChrootInfo.pm: chroot utility library for sbuild
-# Copyright © 2005-2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,11 +30,6 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
-sub new ($$);
-sub get_info (\%$);
-sub get_info_all (\%);
-sub find (\%$$$);
-
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -44,7 +39,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$) {
+sub new {
     my $class = shift;
     my $conf = shift;
 
@@ -60,7 +55,7 @@ sub new ($$) {
 
 
 
-sub create (\%$$$) {
+sub create {
     my $self = shift;
     my $distribution = shift;
     my $chroot = shift;
@@ -78,7 +73,7 @@ sub create (\%$$$) {
 }
 
 
-sub find (\%$$$) {
+sub find {
     my $self = shift;
     my $distribution = shift;
     my $chroot = shift;
@@ -86,12 +81,12 @@ sub find (\%$$$) {
 
     my $chroots = $self->get('Chroots');
 
-    my $arch_set = 1;
 
+    # Don't do strict arch checking if ARCH == HOST_ARCH.
     if (!defined($arch) || $arch eq "") {
 	$arch = $self->get_conf('HOST_ARCH');
-	$arch_set = 0;
     }
+    my $arch_set = ($arch eq $self->get_conf('HOST_ARCH')) ? 0 : 1;
 
     my $arch_found = 0;
 

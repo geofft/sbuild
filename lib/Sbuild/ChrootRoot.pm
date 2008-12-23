@@ -1,7 +1,7 @@
 #
-# Chroot.pm: chroot library for sbuild
+# ChrootRoot.pm: chroot access via root filesystem
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2006 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,11 +20,12 @@
 #
 #######################################################################
 
-package Sbuild::ChrootSudo;
+package Sbuild::ChrootPlain;
 
 use strict;
 use warnings;
 
+use Sbuild::Log;
 use Sbuild::Sysconfig;
 
 BEGIN {
@@ -45,26 +46,19 @@ sub new {
     my $self = $class->SUPER::new($conf, $chroot_id);
     bless($self, $class);
 
+    # Only run split, because plain makes no guarantee that networking
+    # works inside the chroot.
+    $self->set('Split', 1);
+
     return $self;
 }
 
 sub begin_session {
     my $self = shift;
-    my $chroot = $self->get('Chroot ID');
 
-    my $info = $self->get('Chroots')->get_info($chroot);
-
-    print STDERR "Setting up chroot $chroot\n"
-	if $self->get_conf('DEBUG');
-
-    if (defined($info) &&
-	defined($info->{'Location'}) && -d $info->{'Location'}) {
-	$self->set('Priority', $info->{'Priority'});
-	$self->set('Location', $info->{'Location'});
-	$self->set('Session Purged', $info->{'Session Purged'});
-    } else {
-	die $self->get('Chroot ID') . " chroot does not exist\n";
-    }
+    $self->set('Priority', 0);
+    $self->set('Location', $self->get('Chroot ID'));
+    $self->set('Session Purged', 0);
 
     $self->_setup_options();
 
@@ -74,7 +68,7 @@ sub begin_session {
 sub end_session {
     my $self = shift;
 
-    # No-op for sudo.
+    # No-op.
 
     return 1;
 }
@@ -121,7 +115,7 @@ sub get_command_internal {
 	    }
 	}
 
-	@cmdline = ($self->get_conf('SUDO'), '/usr/sbin/chroot', $self->get('Location'),
+	@cmdline = ('/usr/sbin/chroot', $self->get('Location'),
 		    $self->get_conf('SU'), '-p', "$user", '-s',
 		    $Sbuild::Sysconfig::programs{'SHELL'}, '-c',
 		    "cd '$dir' && $shellcommand");
@@ -131,10 +125,8 @@ sub get_command_internal {
 	    $tmpdir = $tmpdir . $dir if defined($dir);
 	    $dir = $tmpdir;
 	}
-	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
+	if ($user ne $self->get_conf('USERNAME')) {
 	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
-	} elsif ($user eq 'root') {
-	    @cmdline = ($self->get_conf('SUDO'));
 	}
 	$chdir = $dir if defined($dir);
 	push(@cmdline, @$command);

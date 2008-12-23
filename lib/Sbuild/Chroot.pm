@@ -42,18 +42,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$);
-sub _setup_options (\$\$);
-sub strip_chroot_path (\$$);
-sub log_command (\$$$);
-sub get_command (\$$$$$$);
-sub run_command (\$$$$$$);
-sub exec_command (\$$$$$$);
-sub get_apt_command_internal (\$$$);
-sub get_apt_command (\$$$$$$);
-sub run_apt_command (\$$$$$$);
-
-sub new ($$$) {
+sub new {
     my $class = shift;
     my $conf = shift;
     my $chroot_id = shift;
@@ -84,7 +73,7 @@ sub new ($$$) {
     return $self;
 }
 
-sub _setup_aptconf (\$$) {
+sub _setup_aptconf {
     my $self = shift;
     my $aptconf = shift;
 
@@ -99,7 +88,7 @@ sub _setup_aptconf (\$$) {
     }
 }
 
-sub _setup_options (\$\$) {
+sub _setup_options {
     my $self = shift;
 
     $self->set('Build Location', $self->get('Location') . "/build");
@@ -145,7 +134,7 @@ sub _setup_options (\$\$) {
     }
 }
 
-sub strip_chroot_path (\$$) {
+sub strip_chroot_path {
     my $self = shift;
     my $path = shift;
 
@@ -155,7 +144,7 @@ sub strip_chroot_path (\$$) {
     return $path;
 }
 
-sub log_command (\$$$) {
+sub log_command {
     my $self = shift;
     my $options = shift;
 
@@ -176,7 +165,7 @@ sub log_command (\$$$) {
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed by schroot, nor required
 # via sudo.
-sub pipe_command_internal (\$$$$$$) {
+sub pipe_command_internal {
     my $self = shift;
     my $options = shift;
 
@@ -237,7 +226,7 @@ sub pipe_command_internal (\$$$$$$) {
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed by schroot, nor required
 # via sudo.
-sub run_command_internal (\$$$$$$) {
+sub run_command_internal {
     my $self = shift;
     my $options = shift;
 
@@ -257,7 +246,7 @@ sub run_command_internal (\$$$$$$) {
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed by schroot, nor required
 # via sudo.
-sub run_command (\$$$$$$) {
+sub run_command {
     my $self = shift;
     my $options = shift;
 
@@ -269,7 +258,7 @@ sub run_command (\$$$$$$) {
 # Note, do not run with $user="root", and $chroot=0, because root
 # access to the host system is not allowed by schroot, nor required
 # via sudo.
-sub pipe_command (\$$$$$$) {
+sub pipe_command {
     my $self = shift;
     my $options = shift;
 
@@ -278,7 +267,7 @@ sub pipe_command (\$$$$$$) {
     return $self->pipe_command_internal($options);
 }
 
-sub exec_command (\$$$$$$) {
+sub exec_command {
     my $self = shift;
     my $options = shift;
 
@@ -318,7 +307,7 @@ sub exec_command (\$$$$$$) {
     die "Failed to exec: $command->[0]: $!";
 }
 
-sub get_apt_command_internal (\$$$) {
+sub get_apt_command_internal {
     my $self = shift;
     my $options = shift;
 
@@ -346,7 +335,7 @@ sub get_apt_command_internal (\$$$) {
     $options->{'INTCOMMAND'} = \@aptcommand;
 }
 
-sub run_apt_command (\$$$$$$) {
+sub run_apt_command {
     my $self = shift;
     my $options = shift;
 
@@ -356,7 +345,7 @@ sub run_apt_command (\$$$$$$) {
     return $self->run_command_internal($options);
 }
 
-sub pipe_apt_command (\$$$$$$) {
+sub pipe_apt_command {
     my $self = shift;
     my $options = shift;
 
@@ -366,7 +355,7 @@ sub pipe_apt_command (\$$$$$$) {
     return $self->pipe_command_internal($options);
 }
 
-sub apt_chroot (\$) {
+sub apt_chroot {
     my $self = shift;
 
     my $chroot =  $self->get('Split') ? 0 : 1;

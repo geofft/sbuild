@@ -26,8 +26,6 @@ use Sbuild::ChrootSudo;
 use strict;
 use warnings;
 
-sub new ($$);
-
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -37,7 +35,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$) {
+sub new {
     my $class = shift;
     my $conf = shift;
 
@@ -47,14 +45,14 @@ sub new ($$) {
     return $self;
 }
 
-sub get_info (\%$) {
+sub get_info {
     my $self = shift;
     my $chroot = shift;
 
     return $self->get('Chroots')->{$chroot};
 }
 
-sub get_info_all (\%) {
+sub get_info_all {
     my $self = shift;
 
     my $chroots = {};
@@ -88,7 +86,7 @@ sub get_info_all (\%) {
     $self->set('Chroots', $chroots);
 }
 
-sub _create (\%$) {
+sub _create {
     my $self = shift;
     my $chroot_id = shift;
 

@@ -39,10 +39,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$);
-sub parse_options (\%);
-
-sub new ($$) {
+sub new {
     my $class = shift;
     my $conf = shift;
 
@@ -56,7 +53,7 @@ sub new ($$) {
     return $self;
 }
 
-sub parse_options (\%) {
+sub parse_options {
     my $self = shift;
 
     return GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
