@@ -25,11 +25,11 @@ use warnings;
 
 BEGIN {
     use Exporter ();
-    our (@ISA, @EXPORT);
+    our (@ISA, @EXPORT_OK);
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($version $release_date %paths %progams);
+    @EXPORT_OK = qw($version $release_date %paths %progams);
 }
 
 our $version = "@PACKAGE_VERSION@";
@@ -73,11 +73,13 @@ our %paths = (
     'BUILDD_SYSCONF_DIR' => '@BUILDD_SYSCONF_DIR@',
     'SBUILD_CONF' => '@SBUILD_CONF@',
     'SBUILD_LIBEXEC_DIR' => '@SBUILD_LIBEXEC_DIR@',
+    'SBUILD_LOCALSTATE_DIR' => "$localstatedir/lib/sbuild",
     'SBUILD_SYSCONF_DIR' => '@SBUILD_SYSCONF_DIR@',
     'SCHROOT_CONF' => '@SCHROOT_CONF@',
     'SCHROOT_SYSCONF_DIR' => '@SCHROOT_SYSCONF_DIR@',
-    'WANNABUILD_LIBEXEC_DIR' => '@WANNABUILD_LIBEXEC_DIR@',
-    'WANNA_BUILD_CONF' => '@WANNA_BUILD_CONF@'
+    'WANNA_BUILD_CONF' => '@WANNA_BUILD_CONF@',
+    'WANNA_BUILD_LOCALSTATE_DIR' => "$localstatedir/lib/wanna-build",
+    'WANNA_BUILD_LIBEXEC_DIR' => '@WANNA_BUILD_LIBEXEC_DIR@'
 );
 
 # Programs:
@@ -93,6 +95,7 @@ our %programs = (
     'DPKG_PARSECHANGELOG' => '@DPKG_PARSECHANGELOG@',
     'DPKG_SOURCE' => '@DPKG_SOURCE@',
     'DU' => '@DU@',
+    'FAKEROOT' => '@FAKEROOT@',
     'GPG' => '@GPG@',
     'HOSTNAME' => '@HOSTNAME@',
     'MAN' => '@MAN@',
@@ -101,6 +104,7 @@ our %programs = (
     'PS' => '@PS@',
     'RM' => '@RM@',
     'SCHROOT' => '@SCHROOT@',
+    'SENDMAIL' => '@SENDMAIL@',
     'SHELL' => '@SHELL@',
     'SU' => '@SU@',
     'SUDO' => '@SUDO@',
