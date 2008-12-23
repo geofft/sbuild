@@ -47,63 +47,9 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$);
-sub set_dsc (\$$);
-sub fetch_source_files (\$);
-sub build (\$$$);
-sub analyze_fail_stage (\$);
-sub install_deps (\$);
-sub wait_for_srcdep_conflicts (\$@);
-sub uninstall_deps (\$);
-sub uninstall_debs (\$$@);
-sub run_apt (\$$\@\@@);
-sub filter_dependencies (\$\@\@\@);
-sub check_dependencies (\$\@);
-sub get_apt_policy (\$@);
-sub get_dpkg_status (\$@);
-sub merge_pkg_build_deps (\$$$$$$);
-sub cmp_dep_lists (\$\@\@);
-sub get_altlist (\$$);
-sub is_superset (\$\%\%);
-sub read_build_essential (\$);
-sub expand_dependencies (\$\@);
-sub expand_virtuals (\$\@);
-sub get_dependencies (\$@);
-sub get_virtuals (\$@);
-sub parse_one_srcdep (\$$$);
-sub parse_manual_srcdeps (\$@);
-sub check_space (\$@);
-sub file_for_name (\$$@);
-sub write_jobs_file (\$$);
-sub append_to_FINISHED (\$);
-sub write_srcdep_lock_file (\$\@);
-sub check_srcdep_conflicts (\$\@\@);
-sub remove_srcdep_lock_file (\$);
-sub prepare_watches (\$\@@);
-sub check_watches (\$);
-sub should_skip (\$);
-sub add_givenback (\$$$);
-sub set_installed (\$@);
-sub set_removed (\$@);
-sub unset_installed (\$@);
-sub unset_removed (\$@);
-sub df (\$$);
-sub fixup_pkgv (\$$);
-sub format_deps (\$@);
-sub lock_file (\$$$);
-sub unlock_file (\$$);
-sub write_stats (\$$$);
-sub debian_files_list (\$$);
-sub dsc_files (\$$);
-sub chroot_arch (\$);
-sub open_build_log (\$);
-sub close_build_log (\$$$$$$$);
-sub add_time_entry (\$$$);
-sub add_space_entry (\$$$);
-
 
 # TODO: put in all package version data and job ID (for indexing in job list)
-sub new ($$$) {
+sub new {
     my $class = shift;
     my $dsc = shift;
     my $conf = shift;
@@ -177,7 +123,7 @@ sub new ($$$) {
     return $self;
 }
 
-sub set_dsc (\$$) {
+sub set_dsc {
     my $self = shift;
     my $dsc = shift;
 
@@ -189,7 +135,7 @@ sub set_dsc (\$$) {
     $self->set('DSC Base', basename($dsc));
 }
 
-sub set_version (\$$) {
+sub set_version {
     my $self = shift;
     my $pkgv = shift;
 
@@ -212,19 +158,19 @@ sub set_version (\$$) {
     $self->set('DSC Dir', "${pkg}-${uversion}");
 }
 
-# sub get_package_status (\$) {
+# sub get_package_status {
 #     my $self = shift;
 
 #     return $self->get('Package Status');
 # }
-# sub set_package_status (\$$) {
+# sub set_package_status {
 #     my $self = shift;
 #     my $status = shift;
 
 #     return $self->set('Package Status', $status);
 # }
 
-sub fetch_source_files (\$) {
+sub fetch_source_files {
     my $self = shift;
 
     my $dir = $self->get('Source Dir');
@@ -413,7 +359,7 @@ sub fetch_source_files (\$) {
     return 1;
 }
 
-sub build (\$$$) {
+sub build {
     my $self = shift;
 
     my $dscfile = $self->get('DSC File');
@@ -835,7 +781,7 @@ sub build (\$$$) {
     return $rv == 0 ? 1 : 0;
 }
 
-sub analyze_fail_stage (\$) {
+sub analyze_fail_stage {
     my $self = shift;
 
     my $pkgv = $self->get('Package_Version');
@@ -871,7 +817,7 @@ sub analyze_fail_stage (\$) {
     }
 }
 
-sub install_deps (\$) {
+sub install_deps {
     my $self = shift;
 
     $self->log_subsection("Install build dependencies");
@@ -983,7 +929,7 @@ sub install_deps (\$) {
     return 1;
 }
 
-sub wait_for_srcdep_conflicts (\$@) {
+sub wait_for_srcdep_conflicts {
     my $self = shift;
     my @confl = @_;
 
@@ -1009,7 +955,7 @@ sub wait_for_srcdep_conflicts (\$@) {
     }
 }
 
-sub uninstall_deps (\$) {
+sub uninstall_deps {
     my $self = shift;
 
     my( @pkgs, @instd, @rmvd );
@@ -1034,7 +980,7 @@ sub uninstall_deps (\$) {
     $self->unlock_file($self->get('Session')->get('Install Lock'));
 }
 
-sub uninstall_debs (\$$@) {
+sub uninstall_debs {
     my $self = shift;
     my $mode = shift;
     my $status;
@@ -1079,7 +1025,7 @@ sub uninstall_debs (\$$@) {
     return $status == 0;
 }
 
-sub run_apt (\$$\@\@@) {
+sub run_apt {
     my $self = shift;
     my $mode = shift;
     my $inst_ret = shift;
@@ -1216,7 +1162,7 @@ sub run_apt (\$$\@\@@) {
     return $mode eq "-s" || $status == 0;
 }
 
-sub filter_dependencies (\$\@\@\@) {
+sub filter_dependencies {
     my $self = shift;
     my $dependencies = shift;
     my $pos_list = shift;
@@ -1362,7 +1308,7 @@ sub filter_dependencies (\$\@\@\@) {
     return 1;
 }
 
-sub check_dependencies (\$\@) {
+sub check_dependencies {
     my $self = shift;
     my $dependencies = shift;
     my $fail = "";
@@ -1450,7 +1396,7 @@ sub check_dependencies (\$\@) {
     return $fail;
 }
 
-sub get_apt_policy (\$@) {
+sub get_apt_policy {
     my $self = shift;
     my @interest = @_;
     my $package;
@@ -1476,7 +1422,7 @@ sub get_apt_policy (\$@) {
     return \%packages;
 }
 
-sub get_dpkg_status (\$@) {
+sub get_dpkg_status {
     my $self = shift;
     my @interest = @_;
     my %result;
@@ -1532,7 +1478,7 @@ sub get_dpkg_status (\$@) {
     return \%result;
 }
 
-sub merge_pkg_build_deps (\$$$$$$) {
+sub merge_pkg_build_deps {
     my $self = shift;
     my $pkg = shift;
     my $depends = shift;
@@ -1646,7 +1592,7 @@ sub merge_pkg_build_deps (\$$$$$$) {
 	           if @$missing;
 }
 
-sub cmp_dep_lists (\$\@\@) {
+sub cmp_dep_lists {
     my $self = shift;
     my $list1 = shift;
     my $list2 = shift;
@@ -1684,7 +1630,7 @@ sub cmp_dep_lists (\$\@\@) {
     return (\@common, \@missing);
 }
 
-sub get_altlist (\$$) {
+sub get_altlist {
     my $self = shift;
     my $dep = shift;
     my %l;
@@ -1695,7 +1641,7 @@ sub get_altlist (\$$) {
     return \%l;
 }
 
-sub is_superset (\$\%\%) {
+sub is_superset {
     my $self = shift;
     my $l1 = shift;
     my $l2 = shift;
@@ -1706,7 +1652,7 @@ sub is_superset (\$\%\%) {
     return 1;
 }
 
-sub read_build_essential (\$) {
+sub read_build_essential {
     my $self = shift;
     my @essential;
     local (*F);
@@ -1744,7 +1690,7 @@ sub read_build_essential (\$) {
     return join( ", ", @essential );
 }
 
-sub expand_dependencies (\$\@) {
+sub expand_dependencies {
     my $self = shift;
     my $dlist = shift;
     my (@to_check, @result, %seen, $check, $dep);
@@ -1782,7 +1728,7 @@ sub expand_dependencies (\$\@) {
     return \@result;
 }
 
-sub expand_virtuals (\$\@) {
+sub expand_virtuals {
     my $self = shift;
     my $dlist = shift;
     my ($dep, %names, @new_dlist);
@@ -1816,7 +1762,7 @@ sub expand_virtuals (\$\@) {
     return \@new_dlist;
 }
 
-sub get_dependencies (\$@) {
+sub get_dependencies {
     my $self = shift;
 
     my %deps;
@@ -1844,7 +1790,7 @@ sub get_dependencies (\$@) {
     return \%deps;
 }
 
-sub get_virtuals (\$@) {
+sub get_virtuals {
     my $self = shift;
 
     my $pipe = $self->get('Session')->pipe_apt_command(
@@ -1876,7 +1822,7 @@ sub get_virtuals (\$@) {
     return \%provided_by;
 }
 
-sub parse_one_srcdep (\$$$) {
+sub parse_one_srcdep {
     my $self = shift;
     my $pkg = shift;
     my $deps = shift;
@@ -1954,7 +1900,7 @@ sub parse_one_srcdep (\$$$) {
     }
 }
 
-sub parse_manual_srcdeps (\$@) {
+sub parse_manual_srcdeps {
     my $self = shift;
     my @for_pkgs = @_;
 
@@ -1971,7 +1917,7 @@ sub parse_manual_srcdeps (\$@) {
     }
 }
 
-sub check_space (\$@) {
+sub check_space {
     my $self = shift;
     my @files = @_;
     my $sum = 0;
@@ -2001,7 +1947,7 @@ sub check_space (\$@) {
 }
 
 # UNUSED
-sub file_for_name (\$$@) {
+sub file_for_name {
     my $self = shift;
     my $name = shift;
     my @x = grep { /^\Q$name\E_/ } @_;
@@ -2009,7 +1955,7 @@ sub file_for_name (\$$@) {
 }
 
 # only called from main loop, but depends on job state.
-sub write_jobs_file (\$$) {
+sub write_jobs_file {
     my $self = shift;
     my $news = shift;
     my $job;
@@ -2038,7 +1984,7 @@ sub write_jobs_file (\$$) {
     }
 }
 
-sub append_to_FINISHED (\$) {
+sub append_to_FINISHED {
     my $self = shift;
 
     my $pkg = $self->get('Package_Version');
@@ -2051,7 +1997,7 @@ sub append_to_FINISHED (\$) {
     }
 }
 
-sub write_srcdep_lock_file (\$\@) {
+sub write_srcdep_lock_file {
     my $self = shift;
     my $deps = shift;
     local( *F );
@@ -2075,7 +2021,7 @@ sub write_srcdep_lock_file (\$\@) {
     close( F );
 }
 
-sub check_srcdep_conflicts (\$\@\@) {
+sub check_srcdep_conflicts {
     my $self = shift;
     my $to_inst = shift;
     my $to_remove = shift;
@@ -2140,7 +2086,7 @@ sub check_srcdep_conflicts (\$\@\@) {
     return @conflict_builds;
 }
 
-sub remove_srcdep_lock_file (\$) {
+sub remove_srcdep_lock_file {
     my $self = shift;
 
     my $f = "$self->{'Session'}->{'Srcdep Lock Dir'}/$$-$self->{'Srcdep Lock Count'}";
@@ -2152,7 +2098,7 @@ sub remove_srcdep_lock_file (\$) {
     }
 }
 
-sub prepare_watches (\$\@@) {
+sub prepare_watches {
     my $self = shift;
     my $dependencies = shift;
     my @instd = @_;
@@ -2186,7 +2132,7 @@ sub prepare_watches (\$\@@) {
     }
 }
 
-sub check_watches (\$) {
+sub check_watches {
     my $self = shift;
     my($prg, @st, %used);
 
@@ -2218,7 +2164,7 @@ sub check_watches (\$) {
     $self->log("\n");
 }
 
-sub should_skip (\$) {
+sub should_skip {
     my $self = shift;
 
     my $pkgv = $self->get('Package_Version');
@@ -2250,7 +2196,7 @@ sub should_skip (\$) {
     return $found;
 }
 
-sub add_givenback (\$$$) {
+sub add_givenback {
     my $self = shift;
     my $pkgv = shift;
     my $time = shift;
@@ -2270,7 +2216,7 @@ sub add_givenback (\$$$) {
     $self->unlock_file("SBUILD-GIVEN-BACK");
 }
 
-sub set_installed (\$@) {
+sub set_installed {
     my $self = shift;
     foreach (@_) {
 	$self->get('Changes')->{'installed'}->{$_} = 1;
@@ -2278,7 +2224,7 @@ sub set_installed (\$@) {
     debug("Added to installed list: @_\n");
 }
 
-sub set_removed (\$@) {
+sub set_removed {
     my $self = shift;
     foreach (@_) {
 	$self->get('Changes')->{'removed'}->{$_} = 1;
@@ -2291,7 +2237,7 @@ sub set_removed (\$@) {
     debug("Added to removed list: @_\n");
 }
 
-sub unset_installed (\$@) {
+sub unset_installed {
     my $self = shift;
     foreach (@_) {
 	delete $self->get('Changes')->{'installed'}->{$_};
@@ -2299,7 +2245,7 @@ sub unset_installed (\$@) {
     debug("Removed from installed list: @_\n");
 }
 
-sub unset_removed (\$@) {
+sub unset_removed {
     my $self = shift;
     foreach (@_) {
 	delete $self->get('Changes')->{'removed'}->{$_};
@@ -2312,7 +2258,7 @@ sub unset_removed (\$@) {
     debug("Removed from removed list: @_\n");
 }
 
-sub df (\$$) {
+sub df {
     my $self = shift;
     my $dir = shift;
 
@@ -2322,7 +2268,7 @@ sub df (\$$) {
     return $free[3];
 }
 
-sub fixup_pkgv (\$$) {
+sub fixup_pkgv {
     my $self = shift;
     my $pkgv = shift;
 
@@ -2333,7 +2279,7 @@ sub fixup_pkgv (\$$) {
     return $pkgv;
 }
 
-sub format_deps (\$@) {
+sub format_deps {
     my $self = shift;
 
     return join( ", ",
@@ -2344,7 +2290,7 @@ sub format_deps (\$@) {
 			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
-sub lock_file (\$$$) {
+sub lock_file {
     my $self = shift;
     my $file = shift;
     my $for_srcdep = shift;
@@ -2393,7 +2339,7 @@ sub lock_file (\$$$) {
     F->close();
 }
 
-sub unlock_file (\$$) {
+sub unlock_file {
     my $self = shift;
     my $file = shift;
     my $lockfile = "$file.lock";
@@ -2401,7 +2347,7 @@ sub unlock_file (\$$) {
     unlink( $lockfile );
 }
 
-sub write_stats (\$$$) {
+sub write_stats {
     my $self = shift;
 
     my $stats_dir = $self->get_conf('STATS_DIR');
@@ -2424,7 +2370,7 @@ sub write_stats (\$$$) {
     $self->unlock_file($stats_dir);
 }
 
-sub debian_files_list (\$$) {
+sub debian_files_list {
     my $self = shift;
     my $files = shift;
 
@@ -2445,7 +2391,7 @@ sub debian_files_list (\$$) {
     return @list;
 }
 
-sub dsc_files (\$$) {
+sub dsc_files {
     my $self = shift;
     my $dsc = shift;
     my @files;
@@ -2467,7 +2413,7 @@ sub dsc_files (\$$) {
 }
 
 # Figure out chroot architecture
-sub chroot_arch (\$) {
+sub chroot_arch {
     my $self = shift;
 
     my $pipe = $self->get('Session')->pipe_command(
@@ -2487,7 +2433,7 @@ sub chroot_arch (\$) {
     return $chroot_arch;
 }
 
-sub open_build_log (\$) {
+sub open_build_log {
     my $self = shift;
 
     my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time')));
@@ -2563,7 +2509,7 @@ sub open_build_log (\$) {
     $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");
 }
 
-sub close_build_log (\$$$$$$$) {
+sub close_build_log {
     my $self = shift;
 
     my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg End Time')));
@@ -2612,7 +2558,7 @@ sub close_build_log (\$$$$$$$) {
     $self->set('Log Stream', undef);
 }
 
-sub log_symlink (\$$$) {
+sub log_symlink {
     my $self = shift;
     my $log = shift;
     my $dest = shift;
@@ -2621,7 +2567,7 @@ sub log_symlink (\$$$) {
     symlink $log, $dest || return;
 }
 
-sub add_time_entry (\$$$) {
+sub add_time_entry {
     my $self = shift;
     my $pkg = shift;
     my $t = shift;
@@ -2648,7 +2594,7 @@ sub add_time_entry (\$$$) {
     untie %db;
 }
 
-sub add_space_entry (\$$$) {
+sub add_space_entry {
     my $self = shift;
     my $pkg = shift;
     my $space = shift;
@@ -2682,7 +2628,7 @@ sub add_space_entry (\$$$) {
     untie %db;
 }
 
-sub log_section(\$$) {
+sub log_section {
     my $self = shift;
     my $section = shift;
 
@@ -2692,7 +2638,7 @@ sub log_section(\$$) {
     $self->log('╚', '═' x 78, '╝', "\n\n");
 }
 
-sub log_subsection(\$$) {
+sub log_subsection {
     my $self = shift;
     my $section = shift;
 
@@ -2702,7 +2648,7 @@ sub log_subsection(\$$) {
     $self->log('└', '─' x 78, '┘', "\n\n");
 }
 
-sub log_subsubsection(\$$) {
+sub log_subsubsection {
     my $self = shift;
     my $section = shift;
 
@@ -2711,7 +2657,7 @@ sub log_subsubsection(\$$) {
     $self->log('─' x (length($section)), "\n\n");
 }
 
-sub log_sep(\$) {
+sub log_sep {
     my $self = shift;
 
     $self->log('─' x 80, "\n");

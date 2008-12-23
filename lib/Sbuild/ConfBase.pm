@@ -37,7 +37,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub init_allowed_keys (\%$) {
+sub init_allowed_keys {
     my $self = shift;
 
     my $validate_program = sub {
@@ -132,7 +132,7 @@ sub init_allowed_keys (\%$) {
     $self->set_allowed_keys(\%common_keys);
 }
 
-sub new ($$) {
+sub new {
     my $class = shift;
 
     my $self  = {};
@@ -145,14 +145,14 @@ sub new ($$) {
     return $self;
 }
 
-sub is_default (\%$$) {
+sub is_default {
     my $self = shift;
     my $key = shift;
 
     return ($self->_get_value($key) == undef);
 }
 
-sub _get_property_value (\%$$$) {
+sub _get_property_value {
     my $self = shift;
     my $key = shift;
     my $property = shift;
@@ -162,21 +162,21 @@ sub _get_property_value (\%$$$) {
     return $entry->{$property};
 }
 
-sub _get_value (\%$$) {
+sub _get_value {
     my $self = shift;
     my $key = shift;
 
     return $self->_get_property_value($key, 'VALUE');
 }
 
-sub _get_default (\%$$) {
+sub _get_default {
     my $self = shift;
     my $key = shift;
 
     return $self->_get_property_value($key, 'DEFAULT');
 }
 
-sub get (\%$) {
+sub get {
     my $self = shift;
     my $key = shift;
 
@@ -196,7 +196,7 @@ sub get (\%$) {
     return $value;
 }
 
-sub _set_property_value (\%$$$) {
+sub _set_property_value {
     my $self = shift;
     my $key = shift;
     my $property = shift;
@@ -207,7 +207,7 @@ sub _set_property_value (\%$$$) {
     return $entry->{$property} = $value;
 }
 
-sub _set_value (\%$$) {
+sub _set_value {
     my $self = shift;
     my $key = shift;
     my $value = shift;
@@ -215,7 +215,7 @@ sub _set_value (\%$$) {
     return $self->_set_property_value($key, 'VALUE', $value);
 }
 
-sub _set_default (\%$$) {
+sub _set_default {
     my $self = shift;
     my $key = shift;
     my $value = shift;
@@ -223,7 +223,7 @@ sub _set_default (\%$$) {
     return $self->_set_property_value($key, 'DEFAULT', $value);
 }
 
-sub set (\%$$) {
+sub set {
     my $self = shift;
     my $key = shift;
     my $value = shift;
@@ -251,7 +251,7 @@ sub set (\%$$) {
     }
 }
 
-sub set_allowed_keys (\%\%) {
+sub set_allowed_keys {
     my $self = shift;
     my $allowed_keys = shift;
 

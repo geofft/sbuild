@@ -30,11 +30,6 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
-sub new ($$);
-sub get_info (\%$);
-sub get_info_all (\%);
-sub find (\%$$$);
-
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -44,7 +39,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$) {
+sub new {
     my $class = shift;
     my $conf = shift;
 
@@ -60,7 +55,7 @@ sub new ($$) {
 
 
 
-sub create (\%$$$) {
+sub create {
     my $self = shift;
     my $distribution = shift;
     my $chroot = shift;
@@ -78,7 +73,7 @@ sub create (\%$$$) {
 }
 
 
-sub find (\%$$$) {
+sub find {
     my $self = shift;
     my $distribution = shift;
     my $chroot = shift;

@@ -38,7 +38,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub init_allowed_keys () {
+sub init_allowed_keys {
     my $self = shift;
 
     $self->SUPER::init_allowed_keys();
@@ -203,7 +203,7 @@ sub init_allowed_keys () {
     $self->set_allowed_keys(\%db_keys);
 }
 
-sub read_config () {
+sub read_config {
     my $self = shift;
 
     # Set here to allow user to override.

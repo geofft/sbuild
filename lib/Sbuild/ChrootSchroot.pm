@@ -35,12 +35,7 @@ BEGIN {
     @EXPORT = qw();
 }
 
-sub new ($$$$$);
-sub begin_session (\$);
-sub end_session (\$);
-sub get_command_internal (\$$$$$);
-
-sub new ($$$$$) {
+sub new {
     my $class = shift;
     my $conf = shift;
     my $chroot_id = shift;
@@ -51,7 +46,7 @@ sub new ($$$$$) {
     return $self;
 }
 
-sub begin_session (\$) {
+sub begin_session {
     my $self = shift;
     my $chroot = $self->get('Chroot ID');
 
@@ -81,7 +76,7 @@ sub begin_session (\$) {
     return 1;
 }
 
-sub end_session (\$) {
+sub end_session {
     my $self = shift;
 
     return if $self->get('Session ID') eq "";
@@ -98,7 +93,7 @@ sub end_session (\$) {
     return 1;
 }
 
-sub get_command_internal (\$$$$$) {
+sub get_command_internal {
     my $self = shift;
     my $options = shift;
 
