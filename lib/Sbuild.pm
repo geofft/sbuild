@@ -225,7 +225,7 @@ sub parse_date ($) {
     $mon =~ y/A-Z/a-z/;
     die "Invalid month name $mon" if !exists $monname{$mon};
     $mon = $monname{$mon};
-    return timelocal($sec, $min, $hour, $day, $mon, $year);
+    return timegm($sec, $min, $hour, $day, $mon, $year);
 }
 
 sub isin ($@) {
