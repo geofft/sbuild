@@ -61,5 +61,7 @@ Buildd.pm: *_command use:
 Unify utility command-line options (help, version) and add verbose/debug
 options.
 
-Sbuild::Conf: Remove _ROLE by splitting out different roles into
-derived classes.
+Copyright details of new files.
+
+ConfBase get/set code doesn't distinguish between undefined and empty
+   hashes (and also arrays?)
