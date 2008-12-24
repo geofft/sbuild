@@ -64,4 +64,5 @@ options.
 Copyright details of new files.
 
 ConfBase get/set code doesn't distinguish between undefined and empty
-   hashes (and also arrays?)
+   hashes (and also arrays?)  Due to Perl automatically creating an
+   instance if the reference is undefined (autovivification).
