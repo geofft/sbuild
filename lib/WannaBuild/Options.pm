@@ -115,6 +115,12 @@ sub parse_options {
 	"n|no-build" => sub {
 	    $self->set_conf('DB_OPERATION', 'set-not-for-us');
 	},
+	"built" => sub {
+	    $self->set_conf('DB_OPERATION', 'set-built');
+	},
+	"attempted" => sub {
+	    $self->set_conf('DB_OPERATION', 'set-attempted');
+	},
 	"give-back" => sub {
 	    $self->set_conf('DB_OPERATION', 'set-needs-build');
 	},
@@ -172,9 +178,9 @@ sub parse_options {
 	"l|list=s" => sub {
 	    die "Unknown state to list: $_[1]\n"
 		if !isin( $_[1], qw(needs-build building uploaded
-				    failed installed dep-wait
-				    not-for-us all failed-removed
-				    dep-wait-removed install-wait
+				    built build-attempted failed
+				    installed dep-wait not-for-us all
+				    failed-removed install-wait
 				    reupload-wait));
 	    $self->set_conf('DB_OPERATION', 'list');
 	    $self->set_conf('DB_LIST_STATE', $_[1]); # <- $list_state
