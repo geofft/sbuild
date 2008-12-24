@@ -89,8 +89,9 @@ exit 1 if !defined($options);
 
 # Temporarily set globals from conf object:
 $mail_logs = "";
-$curr_date = strftime("%Y %b %d %H:%M:%S",localtime);
-$short_date = strftime("%m/%d/%y",localtime);
+my @curr_time = gmtime();
++$curr_date = strftime("%Y %b %d %H:%M:%S",@curr_time);
++$short_date = strftime("%m/%d/%y",@curr_time);
 
 # Undefined: %db %new_vers %merge_srcvers
 
