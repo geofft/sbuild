@@ -94,11 +94,13 @@ sub parse_options {
 	},
 	# TODO: Remove opt_ prefix...
 	"correct-compare" => \$Sbuild::opt_correct_version_cmp,
+	# TODO: remove after buildds no longer pass to wanna-build
 	"N|no-propagation" =>  => sub {
-	    $self->set_conf('DB_NO_PROPAGATION', 1); # <- $opt_no_propagation
+#	    $self->set_conf('DB_NO_PROPAGATION', 1); # <- $opt_no_propagation
 	},
+	# TODO: remove after buildds no longer pass to wanna-build
 	"D|no-down-propagation" => sub {
-	    $self->set_conf('DB_NO_DOWN_PROPAGATION', 1); # <- $opt_no_down_propagation
+#	    $self->set_conf('DB_NO_DOWN_PROPAGATION', 1); # <- $opt_no_down_propagation
 	},
 	# normal actions
 	"take" => sub {

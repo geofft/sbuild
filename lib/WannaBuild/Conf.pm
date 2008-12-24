@@ -170,9 +170,11 @@ sub init_allowed_keys {
 	'DB_LIST_STATE'				=> {
 	    DEFAULT => undef
 	},
+	# TODO: Remove obsolete option.
 	'DB_NO_DOWN_PROPAGATION'		=> {
 	    DEFAULT => 0
 	},
+	# TODO: Remove obsolete option.
 	'DB_NO_PROPAGATION'			=> {
 	    DEFAULT => 0
 	},
