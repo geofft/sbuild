@@ -89,7 +89,7 @@ print "Distribution $dist:\n";
 print "--------------", "-" x length($dist), "\n";
 
 my $total_width = 78;
-my @state_list = qw(Installed Needs-Build Building Uploaded Failed Dep-Wait
+my @state_list = qw(Installed Needs-Build Building Built Build-Attempted Uploaded Failed Dep-Wait
 					Failed-Removed Dep-Wait-Removed
 					Not-For-Us);
 my $statewidth = 0;
@@ -132,8 +132,10 @@ print "\n";
 $total -= $n_state{"Not-For-Us"};
 print percent(qw(Installed)), " up-to-date, ";
 print percent(qw(Installed Uploaded)), " if also counting uploaded pkgs\n";
+print percent(qw(Built Installed Uploaded)), " if also counting built pkgs\n";
 print percent(qw(Needs-Build)), " uncompiled\n";
 print percent(qw(Building)), " currently building (short-term delay)\n";
+print percent(qw(Build-Attempted)), " currently failed building (short-term delay)\n";
 print percent(qw(Failed Dep-Wait)), " failed or waiting (long-term delay)\n";
 
 exit 0;
