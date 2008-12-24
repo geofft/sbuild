@@ -84,16 +84,14 @@ sub init_allowed_keys {
 	    DEFAULT => 'transactions.log'
 	},
 	'DB_DISTRIBUTIONS'			=> {
-	    DEFAULT => [
-		'oldstable-security',
-		'stable',
-		'testing',
-		'unstable',
-		'stable-security',
-		'testing-security'
-		]
-	},
-	'DB_DISTRIBUTION_ORDER'			=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		die "No distributions are defined"
+		    if !defined($self->get($key));
+	    },
 	    DEFAULT => {
 		'oldstable-security'	=> 0,
 		'stable'		=> 1,
@@ -170,9 +168,11 @@ sub init_allowed_keys {
 	'DB_LIST_STATE'				=> {
 	    DEFAULT => undef
 	},
+	# TODO: Remove obsolete option.
 	'DB_NO_DOWN_PROPAGATION'		=> {
 	    DEFAULT => 0
 	},
+	# TODO: Remove obsolete option.
 	'DB_NO_PROPAGATION'			=> {
 	    DEFAULT => 0
 	},
@@ -219,6 +219,8 @@ sub read_config {
     our $basedir = undef;
     our $dbbase = undef;
     our $transactlog = undef;
+    our %distributions;
+    undef %distributions;
     our @distributions;
     undef @distributions;
     our %dist_order;
@@ -239,6 +241,8 @@ sub read_config {
     our $db_base_dir = undef;
     our $db_base_name = undef;
     our $db_transaction_log = undef;
+    our %db_distributions;
+    undef %db_distributions;
     our @db_distributions;
     undef @db_distributions;
     our %db_distribution_order;
@@ -278,8 +282,10 @@ sub read_config {
 	# TODO: Don't allow slash in name
 	$self->set('DB_BASE_NAME', $dbbase);
 	$self->set('DB_TRANSACTION_LOG', $transactlog);
-	$self->set('DB_DISTRIBUTIONS', \@distributions);
-	$self->set('DB_DISTRIBUTION_ORDER', \%dist_order);
+#	$self->set('DB_DISTRIBUTIONS', \@distributions);
+# TODO: Warn if using old value.  Obsolete old options.
+	$self->set('DB_DISTRIBUTIONS', \%dist_order);
+	$self->set('DB_DISTRIBUTIONS', \%distributions);
 	$self->set('DB_SECTIONS', \@sections);
 	$self->set('DB_PACKAGES_SOURCE', $pkgs_source);
 	$self->set('DB_QUINN_SOURCE', $quinn_source);
@@ -293,8 +299,10 @@ sub read_config {
 	$self->set('DB_BASE_DIR', $db_base_dir);
 	$self->set('DB_BASE_NAME', $db_base_name);
 	$self->set('DB_TRANSACTION_LOG', $db_transaction_log);
-	$self->set('DB_DISTRIBUTIONS', \@db_distributions);
-	$self->set('DB_DISTRIBUTION_ORDER', \%db_distribution_order);
+#	$self->set('DB_DISTRIBUTIONS', \@db_distributions);
+# TODO: Warn if using old value.  Obsolete old options.
+	$self->set('DB_DISTRIBUTIONS', \%db_distribution_order);
+	$self->set('DB_DISTRIBUTIONS', \%db_distributions);
 	$self->set('DB_SECTIONS', \@db_sections);
 	$self->set('DB_PACKAGES_SOURCE', $db_packages_source);
 	$self->set('DB_QUINN_SOURCE', $db_quinn_source);
