@@ -93,12 +93,20 @@ sub init_allowed_keys {
 		    if !defined($self->get($key));
 	    },
 	    DEFAULT => {
-		'oldstable-security'	=> 0,
-		'stable'		=> 1,
-		'stable-security'	=> 1,
-		'testing'		=> 2,
-		'testing-security'	=> 2,
-		'unstable'		=> 3
+		'experimental' => { priority => 4 },
+		'unstable' => { priority => 3 },
+		'testing' => { priority => 2 },
+		'testing-security' => { noadw => 1,
+					hidden => 1,
+					priority => 2  },
+		'stable' => { priority => 1 },
+		'stable-security' => { noadw => 1,
+				       hidden => 1,
+				       priority => 1 },
+		'oldstable' => {  priority => 0 },
+		'oldstable-security' => { noadw => 1,
+					  hidden => 1,
+					  priority => 0 },
 	    }
 	},
 	'DB_SECTIONS'				=> {

@@ -2154,7 +2154,7 @@ sub dist_cmp ($$) {
 
     my $dist_order = $conf->get('DB_DISTRIBUTIONS');
 
-    return $dist_order->{$d1} <=> $dist_order->{$d2};
+    return $dist_order->{$d1}->{'priority'} <=> $dist_order->{$d2}->{'priority'};
 }
 
 
