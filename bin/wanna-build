@@ -878,11 +878,15 @@ sub set_one_binnmu ($$) {
 	} else {
 	    $pkg->{'Binary-NMU-Version'} = $conf->get('DB_BIN_NMU_VERSION');
 	    $pkg->{'Binary-NMU-Changelog'} = $conf->get('DB_FAIL_REASON');
+	    $pkg->{'Notes'} = 'out-of-date';
 	    $pkg->{'BuildPri'} = $pkg->{'PermBuildPri'}
 	    if (defined $pkg->{'PermBuildPri'});
 	}
 	log_ta( $pkg, "--binNMU" );
 	$db{$name} = $pkg;
+	return;
+    } elsif ($conf->get('DB_BIN_NMU_VERSION')) {
+	print "${name}_$version: no scheduled binNMU to cancel.\n";
 	return;
     }
 
@@ -892,8 +896,7 @@ sub set_one_binnmu ($$) {
     }
 
     my $fullver = binNMU_version($version,$conf->get('DB_BIN_NMU_VERSION'));
-    if ( version_lesseq( $fullver, $pkg->{'Installed-Version'} ) )
-    {
+    if (version_lesseq($fullver, $pkg->{'Installed-Version'})) {
 	print "$name: binNMU $fullver is not newer than current version $pkg->{'Installed-Version'}\n";
 	return;
     }
@@ -903,6 +906,7 @@ sub set_one_binnmu ($$) {
     delete $pkg->{'Depends'};
     $pkg->{'Binary-NMU-Version'} = $conf->get('DB_BIN_NMU_VERSION');
     $pkg->{'Binary-NMU-Changelog'} = $conf->get('DB_FAIL_REASON');
+    $pkg->{'Notes'} = 'out-of-date';
     log_ta( $pkg, "--binNMU" );
     $db{$name} = $pkg;
     print "${name}: registered for binNMU $fullver\n" if $conf->get('VERBOSE');
