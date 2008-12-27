@@ -290,7 +290,7 @@ sub process () {
 	  parse_quinn_diff(0);
 	  @ARGV = ( $ARGS[2] );
 	  my $build_deps = parse_sources(1);
-	  set_dep_wait( $build_deps, $pkgs );
+	  auto_dep_wait( $build_deps, $pkgs );
 	  clean_db();
 	  last SWITCH;
       };
@@ -371,6 +371,12 @@ sub add_packages ($@) {
 
 	if ($conf->get('DB_OPERATION') eq "set-building") {
 	    add_one_building( $name, $version );
+	}
+	elsif ($conf->get('DB_OPERATION') eq "set-built") {
+	    add_one_built( $name, $version );
+	}
+	elsif ($conf->get('DB_OPERATION') eq "set-attempted") {
+	    add_one_attempted( $name, $version );
 	}
 	elsif ($conf->get('DB_OPERATION') eq "set-uploaded") {
 	    add_one_uploaded( $name, $version );
@@ -453,7 +459,7 @@ sub add_one_building ($$) {
 		    "not $version";
 	    }
 	}
-	elsif ($pkg->{'State'} eq "Building") {
+	elsif (isin($pkg->{'State'},qw(Building Built Build-Attempted))) {
 	    if (version_less($pkg->{'Version'},$version)) {
 		print "$name: Warning: Older version $pkg->{'Version'} ",
 		"is being built by $pkg->{'Builder'}\n";
@@ -615,7 +621,7 @@ sub add_one_uploaded ($$) {
 	print "$name: already uploaded\n";
 	return;
     }
-    if (!isin( $pkg->{'State'}, qw(Building))) {
+    if (!isin( $pkg->{'State'}, qw(Building Built Build-Attempted))) {
 	print "$name: not taken for building (state is $pkg->{'State'}). ",
 	"Skipping.\n";
 	return;
@@ -811,7 +817,7 @@ sub add_one_needsbuild ($$) {
 	    return;
 	}
     }
-    elsif ($state ne "Building") {
+    elsif (!isin( $state, qw(Building Built Build-Attempted))) {
 	print "$name: not taken for building (state is $state).";
 	if ($conf->get('DB_OVERRIDE')) {
 	    print "\n$name: Forcing give-back\n";
@@ -1351,7 +1357,8 @@ sub parse_quinn_diff ($) {
 	       $pkg->{'State'} ne "Not-For-Us" &&
 	       (version_less( $pkg->{'Version'}, $version ) ||
 		($pkg->{'State'} eq "Installed" && version_less($pkg->{'Installed-Version'}, $version)))) {
-	    if ($pkg->{'State'} eq 'Building') {
+	    if (defined( $pkg->{'State'} ) &&
+		isin($pkg->{'State'}, qw(Building Built Build-Attempted))) {
 		send_mail( $pkg->{'Builder'},
 			   "new version of $name (dist=" . $conf->get('DISTRIBUTION') . ")",
 			   "As far as I'm informed, you're currently ".
@@ -1470,10 +1477,12 @@ sub parse_quinn_diff ($) {
 	    next if $name =~ /^_/;
 	    my $pkg = $db{$name};
 	    next if defined $pkg->{'Binary-NMU-Version'};
-	    next if !isin( $pkg->{'State'},
-			   qw(Needs-Build Building Uploaded Failed Dep-Wait) );
-	    my $virtual_delete = $pkg->{'State'} eq 'Failed' ||
-		$pkg->{'State'} eq 'Dep-Wait';
+	    next if !isin($pkg->{'State'},
+			  qw(Needs-Build Building Built
+			     Build-Attempted Uploaded Failed
+			     Dep-Wait));
+	    my $virtual_delete = $pkg->{'State'} eq 'Failed';
+
 	    if (!$quinn_pkgs{$name}) {
 		change_state( \$pkg, $virtual_delete ?
 			      $pkg->{'State'}."-Removed" :
@@ -2050,15 +2059,13 @@ sub change_state ($$;$) {
     }
     my $state = \$pkg->{'State'};
 
-    return if $$state eq $newstate;
-    if (not ((m/^Failed/ =~ $pkg->{'Previous-State'}) and
-	     $$state eq 'Needs-Build' and $newstate eq 'Building'))
-    {
-	$pkg->{'Previous-State'} = $$state || 'unknown';
-    }
+    return if defined($$state) and $$state eq $newstate;
+    $pkg->{'Previous-State'} = $$state if defined($$state);
+
+
     $pkg->{'State-Change'} = $curr_date;
 
-    if ($$state eq 'Failed') {
+    if (defined($$state) and $$state eq 'Failed') {
 	$pkg->{'Old-Failed'} =
 	    "-"x20 . " $pkg->{'Version'} " . "-"x20 . "\n" .
 	    $pkg->{'Failed'} . "\n" .
