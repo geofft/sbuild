@@ -31,7 +31,7 @@ use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 use Sbuild qw(isin);
 use WannaBuild::Conf;
-use Sbuild::Sysconfig qw($version $release_date);
+use Sbuild::Sysconfig;
 use Sbuild::DBInfo;
 use WannaBuild::Options;
 
@@ -138,7 +138,7 @@ die "Bad distribution '" . $conf->get('DISTRIBUTION') . "'\n"
     if !isin($conf->get('DISTRIBUTION'), keys %{$conf->get('DB_DISTRIBUTIONS')});
 
 if ($conf->get('VERBOSE')) {
-    print "wanna-build (Debian sbuild) $version ($release_date) on " . $conf->get('HOSTNAME') . "\n";
+    print "wanna-build (Debian sbuild) $Sbuild::Sysconfig::version ($Sbuild::Sysconfig::release_date) on " . $conf->get('HOSTNAME') . "\n";
     print "Using database " . $conf->get('DB_BASE_NAME') . '/' . $conf->get('DISTRIBUTION') . "\n"
 }
 
