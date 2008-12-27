@@ -29,7 +29,7 @@ use POSIX;
 use FileHandle;
 use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
-use Sbuild qw(isin);
+use Sbuild qw(isin usage_error);
 use WannaBuild::Conf;
 use Sbuild::Sysconfig;
 use Sbuild::DBInfo;
@@ -78,7 +78,6 @@ sub build_deplist ($);
 sub clean_db ();
 sub get_unsatisfied_dep ($$$$);
 sub auto_dep_wait ($$);
-sub usage ();
 sub pkg_version_eq ($$);
 
 our ($mail_logs, $curr_date, %db, %otherdb, %otherdb_lock, %prioval,
@@ -143,8 +142,7 @@ if ($conf->get('VERBOSE')) {
 if (!@ARGV && !isin( $conf->get('DB_OPERATION'), qw(list merge-quinn merge-partial-quinn import export
 				  merge-packages manual-edit maintlock-create
 				  merge-sources maintlock-remove clean-db))) {
-    warn "No packages given.\n";
-    usage();
+    usage_error("wanna-build", "No packages given.");
 }
 
 if (!$conf->get('DB_FAIL_REASON')) {
@@ -2407,55 +2405,6 @@ sub auto_dep_wait ($$) {
             }
 	}
     }
-}
-
-sub usage () {
-    my $prgname;
-    ($prgname = $0) =~ s,^.*/,,;
-    print <<"EOF";
-Usage: $prgname <options...> <package_version...>
-Options:
-    -v, --verbose:    Verbose execution.
-    --take:           Take package for building [default operation]
-    -f, --failed:     Record in database that a build failed due to
-                      deficiencies in the package (that are not
-                      fixable without a new source version).
-    -u, --uploaded:   Record in the database that the packages build
-                      correctly and were uploaded.
-    -n, --no-build:   Record in the database that the packages are not
-                      desired for m68k and should not appear in listings
-                      even if they are out of date.
-    --dep-wait:       Record in the database that the packages are waiting
-                      for some source dependencies to become available
-    --merge-quinn:    Merge quinn-diff output into database.
-    --merge-packages: Merge Packages files into database.
-    --pretend-avail:  Pretend that given packages are available now and give
-                      free packages waiting for them
-    -i SRC_PKG, --info SRC_PKG: Show information for source package
-    -l STATE, --list=STATE: List all packages in state STATE; can be
-                      combined with -U to restrict to a specific user; STATE can
-                      also be 'all'
-    -m MESSAGE, --message=MESSAGE: Give reason why package failed or
-                      source dependency list
-                      (used with -f, --dep-wait, and --binNMU)
-    -o, --override:   Override another user's lock on a package, i.e.
-                      take it over; a notice mail will be sent to the other user
-    -U USER, --user=USER: select user name for which listings should
-                      apply, if not given all users are listed.
-                      if -l is missing, set user name to be entered in db;
-                      usually automatically choosen
-    --import FILE:    Import database from a ASCII file FILE
-    --export FILE:    Export database to a ASCII file FILE
-
-The remaining arguments (depending on operation) usually start with
-"name_version", the trailer is ignored. This allows to pass the names
-of .dsc files, for which file name completion can be used.
-
---merge-packages and --merge-quinn take Package/quin--diff file names
-on the command line or read stdin. --list needs nothing more on the
-command line. --info takes source package names (without version).
-EOF
-    exit 1;
 }
 
 sub pkg_version_eq ($$) {
