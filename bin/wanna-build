@@ -931,6 +931,7 @@ sub set_one_buildpri ($$$) {
     } elsif ($state eq "Failed-Removed") {
 	print "$name: failed previously and doesn't need building. Skipping.\n";
 	return;
+    }
     if (!pkg_version_eq($pkg, $version)) {
 	print "$name: version mismatch ($pkg->{'Version'} registered). ",
 	"Skipping.\n";
