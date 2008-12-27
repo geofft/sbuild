@@ -93,12 +93,20 @@ sub init_allowed_keys {
 		    if !defined($self->get($key));
 	    },
 	    DEFAULT => {
-		'oldstable-security'	=> 0,
-		'stable'		=> 1,
-		'stable-security'	=> 1,
-		'testing'		=> 2,
-		'testing-security'	=> 2,
-		'unstable'		=> 3
+		'experimental' => { priority => 4 },
+		'unstable' => { priority => 3 },
+		'testing' => { priority => 2 },
+		'testing-security' => { noadw => 1,
+					hidden => 1,
+					priority => 2  },
+		'stable' => { priority => 1 },
+		'stable-security' => { noadw => 1,
+				       hidden => 1,
+				       priority => 1 },
+		'oldstable' => {  priority => 0 },
+		'oldstable-security' => { noadw => 1,
+					  hidden => 1,
+					  priority => 0 },
 	    }
 	},
 	'DB_SECTIONS'				=> {
@@ -129,6 +137,9 @@ sub init_allowed_keys {
 	    DEFAULT => undef
 	},
 	'DB_STAT_MAIL'				=> {
+	    DEFAULT => undef
+	},
+	'DB_MAIL_DOMAIN'			=> {
 	    DEFAULT => undef
 	},
 	'DB_WEB_STATS'				=> {
@@ -235,6 +246,7 @@ sub read_config {
     our $notforus_maint = undef;
     our $log_mail = undef;
     our $stat_mail = undef;
+    our $buildd_domain = undef;
     our $web_stats = undef;
 
     # New sbuild.conf format
@@ -257,6 +269,7 @@ sub read_config {
     our $db_notforus_maintainer_email = undef;
     our $db_log_mail = undef;
     our $db_stat_mail = undef;
+    our $db_mail_domain = undef;
     our $db_web_stats = undef;
 
     # read conf files
@@ -294,6 +307,7 @@ sub read_config {
 	$self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $notforus_maint);
 	$self->set('DB_LOG_MAIL', $log_mail);
 	$self->set('DB_STAT_MAIL', $stat_mail);
+	$self->set('DB_MAIL_DOMAIN', $buildd_domain);
 	$self->set('DB_WEB_STATS', $web_stats);
     } else { # Using sbuild.conf
 	$self->set('DB_BASE_DIR', $db_base_dir);
@@ -311,6 +325,7 @@ sub read_config {
 	$self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $db_notforus_maintainer_email);
 	$self->set('DB_LOG_MAIL', $db_log_mail);
 	$self->set('DB_STAT_MAIL', $db_stat_mail);
+	$self->set('DB_MAIL_DOMAIN', $db_mail_domain);
 	$self->set('DB_WEB_STATS', $db_web_stats);
     }
 }
