@@ -532,7 +532,6 @@ sub add_one_building ($$) {
 	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $conf->get('DB_USER');
 	log_ta( $pkg, "--take" );
-	propagate_ta( $pkg, "--take" );
 	$db{$name} = $pkg;
 	print "$name: $ok\n" if $conf->get('VERBOSE');
     }
@@ -648,7 +647,6 @@ sub add_one_uploaded ($$) {
 
     change_state( \$pkg, 'Uploaded' );
     log_ta( $pkg, "--uploaded" );
-    propagate_ta( $pkg, "--uploaded" );
     $db{$name} = $pkg;
     print "$name: registered as uploaded\n" if $conf->get('VERBOSE');
 }
@@ -743,7 +741,6 @@ sub add_one_failed ($$) {
 	delete $pkg->{'BuildPri'};
     }
     log_ta( $pkg, "--failed" );
-    propagate_ta( $pkg, "--failed" );
     $db{$name} = $pkg;
     print "$name: registered as failed\n" if $conf->get('VERBOSE');
 }
@@ -764,7 +761,6 @@ sub add_one_notforus ($$) {
 	delete $pkg->{'Builder'};
 	delete $pkg->{'Depends'};
 	log_ta( $pkg, "--no-build(rev)" );
-	propagate_ta( $pkg, "--no-build(rev)" );
 	print "$name: now not unsuitable anymore\n";
 
 	send_mail( $conf->get('DB_NOTFORUS_MAINTAINER_EMAIL'),
@@ -785,7 +781,6 @@ sub add_one_notforus ($$) {
 	delete $pkg->{'Binary-NMU-Version'};
 	delete $pkg->{'Binary-NMU-Changelog'};
 	log_ta( $pkg, "--no-build" );
-	propagate_ta( $pkg, "--no-build" );
 	print "$name: registered as unsuitable\n" if $conf->get('VERBOSE');
 
 	send_mail( $conf->get('DB_NOTFORUS_MAINTAINER_EMAIL'),
@@ -848,7 +843,6 @@ sub add_one_needsbuild ($$) {
     delete $pkg->{'Builder'};
     delete $pkg->{'Depends'};
     log_ta( $pkg, "--give-back" );
-    propagate_ta( $pkg, "--give-back" );
     $db{$name} = $pkg;
     print "$name: given back\n" if $conf->get('VERBOSE');
 }
@@ -1030,7 +1024,6 @@ sub add_one_depwait ($$) {
     }
     $pkg->{'Depends'} = build_deplist($deplist);
     log_ta( $pkg, "--dep-wait" );
-    propagate_ta( $pkg, "--dep-wait" );
     $db{$name} = $pkg;
     print "$name: registered as waiting for dependencies\n" if $conf->get('VERBOSE');
 }
@@ -1280,7 +1273,6 @@ sub check_dep_wait ($$) {
 	    change_state( \$pkg, 'Needs-Build' );
 	    log_ta( $pkg, $action );
 	    delete $pkg->{'Depends'};
-	    propagate_ta( $pkg, $action ) if $action ne "--merge-packages";
 	    print "$name ($pkg->{'Version'}) has all ",
 	    "dependencies available now\n" if $conf->get('VERBOSE');
 	    $new_vers{$name}++;
