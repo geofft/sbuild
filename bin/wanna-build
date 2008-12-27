@@ -67,7 +67,6 @@ sub read_db ($);
 sub check_entry ($);
 sub write_db ($);
 sub change_state ($$;$);
-sub exists_in_other_dist ($$$);
 sub open_other_db ($);
 sub log_ta ($$;$);
 sub dist_cmp ($$);
@@ -2073,35 +2072,6 @@ sub change_state ($$;$) {
 	delete $pkg->{'Failed-Category'};
     }
     $$state = $newstate;
-}
-
-sub exists_in_other_dist ($$$) {
-    my $name = shift;
-    my $version = shift;
-    my $inst_v_ok = shift;
-    my $dist;
-
-    foreach $dist (keys %{$conf->get('DB_DISTRIBUTIONS')}) {
-	next if $dist eq $conf->get('DISTRIBUTION');
-	next if ! -f db_filename( $dist );
-	next if !open_other_db( $dist );
-	my $odb = $otherdb{$dist};
-	my $pkg = $odb->{$name};
-
-	if (defined($pkg) &&
-	    (version_eq($version, $pkg->{'Version'}) ||
-	     ($inst_v_ok &&
-	      version_eq($version, $pkg->{'Installed-Version'})))) {
-	    my %rv;
-	    foreach (qw(State Builder Failed Old-Failed Depends
-						Installed-Version)) {
-		$rv{$_} = $pkg->{$_} if exists $pkg->{$_};
-	    }
-	    $rv{'Dist'} = $dist;
-	    return \%rv;
-	}
-    }
-    return 0;
 }
 
 sub open_other_db ($) {
