@@ -1033,14 +1033,16 @@ sub parse_sources ($) {
 
     local($/) = ""; # read in paragraph mode
     while( <> ) {
-	my( $version, $arch, $section, $priority, $builddep, $buildconf );
-	/^Package:\s*(\S+)\s*$/mi and $name = $1;
-	/^Version:\s*(\S+)\s*$/mi and $version = $1;
-	/^Architecture:\s*(\S+)\s*$/mi and $arch = $1;
-	/^Section:\s*(\S+)\s*$/mi and $section = $1;
-	/^Priority:\s*(\S+)\s*$/mi and $priority = $1;
-	/^Build-Depends:\s*(.*)\s*$/mi and $builddep = $1;
-	/^Build-Conflicts:\s*(.*)\s*$/mi and $buildconf = $1;
+	my( $version, $arch, $section, $priority, $builddep, $buildconf, $binaries );
+	s/\s*$//m;
+	/^Package:\s*(\S+)$/mi and $name = $1;
+	/^Version:\s*(\S+)$/mi and $version = $1;
+	/^Architecture:\s*(\S+)$/mi and $arch = $1;
+	/^Section:\s*(\S+)$/mi and $section = $1;
+	/^Priority:\s*(\S+)$/mi and $priority = $1;
+	/^Build-Depends:\s*(.*)$/mi and $builddep = $1;
+	/^Build-Conflicts:\s*(.*)$/mi and $buildconf = $1;
+	/^Binary:\s*(.*)$/mi and $binaries = $1;
 
 	next if (defined $srcver{$name} and version_less( $version, $srcver{$name} ));
 	$srcver{$name} = $version;
@@ -1053,7 +1055,9 @@ sub parse_sources ($) {
 	    }
 	}
 
-	$pkgs{$name} = defined $builddep ? $builddep : "";
+	$pkgs{$name}{'dep'} = defined $builddep ? $builddep : "";
+	$pkgs{$name}{'ver'} = $version;
+	$pkgs{$name}{'bin'} = $binaries;
 	my $pkg = $db{$name};
 
 	if (defined $pkg) {
@@ -1077,11 +1081,19 @@ sub parse_sources ($) {
 		    !version_eq( $pkg->{'Version'}, $version));
 	    # Always update priority and section, if available
 	    $pkg->{'Priority'} = $priority, $change++
-		if defined $priority and $pkg->{'Priority'} ne $priority;
-
+		if defined $priority && (!defined($pkg->{'Priority'}) ||
+					 $pkg->{'Priority'} ne $priority);
 	    $pkg->{'Section'} = $section, $change++
-		if defined $section and $pkg->{'Section'} ne $section;
+		if defined $section && (!defined($pkg->{'Section'}) ||
+					$pkg->{'Section'} ne $section);
 	    $db{$name} = $pkg if $change;
+	}
+    }
+    # Now that we only have the latest source version, build the list
+    # of binary packages from the Sources point of view
+    foreach $name (keys %pkgs) {
+	foreach my $bin (split( /\s*,\s*/, $pkgs{$name}{'bin'} ) ) {
+	    $merge_binsrc{$bin} = $name;
 	}
     }
     # remove installed packages that no longer have source available
@@ -1089,7 +1101,6 @@ sub parse_sources ($) {
     foreach $name (keys %db) {
 	next if $name =~ /^_/;
 	my $pkg = $db{$name};
-	next if !isin( $pkg->{'State'}, qw(Installed) );
 	if (not defined($pkgs{$name})) {
 	    change_state( \$pkg, 'deleted' );
 	    log_ta( $pkg, "--merge-sources" );
@@ -1098,19 +1109,22 @@ sub parse_sources ($) {
 		"not in Sources anymore\n"
 		if $conf->get('VERBOSE');
 	    delete $db{$name};
-	} elsif ($full && not defined $merge_srcvers{$name}) {
-	    change_state( \$pkg, 'deleted' );
-	    log_ta( $pkg, "--merge-sources" );
-	    print "$name ($pkg->{'Version'}): ".
-		"deleted from database, because ".
-		"binaries don't exist anymore\n"
-		if $conf->get('VERBOSE');
-	    delete $db{$name};
-	} elsif ($full && version_less( $merge_srcvers{$name}, $pkg->{'Version'})) {
-	    print "$name ($pkg->{'Version'}): ".
-		"package is Installed but binaries are from ".
-		$merge_srcvers{$name}. "\n"
-		if $conf->get('VERBOSE');
+	} else {
+	    next if !isin( $pkg->{'State'}, qw(Installed) );
+	    if ($full && not defined $merge_srcvers{$name}) {
+		change_state( \$pkg, 'deleted' );
+		log_ta( $pkg, "--merge-sources" );
+		print "$name ($pkg->{'Version'}): ".
+		    "deleted from database, because ".
+		    "binaries don't exist anymore\n"
+		    if $conf->get('VERBOSE');
+		delete $db{$name};
+	    } elsif ($full && version_less( $merge_srcvers{$name}, $pkg->{'Version'})) {
+		print "$name ($pkg->{'Version'}): ".
+		    "package is Installed but binaries are from ".
+		    $merge_srcvers{$name}. "\n"
+		    if $conf->get('VERBOSE');
+	    }
 	}
     }
     return \%pkgs;
@@ -1123,27 +1137,46 @@ sub parse_packages () {
 
     local($/) = ""; # read in paragraph mode
     while( <> ) {
-	my( $name, $version, $source, $sourcev, $architecture, $provides );
-	/^Package:\s*(\S+)\s*$/mi and $name = $1;
-	/^Version:\s*(\S+)\s*$/mi and $version = $1;
-	/^Source:\s*(\S+)\s*(\((\S+)\))?$/mi and ($source,$sourcev) = ($1, $3);
-	/^Architecture:\s*(\S+)\s*$/mi and $architecture = $1;
-	/^Provides:\s*(\S+)\s*$/mi and $provides = $1;
+	my( $name, $version, $depends, $source, $sourcev, $architecture, $provides, $binaryv, $binnmu );
+	s/\s*$//m;
+	/^Package:\s*(\S+)$/mi and $name = $1;
+	/^Version:\s*(\S+)$/mi and $version = $1;
+	/^Depends:\s*(.*)$/mi and $depends = $1;
+	/^Source:\s*(\S+)(\s*\((\S+)\))?$/mi and ($source,$sourcev) = ($1, $3);
+	/^Architecture:\s*(\S+)$/mi and $architecture = $1;
+	/^Provides:\s*(.*)$/mi and $provides = $1;
+
 	next if !$name || !$version;
 	next if ($conf->get('ARCH') ne $architecture and $architecture ne "all");
-	next if (defined ($installed->{$name}) and $installed->{$name} ne "" and
-		 version_lesseq( $version, $installed->{$name} ));
-	$installed->{$name} = $version;
+	next if (defined ($installed->{$name}) and $installed->{$name}{'Version'} ne "" and
+		 version_lesseq( $version, $installed->{$name}{'Version'} ));
+	$installed->{$name}{'Version'} = $version;
+	$installed->{$name}{'Depends'} = $depends;
+	$installed->{$name}{'all'} = 1 if $architecture eq "all";
+	undef $installed->{$name}{'Provider'};
+	$installed->{$name}{'Source'} = $source ? $source : $name;
+
 	if ($provides) {
 	    foreach (split( /\s*,\s*/, $provides )) {
-		$installed->{$_} = ""
-		    if not defined ($installed->{$_});
+		if (not defined ($installed->{$_})) {
+		    $installed->{$_}{'Version'} = "";
+		    $installed->{$_}{'Provider'} = $name;
+		}
 	    }
 	}
+	if ( $version =~ /\+b(\d+)$/ ) {
+	    $binnmu = $1;
+	}
 	$version = $sourcev if $sourcev;
+	$binaryv = $version;
+	$binaryv =~ s/\+b\d+$//;
+	$installed->{$name}{'Sourcev'} = $sourcev ? $sourcev : $binaryv;
+	$binaryv .= "+b$binnmu" if defined($binnmu);
+
 	next if $architecture ne $conf->get('ARCH');
 	$name = $source if $source;
-	next if $merge_srcvers{$name} eq $version;
+	next if defined($merge_srcvers{$name}) and $merge_srcvers{$name} eq $version;
+
 	$merge_srcvers{$name} = $version;
 
 	my $pkg = $db{$name};
@@ -1151,14 +1184,14 @@ sub parse_packages () {
 	if (defined $pkg) {
 	    if (isin( $pkg->{'State'}, qw(Not-For-Us)) ||
 		(isin($pkg->{'State'}, qw(Installed)) &&
-		 version_lesseq($version, $pkg->{'Installed-Version'}))) {
+		 version_lesseq($binaryv, $pkg->{'Installed-Version'}))) {
 		print "Skipping $name because State == $pkg->{'State'}\n"
 		    if $conf->get('VERBOSE') >= 2;
 		next;
 	    }
 	    if ($pkg->{'Binary-NMU-Version'} ) {
 		my $nmuver = binNMU_version($pkg->{'Version'}, $pkg->{'Binary-NMU-Version'});
-		if (version_less( $version, $nmuver )) {
+		if (version_less( $binaryv, $nmuver )) {
 		    print "Skipping $name ($version) because have newer ".
 			"version ($nmuver) in db.\n"
 			if $conf->get('VERBOSE') >= 2;
@@ -1182,6 +1215,7 @@ sub parse_packages () {
 		warn "Warning: Package $name was not in uploaded state ".
 		    "before (but in '$pkg->{'State'}').\n";
 		delete $pkg->{'Builder'};
+		delete $pkg->{'Depends'};
 	    }
 	} else {
 	    $pkg = {};
@@ -1190,7 +1224,7 @@ sub parse_packages () {
 
 	change_state( \$pkg, 'Installed' );
 	$pkg->{'Package'} = $name;
-	$pkg->{'Installed-Version'} = $version;
+	$pkg->{'Installed-Version'} = $binaryv;
 	if (defined $pkg->{'PermBuildPri'}) {
 	    $pkg->{'BuildPri'} = $pkg->{'PermBuildPri'};
 	} else {
@@ -1224,7 +1258,7 @@ sub pretend_avail (@) {
 		"(bad format)\n";
 	    next;
 	}
-	$installed->{$name} = $version;
+	$installed->{$name}{'Version'} = $version;
     }
 
     check_dep_wait( "--pretend-avail", $installed );
@@ -1254,7 +1288,7 @@ sub check_dep_wait ($$) {
 	foreach (keys %$deplist) {
 	    if (!exists $installed->{$_} ||
 		($deplist->{$_}->{'Rel'} && $deplist->{$_}->{'Version'} &&
-		 !version_compare( $installed->{$_},
+		 !version_compare( $installed->{$_}{'Version'},
 				   $deplist->{$_}->{'Rel'},
 				   $deplist->{$_}->{'Version'}))) {
 		$allok = 0;
@@ -1268,6 +1302,7 @@ sub check_dep_wait ($$) {
 	  make_needs_build:
 	    change_state( \$pkg, 'Needs-Build' );
 	    log_ta( $pkg, $action );
+	    delete $pkg->{'Builder'};
 	    delete $pkg->{'Depends'};
 	    print "$name ($pkg->{'Version'}) has all ",
 	    "dependencies available now\n" if $conf->get('VERBOSE');
@@ -1294,8 +1329,8 @@ sub parse_quinn_diff ($) {
 
     while( <> ) {
 	my $change = 0;
-	next if !m,^([\w\d/-]*)/			# section
-		   ([\w\d.+-]+)_			# package name
+	next if !m,^([-\w\d/]*)/                        # section
+		   ([-\w\d.+]+)_                        # package name
 		   ([\w\d:.~+-]+)\.dsc\s*		# version
 		   \[([^:]*):				# priority
 		   ([^]]+)\]\s*$,x;			# rest of notes
@@ -1380,46 +1415,6 @@ sub parse_quinn_diff ($) {
 		    "to builder ($pkg->{'Builder'})\n"
 		    if $conf->get('VERBOSE');
 	    }
-	    my $oth_ent;
-	    if ($oth_ent = exists_in_other_dist( $name, $version, 1 )) {
-		my $newstate = '';
-		my $text;
-		my $builder = exists($oth_ent->{'Builder'}) ?
-		    $oth_ent->{'Builder'} : $conf->get('DB_MAINTAINER_EMAIL');
-		if ($oth_ent->{'State'} eq 'Failed') {
-		    $newstate = 'Failed';
-		    $text = "already set to Failed in dist ".
-			"$oth_ent->{'Dist'}; entry copied";
-		}
-		elsif ($oth_ent->{'State'} eq 'Dep-Wait') {
-		    $newstate = 'Dep-Wait';
-		    $text = "already set to Dep-Wait in dist ".
-			"$oth_ent->{'Dist'}; entry copied";
-		}
-
-		if ($newstate) {
-		    change_state( \$pkg, $newstate );
-		    $pkg->{'Package'}  = $name;
-		    $pkg->{'Version'}  = $version;
-		    $pkg->{'Section'}  = $section;
-		    $pkg->{'Priority'} = $priority;
-		    $pkg->{'Notes'}    = $notes;
-		    $pkg->{'Builder'}  = $builder;
-		    my $field;
-		    foreach $field (qw(Failed Old-Failed Depends)) {
-			if ($oth_ent->{$field}) {
-			    $pkg->{$field} = $oth_ent->{$field};
-			}
-			else {
-			    delete $pkg->{$field};
-			}
-		    }
-		    log_ta( $pkg, "--merge-quinn" );
-		    $db{$name} = $pkg;
-		    print "$name ($version) $text\n" if $conf->get('VERBOSE');
-		    next;
-		}
-	    }
 	    change_state( \$pkg, 'Needs-Build' );
 	    $pkg->{'Package'}  = $name;
 	    $pkg->{'Version'}  = $version;
@@ -1440,7 +1435,7 @@ sub parse_quinn_diff ($) {
 	    print "$name: skipping because version in db ".
 		"($pkg->{'Version'}) is >> than ".
 		"what quinn-diff says ($version) ".
-		"(state is $pkg->{'State'}\n"
+		"(state is $pkg->{'State'})\n"
 		if $conf->get('VERBOSE');
 	    $dubious .= "$pkg->{'State'}: ".
 		"db ${name}_$pkg->{'Version'} >> ".
@@ -1515,9 +1510,9 @@ sub send_reupload_mail ($$$$$) {
     my $other_dist = shift;
 
     send_mail( $to,
-	       "Please reupload ${pkg}_${version} for $dist",
+	       "Please reupload ${pkg}_${'Version'} for $dist",
 	       "You have recently built (or are currently building)\n".
-	       "${pkg}_${version} for $other_dist.\n".
+	       "${pkg}_${'Version'} for $other_dist.\n".
 	       "This version is now also needed in the $dist distribution.\n".
 	       "Please reupload the files now present in the Debian archive\n".
 	       "(best with buildd-reupload).\n" );
@@ -1658,9 +1653,8 @@ sub list_packages ($) {
 	next if $name =~ /^_/;
 	$pkg = $db{$name};
 	next if $state ne "all" && $pkg->{'State'} !~ /^\Q$state\E$/i;
-	next if $conf->get('DB_USER') && ((lc($state) eq 'needs-build' and
-			   ((exists($pkg->{'Builder'})) && ($pkg->{'Builder'} ne $conf->get('DB_USER')))) ||
-			  (lc($state) ne 'needs-build' and $pkg->{'Builder'} ne $conf->get('DB_USER')));
+	next if $conf->get('DB_USER') && (lc($state) ne 'needs-build' &&
+					  $pkg->{'Builder'} ne $conf->get('DB_USER'));
 	next if $conf->get('DB_CATEGORY') && $pkg->{'State'} eq "Failed" &&
 	    $pkg->{'Failed-Category'} ne $conf->get('DB_CATEGORY');
 	next if ($conf->get('DB_LIST_MIN_AGE') > 0 &&
@@ -2251,45 +2245,46 @@ sub parse_srcdeplist ($$$) {
 
     foreach $dep (split( /\s*,\s*/, $deps )) {
 	my @alts = split( /\s*\|\s*/, $dep );
+        # Anything with an | is ignored, as it can be configured on a
+        # per-buildd basis what will be installed
+        next if $#alts != 0;
 	$_ = shift @alts;
-#	foreach (@alts) {
-	if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
-	    warn( "parse_srcdeplist: bad dependency $_\n" );
-	    next;
-	}
-	my($dep, $rel, $relv, $archlist) = ($1, $3, $4, $6);
-	if ($archlist) {
-	    $archlist =~ s/^\s*(.*)\s*$/$1/;
-	    my @archs = split( /\s+/, $archlist );
-	    my ($use_it, $ignore_it, $include) = (0, 0, 0);
-	    foreach (@archs) {
-		if (/^!/) {
-		    $ignore_it = 1 if substr($_, 1) eq $arch;
-		}
-		else {
-		    $use_it = 1 if $_ eq $arch;
-		    $include = 1;
-		}
-	    }
-	    warn "Warning: inconsistent arch restriction on ",
+        if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+            warn( "parse_srcdeplist: bad dependency $_\n" );
+            next;
+        }
+        my($dep, $rel, $relv, $archlist) = ($1, $3, $4, $6);
+        if ($archlist) {
+            $archlist =~ s/^\s*(.*)\s*$/$1/;
+            my @archs = split( /\s+/, $archlist );
+            my ($use_it, $ignore_it, $include) = (0, 0, 0);
+            foreach (@archs) {
+                if (/^!/) {
+                    $ignore_it = 1 if substr($_, 1) eq $arch;
+                } else {
+                    $use_it = 1 if $_ eq $arch;
+                    $include = 1;
+                }
+            }
+            warn "Warning: inconsistent arch restriction on ",
 	    "$pkg: $dep depedency\n"
 		if $ignore_it && $use_it;
-	    next if $ignore_it || ($include && !$use_it);
-	}
-	my $neg = 0;
-	if ($dep =~ /^!/) {
-	    $dep =~ s/^!\s*//;
-	    $neg = 1;
-	}
-	my $result;
-	$result->{'Package'} = $dep;
-	$result->{'Neg'} = $neg;
-	if ($rel && $relv) {
-	    $result->{'Rel'} = $rel;
-	    $result->{'Version'} = $relv;
-	}
-	push @results, $result;
-#	}
+            next if $ignore_it || ($include && !$use_it);
+        }
+        my $neg = 0;
+        if ($dep =~ /^!/) {
+            $dep =~ s/^!\s*//;
+            $neg = 1;
+        }
+        my $result;
+        $result->{'Package'} = $dep;
+        $result->{'Neg'} = $neg;
+        if ($rel && $relv) {
+            $result->{'Rel'} = $rel;
+            $result->{'Version'} = $relv;
+        }
+        push @results, $result;
+
     }
     return \@results;
 }
