@@ -38,6 +38,8 @@ use WannaBuild::Options;
 sub process ();
 sub add_packages ($@);
 sub add_one_building ($$);
+sub add_one_attempted ($$);
+sub add_one_built ($$);
 sub add_one_uploaded ($$);
 sub add_one_failed ($$);
 sub add_one_notforus ($$);
@@ -76,6 +78,8 @@ sub parse_deplist ($;$);
 sub parse_srcdeplist ($$$);
 sub build_deplist ($);
 sub clean_db ();
+sub get_unsatisfied_dep ($$$$);
+sub auto_dep_wait ($$);
 sub set_dep_wait ($$);
 sub usage ();
 sub pkg_version_eq ($$);
@@ -535,6 +539,69 @@ sub add_one_building ($$) {
     else {
 	print "$name: NOT OK!\n  $reason\n";
     }
+}
+
+sub add_one_attempted ($$) {
+	my $name = shift;
+	my $version = shift;
+	my $pkg = $db{$name};
+
+	if (!defined($pkg)) {
+		print "$name: not registered yet.\n";
+		return;
+	}
+
+	if ($pkg->{'State'} ne "Building" ) {
+		print "$name: not taken for building (state is $pkg->{'State'}). ",
+			  "Skipping.\n";
+		return;
+	}
+	if ($pkg->{'Builder'} ne $conf->get('USERNAME')) {
+		print "$name: not taken by you, but by $pkg->{'Builder'}. Skipping.\n";
+		return;
+	}
+	elsif ( !pkg_version_eq($pkg, $version) ) {
+		print "$name: version mismatch ".
+			  "$(pkg->{'Version'} ".
+			  "by $pkg->{'Builder'})\n";
+		return;
+	}
+
+	change_state( \$pkg, 'Build-Attempted' );
+	log_ta( $pkg, "--attempted" );
+	$db{$name} = $pkg;
+	print "$name: registered as uploaded\n" if $conf->get('VERBOSE');
+}
+
+sub add_one_built ($$) {
+	my $name = shift;
+	my $version = shift;
+	my $pkg = $db{$name};
+
+	if (!defined($pkg)) {
+		print "$name: not registered yet.\n";
+		return;
+	}
+
+	if ($pkg->{'State'} ne "Building" ) {
+		print "$name: not taken for building (state is $pkg->{'State'}). ",
+			  "Skipping.\n";
+		return;
+	}
+	if ($pkg->{'Builder'} ne $conf->get('USERNAME')) {
+		print "$name: not taken by you, but by $pkg->{'Builder'}. Skipping.\n";
+		return;
+	}
+	elsif ( !pkg_version_eq($pkg, $version) ) {
+		print "$name: version mismatch ".
+			  "$(pkg->{'Version'} ".
+			  "by $pkg->{'Builder'})\n";
+		return;
+	}
+	change_state( \$pkg, 'Built' );
+	log_ta( $pkg, "--built" );
+	$db{$name} = $pkg;
+	print "$name: registered as built\n" if $conf->get('VERBOSE');
 }
 
 sub add_one_uploaded ($$) {
@@ -2288,8 +2355,7 @@ sub clean_db () {
     %db = %new_db;
 }
 
-
-sub get_unsatisfied_dep {
+sub get_unsatisfied_dep ($$$$) {
     my $bd  = shift;
     my $pkgs = shift;
     my $dep = shift;
@@ -2366,7 +2432,7 @@ sub get_unsatisfied_dep {
     return "";
 }
 
-sub auto_dep_wait {
+sub auto_dep_wait ($$) {
     my $bd = shift;
     my $pkgs = shift;
     my $key;
