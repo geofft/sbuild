@@ -414,8 +414,6 @@ sub add_one_building ($$) {
 	elsif ($pkg->{'State'} =~ /^Dep-Wait/) {
 	    $ok = 0;
 	    $reason = "not all source dependencies available yet";
-	    $reason .= "\nalso the package doesn't need builing"
-		if $pkg->{'State'} eq 'Dep-Wait-Removed';
 	}
 	elsif ($pkg->{'State'} eq "Uploaded" &&
 	       (version_lesseq($version, $pkg->{'Version'}))) {
@@ -668,10 +666,6 @@ sub add_one_failed ($$) {
     }
     elsif ($state eq "Failed-Removed") {
 	print "$name: failed previously and doesn't need building. Skipping.\n";
-	return;
-    }
-    elsif ($state eq "Dep-Wait-Removed") {
-	print "$name: waiting for dependencies and doesn't need building. Skipping.\n";
 	return;
     }
     elsif ($state eq "Installed") {
@@ -927,10 +921,6 @@ sub set_one_buildpri ($$$) {
     } elsif ($state eq "Failed-Removed") {
 	print "$name: failed previously and doesn't need building. Skipping.\n";
 	return;
-    } elsif ($state eq "Dep-Wait-Removed") {
-	print "$name: dep-wait previously and doesn't need building. Skipping.\n";
-	return;
-    }
     if (!pkg_version_eq($pkg, $version)) {
 	print "$name: version mismatch ($pkg->{'Version'} registered). ",
 	"Skipping.\n";
@@ -977,10 +967,6 @@ sub add_one_depwait ($$) {
     }
     elsif ($state eq "Failed-Removed") {
 	print "$name: failed previously and doesn't need building. Skipping.\n";
-	return;
-    }
-    elsif ($state eq "Dep-Wait-Removed") {
-	print "$name: already in Dep-Wait and doesn't need building. Skipping.\n";
 	return;
     }
     elsif ($state eq "Installed") {
@@ -1999,10 +1985,10 @@ sub check_entry ($) {
 	}
 	# check state field
 	die "Bad state $pkg->{'State'} of package $pkg->{Package}\n"
-	    if !isin( $pkg->{'State'},
-		      qw(Needs-Build Building Uploaded Installed Dep-Wait
-					 Dep-Wait-Removed Failed Failed-Removed Not-For-Us
-					 ) );
+	    if !isin($pkg->{'State'},
+		     qw(Needs-Build Building Built Build-Attempted
+			Uploaded Installed Dep-Wait Failed
+			Failed-Removed Not-For-Us) );
     }
     if (exists $pkg->{'User'}) {
 	if (!exists $pkg->{'Last-Seen'}) {
