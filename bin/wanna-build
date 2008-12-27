@@ -67,7 +67,6 @@ sub read_db ($);
 sub check_entry ($);
 sub write_db ($);
 sub change_state ($$;$);
-sub propagate_ta ($$);
 sub exists_in_other_dist ($$$);
 sub open_other_db ($);
 sub log_ta ($$;$);
@@ -2082,42 +2081,6 @@ sub change_state ($$;$) {
 	delete $pkg->{'Failed-Category'};
     }
     $$state = $newstate;
-}
-
-sub propagate_ta ($$) {
-    my $pkg = shift;
-    my $action = shift;
-    my $dist;
-
-    return if $conf->get('DB_NO_PROPAGATION');
-
-    foreach $dist (keys %{$conf->get('DB_DISTRIBUTIONS')}) {
-	next if $dist eq $conf->get('DISTRIBUTION');
-	next if dist_cmp ($dist, $conf->get('DISTRIBUTION')) == 0;
-	next if $conf->get('DB_NO_DOWN_PROPAGATION') && dist_cmp($dist, $conf->get('DISTRIBUTION')) < 0;
-	next if ! -f db_filename( $dist );
-	next if !open_other_db( $dist );
-	my $odb = $otherdb{$dist};
-
-	my $pstate = $pkg->{'Previous-State'};
-	my $opkg   = $odb->{$pkg->{'Package'}};
-	if (defined($opkg) &&
-	    version_eq($pkg->{'Version'}, $opkg->{'Version'}) &&
-	    ($pstate eq $opkg->{'State'})) {
-	    delete $odb->{$pkg->{'Package'}};
-	    $opkg   = $odb->{$pkg->{'Package'}};
-	    # it seems the following can trigger a Perl bug, so copy elements
-	    # of the hash explicitly:
-	    # %{$odb->{$name}} = %{$pkg};
-	    foreach (keys %$pkg) {
-		$opkg->{$_} = $pkg->{$_};
-	    }
-	    log_ta( $pkg, $action, $dist );
-	    print "$pkg->{'Package'}: Propagating new state $pkg->{'State'} ".
-		"also to $dist database.\n";
-	    $odb->{$pkg->{'Package'}} = $opkg;
-	}
-    }
 }
 
 sub exists_in_other_dist ($$$) {
