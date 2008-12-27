@@ -78,7 +78,6 @@ sub build_deplist ($);
 sub clean_db ();
 sub get_unsatisfied_dep ($$$$);
 sub auto_dep_wait ($$);
-sub set_dep_wait ($$);
 sub usage ();
 sub pkg_version_eq ($$);
 
@@ -2406,43 +2405,6 @@ sub auto_dep_wait ($$) {
                 }
                 last;
             }
-	}
-    }
-}
-
-sub set_dep_wait ($$) {
-    my $bd = shift;
-    my $pkgs = shift;
-    my $key;
-    my $dep;
-
-    foreach $key (keys %new_vers) {
-	my $pkg = $db{$key};
-	next
-	    if defined $pkg and $pkg->{'State'} ne "Needs-Build";
-	my $deps;
-	$deps = parse_srcdeplist($key,$bd->{$key},$conf->get('ARCH'));
-	my $change = 0;
-	foreach $dep (@$deps) {
-	    if ($dep->{'Rel'} and $pkgs->{$dep->{'Package'}} ne "") {
-	        next if $dep->{'Rel'} !~ /^>/;
-		if ($dep->{'Neg'} == 0) {
-		    if (!version_compare( $pkgs->{$dep->{'Package'}}, $dep->{'Rel'}, $dep->{'Version'} )) {
-			if (version_compare( $dep->{'Version'}, ">>", $pkgs->{$dep->{'Package'}} )) {
-			    $change++;
-			    my $deplist = parse_deplist( $pkg->{'Depends'}, 0 );
-			    $deplist->{$dep->{'Package'}} = $dep;
-			    $pkg->{'Depends'} = build_deplist($deplist);
-			}
-		    }
-		}
-	    }
-	}
-	if ($change) {
-	    change_state( \$pkg, 'Dep-Wait' );
-	    log_ta( $pkg, "--merge-all" );
-	    $db{$key} = $pkg;
-	    print "Auto-Dep-Waiting ${key}_$pkg->{'Version'}\n" if $conf->get('VERBOSE');
 	}
     }
 }
