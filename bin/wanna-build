@@ -2214,18 +2214,30 @@ sub parse_deplist ($;$) {
     my %result;
 
     foreach (split( /\s*,\s*/, $deps )) {
-	if (!/^(\S+)\s*(\(\s*(>>|>=)\s*(\S+)\s*\))?\s*$/) {
-	    return 0 if $verify;
-	    warn( "parse_deplist: bad dependency $_\n" );
-	    next;
-	}
-	next if $verify;
-	my($dep, $rel, $relv) = ($1, $3, $4);
-	$result{$dep}->{'Package'} = $dep;
-	if ($rel && $relv) {
-	    $result{$dep}->{'Rel'} = $rel;
-	    $result{$dep}->{'Version'} = $relv;
-	}
+        if ($verify) {
+            # verification requires > starting prompts, no | crap
+            if (!/^(\S+)\s*(\(\s*(>(?:[>=])?)\s*(\S+)\s*\))?\s*$/) {
+                return 0;
+            }
+            next;
+        }
+        my @alts = split( /\s*\|\s*/, $_ );
+        # Anything with an | is ignored, as it can be configured on a
+        # per-buildd basis what will be installed
+        next if $#alts != 0;
+        $_ = shift @alts;
+
+        if (!/^(\S+)\s*(\(\s*(>=|=|==|>|>>|<<|<=)\s*(\S+)\s*\))?\s*$/) {
+            warn( "parse_deplist: bad dependency $_\n" );
+            next;
+        }
+        my($dep, $rel, $relv) = ($1, $3, $4);
+        $rel = ">>" if defined($rel) and $rel eq ">";
+        $result{$dep}->{'Package'} = $dep;
+        if ($rel && $relv) {
+            $result{$dep}->{'Rel'} = $rel;
+            $result{$dep}->{'Version'} = $relv;
+        }
     }
     return 1 if $verify;
     return \%result;
