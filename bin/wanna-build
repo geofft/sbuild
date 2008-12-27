@@ -2090,17 +2090,9 @@ sub open_other_db ($) {
 sub log_ta ($$;$) {
     my $pkg = shift;
     my $action = shift;
-    my $dist = shift;
-    my $db;
-    if ($dist) {
-	return if !open_other_db( $dist );
-	$db = $otherdb{$dist};
-	$pkg = $db{$pkg->{'Package'}};
-    }
-    else {
-	$dist = $conf->get('DISTRIBUTION');
-	$db = \%db;
-    }
+
+    my $dist = $conf->get('DISTRIBUTION');
+    my $db = \%db;
     my $str;
     my $prevstate;
 
