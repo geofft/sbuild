@@ -2138,10 +2138,16 @@ sub send_mail ($$$) {
     my $text = shift;
 
     my $from = $conf->get('DB_MAINTAINER_EMAIL');
+    my $domain = $conf->get('DB_MAIL_DOMAIN');
 
-    $from .= "\@" . $conf->get('HOSTNAME') if $from !~ /\@/;
+    if (defined($domain)) {
+	$from .= "\@$domain" if $from !~ /\@/;
+	$to .= '@$domain' if $to !~ /\@/;
+    } else {
+	$from .= "\@" . $conf->get('HOSTNAME') if $from !~ /\@/;
+	$to .= '@' . $conf->get('HOSTNAME') if $to !~ /\@/;
+    }
 
-    $to .= '@' . $conf->get('HOSTNAME') if $to !~ /\@/;
     $text =~ s/^\.$/../mg;
     local $SIG{'PIPE'} = 'IGNORE';
     open( PIPE,  "| " . $conf->get('MAILPROG') . " -oem $to" )
