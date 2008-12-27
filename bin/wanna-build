@@ -72,7 +72,7 @@ sub log_ta ($$;$);
 sub dist_cmp ($$);
 sub send_mail ($$$);
 sub db_filename ($);
-sub parse_deplist ($$);
+sub parse_deplist ($;$);
 sub parse_srcdeplist ($$$);
 sub build_deplist ($);
 sub clean_db ();
@@ -81,7 +81,7 @@ sub usage ();
 sub pkg_version_eq ($$);
 
 our ($mail_logs, $curr_date, %db, %otherdb, %otherdb_lock, %prioval,
-     %sectval, %catval, $short_date, %new_vers, %merge_srcvers);
+     %sectval, %catval, $short_date, %new_vers, %merge_binsrc, %merge_srcvers);
 
 my $conf = WannaBuild::Conf->new();
 exit 1 if !defined($conf);
@@ -2186,7 +2186,7 @@ sub db_filename ($) {
 }
 
 # for parsing input to dep-wait
-sub parse_deplist ($$) {
+sub parse_deplist ($;$) {
     my $deps = shift;
     my $verify = shift;
     my %result;
@@ -2288,6 +2288,131 @@ sub clean_db () {
     %db = %new_db;
 }
 
+
+sub get_unsatisfied_dep {
+    my $bd  = shift;
+    my $pkgs = shift;
+    my $dep = shift;
+    my $savedep = shift;
+
+    my $pkgname = $dep->{'Package'};
+
+    if (defined $pkgs->{$pkgname}{'Provider'}) {
+        # provides.  leave them for buildd/sbuild.
+        return "";
+    }
+
+    # check cache
+    return $pkgs->{$pkgname}{'Unsatisfied'} if $savedep and defined($pkgs->{$pkgname}{'Unsatisfied'});
+
+    # Return unsatisfied deps to a higher caller to process
+    if ((!defined($pkgs->{$pkgname})) or
+        (defined($dep->{'Rel'}) and !version_compare( $pkgs->{$pkgname}{'Version'}, $dep->{'Rel'}, $dep->{'Version'} ) ) ) {
+        my %deplist;
+        $deplist{$pkgname} = $dep;
+        my $deps = build_deplist(\%deplist);
+        $pkgs->{$pkgname}{'Unsatisfied'} = $deps if $savedep;
+        return $deps;
+    }
+
+    # set cache to "" to avoid infinite recursion
+    $pkgs->{$pkgname}{'Unsatisfied'} = "" if $savedep;
+
+    if (defined $pkgs->{$dep->{'Package'}}{'Depends'}) {
+        my $deps = parse_deplist( $pkgs->{$dep->{'Package'}}{'Depends'} );
+        foreach (keys %$deps) {
+            $dep = $$deps{$_};
+            # recur on dep.
+            my $ret = get_unsatisfied_dep($bd,$pkgs,$dep,1);
+            if ($ret ne "") {
+                my $retdep = parse_deplist( $ret );
+                foreach (keys %$retdep) {
+                    $dep = $$retdep{$_};
+
+                    $dep->{'Rel'} = '>=' if defined($dep->{'Rel'}) and $dep->{'Rel'} =~ '^=';
+
+                    if (defined($dep->{'Rel'}) and $dep->{'Rel'} =~ '^>' and defined ($pkgs->{$dep->{'Package'}}) and
+                        version_compare($bd->{$pkgs->{$dep->{'Package'}}{'Source'}}{'ver'},'>>',$pkgs->{$dep->{'Package'}}{'Sourcev'})) {
+                        if (not defined($merge_binsrc{$dep->{'Package'}})) {
+                            # the uninstallable package doesn't exist in the new source; look for something else that does.
+                            delete $$retdep{$dep->{'Package'}};
+                            foreach (sort (split( /\s*,\s*/, $bd->{$pkgs->{$dep->{'Package'}}{'Source'}}{'bin'}))) {
+                                next if ($pkgs->{$_}{'all'} or not defined $pkgs->{$_}{'Version'});
+                                $dep->{'Package'} = $_;
+                                $dep->{'Rel'} = '>>';
+                                $dep->{'Version'} = $pkgs->{$_}{'Version'};
+                                $$retdep{$_} = $dep;
+                                last;
+                            }
+                        }
+                    } else {
+                        # sanity check to make sure the depending binary still exists, and the depended binary exists and dep-wait on a new version of it
+                        if ( defined($merge_binsrc{$pkgname}) and defined($pkgs->{$dep->{'Package'}}{'Version'}) ) {
+                            delete $$retdep{$dep->{'Package'}};
+                            $dep->{'Package'} = $pkgname;
+                            $dep->{'Rel'} = '>>';
+                            $dep->{'Version'} = $pkgs->{$pkgname}{'Version'};
+                            $$retdep{$pkgname} = $dep;
+                        }
+                        delete $$retdep{$dep->{'Package'}} if (defined ($dep->{'Rel'}) and $dep->{'Rel'} =~ '^>');
+                    }
+                }
+                $ret = build_deplist($retdep);
+                $pkgs->{$pkgname}{'Unsatisfied'} = $ret if $savedep;
+                return $ret;
+            }
+        }
+    }
+    return "";
+}
+
+sub auto_dep_wait {
+    my $bd = shift;
+    my $pkgs = shift;
+    my $key;
+
+    my $distribution = $conf->get('DISTRIBUTION');
+
+    return if (defined ($conf->get('DB_DISTRIBUTIONS')->{'$distribution'}) &&
+	       defined ($conf->get('DB_DISTRIBUTIONS')->{'$distribution'}->{'noadw'}));
+
+    # We need to walk all of needs-build, as any new upload could make
+    # something in needs-build have uninstallable deps
+    foreach $key (keys %db) {
+	my $pkg = $db{$key};
+	next
+	    if not defined $pkg or $pkg->{'State'} ne "Needs-Build";
+	my $srcdeps = parse_srcdeplist($key,$bd->{$key}{'dep'},
+				       $conf->get('ARCH'));
+        foreach my $srcdep (@$srcdeps) {
+            next if $srcdep->{'Neg'} != 0; # we ignore conflicts atm
+            my $rc = get_unsatisfied_dep($bd,$pkgs,$srcdep,0);
+            if ($rc ne "") {
+                # set dep-wait
+                my $deplist = parse_deplist( $pkg->{'Depends'} );
+                my $newdeps = parse_deplist( $rc );
+                my $change = 0;
+                foreach (%$newdeps) {
+                    my $dep = $$newdeps{$_};
+                    # ensure we're not waiting on ourselves, or a package that has been removed
+                    next if (not defined($merge_binsrc{$dep->{'Package'}})) or ($merge_binsrc{$dep->{'Package'}} eq $key);
+                    if ($dep->{'Rel'} =~ '^>') {
+                        $deplist->{$dep->{'Package'}} = $dep;
+                        $change++;
+                    }
+                }
+                if ($change) {
+                    $pkg->{'Depends'} = build_deplist($deplist);
+                    change_state( \$pkg, 'Dep-Wait' );
+                    log_ta( $pkg, "--merge-all" );
+                    $db{$key} = $pkg;
+                    print "Auto-Dep-Waiting ${key}_$pkg->{'Version'} to $pkg->{'Depends'}\n" if $conf->get('VERBOSE');
+                }
+                last;
+            }
+	}
+    }
+}
 
 sub set_dep_wait ($$) {
     my $bd = shift;
