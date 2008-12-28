@@ -29,8 +29,8 @@ use POSIX;
 use Sbuild qw(isin usage_error);
 use WannaBuild::Conf;
 use Sbuild::Sysconfig;
-use Sbuild::DBInfo;
-use Sbuild::DB;
+use Sbuild::DB::Info;
+use Sbuild::DB::MLDBM;
 use WannaBuild::Options;
 
 sub process ();
