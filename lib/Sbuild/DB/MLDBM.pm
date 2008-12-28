@@ -1,5 +1,5 @@
 #
-# DB.pm: MLDBM Database abstraction
+# MLDBM.pm: MLDBM Database abstraction
 # Copyright © 1998      Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
 # Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
@@ -20,7 +20,7 @@
 #
 #######################################################################
 
-package Sbuild::DB;
+package Sbuild::DB::MLDBM;
 
 use strict;
 use warnings;
@@ -30,13 +30,13 @@ use GDBM_File;
 use MLDBM qw(GDBM_File Storable);
 
 use Sbuild qw(debug isin);
-use Sbuild::Base;
+use Sbuild::DB::Base;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::Base);
+    @ISA = qw(Exporter Sbuild::DB::Base);
 
     @EXPORT = qw();
 }
