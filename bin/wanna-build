@@ -72,7 +72,7 @@ sub get_unsatisfied_dep ($$$$);
 sub auto_dep_wait ($$);
 sub pkg_version_eq ($$);
 
-our ($mail_logs, $curr_date, $db, %dbs, %prioval,
+our ($mail_logs, $curr_date, $db, %databases, %prioval,
      %sectval, %catval, $short_date, %new_vers, %merge_binsrc, %merge_srcvers);
 
 my $conf = WannaBuild::Conf->new();
@@ -184,13 +184,13 @@ if (!-f db_filename( $conf->get('DISTRIBUTION') ) && !$conf->get('DB_CREATE')) {
 }
 END {
 
-    foreach (keys %dbs) {
-	$dbs{$_}->close();
-	undef $dbs{$_};
+    foreach (keys %databases) {
+	$databases{$_}->close();
+	undef $databases{$_};
     }
 }
 
-# TODO: Use %dbs only.
+# TODO: Use %databases only.
 $db = open_db($conf->get('DISTRIBUTION'));
 
 process();
@@ -1719,7 +1719,7 @@ sub info_packages (@) {
     foreach $name (@_) {
 	$name =~ s/_.*$//; # strip version
 	foreach $dist (@dists) {
-	    my $db = $dbs{$dist};
+	    my $db = $databases{$dist};
 	    my $pname = "$name" . ($conf->get('DB_INFO_ALL_DISTS') ? "($dist)" : "");
 
 	    $pkg = $db->get_package($name);
@@ -1897,14 +1897,14 @@ sub change_state ($$) {
 sub open_db ($) {
     my $dist = shift;
 
-    my $newdb = $dbs{$dist};
+    my $newdb = $databases{$dist};
 
     if (!defined($newdb)) {
 	$newdb = Sbuild::DB->new($conf);
 	$newdb->open(db_filename($dist));
 	$newdb->lock();
 
-	$dbs{$dist} = $newdb;
+	$databases{$dist} = $newdb;
     }
 
     return $newdb;
