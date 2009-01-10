@@ -20,6 +20,8 @@
 CREATE DATABASE "wannabuild" ENCODING 'UTF8';
 \c wannabuild
 
+\i version.sql
+
 CREATE TABLE architectures (
 	name text	       -- arch name
 	  CONSTRAINT arch_name PRIMARY KEY
@@ -173,7 +175,7 @@ CREATE TABLE builders (
 CREATE TABLE sources (
 	name text		-- builder name
 	  NOT NULL,
-	version text NOT NULL,	-- package version number
+	version debversion NOT NULL,	-- package version number
 	section_name text	-- package section
 	  CONSTRAINT source_sect REFERENCES sections(name)
 	  NOT NULL,
@@ -199,13 +201,13 @@ CREATE TABLE sources (
 --- Arch-specific package information (from Packages)
 CREATE TABLE binaries (
 	name text NOT NULL,	-- builder name
-	version text NOT NULL,	-- package version number
+	version debversion NOT NULL,	-- package version number
 	arch_name text		-- package
 	  CONSTRAINT bin_arch REFERENCES architectures(name)
 	  NOT NULL,
        	source_name text		-- package source
 	  NOT NULL,
-	source_version text NOT NULL,	-- package source version number
+	source_version debversion NOT NULL,	-- package source version number
 	section_name text	-- package section
 	  CONSTRAINT bin_sect REFERENCES package_sections(name)
 	  NOT NULL,
@@ -242,7 +244,7 @@ INSERT INTO states (name) VALUES ('uploaded');
 CREATE TABLE dist_sources (
        	source_name text		-- package
 	  NOT NULL,
-	source_version text NOT NULL,	-- package version number
+	source_version debversion NOT NULL,	-- package version number
 	distribution_name text		-- distribution
 	  CONSTRAINT dist_src_dist REFERENCES distributions(name)
 	  NOT NULL,
@@ -254,7 +256,7 @@ CREATE TABLE dist_sources (
 CREATE TABLE dist_binaries (
        	pkg_name text			-- package
 	  NOT NULL,
-	pkg_version text NOT NULL,	-- package version number
+	pkg_version debversion NOT NULL,	-- package version number
 	arch_name text		-- package
 	  CONSTRAINT dist_bin_arch REFERENCES architectures(name)
 	  NOT NULL,
@@ -272,7 +274,7 @@ CREATE TABLE build_jobs (
 	  CONSTRAINT build_jobs_pkey PRIMARY KEY,
        	source_name text		-- package
 	  NOT NULL,
-	source_version text		-- package version number
+	source_version debversion	-- package version number
 	  NOT NULL,
 	arch_name text			-- architecture
 	  CONSTRAINT build_jobs_arch REFERENCES architectures(name)
