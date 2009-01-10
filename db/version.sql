@@ -28,21 +28,9 @@ SET SESSION plperl.use_strict TO 't';
 CREATE DOMAIN debversion AS TEXT;
 COMMENT ON DOMAIN debversion IS 'Debian package version number';
 
--- Regex from Dpkg::Version::parseversion
-CREATE OR REPLACE FUNCTION debversion_check (version debversion)
-  RETURNS boolean AS $$
-    my $result = 1;
-    $result = 0 if $_[0] =~ m/[^-+:.0-9a-zA-Z~]/o;
-    return $result;
-$$
-  LANGUAGE plperl
-  IMMUTABLE STRICT;
-COMMENT ON FUNCTION debversion_check (debversion)
-  IS 'Check debian version is valid';
-
 ALTER DOMAIN debversion
   ADD CONSTRAINT debversion_syntax
-    CHECK (debversion_check(VALUE));
+    CHECK (VALUE !~ '[^-+:.0-9a-zA-Z~]');
 
 -- From Dpkg::Version::parseversion
 CREATE OR REPLACE FUNCTION debversion_split (debversion)
