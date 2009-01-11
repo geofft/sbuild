@@ -21,13 +21,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <time.h>
 #include <dirent.h>
-#include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <signal.h>
 
@@ -156,10 +156,11 @@ int main( int argc, char *argv[] )
    * mailer-running yet. So, in this case, wait some time and then check for
    * mailer-running again. */
   if (!dir_was_empty) {
-    struct sysinfo info;
+    double load;
     int waittime;
-    sysinfo( &info );
-    waittime = (info.loads[0] >> (SI_LOAD_SHIFT-2))*6 + 20;
+    getloadavg( &load, 1 );
+    waittime = (((int)load) << 2 | (int)(fmod( load, 1 )*4))*6 + 20;
+
     DPRINTF( "dir was not empty, sleeping\nload*4=%d waittime=%d\n",
 	     (waittime-20)/6, waittime );
     sleep( waittime );

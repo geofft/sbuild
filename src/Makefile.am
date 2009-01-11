@@ -26,3 +26,5 @@ bin_PROGRAMS =			\
 
 buildd_mail_wrapper_SOURCES =	\
 	buildd-mail-wrapper.c
+
+buildd_mail_wrapper_LDADD = -lm
