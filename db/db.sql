@@ -1,4 +1,4 @@
---- WannaBuild Database Schema for PostgreSQL                        -*- sql -*-
+--- Debian Source Builder: Database Schema for PostgreSQL            -*- sql -*-
 ---
 --- Copyright © 2008 Roger Leigh <rleigh@debian.org>
 --- Copyright © 2008 Marc 'HE' Brockschmidt <he@debian.org>
@@ -17,15 +17,19 @@
 --- along with this program.  If not, see
 --- <http://www.gnu.org/licenses/>.
 
-CREATE DATABASE "wannabuild" ENCODING 'UTF8';
-\c wannabuild
+CREATE DATABASE "sbuild-packages" ENCODING 'UTF8';
+COMMENT ON DATABASE "sbuild-packages" IS 'Debian source builder package state management';
+\c "sbuild-packages"
 
 \i version.sql
 
 CREATE TABLE architectures (
-	name text	       -- arch name
+	name text
 	  CONSTRAINT arch_name PRIMARY KEY
 );
+
+COMMENT ON TABLE architectures IS 'Valid architectures';
+COMMENT ON COLUMN architectures.name IS 'Architecture name';
 
 INSERT INTO architectures (name) VALUES ('all');
 INSERT INTO architectures (name) VALUES ('any');
@@ -45,54 +49,21 @@ INSERT INTO architectures (name) VALUES ('powerpc');
 INSERT INTO architectures (name) VALUES ('s390');
 INSERT INTO architectures (name) VALUES ('sparc');
 
---- List of architectures with a primary key
-CREATE TABLE architecture_list (
-	name text	       -- arch name
-	  CONSTRAINT arch_list_name PRIMARY KEY
-);
-
---- Mapping between architecture list and architectures
-CREATE TABLE architecture_list_mapping (
-	arch_list_name text	-- architecture list reference
-	  CONSTRAINT arch_list_map_list REFERENCES architecture_list(name)
-	  NOT NULL,
-	arch_name text		-- architecture reference
-	  CONSTRAINT arch_list_map_arch REFERENCES architectures(name)
-	  NOT NULL,
-	UNIQUE (arch_list_name, arch_name)
-);
-
-
---- Set up initial single mappings
-INSERT INTO architecture_list (name)
-  SELECT name FROM architectures;
-
-INSERT INTO architecture_list_mapping (arch_list_name, arch_name)
-  SELECT l.name AS arch_list_name,
-         a.name AS arch_name
-  FROM architectures AS a
-  INNER JOIN architecture_list AS l
-  ON (l.name = a.name);
-
---- Test more complex mapping
-INSERT INTO architecture_list (name) VALUES ('allmips');
-INSERT INTO architecture_list_mapping SELECT l.name AS arch_list_name, a.name AS arch_name FROM architectures AS a CROSS JOIN architecture_list AS l WHERE (l.name = 'allmips' AND (a.name = 'mips' OR a.name = 'mipsel'));
-
---- Test queries (wrap with view to make simpler)
-SELECT a.name AS name, l.name AS list FROM architectures AS a LEFT OUTER JOIN architecture_list_mapping AS m ON (m.arch_name = a.name) LEFT OUTER JOIN architecture_list AS l ON (m.arch_list_name = l.name) WHERE (l.name = 'allmips');
-
-SELECT l.name AS list, array_to_string(ARRAY(SELECT a.name FROM architectures AS a WHERE (a.name = m.arch_name) ORDER BY a.name ASC), ',') FROM architecture_list_mapping AS m INNER JOIN architecture_list AS l ON (m.arch_list_name = l.name) WHERE (l.name = 'allmips');
-
---- Allowed distributions
 CREATE TABLE distributions (
-	name text 		-- distribution name
+	name text
 	  CONSTRAINT dist_name PRIMARY KEY,
-	priority integer,	-- distribution priority
-	depwait boolean		-- distribution auto dep wait?
+	priority integer,
+	depwait boolean
 	  DEFAULT 't',
-	hidden boolean		-- distribution is hidden?
+	hidden boolean
 	  DEFAULT 'f'
 );
+
+COMMENT ON TABLE distributions IS 'Valid distributions';
+COMMENT ON COLUMN distributions.name IS 'Distribution name';
+COMMENT ON COLUMN distributions.priority IS 'Sorting order (lower is higher priority)';
+COMMENT ON COLUMN distributions.depwait IS 'Automatically wait on dependencies?';
+COMMENT ON COLUMN distributions.hidden IS 'Hide distribution from public view (e.g. for -security)?';
 
 INSERT INTO distributions (name, priority) VALUES ('experimental', 4);
 INSERT INTO distributions (name, priority) VALUES ('unstable', 3);
@@ -103,21 +74,25 @@ INSERT INTO distributions (name, priority) VALUES ('stable', 1);
 INSERT INTO distributions (name, priority, depwait, hidden)
 	VALUES ('stable-security', 1, 'f', 't');
 
---- Archive sections
 CREATE TABLE sections (
-	name text		-- section name
+	name text
 	  CONSTRAINT section_name PRIMARY KEY
 );
+
+COMMENT ON TABLE sections IS 'Valid archive sections';
+COMMENT ON COLUMN sections.name IS 'Section name';
 
 INSERT INTO sections (name) VALUES ('main');
 INSERT INTO sections (name) VALUES ('contrib');
 INSERT INTO sections (name) VALUES ('non-free');
 
--- package_priorities e.g. optional, extra.
 CREATE TABLE package_priorities (
-	name text                  -- package priority name
+	name text
 	  CONSTRAINT pkg_pri_name PRIMARY KEY
 );
+
+COMMENT ON TABLE package_priorities IS 'Valid package priorities';
+COMMENT ON COLUMN package_priorities.name IS 'Priority name';
 
 INSERT INTO package_priorities (name) VALUES ('extra');
 INSERT INTO package_priorities (name) VALUES ('important');
@@ -125,11 +100,13 @@ INSERT INTO package_priorities (name) VALUES ('optional');
 INSERT INTO package_priorities (name) VALUES ('required');
 INSERT INTO package_priorities (name) VALUES ('standard');
 
--- package_sections e.g. base, editors, libs, text, utils.
 CREATE TABLE package_sections (
-        name text                  -- package section name
+        name text
           CONSTRAINT pkg_sect_name PRIMARY KEY
 );
+
+COMMENT ON TABLE package_sections IS 'Valid package sections';
+COMMENT ON COLUMN package_sections.name IS 'Section name';
 
 INSERT INTO package_sections (name) VALUES ('admin');
 INSERT INTO package_sections (name) VALUES ('comm');
@@ -165,142 +142,269 @@ INSERT INTO package_sections (name) VALUES ('utils');
 INSERT INTO package_sections (name) VALUES ('web');
 INSERT INTO package_sections (name) VALUES ('x11');
 
---- Database users: from _userinfo in old db format.
+
 CREATE TABLE builders (
-	name text		-- builder name
-	  CONSTRAINT builder_name PRIMARY KEY
+	name text
+	  CONSTRAINT builder_pkey PRIMARY KEY
 );
 
---- Source information common to all arches (from Sources)
+COMMENT ON TABLE builders IS 'buildd usernames (database users from _userinfo in old MLDBM db format)';
+COMMENT ON COLUMN builders.name IS 'Username';
+
 CREATE TABLE sources (
-	name text		-- builder name
+	name text
 	  NOT NULL,
-	version debversion NOT NULL,	-- package version number
-	section_name text	-- package section
-	  CONSTRAINT source_sect REFERENCES sections(name)
+	version debversion NOT NULL,
+	section_name text
+	  CONSTRAINT source_sect_fkey REFERENCES sections(name)
+	  ON DELETE CASCADE
 	  NOT NULL,
-	pkg_section_name text	-- package section
-	  CONSTRAINT source_pkg_sect REFERENCES package_sections(name)
+	pkg_section_name text
+	  CONSTRAINT source_pkg_sect_fkey REFERENCES package_sections(name)
 	  NOT NULL,
-	pkg_priority_name text	-- package priority
-	  CONSTRAINT source_pkg_pri REFERENCES package_priorities(name)
+	pkg_priority_name text
+	  CONSTRAINT source_pkg_pri_fkey REFERENCES package_priorities(name)
 	  NOT NULL,
-	arch_list_name text	-- package
-	  CONSTRAINT source_arch REFERENCES architecture_list(name)
-	  NOT NULL,
-	maintainer text NOT NULL,	-- maintainer name
-	uploaders text,		-- uploader names
-	build_dep text,		-- build dependencies (arch dep)
-	build_dep_indep text,	-- build dependencies (arch indep)
-	build_confl text,	-- build conflicts (arch dep)
-	build_confl_indep text,	-- build conflicts (arch indep)
-	stdver text,		-- standards version
+	maintainer text NOT NULL,
+	uploaders text,
+	build_dep text,
+	build_dep_indep text,
+	build_confl text,
+	build_confl_indep text,
+	stdver text,
 	CONSTRAINT sources_pkey PRIMARY KEY (name, version)
 );
 
---- Arch-specific package information (from Packages)
-CREATE TABLE binaries (
-	name text NOT NULL,	-- builder name
-	version debversion NOT NULL,	-- package version number
-	arch_name text		-- package
-	  CONSTRAINT bin_arch REFERENCES architectures(name)
+CREATE INDEX sources_pkg_idx ON sources (name);
+
+COMMENT ON TABLE sources IS 'Source packages common to all architectures (from Sources)';
+COMMENT ON COLUMN sources.name IS 'Package name';
+COMMENT ON COLUMN sources.version IS 'Package version number';
+COMMENT ON COLUMN sources.section_name IS 'Archive section';
+COMMENT ON COLUMN sources.pkg_section_name IS 'Package section';
+COMMENT ON COLUMN sources.pkg_priority_name IS 'Package priority';
+COMMENT ON COLUMN sources.maintainer IS 'Package maintainer name';
+COMMENT ON COLUMN sources.uploaders IS 'Package uploader names';
+COMMENT ON COLUMN sources.build_dep IS 'Package build dependencies (architecture dependent)';
+COMMENT ON COLUMN sources.build_dep_indep IS 'Package build dependencies (architecture independent)';
+COMMENT ON COLUMN sources.build_confl IS 'Package build conflicts (architecture dependent)';
+COMMENT ON COLUMN sources.build_confl_indep IS 'Package build conflicts (architecture independent)';
+COMMENT ON COLUMN sources.stdver IS 'Debian Standards (policy) version number';
+
+CREATE TABLE source_architectures (
+	source_name text
 	  NOT NULL,
-       	source_name text		-- package source
+	source_version debversion NOT NULL,
+	arch_name text
+	  CONSTRAINT source_arch_arch_fkey REFERENCES architectures(name)
+	  ON DELETE CASCADE
 	  NOT NULL,
-	source_version debversion NOT NULL,	-- package source version number
-	section_name text	-- package section
-	  CONSTRAINT bin_sect REFERENCES package_sections(name)
-	  NOT NULL,
-	priority_name text	-- package priority
-	  CONSTRAINT bin_pri REFERENCES package_priorities(name)
-	  NOT NULL,
-	CONSTRAINT bin_pkey PRIMARY KEY (name, version, arch_name),
-	CONSTRAINT bin_fkey FOREIGN KEY (source_name, source_version)
+	UNIQUE (source_name,source_version,arch_name),
+	CONSTRAINT source_arch_source_fkey FOREIGN KEY (source_name, source_version)
 	  REFERENCES sources (name, version)
+	  ON DELETE CASCADE
 );
 
---- Wanna-Build package states
-CREATE TABLE states (
-	name text		-- state name
+COMMENT ON TABLE source_architectures IS 'Source package architectures (from Sources)';
+COMMENT ON COLUMN source_architectures.source_name IS 'Package name';
+COMMENT ON COLUMN source_architectures.source_version IS 'Package version number';
+COMMENT ON COLUMN source_architectures.arch_name IS 'Architecture name';
+
+CREATE TABLE binaries (
+	name text NOT NULL,
+	version debversion NOT NULL,
+	arch_name text
+	  CONSTRAINT bin_arch_fkey REFERENCES architectures(name)
+	  ON DELETE CASCADE
+	  NOT NULL,
+       	source_name text
+	  NOT NULL,
+	source_version debversion NOT NULL,
+	pkg_section_name text
+	  CONSTRAINT bin_sect_fkey REFERENCES package_sections(name)
+	  NOT NULL,
+	pkg_priority_name text
+	  CONSTRAINT bin_pri_fkey REFERENCES package_priorities(name)
+	  NOT NULL,
+	CONSTRAINT bin_pkey PRIMARY KEY (name, version, arch_name),
+	CONSTRAINT bin_src_fkey FOREIGN KEY (source_name, source_version)
+	  REFERENCES sources (name, version)
+	  ON DELETE CASCADE
+);
+
+COMMENT ON TABLE binaries IS 'Binary packages specific to single architectures (from Packages)';
+COMMENT ON COLUMN binaries.name IS 'Binary package name';
+COMMENT ON COLUMN binaries.version IS 'Binary package version number';
+COMMENT ON COLUMN binaries.arch_name IS 'Architecture name';
+COMMENT ON COLUMN binaries.source_name IS 'Source package name';
+COMMENT ON COLUMN binaries.source_version IS 'Source package version number';
+COMMENT ON COLUMN binaries.pkg_section_name IS 'Package section';
+COMMENT ON COLUMN binaries.pkg_priority_name IS 'Package priority';
+
+CREATE TABLE job_states (
+	name text
 	  CONSTRAINT state_name PRIMARY KEY
 );
 
-INSERT INTO states (name) VALUES ('build-attempted');
-INSERT INTO states (name) VALUES ('building');
-INSERT INTO states (name) VALUES ('built');
-INSERT INTO states (name) VALUES ('dep-wait');
-INSERT INTO states (name) VALUES ('dep-wait-removed');
-INSERT INTO states (name) VALUES ('failed');
-INSERT INTO states (name) VALUES ('failed-removed');
-INSERT INTO states (name) VALUES ('install-wait');
-INSERT INTO states (name) VALUES ('installed');
-INSERT INTO states (name) VALUES ('needs-build');
-INSERT INTO states (name) VALUES ('not-for-us');
-INSERT INTO states (name) VALUES ('old-failed');
-INSERT INTO states (name) VALUES ('reupload-wait');
-INSERT INTO states (name) VALUES ('state');
-INSERT INTO states (name) VALUES ('uploaded');
+COMMENT ON TABLE job_states IS 'Build job states';
+COMMENT ON COLUMN job_states.name IS 'State name';
+
+INSERT INTO job_states (name) VALUES ('build-attempted');
+INSERT INTO job_states (name) VALUES ('building');
+INSERT INTO job_states (name) VALUES ('built');
+INSERT INTO job_states (name) VALUES ('dep-wait');
+INSERT INTO job_states (name) VALUES ('dep-wait-removed');
+INSERT INTO job_states (name) VALUES ('failed');
+INSERT INTO job_states (name) VALUES ('failed-removed');
+INSERT INTO job_states (name) VALUES ('install-wait');
+INSERT INTO job_states (name) VALUES ('installed');
+INSERT INTO job_states (name) VALUES ('needs-build');
+INSERT INTO job_states (name) VALUES ('not-for-us');
+INSERT INTO job_states (name) VALUES ('old-failed');
+INSERT INTO job_states (name) VALUES ('reupload-wait');
+INSERT INTO job_states (name) VALUES ('state');
+INSERT INTO job_states (name) VALUES ('uploaded');
 
 CREATE TABLE dist_sources (
-       	source_name text		-- package
+       	source_name text
 	  NOT NULL,
-	source_version debversion NOT NULL,	-- package version number
-	distribution_name text		-- distribution
-	  CONSTRAINT dist_src_dist REFERENCES distributions(name)
+	source_version debversion NOT NULL,
+	distribution_name text
+	  CONSTRAINT dist_sources_dist_fkey REFERENCES distributions(name)
+	  ON DELETE CASCADE
 	  NOT NULL,
 	CONSTRAINT dist_sources_pkey PRIMARY KEY (source_name, distribution_name),
-	CONSTRAINT dist_sources_fkey FOREIGN KEY (source_name, source_version)
+	CONSTRAINT dist_sources_src_fkey FOREIGN KEY (source_name, source_version)
 	  REFERENCES sources (name, version)
+	  ON DELETE CASCADE
 );
+
+COMMENT ON TABLE dist_sources IS 'Source packages contained within a distribution';
+COMMENT ON COLUMN dist_sources.source_name IS 'Source package name';
+COMMENT ON COLUMN dist_sources.source_version IS 'Source package version number';
+COMMENT ON COLUMN dist_sources.distribution_name IS 'Distribution name';
 
 CREATE TABLE dist_binaries (
-       	pkg_name text			-- package
+       	binary_name text
 	  NOT NULL,
-	pkg_version debversion NOT NULL,	-- package version number
-	arch_name text		-- package
-	  CONSTRAINT dist_bin_arch REFERENCES architectures(name)
+	binary_version debversion NOT NULL,
+	arch_name text
+	  CONSTRAINT dist_bin_arch_fkey REFERENCES architectures(name)
+          ON DELETE CASCADE
 	  NOT NULL,
-	distribution_name text		-- distribution
-	  CONSTRAINT dist_bin_dist REFERENCES distributions(name)
+	distribution_name text
+	  CONSTRAINT dist_bin_dist_fkey REFERENCES distributions(name)
+          ON DELETE CASCADE
 	  NOT NULL,
-	CONSTRAINT dist_bin_pkey PRIMARY KEY (pkg_name, distribution_name),
-	CONSTRAINT dist_bin_fkey FOREIGN KEY (pkg_name, pkg_version, arch_name)
+	CONSTRAINT dist_bin_pkey PRIMARY KEY (binary_name, distribution_name),
+	CONSTRAINT dist_bin_bin_fkey FOREIGN KEY (binary_name, binary_version, arch_name)
 	  REFERENCES binaries (name, version, arch_name)
+	  ON DELETE CASCADE,
+	CONSTRAINT dist_bin_unique UNIQUE (binary_name, binary_version, arch_name, distribution_name)
 );
 
---- Arch-specific package information
+COMMENT ON TABLE dist_binaries IS 'Binary packages contained within a distribution';
+COMMENT ON COLUMN dist_binaries.binary_name IS 'Binary package name';
+COMMENT ON COLUMN dist_binaries.binary_version IS 'Binary package version number';
+COMMENT ON COLUMN dist_binaries.arch_name IS 'Architecture name';
+COMMENT ON COLUMN dist_binaries.distribution_name IS 'Distribution name';
+
 CREATE TABLE build_jobs (
-	id serial			-- build id
+	id serial
 	  CONSTRAINT build_jobs_pkey PRIMARY KEY,
-       	source_name text		-- package
+       	source_name text
 	  NOT NULL,
-	source_version debversion	-- package version number
+	source_version debversion
 	  NOT NULL,
-	arch_name text			-- architecture
-	  CONSTRAINT build_jobs_arch REFERENCES architectures(name)
+	arch_name text
+ 	  CONSTRAINT build_jobs_arch_fkey REFERENCES architectures(name)
+	  ON DELETE CASCADE
 	  NOT NULL,
-	distribution_name text		-- distribution
-	  CONSTRAINT build_jobs_dist REFERENCES distributions(name)
+	distribution_name text
+	  CONSTRAINT build_jobs_dist_fkey REFERENCES distributions(name)
+	  ON DELETE CASCADE
 	  NOT NULL,
-	builder_name text		-- builder (person making change)
-	  CONSTRAINT build_jobs_builder REFERENCES builders(name)
+	user_name text NOT NULL DEFAULT CURRENT_USER,
+	builder_name text
+	  CONSTRAINT build_jobs_builder_fkey REFERENCES builders(name)
 	  NOT NULL,
-	state_name text			-- build state
-	  CONSTRAINT build_jobs_state REFERENCES states(name)
+	state_name text
+	  CONSTRAINT build_jobs_state_fkey REFERENCES job_states(name)
 	  NOT NULL,
-	notes text,			-- notes about package
-	ctime timestamp with time zone	-- changed time stamp
+	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT build_jobs_unique UNIQUE(source_name, source_version,
-					    arch_name, ctime),
-	CONSTRAINT build_jobs_fkey FOREIGN KEY(source_name, source_version)
+					    arch_name),
+	CONSTRAINT build_jobs_src_fkey FOREIGN KEY(source_name, source_version)
 	  REFERENCES sources(name, version)
+	  ON DELETE CASCADE
 );
 
---- For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)
-CREATE TABLE source_arch_props (
-	job_id integer NOT NULL	        -- job reference
-	  REFERENCES build_jobs(id),
-	prop_name text NOT NULL,	-- property name
-	prop_value text NOT NULL	--property value
+CREATE INDEX build_jobs_name ON build_jobs (source_name);
+CREATE INDEX build_jobs_ctime ON build_jobs (ctime);
+
+COMMENT ON SEQUENCE build_jobs_id_seq IS 'Build job ticket number sequence';
+COMMENT ON TABLE build_jobs IS 'Build job tickets (state changes) specific for single architecture';
+COMMENT ON COLUMN build_jobs.id IS 'Job number';
+COMMENT ON COLUMN build_jobs.source_name IS 'Source package name';
+COMMENT ON COLUMN build_jobs.source_version IS 'Source package version number';
+COMMENT ON COLUMN build_jobs.arch_name IS 'Architecture name';
+COMMENT ON COLUMN build_jobs.distribution_name IS 'Architecture version';
+COMMENT ON COLUMN build_jobs.user_name IS 'User making this change (username)';
+COMMENT ON COLUMN build_jobs.builder_name IS 'Build dæmon making this change (username)';
+COMMENT ON COLUMN build_jobs.state_name IS 'State name';
+COMMENT ON COLUMN build_jobs.ctime IS 'Stage change time';
+
+CREATE TABLE build_job_properties (
+	job_id integer
+	  NOT NULL
+	  REFERENCES build_jobs(id)
+	  ON DELETE CASCADE,
+	prop_name text NOT NULL,
+	prop_value text NOT NULL
 );
+
+COMMENT ON TABLE build_job_properties IS 'Additional job-specific properties (e.g. For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)/Notes)';
+COMMENT ON COLUMN build_job_properties.job_id IS 'Job reference number';
+COMMENT ON COLUMN build_job_properties.prop_name IS 'Property name';
+COMMENT ON COLUMN build_job_properties.prop_value IS 'Property value';
+
+CREATE TABLE log (
+	time timestamp with time zone
+	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	username text NOT NULL DEFAULT CURRENT_USER,
+	message text NOT NULL
+);
+
+CREATE INDEX log_idx ON log (time);
+
+COMMENT ON TABLE log IS 'Log messages';
+COMMENT ON COLUMN log.time IS 'Log entry time';
+COMMENT ON COLUMN log.username IS 'Log user name';
+COMMENT ON COLUMN log.message IS 'Log entry message';
+
+CREATE OR REPLACE FUNCTION package_checkrel() RETURNS trigger AS $package_checkrel$
+BEGIN
+  PERFORM name FROM package_sections WHERE (name = NEW.pkg_section_name);
+  IF FOUND = 'f' THEN
+    INSERT INTO package_sections (name) VALUES (NEW.pkg_section_name);
+  END IF;
+  PERFORM name FROM package_priorities WHERE (name = NEW.pkg_priority_name);
+  IF FOUND = 'f' THEN
+    INSERT INTO package_priorities (name) VALUES (NEW.pkg_priority_name);
+  END IF;
+  RETURN NEW;
+END;
+$package_checkrel$ LANGUAGE plpgsql;
+COMMENT ON FUNCTION package_checkrel ()
+  IS 'Check foreign key references (package sections and priorities) exist';
+
+CREATE TRIGGER checkrel BEFORE INSERT OR UPDATE ON sources
+  FOR EACH ROW EXECUTE PROCEDURE package_checkrel();
+COMMENT ON TRIGGER checkrel ON sources
+  IS 'Check foreign key references (package sections and priorities) exist';
+
+CREATE TRIGGER checkrel BEFORE INSERT OR UPDATE ON binaries
+  FOR EACH ROW EXECUTE PROCEDURE package_checkrel();
+COMMENT ON TRIGGER checkrel ON binaries
+  IS 'Check foreign key references (package sections and priorities) exist';
