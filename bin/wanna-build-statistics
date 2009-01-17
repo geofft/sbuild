@@ -90,9 +90,11 @@ print "Distribution $dist:\n";
 print "--------------", "-" x length($dist), "\n";
 
 my $total_width = 78;
-my @state_list = qw(Installed Needs-Build Building Built Build-Attempted Uploaded Failed Dep-Wait
-					Failed-Removed Dep-Wait-Removed
-					Not-For-Us);
+
+my @state_list = qw(Installed Needs-Build Building Built
+		    Build-Attempted Uploaded Failed Dep-Wait
+		    Failed-Removed Dep-Wait-Removed Not-For-Us);
+
 my $statewidth = 0;
 grep { $statewidth = length($_) if length($_) > $statewidth } @state_list;
 my $startcol = $statewidth + 9;
