@@ -30,6 +30,7 @@ $verbose = 0;
 $dist = "unstable";
 $database = "build-db";
 
+# TODO: Use Getopt::Long.
 while( @ARGV && $ARGV[0] =~ /^-/ ) {
     $_ = shift @ARGV;
     if (/^-v$/ || /^--verbose$/) {
@@ -45,10 +46,11 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	else {
 	    $dist = shift @ARGV;
 	}
+# TODO: Use distribution list from main configuration
 	$dist = "stable"   if $dist eq "s";
 	$dist = "testing"  if $dist eq "t";
 	$dist = "unstable" if $dist eq "u";
-	die "Bad distribution\n" if !isin($dist, qw(stable testing unstable stable-security testing-security));
+	die "Bad distribution\n" if !isin($dist, qw(stable testing unstable stable-security testing-security oldstable oldstable-security));
     }
     elsif (/^--$/) {
 	last;
@@ -89,9 +91,11 @@ print "Distribution $dist:\n";
 print "--------------", "-" x length($dist), "\n";
 
 my $total_width = 78;
-my @state_list = qw(Installed Needs-Build Building Built Build-Attempted Uploaded Failed Dep-Wait
-					Failed-Removed Dep-Wait-Removed
-					Not-For-Us);
+
+my @state_list = qw(Installed Needs-Build Building Built
+		    Build-Attempted Uploaded Failed Dep-Wait
+		    Failed-Removed Dep-Wait-Removed Not-For-Us);
+
 my $statewidth = 0;
 grep { $statewidth = length($_) if length($_) > $statewidth } @state_list;
 my $startcol = $statewidth + 9;
