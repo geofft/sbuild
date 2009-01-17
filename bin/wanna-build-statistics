@@ -30,6 +30,7 @@ $verbose = 0;
 $dist = "unstable";
 $database = "build-db";
 
+# TODO: Use Getopt::Long.
 while( @ARGV && $ARGV[0] =~ /^-/ ) {
     $_ = shift @ARGV;
     if (/^-v$/ || /^--verbose$/) {
