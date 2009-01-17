@@ -45,10 +45,11 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	else {
 	    $dist = shift @ARGV;
 	}
+# TODO: Use distribution list from main configuration
 	$dist = "stable"   if $dist eq "s";
 	$dist = "testing"  if $dist eq "t";
 	$dist = "unstable" if $dist eq "u";
-	die "Bad distribution\n" if !isin($dist, qw(stable testing unstable stable-security testing-security));
+	die "Bad distribution\n" if !isin($dist, qw(stable testing unstable stable-security testing-security oldstable oldstable-security));
     }
     elsif (/^--$/) {
 	last;
