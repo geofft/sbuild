@@ -328,7 +328,7 @@ COMMENT ON OPERATOR = (debversion, debversion)
   IS 'debversion equal';
 
 CREATE OPERATOR != (
-  PROCEDURE = debversion_eq,
+  PROCEDURE = debversion_ne,
   LEFTARG = debversion,
   RIGHTARG = debversion,
   COMMUTATOR = !=,
