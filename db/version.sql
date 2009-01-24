@@ -376,3 +376,13 @@ CREATE OPERATOR >= (
 );
 COMMENT ON OPERATOR >= (debversion, debversion)
   IS 'debversion greater-than-or-equal';
+
+CREATE OPERATOR CLASS debversion_ops
+DEFAULT FOR TYPE DEBVERSION USING btree AS
+    OPERATOR    1   <  (debversion, debversion),
+    OPERATOR    2   <= (debversion, debversion),
+    OPERATOR    3   =  (debversion, debversion),
+    OPERATOR    4   >= (debversion, debversion),
+    OPERATOR    5   >  (debversion, debversion),
+    FUNCTION    1   debversion_compare(debversion, debversion);
+
