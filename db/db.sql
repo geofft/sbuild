@@ -94,11 +94,11 @@ CREATE TABLE package_priorities (
 COMMENT ON TABLE package_priorities IS 'Valid package priorities';
 COMMENT ON COLUMN package_priorities.name IS 'Priority name';
 
-INSERT INTO package_priorities (name) VALUES ('extra');
-INSERT INTO package_priorities (name) VALUES ('important');
-INSERT INTO package_priorities (name) VALUES ('optional');
 INSERT INTO package_priorities (name) VALUES ('required');
 INSERT INTO package_priorities (name) VALUES ('standard');
+INSERT INTO package_priorities (name) VALUES ('important');
+INSERT INTO package_priorities (name) VALUES ('optional');
+INSERT INTO package_priorities (name) VALUES ('extra');
 
 CREATE TABLE package_sections (
         name text
