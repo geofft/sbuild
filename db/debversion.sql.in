@@ -23,6 +23,8 @@
 --- along with this program.  If not, see
 --- <http://www.gnu.org/licenses/>.
 
+SET search_path = public;
+
 CREATE TYPE debversion;
 
 CREATE OR REPLACE FUNCTION debversionin(cstring)
@@ -73,7 +75,7 @@ CREATE CAST (bpchar AS debversion)  WITH FUNCTION debversion(bpchar);
 
 CREATE OR REPLACE FUNCTION debversion_cmp (version1 debversion,
        	  	  	   		   version2 debversion)
-  RETURNS integer AS 'debversion', 'debversion_cmp'
+  RETURNS integer AS 'MODULE_PATHNAME', 'debversion_cmp'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_cmp (debversion, debversion)
@@ -81,7 +83,7 @@ COMMENT ON FUNCTION debversion_cmp (debversion, debversion)
 
 CREATE OR REPLACE FUNCTION debversion_eq (version1 debversion,
        	  	  	   		  version2 debversion)
-  RETURNS boolean AS 'debversion', 'debversion_eq'
+  RETURNS boolean AS 'MODULE_PATHNAME', 'debversion_eq'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_eq (debversion, debversion)
@@ -89,7 +91,7 @@ COMMENT ON FUNCTION debversion_eq (debversion, debversion)
 
 CREATE OR REPLACE FUNCTION debversion_ne (version1 debversion,
        	  	  	   		  version2 debversion)
-  RETURNS boolean AS 'debversion', 'debversion_ne'
+  RETURNS boolean AS 'MODULE_PATHNAME', 'debversion_ne'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_ne (debversion, debversion)
@@ -97,7 +99,7 @@ COMMENT ON FUNCTION debversion_ne (debversion, debversion)
 
 CREATE OR REPLACE FUNCTION debversion_lt (version1 debversion,
        	  	  	   		  version2 debversion)
-  RETURNS boolean AS 'debversion', 'debversion_lt'
+  RETURNS boolean AS 'MODULE_PATHNAME', 'debversion_lt'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_lt (debversion, debversion)
@@ -105,7 +107,7 @@ COMMENT ON FUNCTION debversion_lt (debversion, debversion)
 
 CREATE OR REPLACE FUNCTION debversion_gt (version1 debversion,
        	  	  	   		  version2 debversion)
-  RETURNS boolean AS 'debversion', 'debversion_gt'
+  RETURNS boolean AS 'MODULE_PATHNAME', 'debversion_gt'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_gt (debversion, debversion)
@@ -113,7 +115,7 @@ COMMENT ON FUNCTION debversion_gt (debversion, debversion)
 
 CREATE OR REPLACE FUNCTION debversion_le (version1 debversion,
        	  	  	   		  version2 debversion)
-  RETURNS boolean AS 'debversion', 'debversion_le'
+  RETURNS boolean AS 'MODULE_PATHNAME', 'debversion_le'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_le (debversion, debversion)
@@ -121,7 +123,7 @@ COMMENT ON FUNCTION debversion_le (debversion, debversion)
 
 CREATE OR REPLACE FUNCTION debversion_ge (version1 debversion,
        	  	  	   		  version2 debversion)
-  RETURNS boolean AS 'debversion', 'debversion_ge'
+  RETURNS boolean AS 'MODULE_PATHNAME', 'debversion_ge'
   LANGUAGE C
   IMMUTABLE STRICT;
 COMMENT ON FUNCTION debversion_ge (debversion, debversion)
@@ -188,11 +190,48 @@ COMMENT ON OPERATOR >= (debversion, debversion)
   IS 'debversion greater-than-or-equal';
 
 CREATE OPERATOR CLASS debversion_ops
-DEFAULT FOR TYPE DEBVERSION USING btree AS
-    OPERATOR    1   <  (debversion, debversion),
-    OPERATOR    2   <= (debversion, debversion),
-    OPERATOR    3   =  (debversion, debversion),
-    OPERATOR    4   >= (debversion, debversion),
-    OPERATOR    5   >  (debversion, debversion),
-    FUNCTION    1   debversion_cmp(debversion, debversion);
+DEFAULT FOR TYPE debversion USING btree AS
+  OPERATOR 1 <  (debversion, debversion),
+  OPERATOR 2 <= (debversion, debversion),
+  OPERATOR 3 =  (debversion, debversion),
+  OPERATOR 4 >= (debversion, debversion),
+  OPERATOR 5 >  (debversion, debversion),
+  FUNCTION 1 debversion_cmp(debversion, debversion);
+
+CREATE OR REPLACE FUNCTION debversion_hash(debversion)
+  RETURNS int4
+  AS 'MODULE_PATHNAME'
+  LANGUAGE C
+  IMMUTABLE STRICT;
+
+CREATE OPERATOR CLASS debversion_ops
+DEFAULT FOR TYPE debversion USING hash AS
+  OPERATOR 1 = (debversion, debversion),
+  FUNCTION 1 debversion_hash(debversion);
+
+CREATE OR REPLACE FUNCTION debversion_smaller(version1 debversion,
+					      version2 debversion)
+  RETURNS debversion
+  AS 'MODULE_PATHNAME'
+  LANGUAGE C
+  IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION debversion_larger(version1 debversion,
+					     version2 debversion)
+  RETURNS debversion
+  AS 'MODULE_PATHNAME'
+  LANGUAGE C
+  IMMUTABLE STRICT;
+
+CREATE AGGREGATE min(debversion)  (
+  SFUNC = debversion_smaller,
+  STYPE = debversion,
+  SORTOP = <
+);
+
+CREATE AGGREGATE max(debversion)  (
+  SFUNC = debversion_larger,
+  STYPE = debversion,
+  SORTOP = >
+);
 
