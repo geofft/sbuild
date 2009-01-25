@@ -25,12 +25,57 @@
 
 SET SESSION plperl.use_strict TO 't';
 
-CREATE DOMAIN debversion AS TEXT;
-COMMENT ON DOMAIN debversion IS 'Debian package version number';
+CREATE TYPE debversion;
 
-ALTER DOMAIN debversion
-  ADD CONSTRAINT debversion_syntax
-    CHECK (VALUE !~ '[^-+:.0-9a-zA-Z~]');
+CREATE OR REPLACE FUNCTION debversionin(cstring)
+RETURNS debversion
+AS 'textin'
+LANGUAGE internal IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION debversionout(debversion)
+RETURNS cstring
+AS 'textout'
+LANGUAGE internal IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION debversionrecv(internal)
+RETURNS debversion
+AS 'textrecv'
+LANGUAGE internal STABLE STRICT;
+
+CREATE OR REPLACE FUNCTION debversionsend(debversion)
+RETURNS bytea
+AS 'textsend'
+LANGUAGE internal STABLE STRICT;
+
+CREATE TYPE debversion (
+    INPUT          = debversionin,
+    OUTPUT         = debversionout,
+    RECEIVE        = debversionrecv,
+    SEND           = debversionsend,
+    INTERNALLENGTH = VARIABLE,
+    STORAGE        = extended,
+    -- make it a non-preferred member of string type category
+    CATEGORY       = 'S',
+    PREFERRED      = false
+);
+
+COMMENT ON TYPE debversion IS 'Debian package version number';
+
+CREATE OR REPLACE FUNCTION debversion(bpchar)
+RETURNS debversion
+AS 'rtrim1'
+LANGUAGE internal IMMUTABLE STRICT;
+
+CREATE CAST (debversion AS text)    WITHOUT FUNCTION AS IMPLICIT;
+CREATE CAST (debversion AS varchar) WITHOUT FUNCTION AS IMPLICIT;
+CREATE CAST (debversion AS bpchar)  WITHOUT FUNCTION AS ASSIGNMENT;
+CREATE CAST (text AS debversion)    WITHOUT FUNCTION AS ASSIGNMENT;
+CREATE CAST (varchar AS debversion) WITHOUT FUNCTION AS ASSIGNMENT;
+CREATE CAST (bpchar AS debversion)  WITH FUNCTION debversion(bpchar);
+
+-- ALTER DOMAIN debversion
+--   ADD CONSTRAINT debversion_syntax
+--     CHECK (VALUE !~ '[^-+:.0-9a-zA-Z~]');
 
 -- From Dpkg::Version::parseversion
 CREATE OR REPLACE FUNCTION debversion_split (debversion)
