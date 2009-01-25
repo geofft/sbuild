@@ -73,10 +73,6 @@ CREATE CAST (text AS debversion)    WITHOUT FUNCTION AS ASSIGNMENT;
 CREATE CAST (varchar AS debversion) WITHOUT FUNCTION AS ASSIGNMENT;
 CREATE CAST (bpchar AS debversion)  WITH FUNCTION debversion(bpchar);
 
--- ALTER DOMAIN debversion
---   ADD CONSTRAINT debversion_syntax
---     CHECK (VALUE !~ '[^-+:.0-9a-zA-Z~]');
-
 -- From Dpkg::Version::parseversion
 CREATE OR REPLACE FUNCTION debversion_split (debversion)
   RETURNS text[] AS $$
