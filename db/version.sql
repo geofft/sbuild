@@ -153,8 +153,8 @@ COMMENT ON FUNCTION debversion_revision (debversion)
   IS 'Get debian version revision';
 
 -- From Dpkg::Version::parseversion
-CREATE OR REPLACE FUNCTION debversion_compare_single (version1 text,
-       	  	  	   			      version2 text)
+CREATE OR REPLACE FUNCTION debversion_cmp_single (version1 text,
+       	  	  	   			  version2 text)
   RETURNS integer AS $$
      sub order{
 	  my ($x) = @_;
@@ -221,12 +221,12 @@ CREATE OR REPLACE FUNCTION debversion_compare_single (version1 text,
 $$
   LANGUAGE plperl
   IMMUTABLE STRICT;
-COMMENT ON FUNCTION debversion_compare_single (text, text)
+COMMENT ON FUNCTION debversion_cmp_single (text, text)
   IS 'Compare upstream or revision parts of Debian versions';
 
 -- Logic only derived from Dpkg::Version::parseversion
-CREATE OR REPLACE FUNCTION debversion_compare (version1 debversion,
-       	  	  	   		       version2 debversion)
+CREATE OR REPLACE FUNCTION debversion_cmp (version1 debversion,
+       	  	  	   		   version2 debversion)
   RETURNS integer AS $$
 DECLARE
   split1 text[];
@@ -247,9 +247,9 @@ BEGIN
   ELSIF split1[1] < split2[1] THEN
     result := -1;
   ELSE
-    result := debversion_compare_single(split1[2], split2[2]);
+    result := debversion_cmp_single(split1[2], split2[2]);
     IF result = 0 THEN
-      result := debversion_compare_single(split1[3], split2[3]);
+      result := debversion_cmp_single(split1[3], split2[3]);
     END IF;
   END IF;
 
@@ -258,7 +258,7 @@ END;
 $$
   LANGUAGE plpgsql
   IMMUTABLE STRICT;
-COMMENT ON FUNCTION debversion_compare (debversion, debversion)
+COMMENT ON FUNCTION debversion_cmp (debversion, debversion)
   IS 'Compare Debian versions';
 
 CREATE OR REPLACE FUNCTION debversion_eq (version1 debversion,
@@ -268,7 +268,7 @@ DECLARE
   comp integer;
   result boolean;
 BEGIN
-  comp := debversion_compare(version1, version2);
+  comp := debversion_cmp(version1, version2);
   result := comp = 0;
   RETURN result;
 END;
@@ -285,7 +285,7 @@ DECLARE
   comp integer;
   result boolean;
 BEGIN
-  comp := debversion_compare(version1, version2);
+  comp := debversion_cmp(version1, version2);
   result := comp <> 0;
   RETURN result;
 END;
@@ -302,7 +302,7 @@ DECLARE
   comp integer;
   result boolean;
 BEGIN
-  comp := debversion_compare(version1, version2);
+  comp := debversion_cmp(version1, version2);
   result := comp < 0;
   RETURN result;
 END;
@@ -318,7 +318,7 @@ DECLARE
   comp integer;
   result boolean;
 BEGIN
-  comp := debversion_compare(version1, version2);
+  comp := debversion_cmp(version1, version2);
   result := comp > 0;
   RETURN result;
 END;
@@ -335,7 +335,7 @@ DECLARE
   comp integer;
   result boolean;
 BEGIN
-  comp := debversion_compare(version1, version2);
+  comp := debversion_cmp(version1, version2);
   result := comp <= 0;
   RETURN result;
 END;
@@ -352,7 +352,7 @@ DECLARE
   comp integer;
   result boolean;
 BEGIN
-  comp := debversion_compare(version1, version2);
+  comp := debversion_cmp(version1, version2);
   result := comp >= 0;
   RETURN result;
 END;
@@ -429,5 +429,5 @@ DEFAULT FOR TYPE DEBVERSION USING btree AS
     OPERATOR    3   =  (debversion, debversion),
     OPERATOR    4   >= (debversion, debversion),
     OPERATOR    5   >  (debversion, debversion),
-    FUNCTION    1   debversion_compare(debversion, debversion);
+    FUNCTION    1   debversion_cmp(debversion, debversion);
 
