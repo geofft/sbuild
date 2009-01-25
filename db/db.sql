@@ -40,8 +40,6 @@ INSERT INTO architectures (name) VALUES ('armel');
 INSERT INTO architectures (name) VALUES ('hppa');
 INSERT INTO architectures (name) VALUES ('i386');
 INSERT INTO architectures (name) VALUES ('ia64');
-INSERT INTO architectures (name) VALUES ('kfreebsd-amd64');
-INSERT INTO architectures (name) VALUES ('kfreebsd-i386');
 INSERT INTO architectures (name) VALUES ('m68k');
 INSERT INTO architectures (name) VALUES ('mips');
 INSERT INTO architectures (name) VALUES ('mipsel');
