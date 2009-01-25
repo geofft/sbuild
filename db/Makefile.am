@@ -1,7 +1,7 @@
 # sbuild Makefile template
 #
 #
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2009  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -21,28 +21,12 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = bin configs etc lib man db src
+pg_server_lib_LTLIBRARIES =	\
+	debversion.la
 
-dist-hook:
-# Remove junk from the generated tarball.
-	$(FIND) $(distdir) -name '.*' -print | $(XARGS) xargs $(RM) -rf
-	$(FIND) $(distdir) -name '#*' -print | $(XARGS) $(RM) -rf
-	$(FIND) $(distdir) -name '*~' -print | $(XARGS) $(RM) -rf
+debversion_la_SOURCES =	\
+	debversion.cc
 
-# Generate ChangeLog
-	if [ -d .git ]; then			\
-	  git log > $(distdir)/ChangeLog;	\
-	fi
+debversion_la_CXXFLAGS = -I$(pg_server_includedir)
+debversion_la_LDFLAGS = -module -avoid-version $(APT_PKG_LIBS)
 
-EXTRA_DIST =				\
-	bootstrap			\
-	debian				\
-	scripts/sbuild_release.m4.in
-
-ps:
-	$(MAKE) -C doc sbuild.ps
-
-pdf:
-	$(MAKE) -C doc sbuild.pdf
-
-.PHONY: ps pdf

@@ -97,6 +97,13 @@ if test "$enable_debug" = "yes"; then
 fi
 
 # Checks for programs.
+AC_PROG_CC_C99
+AC_PROG_CXX
+AC_LANG([C++])
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
+AC_LIBTOOL_DLOPEN
+AC_PROG_LIBTOOL
 AC_PATH_PROG([APT_CACHE], [apt-cache])
 AC_PATH_PROG([APT_GET], [apt-get])
 AC_PATH_PROG([CHMOD], [chmod])
@@ -114,6 +121,7 @@ AC_PATH_PROG([GPG], [gpg])
 AC_PATH_PROG([HOSTNAME], [hostname])
 AC_PATH_PROG([MAN], [man])
 AC_PATH_PROG([MD5SUM], [md5sum])
+AC_PATH_PROG([PG_CONFIG], [pg_config])
 AC_PATH_PROG([PGP], [pgp])
 AC_PATH_PROG([PS], [ps])
 AC_PATH_PROG([RM], [rm])
@@ -123,7 +131,32 @@ AC_PATH_PROG([SUDO], [sudo])
 AC_PATH_PROG([SU], [su])
 AC_PATH_PROG([TEMPFILE], [tempfile])
 AC_PATH_PROG([XARGS], [xargs])
-AC_PROG_CC_C99
+
+AC_MSG_CHECKING([for debVS in -lapt-pkg])
+saved_ldflags="${LDFLAGS}"
+LDFLAGS="${LDFLAGS} -lapt-pkg"
+AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <apt-pkg/debversion.h>],
+                                [int result = debVS.CmpVersion ("1", "2");])],
+               [AC_MSG_RESULT([yes])
+	        APT_PKG_LIBS="-lapt-pkg"],
+               [AC_MSG_RESULT([no])
+	        AC_MSG_FAILURE([libapt-pkg (APT) is not installed, but is required by sbuild])])
+LDFLAGS="${saved_ldflags}"
+AC_SUBST([APT_PKG_LIBS])
+
+AC_MSG_CHECKING([for PostgreSQL server include directory])
+pg_server_includedir=`"$PG_CONFIG" --includedir-server`
+AC_ARG_WITH([debug], [AS_HELP_STRING([--pg-server-includedir], [PostgreSQL server include directory])],
+              [pg_server_includedir="${withval}"])
+AC_MSG_RESULT([$pg_server_includedir])
+AC_SUBST([pg_server_includedir])
+
+AC_MSG_CHECKING([for PostgreSQL server module directory])
+pg_server_libdir=`"$PG_CONFIG" --pkglibdir`
+AC_ARG_WITH([debug], [AS_HELP_STRING([--pg-server-libdir], [PostgreSQL server module directory])],
+              [pg_server_libdir="${withval}"])
+AC_MSG_RESULT([$pg_server_libdir])
+AC_SUBST([pg_server_libdir])
 
 dnl Set PACKAGE_LOCALE_DIR in config.h
 AH_TEMPLATE(PACKAGE_LOCALE_DIR, [Package locale directory])
@@ -286,6 +319,7 @@ dnl Configure which files to generate.
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([bin/Makefile])
 AC_CONFIG_FILES([configs/Makefile])
+AC_CONFIG_FILES([db/Makefile])
 AC_CONFIG_FILES([etc/Makefile])
 AC_CONFIG_FILES([lib/Makefile])
 AC_CONFIG_FILES([lib/Buildd/Makefile])
