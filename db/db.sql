@@ -74,17 +74,17 @@ INSERT INTO distributions (name, priority) VALUES ('stable', 1);
 INSERT INTO distributions (name, priority, depwait, hidden)
 	VALUES ('stable-security', 1, 'f', 't');
 
-CREATE TABLE sections (
+CREATE TABLE components (
 	name text
-	  CONSTRAINT section_name PRIMARY KEY
+	  CONSTRAINT component_name PRIMARY KEY
 );
 
-COMMENT ON TABLE sections IS 'Valid archive sections';
-COMMENT ON COLUMN sections.name IS 'Section name';
+COMMENT ON TABLE components IS 'Valid archive components';
+COMMENT ON COLUMN components.name IS 'Component name';
 
-INSERT INTO sections (name) VALUES ('main');
-INSERT INTO sections (name) VALUES ('contrib');
-INSERT INTO sections (name) VALUES ('non-free');
+INSERT INTO components (name) VALUES ('main');
+INSERT INTO components (name) VALUES ('contrib');
+INSERT INTO components (name) VALUES ('non-free');
 
 CREATE TABLE package_priorities (
 	name text
@@ -155,8 +155,8 @@ CREATE TABLE sources (
 	name text
 	  NOT NULL,
 	version debversion NOT NULL,
-	section_name text
-	  CONSTRAINT source_sect_fkey REFERENCES sections(name)
+	component_name text
+	  CONSTRAINT source_comp_fkey REFERENCES components(name)
 	  ON DELETE CASCADE
 	  NOT NULL,
 	pkg_section_name text
@@ -180,7 +180,7 @@ CREATE INDEX sources_pkg_idx ON sources (name);
 COMMENT ON TABLE sources IS 'Source packages common to all architectures (from Sources)';
 COMMENT ON COLUMN sources.name IS 'Package name';
 COMMENT ON COLUMN sources.version IS 'Package version number';
-COMMENT ON COLUMN sources.section_name IS 'Archive section';
+COMMENT ON COLUMN sources.component_name IS 'Archive component';
 COMMENT ON COLUMN sources.pkg_section_name IS 'Package section';
 COMMENT ON COLUMN sources.pkg_priority_name IS 'Package priority';
 COMMENT ON COLUMN sources.maintainer IS 'Package maintainer name';
