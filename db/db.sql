@@ -21,7 +21,7 @@ CREATE DATABASE "sbuild-packages" ENCODING 'UTF8';
 COMMENT ON DATABASE "sbuild-packages" IS 'Debian source builder package state management';
 \c "sbuild-packages"
 
-\i version.sql
+\i debversion.sql
 
 CREATE TABLE architectures (
 	name text
