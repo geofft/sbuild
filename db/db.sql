@@ -47,11 +47,9 @@ CREATE TABLE architectures (
 	  CONSTRAINT arch_pkey PRIMARY KEY
 );
 
-COMMENT ON TABLE architectures IS 'Valid architectures';
+COMMENT ON TABLE architectures IS 'Architectures supported by this wanna-build instance';
 COMMENT ON COLUMN architectures.name IS 'Architecture name';
 
-INSERT INTO architectures (name) VALUES ('all');
-INSERT INTO architectures (name) VALUES ('any');
 INSERT INTO architectures (name) VALUES ('alpha');
 INSERT INTO architectures (name) VALUES ('amd64');
 INSERT INTO architectures (name) VALUES ('arm');
@@ -102,6 +100,14 @@ COMMENT ON COLUMN components.name IS 'Component name';
 INSERT INTO components (name) VALUES ('main');
 INSERT INTO components (name) VALUES ('contrib');
 INSERT INTO components (name) VALUES ('non-free');
+
+CREATE TABLE package_architectures (
+	name text
+	  CONSTRAINT pkg_arch_pkey PRIMARY KEY
+);
+
+COMMENT ON TABLE package_architectures IS 'Possible values for the Architecture field';
+COMMENT ON COLUMN package_architectures.name IS 'Architecture name';
 
 CREATE TABLE package_priorities (
 	name text
@@ -219,7 +225,8 @@ CREATE TABLE source_architectures (
 	  NOT NULL,
 	source_version debversion NOT NULL,
 	arch_name text
-	  CONSTRAINT source_arch_arch_fkey REFERENCES architectures(name)
+	  CONSTRAINT source_arch_arch_fkey
+	  REFERENCES package_architectures(name)
 	  ON DELETE CASCADE
 	  NOT NULL,
 	UNIQUE (source_name,source_version,arch_name),
@@ -237,7 +244,7 @@ CREATE TABLE binaries (
 	name text NOT NULL,
 	version debversion NOT NULL,
 	arch_name text
-	  CONSTRAINT bin_arch_fkey REFERENCES architectures(name)
+	  CONSTRAINT bin_arch_fkey REFERENCES package_architectures(name)
 	  ON DELETE CASCADE
 	  NOT NULL,
        	source_name text
@@ -312,7 +319,7 @@ CREATE TABLE suite_binaries (
 	  NOT NULL,
 	binary_version debversion NOT NULL,
 	arch_name text
-	  CONSTRAINT suite_bin_arch_fkey REFERENCES architectures(name)
+	  CONSTRAINT suite_bin_arch_fkey REFERENCES package_architectures(name)
           ON DELETE CASCADE
 	  NOT NULL,
 	suite_name text
@@ -431,3 +438,27 @@ CREATE TRIGGER checkrel BEFORE INSERT OR UPDATE ON binaries
   FOR EACH ROW EXECUTE PROCEDURE package_checkrel();
 COMMENT ON TRIGGER checkrel ON binaries
   IS 'Check foreign key references (package sections and priorities) exist';
+
+
+CREATE OR REPLACE FUNCTION package_check_arch() RETURNS trigger AS $package_check_arch$
+BEGIN
+  PERFORM name FROM package_architectures WHERE (name = NEW.arch_name);
+  IF FOUND = 'f' THEN
+    INSERT INTO package_architectures (name) VALUES (NEW.arch_name);
+  END IF;
+  RETURN NEW;
+END;
+$package_check_arch$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION package_check_arch ()
+  IS 'Insert missing values into package_architectures (from NEW.arch_name)';
+
+CREATE TRIGGER check_arch BEFORE INSERT OR UPDATE ON source_architectures
+  FOR EACH ROW EXECUTE PROCEDURE package_check_arch();
+COMMENT ON TRIGGER check_arch ON source_architectures
+  IS 'Ensure foreign key references (arch_name) exist';
+
+CREATE TRIGGER check_arch BEFORE INSERT OR UPDATE ON binaries
+  FOR EACH ROW EXECUTE PROCEDURE package_check_arch();
+COMMENT ON TRIGGER check_arch ON binaries
+  IS 'Ensure foreign key references (arch_name) exist';
