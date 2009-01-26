@@ -415,6 +415,56 @@ COMMENT ON COLUMN build_job_properties.job_id IS 'Job reference number';
 COMMENT ON COLUMN build_job_properties.prop_name IS 'Property name';
 COMMENT ON COLUMN build_job_properties.prop_value IS 'Property value';
 
+-- Make this a table because in the future we may have more fine-grained
+-- result states.
+CREATE TABLE build_log_result (
+	result text
+	  CONSTRAINT build_log_result_pkey PRIMARY KEY,
+	is_success boolean
+	  DEFAULT 'f'
+);
+
+COMMENT ON TABLE build_log_result IS 'Possible results states of a build log';
+COMMENT ON COLUMN build_log_result.result IS 'Meaningful and short name for the result';
+COMMENT ON COLUMN build_log_result.is_success IS 'Whether the result of the build is successful';
+
+INSERT INTO build_log_result (result) VALUES ('maybe-failed');
+INSERT INTO build_log_result (result, is_success) VALUES ('maybe-successful', 't');
+
+CREATE TABLE build_logs (
+	source text
+	  NOT NULL,
+	version debversion
+	  NOT NULL,
+	arch text
+	  CONSTRAINT build_logs_arch_fkey REFERENCES architectures(name)
+	  NOT NULL,
+	suite text
+	  CONSTRAINT build_logs_suite_fkey REFERENCES suites(name)
+	  NOT NULL,
+	date timestamp with time zone
+	  NOT NULL,
+	result text
+	  CONSTRAINT build_logs_state_fkey REFERENCES build_log_result(result)
+	  NOT NULL,
+	build_time interval,
+	used_space integer,
+	path text
+	  CONSTRAINT build_logs_pkey PRIMARY KEY
+);
+CREATE INDEX build_logs_source_idx ON build_logs (source);
+
+COMMENT ON TABLE build_logs IS 'Available build logs';
+COMMENT ON COLUMN build_logs.source IS 'Source package name';
+COMMENT ON COLUMN build_logs.version IS 'Source package version';
+COMMENT ON COLUMN build_logs.arch IS 'Architecture name';
+COMMENT ON COLUMN build_logs.suite IS 'Suite name';
+COMMENT ON COLUMN build_logs.date IS 'Date of the log';
+COMMENT ON COLUMN build_logs.result IS 'Result state';
+COMMENT ON COLUMN build_logs.build_time IS 'Time needed by the build';
+COMMENT ON COLUMN build_logs.used_space IS 'Space needed by the build';
+COMMENT ON COLUMN build_logs.path IS 'Relative path to the log file';
+
 CREATE TABLE log (
 	time timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
