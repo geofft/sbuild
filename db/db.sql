@@ -137,12 +137,16 @@ COMMENT ON COLUMN package_sections.section IS 'Section name';
 CREATE TABLE builders (
 	builder text
 	  CONSTRAINT builder_pkey PRIMARY KEY,
+	arch text
+	  CONSTRAINT builder_arch_fkey REFERENCES architectures(arch)
+	  NOT NULL,
 	address text
 	  NOT NULL
 );
 
 COMMENT ON TABLE builders IS 'buildd usernames (database users from _userinfo in old MLDBM db format)';
 COMMENT ON COLUMN builders.builder IS 'Username';
+COMMENT ON COLUMN builders.arch IS 'Buildd architecture';
 COMMENT ON COLUMN builders.address IS 'Remote e-mail address of the buildd user';
 
 CREATE TABLE sources (
