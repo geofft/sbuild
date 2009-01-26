@@ -23,6 +23,25 @@ COMMENT ON DATABASE "sbuild-packages" IS 'Debian source builder package state ma
 
 \i debversion.sql
 
+CREATE OR REPLACE FUNCTION create_plpgsql_language ()
+  RETURNS TEXT AS $$
+    CREATE LANGUAGE plpgsql;
+    SELECT 'language plpgsql created'::TEXT;
+$$
+LANGUAGE SQL;
+
+SELECT CASE WHEN
+ (SELECT 't'::boolean
+    FROM pg_language
+      WHERE lanname='plpgsql')
+  THEN
+    (SELECT 'language plpgsql already installed'::TEXT)
+  ELSE
+    (SELECT create_plpgsql_language())
+END;
+
+DROP FUNCTION create_plpgsql_language()
+
 CREATE TABLE architectures (
 	name text
 	  CONSTRAINT arch_name PRIMARY KEY
