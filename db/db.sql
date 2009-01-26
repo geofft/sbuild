@@ -66,9 +66,9 @@ INSERT INTO architectures (name) VALUES ('powerpc');
 INSERT INTO architectures (name) VALUES ('s390');
 INSERT INTO architectures (name) VALUES ('sparc');
 
-CREATE TABLE distributions (
+CREATE TABLE suites (
 	name text
-	  CONSTRAINT dist_name PRIMARY KEY,
+	  CONSTRAINT suite_name PRIMARY KEY,
 	priority integer,
 	depwait boolean
 	  DEFAULT 't',
@@ -76,19 +76,19 @@ CREATE TABLE distributions (
 	  DEFAULT 'f'
 );
 
-COMMENT ON TABLE distributions IS 'Valid distributions';
-COMMENT ON COLUMN distributions.name IS 'Distribution name';
-COMMENT ON COLUMN distributions.priority IS 'Sorting order (lower is higher priority)';
-COMMENT ON COLUMN distributions.depwait IS 'Automatically wait on dependencies?';
-COMMENT ON COLUMN distributions.hidden IS 'Hide distribution from public view (e.g. for -security)?';
+COMMENT ON TABLE suites IS 'Valid suites';
+COMMENT ON COLUMN suites.name IS 'Suite name';
+COMMENT ON COLUMN suites.priority IS 'Sorting order (lower is higher priority)';
+COMMENT ON COLUMN suites.depwait IS 'Automatically wait on dependencies?';
+COMMENT ON COLUMN suites.hidden IS 'Hide suite from public view (e.g. for -security)?';
 
-INSERT INTO distributions (name, priority) VALUES ('experimental', 4);
-INSERT INTO distributions (name, priority) VALUES ('unstable', 3);
-INSERT INTO distributions (name, priority) VALUES ('testing', 2);
-INSERT INTO distributions (name, priority, depwait, hidden)
+INSERT INTO suites (name, priority) VALUES ('experimental', 4);
+INSERT INTO suites (name, priority) VALUES ('unstable', 3);
+INSERT INTO suites (name, priority) VALUES ('testing', 2);
+INSERT INTO suites (name, priority, depwait, hidden)
 	VALUES ('testing-security', 2, 'f', 't');
-INSERT INTO distributions (name, priority) VALUES ('stable', 1);
-INSERT INTO distributions (name, priority, depwait, hidden)
+INSERT INTO suites (name, priority) VALUES ('stable', 1);
+INSERT INTO suites (name, priority, depwait, hidden)
 	VALUES ('stable-security', 1, 'f', 't');
 
 CREATE TABLE components (
@@ -282,49 +282,49 @@ INSERT INTO job_states (name) VALUES ('reupload-wait');
 INSERT INTO job_states (name) VALUES ('state');
 INSERT INTO job_states (name) VALUES ('uploaded');
 
-CREATE TABLE dist_sources (
+CREATE TABLE suite_sources (
        	source_name text
 	  NOT NULL,
 	source_version debversion NOT NULL,
-	distribution_name text
-	  CONSTRAINT dist_sources_dist_fkey REFERENCES distributions(name)
+	suite_name text
+	  CONSTRAINT suite_sources_suite_fkey REFERENCES suites(name)
 	  ON DELETE CASCADE
 	  NOT NULL,
-	CONSTRAINT dist_sources_pkey PRIMARY KEY (source_name, distribution_name),
-	CONSTRAINT dist_sources_src_fkey FOREIGN KEY (source_name, source_version)
+	CONSTRAINT suite_sources_pkey PRIMARY KEY (source_name, suite_name),
+	CONSTRAINT suite_sources_src_fkey FOREIGN KEY (source_name, source_version)
 	  REFERENCES sources (name, version)
 	  ON DELETE CASCADE
 );
 
-COMMENT ON TABLE dist_sources IS 'Source packages contained within a distribution';
-COMMENT ON COLUMN dist_sources.source_name IS 'Source package name';
-COMMENT ON COLUMN dist_sources.source_version IS 'Source package version number';
-COMMENT ON COLUMN dist_sources.distribution_name IS 'Distribution name';
+COMMENT ON TABLE suite_sources IS 'Source packages contained within a suite';
+COMMENT ON COLUMN suite_sources.source_name IS 'Source package name';
+COMMENT ON COLUMN suite_sources.source_version IS 'Source package version number';
+COMMENT ON COLUMN suite_sources.suite_name IS 'Suite name';
 
-CREATE TABLE dist_binaries (
+CREATE TABLE suite_binaries (
        	binary_name text
 	  NOT NULL,
 	binary_version debversion NOT NULL,
 	arch_name text
-	  CONSTRAINT dist_bin_arch_fkey REFERENCES architectures(name)
+	  CONSTRAINT suite_bin_arch_fkey REFERENCES architectures(name)
           ON DELETE CASCADE
 	  NOT NULL,
-	distribution_name text
-	  CONSTRAINT dist_bin_dist_fkey REFERENCES distributions(name)
+	suite_name text
+	  CONSTRAINT suite_bin_suite_fkey REFERENCES suites(name)
           ON DELETE CASCADE
 	  NOT NULL,
-	CONSTRAINT dist_bin_pkey PRIMARY KEY (binary_name, distribution_name),
-	CONSTRAINT dist_bin_bin_fkey FOREIGN KEY (binary_name, binary_version, arch_name)
+	CONSTRAINT suite_bin_pkey PRIMARY KEY (binary_name, suite_name),
+	CONSTRAINT suite_bin_bin_fkey FOREIGN KEY (binary_name, binary_version, arch_name)
 	  REFERENCES binaries (name, version, arch_name)
 	  ON DELETE CASCADE,
-	CONSTRAINT dist_bin_unique UNIQUE (binary_name, binary_version, arch_name, distribution_name)
+	CONSTRAINT suite_bin_unique UNIQUE (binary_name, binary_version, arch_name, suite_name)
 );
 
-COMMENT ON TABLE dist_binaries IS 'Binary packages contained within a distribution';
-COMMENT ON COLUMN dist_binaries.binary_name IS 'Binary package name';
-COMMENT ON COLUMN dist_binaries.binary_version IS 'Binary package version number';
-COMMENT ON COLUMN dist_binaries.arch_name IS 'Architecture name';
-COMMENT ON COLUMN dist_binaries.distribution_name IS 'Distribution name';
+COMMENT ON TABLE suite_binaries IS 'Binary packages contained within a suite';
+COMMENT ON COLUMN suite_binaries.binary_name IS 'Binary package name';
+COMMENT ON COLUMN suite_binaries.binary_version IS 'Binary package version number';
+COMMENT ON COLUMN suite_binaries.arch_name IS 'Architecture name';
+COMMENT ON COLUMN suite_binaries.suite_name IS 'Suite name';
 
 CREATE TABLE build_jobs (
 	id serial
@@ -337,8 +337,8 @@ CREATE TABLE build_jobs (
  	  CONSTRAINT build_jobs_arch_fkey REFERENCES architectures(name)
 	  ON DELETE CASCADE
 	  NOT NULL,
-	distribution_name text
-	  CONSTRAINT build_jobs_dist_fkey REFERENCES distributions(name)
+	suite_name text
+	  CONSTRAINT build_jobs_suite_fkey REFERENCES suites(name)
 	  ON DELETE CASCADE
 	  NOT NULL,
 	user_name text NOT NULL DEFAULT CURRENT_USER,
@@ -366,7 +366,7 @@ COMMENT ON COLUMN build_jobs.id IS 'Job number';
 COMMENT ON COLUMN build_jobs.source_name IS 'Source package name';
 COMMENT ON COLUMN build_jobs.source_version IS 'Source package version number';
 COMMENT ON COLUMN build_jobs.arch_name IS 'Architecture name';
-COMMENT ON COLUMN build_jobs.distribution_name IS 'Architecture version';
+COMMENT ON COLUMN build_jobs.suite_name IS 'Suite name';
 COMMENT ON COLUMN build_jobs.user_name IS 'User making this change (username)';
 COMMENT ON COLUMN build_jobs.builder_name IS 'Build dæmon making this change (username)';
 COMMENT ON COLUMN build_jobs.state_name IS 'State name';
