@@ -195,7 +195,6 @@ CREATE TABLE sources (
 	  CONSTRAINT source_pkg_pri_fkey REFERENCES package_priorities(name)
 	  NOT NULL,
 	maintainer text NOT NULL,
-	uploaders text,
 	build_dep text,
 	build_dep_indep text,
 	build_confl text,
@@ -213,7 +212,6 @@ COMMENT ON COLUMN sources.component_name IS 'Archive component';
 COMMENT ON COLUMN sources.pkg_section_name IS 'Package section';
 COMMENT ON COLUMN sources.pkg_priority_name IS 'Package priority';
 COMMENT ON COLUMN sources.maintainer IS 'Package maintainer name';
-COMMENT ON COLUMN sources.uploaders IS 'Package uploader names';
 COMMENT ON COLUMN sources.build_dep IS 'Package build dependencies (architecture dependent)';
 COMMENT ON COLUMN sources.build_dep_indep IS 'Package build dependencies (architecture independent)';
 COMMENT ON COLUMN sources.build_confl IS 'Package build conflicts (architecture dependent)';
@@ -239,6 +237,24 @@ COMMENT ON TABLE source_architectures IS 'Source package architectures (from Sou
 COMMENT ON COLUMN source_architectures.source_name IS 'Package name';
 COMMENT ON COLUMN source_architectures.source_version IS 'Package version number';
 COMMENT ON COLUMN source_architectures.arch_name IS 'Architecture name';
+
+CREATE TABLE uploaders (
+	source_name text
+	  NOT NULL,
+	source_version debversion
+	  NOT NULL,
+	uploader text
+	  NOT NULL,
+	UNIQUE (source_name, source_version, uploader),
+	CONSTRAINT uploader_source_fkey FOREIGN KEY (source_name, source_version)
+	  REFERENCES sources (name, version)
+	  ON DELETE CASCADE
+);
+
+COMMENT ON TABLE uploaders IS 'Uploader names for source packages';
+COMMENT ON COLUMN uploaders.source_name IS 'Package name';
+COMMENT ON COLUMN uploaders.source_version IS 'Package version number';
+COMMENT ON COLUMN uploaders.uploader IS 'Uploader name and address';
 
 CREATE TABLE binaries (
 	name text NOT NULL,
