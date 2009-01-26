@@ -105,17 +105,20 @@ INSERT INTO components (name) VALUES ('non-free');
 
 CREATE TABLE package_priorities (
 	name text
-	  CONSTRAINT pkg_pri_pkey PRIMARY KEY
+	  CONSTRAINT pkg_pri_pkey PRIMARY KEY,
+	value integer
+	  DEFAULT 0
 );
 
 COMMENT ON TABLE package_priorities IS 'Valid package priorities';
 COMMENT ON COLUMN package_priorities.name IS 'Priority name';
+COMMENT ON COLUMN package_priorities.value IS 'Integer value for sorting priorities';
 
-INSERT INTO package_priorities (name) VALUES ('required');
-INSERT INTO package_priorities (name) VALUES ('standard');
-INSERT INTO package_priorities (name) VALUES ('important');
-INSERT INTO package_priorities (name) VALUES ('optional');
-INSERT INTO package_priorities (name) VALUES ('extra');
+INSERT INTO package_priorities (name, value) VALUES ('required', 1);
+INSERT INTO package_priorities (name, value) VALUES ('standard', 2);
+INSERT INTO package_priorities (name, value) VALUES ('important', 3);
+INSERT INTO package_priorities (name, value) VALUES ('optional', 4);
+INSERT INTO package_priorities (name, value) VALUES ('extra', 5);
 
 CREATE TABLE package_sections (
         name text
