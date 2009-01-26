@@ -44,7 +44,7 @@ DROP FUNCTION create_plpgsql_language()
 
 CREATE TABLE architectures (
 	name text
-	  CONSTRAINT arch_name PRIMARY KEY
+	  CONSTRAINT arch_pkey PRIMARY KEY
 );
 
 COMMENT ON TABLE architectures IS 'Valid architectures';
@@ -68,7 +68,7 @@ INSERT INTO architectures (name) VALUES ('sparc');
 
 CREATE TABLE suites (
 	name text
-	  CONSTRAINT suite_name PRIMARY KEY,
+	  CONSTRAINT suite_pkey PRIMARY KEY,
 	priority integer,
 	depwait boolean
 	  DEFAULT 't',
@@ -93,7 +93,7 @@ INSERT INTO suites (name, priority, depwait, hidden)
 
 CREATE TABLE components (
 	name text
-	  CONSTRAINT component_name PRIMARY KEY
+	  CONSTRAINT component_pkey PRIMARY KEY
 );
 
 COMMENT ON TABLE components IS 'Valid archive components';
@@ -105,7 +105,7 @@ INSERT INTO components (name) VALUES ('non-free');
 
 CREATE TABLE package_priorities (
 	name text
-	  CONSTRAINT pkg_pri_name PRIMARY KEY
+	  CONSTRAINT pkg_pri_pkey PRIMARY KEY
 );
 
 COMMENT ON TABLE package_priorities IS 'Valid package priorities';
@@ -119,7 +119,7 @@ INSERT INTO package_priorities (name) VALUES ('extra');
 
 CREATE TABLE package_sections (
         name text
-          CONSTRAINT pkg_sect_name PRIMARY KEY
+          CONSTRAINT pkg_sect_pkey PRIMARY KEY
 );
 
 COMMENT ON TABLE package_sections IS 'Valid package sections';
@@ -260,7 +260,7 @@ COMMENT ON COLUMN binaries.pkg_priority_name IS 'Package priority';
 
 CREATE TABLE job_states (
 	name text
-	  CONSTRAINT state_name PRIMARY KEY
+	  CONSTRAINT state_pkey PRIMARY KEY
 );
 
 COMMENT ON TABLE job_states IS 'Build job states';
