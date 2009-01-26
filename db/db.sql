@@ -453,6 +453,39 @@ COMMENT ON COLUMN log.time IS 'Log entry time';
 COMMENT ON COLUMN log.username IS 'Log user name';
 COMMENT ON COLUMN log.message IS 'Log entry message';
 
+CREATE TABLE people (
+	login text
+	  CONSTRAINT people_pkey PRIMARY KEY,
+	full_name text
+	  NOT NULL,
+	address text
+	  NOT NULL
+);
+
+COMMENT ON TABLE people IS 'People wanna-build should know about';
+COMMENT ON COLUMN people.login IS 'Debian login';
+COMMENT ON COLUMN people.full_name IS 'Full name';
+COMMENT ON COLUMN people.address IS 'E-mail address';
+
+CREATE TABLE buildd_admins (
+	builder text
+	  CONSTRAINT buildd_admin_builder_fkey REFERENCES builders(builder)
+	  ON DELETE CASCADE
+	  NOT NULL,
+	admin text
+	  CONSTRAINT buildd_admin_admin_fkey REFERENCES people(login)
+	  ON DELETE CASCADE
+	  NOT NULL,
+	backup boolean
+	  DEFAULT 'f',
+	UNIQUE (builder, admin)
+);
+
+COMMENT ON TABLE buildd_admins IS 'Admins for each buildd';
+COMMENT ON COLUMN buildd_admins.builder IS 'The buildd';
+COMMENT ON COLUMN buildd_admins.admin IS 'The admin login';
+COMMENT ON COLUMN buildd_admins.backup IS 'Whether this is only a backup admin';
+
 CREATE OR REPLACE FUNCTION package_checkrel() RETURNS trigger AS $package_checkrel$
 BEGIN
   PERFORM section FROM package_sections WHERE (section = NEW.section);
