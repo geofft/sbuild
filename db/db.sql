@@ -162,11 +162,14 @@ INSERT INTO package_sections (name) VALUES ('x11');
 
 CREATE TABLE builders (
 	name text
-	  CONSTRAINT builder_pkey PRIMARY KEY
+	  CONSTRAINT builder_pkey PRIMARY KEY,
+	address text
+	  NOT NULL
 );
 
 COMMENT ON TABLE builders IS 'buildd usernames (database users from _userinfo in old MLDBM db format)';
 COMMENT ON COLUMN builders.name IS 'Username';
+COMMENT ON COLUMN builders.address IS 'Remote e-mail address of the buildd user';
 
 CREATE TABLE sources (
 	name text
