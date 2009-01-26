@@ -1,7 +1,8 @@
 --- Debian Source Builder: Database Schema for PostgreSQL            -*- sql -*-
 ---
---- Copyright © 2008 Roger Leigh <rleigh@debian.org>
---- Copyright © 2008 Marc 'HE' Brockschmidt <he@debian.org>
+--- Copyright © 2008-2009 Roger Leigh <rleigh@debian.org>
+--- Copyright © 2008-2009 Marc 'HE' Brockschmidt <he@debian.org>
+--- Copyright © 2008-2009 Adeodato Simó <adeodato@debian.org>
 ---
 --- This program is free software: you can redistribute it and/or modify
 --- it under the terms of the GNU General Public License as published by
