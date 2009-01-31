@@ -24,6 +24,8 @@ COMMENT ON DATABASE "sbuild-packages" IS 'Debian source builder package state ma
 
 \i debversion.sql
 
+SET search_path = public;
+
 CREATE OR REPLACE FUNCTION create_plpgsql_language ()
   RETURNS TEXT AS $$
     CREATE LANGUAGE plpgsql;
