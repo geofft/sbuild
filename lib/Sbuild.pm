@@ -98,6 +98,12 @@ sub version_compare ($$$) {
 	my $rel = shift;
 	my $v2 = shift;
 
+	# If we're trying to compare versions against a provided package,
+	# always return "not satisfied", forcing an install attempt.
+	if ($v1 eq "=*=PROVIDED=*=") {
+		return 0;
+	}
+
 	if ($Sbuild::opt_correct_version_cmp) {
 		system "dpkg", "--compare-versions", $v1, $rel, $v2;
 		return $? == 0;
