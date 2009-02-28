@@ -31,6 +31,7 @@ use WannaBuild::Conf;
 use Sbuild::Sysconfig;
 use Sbuild::DB::Info;
 use Sbuild::DB::MLDBM;
+use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
 sub process ();
@@ -1900,7 +1901,14 @@ sub open_db ($) {
     my $newdb = $databases{$dist};
 
     if (!defined($newdb)) {
-	$newdb = Sbuild::DB->new($conf);
+	if ($conf->get('DB_TYPE') eq 'mldbm') {
+	    $newdb = Sbuild::DB::MLDBM->new($conf);
+	} elsif ($conf->get('DB_TYPE') eq 'postgres') {
+	    $newdb = Sbuild::DB::Postgres->new($conf);
+	} else {
+	    die "Unsupported database type '" . $conf->get('DB_TYPE') . "'\n";
+        }
+
 	$newdb->open(db_filename($dist));
 	$newdb->lock();
 

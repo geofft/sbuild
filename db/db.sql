@@ -422,7 +422,7 @@ CREATE TABLE build_logs (
 	date timestamp with time zone
 	  NOT NULL,
 	result text
-	  CONSTRAINT build_logs_state_fkey REFERENCES build_log_result(result)
+	  CONSTRAINT build_logs_result_fkey REFERENCES build_log_result(result)
 	  NOT NULL,
 	build_time interval,
 	used_space integer,

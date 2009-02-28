@@ -57,6 +57,9 @@ sub init_allowed_keys {
     };
 
     my %db_keys = (
+	'DB_TYPE'				=> {
+	    DEFAULT => 'mldbm'
+	},
 	'DB_BASE_DIR'				=> {
 	    CHECK => $validate_directory,
 	    DEFAULT => $Sbuild::Sysconfig::paths{'WANNA_BUILD_LOCALSTATE_DIR'}
@@ -250,6 +253,7 @@ sub read_config {
     our $web_stats = undef;
 
     # New sbuild.conf format
+    our $db_type = undef;
     our $db_base_dir = undef;
     our $db_base_name = undef;
     our $db_transaction_log = undef;
@@ -291,6 +295,7 @@ sub read_config {
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
     if ($legacy_db) { # Using old wanna-build.conf
+	$self->set('DB_TYPE', 'mldbm');
 	$self->set('DB_BASE_DIR', $basedir);
 	# TODO: Don't allow slash in name
 	$self->set('DB_BASE_NAME', $dbbase);
@@ -310,6 +315,7 @@ sub read_config {
 	$self->set('DB_MAIL_DOMAIN', $buildd_domain);
 	$self->set('DB_WEB_STATS', $web_stats);
     } else { # Using sbuild.conf
+	$self->set('DB_TYPE', $db_type);
 	$self->set('DB_BASE_DIR', $db_base_dir);
 	$self->set('DB_BASE_NAME', $db_base_name);
 	$self->set('DB_TRANSACTION_LOG', $db_transaction_log);
