@@ -125,7 +125,7 @@ elsif ($progname =~ /^list-(.*)$/) {
 
 $conf->set('DB_OPERATION', $conf->get('DB_CATEGORY') ? "set-failed" : "set-building")
     if !$conf->get('DB_OPERATION'); # default operation
-$conf->set('DB_LIST_ORDER', $conf->get('DB_LIST_STATE') eq "failed" ? 'fPcpsn' : 'PScpsn')
+$conf->set('DB_LIST_ORDER', $conf->get('DB_LIST_STATE') eq "failed" ? 'fPcpasn' : 'PScpasn')
     if (!$conf->get('DB_LIST_ORDER') &&
 	(defined($conf->get('DB_LIST_STATE')) && $conf->get('DB_LIST_STATE')));
 $conf->set('DISTRIBUTION', 'unstable')
@@ -1630,6 +1630,11 @@ sub sort_list_func () {
 	      my $pb = $prioval{$b->{'Priority'}} >
 		  $prioval{'standard'};
 	      $x = $pa <=> $pb;
+	      return $x if $x != 0;
+	      last SWITCH;
+	  };
+	  /a/ && do {
+	      my $x = $ctime-parse_date($a->{'State-Change'}) <=> $ctime-parse_date($b->{'State-Change'});
 	      return $x if $x != 0;
 	      last SWITCH;
 	  };
