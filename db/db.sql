@@ -58,6 +58,7 @@ INSERT INTO architectures (arch) VALUES ('amd64');
 INSERT INTO architectures (arch) VALUES ('arm');
 INSERT INTO architectures (arch) VALUES ('armel');
 INSERT INTO architectures (arch) VALUES ('hppa');
+INSERT INTO architectures (arch) VALUES ('hurd-i386');
 INSERT INTO architectures (arch) VALUES ('i386');
 INSERT INTO architectures (arch) VALUES ('ia64');
 INSERT INTO architectures (arch) VALUES ('m68k');
