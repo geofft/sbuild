@@ -92,6 +92,7 @@ INSERT INTO suites (suite, priority, depwait, hidden)
 INSERT INTO suites (suite, priority) VALUES ('stable', 1);
 INSERT INTO suites (suite, priority, depwait, hidden)
 	VALUES ('stable-security', 1, 'f', 't');
+INSERT INTO suites (suite, priority) VALUES ('oldstable', 1);
 
 CREATE TABLE components (
 	component text
