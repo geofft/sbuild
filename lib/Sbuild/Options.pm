@@ -97,9 +97,8 @@ sub parse_options {
 		       },
 		       "make-binNMU=s" => sub {
 			   $self->set_conf('BIN_NMU', $_[1]);
-			   $self->set_conf(
-			       'BIN_NMU_VERSION',
-			       $self->set_conf('BIN_NMU_VERSION') || 1);
+			   $self->set_conf('BIN_NMU_VERSION', 1)
+			       if (!defined $self->get_conf('BIN_NMU_VERSION'));
 		       },
 		       "binNMU=i" => sub {
 			   $self->set_conf('BIN_NMU_VERSION', $_[1]);
