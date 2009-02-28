@@ -1,0 +1,17 @@
+MODULES = debversion
+DATA_built = debversion.sql
+DATA = uninstall_debversion.sql
+#REGRESS = debversion
+
+PG_CONFIG = pg_config
+PGXS := $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)
+
+CXXFLAGS := $(CPPFLAGS)
+
+debversion.so: debversion.o
+	$(CXX) $(LDFLAGS) -shared -o $@ $^ -lapt-pkg
+
+debversion.o: debversion.cc
+	$(COMPILE.cc) $(CFLAGS_SL) $(OUTPUT_OPTION) $<
+
