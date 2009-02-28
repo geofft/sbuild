@@ -299,7 +299,7 @@ db.
 This was needed when an old database was updated to contain epochs. As now all
 databases should include epochs, this option should be unneeded.
 .SH ALIASES
-wanna\-build includes a set of aliases (found in @WANNABUILD_LIBEXEC_DIR@)
+wanna\-build includes a set of aliases (found in @WANNA_BUILD_LIBEXEC_DIR@)
 which save typing the operation option (add the directory to the PATH in your
 environment).  The following aliases exist:
 .SS Actions
