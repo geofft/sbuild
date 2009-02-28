@@ -322,11 +322,10 @@ CREATE TABLE suite_binaries (
 	  CONSTRAINT suite_bin_suite_fkey REFERENCES suites(suite)
           ON DELETE CASCADE
 	  NOT NULL,
-	CONSTRAINT suite_bin_pkey PRIMARY KEY (package, suite),
+	CONSTRAINT suite_bin_pkey PRIMARY KEY (package, arch, suite),
 	CONSTRAINT suite_bin_bin_fkey FOREIGN KEY (package, version, arch)
 	  REFERENCES binaries (package, version, arch)
-	  ON DELETE CASCADE,
-	CONSTRAINT suite_bin_unique UNIQUE (package, version, arch, suite)
+	  ON DELETE CASCADE
 );
 
 COMMENT ON TABLE suite_binaries IS 'Binary packages contained within a suite';
