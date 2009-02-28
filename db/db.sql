@@ -407,6 +407,7 @@ COMMENT ON COLUMN build_log_result.is_success IS 'Whether the result of the buil
 
 INSERT INTO build_log_result (result) VALUES ('maybe-failed');
 INSERT INTO build_log_result (result, is_success) VALUES ('maybe-successful', 't');
+INSERT INTO build_log_result (result) VALUES ('skipped');
 
 CREATE TABLE build_logs (
 	source text
