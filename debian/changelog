@@ -9,6 +9,7 @@ sbuild (0.58.0-1) experimental; urgency=low
     - Build-Depend on debhelper 7.
     - Build-Depend on libapt-pkg-dev and postgresql-server-dev
       (for PostgreSQL debversion type used by wanna-build).
+    - postgresql-8.3-debversion: New package.
 
  -- Roger Leigh <rleigh@debian.org>  Mon, 02 Mar 2009 22:32:01 +0000
 
