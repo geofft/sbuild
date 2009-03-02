@@ -21,7 +21,7 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = bin configs etc lib man src
+SUBDIRS = bin configs etc lib man db src
 
 dist-hook:
 # Remove junk from the generated tarball.
@@ -38,6 +38,12 @@ EXTRA_DIST =				\
 	bootstrap			\
 	debian				\
 	scripts/sbuild_release.m4.in
+
+DISTCHECK_CONFIGURE_FLAGS =						\
+	--with-postgresql						\
+	--enable-pg-server-libdir=\$${prefix}/postgresql/lib		\
+	--enable-pg-server-sharedir=\$${prefix}/postgresql/share
+
 
 ps:
 	$(MAKE) -C doc sbuild.ps

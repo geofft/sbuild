@@ -6,7 +6,11 @@ sbuild (0.58.0-1) experimental; urgency=low
     - Clean up old unused code.
     - Correct patching of config.status and config.guess. 
   * debian/compat: Update to debhelper version 7.
-  * debian/control: Build-Depend on debhelper 7.
+  * debian/control:
+    - Build-Depend on debhelper 7.
+    - Build-Depend on libapt-pkg-dev and postgresql-server-dev
+      (for PostgreSQL debversion type used by wanna-build).
+    - postgresql-8.3-debversion: New package.
   * buildd-mail-wrapper: Use more portable BSD getloadavg in place of
     Linux-specific sysinfo.  Thanks to Robert Millan for this
     patch (Closes: #511095). 
@@ -17,7 +21,7 @@ sbuild (0.58.0-1) experimental; urgency=low
   * lib/Sbuild.pm: always perform version checks on provided packages
     (Closes: #505747).
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 11 Jan 2009 23:34:40 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 02 Mar 2009 23:21:46 +0000
 
 sbuild (0.57.5-1) unstable; urgency=low
 

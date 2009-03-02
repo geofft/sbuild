@@ -20,7 +20,7 @@
 #
 #######################################################################
 
-package Sbuild::DBInfo;
+package Sbuild::DB::Info;
 
 use Sbuild qw(debug isin);
 

@@ -22,7 +22,7 @@
 include $(top_srcdir)/scripts/global.mk
 
 sbuildlibexecdir = $(SBUILD_LIBEXEC_DIR)
-wblibexecdir = $(WANNABUILD_LIBEXEC_DIR)
+wblibexecdir = $(WANNA_BUILD_LIBEXEC_DIR)
 
 bin_SCRIPTS = 				\
 	sbuild				\

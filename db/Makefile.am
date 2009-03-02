@@ -1,7 +1,7 @@
 # sbuild Makefile template
 #
 #
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2009  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -21,29 +21,29 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = DB
+if BUILD_DEBVERSION
+pg_server_lib_LTLIBRARIES =	\
+	debversion.la
 
-perlmodsbuilddir = $(perlmoddir)/Sbuild
+debversion_la_SOURCES =	\
+	debversion.cc
 
-MODULES =			\
-	Base.pm			\
-	Build.pm		\
-	Chroot.pm		\
-	ChrootPlain.pm		\
-	ChrootRoot.pm		\
-	ChrootSchroot.pm	\
-	ChrootSudo.pm		\
-	ChrootInfo.pm		\
-	ChrootInfoSchroot.pm	\
-	ChrootInfoSudo.pm	\
-	Conf.pm			\
-	Log.pm			\
-	Options.pm		\
-	Utility.pm
+debversion_la_CXXFLAGS = -I$(pg_server_includedir)
+debversion_la_LDFLAGS = -module -avoid-version $(APT_PKG_LIBS)
 
-perlmodsbuild_DATA =	\
-	$(MODULES)	\
-	Sysconfig.pm
+pg_contrib_DATA =			\
+	debversion.sql			\
+	uninstall_debversion.sql
+endif
 
-EXTRA_DIST =		\
-	$(MODULES)
+debversion.sql: debversion.sql.in
+	sed 's,MODULE_PATHNAME,$$libdir/$*,g' $< >$@
+
+CLEANFILES =	\
+	debversion.sql
+
+EXTRA_DIST =				\
+	db.sql				\
+	debversion.sql.in		\
+	uninstall_debversion.sql	\
+	Makefile-pgxs
