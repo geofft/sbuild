@@ -21,6 +21,7 @@
 
 include $(top_srcdir)/scripts/global.mk
 
+if BUILD_DEBVERSION
 pg_server_lib_LTLIBRARIES =	\
 	debversion.la
 
@@ -30,3 +31,19 @@ debversion_la_SOURCES =	\
 debversion_la_CXXFLAGS = -I$(pg_server_includedir)
 debversion_la_LDFLAGS = -module -avoid-version $(APT_PKG_LIBS)
 
+pg_contrib_DATA =			\
+	debversion.sql			\
+	uninstall_debversion.sql
+endif
+
+debversion.sql: debversion.sql.in
+	sed 's,MODULE_PATHNAME,$$libdir/$*,g' $< >$@
+
+CLEANFILES =	\
+	debversion.sql
+
+EXTRA_DIST =				\
+	db.sql				\
+	debversion.sql.in		\
+	uninstall_debversion.sql	\
+	Makefile-pgxs
