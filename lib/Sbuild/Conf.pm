@@ -494,6 +494,7 @@ sub read_config {
         if -r $Sbuild::Sysconfig::paths{'SBUILD_CONF'};
     require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
+    $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);
     $self->set('DEBUG', $debug);
     $self->set('DPKG', $dpkg);
