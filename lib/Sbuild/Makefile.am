@@ -37,6 +37,7 @@ MODULES =			\
 	ChrootInfoSchroot.pm	\
 	ChrootInfoSudo.pm	\
 	Conf.pm			\
+	ConfBase.pm		\
 	Log.pm			\
 	Options.pm		\
 	Utility.pm
