@@ -21,7 +21,8 @@ debian/build/config.status: configure
 	CFLAGS="$(CFLAGS)" ../../configure \
 	  --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
 	  --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/share \
-	  --localstatedir=/var --mandir=\$${prefix}/share/man
+	  --localstatedir=/var --mandir=\$${prefix}/share/man \
+          --with-postgresql
 
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status
@@ -60,23 +61,39 @@ install: build
 
 # Build architecture-independent files here.
 binary-indep: build install
-	dh_testdir
-	dh_testroot
-	dh_installdocs debian/cvslogs.old
-	dh_installman
-	dh_installchangelogs
-	dh_link
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_perl
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
+	dh_testdir -i
+	dh_testroot -i
+	dh_installchangelogs -i ChangeLog
+	dh_installdocs -i -A debian/cvslogs.old
+	dh_installexamples -i
+	dh_installman -i
+	dh_perl -i
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
 
 # Build architecture-dependent files here.
-binary-arch: build
-# We have nothing to do by default.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+	dh_installchangelogs -a ChangeLog
+	dh_installdocs -a -A debian/cvslogs.old
+	dh_installexamples -a
+	dh_installman -a
+	dh_link -a
+	dh_strip -a
+	dh_compress -a
+	dh_fixperms -a
+	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install

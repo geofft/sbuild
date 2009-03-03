@@ -4,7 +4,9 @@ sbuild (0.58.0-1) experimental; urgency=low
   * New release.
   * debian/rules:
     - Clean up old unused code.
-    - Correct patching of config.status and config.guess. 
+    - Correct patching of config.status and config.guess.
+    - configure with --with-postgres.
+    - Add functional binary-arch target.
   * debian/compat: Update to debhelper version 7.
   * debian/control:
     - Build-Depend on debhelper 7.
@@ -21,7 +23,7 @@ sbuild (0.58.0-1) experimental; urgency=low
   * lib/Sbuild.pm: always perform version checks on provided packages
     (Closes: #505747).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 02 Mar 2009 23:21:46 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 03 Mar 2009 00:25:40 +0000
 
 sbuild (0.57.5-1) unstable; urgency=low
 
