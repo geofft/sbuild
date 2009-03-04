@@ -39,12 +39,6 @@ EXTRA_DIST =				\
 	debian				\
 	scripts/sbuild_release.m4.in
 
-DISTCHECK_CONFIGURE_FLAGS =						\
-	--with-postgresql						\
-	--enable-pg-server-libdir=\$${prefix}/postgresql/lib		\
-	--enable-pg-server-sharedir=\$${prefix}/postgresql/share
-
-
 ps:
 	$(MAKE) -C doc sbuild.ps
 
