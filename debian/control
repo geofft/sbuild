@@ -3,7 +3,7 @@ Section: devel
 Priority: extra
 Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debian.org>
 Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, Francesco Paolo Lovergine <frankie@debian.org>
-Build-Depends: debhelper (>> 7.0.0), libapt-pkg-dev, postgresql-server-dev-8.3
+Build-Depends: debhelper (>> 7.0.0)
 Standards-Version: 3.8.0
 Vcs-Browser: http://git.debian.org/?p=buildd-tools/sbuild.git
 Vcs-Git: git://git.debian.org/git/buildd-tools/sbuild
@@ -39,15 +39,4 @@ Description: Database to track building of Debian binary packages from Debian so
  most architectures to build binary packages from source packages.
  buildd schedules work from information it gets from the wanna-build
  database; sbuild does the grunt-work.
-
-Package: postgresql-8.3-debversion
-Architecture: any
-Depends: ${shlibs:Depends}
-Description: Debian version number type for PostgreSQL
- Debian version numbers, used to version Debian packages, have a
- specified format, including specifications for how versions
- should be compared in order to sort them.  This package
- provides a debversion type for PostgreSQL, including operators
- for version comparison and index operator classes for creating
- indexes on the debversion type.
 
