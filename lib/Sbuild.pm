@@ -440,7 +440,10 @@ sub send_mail {
 
     print MAIL "From: " . $conf->get('MAILFROM') . "\n";
     print MAIL "To: $to\n";
-    print MAIL "Subject: $subject\n\n";
+    print MAIL "Subject: $subject\n";
+    print MAIL "Content-Type: text/plain; charset=UTF-8\n";
+    print MAIL "Content-Transfer-Encoding: 8bit\n";
+    print MAIL "\n";
     while( <F> ) {
 	print MAIL "." if $_ eq ".\n";
 	print MAIL $_;
