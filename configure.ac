@@ -96,29 +96,10 @@ if test "$enable_debug" = "yes"; then
   AC_DEFINE_UNQUOTED([SBUILD_DEBUG], [1], [Enable debugging])
 fi
 
-AC_MSG_CHECKING([whether to build PostgreSQL debversion extension])
-AC_ARG_WITH([postgresql], [AS_HELP_STRING([--with-postgresql], [Build with PostgreSQL debversion data type])],
-              [ case "${withval}" in
-                yes) with_postgresql="yes" ;;
-                no)  with_postgresql="no" ;;
-                unset)  with_postgresql="no" ;;
-                *) AC_MSG_RESULT([unknown])
-                   AC_MSG_ERROR([bad value ${withval} for --with-postgresql]) ;;
-                esac ],
-              [ with_postgresql="no" ])
-AC_MSG_RESULT([$with_postgresql])
-if test "$with_postgresql" = "yes"; then
-  AC_DEFINE_UNQUOTED([SBUILD_POSTGRESQL], [1], [Build with PostgreSQL debversion data type])
-fi
-
 # Checks for programs.
 AC_PROG_CC_C99
 AC_PROG_CXX
 AC_LANG([C++])
-AC_DISABLE_STATIC
-AC_ENABLE_SHARED
-AC_LIBTOOL_DLOPEN
-AC_PROG_LIBTOOL
 AC_PATH_PROG([APT_CACHE], [apt-cache])
 AC_PATH_PROG([APT_GET], [apt-get])
 AC_PATH_PROG([CHMOD], [chmod])
@@ -136,9 +117,6 @@ AC_PATH_PROG([GPG], [gpg])
 AC_PATH_PROG([HOSTNAME], [hostname])
 AC_PATH_PROG([MAN], [man])
 AC_PATH_PROG([MD5SUM], [md5sum])
-if test "$with_postgresql" = "yes"; then
-  AC_PATH_PROG([PG_CONFIG], [pg_config])
-fi
 AC_PATH_PROG([PGP], [pgp])
 AC_PATH_PROG([PS], [ps])
 AC_PATH_PROG([RM], [rm])
@@ -148,47 +126,6 @@ AC_PATH_PROG([SUDO], [sudo])
 AC_PATH_PROG([SU], [su])
 AC_PATH_PROG([TEMPFILE], [tempfile])
 AC_PATH_PROG([XARGS], [xargs])
-
-if test "$with_postgresql" = "yes" && test -x "$PG_CONFIG"; then
-  AC_MSG_CHECKING([for PostgreSQL server include directory])
-  pg_server_includedir=`"$PG_CONFIG" --includedir-server`
-  AC_ARG_ENABLE([pg-server-includedir], [AS_HELP_STRING([--enable-pg-server-includedir], [PostgreSQL server include directory])],
-                [pg_server_includedir="${enableval}"])
-  AC_MSG_RESULT([$pg_server_includedir])
-  AC_SUBST([pg_server_includedir])
-
-  AC_MSG_CHECKING([for PostgreSQL server module directory])
-  pg_server_libdir=`"$PG_CONFIG" --pkglibdir`
-  AC_ARG_ENABLE([pg-server-libdir], [AS_HELP_STRING([--enable-pg-server-libdir], [PostgreSQL server module directory])],
-                [pg_server_libdir="${enableval}"])
-  AC_MSG_RESULT([$pg_server_libdir])
-  AC_SUBST([pg_server_libdir])
-
-  AC_MSG_CHECKING([for PostgreSQL architecture-independent support files directory])
-  pg_server_sharedir=`"$PG_CONFIG" --sharedir`
-  AC_ARG_ENABLE([pg-server-sharedir], [AS_HELP_STRING([--enable-pg-server-sharedir], [PostgreSQL architecture-independent support files directory])],
-                [pg_server_sharedir="${enableval}"])
-  AC_MSG_RESULT([$pg_server_sharedir])
-  AC_SUBST([pg_server_sharedir])
-
-  pg_contribdir="$pg_server_sharedir/contrib"
-  AC_SUBST([pg_contribdir])
-
-  AC_MSG_CHECKING([for debVS in -lapt-pkg])
-  saved_ldflags="${LDFLAGS}"
-  LDFLAGS="${LDFLAGS} -lapt-pkg"
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <apt-pkg/debversion.h>],
-                                  [int result = debVS.CmpVersion ("1", "2");])],
-                 [AC_MSG_RESULT([yes])
-	          APT_PKG_LIBS="-lapt-pkg"],
-                 [AC_MSG_RESULT([no])
-	          AC_MSG_FAILURE([libapt-pkg (APT) is not installed, but is required by sbuild])])
-  LDFLAGS="${saved_ldflags}"
-  AC_SUBST([APT_PKG_LIBS])
-fi
-
-AM_CONDITIONAL([BUILD_DEBVERSION],
-               [test -x "$PG_CONFIG" && test -n "$APT_PKG_LIBS"])
 
 dnl Set PACKAGE_LOCALE_DIR in config.h
 AH_TEMPLATE(PACKAGE_LOCALE_DIR, [Package locale directory])
