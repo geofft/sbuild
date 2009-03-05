@@ -29,7 +29,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT_OK = qw($version $release_date %paths %progams);
+    @EXPORT_OK = qw($version $release_date %paths %programs);
 }
 
 our $version = "@PACKAGE_VERSION@";
