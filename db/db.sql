@@ -157,7 +157,7 @@ COMMENT ON COLUMN builders.address IS 'Remote e-mail address of the buildd user'
 CREATE TABLE sources (
 	source text
 	  NOT NULL,
-	version debversion
+	source_version debversion
 	  NOT NULL,
 	component text
 	  CONSTRAINT source_comp_fkey REFERENCES components(component)
@@ -175,14 +175,14 @@ CREATE TABLE sources (
 	build_confl text,
 	build_confl_indep text,
 	stdver text,
-	CONSTRAINT sources_pkey PRIMARY KEY (source, version)
+	CONSTRAINT sources_pkey PRIMARY KEY (source, source_version)
 );
 
 CREATE INDEX sources_pkg_idx ON sources (source);
 
 COMMENT ON TABLE sources IS 'Source packages common to all architectures (from Sources)';
 COMMENT ON COLUMN sources.source IS 'Package name';
-COMMENT ON COLUMN sources.version IS 'Package version number';
+COMMENT ON COLUMN sources.source_version IS 'Package version number';
 COMMENT ON COLUMN sources.component IS 'Archive component';
 COMMENT ON COLUMN sources.section IS 'Package section';
 COMMENT ON COLUMN sources.pkg_prio IS 'Package priority';
@@ -196,40 +196,40 @@ COMMENT ON COLUMN sources.stdver IS 'Debian Standards (policy) version number';
 CREATE TABLE source_architectures (
 	source text
 	  NOT NULL,
-	version debversion
+	source_version debversion
 	  NOT NULL,
 	arch text
 	  CONSTRAINT source_arch_arch_fkey
 	  REFERENCES package_architectures(arch)
 	  ON DELETE CASCADE
 	  NOT NULL,
-	UNIQUE (source, version, arch),
-	CONSTRAINT source_arch_source_fkey FOREIGN KEY (source, version)
-	  REFERENCES sources (source, version)
+	UNIQUE (source, source_version, arch),
+	CONSTRAINT source_arch_source_fkey FOREIGN KEY (source, source_version)
+	  REFERENCES sources (source, source_version)
 	  ON DELETE CASCADE
 );
 
 COMMENT ON TABLE source_architectures IS 'Source package architectures (from Sources)';
 COMMENT ON COLUMN source_architectures.source IS 'Package name';
-COMMENT ON COLUMN source_architectures.version IS 'Package version number';
+COMMENT ON COLUMN source_architectures.source_version IS 'Package version number';
 COMMENT ON COLUMN source_architectures.arch IS 'Architecture name';
 
 CREATE TABLE uploaders (
 	source text
 	  NOT NULL,
-	version debversion
+	source_version debversion
 	  NOT NULL,
 	uploader text
 	  NOT NULL,
-	UNIQUE (source, version, uploader),
-	CONSTRAINT uploader_source_fkey FOREIGN KEY (source, version)
-	  REFERENCES sources (source, version)
+	UNIQUE (source, source_version, uploader),
+	CONSTRAINT uploader_source_fkey FOREIGN KEY (source, source_version)
+	  REFERENCES sources (source, source_version)
 	  ON DELETE CASCADE
 );
 
 COMMENT ON TABLE uploaders IS 'Uploader names for source packages';
 COMMENT ON COLUMN uploaders.source IS 'Package name';
-COMMENT ON COLUMN uploaders.version IS 'Package version number';
+COMMENT ON COLUMN uploaders.source_version IS 'Package version number';
 COMMENT ON COLUMN uploaders.uploader IS 'Uploader name and address';
 
 CREATE TABLE binaries (
@@ -252,7 +252,7 @@ CREATE TABLE binaries (
 	  NOT NULL,
 	CONSTRAINT bin_pkey PRIMARY KEY (package, version, arch),
 	CONSTRAINT bin_src_fkey FOREIGN KEY (source, source_version)
-	  REFERENCES sources (source, version)
+	  REFERENCES sources (source, source_version)
 	  ON DELETE CASCADE
 );
 
@@ -292,21 +292,21 @@ INSERT INTO job_states (name) VALUES ('uploaded');
 CREATE TABLE suite_sources (
 	source text
 	  NOT NULL,
-	version debversion
+	source_version debversion
 	  NOT NULL,
 	suite text
 	  CONSTRAINT suite_sources_suite_fkey REFERENCES suites(suite)
 	  ON DELETE CASCADE
 	  NOT NULL,
 	CONSTRAINT suite_sources_pkey PRIMARY KEY (source, suite),
-	CONSTRAINT suite_sources_src_fkey FOREIGN KEY (source, version)
-	  REFERENCES sources (source, version)
+	CONSTRAINT suite_sources_src_fkey FOREIGN KEY (source, source_version)
+	  REFERENCES sources (source, source_version)
 	  ON DELETE CASCADE
 );
 
 COMMENT ON TABLE suite_sources IS 'Source packages contained within a suite';
 COMMENT ON COLUMN suite_sources.source IS 'Source package name';
-COMMENT ON COLUMN suite_sources.version IS 'Source package version number';
+COMMENT ON COLUMN suite_sources.source_version IS 'Source package version number';
 COMMENT ON COLUMN suite_sources.suite IS 'Suite name';
 
 CREATE TABLE suite_binaries (
@@ -339,7 +339,7 @@ CREATE TABLE build_jobs (
 	  CONSTRAINT build_jobs_pkey PRIMARY KEY,
 	source text
 	  NOT NULL,
-	version debversion
+	source_version debversion
 	  NOT NULL,
 	arch text
 	  CONSTRAINT build_jobs_arch_fkey REFERENCES architectures(arch)
@@ -358,9 +358,9 @@ CREATE TABLE build_jobs (
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT build_jobs_unique UNIQUE(source, version, arch),
-	CONSTRAINT build_jobs_src_fkey FOREIGN KEY(source, version)
-	  REFERENCES sources(source, version)
+	CONSTRAINT build_jobs_unique UNIQUE(source, source_version, arch),
+	CONSTRAINT build_jobs_src_fkey FOREIGN KEY(source, source_version)
+	  REFERENCES sources(source, source_version)
 	  ON DELETE CASCADE
 );
 
@@ -371,7 +371,7 @@ COMMENT ON SEQUENCE build_jobs_id_seq IS 'Build job ticket number sequence';
 COMMENT ON TABLE build_jobs IS 'Build job tickets (state changes) specific for single architecture';
 COMMENT ON COLUMN build_jobs.id IS 'Job number';
 COMMENT ON COLUMN build_jobs.source IS 'Source package name';
-COMMENT ON COLUMN build_jobs.version IS 'Source package version number';
+COMMENT ON COLUMN build_jobs.source_version IS 'Source package version number';
 COMMENT ON COLUMN build_jobs.arch IS 'Architecture name';
 COMMENT ON COLUMN build_jobs.suite IS 'Suite name';
 COMMENT ON COLUMN build_jobs.user_name IS 'User making this change (username)';
@@ -413,7 +413,7 @@ INSERT INTO build_log_result (result) VALUES ('skipped');
 CREATE TABLE build_logs (
 	source text
 	  NOT NULL,
-	version debversion
+	source_version debversion
 	  NOT NULL,
 	arch text
 	  CONSTRAINT build_logs_arch_fkey REFERENCES architectures(arch)
@@ -435,7 +435,7 @@ CREATE INDEX build_logs_source_idx ON build_logs (source);
 
 COMMENT ON TABLE build_logs IS 'Available build logs';
 COMMENT ON COLUMN build_logs.source IS 'Source package name';
-COMMENT ON COLUMN build_logs.version IS 'Source package version';
+COMMENT ON COLUMN build_logs.source_version IS 'Source package version';
 COMMENT ON COLUMN build_logs.arch IS 'Architecture name';
 COMMENT ON COLUMN build_logs.suite IS 'Suite name';
 COMMENT ON COLUMN build_logs.date IS 'Date of the log';
