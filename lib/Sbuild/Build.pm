@@ -1012,7 +1012,7 @@ sub uninstall_debs {
     close($pipe);
     $status = $?;
 
-    if ($output =~ /status database area is locked/mi) {
+    if (defined($output) && $output =~ /status database area is locked/mi) {
 	$self->log("Another dpkg is running -- retrying later\n");
 	$output = "";
 	sleep( 2*60 );
