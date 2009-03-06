@@ -304,6 +304,8 @@ CREATE TABLE suite_sources (
 	  ON DELETE CASCADE
 );
 
+CREATE INDEX suite_sources_src_ver_idx ON suite_sources (source, source_version);
+
 COMMENT ON TABLE suite_sources IS 'Source packages contained within a suite';
 COMMENT ON COLUMN suite_sources.source IS 'Source package name';
 COMMENT ON COLUMN suite_sources.source_version IS 'Source package version number';
@@ -327,6 +329,8 @@ CREATE TABLE suite_binaries (
 	  REFERENCES binaries (package, version, arch)
 	  ON DELETE CASCADE
 );
+
+CREATE INDEX suite_binaries_pkg_ver_idx ON suite_binaries (package, version);
 
 COMMENT ON TABLE suite_binaries IS 'Binary packages contained within a suite';
 COMMENT ON COLUMN suite_binaries.package IS 'Binary package name';
