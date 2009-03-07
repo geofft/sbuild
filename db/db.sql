@@ -270,7 +270,7 @@ CREATE TABLE package_states (
 	  CONSTRAINT state_pkey PRIMARY KEY
 );
 
-COMMENT ON TABLE package_states IS 'Build job states';
+COMMENT ON TABLE package_states IS 'Package states';
 COMMENT ON COLUMN package_states.name IS 'State name';
 
 INSERT INTO package_states (name) VALUES ('build-attempted');
