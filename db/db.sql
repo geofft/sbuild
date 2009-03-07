@@ -265,29 +265,29 @@ COMMENT ON COLUMN binaries.source_version IS 'Source package version number';
 COMMENT ON COLUMN binaries.section IS 'Package section';
 COMMENT ON COLUMN binaries.pkg_prio IS 'Package priority';
 
-CREATE TABLE job_states (
+CREATE TABLE package_states (
 	name text
 	  CONSTRAINT state_pkey PRIMARY KEY
 );
 
-COMMENT ON TABLE job_states IS 'Build job states';
-COMMENT ON COLUMN job_states.name IS 'State name';
+COMMENT ON TABLE package_states IS 'Build job states';
+COMMENT ON COLUMN package_states.name IS 'State name';
 
-INSERT INTO job_states (name) VALUES ('build-attempted');
-INSERT INTO job_states (name) VALUES ('building');
-INSERT INTO job_states (name) VALUES ('built');
-INSERT INTO job_states (name) VALUES ('dep-wait');
-INSERT INTO job_states (name) VALUES ('dep-wait-removed');
-INSERT INTO job_states (name) VALUES ('failed');
-INSERT INTO job_states (name) VALUES ('failed-removed');
-INSERT INTO job_states (name) VALUES ('install-wait');
-INSERT INTO job_states (name) VALUES ('installed');
-INSERT INTO job_states (name) VALUES ('needs-build');
-INSERT INTO job_states (name) VALUES ('not-for-us');
-INSERT INTO job_states (name) VALUES ('old-failed');
-INSERT INTO job_states (name) VALUES ('reupload-wait');
-INSERT INTO job_states (name) VALUES ('state');
-INSERT INTO job_states (name) VALUES ('uploaded');
+INSERT INTO package_states (name) VALUES ('build-attempted');
+INSERT INTO package_states (name) VALUES ('building');
+INSERT INTO package_states (name) VALUES ('built');
+INSERT INTO package_states (name) VALUES ('dep-wait');
+INSERT INTO package_states (name) VALUES ('dep-wait-removed');
+INSERT INTO package_states (name) VALUES ('failed');
+INSERT INTO package_states (name) VALUES ('failed-removed');
+INSERT INTO package_states (name) VALUES ('install-wait');
+INSERT INTO package_states (name) VALUES ('installed');
+INSERT INTO package_states (name) VALUES ('needs-build');
+INSERT INTO package_states (name) VALUES ('not-for-us');
+INSERT INTO package_states (name) VALUES ('old-failed');
+INSERT INTO package_states (name) VALUES ('reupload-wait');
+INSERT INTO package_states (name) VALUES ('state');
+INSERT INTO package_states (name) VALUES ('uploaded');
 
 CREATE TABLE suite_sources (
 	source text
@@ -358,7 +358,7 @@ CREATE TABLE build_status (
 	  CONSTRAINT build_status_builder_fkey REFERENCES builders(builder)
 	  NOT NULL,
 	state text
-	  CONSTRAINT build_status_state_fkey REFERENCES job_states(name)
+	  CONSTRAINT build_status_state_fkey REFERENCES package_states(name)
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -403,7 +403,7 @@ CREATE TABLE build_status_history (
 	  CONSTRAINT build_status_history_builder_fkey REFERENCES builders(builder)
 	  NOT NULL,
 	state text
-	  CONSTRAINT build_status_history_state_fkey REFERENCES job_states(name)
+	  CONSTRAINT build_status_history_state_fkey REFERENCES package_states(name)
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
