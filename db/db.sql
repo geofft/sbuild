@@ -383,6 +383,50 @@ COMMENT ON COLUMN build_status.builder IS 'Build daemon making this change (user
 COMMENT ON COLUMN build_status.state IS 'State name';
 COMMENT ON COLUMN build_status.ctime IS 'Stage change time';
 
+CREATE TABLE build_status_history (
+	id integer
+	  CONSTRAINT build_status_history_unique UNIQUE NOT NULL,
+	source text
+	  NOT NULL,
+	source_version debversion
+	  NOT NULL,
+	arch text
+	  CONSTRAINT build_status_history_arch_fkey REFERENCES architectures(arch)
+	  ON DELETE CASCADE
+	  NOT NULL,
+	suite text
+	  CONSTRAINT build_status_history_suite_fkey REFERENCES suites(suite)
+	  ON DELETE CASCADE
+	  NOT NULL,
+	user_name text NOT NULL DEFAULT CURRENT_USER,
+	builder text
+	  CONSTRAINT build_status_history_builder_fkey REFERENCES builders(builder)
+	  NOT NULL,
+	state text
+	  CONSTRAINT build_status_history_state_fkey REFERENCES job_states(name)
+	  NOT NULL,
+	ctime timestamp with time zone
+	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT build_status_history_unique UNIQUE(source, source_version, arch),
+	CONSTRAINT build_status_history_src_fkey FOREIGN KEY(source, source_version)
+	  REFERENCES sources(source, source_version)
+	  ON DELETE CASCADE
+);
+
+CREATE INDEX build_status_history_source ON build_status_history (source);
+CREATE INDEX build_status_history_ctime ON build_status_history (ctime);
+
+COMMENT ON TABLE build_status_history IS 'Build status history for each package';
+COMMENT ON COLUMN build_status_history.id IS 'Job number';
+COMMENT ON COLUMN build_status_history.source IS 'Source package name';
+COMMENT ON COLUMN build_status_history.source_version IS 'Source package version number';
+COMMENT ON COLUMN build_status_history.arch IS 'Architecture name';
+COMMENT ON COLUMN build_status_history.suite IS 'Suite name';
+COMMENT ON COLUMN build_status_history.user_name IS 'User making this change (username)';
+COMMENT ON COLUMN build_status_history.builder IS 'Build daemon making this change (username)';
+COMMENT ON COLUMN build_status_history.state IS 'State name';
+COMMENT ON COLUMN build_status_history.ctime IS 'Stage change time';
+
 CREATE TABLE build_status_properties (
 	job_id integer
 	  NOT NULL
