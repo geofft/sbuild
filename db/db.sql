@@ -43,7 +43,7 @@ SELECT CASE WHEN
     (SELECT create_plpgsql_language())
 END;
 
-DROP FUNCTION create_plpgsql_language()
+DROP FUNCTION create_plpgsql_language();
 
 CREATE TABLE architectures (
 	arch text
