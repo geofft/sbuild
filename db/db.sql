@@ -338,64 +338,64 @@ COMMENT ON COLUMN suite_binaries.version IS 'Binary package version number';
 COMMENT ON COLUMN suite_binaries.arch IS 'Architecture name';
 COMMENT ON COLUMN suite_binaries.suite IS 'Suite name';
 
-CREATE TABLE build_jobs (
+CREATE TABLE build_status (
 	id serial
-	  CONSTRAINT build_jobs_pkey PRIMARY KEY,
+	  CONSTRAINT build_status_pkey PRIMARY KEY,
 	source text
 	  NOT NULL,
 	source_version debversion
 	  NOT NULL,
 	arch text
-	  CONSTRAINT build_jobs_arch_fkey REFERENCES architectures(arch)
+	  CONSTRAINT build_status_arch_fkey REFERENCES architectures(arch)
 	  ON DELETE CASCADE
 	  NOT NULL,
 	suite text
-	  CONSTRAINT build_jobs_suite_fkey REFERENCES suites(suite)
+	  CONSTRAINT build_status_suite_fkey REFERENCES suites(suite)
 	  ON DELETE CASCADE
 	  NOT NULL,
 	user_name text NOT NULL DEFAULT CURRENT_USER,
 	builder text
-	  CONSTRAINT build_jobs_builder_fkey REFERENCES builders(builder)
+	  CONSTRAINT build_status_builder_fkey REFERENCES builders(builder)
 	  NOT NULL,
 	state text
-	  CONSTRAINT build_jobs_state_fkey REFERENCES job_states(name)
+	  CONSTRAINT build_status_state_fkey REFERENCES job_states(name)
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT build_jobs_unique UNIQUE(source, source_version, arch),
-	CONSTRAINT build_jobs_src_fkey FOREIGN KEY(source, source_version)
+	CONSTRAINT build_status_unique UNIQUE(source, source_version, arch),
+	CONSTRAINT build_status_src_fkey FOREIGN KEY(source, source_version)
 	  REFERENCES sources(source, source_version)
 	  ON DELETE CASCADE
 );
 
-CREATE INDEX build_jobs_source ON build_jobs (source);
-CREATE INDEX build_jobs_ctime ON build_jobs (ctime);
+CREATE INDEX build_status_source ON build_status (source);
+CREATE INDEX build_status_ctime ON build_status (ctime);
 
-COMMENT ON SEQUENCE build_jobs_id_seq IS 'Build job ticket number sequence';
-COMMENT ON TABLE build_jobs IS 'Build job tickets (state changes) specific for single architecture';
-COMMENT ON COLUMN build_jobs.id IS 'Job number';
-COMMENT ON COLUMN build_jobs.source IS 'Source package name';
-COMMENT ON COLUMN build_jobs.source_version IS 'Source package version number';
-COMMENT ON COLUMN build_jobs.arch IS 'Architecture name';
-COMMENT ON COLUMN build_jobs.suite IS 'Suite name';
-COMMENT ON COLUMN build_jobs.user_name IS 'User making this change (username)';
-COMMENT ON COLUMN build_jobs.builder IS 'Build daemon making this change (username)';
-COMMENT ON COLUMN build_jobs.state IS 'State name';
-COMMENT ON COLUMN build_jobs.ctime IS 'Stage change time';
+COMMENT ON SEQUENCE build_status_id_seq IS 'Build job ticket number sequence';
+COMMENT ON TABLE build_status IS 'Build status for each package';
+COMMENT ON COLUMN build_status.id IS 'Job number';
+COMMENT ON COLUMN build_status.source IS 'Source package name';
+COMMENT ON COLUMN build_status.source_version IS 'Source package version number';
+COMMENT ON COLUMN build_status.arch IS 'Architecture name';
+COMMENT ON COLUMN build_status.suite IS 'Suite name';
+COMMENT ON COLUMN build_status.user_name IS 'User making this change (username)';
+COMMENT ON COLUMN build_status.builder IS 'Build daemon making this change (username)';
+COMMENT ON COLUMN build_status.state IS 'State name';
+COMMENT ON COLUMN build_status.ctime IS 'Stage change time';
 
-CREATE TABLE build_job_properties (
+CREATE TABLE build_status_properties (
 	job_id integer
 	  NOT NULL
-	  REFERENCES build_jobs(id)
+	  REFERENCES build_status(id)
 	  ON DELETE CASCADE,
 	prop_name text NOT NULL,
 	prop_value text NOT NULL
 );
 
-COMMENT ON TABLE build_job_properties IS 'Additional job-specific properties (e.g. For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)/Notes)';
-COMMENT ON COLUMN build_job_properties.job_id IS 'Job reference number';
-COMMENT ON COLUMN build_job_properties.prop_name IS 'Property name';
-COMMENT ON COLUMN build_job_properties.prop_value IS 'Property value';
+COMMENT ON TABLE build_status_properties IS 'Additional job-specific properties (e.g. For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)/Notes)';
+COMMENT ON COLUMN build_status_properties.job_id IS 'Job reference number';
+COMMENT ON COLUMN build_status_properties.prop_name IS 'Property name';
+COMMENT ON COLUMN build_status_properties.prop_value IS 'Property value';
 
 -- Make this a table because in the future we may have more fine-grained
 -- result states.
