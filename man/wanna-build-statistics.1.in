@@ -1,0 +1,63 @@
+'\" tp
+.\" Copyright © 2009  Roger Leigh <rleigh@debian.org>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH WANNA\-BUILD\-STATISTICS 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+wanna\-build\-statistics \- print statistics for wanna\-build databases
+.SH SYNOPSIS
+.B wanna\-build\-statistics
+.BR [ \-\-database=\fIdatabase\fP ]
+.BR [ \-\-dist=\fIdistribution\fP ]
+.BR [ \-\-verbose ]
+.SH VERSION
+This man page documents the packaged version of wanna\-build.  This version
+is maintained by the \fBbuildd-tools\fP project developers on Alioth
+(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
+.PP
+There is also a version maintained by Ryan Murray which is adapted to build
+daemon needs, with similar functionality.  This version should be equally
+capable of working in a buildd setup, but has a number of enhancements aimed at
+making it suitable for use by end-users.
+.SH DESCRIPTION
+wanna\-build\-statistics is used to print summary statistics for the given
+database or distribution.
+.SH OPTIONS
+.TP
+.BR \-\-database=\fIdatabase\fP
+Database to use.
+.TP
+.BR \-\-dist=\fIdistribution\fP
+Distribution to use.
+.TP
+.BR \-\-verbose
+Verbose messages.
+.SH FILES
+.TP
+.I /var/lib/wanna\-build
+Database files.
+.SH AUTHORS
+Roman Hodek <Roman.Hodek@informatik.uni\-erlangen.de>,
+Ryan Murray <rmurray@debian.org>, and
+Roger Leigh <rleigh@debian.org>.
+.fi
+.SH "SEE ALSO"
+.BR wanna\-build (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:

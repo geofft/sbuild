@@ -37,7 +37,8 @@ man_MANS = \
 	wanna-build.1			\
 	wanna-build-catdb.1		\
 	wanna-build-mail.1		\
-	wanna-build-merge-packages.1
+	wanna-build-merge-packages.1	\
+	wanna-build-statistics.1
 
 install-data-hook:
 	ln -sf sbuild-hold.1 $(DESTDIR)$(man1dir)/sbuild-unhold.1
