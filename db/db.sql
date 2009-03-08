@@ -624,7 +624,7 @@ COMMENT ON TRIGGER check_arch ON binaries
 CREATE OR REPLACE FUNCTION set_ctime()
 RETURNS trigger AS $set_ctime$
 BEGIN
-  NEW.ctime = CURRENT_TIMESTAMP
+  NEW.ctime = CURRENT_TIMESTAMP;
   RETURN NEW;
 END;
 $set_ctime$ LANGUAGE plpgsql;
