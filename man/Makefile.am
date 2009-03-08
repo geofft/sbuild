@@ -22,23 +22,25 @@
 include $(top_srcdir)/scripts/global.mk
 
 man_MANS = \
-	sbuild.1		\
-	sbuild-abort.1		\
-	sbuild-adduser.8	\
-	sbuild-apt.1		\
-	sbuild-checkpackages.1	\
-	sbuild-createchroot.8	\
-	sbuild-hold.1		\
-	sbuild-setup.7		\
-	sbuild-shell.1		\
-	sbuild-stats.1		\
-	sbuild-update.1		\
-	sbuild-upgrade.1	\
-	wanna-build.1		\
-	wanna-build-catdb.1	\
-	wanna-build-mail.1
+	sbuild.1			\
+	sbuild-abort.1			\
+	sbuild-adduser.8		\
+	sbuild-apt.1			\
+	sbuild-checkpackages.1		\
+	sbuild-createchroot.8		\
+	sbuild-hold.1			\
+	sbuild-setup.7			\
+	sbuild-shell.1			\
+	sbuild-stats.1			\
+	sbuild-update.1			\
+	sbuild-upgrade.1		\
+	wanna-build.1			\
+	wanna-build-catdb.1		\
+	wanna-build-mail.1		\
+	wanna-build-merge-packages.1
 
 install-data-hook:
 	ln -sf sbuild-hold.1 $(DESTDIR)$(man1dir)/sbuild-unhold.1
-	ln -sf wanna-build-catdb $(DESTDIR)$(man1dir)/wanna-build-catgdbm.1
-	ln -sf wanna-build-catdb $(DESTDIR)$(man1dir)/wanna-build-catmldbm.1
+	ln -sf wanna-build-catdb.1 $(DESTDIR)$(man1dir)/wanna-build-catgdbm.1
+	ln -sf wanna-build-catdb.1 $(DESTDIR)$(man1dir)/wanna-build-catmldbm.1
+	ln -sf wanna-build-merge-packages.1 $(DESTDIR)$(man1dir)/wanna-build-merge-quinn.1
