@@ -339,8 +339,6 @@ COMMENT ON COLUMN suite_binaries.arch IS 'Architecture name';
 COMMENT ON COLUMN suite_binaries.suite IS 'Suite name';
 
 CREATE TABLE build_status (
-	id serial
-	  CONSTRAINT build_status_pkey PRIMARY KEY,
 	source text
 	  NOT NULL,
 	source_version debversion
@@ -362,7 +360,7 @@ CREATE TABLE build_status (
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT build_status_unique UNIQUE(source, source_version, arch),
+	CONSTRAINT build_status_pkey PRIMARY KEY (source, arch, suite),
 	CONSTRAINT build_status_src_fkey FOREIGN KEY(source, source_version)
 	  REFERENCES sources(source, source_version)
 	  ON DELETE CASCADE
@@ -371,9 +369,7 @@ CREATE TABLE build_status (
 CREATE INDEX build_status_source ON build_status (source);
 CREATE INDEX build_status_ctime ON build_status (ctime);
 
-COMMENT ON SEQUENCE build_status_id_seq IS 'Build job ticket number sequence';
 COMMENT ON TABLE build_status IS 'Build status for each package';
-COMMENT ON COLUMN build_status.id IS 'Job number';
 COMMENT ON COLUMN build_status.source IS 'Source package name';
 COMMENT ON COLUMN build_status.source_version IS 'Source package version number';
 COMMENT ON COLUMN build_status.arch IS 'Architecture name';
@@ -384,8 +380,6 @@ COMMENT ON COLUMN build_status.state IS 'State name';
 COMMENT ON COLUMN build_status.ctime IS 'Stage change time';
 
 CREATE TABLE build_status_history (
-	id integer
-	  CONSTRAINT build_status_history_unique UNIQUE NOT NULL,
 	source text
 	  NOT NULL,
 	source_version debversion
@@ -407,17 +401,12 @@ CREATE TABLE build_status_history (
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT build_status_history_unique UNIQUE(source, source_version, arch),
-	CONSTRAINT build_status_history_src_fkey FOREIGN KEY(source, source_version)
-	  REFERENCES sources(source, source_version)
-	  ON DELETE CASCADE
 );
 
 CREATE INDEX build_status_history_source ON build_status_history (source);
 CREATE INDEX build_status_history_ctime ON build_status_history (ctime);
 
 COMMENT ON TABLE build_status_history IS 'Build status history for each package';
-COMMENT ON COLUMN build_status_history.id IS 'Job number';
 COMMENT ON COLUMN build_status_history.source IS 'Source package name';
 COMMENT ON COLUMN build_status_history.source_version IS 'Source package version number';
 COMMENT ON COLUMN build_status_history.arch IS 'Architecture name';
@@ -428,16 +417,23 @@ COMMENT ON COLUMN build_status_history.state IS 'State name';
 COMMENT ON COLUMN build_status_history.ctime IS 'Stage change time';
 
 CREATE TABLE build_status_properties (
-	job_id integer
-	  NOT NULL
+	source text NOT NULL,
+	arch text NOT NULL,
+	source suite NOT NULL,
+	prop_name text NOT NULL,
+	prop_value text NOT NULL,
+	CONSTRAINT build_status_properties_fkey
+	  FOREIGN KEY(source, arch)
 	  REFERENCES build_status(id)
 	  ON DELETE CASCADE,
-	prop_name text NOT NULL,
-	prop_value text NOT NULL
+	CONSTRAINT build_status_properties_unique
+	  UNIQUE (source, arch, prop_name),
 );
 
-COMMENT ON TABLE build_status_properties IS 'Additional job-specific properties (e.g. For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)/Notes)';
-COMMENT ON COLUMN build_status_properties.job_id IS 'Job reference number';
+COMMENT ON TABLE build_status_properties IS 'Additional package-specific properties (e.g. For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)/Notes)';
+COMMENT ON COLUMN build_status_properties.source IS 'Source package name';
+COMMENT ON COLUMN build_status_properties.arch IS 'Architecture name';
+COMMENT ON COLUMN build_status_properties.suite IS 'Suite name';
 COMMENT ON COLUMN build_status_properties.prop_name IS 'Property name';
 COMMENT ON COLUMN build_status_properties.prop_value IS 'Property value';
 
