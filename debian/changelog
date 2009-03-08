@@ -1,4 +1,4 @@
-sbuild (0.58.0-1) experimental; urgency=low
+sbuild (0.58.0-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release.
@@ -13,6 +13,7 @@ sbuild (0.58.0-1) experimental; urgency=low
   * debian/control:
     - Build-Depend on debhelper 7.
     - wanna-build recommends postgresql-8.3-debversion.
+  * debian/NEWS: Document incompatible changes from previous versions.
   * buildd-mail-wrapper: Use more portable BSD getloadavg in place of
     Linux-specific sysinfo.  Thanks to Robert Millan for this
     patch (Closes: #511095). 
@@ -23,10 +24,7 @@ sbuild (0.58.0-1) experimental; urgency=low
   * lib/Sbuild.pm: always perform version checks on provided packages
     (Closes: #505747).
 
-  [ Roger Leigh ]
-  * 
-
- -- Roger Leigh <rleigh@debian.org>  Sun, 08 Mar 2009 19:43:05 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 08 Mar 2009 21:52:11 +0000
 
 sbuild (0.57.5-1) unstable; urgency=low
 

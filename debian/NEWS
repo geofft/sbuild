@@ -1,4 +1,56 @@
+sbuild (0.58.0) unstable; urgency=low
+
+  * The configuration option @no_auto_upgrade, which was no longer
+    used, has been removed.  To prevent packages being upgraded
+    automatically, please use sbuild-hold.  See sbuild-hold(1).
+
+  * The configuration option $chroot_mode has been restored, allowing
+    chroot access by both schroot (which remains the default) and
+    sudo.
+
+  * A new configuration option $chroot_split has been added.  This
+    allows both schroot and sudo chroot access to be modified to run
+    apt/dpkg on the host system.  Note that schroot needs sudo to run
+    commands as root on the host system.
+
+  * Deprecated commands from /usr/lib/sbuild have been removed.
+    Please use the sbuild-* replacements found in /usr/bin.
+
+  * The maintainer name defaults to DEBEMAIL if set in the
+    environment, so no longer needs setting explicitly in .sbuildrc.
+
+  * Unless configured as a buildd ($sbuild_mode), when using sudo
+    chroot access, chroots are searched for in /etc/sbuild/chroots.
+    This directory should contain symlinks to the chroots, with the
+    distribution name being the name of the symlink.  Buildd mode will
+    continue to use the old method of current-$distribution symlinks
+    in the current directory.
+
+  * The log format used for build logs has been updated to use a more
+    readable format, and is now encoded in UTF-8 rather than US-ASCII.
+    Code which parses the log file may need to be updated to handle
+    the new format.  Further log format changes made in the future.
+
+  * The wanna-build configuration has moved from
+    /etc/wanna-build/wanna-build.conf into /etc/sbuild/sbuild.conf as
+    part of ongoing refactoring work.  It is expected that this will
+    be split into a separate file in the future once this work is
+    completed.
+
+  * wanna-build can now correctly dump and restore its databases using
+    the --export and --import options.  Note that wanna-build-catmldbm
+    and related commands can not correctly dump the current database
+    format, can not be used to restore the dump and will be removed in
+    the future.
+
+  * The wanna-build commands do-merge-packages and do-merge-quinn
+     have been renamed to wanna-build-merge-packages and
+     wanna-build-merge-quinn.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 08 Mar 2009 21:49:22 +0000
+
 sbuild (0.54) unstable; urgency=low
+
 
   * Support for manual source dependencies has been removed.  Packages
     must now supply all their build dependencies in the debian/control
