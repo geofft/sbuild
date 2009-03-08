@@ -1,0 +1,112 @@
+'\" tp
+.\" Copyright © 2009  Roger Leigh <rleigh@debian.org>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH WANNA\-BUILD\-MAIL 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+wanna\-build\-mail \- wanna\-build mail interface
+.SH SYNOPSIS
+.B wanna\-build\-mail
+.B package
+.br
+.B wanna\-build\-catgdbm
+.B package
+.br
+.B wanna\-build\-catmldbm
+.B package
+.SH VERSION
+This man page documents the packaged version of wanna\-build.  This version
+is maintained by the \fBbuildd-tools\fP project developers on Alioth
+(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
+.PP
+There is also a version maintained by Ryan Murray which is adapted to build
+daemon needs, with similar functionality.  This version should be equally
+capable of working in a buildd setup, but has a number of enhancements aimed at
+making it suitable for use by end-users.
+.SH DESCRIPTION
+wanna\-build\-mail is used to drive wanna\-build though an email interface.
+Set up wanna\-build\-mail as the mail filter for the wanna\-build user on your
+system, then when you send this user mail, wanna\-build\-mail will run to
+process the mail and query the database with the commands you specify in the
+mail.
+.PP
+The mail processor sends a reply mail with all the program output to the
+address the request came from (From: header). Alternatively, it obeys a
+Reply-To: header if present.
+.SH OVERVIEW
+The email subject does not matter.  The body must be signed with PGP, with a
+key registered in /var/lib/wanna-build/mail-keyring.pgp. Only these keys are
+authorised to use the mail interface.  Additionally, the file mail-users in the
+same directory is used to map PGP-key names to user names.
+.PP
+In the body (the PGP-signed part), you can write commands like:
+.PP
+\f[CR]wanna-build hello_1.0-1\fP
+.br
+\f[CR]uploaded tst1_1.0 tst2_0.99a\fP
+.br
+\f[CR]info hello\fP
+.br
+\f[CR]list needs-build failed\fP
+.SH COMMANDS
+The commands below are available. All be be abbreviated to their first letter
+and must start in column 0.  An argument \fIpackage_version\fP is the package
+name and its version number, as usual with wanna-build.
+.TP
+.BR wanna-build " package_version "
+.TP
+.BR uploaded-build " package_version "
+.TP
+.BR failed-build " package_version "
+The failed-build command also needs a failing message. You put this message in
+the lines after the command, each line with some whitespace at the start. This
+whitespace is stripped for the message actually passed to failed-build. The
+first line without whitespace is treated as the next command.
+.TP
+.BR info package1 " [ " package2 " [ " packagen ]]
+Get package information.  No version number is required.
+.TP
+.BR list\ state1 " [ " state2 " [ " staten ]]
+List packages in given states.  Valid states are \fIinstalled\fP,
+\fIneeds-build\fP, \fIbuilding\fP, \fIuploaded\fP, \fIfailed\fP,
+\fInot-for-us\fP, and additionally \fIall\fP (for any state).
+.TP
+.BR vlist\ state1 " [ " state2 " [ " staten ]]
+\fBvlist\fP is the same as list, but includes a \fI-v\fP option, so that
+previous states and old failing messages are printed, too.
+.PP
+.SH FILES
+.TP
+.I /var/lib/wanna\-build
+Database files.
+.TP
+.I /var/lib/wanna-build/mail-keyring.pgp
+PGP keys of users authorised to use the mail interface.
+.TP
+.I /var/lib/wanna-build/mail-users
+Mapping between PGP keys and system usernames.
+.SH AUTHORS
+Roman Hodek <Roman.Hodek@informatik.uni\-erlangen.de>,
+Ryan Murray <rmurray@debian.org>, and
+Roger Leigh <rleigh@debian.org>.
+.fi
+.SH "SEE ALSO"
+.BR wanna\-build (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:

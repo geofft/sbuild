@@ -35,7 +35,8 @@ man_MANS = \
 	sbuild-update.1		\
 	sbuild-upgrade.1	\
 	wanna-build.1		\
-	wanna-build-catdb.1
+	wanna-build-catdb.1	\
+	wanna-build-mail.1
 
 install-data-hook:
 	ln -sf sbuild-hold.1 $(DESTDIR)$(man1dir)/sbuild-unhold.1
