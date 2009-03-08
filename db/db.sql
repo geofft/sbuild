@@ -356,8 +356,8 @@ CREATE TABLE build_status (
 	  NOT NULL
 	  DEFAULT CURRENT_USER,
 	builder text
-	  CONSTRAINT build_status_builder_fkey REFERENCES builders(builder)
-	  NOT NULL,
+	  -- Can be NULL in case of states set up manually by people.
+	  CONSTRAINT build_status_builder_fkey REFERENCES builders(builder),
 	status text
 	  CONSTRAINT build_status_status_fkey REFERENCES package_states(name)
 	  NOT NULL,
