@@ -369,7 +369,6 @@ CREATE TABLE build_status (
 );
 
 CREATE INDEX build_status_source ON build_status (source);
-CREATE INDEX build_status_ctime ON build_status (ctime);
 
 COMMENT ON TABLE build_status IS 'Build status for each package';
 COMMENT ON COLUMN build_status.source IS 'Source package name';
