@@ -23,8 +23,9 @@ include $(top_srcdir)/scripts/global.mk
 
 perlmodwannabuilddir = $(perlmoddir)/WannaBuild
 
-MODULES =	\
-	Conf.pm	
+MODULES =		\
+	Conf.pm		\
+	Options.pm
 
 perlmodwannabuild_DATA =	\
 	$(MODULES)
