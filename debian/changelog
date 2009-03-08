@@ -6,6 +6,7 @@ sbuild (0.58.0-1) experimental; urgency=low
     - Clean up old unused code.
     - Correct patching of config.status and config.guess.
     - Add functional binary-arch target.
+    - Use dh_prep in place of dh_clean -k.
   * debian/compat: Update to debhelper version 7.
   * debian/control:
     - Build-Depend on debhelper 7.
@@ -20,7 +21,7 @@ sbuild (0.58.0-1) experimental; urgency=low
   * lib/Sbuild.pm: always perform version checks on provided packages
     (Closes: #505747).
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 08 Mar 2009 16:46:21 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 08 Mar 2009 19:41:08 +0000
 
 sbuild (0.57.5-1) unstable; urgency=low
 
