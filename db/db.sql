@@ -50,7 +50,7 @@ CREATE TABLE architectures (
 	  CONSTRAINT arch_pkey PRIMARY KEY
 );
 
-COMMENT ON TABLE architectures IS 'Architectures supported by this wanna-build instance';
+COMMENT ON TABLE architectures IS 'Architectures known by this wanna-build instance';
 COMMENT ON COLUMN architectures.arch IS 'Architecture name';
 
 INSERT INTO architectures (arch) VALUES ('alpha');
@@ -93,6 +93,20 @@ INSERT INTO suites (suite, priority) VALUES ('stable', 1);
 INSERT INTO suites (suite, priority, depwait, hidden)
 	VALUES ('stable-security', 1, 'f', 't');
 INSERT INTO suites (suite, priority) VALUES ('oldstable', 1);
+
+CREATE TABLE suite_arches (
+	suite text
+	  NOT NULL
+	  CONSTRAINT suite_arches_suite_fkey REFERENCES suites(suite),
+	arch text
+	  NOT NULL
+	  CONSTRAINT suite_arches_arch_fkey REFERENCES architectures(arch),
+	CONSTRAINT suite_arches_pkey PRIMARY KEY (suite, arch)
+);
+
+COMMENT ON TABLE suite_arches IS 'List of architectures in each suite';
+COMMENT ON COLUMN suite_arches.suite IS 'Suite name';
+COMMENT ON COLUMN suite_arches.arch IS 'Architecture name';
 
 CREATE TABLE components (
 	component text
@@ -327,6 +341,9 @@ CREATE TABLE suite_binaries (
 	CONSTRAINT suite_bin_pkey PRIMARY KEY (package, arch, suite),
 	CONSTRAINT suite_bin_bin_fkey FOREIGN KEY (package, version, arch)
 	  REFERENCES binaries (package, version, arch)
+	  ON DELETE CASCADE,
+	CONSTRAINT suite_bin_suite_arch_fkey FOREIGN KEY (suite, arch)
+	  REFERENCES suite_arches (suite, arch)
 	  ON DELETE CASCADE
 );
 
@@ -367,6 +384,9 @@ CREATE TABLE build_status (
 	CONSTRAINT build_status_pkey PRIMARY KEY (source, arch, suite),
 	CONSTRAINT build_status_src_fkey FOREIGN KEY(source, source_version)
 	  REFERENCES sources(source, source_version)
+	  ON DELETE CASCADE,
+	CONSTRAINT suite_bin_suite_arch_fkey FOREIGN KEY (suite, arch)
+	  REFERENCES suite_arches (suite, arch)
 	  ON DELETE CASCADE
 );
 
