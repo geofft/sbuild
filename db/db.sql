@@ -351,12 +351,14 @@ CREATE TABLE build_status (
 	  CONSTRAINT build_status_suite_fkey REFERENCES suites(suite)
 	  ON DELETE CASCADE
 	  NOT NULL,
-	user_name text NOT NULL DEFAULT CURRENT_USER,
+	user_name text
+	  NOT NULL
+	  DEFAULT CURRENT_USER,
 	builder text
 	  CONSTRAINT build_status_builder_fkey REFERENCES builders(builder)
 	  NOT NULL,
-	state text
-	  CONSTRAINT build_status_state_fkey REFERENCES package_states(name)
+	status text
+	  CONSTRAINT build_status_status_fkey REFERENCES package_states(name)
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -375,8 +377,8 @@ COMMENT ON COLUMN build_status.source_version IS 'Source package version number'
 COMMENT ON COLUMN build_status.arch IS 'Architecture name';
 COMMENT ON COLUMN build_status.suite IS 'Suite name';
 COMMENT ON COLUMN build_status.user_name IS 'User making this change (username)';
-COMMENT ON COLUMN build_status.builder IS 'Build daemon making this change (username)';
-COMMENT ON COLUMN build_status.state IS 'State name';
+COMMENT ON COLUMN build_status.builder IS 'Build dæmon making this change (username)';
+COMMENT ON COLUMN build_status.status IS 'Status name';
 COMMENT ON COLUMN build_status.ctime IS 'Stage change time';
 
 CREATE TABLE build_status_history (
@@ -392,12 +394,14 @@ CREATE TABLE build_status_history (
 	  CONSTRAINT build_status_history_suite_fkey REFERENCES suites(suite)
 	  ON DELETE CASCADE
 	  NOT NULL,
-	user_name text NOT NULL DEFAULT CURRENT_USER,
+	user_name text
+	  NOT NULL
+	  DEFAULT CURRENT_USER,
 	builder text
 	  CONSTRAINT build_status_history_builder_fkey REFERENCES builders(builder)
 	  NOT NULL,
-	state text
-	  CONSTRAINT build_status_history_state_fkey REFERENCES package_states(name)
+	status text
+	  CONSTRAINT build_status_history_status_fkey REFERENCES package_states(name)
 	  NOT NULL,
 	ctime timestamp with time zone
 	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -412,8 +416,8 @@ COMMENT ON COLUMN build_status_history.source_version IS 'Source package version
 COMMENT ON COLUMN build_status_history.arch IS 'Architecture name';
 COMMENT ON COLUMN build_status_history.suite IS 'Suite name';
 COMMENT ON COLUMN build_status_history.user_name IS 'User making this change (username)';
-COMMENT ON COLUMN build_status_history.builder IS 'Build daemon making this change (username)';
-COMMENT ON COLUMN build_status_history.state IS 'State name';
+COMMENT ON COLUMN build_status_history.builder IS 'Build dæmon making this change (username)';
+COMMENT ON COLUMN build_status_history.status IS 'Status name';
 COMMENT ON COLUMN build_status_history.ctime IS 'Stage change time';
 
 CREATE TABLE build_status_properties (
