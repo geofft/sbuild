@@ -22,10 +22,10 @@
 
 SET search_path = public;
 
-\i language.sql
-\i archive.sql
-\i build.sql
-\i functions.sql
+\i SQL_PATHNAME/language.sql
+\i SQL_PATHNAME/archive.sql
+\i SQL_PATHNAME/build.sql
+\i SQL_PATHNAME/functions.sql
 
-\i archive-data.sql
-\i build-data.sql
+\i SQL_PATHNAME/archive-data.sql
+\i SQL_PATHNAME/build-data.sql

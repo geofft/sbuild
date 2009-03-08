@@ -21,5 +21,26 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-EXTRA_DIST =	\
+sqldir = $(datadir)/wanna-build/postgresql/install
+
+sql_DATA =			\
+	archive-data.sql	\
+	archive.sql		\
+	build-data.sql		\
+	build.sql		\
+	db.sql			\
+	functions.sql		\
+	install.sql		\
+	language.sql
+
+db.sql: db.sql.in
+	sqlpath=$$(echo "$(sqldir)"); \
+	sqlpath=$$(echo "$$sqlpath" | sed -e 's/\//\\\//g'); \
+	sed "s,SQL_PATHNAME,$$sqlpath,g" $< >$@
+
+CLEANFILES =	\
 	db.sql
+
+EXTRA_DIST =	\
+	$(sql_DATA)	\
+	db.sql.in
