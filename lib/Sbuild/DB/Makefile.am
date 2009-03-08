@@ -21,13 +21,16 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-perlmodsbuilddir = $(perlmoddir)/Sbuild/DB
+perlmodsbuilddbdir = $(perlmoddir)/Sbuild/DB
 
 MODULES =			\
 	Base.pm			\
 	Info.pm			\
 	MLDBM.pm		\
 	Postgres.pm
+
+perlmodsbuilddb_DATA =	\
+	$(MODULES)
 
 EXTRA_DIST =		\
 	$(MODULES)
