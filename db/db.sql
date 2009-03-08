@@ -18,11 +18,7 @@
 --- along with this program.  If not, see
 --- <http://www.gnu.org/licenses/>.
 
-CREATE DATABASE "sbuild-packages" ENCODING 'UTF8';
-COMMENT ON DATABASE "sbuild-packages" IS 'Debian source builder package state management';
-\c "sbuild-packages"
-
-\i debversion.sql
+\i /usr/share/postgresql/8.3/contrib/debversion.sql
 
 SET search_path = public;
 
