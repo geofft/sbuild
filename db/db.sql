@@ -362,7 +362,8 @@ CREATE TABLE build_status (
 	  CONSTRAINT build_status_status_fkey REFERENCES package_states(name)
 	  NOT NULL,
 	ctime timestamp with time zone
-	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	  NOT NULL
+	  DEFAULT 'epoch'::timestamp,
 	CONSTRAINT build_status_pkey PRIMARY KEY (source, arch, suite),
 	CONSTRAINT build_status_src_fkey FOREIGN KEY(source, source_version)
 	  REFERENCES sources(source, source_version)
