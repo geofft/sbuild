@@ -18,22 +18,24 @@
 --- along with this program.  If not, see
 --- <http://www.gnu.org/licenses/>.
 
-INSERT INTO package_states (name) VALUES ('build-attempted');
-INSERT INTO package_states (name) VALUES ('building');
-INSERT INTO package_states (name) VALUES ('built');
-INSERT INTO package_states (name) VALUES ('dep-wait');
-INSERT INTO package_states (name) VALUES ('dep-wait-removed');
-INSERT INTO package_states (name) VALUES ('failed');
-INSERT INTO package_states (name) VALUES ('failed-removed');
-INSERT INTO package_states (name) VALUES ('install-wait');
-INSERT INTO package_states (name) VALUES ('installed');
-INSERT INTO package_states (name) VALUES ('needs-build');
-INSERT INTO package_states (name) VALUES ('not-for-us');
-INSERT INTO package_states (name) VALUES ('old-failed');
-INSERT INTO package_states (name) VALUES ('reupload-wait');
-INSERT INTO package_states (name) VALUES ('state');
-INSERT INTO package_states (name) VALUES ('uploaded');
+INSERT INTO package_states (name) VALUES
+  ('build-attempted'),
+  ('building'),
+  ('built'),
+  ('dep-wait'),
+  ('dep-wait-removed'),
+  ('failed'),
+  ('failed-removed'),
+  ('install-wait'),
+  ('installed'),
+  ('needs-build'),
+  ('not-for-us'),
+  ('old-failed'),
+  ('reupload-wait'),
+  ('state'),
+  ('uploaded');
 
-INSERT INTO build_log_result (result) VALUES ('maybe-failed');
-INSERT INTO build_log_result (result, is_success) VALUES ('maybe-successful', 't');
-INSERT INTO build_log_result (result) VALUES ('skipped');
+INSERT INTO build_log_result (result, is_success) VALUES
+  ('maybe-failed', 'f'),
+  ('maybe-successful', 't'),
+  ('skipped', 'f');
