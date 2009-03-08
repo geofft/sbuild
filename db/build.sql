@@ -141,7 +141,7 @@ CREATE TABLE build_status_properties (
 	  REFERENCES build_status(id)
 	  ON DELETE CASCADE,
 	CONSTRAINT build_status_properties_unique
-	  UNIQUE (source, arch, prop_name),
+	  UNIQUE (source, arch, prop_name)
 );
 
 COMMENT ON TABLE build_status_properties IS 'Additional package-specific properties (e.g. For PermBuildPri/BuildPri/Binary-NMU-(Version|ChangeLog)/Notes)';
