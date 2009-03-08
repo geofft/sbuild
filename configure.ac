@@ -310,6 +310,7 @@ AC_CONFIG_FILES([man/sbuild-stats.1])
 AC_CONFIG_FILES([man/sbuild-update.1])
 AC_CONFIG_FILES([man/sbuild-upgrade.1])
 AC_CONFIG_FILES([man/wanna-build.1])
+AC_CONFIG_FILES([man/wanna-build-catdb.1])
 AC_CONFIG_FILES([src/Makefile])
 
 dnl Output the generated config.status script.
