@@ -351,6 +351,7 @@ CREATE TABLE build_status (
 	  CONSTRAINT build_status_suite_fkey REFERENCES suites(suite)
 	  ON DELETE CASCADE
 	  NOT NULL,
+	bin_nmu integer,
 	user_name text
 	  NOT NULL
 	  DEFAULT CURRENT_USER,
@@ -375,6 +376,7 @@ COMMENT ON COLUMN build_status.source IS 'Source package name';
 COMMENT ON COLUMN build_status.source_version IS 'Source package version number';
 COMMENT ON COLUMN build_status.arch IS 'Architecture name';
 COMMENT ON COLUMN build_status.suite IS 'Suite name';
+COMMENT ON COLUMN build_status.bin_nmu IS 'Scheduled binary NMU version, if any';
 COMMENT ON COLUMN build_status.user_name IS 'User making this change (username)';
 COMMENT ON COLUMN build_status.builder IS 'Build dæmon making this change (username)';
 COMMENT ON COLUMN build_status.status IS 'Status name';
@@ -393,6 +395,7 @@ CREATE TABLE build_status_history (
 	  CONSTRAINT build_status_history_suite_fkey REFERENCES suites(suite)
 	  ON DELETE CASCADE
 	  NOT NULL,
+	bin_nmu integer,
 	user_name text
 	  NOT NULL
 	  DEFAULT CURRENT_USER,
@@ -414,6 +417,7 @@ COMMENT ON COLUMN build_status_history.source IS 'Source package name';
 COMMENT ON COLUMN build_status_history.source_version IS 'Source package version number';
 COMMENT ON COLUMN build_status_history.arch IS 'Architecture name';
 COMMENT ON COLUMN build_status_history.suite IS 'Suite name';
+COMMENT ON COLUMN build_status_history.bin_nmu IS 'Scheduled binary NMU version, if any';
 COMMENT ON COLUMN build_status_history.user_name IS 'User making this change (username)';
 COMMENT ON COLUMN build_status_history.builder IS 'Build dæmon making this change (username)';
 COMMENT ON COLUMN build_status_history.status IS 'Status name';
