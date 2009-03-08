@@ -1580,8 +1580,8 @@ sub sort_list_func () {
 	      last SWITCH;
 	  };
 	  /s/ && do {
-	      $sectval{$a->{'Section'}} = -125 if(!$sectval{$a->{'Section'}};
-	      $sectval{$b->{'Section'}} = -125 if(!$sectval{$b->{'Section'}};
+	      $sectval{$a->{'Section'}} = -125 if(!$sectval{$a->{'Section'}});
+	      $sectval{$b->{'Section'}} = -125 if(!$sectval{$b->{'Section'}});
 	      $x = $sectval{$a->{'Section'}} <=> $sectval{$b->{'Section'}};
 	      return $x if $x != 0;
 	      last SWITCH;
