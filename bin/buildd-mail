@@ -36,7 +36,6 @@ use File::Basename;
 use MIME::QuotedPrint;
 use MIME::Base64;
 
-sub get_next_file ();
 sub process_mail ();
 sub prepare_for_upload ($$);
 sub redo_new_version ($$$);
@@ -62,8 +61,6 @@ sub get_dists_from_changes ($);
 sub reply ($);
 sub is_blacklisted ($);
 sub add_error_mail ();
-sub dist_cmp ($$);
-sub dist_list_ge ($);
 
 $main::keep_running = 1;
 $ENV{'PATH'} = "$main::HOME/bin:/bin:/usr/bin:/usr/local/bin";
@@ -79,72 +76,15 @@ $main::arch =~ /^(\S+)/; $main::arch = $1;
 $conf::wanna_build_user ||= $Buildd::username;
 $conf::log_queued_messages = 1 if !defined $conf::log_queued_messages;
 
-# check if another watcher is still running
-relock:
-    my $mailer_pid;
-repeat:
-    if (!sysopen( F, "mailer-running", O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )) {
-	if ($! == EEXIST) {
-	    goto repeat if !open( F, "<mailer-running" );
-	    my $mailer_pid = <F>;
-	    close( F );
-	    if ($mailer_pid !~ /^\s*(\d+)/) {
-		# file probably created, but not written yet by another process
-		sleep 2;
-		goto repeat;
-	    }
-	    $mailer_pid = $1;
-	    if (kill( 0, $mailer_pid ) == 0 && $! == ESRCH) {
-		logger( "Ignoring stale mailer-running file (pid $mailer_pid).\n");
-		unlink( "mailer-running" );
-		goto repeat;
-	    }
-	    logger( "Another buildd-mail (pid $mailer_pid) is already running.\n");
-	    exit 0;
-	}
-	die "Can't create mailer-running: $!\n";
-}
-$main::keep_running = 0;
-printf F "%5d\n", $$;
-close( F );
-END { unlink( "mailer-running" ) if !$main::keep_running; }
-
 lock_file( "daemon.log" );
 END { unlock_file( "daemon.log" ); }
 open_log();
 
 my($error, $short_error, %header, $body_text);
-my $mailfile;
-while( $mailfile = get_next_file() ) {
-    if (!open( MAIL, "<$mailfile" )) {
-	logger( "Cannot open $mailfile: $!\n" );
-	next;
-    }
-    process_mail();
-    close( MAIL );
-    unlink( $mailfile )
-	or logger( "Cannot remove $mailfile: $!\n" );
-}
 
-$main::keep_running = 1;
-unlink( "mailer-running" );
-
-# This check for a mail file again is to plug a race condition that
-# could take place if a mail file is created after our last check in
-# the loop, but mailer-running is still present and no new buildd-mail
-# started. In the other case that a new mail comes in after removing
-# mailer-running and before the check and a second buildd-mail is
-# started is handled by the mailer-running locking: one of the
-# processes will exit.
-goto relock if get_next_file();
-
+process_mail();
 exit 0;
 
-
-sub get_next_file () {
-    my @files = glob( "mqueue/mail.*" );
-    return @files ? $files[0] : "";
-}
 
 sub process_mail () {
 
@@ -154,7 +94,7 @@ sub process_mail () {
     undef %header;
     $error = $short_error = "";
 
-    while( <MAIL> ) {
+    while( <STDIN> ) {
 	$header_text .= $_;
 	last if /^$/;
 
@@ -177,13 +117,13 @@ sub process_mail () {
 	    $lastheader = "";
 	}
     }
-    while( <MAIL> ) {
+    while( <STDIN> ) {
 	last if !/^\s*$/;
     }
     $body_text .= $_;
 
     if (!eof)
-    { local($/); undef $/; $body_text .= <MAIL>; }
+    { local($/); undef $/; $body_text .= <STDIN>; }
 
     if ($header{'from'} =~ /mail\s+delivery\s+(sub)?system|mailer.\s*daemon/i) {
 	# is an error mail from a mailer daemon
@@ -417,7 +357,7 @@ FILE:	foreach (@to_remove) {
 	logger( "$pkgv must be manually dinstall-ed -- delayed\n" );
     }
     elsif ($subject =~ /^new version of (\S+) \(dist=(\S+)\)$/) {
-	# notice from from wanna-build
+	# notice from wanna-build
 	my ($pkg, $dist) = ($1, $2);
 	goto forward if $body_text !~ /^in version (\S+)\.$/m;
 	my $pkgv = $pkg."_".$1;
@@ -1172,21 +1112,3 @@ sub add_error_mail () {
     return scalar(@em);
 }
 
-BEGIN { %main::dist_order = ( stable => 0, frozen => 1, unstable => 2 ); }
-
-sub dist_cmp ($$) {
-    my $d1 = shift;
-    my $d2 = shift;
-
-    return $main::dist_order{$d1} <=> $main::dist_order{$d2};
-}
-
-sub dist_list_ge ($) {
-    my $d = shift;
-    my @l = ();
-
-    foreach (keys %main::dist_order) {
-	push( @l, $_ ) if $main::dist_order{$_} >= $main::dist_order{$d};
-    }
-    return @l;
-}
