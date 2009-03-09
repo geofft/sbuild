@@ -314,7 +314,6 @@ AC_CONFIG_FILES([man/wanna-build-catdb.1])
 AC_CONFIG_FILES([man/wanna-build-mail.1])
 AC_CONFIG_FILES([man/wanna-build-merge-packages.1])
 AC_CONFIG_FILES([man/wanna-build-statistics.1])
-AC_CONFIG_FILES([src/Makefile])
 
 dnl Output the generated config.status script.
 AC_OUTPUT

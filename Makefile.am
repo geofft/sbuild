@@ -21,7 +21,7 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = bin configs etc lib man db src
+SUBDIRS = bin configs etc lib man db
 
 dist-hook:
 # Remove junk from the generated tarball.
