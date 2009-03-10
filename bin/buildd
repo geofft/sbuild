@@ -450,7 +450,9 @@ sub do_build ($\%@) {
     my $binNMUver;
 
     my @sbuild_args = ( 'nice', '-n', "$Conf::nice_level", 'sbuild',
-			'--batch', "--stats-dir=$main::HOME/stats",
+			'--apt-update',
+			'--batch',
+			"--stats-dir=$main::HOME/stats",
 			"--dist=$dist" );
     my $sbuild_gb = '--auto-give-back';
     if ($Conf::sshcmd) {
