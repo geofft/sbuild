@@ -58,7 +58,7 @@ sub init ();
 our $max_build = 10;
 our $nice_level = 10;
 our $idle_sleep_time = 5*60;
-our $min_free_space = 10*1024;
+our $min_free_space = 50*1024;
 our @take_from_dists = qw(stable testing unstable);
 our @no_auto_build = ();
 our $no_build_regex = "^(contrib/|non-free/)?non-US/";
