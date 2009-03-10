@@ -861,7 +861,7 @@ sub install_deps {
     $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
-    debug("Installing positive dependencies: @positive\n");
+    $self->log("Installing positive dependencies: @positive\n");
     if (!$self->run_apt("-y", \@instd, \@rmvd, @positive)) {
 	$self->log("Package installation failed\n");
 	# try to reinstall removed packages
@@ -882,7 +882,7 @@ sub install_deps {
     $self->set_installed(@instd);
     $self->set_removed(@rmvd);
 
-    debug("Removing negative dependencies: @negative\n");
+    $self->log("Removing negative dependencies: @negative\n");
     if (!$self->uninstall_debs($self->get('Chroot Dir') ? "purge" : "remove",
 			       @negative)) {
 	$self->log("Removal of packages failed\n");
