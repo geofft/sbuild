@@ -395,17 +395,6 @@ sub do_build ($\%@) {
 	write_stats( "idle-time", $idle_end_time - $idle_start_time );
     }
 
-    if (-x "/usr/bin/update-sourcedeps") {
-	my $log = `/usr/bin/update-sourcedeps 2>&1`;
-	if ($?) {
-	    logger( "Failure on updating source-dependencies:\n$log" )
-		if $log;
-	}
-	else {
-	    logger( $log ? $log : "Updated source-dependencies\n" );
-	}
-    }
-
     if (-d "chroot-$dist") {
 	my $absroot = cwd() . "/chroot-$dist";
 	$chroot_apt_options = "-o Dir::State::status=$absroot/var/lib/dpkg/status";

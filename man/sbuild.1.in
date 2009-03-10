@@ -245,7 +245,6 @@ Copyright \[co] 2005      Michael Banck <mbanck\@debian.org>
 Copyright \[co] 2005-2008 Roger Leigh <rleigh\@debian.org>
 .fi
 .SH "SEE ALSO"
-.BR update\-sourcedeps (1),
 .BR avg\-pkg\-build\-time (1),
 .BR schroot (1),
 .BR sbuild\-setup (7).
