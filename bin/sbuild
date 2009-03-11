@@ -178,10 +178,8 @@ sub main () {
 	$chroot_defaults->{'STREAMIN'} = $devnull;
 	$chroot_defaults->{'STREAMOUT'} = $build->get('Log Stream');
 	$chroot_defaults->{'STREAMERR'} = $build->get('Log Stream');
-	$chroot_defaults->{'ENV'} = {
-	    'LC_ALL' => 'POSIX',
-	    'SHELL' => $programs{'SHELL'}
-	};
+	$chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
+	$chroot_defaults->{'ENV'}->{'SHELL'} = $programs{'SHELL'};
 
 	$build->set('Session', $session);
 
