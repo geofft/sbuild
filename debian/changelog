@@ -6,8 +6,11 @@ sbuild (0.58.1-1) unstable; urgency=low
     build-dependency due to it not allowing automatic removal, and
     none of the commands are actually needed for the build, just
     setting the default path.
+  * sbuild: Don't erase default chroot environment (Closes: #519276).
+    This removed APT_CONFIG, preventing sbuild from working correctly.
+    Thanks to Francois-Denis Gonthier. 
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 11 Mar 2009 22:48:19 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 11 Mar 2009 23:16:41 +0000
 
 sbuild (0.58.0-1) unstable; urgency=low
 
