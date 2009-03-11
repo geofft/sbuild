@@ -1,3 +1,14 @@
+sbuild (0.58.1-1) unstable; urgency=low
+
+  [ Roger Leigh ]
+  * debian/rules: Run configure setting DCMD, SUDO and SCHROOT.
+    (Closes: #519097). It's not possible to install sudo as a
+    build-dependency due to it not allowing automatic removal, and
+    none of the commands are actually needed for the build, just
+    setting the default path.
+
+ -- Roger Leigh <rleigh@debian.org>  Wed, 11 Mar 2009 22:48:19 +0000
+
 sbuild (0.58.0-1) unstable; urgency=low
 
   [ Roger Leigh ]
@@ -18,7 +29,7 @@ sbuild (0.58.0-1) unstable; urgency=low
   * debian/wanna-build.docs: New file.  Add NEWS.
   * buildd-mail-wrapper: Use more portable BSD getloadavg in place of
     Linux-specific sysinfo.  Thanks to Robert Millan for this
-    patch (Closes: #511095). 
+    patch (Closes: #511095).
   * wanna-build: --help output now documents --create-db, since --help
     now displays the full manual page (Closes: #511314).
 
