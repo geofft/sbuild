@@ -136,7 +136,6 @@ sub init_allowed_keys {
 	    DEFAULT => ['-q']
 	},
 	'FAKEROOT'				=> {
-	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'FAKEROOT'}
 	},
 	'APT_GET'				=> {
