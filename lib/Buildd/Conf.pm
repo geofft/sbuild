@@ -33,7 +33,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($HOME $max_build $nice_level $idle_sleep_time
+    @EXPORT = qw($HOME $arch $max_build $nice_level $idle_sleep_time
                  $min_free_space @take_from_dists @no_auto_build
                  $no_build_regex $build_regex @weak_no_auto_build
                  $delay_after_give_back $pkg_log_keep $pkg_log_keep
@@ -55,6 +55,7 @@ sub init ();
     or die "HOME not defined in environment!\n";
 
 # Defaults.
+chomp( our $arch = `dpkg --print-architecture 2>/dev/null` );
 our $max_build = 10;
 our $nice_level = 10;
 our $idle_sleep_time = 5*60;
