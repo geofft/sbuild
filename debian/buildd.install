@@ -1,0 +1,3 @@
+debian/install/etc/buildd/buildd.conf		etc
+debian/install/usr/bin/buildd*			usr/bin
+debian/install/usr/share/perl5/Buildd*		usr/share/perl5
