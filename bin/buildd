@@ -96,7 +96,7 @@ open( PID, ">buildd.pid" )
     or die "can't create buildd.pid: $!\n";
 printf PID "%5d\n", $$;
 close( PID );
-END { unlink( "buildd.pid" ) if ($pid == 0); }
+END { unlink( "buildd.pid" ) if (defined($pid) and $pid == 0); }
 
 open_log();
 
