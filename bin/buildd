@@ -565,25 +565,16 @@ sub get_changelog ($$) {
     my $pkg_ne = "${n}_${v_ne}";
 
 retry:
-    # try if apt-get can fetch us the sources
-    if (-d "chroot-$dist") {
-	my $absroot = cwd() . "/chroot-$dist";
-	$chroot_apt_options =
-	    "-o Dir::State=$absroot/var/" . ( -d "$absroot/var/lib/apt" ?
-					      "lib/" : "state/") . "apt ".
-					      "-o Dir::State::status=$absroot/var/lib/dpkg/status ".
-					      "-o Dir::Cache=$absroot/var/cache/apt ".
-					      "-o Dir::Etc=$absroot/etc/apt ";
-    }
-
-    $msg = `$Conf::apt_get $chroot_apt_options -q -d --diff-only source $n=$v 2>&1`;
+    my $schroot = "$Conf::schroot -c $dist-$arch-sbuild --";
+    my $schroot_root = "$Conf::schroot -c $dist-$arch-sbuild -u root --";
+    $msg = `$schroot $Conf::apt_get -q -d --diff-only source $n=$v 2>&1`;
     if ($? == 0 && $msg !~ /get 0B/) {
 	$analyze = "diff";
 	$file = "${n}_${v_ne}.diff.gz";
     }
 
     if (!$analyze) {
-	$msg = `$Conf::apt_get $chroot_apt_options -q -d --tar-only source $n=$v 2>&1`;
+	$msg = `$schroot $Conf::apt_get -q -d --tar-only source $n=$v 2>&1`;
 	if ($? == 0 && $msg !~ /get 0B/) {
 	    $analyze = "tar";
 	    $file = "${n}_${v_ne}.tar.gz";
@@ -591,8 +582,8 @@ retry:
     }
 
     if (!$analyze && !$retried) {
-	system "$Conf::sudo $Conf::apt_get ".
-	    "-qq $chroot_apt_options update &>/dev/null";
+	system "$schroot_root $Conf::apt_get ".
+	    "-qq update &>/dev/null";
 	$retried = 1;
 	goto retry;
     }
