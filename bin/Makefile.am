@@ -40,7 +40,11 @@ bin_SCRIPTS = 				\
 	wanna-build-mail		\
 	wanna-build-merge-packages	\
 	wanna-build-merge-quinn		\
-	wanna-build-statistics
+	wanna-build-statistics		\
+	buildd				\
+	buildd-mail			\
+	buildd-uploader			\
+	buildd-watcher
 
 sbin_SCRIPTS = 			\
 	sbuild-adduser		\
@@ -84,4 +88,6 @@ install-exec-hook:
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-all"
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/merge-quinn"
 	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/merge-packages"
+
+	ln -sf "$(bindir)/buildd-mail" "$(DESTDIR)$(bindir)/buildd-mail-wrapper"
 
