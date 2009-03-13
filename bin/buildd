@@ -385,7 +385,6 @@ sub do_build ($\%@) {
     my $binNMUlog = shift;
     return if !@_;
     my $free_space;
-    my $chroot_apt_options;
 
     while (($free_space = df(".")) < $Conf::min_free_space) {
 	logger( "Delaying build, because free space is low ($free_space KB)\n" );
@@ -393,56 +392,6 @@ sub do_build ($\%@) {
 	sleep( 10*60 );
 	my $idle_end_time = time;
 	write_stats( "idle-time", $idle_end_time - $idle_start_time );
-    }
-
-    if (-d "chroot-$dist") {
-	my $absroot = cwd() . "/chroot-$dist";
-	$chroot_apt_options = "-o Dir::State::status=$absroot/var/lib/dpkg/status";
-	my $aptconf = "$absroot/var/lib/sbuild/apt.conf";
-	$ENV{'APT_CONFIG'} = $aptconf;
-	if ( ! -f $aptconf ) {
-	    if (open F, ">$aptconf") {
-		print F "Dir \"$absroot/\";\n";
-		close F;
-	    } else {
-		$chroot_apt_options .=
-		    " -o Dir::State=$absroot/var/lib/apt" .
-		    " -o Dir::Cache=$absroot/var/cache/apt".
-		    " -o Dir::Etc=$absroot/etc/apt";
-	    }
-	}
-    }
-
-    if (-x "$Conf::apt_get") {
-	my $mtime = (stat(((-d "chroot-$dist" ? "chroot-$dist" : "") . "/var/cache/apt/pkgcache.bin")))[ST_MTIME];
-	my $log = `$Conf::sudo $Conf::apt_get -qq $chroot_apt_options update 2>&1`;
-	if ($?) {
-	    logger( "Error on updating apt sources for $dist:\n$log" )
-		if $log;
-
-	    # We've already taken the packages -- but the build
-	    # environment is broken.  Ideally, we'd never take them
-	    # in the first place.  Also better would be to give-back
-	    # the packages here.  Instead, we drop the dist from
-	    # future attempts, and soldier on, letting sbuild give
-	    # them back, or fail them.
-	    if (($log =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
-		($log =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi)) {
-		for (my $i = 0; $i < @Conf::take_from_dists ; $i++ ) {
-		    if ($Conf::take_from_dists[$i] eq $dist) {
-			splice (@Conf::take_from_dists,$i,1);
-			logger( "Removing $dist from building; env. broken" );
-		    }
-		}
-	    }
-	}
-	else {
-	    logger( $log ? $log : "Updated apt sources for $dist\n" );
-	    if ((stat(((-d "chroot-$dist" ? "chroot-$dist" : "") . "/var/cache/apt/pkgcache.bin")))[ST_MTIME] > $mtime) {
-		$log = `$Conf::sudo $Conf::apt_get -qq $chroot_apt_options autoclean 2>&1`;
-		logger( $log ? $log : "Autocleaned apt cache directory for $dist\n" );
-	    }
-	}
     }
 
     logger( "Starting build (dist=$dist) of:\n@_\n" );
