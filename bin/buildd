@@ -565,8 +565,8 @@ sub get_changelog ($$) {
     my $pkg_ne = "${n}_${v_ne}";
 
 retry:
-    my $schroot = "$Conf::schroot -c $dist-$arch-sbuild --";
-    my $schroot_root = "$Conf::schroot -c $dist-$arch-sbuild -u root --";
+    my $schroot = "$Conf::schroot -c $dist-$Conf::arch-sbuild --";
+    my $schroot_root = "$Conf::schroot -c $dist-$Conf::arch-sbuild -u root --";
     $msg = `$schroot $Conf::apt_get -q -d --diff-only source $n=$v 2>&1`;
     if ($? == 0 && $msg !~ /get 0B/) {
 	$analyze = "diff";
