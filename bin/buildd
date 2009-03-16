@@ -562,7 +562,7 @@ sub get_changelog ($$) {
     my $msg;
     my $file;
     my $retried = 0;
-    local( *PIPE, *DSC, *F );
+    local( *PIPE, *F );
 
     $pkg =~ /^([\w\d.+-]+)_([\w\d:.~+-]+)/;
     my ($n, $v) = ($1, $2);
