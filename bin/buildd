@@ -31,9 +31,9 @@ use warnings;
 use POSIX;
 use Buildd;
 use Buildd::Conf;
-use Sbuild;
 use Cwd;
 
+sub isin ($@);
 sub ST_MTIME ();
 sub get_from_REDO ($\%);
 sub read_givenback ();
@@ -226,6 +226,11 @@ MAINLOOP: while( 1 ) {
 	my $idle_end_time = time;
 	write_stats( "idle-time", $idle_end_time - $idle_start_time );
     }
+}
+
+sub isin ($@) {
+    my $val = shift;
+    return grep( $_ eq $val, @_ );
 }
 
 sub get_from_REDO ($\%) {
