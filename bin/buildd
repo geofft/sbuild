@@ -59,14 +59,6 @@ $my_binary = cwd . "/" . $my_binary if $my_binary !~ m,^/,;
 my @bin_stats = stat( $my_binary );
 die "Cannot stat $my_binary: $!\n" if !@bin_stats;
 my $my_bin_time = $bin_stats[ST_MTIME];
-my $my_config = "$main::HOME/buildd.conf";
-my $my_config_global = "/etc/buildd.conf.global";
-my @config_stats = stat( $my_config );
-die "Cannot stat $my_config: $!\n" if !@config_stats;
-my $my_config_time = $config_stats[ST_MTIME];
-my @config_g_stats = stat( $my_config_global );
-die "Cannot stat $my_config_global: $!\n" if !@config_g_stats;
-my $my_config_g_time = $config_g_stats[ST_MTIME];
 
 
 chdir( "$main::HOME/build" )
