@@ -15,8 +15,6 @@ sed -e "s/@RELEASE_DATE@/`date '+%d %b %Y'`/" -e "s/@RELEASE_UDATE@/`date '+%s'`
 touch ChangeLog
 
 
-echo "libtoolize"
-libtoolize --force --copy
 echo "aclocal -I m4"
 aclocal -I m4
 echo "autoheader"
