@@ -310,7 +310,7 @@ sub read_givenback () {
 	close( F );
     }
     else {
-	print PLOG "Can't open SBUILD-GIVEN-BACK: $!\n";
+	logger( "Can't open SBUILD-GIVEN-BACK: $!\n" );
     }
 
   unlock:
