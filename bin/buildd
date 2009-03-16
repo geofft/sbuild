@@ -46,7 +46,6 @@ sub append_to_REDO ($$@);
 sub read_FINISHED ();
 sub shutdown ($);
 sub check_restart ();
-sub check_reread_config ();
 sub block_signals ();
 sub unblock_signals ();
 sub check_ssh_master ();
@@ -113,7 +112,6 @@ foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
 $SIG{'HUP'} = \&reopen_log;
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
-$SIG{'USR1'} = sub ($) { $main::reread_config = 1; };
 undef $ENV{'DISPLAY'};
 
 $main::block_sigset = POSIX::SigSet->new;
@@ -124,7 +122,7 @@ $main::block_sigset->addset( $main::signo{"TERM"} );
 my $dist;
 MAINLOOP: while( 1 ) {
     check_restart();
-    check_reread_config();
+    Buildd::Conf::check_reread_config();
     check_ssh_master();
 
     my $done = 0;
@@ -134,7 +132,7 @@ MAINLOOP: while( 1 ) {
 	$thisdone = 0;
 	foreach $dist (@Conf::take_from_dists) {
 	    check_restart();
-	    check_reread_config();
+	    Conf::check_reread_config();
 	    my @redo = get_from_REDO( $dist, %binNMUlog );
 	    next if !@redo;
 	    do_build( $dist, %binNMUlog, @redo );
@@ -145,7 +143,7 @@ MAINLOOP: while( 1 ) {
 
     foreach $dist (@Conf::take_from_dists) {
 	check_restart();
-	check_reread_config();
+	Conf::check_reread_config();
 	my %givenback = read_givenback();
 	if (!open( PIPE, "$Conf::sshcmd wanna-build --list=needs-build --dist=$dist ".
 		   ($Conf::wanna_build_dbbase ?
@@ -733,26 +731,6 @@ sub check_restart () {
     if ( -f "$main::HOME/EXIT-DAEMON-PLEASE" ) {
 	unlink("$main::HOME/EXIT-DAEMON-PLEASE");
 	&shutdown("NONE (flag file exit)");
-    }
-}
-
-sub check_reread_config () {
-    my @stats = stat( $my_config );
-    my @stats_g = stat( $my_config_global );
-
-    if ($main::reread_config ||
-	(@stats && $my_config_time != $stats[ST_MTIME]) ||
-	(@stats_g && $my_config_g_time != $stats_g[ST_MTIME])) {
-	logger( "My config file has been updated -- rereading it\n" );
-	$my_config_time = $stats[ST_MTIME];
-	$my_config_g_time = $stats_g[ST_MTIME];
-	delete $INC{$my_config};
-	delete $INC{$my_config_global};
-	Build::Conf::read();
-	if ($Conf::sshsocket) {
-	    $Conf::sshcmd .= " -S $Conf::sshsocket";
-	}
-	$main::reread_config = 0;
     }
 }
 

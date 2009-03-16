@@ -47,12 +47,21 @@ BEGIN {
                  $log_queued_messages $wanna_build_dbbase read);
 }
 
+sub read_file ($\$);
 sub read ();
+sub convert_sshcmd ();
 sub init ();
+
+my $reread_config = 0;
 
 # Originally from the main namespace.
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";
+# Configuration files.
+my $config_global = "/etc/buildd/buildd.conf";
+my $config_user = "$HOME/.builddrc";
+my $config_global_time = 0;
+my $config_user_time = 0;
 
 # Defaults.
 chomp( our $arch = `dpkg --print-architecture 2>/dev/null` );
@@ -91,16 +100,27 @@ our $dupload_to_security = "security";
 our $log_queued_messages = 0;
 our $wanna_build_dbbase = "arch/build-db";
 
-# read conf files
-sub read () {
-    require "/etc/buildd/buildd.conf" if -r "/etc/buildd/buildd.conf";
-    require "$HOME/.builddrc" if -r "$HOME/.builddrc";
+sub ST_MTIME () { 9 }
+
+sub read_file ($\$) {
+    my $filename = shift;
+    my $time_var = shift;
+    if (-r $filename) {
+        my @stat = stat( $filename );
+        $time_var = $stat[ST_MTIME];
+        delete $INC{$filename};
+        require $filename;
+    }
 }
 
-sub init () {
-    Buildd::Conf::read();
+# read conf files
+sub read () {
+    read_file( $config_global, $config_global_time );
+    read_file( $config_user, $config_user_time );
+    convert_sshcmd();
+}
 
-    # some checks
+sub convert_sshcmd () {
     if ($sshcmd) {
 	if ($sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
 	    ($main::sshuser, $main::sshhost) = ($1, $2);
@@ -115,6 +135,25 @@ sub init () {
 	if ($sshsocket) {
 	    $sshcmd .= " -S $sshsocket";
 	}
+    }
+}
+
+sub init () {
+    Buildd::Conf::read();
+}
+
+$SIG{'USR1'} = sub ($) { $reread_config = 1; };
+
+sub check_reread_config () {
+    my @stat_user = stat( $config_user );
+    my @stat_global = stat( $config_global );
+
+    if ( $reread_config ||
+        (@stat_user && $config_user_time != $stat_user[ST_MTIME]) ||
+        (@stat_global && $config_global_time != $stat_global[ST_MTIME])) {
+        logger( "My config file has been updated -- rereading it\n" );
+        Buildd::Conf::read();
+        $reread_config = 0;
     }
 }
 
