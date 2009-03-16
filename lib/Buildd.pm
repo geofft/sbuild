@@ -162,7 +162,7 @@ sub logger (@) {
     foreach (@_) { $text .= $_; }
     $text =~ s/\n+$/\n/; # remove newlines at end
     $text .= "\n" if $text !~ /\n$/; # ensure newline at end
-    $text =~ s/^/$1$t $Buildd::progname: /mg;
+    $text =~ s/^/$t $Buildd::progname: /mg;
     print LOG $text;
 }
 
