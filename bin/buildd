@@ -106,10 +106,6 @@ $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 undef $ENV{'DISPLAY'};
 
-$main::block_sigset = POSIX::SigSet->new;
-$main::block_sigset->addset( $main::signo{"INT"} );
-$main::block_sigset->addset( $main::signo{"TERM"} );
-
 # the main loop
 my $dist;
 MAINLOOP: while( 1 ) {
