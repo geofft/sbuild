@@ -207,7 +207,7 @@ MAINLOOP: while( 1 ) {
 
 	# Build weak_no_auto packages before the next dist
 	if (!@todo && @lowprio_todo) {
-	    push ( @todo, @lowprio_todo[0] );
+	    push ( @todo, @lowprio_todo );
 	}
 
 	next if !@todo;
