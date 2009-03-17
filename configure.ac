@@ -97,9 +97,6 @@ if test "$enable_debug" = "yes"; then
 fi
 
 # Checks for programs.
-AC_PROG_CC_C99
-AC_PROG_CXX
-AC_LANG([C++])
 AC_PATH_PROG([APT_CACHE], [apt-cache])
 AC_PATH_PROG([APT_GET], [apt-get])
 AC_PATH_PROG([CHMOD], [chmod])
