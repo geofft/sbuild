@@ -323,7 +323,7 @@ sub init_allowed_keys {
 	    DEFAULT => undef
 	},
 	'MAINTAINER_NAME'			=> {
-	    DEFAULT => $ENV{'DEBEMAIL'}
+	    DEFAULT => undef
 	},
 	'UPLOADER_NAME'				=> {
 	    DEFAULT => undef
