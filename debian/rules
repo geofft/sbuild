@@ -6,16 +6,6 @@
 debian/build/config.status: configure
 	dh_testdir
 
-	[ -r scripts/config.sub.orig ] || \
-	  cp -f scripts/config.sub scripts/config.sub.orig
-	[ -r scripts/config.guess.orig ] || \
-	  cp -f scripts/config.guess scripts/config.guess.orig
-
-	[ ! -r /usr/share/misc/config.sub ] || \
-	  cp -f /usr/share/misc/config.sub scripts/config.sub
-	[ ! -r /usr/share/misc/config.guess ] || \
-	  cp -f /usr/share/misc/config.guess scripts/config.guess
-
 	mkdir debian/build; \
 	cd debian/build; \
 	CFLAGS="$(CFLAGS)" ../../configure \
@@ -42,11 +32,6 @@ clean:
 	rm -rf debian/build
 	rm -rf debian/install
 	rm -f debian/build-stamp
-
-	[ ! -r scripts/config.guess.orig ] || \
-	  mv -f scripts/config.guess.orig scripts/config.guess || :
-	[ ! -r scripts/config.sub.orig ] || \
-	  mv -f scripts/config.sub.orig scripts/config.sub || :
 
 	dh_clean
 

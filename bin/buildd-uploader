@@ -38,12 +38,12 @@ sub do_dupload ($@);
 
 unset_env();
 
-if ($conf::sshsocket and -S "$main::HOME/build/$conf::sshsocket") {
-    $conf::sshcmd .= " -S $main::HOME/build/$conf::sshsocket";
+if ($Buildd::Conf::sshsocket and -S "$main::HOME/build/$Buildd::Conf::sshsocket") {
+    $Buildd::Conf::sshcmd .= " -S $main::HOME/build/$Buildd::Conf::sshsocket";
 }
 
-$conf::dupload_to ||= "anonymous-ftp-master";
-$conf::dupload_to_security ||= "security";
+$Buildd::Conf::dupload_to ||= "anonymous-ftp-master";
+$Buildd::Conf::dupload_to_security ||= "security";
 
 my $log_locked = 0;
 my $locked = 0;
@@ -63,8 +63,8 @@ $locked = 1;
 
 my %uploaded_pkgs;
 
-upload( "upload-security", $conf::dupload_to_security );
-upload( "upload", $conf::dupload_to );
+upload( "upload-security", $Buildd::Conf::dupload_to_security );
+upload( "upload", $Buildd::Conf::dupload_to );
 
 foreach my $dist (keys %uploaded_pkgs) {
     logger( "Set to Uploaded($dist):$uploaded_pkgs{$dist}" );
@@ -77,8 +77,8 @@ sub uploaded ($@) {
     my @propagated_pkgs = ();
     foreach my $dist (@_) {
 	my $msgs = "";
-	if (open( PIPE, "$conf::sshcmd wanna-build --uploaded --user=$conf::wanna_build_user ".
-		  ($conf::wanna_build_dbbase?"--database=$conf::wanna_build_dbbase ":"").
+	if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build --uploaded --user=$Buildd::Conf::wanna_build_user ".
+		  ($Buildd::Conf::wanna_build_dbbase?"--database=$Buildd::Conf::wanna_build_dbbase ":"").
 		  "--no-down-propagation --dist=$dist ".
 		  "$pkg 2>&1 |" )) {
 	    while( <PIPE> ) {
@@ -272,7 +272,7 @@ sub do_dupload ($@) {
 
     if ($errs) {
 	$errs .= "\nComplete output from dupload:\n\n$dup_log";
-	send_mail( $conf::admin_mail, "dupload errors", $errs );
+	send_mail( $Buildd::Conf::admin_mail, "dupload errors", $errs );
     }
     return \@log;
 }
