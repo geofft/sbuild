@@ -195,15 +195,12 @@ sub main () {
 
 	# Update APT cache.
 	if ($conf->get('APT_UPDATE')) {
-	    if (!open(PIPE, $session->get_apt_command($conf->get('APT_GET'),
-						      "-q update", "root", 1, '/') . " 2>&1 |")) {
-		$build->log("Can't open pipe to apt-get: $!\n");
-		return 0;
-	    }
-	    while(<PIPE>) {
-		$build->log($_);
-	    }
-	    close(PIPE);
+	    $session->run_apt_command(
+		{ COMMAND => [$conf->get('APT_GET'), 'update'],
+		  USER => 'root',
+		  PRIORITY => 1,
+		  DIR => '/'});
+
 	    if ($?) {
 		$build->log("apt-get update failed\n");
 		$build->set('Pkg Status', 'skipped');
