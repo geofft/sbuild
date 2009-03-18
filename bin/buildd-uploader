@@ -30,15 +30,13 @@ use warnings;
 use Buildd;
 use Buildd::Conf;
 
+Buildd::Conf::init();
+
 sub uploaded ($@);
 sub upload ($$);
 sub do_dupload ($@);
 
 unset_env();
-
-if ($Buildd::Conf::sshsocket and -S "$main::HOME/build/$Buildd::Conf::sshsocket") {
-    $Buildd::Conf::sshcmd .= " -S $main::HOME/build/$Buildd::Conf::sshsocket";
-}
 
 $Buildd::Conf::dupload_to ||= "anonymous-ftp-master";
 $Buildd::Conf::dupload_to_security ||= "security";
