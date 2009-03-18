@@ -337,7 +337,15 @@ sub shutdown ($) {
     if ($main::build_object->get('Sub PID')) {
 	print "Killing " . $main::build_object->get('Sub Task') .
 	    " subprocess " . $main::build_object->get('Sub PID') . "\n";
-	$main::build_object->get('Session')->run_command("perl -e \"kill( \\\"TERM\\\", " . $main::build_object->get('Sub PID') . " )\"", "root", 1, 0, '/');
+	$main::build_object->get('Session')->run_command(
+		{ COMMAND => ['perl', '-e',
+			      "\"kill( \\\"TERM\\\", " .
+			      $main::build_object->get('Sub PID') .
+			      " )\""],
+		  USER => 'root',
+		  CHROOT => 1,
+		  PRIORITY => 0,
+		  DIR => '/' });
     }
     $main::build_object->remove_srcdep_lock_file();
 
@@ -346,7 +354,13 @@ sub shutdown ($) {
 	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
 	    $main::build_object->log("Purging " . $main::build_object->get('Chroot Build Dir') . "\n");
 	    my $bdir = $main::build_object->get('Session')->strip_chroot_path($main::build_object->get('Chroot Build Dir'));
-	    $main::build_object->get('Session')->run_command("rm -rf '$bdir'", "root", 1, 0, '/');
+	    $main::build_object->get('Session')->run_command(
+		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
+			      '-rf', $bdir],
+		  USER => 'root',
+		  CHROOT => 1,
+		  PRIORITY => 0,
+		  DIR => '/' });
 	}
 
 	$main::current_job =
