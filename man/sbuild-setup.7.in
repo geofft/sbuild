@@ -154,7 +154,7 @@ example:
 .PP
 \f[CR]# \f[CB]mkdir \-p /etc/sbuild/chroot\fP\fP
 .br
-\f[CR]# \f[CB]mkdir \-p /srv/chroot/lenny /etc/sbuild/chroot/lenny\fP\fP
+\f[CR]# \f[CB]ln \-s /srv/chroot/lenny /etc/sbuild/chroot/lenny\fP\fP
 .br
 .SS 5. Log into chroot
 \f[CR]# \f[CB]dchroot \-c lenny\fP\fP
