@@ -114,12 +114,11 @@ Sbuild
 This is the script used to build Debian source packages.
 .TP
 Adminstrator
-Each build daemon must have a human adminstrator who looks at each
-build logs and sends a response.  The response can be a signed
-..changes file, in which case the build daemon will upload the package,
-or it can be a `fail' response along with a reason, in which case the
-build daemon will notify the wanna\-build database about the change of
-state for the package.
+Each build daemon must have a human adminstrator who looks at each build logs
+and sends a response.  The response can be a signed .changes file, in which
+case the build daemon will upload the package, or it can be a `fail' response
+along with a reason, in which case the build daemon will notify the
+wanna\-build database about the change of state for the package.
 .TP
 Developers
 Developers can compile and upload packages without duplication of work
