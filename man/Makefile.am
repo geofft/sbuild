@@ -21,7 +21,11 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-man_MANS = \
+man_MANS =				\
+	buildd.1			\
+	buildd-mail.1			\
+	buildd-uploader.1		\
+	buildd-watcher.1		\
 	sbuild.1			\
 	sbuild-abort.1			\
 	sbuild-adduser.8		\

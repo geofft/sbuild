@@ -1,0 +1,69 @@
+.\" Copyright © 2009  Roger Leigh <rleigh@debian.org>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH BUILDD\-UPLOADER 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+buildd\-uploader \- upload built packages for buildd
+.SH SYNOPSIS
+.B buildd\-uploader
+.SH VERSION
+This man page documents the packaged version of buildd\-uploader.  This version
+is maintained by the \fBbuildd-tools\fP project developers on Alioth
+(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
+.PP
+There is also a version maintained by Ryan Murray which is adapted to build
+daemon needs, with similar functionality.  This version should be equally
+capable of working in a buildd setup, but has a number of enhancements aimed at
+making it suitable for use by end-users.
+.SH DESCRIPTION
+\fBbuildd\-uploader\fR uploads built packages.
+.SH FILES
+.TP
+.I /etc/buildd/buildd.conf
+Configuration, maintained by the system administrator.  This may be used to
+override the defaults.
+.TP
+.I ~/.builddrc
+User-specific configuration.
+.SH AUTHORS
+Roman Hodek <Roman.Hodek@informatik.uni\-erlangen.de>.
+.PP
+\fBsbuild\fR is based on debbuild, written by James Troup
+<james@nocrew.org> and has been modified by
+.nf
+Ben Collins <bcollins@debian.org>,
+Ryan Murray <rmurray@debian.org>,
+Francesco Paolo Lovergine <frankie@debian.org>,
+Michael Banck <mbanck@debian.org>, and
+Roger Leigh <rleigh@debian.org>
+.fi
+.SH COPYRIGHT
+.nf
+Copyright \[co] 1998-2000 Roman Hodek <roman\@hodek.net>
+Copyright \[co] 1998-1999 James Troup <troup\@debian.org>
+Copyright \[co] 2003-2006 Ryan Murray <rmurray\@debian.org>
+Copyright \[co] 2001-2003 Rick Younie <younie\@debian.org>
+Copyright \[co] 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
+Copyright \[co] 2005      Michael Banck <mbanck\@debian.org>
+Copyright \[co] 2005-2008 Roger Leigh <rleigh\@debian.org>
+.fi
+.SH "SEE ALSO"
+.BR buildd (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:
