@@ -18,6 +18,8 @@
 buildd\-mail \- mail answer processor for buildd
 .SH SYNOPSIS
 .B buildd\-mail
+.br
+.B buildd\-mail\-wrapper
 .SH VERSION
 This man page documents the packaged version of buildd\-mail.  This version
 is maintained by the \fBbuildd-tools\fP project developers on Alioth
@@ -29,6 +31,11 @@ capable of working in a buildd setup, but has a number of enhancements aimed at
 making it suitable for use by end-users.
 .SH DESCRIPTION
 \fBbuildd\-mail\fR processes incoming mail for the buildd user.
+.PP
+\fBbuildd\-mail\-wrapper\fR was a setuid wrapper for buildd\-mail, which has
+been removed and is no longer required.  It has been kept as a symbolic link to
+buildd\-mail for compatibilty purposes, but is obsolete and will removed in a
+future release.
 .SH SETUP
 The buildd user should have a file \fI~/.forward\fP with the following
 contents:
