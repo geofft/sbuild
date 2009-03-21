@@ -22,8 +22,6 @@
 BEGIN {
     ($main::HOME = $ENV{'HOME'})
 	or die "HOME not defined in environment!\n";
-    $main::HOME =~ /^(.*)$/;
-    $main::HOME = $1;
 }
 
 use strict;
