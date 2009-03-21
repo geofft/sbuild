@@ -31,7 +31,7 @@ use Buildd::Conf;
 use POSIX qw(ESRCH LONG_MAX);
 use Cwd;
 
-sub ST_MTIME () { 9 }
+sub ST_MTIME ();
 sub archive_logs ($$$$);
 sub make_statistics ($$);
 sub print_time ($);
