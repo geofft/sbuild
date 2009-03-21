@@ -62,8 +62,6 @@ sub reply ($);
 sub is_blacklisted ($);
 sub add_error_mail ();
 
-$main::keep_running = 1;
-
 chdir( "$main::HOME" );
 
 if ($conf::sshsocket and -S "build/$conf::sshsocket") {
