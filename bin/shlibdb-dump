@@ -22,7 +22,6 @@
 BEGIN {
     ($HOME = $ENV{'HOME'})
 	or die "HOME not defined in environment!\n";
-    push( @INC, "$main::HOME/lib" );
 }
 
 package conf;

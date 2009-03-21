@@ -24,7 +24,6 @@ BEGIN {
 	or die "HOME not defined in environment!\n";
     $main::HOME =~ /^(.*)$/;
     $main::HOME = $1;
-    push( @INC, "$main::HOME/lib" );
 }
 
 use strict;
