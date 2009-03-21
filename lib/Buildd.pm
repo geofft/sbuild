@@ -41,10 +41,7 @@ my @pwinfo = getpwuid($>);
 $Buildd::username = $pwinfo[0];
 $Buildd::gecos = $pwinfo[6];
 $Buildd::gecos =~ s/,.*$//;
-my $oldPATH = $ENV{'PATH'};
-$ENV{'PATH'} = "/bin";
 $Buildd::hostname = `/bin/hostname -f`;
-$ENV{'PATH'} = $oldPATH;
 $Buildd::hostname =~ /^(\S+)$/; $Buildd::hostname = $1; # untaint
 
 sub unset_env ();

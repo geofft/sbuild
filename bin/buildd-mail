@@ -63,7 +63,6 @@ sub is_blacklisted ($);
 sub add_error_mail ();
 
 $main::keep_running = 1;
-$ENV{'PATH'} = "$main::HOME/bin:/bin:/usr/bin:/usr/local/bin";
 
 chdir( "$main::HOME" );
 

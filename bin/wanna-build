@@ -91,7 +91,6 @@ my $ctime = time;
 # Undefined: %new_vers %merge_srcvers
 
 # global vars
-$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $| = 1;
 
 # map program invocation names to operation modes

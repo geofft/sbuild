@@ -26,8 +26,6 @@ use Time::Local;
 my $HOME = $ENV{'HOME'}
 or die "HOME not defined in environment!\n";
 
-$ENV{PATH} .= ":/usr/local/bin" if $ENV{'PATH'} !~ m,/usr/local/bin(:|$),;
-
 sub check (@);
 sub notify_mail (@);
 sub parse_date ($);

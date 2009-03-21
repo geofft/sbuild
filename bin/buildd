@@ -52,7 +52,6 @@ sub check_ssh_master ();
 
 sub ST_MTIME () { 9 }
 
-$ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin:/usr/bin/X11:/usr/games";
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
 $my_binary = cwd . "/" . $my_binary if $my_binary !~ m,^/,;

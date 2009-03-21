@@ -32,7 +32,6 @@ sub logger (@);
 
 # TODO: Convert to use WannaBuild::Conf and Sbuild::Sysconfig
 
-$ENV{'PATH'} = "/bin:/usr/bin:/usr/local/bin";
 $main::tempfile = "/bin/tempfile";
 $main::wanna_build = -f "/usr/local/bin/wanna-build" ?
     "/usr/local/bin/wanna-build" : "/usr/bin/wanna-build";

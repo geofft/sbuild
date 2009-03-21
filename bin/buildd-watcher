@@ -42,7 +42,6 @@ sub format_date ($);
 
 sub ST_MTIME () { 9 }
 
-$ENV{'PATH'} = "$main::HOME/bin:/usr/bin:/bin:/usr/local/bin";
 my $fudge = 1/24/6; # 10 minutes in units of a day
 my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 
