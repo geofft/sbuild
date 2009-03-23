@@ -109,6 +109,10 @@ INSERT INTO components (component) VALUES
   ('contrib'),
   ('non-free');
 
+INSERT INTO package_types (type) VALUES
+  ('deb'),
+  ('udeb');
+
 INSERT INTO package_priorities (pkg_prio, prio_val) VALUES
  ('required', 1),
  ('standard', 2),

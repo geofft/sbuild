@@ -64,6 +64,14 @@ CREATE TABLE components (
 COMMENT ON TABLE components IS 'Valid archive components';
 COMMENT ON COLUMN components.component IS 'Component name';
 
+CREATE TABLE package_types (
+	type text
+	  CONSTRAINT pkg_tpe_pkey PRIMARY KEY
+);
+
+COMMENT ON TABLE package_types IS 'Valid types for binary packages';
+COMMENT ON COLUMN package_types.type IS 'Type name';
+
 CREATE TABLE package_architectures (
 	arch text
 	  CONSTRAINT pkg_arch_pkey PRIMARY KEY
@@ -183,6 +191,9 @@ CREATE TABLE binaries (
 	  NOT NULL,
 	section text
 	  CONSTRAINT bin_section_fkey REFERENCES package_sections(section)
+	  NOT NULL,
+	type text
+	  CONSTRAINT bin_pkg_type_fkey REFERENCES package_types(type)
 	  NOT NULL,
 	pkg_prio text
 	  CONSTRAINT bin_pkg_prio_fkey REFERENCES package_priorities(pkg_prio)
