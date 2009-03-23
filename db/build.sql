@@ -107,8 +107,7 @@ CREATE TABLE build_status_history (
 	  NOT NULL
 	  DEFAULT CURRENT_USER,
 	builder text
-	  CONSTRAINT build_status_history_builder_fkey REFERENCES builders(builder)
-	  NOT NULL,
+	  CONSTRAINT build_status_history_builder_fkey REFERENCES builders(builder),
 	status text
 	  CONSTRAINT build_status_history_status_fkey REFERENCES package_states(name)
 	  NOT NULL,
