@@ -113,7 +113,7 @@ COMMENT ON TRIGGER set_or_update_ctime ON build_status
 CREATE OR REPLACE FUNCTION update_status_history()
 RETURNS trigger AS $update_status_history$
 BEGIN
-  INSERT INTO status_history
+  INSERT INTO build_status_history
     (source, source_version, arch, suite,
      bin_nmu, user_name, builder, status, ctime)
     VALUES
@@ -126,4 +126,4 @@ $update_status_history$ LANGUAGE plpgsql;
 CREATE TRIGGER update_history AFTER INSERT OR UPDATE ON build_status
   FOR EACH ROW EXECUTE PROCEDURE update_status_history();
 COMMENT ON TRIGGER update_history ON build_status
-  IS 'Insert a record of the status change into status_history';
+  IS 'Insert a record of the status change into build_status_history';
