@@ -2,8 +2,10 @@ sbuild (0.58.2-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release.
+  * etc/50sbuild: Don't create user home directory inside the build
+    chroot.  Home directories are not required for building.
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 19 Mar 2009 21:46:10 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 29 Mar 2009 22:05:29 +0100
 
 sbuild (0.58.1-1) unstable; urgency=low
 
