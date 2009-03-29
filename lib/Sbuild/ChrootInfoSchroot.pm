@@ -1,6 +1,6 @@
 #
 # ChrootInfo.pm: chroot utility library for sbuild
-# Copyright © 2005-2006 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2009 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -53,6 +53,12 @@ sub get_info {
     my %tmp = ('Priority' => 0,
 	       'Location' => "",
 	       'Session Purged' => 0);
+
+    local %ENV;
+
+    $ENV{'LC_ALL'} = 'C';
+    $ENV{'LANGUAGE'} = 'C';
+
     open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot
 	or die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
     while (<CHROOT_DATA>) {
@@ -99,6 +105,11 @@ sub get_info_all {
 
     my $chroots = {};
     my $build_dir = $self->get_conf('BUILD_DIR');
+
+    local %ENV;
+
+    $ENV{'LC_ALL'} = 'C';
+    $ENV{'LANGUAGE'} = 'C';
 
     open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--list'
 	or die 'Can\'t run ' . $self->get_conf('SCHROOT');

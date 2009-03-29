@@ -4,8 +4,12 @@ sbuild (0.58.2-1) unstable; urgency=low
   * New release.
   * etc/50sbuild: Don't create user home directory inside the build
     chroot.  Home directories are not required for building.
+  * lib/Sbuild/ChrootInfoSchroot.pm: Run schroot in a C locale, to
+    avoid localisation of the output which breaks parsing
+    (Closes: #520755).  This was preventing the detection of chroots
+    in some locales. 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 Mar 2009 22:05:29 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 29 Mar 2009 22:13:40 +0100
 
 sbuild (0.58.1-1) unstable; urgency=low
 
