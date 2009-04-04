@@ -107,7 +107,7 @@ sub read_file ($\$) {
     my $time_var = shift;
     if (-r $filename) {
         my @stat = stat( $filename );
-        $time_var = $stat[ST_MTIME];
+        $$time_var = $stat[ST_MTIME];
         delete $INC{$filename};
         require $filename;
     }
