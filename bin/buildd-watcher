@@ -264,7 +264,9 @@ if ($restart) {
     else {
 	defined(my $pid = fork) or die "$0: can't fork to restart buildd: $!\n";
 	if ($pid == 0) {
-	    exec "buildd";
+	    # Use curly braces to avoid a warning about unreachable
+	    # statements.  See manpage of Perl's exec for details.
+	    { exec ("buildd"); }
 	    logger( "Failed to start daemon: $!\n" );
 	    exit( 1 );
 	}
