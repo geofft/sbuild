@@ -85,6 +85,10 @@ sub lock_file ($;$) {
     my $try = 0;
     my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 
+    if (!defined($nowait)) {
+        $nowait = 0;
+    }
+
   repeat:
     if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
 	if ($! == EEXIST) {
