@@ -133,7 +133,7 @@ sub process_mail () {
     goto forward_mail if !$header{'subject'};
     my $subject = $header{'subject'};
 
-    if ($subject =~ /^Re: Log for \S+ build of (\S+) \(dist=(\S+)\)/i) {
+    if ($subject =~ /^Re: Log for \S+ build of (\S+)(?: on [\w-]+)? \(dist=(\S+)\)/i) {
 	# reply to a build log
 	my( $package, $dist ) = ( $1, $2 );
 	$body_text =~ /^(\S+)/;
@@ -960,7 +960,7 @@ sub check_state ($$@) {
 	$error .= $msg."version $av registered as $as\n";
 	return 0;
     }
-    if (!isin( $as, @wanted_states)) {
+    if (!Buildd::isin( $as, @wanted_states)) {
 	$error .= $msg."state is $as\n";
 	return 0;
     }

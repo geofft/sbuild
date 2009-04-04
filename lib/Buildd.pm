@@ -44,6 +44,7 @@ $Buildd::gecos =~ s/,.*$//;
 $Buildd::hostname = `/bin/hostname -f`;
 $Buildd::hostname =~ /^(\S+)$/; $Buildd::hostname = $1; # untaint
 
+sub isin ($@);
 sub unset_env ();
 sub lock_file ($;$);
 sub unlock_file ($);
@@ -55,6 +56,11 @@ sub reopen_log ();
 sub send_mail ($$$;$);
 sub ll_send_mail ($$);
 sub exitstatus ($);
+
+sub isin ($@) {
+    my $val = shift;
+    return grep( $_ eq $val, @_ );
+}
 
 sub unset_env () {
     # unset any locale variables

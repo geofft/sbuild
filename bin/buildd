@@ -32,7 +32,6 @@ use Buildd;
 use Buildd::Conf;
 use Cwd;
 
-sub isin ($@);
 sub ST_MTIME ();
 sub get_from_REDO ($\%);
 sub read_givenback ();
@@ -168,9 +167,9 @@ MAINLOOP: while( 1 ) {
 	    $pv =~ s,^.*/,,;
 	    my $p;
 	    ($p = $pv) =~ s/_.*$//;
-	    next if isin( $p, @Buildd::Conf::no_auto_build );
+	    next if Buildd::isin( $p, @Buildd::Conf::no_auto_build );
 	    next if $givenback{$pv};
-	    if (isin( $p, @Buildd::Conf::weak_no_auto_build )) {
+	    if (Buildd::isin( $p, @Buildd::Conf::weak_no_auto_build )) {
 		push( @lowprio_todo, $pv );
 		next;
 	    }
@@ -216,11 +215,6 @@ MAINLOOP: while( 1 ) {
 	my $idle_end_time = time;
 	write_stats( "idle-time", $idle_end_time - $idle_start_time );
     }
-}
-
-sub isin ($@) {
-    my $val = shift;
-    return grep( $_ eq $val, @_ );
 }
 
 sub get_from_REDO ($\%) {
@@ -461,7 +455,7 @@ sub do_build ($\%@) {
 	    logger( "sbuild has already finished:\n@finished\n" );
 	    my @unfinished;
 	    for (@_) {
-		push( @unfinished, $_ ) if !isin( $_, @finished );
+		push( @unfinished, $_ ) if !Buildd::isin( $_, @finished );
 	    }
 	    logger( "Adding rest to REDO:\n@unfinished\n" );
 	    append_to_REDO( $dist, '', @unfinished );
