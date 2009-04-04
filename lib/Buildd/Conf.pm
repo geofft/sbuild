@@ -58,7 +58,7 @@ my $reread_config = 0;
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";
 # Configuration files.
-my $config_global = "/etc/buildd/buildd.conf";
+my $config_global = "/etc/buildd.conf";
 my $config_user = "$HOME/.builddrc";
 my $config_global_time = 0;
 my $config_user_time = 0;
