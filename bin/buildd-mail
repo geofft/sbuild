@@ -61,14 +61,10 @@ sub add_error_mail ();
 
 chdir( "$main::HOME" );
 
-if ($conf::sshsocket and -S "build/$conf::sshsocket") {
-    $conf::sshcmd .= " -S build/$conf::sshsocket";
-}
+Buildd::Conf::init();
 
 chomp( $main::arch = `dpkg --print-installation-architecture` );
 $main::arch =~ /^(\S+)/; $main::arch = $1;
-$conf::wanna_build_user ||= $Buildd::username;
-$conf::log_queued_messages = 1 if !defined $conf::log_queued_messages;
 
 lock_file( "daemon.log" );
 END { unlock_file( "daemon.log" ); }
@@ -127,7 +123,7 @@ sub process_mail () {
 	my $n = add_error_mail();
 	if ($n > 5) {
 	    logger( "Too much error mails ($n) within ",
-		    int($conf::error_mail_window/(60*60)), " hours\n",
+		    int($Buildd::Conf::error_mail_window/(60*60)), " hours\n",
 		    "Not forwarding mail from $header{'from'}\n",
 		    "Subject: $header{'subject'}\n" );
 	    return;
@@ -283,7 +279,7 @@ sub process_mail () {
 	# mail from Erlangen queue daemon: forward all non-success messages
 	goto forward_mail if $body_text !~ /uploaded successfully/mi;
 	logger( "$job processed by upload queue\n" )
-	    if $conf::log_queued_messages;
+	    if $Buildd::Conf::log_queued_messages;
     }
     elsif ($subject =~ /^([-+~\.\w]+\.changes) (INSTALL|ACCEPT)ED/) {
 	# success mail from dinstall
@@ -399,7 +395,7 @@ forward_mail:
     }
     else {
 	logger( "Not for me, forwarding to admin\n" );
-	ll_send_mail( $conf::admin_mail,
+	ll_send_mail( $Buildd::Conf::admin_mail,
 		      "To: $header{'to'}\n".
 		      ($header{'cc'} ? "Cc: $header{'cc'}\n" : "").
 		      "From: $header{'from'}\n".
@@ -410,7 +406,7 @@ forward_mail:
 		      ($header{'in-reply-to'} ? "In-Reply-To: $header{'in-reply-to'}\n" : "").
 		      ($header{'references'} ? "References: $header{'references'}\n" : "").
 		      "Resent-From: $Buildd::gecos <$Buildd::username\@$Buildd::hostname>\n".
-		      "Resent-To: $conf::admin_mail\n\n".
+		      "Resent-To: $Buildd::Conf::admin_mail\n\n".
 		      $body_text );
     }
 }
@@ -516,9 +512,9 @@ sub redo_new_version ($$$) {
     my $newv = shift;
     my $err = 0;
 
-    if (open( PIPE,"$conf::sshcmd wanna-build -v ".
-	      ($conf::wanna_build_dbbase? "--database=$conf::wanna_build_dbbase ":"").
-	      "--user=$conf::wanna_build_user --dist=$dist $newv 2>&1 |")) {
+    if (open( PIPE,"$Buildd::Conf::sshcmd wanna-build -v ".
+	      ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":"").
+	      "--user=$Buildd::Conf::wanna_build_user --dist=$dist $newv 2>&1 |")) {
 	while( <PIPE> ) {
 	    next if /^wanna-build Revision/ ||
 		/^\S+: Warning: Older version / ||
@@ -825,9 +821,9 @@ sub set_to_failed ($$$) {
 
     open( PIPE, "|-" )
 	or (open( STDOUT, ">/dev/null"),
-	    exec "$conf::sshcmd wanna-build --failed --no-down-propagation ".
-	    "--user=$conf::wanna_build_user ".($conf::wanna_build_dbbase?
-					       "--database=$conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
+	    exec "$Buildd::Conf::sshcmd wanna-build --failed --no-down-propagation ".
+	    "--user=$Buildd::Conf::wanna_build_user ".($Buildd::Conf::wanna_build_dbbase?
+					       "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
     print PIPE "${text}.\n";
     close( PIPE );
     if ($?) {
@@ -851,9 +847,9 @@ sub set_to_depwait ($$$) {
 
     open( PIPE, "|-" )
 	or (open( STDOUT, ">/dev/null"),
-	    exec "$conf::sshcmd wanna-build --dep-wait --no-down-propagation ".
-	    "--user=$conf::wanna_build_user ".($conf::wanna_build_dbbase?
-					       "--database=$conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
+	    exec "$Buildd::Conf::sshcmd wanna-build --dep-wait --no-down-propagation ".
+	    "--user=$Buildd::Conf::wanna_build_user ".($Buildd::Conf::wanna_build_dbbase?
+					       "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
     print PIPE "$deps\n";
     close( PIPE );
     if ($?) {
@@ -872,8 +868,8 @@ sub give_back ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = "$conf::sshcmd wanna-build --give-back --no-down-propagation --user=$conf::wanna_build_user ".
-	($conf::wanna_build_dbbase? "--database=$conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
+    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --give-back --no-down-propagation --user=$Buildd::Conf::wanna_build_user ".
+	($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
     my $answer = `$answer_cmd`;
     if ($?) {
 	$error .= "wanna-build --give-back failed:\n$answer";
@@ -888,8 +884,8 @@ sub no_build ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = "$conf::sshcmd wanna-build --no-build --no-down-propagation --user=$conf::wanna_build_user ".
-	($conf::wanna_build_dbbase? "--database=$conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
+    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --no-build --no-down-propagation --user=$Buildd::Conf::wanna_build_user ".
+	($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
     my $answer = `$answer_cmd`;
     if ($?) {
 	$error .= "no-build failed:\n$answer";
@@ -906,8 +902,8 @@ sub get_fail_msg ($$) {
     local( *PIPE );
 
     $pkg =~ s/_.*//;
-    if (open( PIPE, "$conf::sshcmd wanna-build --info --dist=$dist ".
-	      ($conf::wanna_build_dbbase? "--database=$conf::wanna_build_dbbase ":""). "$pkg |" )) {
+    if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build --info --dist=$dist ".
+	      ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "$pkg |" )) {
 	my $msg = "";
 	while( <PIPE> ) {
 	    if (/^\s*Old-Failed\s*:/) {
@@ -943,8 +939,8 @@ sub check_state ($$@) {
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
-    if (!open( PIPE, "$conf::sshcmd wanna-build --info ".
-	       ($conf::wanna_build_dbbase? "--database=$conf::wanna_build_dbbase ":""). "--dist=$dist $pkg |" )){
+    if (!open( PIPE, "$Buildd::Conf::sshcmd wanna-build --info ".
+	       ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg |" )){
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return 0;
     }
@@ -968,7 +964,7 @@ sub check_state ($$@) {
 	$error .= $msg."state is $as\n";
 	return 0;
     }
-    if ($as eq "Building" && $ab ne $conf::wanna_build_user) {
+    if ($as eq "Building" && $ab ne $Buildd::Conf::wanna_build_user) {
 	$error .= $msg."is building by $ab\n";
 	return 0;
     }
@@ -982,8 +978,8 @@ sub check_building_any_dist ($) {
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
-    if (!open( PIPE, "$conf::sshcmd wanna-build --info ".
-	       ($conf::wanna_build_dbbase? "--database=$conf::wanna_build_dbbase ":""). "--dist=all $pkg |" )){
+    if (!open( PIPE, "$Buildd::Conf::sshcmd wanna-build --info ".
+	       ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=all $pkg |" )){
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return 0;
     }
@@ -1001,7 +997,7 @@ sub check_building_any_dist ($) {
 	$ab = $1 if $info =~ /^\s*Builder\s*:\s*(\S+)/mi;
 	push( @dists, $dist )
 	    if $av eq $vers && $as eq "Building" &&
-	    $ab eq $conf::wanna_build_user;
+	    $ab eq $Buildd::Conf::wanna_build_user;
     }
     return @dists;
 }
@@ -1092,7 +1088,7 @@ sub add_error_mail () {
 	close( F );
     }
     push( @em, $now );
-    shift @em while @em && ($now - $em[0]) > $conf::error_mail_window;
+    shift @em while @em && ($now - $em[0]) > $Buildd::Conf::error_mail_window;
 
     if (@em) {
 	open( F, ">mail-errormails" );
