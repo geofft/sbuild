@@ -31,7 +31,7 @@ Description: Tool for building Debian binary packages from Debian sources
 Package: wanna-build
 Architecture: all
 Depends: ${perl:Depends}, perl-modules, libmldbm-perl
-Recommends: exim | mail-transport-agent, cron, wget, postgresql-8.3-debversion
+Recommends: exim4 | mail-transport-agent, cron, wget, postgresql-8.3-debversion
 Suggests: gnupg
 Description: Database to track building of Debian binary packages from Debian sources
  wanna-build is part of a suite of programs -- consisting of
@@ -42,7 +42,7 @@ Description: Database to track building of Debian binary packages from Debian so
 
 Package: buildd
 Architecture: all
-Depends: ${perl:Depends}, sbuild (>= 0.58), dupload, cron, exim | mail-transport-agent
+Depends: ${perl:Depends}, sbuild (>= 0.58), dupload, cron, exim4 | mail-transport-agent
 Description: Build daemon for automatically compiling Debian packages
  buildd is a build daemon which will compile Debian packages automatically.
 
