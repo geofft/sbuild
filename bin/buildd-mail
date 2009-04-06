@@ -28,6 +28,7 @@ use strict;
 use warnings;
 use Buildd;
 use Buildd::Conf;
+use Sbuild qw(binNMU_version);
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
