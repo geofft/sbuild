@@ -19,11 +19,6 @@
 #
 #######################################################################
 
-BEGIN {
-    ($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
-}
-
 use strict;
 use warnings;
 use Buildd;
@@ -60,12 +55,9 @@ sub reply ($);
 sub is_blacklisted ($);
 sub add_error_mail ();
 
-chdir( "$main::HOME" );
-
 Buildd::Conf::init();
 
-chomp( $main::arch = `dpkg --print-installation-architecture` );
-$main::arch =~ /^(\S+)/; $main::arch = $1;
+chdir( $Buildd::Conf::HOME );
 
 lock_file( "daemon.log" );
 END { unlock_file( "daemon.log" ); }
@@ -289,7 +281,7 @@ sub process_mail () {
 	# success mail from dinstall
 	my $changes_f = $1;
 	my( @to_remove, $upload_f, $pkgv );
-	my $upload_dir = "$main::HOME/upload";
+	my $upload_dir = "$Buildd::Conf::HOME/upload";
 	$upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
 	if (-f "$upload_dir/$changes_f" && open( F, "<$upload_dir/$changes_f" )) {
@@ -326,12 +318,12 @@ FILE:	foreach (@to_remove) {
     if (/\.deb$/) {
 	# first listed wins
 	foreach my $dist (@dists) {
-	    if ( -d "$main::HOME/build/chroot-$dist" && -w "$main::HOME/build/chroot-$dist/var/cache/apt/archives/") {
+	    if ( -d "$Buildd::Conf::HOME/build/chroot-$dist" && -w "$Buildd::Conf::HOME/build/chroot-$dist/var/cache/apt/archives/") {
 		# TODO: send all of to_remove to perl-apt if it's available, setting a try_mv list
 		# that only has build-depends in it.
 		# if that's too much cpu, have buildd use perl-apt if avail to export the
 		# build-depends list, which could then be read in at this point
-		if (system "mv $upload_dir/$_ $main::HOME/build/chroot-$dist/var/cache/apt/archives/") {
+		if (system "mv $upload_dir/$_ $Buildd::Conf::HOME/build/chroot-$dist/var/cache/apt/archives/") {
 		    logger( "Cannot move $upload_dir/$_ to cache dir\n" );
 		} else {
 		    next FILE;
@@ -453,11 +445,11 @@ sub prepare_for_upload ($$) {
     }
 
     for( $i = 0; $i < @files; ++$i ) {
-	if (! -f "$main::HOME/build/$files[$i]") {
+	if (! -f "$Buildd::Conf::HOME/build/$files[$i]") {
 	    push( @missing, $files[$i] ) ;
 	}
 	else {
-	    chomp( my $sum = `md5sum $main::HOME/build/$files[$i]` );
+	    chomp( my $sum = `md5sum $Buildd::Conf::HOME/build/$files[$i]` );
 	    push( @md5fail, $files[$i] ) if (split(/\s+/,$sum))[0] ne $md5[$i];
 	}
     }
@@ -476,7 +468,7 @@ sub prepare_for_upload ($$) {
 	return 0;
     }
 
-    my $upload_dir = "$main::HOME/upload" .
+    my $upload_dir = "$Buildd::Conf::HOME/upload" .
 	(is_for_security( $changes ) ? "-security" : "");
 
     if (! -d $upload_dir &&!mkdir( $upload_dir, 0750 )) {
@@ -488,7 +480,7 @@ sub prepare_for_upload ($$) {
     lock_file( "$upload_dir" );
     my $errs = 0;
     foreach (@files) {
-	if (system "mv $main::HOME/build/$_ $upload_dir/$_") {
+	if (system "mv $Buildd::Conf::HOME/build/$_ $upload_dir/$_") {
 	    logger( "Cannot move $_ to upload dir\n" );
 	    ++$errs;
 	}
@@ -500,8 +492,8 @@ sub prepare_for_upload ($$) {
 
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes_name = "${pkg_noep}_$main::arch.changes";
-    unlink( "$main::HOME/build/$changes_name" )
+    my $changes_name = "${pkg_noep}_$Buildd::Conf::arch.changes";
+    unlink( "$Buildd::Conf::HOME/build/$changes_name" )
 	or logger( "Cannot remove ~/build/$changes_name: $!\n" );
     open( F, ">$upload_dir/$changes_name" );
     print F $changes;
@@ -553,7 +545,7 @@ sub purge_pkg ($$) {
     # remove .changes and .deb in build dir (if existing)
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes = "${pkg_noep}_$main::arch.changes";
+    my $changes = "${pkg_noep}_$Buildd::Conf::arch.changes";
     if (-f "build/$changes" && open( F, "<build/$changes" )) {
 	local($/); undef $/;
 	my $changetext = <F>;
@@ -596,8 +588,8 @@ sub remove_from_upload ($) {
     logger( "Remove $pkg from upload dir\n" );
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    $changes_f = "${pkg_noep}_$main::arch.changes";
-    my $upload_dir = "$main::HOME/upload";
+    $changes_f = "${pkg_noep}_$Buildd::Conf::arch.changes";
+    my $upload_dir = "$Buildd::Conf::HOME/upload";
     $upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
     if (!-f "$upload_dir/$changes_f") {
