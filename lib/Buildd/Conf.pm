@@ -98,7 +98,7 @@ our $dupload_to = "anonymous-ftp-master";
 our $dupload_to_non_us = "anonymous-non-us";
 our $dupload_to_security = "security";
 our $log_queued_messages = 0;
-our $wanna_build_dbbase = "arch/build-db";
+our $wanna_build_dbbase = "$arch/build-db";
 
 sub ST_MTIME () { 9 }
 
