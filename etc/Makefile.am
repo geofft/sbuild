@@ -22,7 +22,7 @@
 include $(top_srcdir)/scripts/global.mk
 
 sbuildsysconfdir = $(SBUILD_SYSCONF_DIR)
-sbuildsysconf_DATA = sbuild.conf
+sbuildsysconf_DATA = sbuild.conf nssdatabases-defaults
 
 builddsysconfdir = $(BUILDD_SYSCONF_DIR)
 builddsysconf_DATA = buildd.conf wanna-build.conf
@@ -31,7 +31,7 @@ exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
-schrootsetup_SCRIPTS = 50sbuild
+schrootsetup_SCRIPTS = 50sbuild 25nssdatabases
 
 EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
