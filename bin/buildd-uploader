@@ -82,7 +82,7 @@ sub uploaded ($@) {
 		    push( @propagated_pkgs, $1 );
 		}
 		elsif (/^(\S+): already uploaded/ &&
-		       isin( $1, @propagated_pkgs )) {
+		       Buildd::isin( $1, @propagated_pkgs )) {
 		    # be quiet on this
 		}
 		else {
