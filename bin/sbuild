@@ -75,7 +75,9 @@ sub main () {
     # Create jobs
     foreach (@ARGV) {
 	$jobs{$_} = Sbuild::Build->new($_, $conf);
+	$jobs{$_}->set('Pkg Status Trigger', \&write_jobs_file)
     }
+    write_jobs_file(); # Will now update on trigger.
 
     # Run each job.  Potential for parallelising this step.
     foreach (keys %jobs) {
@@ -84,7 +86,6 @@ sub main () {
 	my $job = $jobs{$jobname};
 	$current_job = $jobname;
 
-	write_jobs_file();
 
 	# Do the build
 	if (should_skip($job)) {
@@ -92,11 +93,9 @@ sub main () {
 	} else {
 	    $job->run();
 	}
-	write_jobs_file();
 
 	# Give back if build failed
 	analyze_fail_stage($job);
-	write_jobs_file();
 
 	dump_main_state() if $conf->get('DEBUG');
 

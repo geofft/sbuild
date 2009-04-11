@@ -105,6 +105,7 @@ sub new {
     $self->set('Lock Interval', 5);
     $self->set('Srcdep Lock Count', 0);
     $self->set('Pkg Status', 'pending');
+    $self->set('Pkg Status Trigger', undef);
     $self->set('Pkg Start Time', 0);
     $self->set('Pkg End Time', 0);
     $self->set('Pkg Fail Stage', 0);
@@ -170,17 +171,27 @@ sub set_version {
     $self->set('DSC Dir', "${pkg}-${uversion}");
 }
 
+sub set_status {
+    my $self = shift;
+    my $status = shift;
+
+    $self->set('Pkg Status', $status);
+    if (defined($self->get('Pkg Status Trigger'))) {
+	$self->get('Pkg Status Trigger')->($self, $status);
+    }
+}
+
 sub run {
     my $self = shift;
 
-    $self->set('Pkg Status', 'building');
+    $self->set_status('building');
 
     $self->set('Pkg Start Time', time);
 
     if ($self->get('Invalid Source')) {
 	$self->log("Invalid source: " . $self->get('DSC') . "\n");
 	$self->log("Skipping " . $self->get('Package') . " \n");
-	$self->set('Pkg Status', 'skipped');
+	$self->set_status('skipped');
 	goto cleanup_skip;
     }
 
@@ -198,7 +209,7 @@ sub run {
     if (!$session->begin_session()) {
 	$self->log("Error creating chroot session: skipping " .
 		   $self->get('Package') . "\n");
-	$self->set('Pkg Status', 'skipped');
+	$self->set_status('skipped');
 	goto cleanup_close;
     }
 
@@ -235,7 +246,6 @@ sub run {
 
     $self->set('Session', $session);
 
-    $self->set('Pkg Status', 'failed'); # assume for now
     $self->set('Additional Deps', []);
 
     # Update APT cache.
@@ -248,7 +258,7 @@ sub run {
 
 	if ($?) {
 	    $self->log("apt-get update failed\n");
-	    $self->set('Pkg Status', 'skipped');
+	    $self->set_status('skipped');
 	    goto cleanup_close;
 	}
     }
@@ -265,8 +275,11 @@ sub run {
 	goto cleanup_packages;
     }
 
-    $self->set('Pkg Status', 'successful')
-	if $self->build();
+    if ($self->build()) {
+	$self->set_status('successful');
+    } else {
+	$self->set_status('failed');
+    }
 
   cleanup_packages:
     if (defined ($session->get('Session Purged')) &&
@@ -2525,8 +2538,7 @@ sub close_build_log {
     }
     my $date = strftime("%Y%m%d-%H%M", localtime($time));
 
-    if (defined($self->get('Pkg Status')) &&
-	$self->get('Pkg Status') eq "successful") {
+    if ($self->get('Pkg Status') eq "successful") {
 	$self->add_time_entry($self->get('Package_Version'), $self->get('This Time'));
 	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
     }
@@ -2544,11 +2556,13 @@ sub close_build_log {
 
     my $filename = $self->get('Log File');
 
-    my $subject = "Log for " . $self->get('Pkg Status') .
-                  " build of " . $self->get('Package_Version');
-    if (defined($self->get_conf('BIN_NMU_VERSION'))) {
-	    $subject .= "+b" . $self->get_conf('BIN_NMU_VERSION');
+    # Only report success or failure
+    if ($self->get('Pkg Status') ne "successful") {
+	$self->set_status('failed');
     }
+
+    my $subject = "Log for " . $self->get('Pkg Status') .
+	" build of " . $self->get('Package_Version');
     if ($self->get('Arch')) {
 	$subject .= " on " . $self->get('Arch');
     }
