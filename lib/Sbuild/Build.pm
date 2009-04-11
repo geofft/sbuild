@@ -149,8 +149,9 @@ sub set_version {
     my $oversion = $version; # Original version (no binNMU addition)
 
     # Add binNMU to version if needed.
-    if ($self->get_conf('BIN_NMU')) {
-	$version = binNMU_version($version, $self->get_conf('BIN_NMU_VERSION'));
+    if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
+	$version = binNMU_version($version, $self->get_conf('BIN_NMU_VERSION'),
+	    $self->get_conf('APPEND_TO_VERSION'));
     }
 
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
@@ -651,7 +652,7 @@ sub build {
 	}
     }
 
-    if ($self->get_conf('BIN_NMU')) {
+    if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
 	$self->log_subsubsection("Hack binNMU version");
 	$self->set('Pkg Fail Stage', "hack-binNMU");
 	if (open( F, "<$dscdir/debian/changelog" )) {
@@ -669,12 +670,20 @@ sub build {
 		return 0;
 	    }
 	    $dists = $self->get_conf('DISTRIBUTION');
-	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
-	    print F "  * Binary-only non-maintainer upload for $arch; ",
-	    "no source changes.\n";
-	    print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n\n";
-	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
 
+	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
+	    if ($self->get_conf('APPEND_TO_VERSION')) {
+		print F "  * Append ", $self->get_conf('APPEND_TO_VERSION'),
+		    " to version number; no source changes\n";
+	    }
+	    if ($self->get_conf('BIN_NMU')) {
+		print F "  * Binary-only non-maintainer upload for $arch; ",
+		    "no source changes.\n";
+		print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n";
+	    }
+	    print F "\n";
+
+	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
 	    print F $firstline, $text;
 	    close( F );
 	    $self->log("*** Created changelog entry for bin-NMU version $NMUversion\n");

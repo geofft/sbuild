@@ -56,7 +56,7 @@ sub new {
 sub parse_options {
     my $self = shift;
 
-    return GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
+    my $ret = GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
 		       "V|version" => sub {version_text("sbuild"); },
 		       "arch=s" => sub {
 			   $self->set_conf('ARCH', $_[1]);
@@ -106,6 +106,9 @@ sub parse_options {
 		       },
 		       "binNMU=i" => sub {
 			   $self->set_conf('BIN_NMU_VERSION', $_[1]);
+		       },
+		       "append-to-version=s" => sub {
+			   $self->set_conf('APPEND_TO_VERSION', $_[1]);
 		       },
 		       "c|chroot=s" => sub {
 			   $self->set_conf('CHROOT', $_[1]);
@@ -180,6 +183,13 @@ sub parse_options {
 			       if $self->get_conf('VERBOSE');
 		       },
 	);
+
+    if (defined($self->get_conf('APPEND_TO_VERSION')) &&
+	$self->get_conf('BUILD_SOURCE') != 0) {
+	# See <http://bugs.debian.org/475777> for details
+	die "The --append-to-version option is incompatible with a source upload\n";
+    }
+    return $ret;
 }
 
 1;

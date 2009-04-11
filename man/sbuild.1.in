@@ -31,6 +31,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-force\-orig\-source ]
 .RB [ \-\-make\-binNMU=\fIchangelog-entry\fP ]
 .RB [ \-\-binNMU=\fINMU-version\fP ]
+.RB [ \-\-append\-to\-version=\fIstring\fP ]
 .RB [ \-\-add-depends=\fIdependency\fP ]
 .RB [ \-\-add-conflicts=\fIdependency\fP ]
 .RB [ \-\-add-depends\-indep=\fIdependency\fP ]
@@ -202,6 +203,11 @@ mails will be modified by \fBsbuild\fR automatically.
 The version number of the binary NMU.  This should be used in conjunction with
 \-\-make\-binNMU.  \fIversion\fP is a single number for the (+b\fIn\fR) format
 used for binary NMUs.
+.TP
+.BR "\-\-append\-to\-version=\fIstring\P"
+This option is similar to --make-binNMU except that it allows the user to
+specify an arbitrary string to be appended to the version number (immediately
+before the '+' in the Debian revision if --make-binNMU is also provided).
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
 .IP "DEBEMAIL"

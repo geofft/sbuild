@@ -419,6 +419,9 @@ sub init_allowed_keys {
 	'BIN_NMU_VERSION'			=> {
 	    DEFAULT => undef
 	},
+	'APPEND_TO_VERSION'			=> {
+	    DEFAULT => undef
+	},
 	'GCC_SNAPSHOT'				=> {
 	    DEFAULT => 0
 	},
