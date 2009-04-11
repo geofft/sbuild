@@ -2590,7 +2590,6 @@ sub open_build_log {
     my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time')));
 
     my $filename = $self->get_conf('LOG_DIR') . '/' .
-	$self->get_conf('USERNAME') . '-' .
 	$self->get('Package_SVersion') . '-' .
 	$self->get('Arch') .
 	"-$date";
@@ -2636,7 +2635,9 @@ sub open_build_log {
 			   $self->get_conf('DISTRIBUTION'));
     } else {
 	$self->log_symlink($filename,
-			   $self->get_conf('BUILD_DIR') . '/current');
+			   $self->get_conf('BUILD_DIR') . '/' .
+			   $self->get('Package_SVersion') . '_' .
+			   $self->get('Arch') . '.build');
     }
 
     $PLOG->autoflush(1);
