@@ -11,8 +11,10 @@ sbuild (0.58.2-1) unstable; urgency=low
   * debian/buildd.cron.d: Move example crontab here, with entries
     commented out for now. 
   * debian/rules: Use dh_installcrontab to install crontabs.
+  * Remove buildd package for this release, because it's not yet
+    ready for use. 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 Mar 2009 23:03:30 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 11 Apr 2009 10:20:25 +0100
 
 sbuild (0.58.1-1) unstable; urgency=low
 
