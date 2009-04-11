@@ -167,7 +167,6 @@ sub run {
     $self->set('Pkg Start Time', time);
 
     $self->write_jobs_file("");
-    $self->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @{$self->get_conf('MANUAL_SRCDEPS')});
 
     if ($self->get('Invalid Source')) {
 	$self->log("Invalid source: " . $self->get('DSC'));
@@ -463,6 +462,46 @@ sub fetch_source_files {
 	and $build_conflicts = $1;
     $dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
 	and $build_conflicts_indep = $1;
+
+    # Add additional build dependencies specified on the command-line.
+    # TODO: Split dependencies into an array from the start to save
+    # lots of joining.
+    if ($self->get_conf('MANUAL_DEPENDS')) {
+	if ($build_depends) {
+	    $build_depends = join(", ", $build_depends,
+				  @{$self->get_conf('MANUAL_DEPENDS')});
+	} else {
+	    $build_depends = join(", ", @{$self->get_conf('MANUAL_DEPENDS')});
+	}
+    }
+    if ($self->get_conf('MANUAL_DEPENDS_INDEP')) {
+	if ($build_depends_indep) {
+	    $build_depends_indep = join(", ", $build_depends_indep,
+				  @{$self->get_conf('MANUAL_DEPENDS_INDEP')});
+	} else {
+	    $build_depends_indep = join(", ",
+				  @{$self->get_conf('MANUAL_DEPENDS_INDEP')});
+	}
+    }
+    if ($self->get_conf('MANUAL_CONFLICTS')) {
+	if ($build_conflicts) {
+	    $build_conflicts = join(", ", $build_conflicts,
+				  @{$self->get_conf('MANUAL_CONFLICTS')});
+	} else {
+	    $build_conflicts = join(", ",
+				  @{$self->get_conf('MANUAL_CONFLICTS')});
+	}
+    }
+    if ($self->get_conf('MANUAL_CONFLICTS_INDEP')) {
+	if ($build_conflicts_indep) {
+	    $build_conflicts_indep = join(", ", $build_conflicts_indep,
+				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
+	} else {
+	    $build_conflicts_indep = join(", ",
+				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
+	}
+    }
+
     $build_depends =~ s/\n\s+/ /g if defined $build_depends;
     $build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;
     $build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
@@ -2040,23 +2079,6 @@ sub parse_one_srcdep {
 	    }
 	    push( @{$self->get('Dependencies')->{$pkg}}, $l );
 	}
-    }
-}
-
-sub parse_manual_srcdeps {
-    my $self = shift;
-    my @for_pkgs = @_;
-
-    foreach (@{$self->get_conf('MANUAL_SRCDEPS')}) {
-	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-	    $self->log_warning("Syntax error in manual source dependency: ",
-			       substr( $_, 1 ), "\n");
-	    next;
-	}
-	my ($mode, $pkg, $deps) = ($1, $2, $3);
-	next if !isin( $pkg, @for_pkgs );
-	@{$self->get('Dependencies')->{$pkg}} = () if $mode eq 'f';
-	$self->parse_one_srcdep($pkg, $deps);
     }
 }
 

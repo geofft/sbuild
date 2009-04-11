@@ -395,7 +395,16 @@ sub init_allowed_keys {
 	'BATCH_MODE'				=> {
 	    DEFAULT => 0
 	},
-	'MANUAL_SRCDEPS'			=> {
+	'MANUAL_DEPENDS'			=> {
+	    DEFAULT => []
+	},
+	'MANUAL_CONFLICTS'			=> {
+	    DEFAULT => []
+	},
+	'MANUAL_DEPENDS_INDEP'			=> {
+	    DEFAULT => []
+	},
+	'MANUAL_CONFLICTS_INDEP'		=> {
 	    DEFAULT => []
 	},
 	'BUILD_SOURCE'				=> {

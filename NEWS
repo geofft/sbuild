@@ -1,11 +1,19 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.58.2.  Please read these release notes carefully.
+Welcome to sbuild 0.58.3.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.58.3:
+
+  1) The broken options --add-depends and --force-depends have been
+     replaced by --add-depends, --add-conflicts, --add-depends-indep
+     and --add-conflicts-indep.  These options each take a single
+     dependency, using the same dependency syntax one would use in
+     debian/control.
 
 * Major changes in 0.58.2:
 

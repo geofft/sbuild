@@ -1,5 +1,5 @@
 .\" Copyright © 1998       James Troup <james@nocrew.org>
-.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2009  Roger Leigh <rleigh@debian.org>
 .\" Copyright © 2008       Simon McVittie <smcv@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
@@ -31,8 +31,10 @@ sbuild \- build debian packages from source
 .RB [ \-\-force\-orig\-source ]
 .RB [ \-\-make\-binNMU=\fIchangelog-entry\fP ]
 .RB [ \-\-binNMU=\fINMU-version\fP ]
-.RB [ \-a \[or] \-\-add-depends=\fIdependency-line\fP ]
-.RB [ \-f \[or] \-\-force-depends=\fIdependency-line\fP ]
+.RB [ \-\-add-depends=\fIdependency\fP ]
+.RB [ \-\-add-conflicts=\fIdependency\fP ]
+.RB [ \-\-add-depends\-indep=\fIdependency\fP ]
+.RB [ \-\-add-conflicts\-indep=\fIdependency\fP ]
 .RB [ \-m \[or] \-\-maintainer=\fImaintainer\fP ]
 .RB [ \-e \[or] \-\-uploader=\fIuploader\fP ]
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
@@ -86,12 +88,19 @@ Display this manual.
 .BR \-V ", " \-\-version
 Print version information.
 .TP
-.BR \-a ", " "\-\-add\-depends=\fIdependency-line\fP"
-This option adds some source dependency information for a package. It can be
-given more than one time with accumulating effect. The argument is a line of
-source dependencies in the same format as in
-\fI/var/lib/sbuild/source\-dependencies\fR. The given dependencies are appended
-to the src-deps from source\-dependencies\-* files or package src-deps, resp.
+.BR "\-\-add\-depends=\fIdependency\fP"
+.TP
+.BR "\-\-add\-conflicts=\fIdependency\fP"
+.TP
+.BR "\-\-add\-depends\-indep=\fIdependency\fP"
+.TP
+.BR "\-\-add\-conflicts\-indep=\fIdependency\fP"
+These options add a build dependencies to the source package being built, in
+addition to the build dependency information specified in debian/control.
+These dependencies will be concatenated directly to the Build-Depends,
+Build-Conflicts, Build-Depends-Indep and Build-Conflicts-Indep dependencies,
+respectively.  The options may be used any number of times to add multiple
+dependencies.  The format is identical to the format used in debian/control.
 .TP
 .BR "\-\-arch=\fIarchitecture\fP"
 Build using the architecture specified.  A chroot named

@@ -81,13 +81,17 @@ sub parse_options {
 					  $parts[$#parts]);
 			   }
 		       },
-		       "f|force-depends=s" => sub {
-			   push(@{$self->get_conf('MANUAL_SRCDEPS')},
-				"f".$_[1]);
+		       "add-depends=s" => sub {
+			   push(@{$self->get_conf('MANUAL_DEPENDS')}, $_[1]);
 		       },
-		       "a|add-depends=s" => sub {
-			   push(@{$self->get_conf('MANUAL_SRCDEPS')},
-				"a".$_[1] );
+		       "add-conflicts=s" => sub {
+			   push(@{$self->get_conf('MANUAL_CONFLICTS')}, $_[1]);
+		       },
+		       "add-depends-indep=s" => sub {
+			   push(@{$self->get_conf('MANUAL_DEPENDS_INDEP')}, $_[1]);
+		       },
+		       "add-conflicts-indep=s" => sub {
+			   push(@{$self->get_conf('MANUAL_CONFLICTS_INDEP')}, $_[1]);
 		       },
 		       "check-depends-algorithm=s" => sub {
 			   $self->set_conf('CHECK_DEPENDS_ALGORITHM', $_[1]);
