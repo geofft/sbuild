@@ -53,7 +53,7 @@ sub read_progress () {
 
     open( F, "<$f" ) || return "";
     while( <F> ) {
-	$p = $1 if /^(\S+): currently building/;
+	$p = $1 if /^(\S+): building/;
     }
     close( F );
     return $p;
