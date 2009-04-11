@@ -28,37 +28,22 @@ use warnings;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Base;
+use Sbuild::OptionsBase;
 use Sbuild::Conf;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::Base);
+    @ISA = qw(Exporter Sbuild::OptionsBase);
 
     @EXPORT = qw();
 }
 
-sub new {
-    my $class = shift;
-    my $conf = shift;
-
-    my $self = $class->SUPER::new($conf);
-    bless($self, $class);
-
-    if (!$self->parse_options()) {
-	usage_error("sbuild", "Error parsing command-line options");
-	return undef;
-    }
-    return $self;
-}
-
-sub parse_options {
+sub set_options {
     my $self = shift;
 
-    my $ret = GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
-		       "V|version" => sub {version_text("sbuild"); },
-		       "arch=s" => sub {
+    $self->add_options("arch=s" => sub {
 			   $self->set_conf('ARCH', $_[1]);
 		       },
 		       "A|arch-all" => sub {
@@ -116,10 +101,6 @@ sub parse_options {
 		       "database=s" => sub {
 			   $self->set_conf('WANNABUILD_DATABASE', $_[1]);
 		       },
-		       "D|debug" => sub {
-			   $self->set_conf('DEBUG',
-					   $self->get_conf('DEBUG') + 1);
-		       },
 		       "apt-update" => sub {
 			   $self->set_conf('APT_UPDATE', $_[1]);
 		       },
@@ -172,19 +153,8 @@ sub parse_options {
 			   $self->set_conf('PATH',
 					   '/usr/lib/gcc-snapshot/bin' .
 					   $self->get_conf('PATH') ne '' ? ':' . $self->get_conf('PATH') : '');
-		       },
-		       "v|verbose" => sub {
-			   $self->set_conf('VERBOSE',
-					  $self->get_conf('VERBOSE') + 1);
-		       },
-		       "q|quiet" => sub {
-			   $self->set_conf('VERBOSE',
-					   $self->get_conf('VERBOSE') - 1)
-			       if $self->get_conf('VERBOSE');
-		       },
+		       }
 	);
-
-    return $ret;
 }
 
 1;

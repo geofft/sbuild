@@ -46,7 +46,7 @@ sub dump_main_state ();
 
 my $conf = Sbuild::Conf->new();
 exit 1 if !defined($conf);
-my $options = Sbuild::Options->new($conf);
+my $options = Sbuild::Options->new($conf, "sbuild", "1");
 exit 1 if !defined($options);
 
 umask(022);
