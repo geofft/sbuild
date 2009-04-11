@@ -4,8 +4,10 @@ sbuild (0.58.3-1) unstable; urgency=low
   * New release. 
   * debian/control:
     - Update to Standards Version 3.8.1 
+  * Add support for appending a tag to version numbers (Closes: #475777).
+    Thanks to Timothy G Abbott for this patch. 
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 11 Apr 2009 12:41:45 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 12 Apr 2009 00:01:41 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 
