@@ -25,9 +25,12 @@ package Sbuild::Build;
 use Errno qw(:POSIX);
 use Fcntl;
 use File::Basename qw(basename dirname);
+use File::Temp qw(tempdir);
 use GDBM_File;
-use Sbuild qw(binNMU_version version_compare split_version copy isin send_mail debug);
+use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug);
 use Sbuild::Base;
+use Sbuild::ChrootInfoSchroot;
+use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
@@ -156,6 +159,146 @@ sub set_version {
     $self->set('VersionDebian', $dversion);
     $self->set('DSC File', "${pkg}_${sversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
+}
+
+sub run {
+    my $self = shift;
+
+    $self->set('Pkg Start Time', time);
+
+    $self->write_jobs_file("");
+    $self->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @{$self->get_conf('MANUAL_SRCDEPS')});
+
+    if ($self->get('Invalid Source')) {
+	$self->log("Invalid source: " . $self->get('DSC'));
+	$self->log("Skipping " . $self->get('Package') . " \n");
+	$self->set('Pkg Status', 'skipped');
+	goto cleanup_skip;
+    }
+
+    my $chroot_info;
+    if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
+	$chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
+    } else {
+	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
+    }
+
+    my $session = $chroot_info->create($self->get_conf('DISTRIBUTION'),
+				       $self->get_conf('CHROOT'),
+				       $self->get_conf('ARCH'));
+
+    if (!$session->begin_session()) {
+	$self->log("Error creating chroot session: skipping " .
+		   $self->get('Package') . "\n");
+	$self->set('Pkg Status', 'skipped');
+	goto cleanup_close;
+    }
+
+    $self->set('Session', $session);
+    $self->set('Arch', $self->chroot_arch());
+
+    $self->set('Chroot Dir', $session->get('Location'));
+    $self->set('Chroot Build Dir',
+	       tempdir($self->get_conf('USERNAME') . '-' .
+		       $self->get('Package_SVersion') . '-' .
+		       $self->get('Arch') . '-XXXXXX',
+		       DIR => $session->get('Build Location')));
+    # TODO: Don't hack the build location in; add a means to customise
+    # the chroot directly.
+    $session->set('Build Location', $self->get('Chroot Build Dir'));
+
+    {
+	my $tpkg = basename($self->get('Package_Version'));
+	# TODO: This should be 'Pkg Start Time', set in build().
+	my $date = strftime("%Y%m%d-%H%M",localtime);
+
+	if ($self->get_conf('BIN_NMU')) {
+	    $tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
+	    $tpkg = $1 . "_" . binNMU_version($2,$self->get_conf('BIN_NMU_VERSION'));
+	    $self->set('binNMU Name', $tpkg);
+	    $tpkg .= $3;
+	}
+
+	# TODO: Get package name from build object
+	next if !$self->open_build_log($tpkg);
+    }
+
+    # Needed so chroot commands log to build log
+    $session->set('Log Stream', $self->get('Log Stream'));
+
+    # Chroot execution defaults
+    my $chroot_defaults = $session->get('Defaults');
+    $chroot_defaults->{'DIR'} =
+	$session->strip_chroot_path($session->get('Build Location'));
+    $chroot_defaults->{'STREAMIN'} = $devnull;
+    $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+    $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
+    $chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
+    $chroot_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+
+    $self->set('Session', $session);
+
+    $self->set('Pkg Status', 'failed'); # assume for now
+    $self->set('Additional Deps', []);
+    $self->write_jobs_file("currently building");
+    if ($self->should_skip()) {
+	$self->set('Pkg Status', 'skipped');
+	goto cleanup_close;
+    }
+
+    # Update APT cache.
+    if ($self->get_conf('APT_UPDATE')) {
+	$session->run_apt_command(
+	    { COMMAND => [$self->get_conf('APT_GET'), 'update'],
+	      USER => 'root',
+	      PRIORITY => 1,
+	      DIR => '/'});
+
+	if ($?) {
+	    $self->log("apt-get update failed\n");
+	    $self->set('Pkg Status', 'skipped');
+	    goto cleanup_close;
+	}
+    }
+
+    $self->set('Pkg Fail Stage', 'fetch-src');
+    if (!$self->fetch_source_files()) {
+	goto cleanup_close;
+    }
+
+    $self->set('Pkg Fail Stage', 'install-deps');
+    if (!$self->install_deps()) {
+	$self->log("Source-dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	goto cleanup_packages;
+    }
+
+    $self->set('Pkg Status', 'successful')
+	if $self->build();
+    $self->write_jobs_file($self->get('Pkg Status'));
+    $self->append_to_FINISHED();
+
+  cleanup_packages:
+    if (defined ($session->get('Session Purged')) &&
+	$session->get('Session Purged') == 1) {
+	$self->log("Not removing build depends: cloned chroot in use\n");
+    } else {
+	$self->uninstall_deps();
+    }
+    $self->remove_srcdep_lock_file();
+  cleanup_close:
+    $self->analyze_fail_stage();
+    $self->write_jobs_file($self->get('Pkg Status'));
+
+    $session->end_session();
+    $session = undef;
+    $self->set('Session', undef);
+
+    $self->close_build_log();
+
+  cleanup_skip:
+    $self->set('binNMU Name', undef);
+    $self->write_jobs_file("");
 }
 
 # sub get_package_status {

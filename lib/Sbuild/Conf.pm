@@ -550,6 +550,28 @@ sub read_config {
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
 
     $self->check_group_membership();
+
+    $self->set('MAILTO',
+	       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')})
+	if $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
+
+    $self->set('SIGNING_OPTIONS',
+	       "-m".$self->get('MAINTAINER_NAME')."")
+	if defined $self->get('MAINTAINER_NAME');
+    $self->set('SIGNING_OPTIONS',
+	       "-e".$self->get('UPLOADER_NAME')."")
+	if defined $self->get('UPLOADER_NAME');
+    $self->set('SIGNING_OPTIONS',
+	       "-k".$self->get('KEY_ID')."")
+	if defined $self->get('KEY_ID');
+    $self->set('MAINTAINER_NAME', $self->get('UPLOADER_NAME')) if defined $self->get('UPLOADER_NAME');
+    $self->set('MAINTAINER_NAME', $self->get('KEY_ID')) if defined $self->get('KEY_ID');
+
+    if (!defined($self->get('MAINTAINER_NAME')) &&
+	$self->get('BIN_NMU')) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
+    }
+
 }
 
 sub check_group_membership ($) {

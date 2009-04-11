@@ -34,14 +34,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use File::Basename qw(basename dirname);
-use IO::Handle;
-use FileHandle;
-use Sbuild qw($devnull binNMU_version version_compare copy);
 use Data::Dumper;
-use File::Temp qw(tempdir);
-use Sbuild::ChrootInfoSchroot;
-use Sbuild::ChrootInfoSudo;
 use Sbuild::Log qw(open_log close_log);
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
@@ -71,30 +64,8 @@ sub main () {
     print "Selected architecture " . $conf->get('ARCH') . "\n"
 	if $conf->get('DEBUG' && defined($conf->get('ARCH')));
 
-    $conf->set('MAILTO',
-	       $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')})
-	if $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')};
-
-# see debsign for priorities, we will follow the same order
-    $conf->set('SIGNING_OPTIONS',
-	       "-m".$conf->get('MAINTAINER_NAME')."")
-	if defined $conf->get('MAINTAINER_NAME');
-    $conf->set('SIGNING_OPTIONS',
-	       "-e".$conf->get('UPLOADER_NAME')."")
-	if defined $conf->get('UPLOADER_NAME');
-    $conf->set('SIGNING_OPTIONS',
-	       "-k".$conf->get('KEY_ID')."")
-	if defined $conf->get('KEY_ID');
-    $conf->set('MAINTAINER_NAME', $conf->get('UPLOADER_NAME')) if defined $conf->get('UPLOADER_NAME');
-    $conf->set('MAINTAINER_NAME', $conf->get('KEY_ID')) if defined $conf->get('KEY_ID');
-
-    if (!defined($conf->get('MAINTAINER_NAME')) &&
-	$conf->get('BIN_NMU')) {
-	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
-    }
-
-# variables for scripts:
     open_log($conf->get('DISTRIBUTION'), $conf);
+
     $SIG{'INT'} = \&shutdown;
     $SIG{'TERM'} = \&shutdown;
     $SIG{'ALRM'} = \&shutdown;
@@ -106,149 +77,18 @@ sub main () {
 	# TODO: Append to build list, to allow parallel builds.
 	my $build = Sbuild::Build->new($dscfile, $conf);
 	$main::build_object = $build;
+	$main::current_job = $main::build_object->get('Package_Version');
 
-	$build->set('Pkg Start Time', time);
+	$build->run();
 
-	$main::build_object->write_jobs_file("");
-	$build->parse_manual_srcdeps(map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV);
-
-	if ($build->get('Invalid Source')) {
-	    $build->log("Invalid source: $dscfile\n");
-	    $build->log("Skipping " . $build->get('Package') . " \n");
-	    $build->set('Pkg Status', 'skipped');
-	    goto cleanup_skip;
-	}
-
-	my $chroot_info;
-	if ($conf->get('CHROOT_MODE') eq 'schroot') {
-	    $chroot_info = Sbuild::ChrootInfoSchroot->new($conf);
-	} else {
-	    $chroot_info = Sbuild::ChrootInfoSudo->new($conf);
-	}
-
-	my $session = $chroot_info->create($conf->get('DISTRIBUTION'),
-					   $conf->get('CHROOT'),
-					   $conf->get('ARCH'));
-
-	if (!$session->begin_session()) {
-	    $build->log("Error creating chroot session: skipping " .
-		$build->get('Package') . "\n");
-	    $build->set('Pkg Status', 'skipped');
-	    goto cleanup_close;
-	}
-
-	$build->set('Session', $session);
-	$build->set('Arch', $build->chroot_arch());
-
-	$build->set('Chroot Dir', $session->get('Location'));
-	$build->set('Chroot Build Dir',
-		    tempdir($conf->get('USERNAME') . '-' .
-			    $build->get('Package_SVersion') . '-' .
-			    $build->get('Arch') . '-XXXXXX',
-			    DIR => $session->get('Build Location')));
-	# TODO: Don't hack the build location in; add a means to customise
-	# the chroot directly.
-	$session->set('Build Location', $build->get('Chroot Build Dir'));
-
-	{
-	    my $tpkg = basename($build->get('Package_Version'));
-	    # TODO: This should be 'Pkg Start Time', set in build().
-	    my $date = strftime("%Y%m%d-%H%M",localtime);
-
-	    if ($conf->get('BIN_NMU')) {
-		$tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-		$tpkg = $1 . "_" . binNMU_version($2,$conf->get('BIN_NMU_VERSION'));
-		$build->set('binNMU Name', $tpkg);
-		$tpkg .= $3;
-	    }
-
-	    # TODO: Get package name from build object
-	    next if !$build->open_build_log($tpkg);
-	}
-
-	# Needed so chroot commands log to build log
-	$session->set('Log Stream', $build->get('Log Stream'));
-
-	# Chroot execution defaults
-	my $chroot_defaults = $session->get('Defaults');
-	$chroot_defaults->{'DIR'} =
-	    $session->strip_chroot_path($session->get('Build Location'));
-	$chroot_defaults->{'STREAMIN'} = $devnull;
-	$chroot_defaults->{'STREAMOUT'} = $build->get('Log Stream');
-	$chroot_defaults->{'STREAMERR'} = $build->get('Log Stream');
-	$chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
-	$chroot_defaults->{'ENV'}->{'SHELL'} = $programs{'SHELL'};
-
-	$build->set('Session', $session);
-
-	$build->set('Pkg Status', 'failed'); # assume for now
-	$main::current_job = $build->get('Package_Version');
-	$build->set('Additional Deps', []);
-	$main::build_object->write_jobs_file("currently building");
-	if ($build->should_skip()) {
-	    $build->set('Pkg Status', 'skipped');
-	    goto cleanup_close;
-	}
-
-
-	# Update APT cache.
-	if ($conf->get('APT_UPDATE')) {
-	    $session->run_apt_command(
-		{ COMMAND => [$conf->get('APT_GET'), 'update'],
-		  USER => 'root',
-		  PRIORITY => 1,
-		  DIR => '/'});
-
-	    if ($?) {
-		$build->log("apt-get update failed\n");
-		$build->set('Pkg Status', 'skipped');
-		goto cleanup_close;
-	    }
-	}
-
-	$build->set('Pkg Fail Stage', 'fetch-src');
-	if (!$build->fetch_source_files()) {
-	    goto cleanup_close;
-	}
-
-	$build->set('Pkg Fail Stage', 'install-deps');
-	if (!$build->install_deps()) {
-	    $build->log("Source-dependencies not satisfied; skipping " .
-		$build->get('Package') . "\n");
-	    goto cleanup_packages;
-	}
-
-	$build->set('Pkg Status', 'successful')
-	    if $build->build();
-	$build->write_jobs_file($build->get('Pkg Status'));
-	$build->append_to_FINISHED();
-
-      cleanup_packages:
-	if (defined ($session->get('Session Purged')) &&
-	    $session->get('Session Purged') == 1) {
-	    $build->log("Not removing build depends: cloned chroot in use\n");
-	} else {
-	    $build->uninstall_deps();
-	}
-	$build->remove_srcdep_lock_file();
-      cleanup_close:
-	$build->analyze_fail_stage();
-	$main::build_object->write_jobs_file($build->get('Pkg Status'));
-
-	$session->end_session();
-	$session = undef;
-	$build->set('Session', undef);
-
-	$build->close_build_log();
-
-      cleanup_skip:
-	$build->set('binNMU Name', undef);
 	$main::current_job = "";
+
+	dump_main_state() if $conf->get('DEBUG');
+
 	if ($conf->get('BATCH_MODE') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
 	    main::shutdown("NONE (flag file exit)");
 	}
-	dump_main_state() if $conf->get('DEBUG');
-	$main::build_object->write_jobs_file("");
+
     }
 
     close_log($conf);
