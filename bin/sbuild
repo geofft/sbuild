@@ -3,7 +3,7 @@
 # sbuild: build packages, obeying source dependencies
 # Copyright © 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org
+# Copyright © 2005-2009 Roger Leigh <rleigh@debian.org
 # Copyright © 2008      Timothy G Abbott <tabbott@mit.edu>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
@@ -23,11 +23,6 @@
 #
 #######################################################################
 
-package conf;
-
-use Sbuild::Conf;
-
-
 package main;
 
 use strict;
@@ -41,8 +36,12 @@ use Sbuild::Options;
 use Sbuild::Build;
 
 sub main ();
+sub write_jobs_file ();
+sub append_to_FINISHED ($);
+sub add_givenback ($$);
+sub should_skip ($);
+sub analyze_fail_stage ($);
 sub shutdown ($);
-sub check_group_membership ($);
 sub dump_main_state ();
 
 my $conf = Sbuild::Conf->new();
@@ -52,7 +51,9 @@ exit 1 if !defined($options);
 
 umask(022);
 
-$main::build_object = undef;
+# Job state
+my %jobs = ();
+my $current_job = "";
 
 main();
 
@@ -66,44 +67,182 @@ sub main () {
 
     open_log($conf->get('DISTRIBUTION'), $conf);
 
-    $SIG{'INT'} = \&shutdown;
-    $SIG{'TERM'} = \&shutdown;
-    $SIG{'ALRM'} = \&shutdown;
-    $SIG{'PIPE'} = \&shutdown;
+    $SIG{'INT'} = \&main::shutdown;
+    $SIG{'TERM'} = \&main::shutdown;
+    $SIG{'ALRM'} = \&main::shutdown;
+    $SIG{'PIPE'} = \&main::shutdown;
 
-    my $dscfile;
-    foreach $dscfile (@ARGV) {
+    # Create jobs
+    foreach (@ARGV) {
+	$jobs{$_} = Sbuild::Build->new($_, $conf);
+    }
 
-	# TODO: Append to build list, to allow parallel builds.
-	my $build = Sbuild::Build->new($dscfile, $conf);
-	$main::build_object = $build;
-	$main::current_job = $main::build_object->get('Package_Version');
+    # Run each job.  Potential for parallelising this step.
+    foreach (keys %jobs) {
+	my $jobname = $_;
 
-	$build->run();
+	my $job = $jobs{$jobname};
+	$current_job = $jobname;
 
-	$main::current_job = "";
+	write_jobs_file();
+
+	# Do the build
+	if (should_skip($job)) {
+	    $job->set('Pkg Status', 'skipped');
+	} else {
+	    $job->run();
+	}
+	write_jobs_file();
+
+	# Give back if build failed
+	analyze_fail_stage($job);
+	write_jobs_file();
 
 	dump_main_state() if $conf->get('DEBUG');
 
-	if ($conf->get('BATCH_MODE') and (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE') ) {
+	if ($conf->get('BATCH_MODE') &&
+	    (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE')) {
 	    main::shutdown("NONE (flag file exit)");
 	}
-
     }
 
     close_log($conf);
-    unlink($main::build_object->get('Jobs File'))
+    unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
-    if ($conf->get('SBUILD_MODE') eq "user" && defined($main::build_object)) {
-	    exit ($main::build_object->get('Pkg Status') ne "successful") ? 1 : 0;
+    if ($conf->get('SBUILD_MODE') eq "user" && defined($current_job)) {
+	exit ($jobs{$current_job}->get('Pkg Status') ne "successful") ? 1 : 0;
     }
     exit 0;
 }
 
+# only called from main loop, but depends on job state.
+sub write_jobs_file () {
+    if ($conf->get('BATCH_MODE')) {
+
+	my $file = $conf->get('JOB_FILE');
+	local( *F );
+
+	return if !open( F, ">$file" );
+	foreach (keys %jobs) {
+	    my $job = $jobs{$_};
+
+	    print F $job->get('Package_OVersion') . ": " .
+		$job->get('Pkg Status') . "\n";
+	}
+	close( F );
+    }
+}
+
+sub append_to_FINISHED ($) {
+    my $job = shift;
+
+    local( *F );
+
+    if ($conf->get('BATCH_MODE')) {
+	open(F, ">>SBUILD-FINISHED");
+	print F $job->get('Package_OVersion');
+	close(F);
+    }
+}
+
+sub add_givenback ($$) {
+    my $build = shift;
+    my $time = shift;
+
+    if ($conf->get('BATCH_MODE')) {
+	my $pkgv = $build->get('Package_OVersion');
+	local( *F );
+
+	$build->lock_file("SBUILD-GIVEN-BACK", 0);
+
+	if (open( F, ">>SBUILD-GIVEN-BACK" )) {
+	    print F "$pkgv $time\n";
+	    close( F );
+	}
+	else {
+	    $build->log("Can't open SBUILD-GIVEN-BACK: $!\n");
+	}
+
+	$build->unlock_file("SBUILD-GIVEN-BACK");
+    }
+}
+
+sub should_skip ($) {
+    my $build = shift;
+
+    if ($conf->get('BATCH_MODE')) {
+	my $pkgv = $build->get('Package_OVersion');
+
+	$pkgv = $build->fixup_pkgv($pkgv);
+	$build->lock_file("SKIP", 0);
+	goto unlock if !open( F, "SKIP" );
+	my @pkgs = <F>;
+	close( F );
+
+	if (!open( F, ">SKIP" )) {
+	    print "Can't open SKIP for writing: $!\n",
+	    "Would write: @pkgs\nminus $pkgv\n";
+	    goto unlock;
+	}
+	my $found = 0;
+	foreach (@pkgs) {
+	    if (/^\Q$pkgv\E$/) {
+		++$found;
+		print LOG "$pkgv found in SKIP file -- skipping building it\n";
+	    }
+	    else {
+		print F $_;
+	    }
+	}
+	close( F );
+      unlock:
+	$build->unlock_file("SKIP");
+	return $found;
+	}
+}
+
+sub analyze_fail_stage ($) {
+    my $build = shift;
+
+    if ($conf->get('BATCH_MODE')) {
+	my $pkgv = $build->get('Package_OVersion');
+
+	return if $build->get('Pkg Status') ne "failed";
+	return if !$build->get_conf('AUTO_GIVEBACK');
+	if (isin( $build->get('Pkg Fail Stage'),
+		  qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
+	    $build->set('Pkg Status', "given-back");
+	    $build->log("Giving back package $pkgv after failure in ".
+			"$build->{'Pkg Fail Stage'} stage.\n");
+	    my $cmd = "";
+	    $cmd = "ssh -l " . $build->get_conf('AUTO_GIVEBACK_USER') . " " .
+		$build->get_conf('AUTO_GIVEBACK_HOST') . " "
+		if $build->get_conf('AUTO_GIVEBACK_HOST');
+	    $cmd .= "-S " . $build->get_conf('AUTO_GIVEBACK_SOCKET') . " "
+		if $build->get_conf('AUTO_GIVEBACK_SOCKET');
+	    $cmd .= "wanna-build --give-back --no-down-propagation ".
+		"--dist=" . $build->get_conf('DISTRIBUTION') . " ";
+	    $cmd .= "--database=" . $build->get_conf('WANNABUILD_DATABASE') . " "
+		if $build->get_conf('WANNABUILD_DATABASE');
+	    $cmd .= "--user=" . $build->get_conf('AUTO_GIVEBACK_WANNABUILD_USER') . " "
+		if $build->get_conf('AUTO_GIVEBACK_WANNABUILD_USER');
+	    $cmd .= "$pkgv";
+	    system $cmd;
+	    if ($?) {
+		$build->log("wanna-build failed with status $?\n");
+	    }
+	    else {
+		$build->add_givenback($build, time);
+		$build->write_stats('give-back', 1);
+	    }
+	}
+    }
+}
+
 sub shutdown ($) {
     my $signame = shift;
-    my($job,@npkgs,@pkgs);
+    my(@npkgs,@pkgs);
     local( *F );
 
     $SIG{'INT'} = 'IGNORE';
@@ -111,88 +250,85 @@ sub shutdown ($) {
     $SIG{'TERM'} = 'IGNORE';
     $SIG{'ALRM'} = 'IGNORE';
     $SIG{'PIPE'} = 'IGNORE';
-    $main::build_object->log("sbuild received SIG$signame -- shutting down\n");
 
-    goto not_ni_shutdown if !$conf->get('BATCH_MODE');
+    $jobs{$current_job}->log("sbuild received SIG$signame -- shutting down\n");
 
-    # most important: dump out names of unfinished jobs to REDO
-    foreach $job (@ARGV) {
-	my $job2 = $job;
-	$job2 = $main::build_object->fixup_pkgv($job2);
-	push( @npkgs, $job2 )
-	    if !$main::job_state{$job} || $job eq $main::current_job;
-    }
-    print LOG "The following jobs were not finished: @npkgs\n";
+    if ($conf->get('BATCH_MODE')) {
 
-    my $f = "REDO";
-    if (-f "REDO.lock") {
-	# if lock file exists, write to a different file -- timing may
-	# be critical
-	$f = "REDO2";
-    }
-    if (open( F, "<$f" )) {
-	@pkgs = <F>;
-	close( F );
-    }
-    if (open( F, ">>$f" )) {
-	foreach $job (@npkgs) {
-	    next if grep( /^\Q$job\E\s/, @pkgs );
-	    if (not defined $main::build_object->get_conf('BIN_NMU_VERSION')) {
-		print F "$job " .
-		    $main::build_object->get_conf('DISTRIBUTION') . "\n";
-	    } else {
-		print F "$job " .
-		    $main::build_object->get_conf('DISTRIBUTION')
-		    . " " .
-		    $main::build_object->get_conf('BIN_NMU_VERSION')
-		    . " " .
-		    $main::build_object->get_conf('BIN_NMU') . "\n";
+	# Dump names of unfinished jobs to REDO
+	foreach (keys %jobs) {
+	    my $job = $jobs{$_};
+
+	    push(@npkgs, $job->get('Package_OVersion'))
+		if $job->get('Pkg Status') ne "successful";
+	}
+	print LOG "The following jobs were not finished: @npkgs\n";
+
+	my $f = "REDO";
+	if (-f "REDO.lock") {
+	    # if lock file exists, write to a different file -- timing may
+	    # be critical
+	    $f = "REDO2";
+	}
+	if (open(F, "<$f")) {
+	    @pkgs = <F>;
+	    close(F);
+	}
+	if (open(F, ">>$f")) {
+	    foreach (@npkgs) {
+		next if grep( /^\Q$_\E\s/, @pkgs );
+		print F "$_ " .
+		    $jobs{$current_job}->get_conf('DISTRIBUTION');
+		print F " " . $jobs{$current_job}->get_conf('BIN_NMU_VERSION')
+		    . " " . $jobs{$current_job}->get_conf('BIN_NMU')
+		    if (defined $jobs{$current_job}->get_conf('BIN_NMU_VERSION'));
+		print F "\n";
 	    }
+	    close(F);
 	}
-	close( F );
-    }
-    else {
-	print "Cannot open $f: $!\n";
-    }
-    open( F, ">SBUILD-REDO-DUMPED" );
-    close( F );
-    print LOG "SBUILD-REDO-DUMPED created\n";
-    unlink( "SBUILD-FINISHED" );
-
-    # next: say which packages should be uninstalled
-    @pkgs = keys %{$main::build_object->get('Changes')->{'installed'}};
-    if (@pkgs) {
-	if (open( F, ">>NEED-TO-UNINSTALL" )) {
-	    print F "@pkgs\n";
-	    close( F );
+	else {
+	    print "Cannot open $f: $!\n";
 	}
-	print "The following packages still need to be uninstalled ",
-	"(--purge):\n@pkgs\n";
+	open(F, ">SBUILD-REDO-DUMPED");
+	close(F);
+	print LOG "SBUILD-REDO-DUMPED created\n";
+
+	unlink("SBUILD-FINISHED");
+
+	# next: say which packages should be uninstalled
+	@pkgs = keys %{$jobs{$current_job}->get('Changes')->{'installed'}};
+	if (@pkgs) {
+	    if (open( F, ">>NEED-TO-UNINSTALL" )) {
+		print F "@pkgs\n";
+		close( F );
+	    }
+	    print "The following packages still need to be uninstalled ",
+	    "(--purge):\n@pkgs\n";
+	}
     }
 
-  not_ni_shutdown:
-    # next: kill currently running command (if one)
-    if ($main::build_object->get('Sub PID')) {
-	print "Killing " . $main::build_object->get('Sub Task') .
-	    " subprocess " . $main::build_object->get('Sub PID') . "\n";
-	$main::build_object->get('Session')->run_command(
-		{ COMMAND => ['perl', '-e',
-			      "\"kill( \\\"TERM\\\", " .
-			      $main::build_object->get('Sub PID') .
-			      " )\""],
-		  USER => 'root',
-		  CHROOT => 1,
-		  PRIORITY => 0,
-		  DIR => '/' });
+    # Kill currently running command (if any)
+    if ($jobs{$current_job}->get('Sub PID')) {
+	print "Killing " . $jobs{$current_job}->get('Sub Task') .
+	    " subprocess " . $jobs{$current_job}->get('Sub PID') . "\n";
+	$jobs{$current_job}->get('Session')->run_command(
+	    { COMMAND => ['perl', '-e',
+			  "\"kill( \\\"TERM\\\", " .
+			  $jobs{$current_job}->get('Sub PID') .
+			  " )\""],
+			  USER => 'root',
+			  CHROOT => 1,
+			  PRIORITY => 0,
+			  DIR => '/' });
     }
-    $main::build_object->remove_srcdep_lock_file();
+    $jobs{$current_job}->remove_srcdep_lock_file();
 
-    # close logs and send mails
-    if ( $main::current_job && defined($main::build_object->get('Session'))) {
+    # Close logs and send mails
+    if ( $current_job && defined($jobs{$current_job}->get('Session'))) {
 	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
-	    $main::build_object->log("Purging " . $main::build_object->get('Chroot Build Dir') . "\n");
-	    my $bdir = $main::build_object->get('Session')->strip_chroot_path($main::build_object->get('Chroot Build Dir'));
-	    $main::build_object->get('Session')->run_command(
+	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
+	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
+	    $jobs{$current_job}->get('Session')->run_command(
 		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
 			      '-rf', $bdir],
 		  USER => 'root',
@@ -201,17 +337,17 @@ sub shutdown ($) {
 		  DIR => '/' });
 	}
 
-	$main::current_job =
-	    $main::build_object->fixup_pkgv($main::current_job);
+	$current_job =
+	    $jobs{$current_job}->fixup_pkgv($current_job);
 
-	$main::build_object->get('Session')->end_session();
-	$main::build_object->set('Session', undef);
+	$jobs{$current_job}->get('Session')->end_session();
+	$jobs{$current_job}->set('Session', undef);
 
-	$main::build_object->close_build_log();
-	$main::build_object->set('binNMU Name', undef);
+	$jobs{$current_job}->close_build_log();
+	$jobs{$current_job}->set('binNMU Name', undef);
     }
     close_log($conf);
-    unlink( $main::build_object->get('Jobs File') ) if $conf->get('BATCH_MODE');
+    unlink( $jobs{$current_job}->get('Jobs File') ) if $conf->get('BATCH_MODE');
     $? = 0; $! = 0;
     if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;
@@ -220,12 +356,10 @@ sub shutdown ($) {
 }
 
 sub dump_main_state () {
-    print STDERR Data::Dumper->Dump([$main::build_object,
-				     $main::current_job,
-				     \%main::job_state],
-				    [qw($main::build_object
-					$main::current_job
-					%main::job_state)] );
+    print STDERR Data::Dumper->Dump([$current_job,
+				     \%jobs],
+				    [qw($current_job
+					%jobs)] );
 }
 
 # avoid intermixing of stdout and stderr

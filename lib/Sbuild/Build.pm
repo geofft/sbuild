@@ -101,11 +101,10 @@ sub new {
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
-    $self->set('Jobs File', 'build-progress');
     $self->set('Max Lock Trys', 120);
     $self->set('Lock Interval', 5);
     $self->set('Srcdep Lock Count', 0);
-    $self->set('Pkg Status', '');
+    $self->set('Pkg Status', 'pending');
     $self->set('Pkg Start Time', 0);
     $self->set('Pkg End Time', 0);
     $self->set('Pkg Fail Stage', 0);
@@ -118,7 +117,6 @@ sub new {
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
     $self->set('Additional Deps', []);
-    $self->set('binNMU Name', undef);
     $self->set('Changes', {});
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
@@ -170,15 +168,14 @@ sub set_version {
     $self->set('VersionDebian', $dversion);
     $self->set('DSC File', "${pkg}_${oversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
-    $self->set('binNMU Name', "${pkg}_${version}");
 }
 
 sub run {
     my $self = shift;
 
-    $self->set('Pkg Start Time', time);
+    $self->set('Pkg Status', 'building');
 
-    $self->write_jobs_file("");
+    $self->set('Pkg Start Time', time);
 
     if ($self->get('Invalid Source')) {
 	$self->log("Invalid source: " . $self->get('DSC') . "\n");
@@ -240,11 +237,6 @@ sub run {
 
     $self->set('Pkg Status', 'failed'); # assume for now
     $self->set('Additional Deps', []);
-    $self->write_jobs_file("currently building");
-    if ($self->should_skip()) {
-	$self->set('Pkg Status', 'skipped');
-	goto cleanup_close;
-    }
 
     # Update APT cache.
     if ($self->get_conf('APT_UPDATE')) {
@@ -275,8 +267,6 @@ sub run {
 
     $self->set('Pkg Status', 'successful')
 	if $self->build();
-    $self->write_jobs_file($self->get('Pkg Status'));
-    $self->append_to_FINISHED();
 
   cleanup_packages:
     if (defined ($session->get('Session Purged')) &&
@@ -287,18 +277,13 @@ sub run {
     }
     $self->remove_srcdep_lock_file();
   cleanup_close:
-    $self->analyze_fail_stage();
-    $self->write_jobs_file($self->get('Pkg Status'));
-
     $session->end_session();
     $session = undef;
-    $self->set('Session', undef);
+    $self->set('Session', $session);
 
     $self->close_build_log();
 
   cleanup_skip:
-    $self->set('binNMU Name', undef);
-    $self->write_jobs_file("");
 }
 
 # sub get_package_status {
@@ -947,42 +932,6 @@ sub build {
 
     $self->log_sep();
     return $rv == 0 ? 1 : 0;
-}
-
-sub analyze_fail_stage {
-    my $self = shift;
-
-    my $pkgv = $self->get('Package_Version');
-
-    return if $self->get('Pkg Status') ne "failed";
-    return if !$self->get_conf('AUTO_GIVEBACK');
-    if (isin( $self->get('Pkg Fail Stage'),
-	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
-	$self->set('Pkg Status', "given-back");
-	$self->log("Giving back package $pkgv after failure in ".
-		   "$self->{'Pkg Fail Stage'} stage.\n");
-	my $cmd = "";
-	$cmd = "ssh -l " . $self->get_conf('AUTO_GIVEBACK_USER') . " " .
-	    $self->get_conf('AUTO_GIVEBACK_HOST') . " "
-	    if $self->get_conf('AUTO_GIVEBACK_HOST');
-	$cmd .= "-S " . $self->get_conf('AUTO_GIVEBACK_SOCKET') . " "
-	    if $self->get_conf('AUTO_GIVEBACK_SOCKET');
-	$cmd .= "wanna-build --give-back --no-down-propagation ".
-	    "--dist=" . $self->get_conf('DISTRIBUTION') . " ";
-	$cmd .= "--database=" . $self->get_conf('WANNABUILD_DATABASE') . " "
-	    if $self->get_conf('WANNABUILD_DATABASE');
-	$cmd .= "--user=" . $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER') . " "
-	    if $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER');
-	$cmd .= "$pkgv";
-	system $cmd;
-	if ($?) {
-	    $self->log("wanna-build failed with status $?\n");
-	}
-	else {
-	    $self->add_givenback($pkgv, time );
-	    $self->write_stats('give-back', 1);
-	}
-    }
 }
 
 sub install_deps {
@@ -2105,49 +2054,6 @@ sub file_for_name {
     return $x[0];
 }
 
-# only called from main loop, but depends on job state.
-sub write_jobs_file {
-    my $self = shift;
-    my $news = shift;
-    my $job;
-    local( *F );
-
-    $main::job_state{$main::current_job} = $news
-	if $news && $main::current_job;
-
-    if ($self->get_conf('BATCH_MODE')) {
-
-	return if !open( F, ">$self->{'Jobs File'}" );
-	foreach $job (@ARGV) {
-	    my $jobname;
-
-	    if ($main::current_job and $job eq $main::current_job and $self->get('binNMU Name')) {
-		$jobname = $self->get('binNMU Name');
-	    } else {
-		$jobname = $job;
-	    }
-	    print F ($main::current_job and $job eq $main::current_job) ? "" : "  ",
-	    $jobname,
-	    ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
-	    "\n";
-	}
-	close( F );
-    }
-}
-
-sub append_to_FINISHED {
-    my $self = shift;
-
-    my $pkg = $self->get('Package_Version');
-    local( *F );
-
-    if ($self->get_conf('BATCH_MODE')) {
-	open( F, ">>SBUILD-FINISHED" );
-	print F "$pkg\n";
-	close( F );
-    }
-}
-
 sub write_srcdep_lock_file {
     my $self = shift;
     my $deps = shift;
@@ -2162,8 +2068,8 @@ sub write_srcdep_lock_file {
     debug("Writing srcdep lock file $f:\n");
 
     my $user = getpwuid($<);
-    print F "$main::current_job $$ $user\n";
-    debug("Job $main::current_job pid $$ user $user\n");
+    print F $self->get('Package_SVersion') . " $$ $user\n";
+    debug("Job " . $self->get('Package_SVersion') . " pid $$ user $user\n");
     foreach (@$deps) {
 	my $name = $_->{'Package'};
 	print F ($_->{'Neg'} ? "!" : ""), "$name\n";
@@ -2218,7 +2124,8 @@ sub check_srcdep_conflicts {
 		           "$job by $user (pid $pid):\n");
 		$self->log("  $job " . ($neg ? "conflicts with" : "needs") .
 		           " $pkg\n");
-		$self->log("  $main::current_job wants to " .
+		$self->log("  " . $self->get('Package_SVersion') .
+			   " wants to " .
 		           (isin( $pkg, @$to_inst ) ? "update" : "remove") .
 		           " $pkg\n");
 		$conflict_builds{$file} = 1;
@@ -2313,58 +2220,6 @@ sub check_watches {
 	$self->log("  $_: @{$used{$_}}\n");
     }
     $self->log("\n");
-}
-
-sub should_skip {
-    my $self = shift;
-
-    my $pkgv = $self->get('Package_Version');
-
-    $pkgv = $self->fixup_pkgv($pkgv);
-    $self->lock_file("SKIP", 0);
-    goto unlock if !open( F, "SKIP" );
-    my @pkgs = <F>;
-    close( F );
-
-    if (!open( F, ">SKIP" )) {
-	print "Can't open SKIP for writing: $!\n",
-	"Would write: @pkgs\nminus $pkgv\n";
-	goto unlock;
-    }
-    my $found = 0;
-    foreach (@pkgs) {
-	if (/^\Q$pkgv\E$/) {
-	    ++$found;
-	    $self->log("$pkgv found in SKIP file -- skipping building it\n");
-	}
-	else {
-	    print F $_;
-	}
-    }
-    close( F );
-  unlock:
-    $self->unlock_file("SKIP");
-    return $found;
-}
-
-sub add_givenback {
-    my $self = shift;
-    my $pkgv = shift;
-    my $time = shift;
-    local( *F );
-
-    $self->lock_file("SBUILD-GIVEN-BACK", 0);
-
-    if (open( F, ">>SBUILD-GIVEN-BACK" )) {
-	print F "$pkgv $time\n";
-	close( F );
-    }
-    else {
-	$self->log("Can't open SBUILD-GIVEN-BACK: $!\n");
-    }
-
-  unlock:
-    $self->unlock_file("SBUILD-GIVEN-BACK");
 }
 
 sub set_installed {

@@ -421,6 +421,9 @@ sub init_allowed_keys {
 	},
 	'GCC_SNAPSHOT'				=> {
 	    DEFAULT => 0
+	},
+	'JOB_FILE'				=> {
+	    DEFAULT => 'build-progress'
 	}
     );
 
@@ -497,6 +500,7 @@ sub read_config {
     our $chroot = undef;
     our $build_arch_all = undef;
     our $arch = undef;
+    our $job_file = undef;
 
     require $Sbuild::Sysconfig::paths{'SBUILD_CONF'}
         if -r $Sbuild::Sysconfig::paths{'SBUILD_CONF'};
@@ -557,6 +561,7 @@ sub read_config {
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
     $self->set('ALTERNATIVES', \%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
+    $self->set('JOB_FILE', $job_file);
 
     $self->check_group_membership();
 
