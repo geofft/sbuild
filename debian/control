@@ -31,7 +31,7 @@ Description: Tool for building Debian binary packages from Debian sources
 Package: wanna-build
 Architecture: all
 Depends: ${perl:Depends}, perl-modules, libmldbm-perl
-Recommends: exim | mail-transport-agent, cron, wget, postgresql-8.3-debversion
+Recommends: exim4 | mail-transport-agent, cron, wget, postgresql-8.3-debversion
 Suggests: gnupg
 Description: Database to track building of Debian binary packages from Debian sources
  wanna-build is part of a suite of programs -- consisting of

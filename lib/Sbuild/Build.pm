@@ -2512,7 +2512,11 @@ sub open_build_log {
 sub close_build_log {
     my $self = shift;
 
-    my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg End Time')));
+    my $time = $self->get('Pkg End Time');
+    if ($time == 0) {
+        $time = time;
+    }
+    my $date = strftime("%Y%m%d-%H%M", localtime($time));
 
     if (defined($self->get('Pkg Status')) &&
 	$self->get('Pkg Status') eq "successful") {

@@ -44,6 +44,8 @@ sub ST_MTIME () { 9 }
 my $fudge = 1/24/6; # 10 minutes in units of a day
 my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 
+Buildd::Conf::init();
+
 unset_env();
 chdir( "$main::HOME" );
 open_log();
@@ -112,7 +114,7 @@ if (open( F, "<mail-errormails" )) {
     chomp( @em = <F> );
     close( F );
 }
-shift @em while @em && ($now - $em[0]) > $conf::error_mail_window;
+shift @em while @em && ($now - $em[0]) > $Buildd::Conf::error_mail_window;
 if (@em) {
     open( F, ">mail-errormails" );
     print F join( "\n", @em ), "\n";
@@ -129,16 +131,16 @@ my $dev;
 my $ino;
 foreach $file (<upload/*>) {
     ($dev,$ino) = lstat $file;
-    $warnfile{"$dev:$ino"} = $file if -M $file >= $conf::warning_age;
+    $warnfile{"$dev:$ino"} = $file if -M $file >= $Buildd::Conf::warning_age;
 }
 foreach $file (<build/chroot-*/build/$username/*>) {
     ($dev,$ino) = lstat $file;
     if (! -d _ && ! -l _) {
-	$warnfile{"$dev:$ino"} = $file if -C _ >= $conf::warning_age;
+	$warnfile{"$dev:$ino"} = $file if -C _ >= $Buildd::Conf::warning_age;
     }
     else {
 	my $changed_files =
-	    `find $file -ctime -$conf::warning_age -print 2>/dev/null`;
+	    `find $file -ctime -$Buildd::Conf::warning_age -print 2>/dev/null`;
 	$warnfile{"$dev:$ino"} = $file if !$changed_files;
     }
 }
@@ -146,15 +148,15 @@ foreach $file (<build/*>) {
     next if $file =~ m#^build/chroot-[^/]+$#;
     ($dev,$ino) = lstat $file;
     if (! -d _ && ! -l _) {
-	$warnfile{"$dev:$ino"} = $file if -C _ >= $conf::warning_age;
+	$warnfile{"$dev:$ino"} = $file if -C _ >= $Buildd::Conf::warning_age;
     }
     else {
 	my $changed_files =
-	    `find $file -ctime -$conf::warning_age -print 2>/dev/null`;
+	    `find $file -ctime -$Buildd::Conf::warning_age -print 2>/dev/null`;
 	$warnfile{"$dev:$ino"} = $file if !$changed_files;
     }
 }
-my @warnings = grep( !/$conf::no_warn_pattern/, sort values %warnfile );
+my @warnings = grep( !/$Buildd::Conf::no_warn_pattern/, sort values %warnfile );
 if (@warnings) {
     my %reported;
     my @do_warn;
@@ -168,7 +170,7 @@ if (@warnings) {
 
     foreach (@warnings) {
 	if (!exists($reported{$_}) ||
-	    ($now - $reported{$_}) >= $conf::warning_age*24*60*60) {
+	    ($now - $reported{$_}) >= $Buildd::Conf::warning_age*24*60*60) {
 	    push( @do_warn, $_ );
 	    $reported{$_} = $now;
 	}
@@ -183,7 +185,7 @@ if (@warnings) {
     close( W );
     umask $old_umask;
 
-    send_mail( $conf::admin_mail, "buildd-watcher found some old files",
+    send_mail( $Buildd::Conf::admin_mail, "buildd-watcher found some old files",
 	       "buildd-watcher has found some old files or directories in\n".
 	       "~buildd/upload and/or ~buildd/build. Those are:\n\n  ".
 	       join( "\n  ", @do_warn ). "\n\n".
@@ -193,12 +195,12 @@ if (@warnings) {
 }
 
 # archive old package/build log files
-archive_logs( "logs", "*", "old-logs/plog", $conf::pkg_log_keep );
-archive_logs( "build", "build-*.log", "old-logs/blog", $conf::build_log_keep );
+archive_logs( "logs", "*", "old-logs/plog", $Buildd::Conf::pkg_log_keep );
+archive_logs( "build", "build-*.log", "old-logs/blog", $Buildd::Conf::build_log_keep );
 
 # rotate daemon's log file
 if (!-f "old-logs/daemon-stamp" ||
-    -M "old-logs/daemon-stamp" > $conf::daemon_log_rotate-$fudge) {
+    -M "old-logs/daemon-stamp" > $Buildd::Conf::daemon_log_rotate-$fudge) {
 
     logger( "Rotating daemon log file\n" );
     system "touch old-logs/daemon-stamp";
@@ -218,19 +220,19 @@ if (!-f "old-logs/daemon-stamp" ||
     reopen_log();
     unlock_file( "daemon.log" );
 
-    if ($conf::daemon_log_send) {
+    if ($Buildd::Conf::daemon_log_send) {
 	my $text;
 	open( F, "<daemon.log.old" );
 	{ local($/); undef $/; $text = <F>; }
 	close( F );
-	send_mail( $conf::admin_mail, "Build Daemon Log $d", $text );
+	send_mail( $Buildd::Conf::admin_mail, "Build Daemon Log $d", $text );
     }
 }
-archive_logs( "old-logs", "daemon-*.log.gz", "old-logs/dlog", $conf::daemon_log_keep );
+archive_logs( "old-logs", "daemon-*.log.gz", "old-logs/dlog", $Buildd::Conf::daemon_log_keep );
 
 # make buildd statistics
 if (!-f "stats/Stamp" ||
-    -M "stats/Stamp" > $conf::statistics_period-$fudge) {
+    -M "stats/Stamp" > $Buildd::Conf::statistics_period-$fudge) {
 
     logger( "Making buildd statistics\n" );
     lock_file( "stats" );
@@ -252,7 +254,7 @@ if (!-f "stats/Stamp" ||
     open( F, "<stats/Summary" );
     { local($/); undef $/; $text = <F>; }
     close( F );
-    send_mail( $conf::statistics_mail, "Build Daemon Statistics", $text );
+    send_mail( $Buildd::Conf::statistics_mail, "Build Daemon Statistics", $text );
 }
 
 if ($restart) {
@@ -262,7 +264,9 @@ if ($restart) {
     else {
 	defined(my $pid = fork) or die "$0: can't fork to restart buildd: $!\n";
 	if ($pid == 0) {
-	    exec "buildd";
+	    # Use curly braces to avoid a warning about unreachable
+	    # statements.  See manpage of Perl's exec for details.
+	    { exec ("buildd"); }
 	    logger( "Failed to start daemon: $!\n" );
 	    exit( 1 );
 	}

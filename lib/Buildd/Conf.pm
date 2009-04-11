@@ -58,7 +58,7 @@ my $reread_config = 0;
 (our $HOME = $ENV{'HOME'})
     or die "HOME not defined in environment!\n";
 # Configuration files.
-my $config_global = "/etc/buildd/buildd.conf";
+my $config_global = "/etc/buildd.conf";
 my $config_user = "$HOME/.builddrc";
 my $config_global_time = 0;
 my $config_user_time = 0;
@@ -79,7 +79,7 @@ our $pkg_log_keep = 7;
 our $build_log_keep = 2;
 our $daemon_log_rotate = 1;
 our $daemon_log_send = 1;
-our $daemon_log_keepb = 7;
+our $daemon_log_keep = 7;
 our $warning_age = 7;
 our $error_mail_window = 8*60*60;
 our $statistics_period = 7;
@@ -98,7 +98,7 @@ our $dupload_to = "anonymous-ftp-master";
 our $dupload_to_non_us = "anonymous-non-us";
 our $dupload_to_security = "security";
 our $log_queued_messages = 0;
-our $wanna_build_dbbase = "arch/build-db";
+our $wanna_build_dbbase = "$arch/build-db";
 
 sub ST_MTIME () { 9 }
 
@@ -107,7 +107,7 @@ sub read_file ($\$) {
     my $time_var = shift;
     if (-r $filename) {
         my @stat = stat( $filename );
-        $time_var = $stat[ST_MTIME];
+        $$time_var = $stat[ST_MTIME];
         delete $INC{$filename};
         require $filename;
     }
