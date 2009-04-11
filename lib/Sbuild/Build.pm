@@ -77,22 +77,24 @@ sub new {
     $self->set('Invalid Source', 1)
 	if ((!$self->get('Download') && ! -f $self->get('DSC')) ||
 	    ($self->get('Download') &&
-	     $self->get('DSC') ne $self->get('Package_Version')) ||
+	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
 	    (!defined $self->get('Version')));
 
     debug("DSC = " . $self->get('DSC') . "\n");
     debug("Source Dir = " . $self->get('Source Dir') . "\n");
     debug("DSC Base = " . $self->get('DSC Base') . "\n");
-    debug("DSC File = " . $self->get('DSC Base') . "\n");
-    debug("DSC Dir = " . $self->get('DSC Base') . "\n");
+    debug("DSC File = " . $self->get('DSC File') . "\n");
+    debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
     debug("Package_Version = " . $self->get('Package_Version') . "\n");
+    debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
     debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
     debug("Package = " . $self->get('Package') . "\n");
     debug("Version = " . $self->get('Version') . "\n");
+    debug("OVersion = " . $self->get('OVersion') . "\n");
+    debug("SVersion = " . $self->get('SVersion') . "\n");
     debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
     debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
     debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
-    debug("SVersion = " . $self->get('SVersion') . "\n");
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
@@ -144,21 +146,31 @@ sub set_version {
 
     debug("Setting package version: $pkgv\n");
 
-    $self->set('Package_Version', $pkgv);
-    my ($pkg, $version) = split /_/, $self->get('Package_Version');
+    my ($pkg, $version) = split /_/, $pkgv;
+    my $oversion = $version; # Original version (no binNMU addition)
+
+    # Add binNMU to version if needed.
+    if ($self->get_conf('BIN_NMU')) {
+	$version = binNMU_version($version, $self->get_conf('BIN_NMU_VERSION'));
+    }
+
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
-    $self->set('Package_SVersion', "${pkg}_$sversion");
 
     my ($epoch, $uversion, $dversion) = split_version($version);
 
     $self->set('Package', $pkg);
     $self->set('Version', $version);
+    $self->set('Package_Version', "${pkg}_$version");
+    $self->set('Package_OVersion', "${pkg}_$oversion");
+    $self->set('Package_SVersion', "${pkg}_$sversion");
+    $self->set('OVersion', $oversion);
     $self->set('SVersion', $sversion);
     $self->set('VersionEpoch', $epoch);
     $self->set('VersionUpstream', $uversion);
     $self->set('VersionDebian', $dversion);
-    $self->set('DSC File', "${pkg}_${sversion}.dsc");
+    $self->set('DSC File', "${pkg}_${oversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
+    $self->set('binNMU Name', "${pkg}_${version}");
 }
 
 sub run {
@@ -169,7 +181,7 @@ sub run {
     $self->write_jobs_file("");
 
     if ($self->get('Invalid Source')) {
-	$self->log("Invalid source: " . $self->get('DSC'));
+	$self->log("Invalid source: " . $self->get('DSC') . "\n");
 	$self->log("Skipping " . $self->get('Package') . " \n");
 	$self->set('Pkg Status', 'skipped');
 	goto cleanup_skip;
@@ -206,20 +218,9 @@ sub run {
     # the chroot directly.
     $session->set('Build Location', $self->get('Chroot Build Dir'));
 
-    {
-	my $tpkg = basename($self->get('Package_Version'));
-	# TODO: This should be 'Pkg Start Time', set in build().
-	my $date = strftime("%Y%m%d-%H%M",localtime);
-
-	if ($self->get_conf('BIN_NMU')) {
-	    $tpkg =~ /^([^_]+)_([^_]+)(.*)$/;
-	    $tpkg = $1 . "_" . binNMU_version($2,$self->get_conf('BIN_NMU_VERSION'));
-	    $self->set('binNMU Name', $tpkg);
-	    $tpkg .= $3;
-	}
-
-	# TODO: Get package name from build object
-	next if !$self->open_build_log($tpkg);
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_close;
     }
 
     # Needed so chroot commands log to build log
@@ -319,7 +320,7 @@ sub fetch_source_files {
     my $dsc = $self->get('DSC File');
     my $build_dir = $self->get('Chroot Build Dir');
     my $pkg = $self->get('Package');
-    my $ver = $self->get('Version');
+    my $ver = $self->get('OVersion');
     my $arch = $self->get('Arch');
 
     my ($files, @other_files, $dscarchs, $dscpkg, $dscver, @fetched);
@@ -335,7 +336,7 @@ sub fetch_source_files {
     $self->log_subsection("Fetch source files");
 
     if (!defined($self->get('Package')) ||
-	!defined($self->get('Version')) ||
+	!defined($self->get('OVersion')) ||
 	!defined($self->get('Source Dir'))) {
 	$self->log("Invalid source: $self->get('DSC')\n");
 	return 0;
@@ -416,7 +417,7 @@ sub fetch_source_files {
 		goto retry;
 	    }
 	    $self->log("Can't find source for " .
-		       $self->get('Package_Version') . "\n");
+		       $self->get('Package_OVersion') . "\n");
 	    $self->log("(only different version(s) ",
 	    join( ", ", sort keys %entries), " found)\n")
 		if %entries;
@@ -626,14 +627,6 @@ sub build {
 	    $self->log("dpkg-parsechangelog didn't print Version:\n");
 	    return 0;
 	}
-	my $tree_version = $1;
-	my $cmp_version = ($self->get_conf('BIN_NMU') && -f "$dscdir/debian/.sbuild-binNMU-done") ?
-	    binNMU_version($version,$self->get_conf('BIN_NMU_VERSION')) : $version;
-	if ($tree_version ne $cmp_version) {
-	    $$self->log("The unpacked source tree $dscdir is version ".
-			"$tree_version, not wanted $cmp_version!\n");
-	    return 0;
-	}
     }
 
     $self->log_subsubsection("Check disc space");
@@ -660,8 +653,7 @@ sub build {
 	}
     }
 
-    if ($self->get_conf('BIN_NMU') &&
-	! -f "$dscdir/debian/.sbuild-binNMU-done") {
+    if ($self->get_conf('BIN_NMU')) {
 	$self->log_subsubsection("Hack binNMU version");
 	$self->set('Pkg Fail Stage', "hack-binNMU");
 	if (open( F, "<$dscdir/debian/changelog" )) {
@@ -672,7 +664,7 @@ sub build {
 	    close( F );
 	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-	    my $NMUversion = binNMU_version($version,$self->get_conf('BIN_NMU_VERSION'));
+	    my $NMUversion = $self->get('Version');
 	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dscdir/debian/changelog" )) {
 		$self->log("Can't open debian/changelog for binNMU hack: $!\n");
@@ -687,7 +679,6 @@ sub build {
 
 	    print F $firstline, $text;
 	    close( F );
-	    system "touch '$dscdir/debian/.sbuild-binNMU-done'";
 	    $self->log("*** Created changelog entry for bin-NMU version $NMUversion\n");
 	}
 	else {
@@ -857,12 +848,7 @@ sub build {
 	    }
 	}
 
-	$changes = "${pkg}_".
-	    ($self->get_conf('BIN_NMU') ?
-	     binNMU_version($self->get('SVersion'),
-			    $self->get_conf('BIN_NMU_VERSION')) :
-	     $self->get('SVersion')).
-	    "_$arch.changes";
+	$changes = $self->get('Package_SVersion') . "_$arch.changes";
 	my @cfiles;
 	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
