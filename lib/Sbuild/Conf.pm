@@ -548,6 +548,32 @@ sub read_config {
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
     $self->set('ALTERNATIVES', \%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
+
+    $self->check_group_membership();
+}
+
+sub check_group_membership ($) {
+    my $self = shift;
+
+    my $user = getpwuid($<);
+    my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
+
+    if (!$gid) {
+	die "Group sbuild does not exist";
+    }
+
+    my $in_group = 0;
+    foreach (split(' ', $members)) {
+	$in_group = 1 if $_ eq $self->get('USERNAME');
+    }
+
+    if (!$in_group) {
+	print STDERR "User $user is not a member of group $name\n";
+	print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
+	exit(1);
+    }
+
+    return;
 }
 
 1;
