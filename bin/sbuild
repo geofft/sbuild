@@ -109,7 +109,8 @@ sub main () {
     unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
-    if ($conf->get('SBUILD_MODE') eq "user" && defined($current_job)) {
+    if ($conf->get('SBUILD_MODE') eq "user" && defined($current_job) &&
+	defined($jobs{$current_job})) {
 	exit ($jobs{$current_job}->get('Pkg Status') ne "successful") ? 1 : 0;
     }
     exit 0;
