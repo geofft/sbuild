@@ -184,11 +184,6 @@ sub parse_options {
 		       },
 	);
 
-    if (defined($self->get_conf('APPEND_TO_VERSION')) &&
-	$self->get_conf('BUILD_SOURCE') != 0) {
-	# See <http://bugs.debian.org/475777> for details
-	die "The --append-to-version option is incompatible with a source upload\n";
-    }
     return $ret;
 }
 

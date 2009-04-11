@@ -70,6 +70,18 @@ sub init_allowed_keys {
 	    if !-d $directory;
     };
 
+    my $validate_append_version = sub {
+	my $self = shift;
+	my $entry = shift;
+
+	if (defined($self->get('APPEND_TO_VERSION')) &&
+	    $self->get('APPEND_TO_VERSION') &&
+	    $self->get('BUILD_SOURCE') != 0) {
+	    # See <http://bugs.debian.org/475777> for details
+	    die "The --append-to-version option is incompatible with a source upload\n";
+	}
+    };
+
     my $HOME = $self->get('HOME');
 
     my %sbuild_keys = (
@@ -408,7 +420,8 @@ sub init_allowed_keys {
 	    DEFAULT => []
 	},
 	'BUILD_SOURCE'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    CHECK => $validate_append_version,
 	},
 	'ARCHIVE'				=> {
 	    DEFAULT => undef
@@ -420,7 +433,8 @@ sub init_allowed_keys {
 	    DEFAULT => undef
 	},
 	'APPEND_TO_VERSION'			=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    CHECK => $validate_append_version,
 	},
 	'GCC_SNAPSHOT'				=> {
 	    DEFAULT => 0
