@@ -22,6 +22,32 @@
 use strict;
 use warnings;
 
+our $mode = undef;
+
+package Options;
+
+use Sbuild::OptionsBase;
+use Sbuild::Conf;
+
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @ISA = qw(Exporter Sbuild::OptionsBase);
+
+    @EXPORT = qw();
+}
+
+sub set_options {
+    my $self = shift;
+
+    $self->add_options(
+	"l|list" => sub { $mode = "list"; },
+	"s|set" => sub { $mode = "set"; });
+}
+
+package main;
+
 use locale;
 use POSIX qw(locale_h);
 use Getopt::Long;
@@ -29,21 +55,18 @@ use Sbuild qw(help_text version_text usage_error check_packages);
 use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
 
-package main;
-
-our $mode = undef;
+use Sbuild::Conf;
 
 my $conf = Sbuild::Conf->new();
-
-GetOptions (
-    "h|help" => sub { help_text("1", "sbuild-checkpackages"); },
-    "V|version" => sub {version_text("sbuild-checkpackages"); },
-    "l|list" => sub { $mode = "list"; },
-    "s|set" => sub { $mode = "set"; })
-or usage_error("sbuild-checkpackages", "Error parsing command-line options");
+exit 1 if !defined($conf);
+my $options = Options->new($conf, "sbuild-checkpackages", "1");
+exit 1 if !defined($options);
 
 usage_error("sbuild-checkpackages", "--list or --set must be specified")
-    if (@ARGV != 1 || !defined($mode));
+    if (!defined($mode));
+
+usage_error("sbuild-checkpackages", "A chroot must be specified")
+    if (@ARGV != 1);
 
 my $chroot = $ARGV[0];
 

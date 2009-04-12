@@ -23,17 +23,14 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup);
-
-package main;
+use Sbuild::Conf;
+use Sbuild::OptionsBase;
 
 my $conf = Sbuild::Conf->new();
-
-GetOptions (
-    "h|help" => sub { help_text("1", "sbuild-update"); },
-    "V|version" => sub {version_text("sbuild-update"); })
-or usage_error("sbuild-update", "Error parsing command-line options");
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "sbuild-update", "1");
+exit 1 if !defined($options);
 
 usage_error("sbuild-update", "Incorrect number of options") if (@ARGV < 1);
 
