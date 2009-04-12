@@ -25,9 +25,6 @@ package Sbuild::Options;
 use strict;
 use warnings;
 
-use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Base;
 use Sbuild::OptionsBase;
 use Sbuild::Conf;
 
