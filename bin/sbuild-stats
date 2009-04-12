@@ -129,6 +129,7 @@ my $conf = Conf->new();
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-stats", "1");
 exit 1 if !defined($options);
+$conf->check_group_membership();
 
 if ($conf->get('STATS_DB_FILE') eq "") {
     usage_error("sbuild-stats", "Database not specified");

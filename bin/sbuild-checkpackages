@@ -61,6 +61,7 @@ my $conf = Sbuild::Conf->new();
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-checkpackages", "1");
 exit 1 if !defined($options);
+$conf->check_group_membership();
 
 usage_error("sbuild-checkpackages", "--list or --set must be specified")
     if (!defined($mode));

@@ -580,8 +580,6 @@ sub read_config {
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
     $self->set('JOB_FILE', $job_file);
 
-    $self->check_group_membership();
-
     $self->set('MAILTO',
 	       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')})
 	if $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
@@ -607,6 +605,9 @@ sub read_config {
 
 sub check_group_membership ($) {
     my $self = shift;
+
+    # Skip for root
+    return if ($< == 0);
 
     my $user = getpwuid($<);
     my ($name,$passwd,$gid,$members) = getgrnam("sbuild");

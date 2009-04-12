@@ -32,6 +32,7 @@ my $conf = Sbuild::Conf->new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "sbuild-hold", "1");
 exit 1 if !defined($options);
+$conf->check_group_membership();
 
 usage_error("sbuild-hold", "Incorrect number of options") if (@ARGV < 2);
 

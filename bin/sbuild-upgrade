@@ -31,6 +31,7 @@ my $conf = Sbuild::Conf->new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "sbuild-upgrade", "1");
 exit 1 if !defined($options);
+$conf->check_group_membership();
 
 usage_error("sbuild-upgrade", "Incorrect number of options") if (@ARGV < 1);
 

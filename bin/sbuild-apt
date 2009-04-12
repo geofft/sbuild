@@ -32,6 +32,7 @@ exit 1 if !defined($conf);
 $conf->set('CWD', '/');
 my $options = Sbuild::OptionsBase->new($conf, "sbuild-apt", "1");
 exit 1 if !defined($options);
+$conf->check_group_membership();
 
 usage_error("sbuild-apt", "Incorrect number of options") if (@ARGV < 2);
 
