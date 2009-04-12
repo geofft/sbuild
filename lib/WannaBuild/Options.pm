@@ -44,12 +44,6 @@ sub set_options {
     my $self = shift;
 
     $self->add_options (
-	"h|help" => sub { help_text("1", "wanna-build"); },
-	"V|version" => sub {version_text("wanna-build"); },
-	"v|verbose" => sub {
-	    $self->set_conf('VERBOSE',
-			    $self->get_conf('VERBOSE') + 1);
-	},
 	"d|dist=s" => sub {
 	    $self->set_conf('DISTRIBUTION', $_[1]);
 	    $self->set_conf('DISTRIBUTION', "oldstable")
