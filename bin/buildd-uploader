@@ -30,16 +30,14 @@ use warnings;
 use Buildd;
 use Buildd::Conf;
 
-Buildd::Conf::init();
+my $conf = Buildd::Conf->new();
+exit 1 if !defined($conf);
 
 sub uploaded ($@);
 sub upload ($$);
 sub do_dupload ($@);
 
 unset_env();
-
-$Buildd::Conf::dupload_to ||= "anonymous-ftp-master";
-$Buildd::Conf::dupload_to_security ||= "security";
 
 my $log_locked = 0;
 my $locked = 0;
@@ -59,8 +57,8 @@ $locked = 1;
 
 my %uploaded_pkgs;
 
-upload( "upload-security", $Buildd::Conf::dupload_to_security );
-upload( "upload", $Buildd::Conf::dupload_to );
+upload( "upload-security", $conf->get('DUPLOAD_TO_SECURITY') );
+upload( "upload", $conf->get('DUPLOAD_TO') );
 
 foreach my $dist (keys %uploaded_pkgs) {
     logger( "Set to Uploaded($dist):$uploaded_pkgs{$dist}" );
@@ -73,8 +71,11 @@ sub uploaded ($@) {
     my @propagated_pkgs = ();
     foreach my $dist (@_) {
 	my $msgs = "";
-	if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build --uploaded --user=$Buildd::Conf::wanna_build_user ".
-		  ($Buildd::Conf::wanna_build_dbbase?"--database=$Buildd::Conf::wanna_build_dbbase ":"").
+	if (open( PIPE, $conf->get('SSHCMD') .
+		  " wanna-build --uploaded ".
+		  "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
+		  ($conf->get('WANNA_BUILD_DBBASE')?
+		   "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
 		  "--no-down-propagation --dist=$dist ".
 		  "$pkg 2>&1 |" )) {
 	    while( <PIPE> ) {
@@ -268,7 +269,7 @@ sub do_dupload ($@) {
 
     if ($errs) {
 	$errs .= "\nComplete output from dupload:\n\n$dup_log";
-	send_mail( $Buildd::Conf::admin_mail, "dupload errors", $errs );
+	send_mail($conf->get('ADMIN_MAIL'), "dupload errors", $errs);
     }
     return \@log;
 }
