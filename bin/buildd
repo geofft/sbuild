@@ -30,6 +30,7 @@ use warnings;
 use POSIX;
 use Buildd;
 use Buildd::Conf;
+use Sbuild::OptionsBase;
 use Cwd;
 
 sub ST_MTIME ();
@@ -52,6 +53,8 @@ sub ST_MTIME () { 9 }
 
 my $conf = Buildd::Conf->new();
 exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
+exit 1 if !defined($options);
 
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;

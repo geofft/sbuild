@@ -28,6 +28,8 @@ use strict;
 use warnings;
 use Buildd;
 use Buildd::Conf;
+use Sbuild::OptionsBase;
+
 use POSIX qw(ESRCH LONG_MAX);
 use Cwd;
 
@@ -46,6 +48,8 @@ my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 
 my $conf = Buildd::Conf->new();
 exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd-watcher", "1");
+exit 1 if !defined($options);
 
 unset_env();
 chdir( "$main::HOME" );

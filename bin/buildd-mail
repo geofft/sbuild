@@ -24,6 +24,7 @@ use warnings;
 use Buildd;
 use Buildd::Conf;
 use Sbuild qw(binNMU_version);
+use Sbuild::OptionsBase;
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
@@ -57,6 +58,8 @@ sub add_error_mail ();
 
 my $conf = Buildd::Conf->new();
 exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd-mail", "1");
+exit 1 if !defined($options);
 
 chdir($conf->get('HOME'));
 
