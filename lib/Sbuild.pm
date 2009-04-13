@@ -61,7 +61,7 @@ sub do_version_cmp ($$);
 sub order ($);
 sub version_cmp_single ($$);
 sub split_version ($);
-sub binNMU_version ($$);
+sub binNMU_version ($$$);
 sub parse_date ($);
 sub isin ($@);
 sub copy ($);
@@ -211,11 +211,19 @@ sub split_version ($) {
 	return( $epoch, $vers, $revision );
 }
 
-sub binNMU_version ($$) {
+sub binNMU_version ($$$) {
 	my $v = shift;
 	my $binNMUver = shift;
+	my $append_to_version = shift;
 
-	return "$v+b$binNMUver";
+	my $ver = $v;
+	if (defined($append_to_version) && $append_to_version) {
+	    $ver .= $append_to_version;
+	}
+	if (defined($binNMUver) && $binNMUver) {
+	    $ver .= "+b$binNMUver";
+	}
+	return $ver;
 }
 
 my %monname = ('jan', 0, 'feb', 1, 'mar', 2, 'apr', 3, 'may', 4, 'jun', 5,

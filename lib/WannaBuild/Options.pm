@@ -1,7 +1,7 @@
 #
 # Options.pm: options parser for wanna-build
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2009 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -28,41 +28,22 @@ use warnings;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(isin help_text version_text usage_error);
 use Sbuild::Base;
+use Sbuild::OptionsBase;
 use Sbuild::DB::Info;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::Base);
+    @ISA = qw(Exporter Sbuild::OptionsBase);
 
     @EXPORT = qw();
 }
 
-sub new {
-    my $class = shift;
-    my $conf = shift;
-
-    my $self = $class->SUPER::new($conf);
-    bless($self, $class);
-
-    if (!$self->parse_options()) {
-	usage_error("wanna-build", "Error parsing command-line options");
-	return undef;
-    }
-    return $self;
-}
-
-sub parse_options {
+sub set_options {
     my $self = shift;
 
-    return GetOptions (
-	"h|help" => sub { help_text("1", "wanna-build"); },
-	"V|version" => sub {version_text("wanna-build"); },
-	"v|verbose" => sub {
-	    $self->set_conf('VERBOSE',
-			    $self->get_conf('VERBOSE') + 1);
-	},
+    $self->add_options (
 	"d|dist=s" => sub {
 	    $self->set_conf('DISTRIBUTION', $_[1]);
 	    $self->set_conf('DISTRIBUTION', "oldstable")

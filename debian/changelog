@@ -1,3 +1,17 @@
+sbuild (0.58.3-1) unstable; urgency=low
+
+  [ Roger Leigh ]
+  * New release. 
+  * debian/control:
+    - Update to Standards Version 3.8.1 
+  * Add support for appending a tag to version numbers (Closes: #475777).
+    Thanks to Timothy G Abbott for this patch. 
+  * When using the --help or --version options, don't abort if not
+    in the sbuild group (Closes: #523670).  Group membership is now
+    only performed after options parsing, and only if required.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 12 Apr 2009 16:42:42 +0100
+
 sbuild (0.58.2-1) unstable; urgency=low
 
   [ Roger Leigh ]
@@ -11,8 +25,10 @@ sbuild (0.58.2-1) unstable; urgency=low
   * debian/buildd.cron.d: Move example crontab here, with entries
     commented out for now. 
   * debian/rules: Use dh_installcrontab to install crontabs.
+  * Remove buildd package for this release, because it's not yet
+    ready for use. 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 Mar 2009 23:03:30 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 11 Apr 2009 10:20:25 +0100
 
 sbuild (0.58.1-1) unstable; urgency=low
 

@@ -20,13 +20,100 @@
 #
 #######################################################################
 
-package conf;
-use Sbuild::Conf;
-
-package main;
-
 use strict;
 use warnings;
+
+package Conf;
+
+use Sbuild::Conf;
+
+use GDBM_File;
+
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @ISA = qw(Exporter Sbuild::Conf);
+
+    @EXPORT = qw();
+}
+
+sub init_allowed_keys {
+    my $self = shift;
+
+    $self->SUPER::init_allowed_keys();
+
+    my $keyring = '';
+    $keyring = '/etc/apt/trusted.gpg'
+	if -f '/etc/apt/trusted.gpg';
+
+    my %stats_keys = (
+	'STATS_DB'				=> {
+	    DEFAULT => ''
+	},
+	'STATS_DB_FILE'				=> {
+	    DEFAULT => ''
+	},
+	'STATS_DB_OPEN_MODE'			=> {
+	    DEFAULT => &GDBM_READER
+	},
+	'STATS_MODE'				=> {
+	    DEFAULT => ''
+	},
+	'STATS_TOPMODE'				=> {
+	    DEFAULT => 0
+	});
+
+    $self->set_allowed_keys(\%stats_keys);
+}
+
+package Options;
+
+use Sbuild::OptionsBase;
+use Sbuild::Conf;
+
+use GDBM_File;
+
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @ISA = qw(Exporter Sbuild::OptionsBase);
+
+    @EXPORT = qw();
+}
+
+sub set_options {
+    my $self = shift;
+
+    $self->add_options(
+	"t|time" => sub {
+	    $self->set_conf('STATS_DB', 'time');
+	    $self->set_conf('STATS_DB_FILE', $self->get_conf('AVG_TIME_DB'));
+	},
+	"s|space" => sub {
+	    $self->set_conf('STATS_DB', 'space');
+	    $self->set_conf('STATS_DB_FILE', $self->get_conf('AVG_SPACE_DB'));
+	},
+	"d|delete" => sub {
+	    $self->set_conf('STATS_MODE', 'del');
+	    $self->set_conf('STATS_OPEN_MODE', &GDBM_WRCREAT);
+	},
+	"dump" => sub {
+	    $self->set_conf('STATS_MODE', 'dump');
+	},
+	"a|add" => sub {
+	    $self->set_conf('STATS_MODE', 'add');
+	    $self->set_conf('STATS_OPEN_MODE', &GDBM_WRCREAT);
+	},
+	"top" => sub {
+	    $self->set_conf('STATS_TOPMODE',
+			    $self->get_conf('STATS_TOPMODE') + 1);
+	},
+	"f|db-file=s" => sub {
+	    $self->set_conf('STATS_DB_FILE', $_[1]);
+	});
+}
 
 use GDBM_File;
 use File::Basename;
@@ -38,61 +125,36 @@ package main;
 sub align ($);
 sub sortfunc ();
 
-my $conf = Sbuild::Conf->new();
-$conf->set('CWD', '/');
+my $conf = Conf->new();
+exit 1 if !defined($conf);
+my $options = Options->new($conf, "sbuild-stats", "1");
+exit 1 if !defined($options);
+$conf->check_group_membership();
 
-my $db = "unspec";
-my $mode = "unspec";
-my $topmode = 0;
-my $open_mode = GDBM_READER;
-my $db_file = "unspec";
-
-GetOptions (
-    "h|help" => sub { help_text("1", "sbuild-stats"); },
-    "V|version" => sub {version_text("sbuild-stats"); },
-    "t|time" => sub { $db = "time"; },
-    "s|space" => sub { $db = "space"; },
-    "d|delete" => sub { $mode = "del"; },
-    "dump" => sub { $mode = "dump"; },
-    "a|add" => sub { $mode = "add"; },
-    "top+" => \$topmode,
-    "f|db-file=s" => \$db_file)
-or usage_error("sbuild-stats", "Error parsing command-line options");
-
-if ($db eq "time") {
-    $db_file = $conf->get('AVG_TIME_DB');
-} elsif ($db eq "space") {
-    $db_file = $conf->get('AVG_SPACE_DB');
-} elsif ($db_file ne "unspec") {
-# Set by hand.
-} else {
+if ($conf->get('STATS_DB_FILE') eq "") {
     usage_error("sbuild-stats", "Database not specified");
 }
 
-if ($mode eq "add") {
-    $open_mode = GDBM_WRCREAT;
-} elsif ($mode eq "del") {
-    $open_mode = GDBM_WRCREAT;
-} else {
-    $open_mode = GDBM_READER;
-}
+$conf->set('CWD', '/');
 
 my %db;
-if (!tie %db, 'GDBM_File', $db_file, $open_mode, 0664) {
+if (!tie %db, 'GDBM_File',
+    $conf->get('STATS_DB_FILE'),
+    $conf->get('STATS_DB_OPEN_MODE'), 0664) {
     die "Can't open db";
 }
 
-if ($mode eq "del" && !@ARGV) {
+if ($conf->get('STATS_MODE') eq "del" && !@ARGV) {
     usage_error("sbuild-stats", "No packages given for --delete");
 }
 
-if ($mode eq "add") {
+if ($conf->get('STATS_MODE') eq "add") {
     if (@ARGV != 2 || $ARGV[1] !~ /^[\d.:]+$/) {
 	usage_error("sbuild-stats", "Arguments for --add must be package and a build time or space");
     }
     my($pkg,$t) = @ARGV;
 
-    if ($db ne "space") {
+    if ($conf->get('STATS_DB') ne "space") {
 	if ($t =~ /:/) {
 	    my @a = split( ':', $t );
 	    my $x;
@@ -103,7 +165,7 @@ if ($mode eq "add") {
     }
 
     if (exists $db{$pkg}) {
-	if ($db ne "space") {
+	if ($conf->get('STATS_DB') ne "space") {
 	    my @times = split( /\s+/, $db{$pkg} );
 	    push( @times, $t );
 	    my $sum = 0;
@@ -134,15 +196,15 @@ if ($mode eq "add") {
     my @pkgs = sort sortfunc (@ARGV ? @ARGV : keys %db);
     foreach $pkg (@pkgs) {
 	if (exists $db{$pkg}) {
-	    if ($mode eq "del") {
+	    if ($conf->get('STATS_MODE') eq "del") {
 		delete $db{$pkg};
 		print "$pkg: deleted\n";
 	    }
-	    elsif ($mode eq "dump") {
+	    elsif ($conf->get('STATS_MODE') eq "dump") {
 		print "$pkg: $db{$pkg}\n";
 	    }
 	    else {
-		if ($db ne "space") {
+		if ($conf->get('STATS_DB') ne "space") {
 		    my @times = split( /\s+/, $db{$pkg} );
 		    my $t = $times[0];
 		    my($sum, $sumq) = (0, 0);
@@ -187,7 +249,7 @@ sub align ($) {
 }
 
 sub sortfunc () {
-    if ($topmode) {
+    if ($conf->get('STATS_TOPMODE')) {
 	my $tima = (split( /\s+/, $db{$a} ))[0];
 	my $timb = (split( /\s+/, $db{$b} ))[0];
 	return $timb <=> $tima;

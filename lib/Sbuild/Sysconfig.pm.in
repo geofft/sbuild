@@ -36,23 +36,23 @@ our $version = "@PACKAGE_VERSION@";
 our $release_date = "@RELEASE_DATE@";
 
 # Paths
-my $prefix = '@prefix@';
-my $exec_prefix = '@exec_prefix@';
+my $prefix = "@prefix@";
+my $exec_prefix = "@exec_prefix@";
 # Depend on prefix
-my $includedir = '@includedir@';
-my $localstatedir = '@localstatedir@';
-my $sharedstatedir = '@sharedstatedir@';
-my $sysconfdir = '@sysconfdir@';
+my $includedir = "@includedir@";
+my $localstatedir = "@localstatedir@";
+my $sharedstatedir = "@sharedstatedir@";
+my $sysconfdir = "@sysconfdir@";
 # Depend on exec_prefix
-my $bindir = '@bindir@';
-my $libdir = '@libdir@';
-my $libexecdir = '@libexecdir@';
-my $sbindir = '@sbindir@';
+my $bindir = "@bindir@";
+my $libdir = "@libdir@";
+my $libexecdir = "@libexecdir@";
+my $sbindir = "@sbindir@";
 # Data directories
-my $datarootdir = '@datarootdir@';
-my $datadir = '@datadir@';
-my $localedir = '@localedir@';
-my $mandir = '@mandir@';
+my $datarootdir = "@datarootdir@";
+my $datadir = "@datadir@";
+my $localedir = "@localedir@";
+my $mandir = "@mandir@";
 
 our %paths = (
     'PREFIX' => $prefix,
@@ -69,17 +69,17 @@ our %paths = (
     'DATADIR' => $datadir,
     'LOCALEDIR' => $localedir,
     'MANDIR' => $mandir,
-    'BUILDD_CONF' => '@BUILDD_CONF@',
-    'BUILDD_SYSCONF_DIR' => '@BUILDD_SYSCONF_DIR@',
-    'SBUILD_CONF' => '@SBUILD_CONF@',
-    'SBUILD_LIBEXEC_DIR' => '@SBUILD_LIBEXEC_DIR@',
+    'BUILDD_CONF' => "@BUILDD_CONF@",
+    'BUILDD_SYSCONF_DIR' => "@BUILDD_SYSCONF_DIR@",
+    'SBUILD_CONF' => "@SBUILD_CONF@",
+    'SBUILD_LIBEXEC_DIR' => "@SBUILD_LIBEXEC_DIR@",
     'SBUILD_LOCALSTATE_DIR' => "$localstatedir/lib/sbuild",
-    'SBUILD_SYSCONF_DIR' => '@SBUILD_SYSCONF_DIR@',
-    'SCHROOT_CONF' => '@SCHROOT_CONF@',
-    'SCHROOT_SYSCONF_DIR' => '@SCHROOT_SYSCONF_DIR@',
-    'WANNA_BUILD_CONF' => '@WANNA_BUILD_CONF@',
+    'SBUILD_SYSCONF_DIR' => "@SBUILD_SYSCONF_DIR@",
+    'SCHROOT_CONF' => "@SCHROOT_CONF@",
+    'SCHROOT_SYSCONF_DIR' => "@SCHROOT_SYSCONF_DIR@",
+    'WANNA_BUILD_CONF' => "@WANNA_BUILD_CONF@",
     'WANNA_BUILD_LOCALSTATE_DIR' => "$localstatedir/lib/wanna-build",
-    'WANNA_BUILD_LIBEXEC_DIR' => '@WANNA_BUILD_LIBEXEC_DIR@'
+    'WANNA_BUILD_LIBEXEC_DIR' => "@WANNA_BUILD_LIBEXEC_DIR@"
 );
 
 # Programs:

@@ -24,17 +24,15 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
-
-package main;
+use Sbuild::Conf;
+use Sbuild::OptionsBase;
 
 my $conf = Sbuild::Conf->new();
-
-GetOptions (
-    "h|help" => sub { help_text("1", "sbuild-hold"); },
-    "V|version" => sub {version_text("sbuild-hold"); })
-or usage_error("sbuild-hold", "Error parsing command-line options");
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "sbuild-hold", "1");
+exit 1 if !defined($options);
+$conf->check_group_membership();
 
 usage_error("sbuild-hold", "Incorrect number of options") if (@ARGV < 2);
 

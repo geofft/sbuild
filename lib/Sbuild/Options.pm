@@ -25,40 +25,22 @@ package Sbuild::Options;
 use strict;
 use warnings;
 
-use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
-use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Base;
+use Sbuild::OptionsBase;
 use Sbuild::Conf;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::Base);
+    @ISA = qw(Exporter Sbuild::OptionsBase);
 
     @EXPORT = qw();
 }
 
-sub new {
-    my $class = shift;
-    my $conf = shift;
-
-    my $self = $class->SUPER::new($conf);
-    bless($self, $class);
-
-    if (!$self->parse_options()) {
-	usage_error("sbuild", "Error parsing command-line options");
-	return undef;
-    }
-    return $self;
-}
-
-sub parse_options {
+sub set_options {
     my $self = shift;
 
-    return GetOptions ("h|help" => sub { help_text("1", "sbuild"); },
-		       "V|version" => sub {version_text("sbuild"); },
-		       "arch=s" => sub {
+    $self->add_options("arch=s" => sub {
 			   $self->set_conf('ARCH', $_[1]);
 		       },
 		       "A|arch-all" => sub {
@@ -81,13 +63,17 @@ sub parse_options {
 					  $parts[$#parts]);
 			   }
 		       },
-		       "f|force-depends=s" => sub {
-			   push(@{$self->get_conf('MANUAL_SRCDEPS')},
-				"f".$_[1]);
+		       "add-depends=s" => sub {
+			   push(@{$self->get_conf('MANUAL_DEPENDS')}, $_[1]);
 		       },
-		       "a|add-depends=s" => sub {
-			   push(@{$self->get_conf('MANUAL_SRCDEPS')},
-				"a".$_[1] );
+		       "add-conflicts=s" => sub {
+			   push(@{$self->get_conf('MANUAL_CONFLICTS')}, $_[1]);
+		       },
+		       "add-depends-indep=s" => sub {
+			   push(@{$self->get_conf('MANUAL_DEPENDS_INDEP')}, $_[1]);
+		       },
+		       "add-conflicts-indep=s" => sub {
+			   push(@{$self->get_conf('MANUAL_CONFLICTS_INDEP')}, $_[1]);
 		       },
 		       "check-depends-algorithm=s" => sub {
 			   $self->set_conf('CHECK_DEPENDS_ALGORITHM', $_[1]);
@@ -103,15 +89,14 @@ sub parse_options {
 		       "binNMU=i" => sub {
 			   $self->set_conf('BIN_NMU_VERSION', $_[1]);
 		       },
+		       "append-to-version=s" => sub {
+			   $self->set_conf('APPEND_TO_VERSION', $_[1]);
+		       },
 		       "c|chroot=s" => sub {
 			   $self->set_conf('CHROOT', $_[1]);
 		       },
 		       "database=s" => sub {
 			   $self->set_conf('WANNABUILD_DATABASE', $_[1]);
-		       },
-		       "D|debug" => sub {
-			   $self->set_conf('DEBUG',
-					   $self->get_conf('DEBUG') + 1);
 		       },
 		       "apt-update" => sub {
 			   $self->set_conf('APT_UPDATE', $_[1]);
@@ -165,16 +150,7 @@ sub parse_options {
 			   $self->set_conf('PATH',
 					   '/usr/lib/gcc-snapshot/bin' .
 					   $self->get_conf('PATH') ne '' ? ':' . $self->get_conf('PATH') : '');
-		       },
-		       "v|verbose" => sub {
-			   $self->set_conf('VERBOSE',
-					  $self->get_conf('VERBOSE') + 1);
-		       },
-		       "q|quiet" => sub {
-			   $self->set_conf('VERBOSE',
-					   $self->get_conf('VERBOSE') - 1)
-			       if $self->get_conf('VERBOSE');
-		       },
+		       }
 	);
 }
 

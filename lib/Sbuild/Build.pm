@@ -25,9 +25,12 @@ package Sbuild::Build;
 use Errno qw(:POSIX);
 use Fcntl;
 use File::Basename qw(basename dirname);
+use File::Temp qw(tempdir);
 use GDBM_File;
-use Sbuild qw(binNMU_version version_compare split_version copy isin send_mail debug);
+use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug);
 use Sbuild::Base;
+use Sbuild::ChrootInfoSchroot;
+use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::Sysconfig;
@@ -74,33 +77,35 @@ sub new {
     $self->set('Invalid Source', 1)
 	if ((!$self->get('Download') && ! -f $self->get('DSC')) ||
 	    ($self->get('Download') &&
-	     $self->get('DSC') ne $self->get('Package_Version')) ||
+	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
 	    (!defined $self->get('Version')));
 
     debug("DSC = " . $self->get('DSC') . "\n");
     debug("Source Dir = " . $self->get('Source Dir') . "\n");
     debug("DSC Base = " . $self->get('DSC Base') . "\n");
-    debug("DSC File = " . $self->get('DSC Base') . "\n");
-    debug("DSC Dir = " . $self->get('DSC Base') . "\n");
+    debug("DSC File = " . $self->get('DSC File') . "\n");
+    debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
     debug("Package_Version = " . $self->get('Package_Version') . "\n");
+    debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
     debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
     debug("Package = " . $self->get('Package') . "\n");
     debug("Version = " . $self->get('Version') . "\n");
+    debug("OVersion = " . $self->get('OVersion') . "\n");
+    debug("SVersion = " . $self->get('SVersion') . "\n");
     debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
     debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
     debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
-    debug("SVersion = " . $self->get('SVersion') . "\n");
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
-    $self->set('Jobs File', 'build-progress');
     $self->set('Max Lock Trys', 120);
     $self->set('Lock Interval', 5);
     $self->set('Srcdep Lock Count', 0);
-    $self->set('Pkg Status', '');
+    $self->set('Pkg Status', 'pending');
+    $self->set('Pkg Status Trigger', undef);
     $self->set('Pkg Start Time', 0);
     $self->set('Pkg End Time', 0);
     $self->set('Pkg Fail Stage', 0);
@@ -113,7 +118,6 @@ sub new {
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
     $self->set('Additional Deps', []);
-    $self->set('binNMU Name', undef);
     $self->set('Changes', {});
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
@@ -141,21 +145,159 @@ sub set_version {
 
     debug("Setting package version: $pkgv\n");
 
-    $self->set('Package_Version', $pkgv);
-    my ($pkg, $version) = split /_/, $self->get('Package_Version');
+    my ($pkg, $version) = split /_/, $pkgv;
+    my $oversion = $version; # Original version (no binNMU addition)
+
+    # Add binNMU to version if needed.
+    if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
+	$version = binNMU_version($version, $self->get_conf('BIN_NMU_VERSION'),
+	    $self->get_conf('APPEND_TO_VERSION'));
+    }
+
     (my $sversion = $version) =~ s/^\d+://; # Strip epoch
-    $self->set('Package_SVersion', "${pkg}_$sversion");
 
     my ($epoch, $uversion, $dversion) = split_version($version);
 
     $self->set('Package', $pkg);
     $self->set('Version', $version);
+    $self->set('Package_Version', "${pkg}_$version");
+    $self->set('Package_OVersion', "${pkg}_$oversion");
+    $self->set('Package_SVersion', "${pkg}_$sversion");
+    $self->set('OVersion', $oversion);
     $self->set('SVersion', $sversion);
     $self->set('VersionEpoch', $epoch);
     $self->set('VersionUpstream', $uversion);
     $self->set('VersionDebian', $dversion);
-    $self->set('DSC File', "${pkg}_${sversion}.dsc");
+    $self->set('DSC File', "${pkg}_${oversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
+}
+
+sub set_status {
+    my $self = shift;
+    my $status = shift;
+
+    $self->set('Pkg Status', $status);
+    if (defined($self->get('Pkg Status Trigger'))) {
+	$self->get('Pkg Status Trigger')->($self, $status);
+    }
+}
+
+sub run {
+    my $self = shift;
+
+    $self->set_status('building');
+
+    $self->set('Pkg Start Time', time);
+
+    if ($self->get('Invalid Source')) {
+	$self->log("Invalid source: " . $self->get('DSC') . "\n");
+	$self->log("Skipping " . $self->get('Package') . " \n");
+	$self->set_status('skipped');
+	goto cleanup_skip;
+    }
+
+    my $chroot_info;
+    if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
+	$chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
+    } else {
+	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
+    }
+
+    my $session = $chroot_info->create($self->get_conf('DISTRIBUTION'),
+				       $self->get_conf('CHROOT'),
+				       $self->get_conf('ARCH'));
+
+    if (!$session->begin_session()) {
+	$self->log("Error creating chroot session: skipping " .
+		   $self->get('Package') . "\n");
+	$self->set_status('skipped');
+	goto cleanup_close;
+    }
+
+    $self->set('Session', $session);
+    $self->set('Arch', $self->chroot_arch());
+
+    $self->set('Chroot Dir', $session->get('Location'));
+    $self->set('Chroot Build Dir',
+	       tempdir($self->get_conf('USERNAME') . '-' .
+		       $self->get('Package_SVersion') . '-' .
+		       $self->get('Arch') . '-XXXXXX',
+		       DIR => $session->get('Build Location')));
+    # TODO: Don't hack the build location in; add a means to customise
+    # the chroot directly.
+    $session->set('Build Location', $self->get('Chroot Build Dir'));
+
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_close;
+    }
+
+    # Needed so chroot commands log to build log
+    $session->set('Log Stream', $self->get('Log Stream'));
+
+    # Chroot execution defaults
+    my $chroot_defaults = $session->get('Defaults');
+    $chroot_defaults->{'DIR'} =
+	$session->strip_chroot_path($session->get('Build Location'));
+    $chroot_defaults->{'STREAMIN'} = $devnull;
+    $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+    $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
+    $chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
+    $chroot_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+
+    $self->set('Session', $session);
+
+    $self->set('Additional Deps', []);
+
+    # Update APT cache.
+    if ($self->get_conf('APT_UPDATE')) {
+	$session->run_apt_command(
+	    { COMMAND => [$self->get_conf('APT_GET'), 'update'],
+	      USER => 'root',
+	      PRIORITY => 1,
+	      DIR => '/'});
+
+	if ($?) {
+	    $self->log("apt-get update failed\n");
+	    $self->set_status('skipped');
+	    goto cleanup_close;
+	}
+    }
+
+    $self->set('Pkg Fail Stage', 'fetch-src');
+    if (!$self->fetch_source_files()) {
+	goto cleanup_close;
+    }
+
+    $self->set('Pkg Fail Stage', 'install-deps');
+    if (!$self->install_deps()) {
+	$self->log("Source-dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	goto cleanup_packages;
+    }
+
+    if ($self->build()) {
+	$self->set_status('successful');
+    } else {
+	$self->set_status('failed');
+    }
+
+  cleanup_packages:
+    if (defined ($session->get('Session Purged')) &&
+	$session->get('Session Purged') == 1) {
+	$self->log("Not removing build depends: cloned chroot in use\n");
+    } else {
+	$self->uninstall_deps();
+    }
+    $self->remove_srcdep_lock_file();
+  cleanup_close:
+    $session->end_session();
+    $session = undef;
+    $self->set('Session', $session);
+
+    $self->close_build_log();
+
+  cleanup_skip:
 }
 
 # sub get_package_status {
@@ -177,7 +319,7 @@ sub fetch_source_files {
     my $dsc = $self->get('DSC File');
     my $build_dir = $self->get('Chroot Build Dir');
     my $pkg = $self->get('Package');
-    my $ver = $self->get('Version');
+    my $ver = $self->get('OVersion');
     my $arch = $self->get('Arch');
 
     my ($files, @other_files, $dscarchs, $dscpkg, $dscver, @fetched);
@@ -193,7 +335,7 @@ sub fetch_source_files {
     $self->log_subsection("Fetch source files");
 
     if (!defined($self->get('Package')) ||
-	!defined($self->get('Version')) ||
+	!defined($self->get('OVersion')) ||
 	!defined($self->get('Source Dir'))) {
 	$self->log("Invalid source: $self->get('DSC')\n");
 	return 0;
@@ -274,7 +416,7 @@ sub fetch_source_files {
 		goto retry;
 	    }
 	    $self->log("Can't find source for " .
-		       $self->get('Package_Version') . "\n");
+		       $self->get('Package_OVersion') . "\n");
 	    $self->log("(only different version(s) ",
 	    join( ", ", sort keys %entries), " found)\n")
 		if %entries;
@@ -320,6 +462,46 @@ sub fetch_source_files {
 	and $build_conflicts = $1;
     $dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
 	and $build_conflicts_indep = $1;
+
+    # Add additional build dependencies specified on the command-line.
+    # TODO: Split dependencies into an array from the start to save
+    # lots of joining.
+    if ($self->get_conf('MANUAL_DEPENDS')) {
+	if ($build_depends) {
+	    $build_depends = join(", ", $build_depends,
+				  @{$self->get_conf('MANUAL_DEPENDS')});
+	} else {
+	    $build_depends = join(", ", @{$self->get_conf('MANUAL_DEPENDS')});
+	}
+    }
+    if ($self->get_conf('MANUAL_DEPENDS_INDEP')) {
+	if ($build_depends_indep) {
+	    $build_depends_indep = join(", ", $build_depends_indep,
+				  @{$self->get_conf('MANUAL_DEPENDS_INDEP')});
+	} else {
+	    $build_depends_indep = join(", ",
+				  @{$self->get_conf('MANUAL_DEPENDS_INDEP')});
+	}
+    }
+    if ($self->get_conf('MANUAL_CONFLICTS')) {
+	if ($build_conflicts) {
+	    $build_conflicts = join(", ", $build_conflicts,
+				  @{$self->get_conf('MANUAL_CONFLICTS')});
+	} else {
+	    $build_conflicts = join(", ",
+				  @{$self->get_conf('MANUAL_CONFLICTS')});
+	}
+    }
+    if ($self->get_conf('MANUAL_CONFLICTS_INDEP')) {
+	if ($build_conflicts_indep) {
+	    $build_conflicts_indep = join(", ", $build_conflicts_indep,
+				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
+	} else {
+	    $build_conflicts_indep = join(", ",
+				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
+	}
+    }
+
     $build_depends =~ s/\n\s+/ /g if defined $build_depends;
     $build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;
     $build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
@@ -444,14 +626,6 @@ sub build {
 	    $self->log("dpkg-parsechangelog didn't print Version:\n");
 	    return 0;
 	}
-	my $tree_version = $1;
-	my $cmp_version = ($self->get_conf('BIN_NMU') && -f "$dscdir/debian/.sbuild-binNMU-done") ?
-	    binNMU_version($version,$self->get_conf('BIN_NMU_VERSION')) : $version;
-	if ($tree_version ne $cmp_version) {
-	    $$self->log("The unpacked source tree $dscdir is version ".
-			"$tree_version, not wanted $cmp_version!\n");
-	    return 0;
-	}
     }
 
     $self->log_subsubsection("Check disc space");
@@ -478,8 +652,7 @@ sub build {
 	}
     }
 
-    if ($self->get_conf('BIN_NMU') &&
-	! -f "$dscdir/debian/.sbuild-binNMU-done") {
+    if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
 	$self->log_subsubsection("Hack binNMU version");
 	$self->set('Pkg Fail Stage', "hack-binNMU");
 	if (open( F, "<$dscdir/debian/changelog" )) {
@@ -490,22 +663,29 @@ sub build {
 	    close( F );
 	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
 	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
-	    my $NMUversion = binNMU_version($version,$self->get_conf('BIN_NMU_VERSION'));
+	    my $NMUversion = $self->get('Version');
 	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dscdir/debian/changelog" )) {
 		$self->log("Can't open debian/changelog for binNMU hack: $!\n");
 		return 0;
 	    }
 	    $dists = $self->get_conf('DISTRIBUTION');
-	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
-	    print F "  * Binary-only non-maintainer upload for $arch; ",
-	    "no source changes.\n";
-	    print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n\n";
-	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
 
+	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
+	    if ($self->get_conf('APPEND_TO_VERSION')) {
+		print F "  * Append ", $self->get_conf('APPEND_TO_VERSION'),
+		    " to version number; no source changes\n";
+	    }
+	    if ($self->get_conf('BIN_NMU')) {
+		print F "  * Binary-only non-maintainer upload for $arch; ",
+		    "no source changes.\n";
+		print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n";
+	    }
+	    print F "\n";
+
+	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
 	    print F $firstline, $text;
 	    close( F );
-	    system "touch '$dscdir/debian/.sbuild-binNMU-done'";
 	    $self->log("*** Created changelog entry for bin-NMU version $NMUversion\n");
 	}
 	else {
@@ -675,12 +855,7 @@ sub build {
 	    }
 	}
 
-	$changes = "${pkg}_".
-	    ($self->get_conf('BIN_NMU') ?
-	     binNMU_version($self->get('SVersion'),
-			    $self->get_conf('BIN_NMU_VERSION')) :
-	     $self->get('SVersion')).
-	    "_$arch.changes";
+	$changes = $self->get('Package_SVersion') . "_$arch.changes";
 	my @cfiles;
 	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
@@ -779,42 +954,6 @@ sub build {
 
     $self->log_sep();
     return $rv == 0 ? 1 : 0;
-}
-
-sub analyze_fail_stage {
-    my $self = shift;
-
-    my $pkgv = $self->get('Package_Version');
-
-    return if $self->get('Pkg Status') ne "failed";
-    return if !$self->get_conf('AUTO_GIVEBACK');
-    if (isin( $self->get('Pkg Fail Stage'),
-	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
-	$self->set('Pkg Status', "given-back");
-	$self->log("Giving back package $pkgv after failure in ".
-		   "$self->{'Pkg Fail Stage'} stage.\n");
-	my $cmd = "";
-	$cmd = "ssh -l " . $self->get_conf('AUTO_GIVEBACK_USER') . " " .
-	    $self->get_conf('AUTO_GIVEBACK_HOST') . " "
-	    if $self->get_conf('AUTO_GIVEBACK_HOST');
-	$cmd .= "-S " . $self->get_conf('AUTO_GIVEBACK_SOCKET') . " "
-	    if $self->get_conf('AUTO_GIVEBACK_SOCKET');
-	$cmd .= "wanna-build --give-back --no-down-propagation ".
-	    "--dist=" . $self->get_conf('DISTRIBUTION') . " ";
-	$cmd .= "--database=" . $self->get_conf('WANNABUILD_DATABASE') . " "
-	    if $self->get_conf('WANNABUILD_DATABASE');
-	$cmd .= "--user=" . $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER') . " "
-	    if $self->get_conf('AUTO_GIVEBACK_WANNABUILD_USER');
-	$cmd .= "$pkgv";
-	system $cmd;
-	if ($?) {
-	    $self->log("wanna-build failed with status $?\n");
-	}
-	else {
-	    $self->add_givenback($pkgv, time );
-	    $self->write_stats('give-back', 1);
-	}
-    }
 }
 
 sub install_deps {
@@ -1900,23 +2039,6 @@ sub parse_one_srcdep {
     }
 }
 
-sub parse_manual_srcdeps {
-    my $self = shift;
-    my @for_pkgs = @_;
-
-    foreach (@{$self->get_conf('MANUAL_SRCDEPS')}) {
-	if (!/^([fa])([a-zA-Z\d.+-]+):\s*(.*)\s*$/) {
-	    $self->log_warning("Syntax error in manual source dependency: ",
-			       substr( $_, 1 ), "\n");
-	    next;
-	}
-	my ($mode, $pkg, $deps) = ($1, $2, $3);
-	next if !isin( $pkg, @for_pkgs );
-	@{$self->get('Dependencies')->{$pkg}} = () if $mode eq 'f';
-	$self->parse_one_srcdep($pkg, $deps);
-    }
-}
-
 sub check_space {
     my $self = shift;
     my @files = @_;
@@ -1954,49 +2076,6 @@ sub file_for_name {
     return $x[0];
 }
 
-# only called from main loop, but depends on job state.
-sub write_jobs_file {
-    my $self = shift;
-    my $news = shift;
-    my $job;
-    local( *F );
-
-    $main::job_state{$main::current_job} = $news
-	if $news && $main::current_job;
-
-    if ($self->get_conf('BATCH_MODE')) {
-
-	return if !open( F, ">$self->{'Jobs File'}" );
-	foreach $job (@ARGV) {
-	    my $jobname;
-
-	    if ($main::current_job and $job eq $main::current_job and $self->get('binNMU Name')) {
-		$jobname = $self->get('binNMU Name');
-	    } else {
-		$jobname = $job;
-	    }
-	    print F ($main::current_job and $job eq $main::current_job) ? "" : "  ",
-	    $jobname,
-	    ($main::job_state{$job} ? ": $main::job_state{$job}" : ""),
-	    "\n";
-	}
-	close( F );
-    }
-}
-
-sub append_to_FINISHED {
-    my $self = shift;
-
-    my $pkg = $self->get('Package_Version');
-    local( *F );
-
-    if ($self->get_conf('BATCH_MODE')) {
-	open( F, ">>SBUILD-FINISHED" );
-	print F "$pkg\n";
-	close( F );
-    }
-}
-
 sub write_srcdep_lock_file {
     my $self = shift;
     my $deps = shift;
@@ -2011,8 +2090,8 @@ sub write_srcdep_lock_file {
     debug("Writing srcdep lock file $f:\n");
 
     my $user = getpwuid($<);
-    print F "$main::current_job $$ $user\n";
-    debug("Job $main::current_job pid $$ user $user\n");
+    print F $self->get('Package_SVersion') . " $$ $user\n";
+    debug("Job " . $self->get('Package_SVersion') . " pid $$ user $user\n");
     foreach (@$deps) {
 	my $name = $_->{'Package'};
 	print F ($_->{'Neg'} ? "!" : ""), "$name\n";
@@ -2067,7 +2146,8 @@ sub check_srcdep_conflicts {
 		           "$job by $user (pid $pid):\n");
 		$self->log("  $job " . ($neg ? "conflicts with" : "needs") .
 		           " $pkg\n");
-		$self->log("  $main::current_job wants to " .
+		$self->log("  " . $self->get('Package_SVersion') .
+			   " wants to " .
 		           (isin( $pkg, @$to_inst ) ? "update" : "remove") .
 		           " $pkg\n");
 		$conflict_builds{$file} = 1;
@@ -2162,58 +2242,6 @@ sub check_watches {
 	$self->log("  $_: @{$used{$_}}\n");
     }
     $self->log("\n");
-}
-
-sub should_skip {
-    my $self = shift;
-
-    my $pkgv = $self->get('Package_Version');
-
-    $pkgv = $self->fixup_pkgv($pkgv);
-    $self->lock_file("SKIP", 0);
-    goto unlock if !open( F, "SKIP" );
-    my @pkgs = <F>;
-    close( F );
-
-    if (!open( F, ">SKIP" )) {
-	print "Can't open SKIP for writing: $!\n",
-	"Would write: @pkgs\nminus $pkgv\n";
-	goto unlock;
-    }
-    my $found = 0;
-    foreach (@pkgs) {
-	if (/^\Q$pkgv\E$/) {
-	    ++$found;
-	    $self->log("$pkgv found in SKIP file -- skipping building it\n");
-	}
-	else {
-	    print F $_;
-	}
-    }
-    close( F );
-  unlock:
-    $self->unlock_file("SKIP");
-    return $found;
-}
-
-sub add_givenback {
-    my $self = shift;
-    my $pkgv = shift;
-    my $time = shift;
-    local( *F );
-
-    $self->lock_file("SBUILD-GIVEN-BACK", 0);
-
-    if (open( F, ">>SBUILD-GIVEN-BACK" )) {
-	print F "$pkgv $time\n";
-	close( F );
-    }
-    else {
-	$self->log("Can't open SBUILD-GIVEN-BACK: $!\n");
-    }
-
-  unlock:
-    $self->unlock_file("SBUILD-GIVEN-BACK");
 }
 
 sub set_installed {
@@ -2439,7 +2467,6 @@ sub open_build_log {
     my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time')));
 
     my $filename = $self->get_conf('LOG_DIR') . '/' .
-	$self->get_conf('USERNAME') . '-' .
 	$self->get('Package_SVersion') . '-' .
 	$self->get('Arch') .
 	"-$date";
@@ -2485,7 +2512,9 @@ sub open_build_log {
 			   $self->get_conf('DISTRIBUTION'));
     } else {
 	$self->log_symlink($filename,
-			   $self->get_conf('BUILD_DIR') . '/current');
+			   $self->get_conf('BUILD_DIR') . '/' .
+			   $self->get('Package_SVersion') . '_' .
+			   $self->get('Arch') . '.build');
     }
 
     $PLOG->autoflush(1);
@@ -2518,8 +2547,7 @@ sub close_build_log {
     }
     my $date = strftime("%Y%m%d-%H%M", localtime($time));
 
-    if (defined($self->get('Pkg Status')) &&
-	$self->get('Pkg Status') eq "successful") {
+    if ($self->get('Pkg Status') eq "successful") {
 	$self->add_time_entry($self->get('Package_Version'), $self->get('This Time'));
 	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
     }
@@ -2537,11 +2565,13 @@ sub close_build_log {
 
     my $filename = $self->get('Log File');
 
-    my $subject = "Log for " . $self->get('Pkg Status') .
-                  " build of " . $self->get('Package_Version');
-    if (defined($self->get_conf('BIN_NMU_VERSION'))) {
-	    $subject .= "+b" . $self->get_conf('BIN_NMU_VERSION');
+    # Only report success or failure
+    if ($self->get('Pkg Status') ne "successful") {
+	$self->set_status('failed');
     }
+
+    my $subject = "Log for " . $self->get('Pkg Status') .
+	" build of " . $self->get('Package_Version');
     if ($self->get('Arch')) {
 	$subject .= " on " . $self->get('Arch');
     }

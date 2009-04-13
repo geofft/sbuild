@@ -25,11 +25,13 @@ package main;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
+use Sbuild::OptionsBase;
 
-GetOptions (
-    "h|help" => sub { help_text("8", "sbuild-adduser"); },
-    "V|version" => sub {version_text("sbuild-adduser"); })
-or usage_error("sbuild-adduser", "Error parsing command-line options");
+my $conf = Sbuild::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "sbuild-adduser", "8");
+exit 1 if !defined($options);
 
 usage_error("sbuild-adduser", "Incorrect number of options") if (@ARGV < 1);
 

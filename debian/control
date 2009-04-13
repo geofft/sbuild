@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debian.org>
 Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, Francesco Paolo Lovergine <frankie@debian.org>
 Build-Depends: debhelper (>> 7.0.0)
-Standards-Version: 3.8.0
+Standards-Version: 3.8.1
 Vcs-Browser: http://git.debian.org/?p=buildd-tools/sbuild.git
 Vcs-Git: git://git.debian.org/git/buildd-tools/sbuild
 
@@ -39,10 +39,4 @@ Description: Database to track building of Debian binary packages from Debian so
  most architectures to build binary packages from source packages.
  buildd schedules work from information it gets from the wanna-build
  database; sbuild does the grunt-work.
-
-Package: buildd
-Architecture: all
-Depends: ${perl:Depends}, sbuild (>= 0.58), dupload, cron, exim4 | mail-transport-agent
-Description: Build daemon for automatically compiling Debian packages
- buildd is a build daemon which will compile Debian packages automatically.
 

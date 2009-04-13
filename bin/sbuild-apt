@@ -23,18 +23,16 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup);
-
-package main;
+use Sbuild::Conf;
+use Sbuild::OptionsBase;
 
 my $conf = Sbuild::Conf->new();
+exit 1 if !defined($conf);
 $conf->set('CWD', '/');
-
-GetOptions (
-    "h|help" => sub { help_text("1", "sbuild-apt"); },
-    "V|version" => sub {version_text("sbuild-apt"); })
-or usage_error("sbuild-apt", "Error parsing command-line options");
+my $options = Sbuild::OptionsBase->new($conf, "sbuild-apt", "1");
+exit 1 if !defined($options);
+$conf->check_group_membership();
 
 usage_error("sbuild-apt", "Incorrect number of options") if (@ARGV < 2);
 

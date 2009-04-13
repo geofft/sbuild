@@ -26,11 +26,14 @@ use warnings;
 
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
+use Sbuild::Conf;
+use Sbuild::OptionsBase;
 
-GetOptions (
-    "h|help" => sub { help_text("1", "sbuild-abort"); },
-    "V|version" => sub {version_text("sbuild-abort"); })
-or usage_error("sbuild-abort", "Error parsing command-line options");
+my $conf = Sbuild::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "sbuild-abort", "1");
+exit 1 if !defined($options);
+$conf->check_group_membership();
 
 my $buildcount = 0;
 my $linecount = 0;

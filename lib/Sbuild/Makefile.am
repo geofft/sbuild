@@ -40,6 +40,7 @@ MODULES =			\
 	ConfBase.pm		\
 	Log.pm			\
 	Options.pm		\
+	OptionsBase.pm		\
 	Utility.pm
 
 perlmodsbuild_DATA =	\

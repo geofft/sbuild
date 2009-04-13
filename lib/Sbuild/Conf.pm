@@ -70,6 +70,18 @@ sub init_allowed_keys {
 	    if !-d $directory;
     };
 
+    my $validate_append_version = sub {
+	my $self = shift;
+	my $entry = shift;
+
+	if (defined($self->get('APPEND_TO_VERSION')) &&
+	    $self->get('APPEND_TO_VERSION') &&
+	    $self->get('BUILD_SOURCE') != 0) {
+	    # See <http://bugs.debian.org/475777> for details
+	    die "The --append-to-version option is incompatible with a source upload\n";
+	}
+    };
+
     my $HOME = $self->get('HOME');
 
     my %sbuild_keys = (
@@ -395,11 +407,21 @@ sub init_allowed_keys {
 	'BATCH_MODE'				=> {
 	    DEFAULT => 0
 	},
-	'MANUAL_SRCDEPS'			=> {
+	'MANUAL_DEPENDS'			=> {
+	    DEFAULT => []
+	},
+	'MANUAL_CONFLICTS'			=> {
+	    DEFAULT => []
+	},
+	'MANUAL_DEPENDS_INDEP'			=> {
+	    DEFAULT => []
+	},
+	'MANUAL_CONFLICTS_INDEP'		=> {
 	    DEFAULT => []
 	},
 	'BUILD_SOURCE'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    CHECK => $validate_append_version,
 	},
 	'ARCHIVE'				=> {
 	    DEFAULT => undef
@@ -410,8 +432,15 @@ sub init_allowed_keys {
 	'BIN_NMU_VERSION'			=> {
 	    DEFAULT => undef
 	},
+	'APPEND_TO_VERSION'			=> {
+	    DEFAULT => undef,
+	    CHECK => $validate_append_version,
+	},
 	'GCC_SNAPSHOT'				=> {
 	    DEFAULT => 0
+	},
+	'JOB_FILE'				=> {
+	    DEFAULT => 'build-progress'
 	}
     );
 
@@ -488,6 +517,7 @@ sub read_config {
     our $chroot = undef;
     our $build_arch_all = undef;
     our $arch = undef;
+    our $job_file = undef;
 
     require $Sbuild::Sysconfig::paths{'SBUILD_CONF'}
         if -r $Sbuild::Sysconfig::paths{'SBUILD_CONF'};
@@ -548,6 +578,56 @@ sub read_config {
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
     $self->set('ALTERNATIVES', \%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
+    $self->set('JOB_FILE', $job_file);
+
+    $self->set('MAILTO',
+	       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')})
+	if $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
+
+    $self->set('SIGNING_OPTIONS',
+	       "-m".$self->get('MAINTAINER_NAME')."")
+	if defined $self->get('MAINTAINER_NAME');
+    $self->set('SIGNING_OPTIONS',
+	       "-e".$self->get('UPLOADER_NAME')."")
+	if defined $self->get('UPLOADER_NAME');
+    $self->set('SIGNING_OPTIONS',
+	       "-k".$self->get('KEY_ID')."")
+	if defined $self->get('KEY_ID');
+    $self->set('MAINTAINER_NAME', $self->get('UPLOADER_NAME')) if defined $self->get('UPLOADER_NAME');
+    $self->set('MAINTAINER_NAME', $self->get('KEY_ID')) if defined $self->get('KEY_ID');
+
+    if (!defined($self->get('MAINTAINER_NAME')) &&
+	$self->get('BIN_NMU')) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
+    }
+
+}
+
+sub check_group_membership ($) {
+    my $self = shift;
+
+    # Skip for root
+    return if ($< == 0);
+
+    my $user = getpwuid($<);
+    my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
+
+    if (!$gid) {
+	die "Group sbuild does not exist";
+    }
+
+    my $in_group = 0;
+    foreach (split(' ', $members)) {
+	$in_group = 1 if $_ eq $self->get('USERNAME');
+    }
+
+    if (!$in_group) {
+	print STDERR "User $user is not a member of group $name\n";
+	print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
+	exit(1);
+    }
+
+    return;
 }
 
 1;
