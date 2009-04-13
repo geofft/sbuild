@@ -37,7 +37,7 @@ sub get_from_REDO ($\%);
 sub read_givenback ();
 sub do_wanna_build ($\%@);
 sub do_build ($\%@);
-sub handle_prevfailed ($$);
+sub handle_prevfailed ($@);
 sub get_changelog ($$);
 sub df ($);
 sub append_to_REDO ($$@);
@@ -504,7 +504,7 @@ EOF
     logger( "Build finished.\n" );
 }
 
-sub handle_prevfailed ($$) {
+sub handle_prevfailed ($@) {
     my $dist = shift;
     my $pkgv = shift;
     my( $pkg, $fail_msg, $changelog, $fail_cmd);

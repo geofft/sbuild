@@ -40,8 +40,8 @@ BEGIN {
                  $build_log_keep $daemon_log_rotate $daemon_log_send
                  $daemon_log_keep $warning_age $error_mail_window
                  $statistics_period $sshcmd $wanna_build_user
-                 $no_warn_pattern $should_build_msgs apt_get sudo
-                 $autoclean_interval $secondary_daemon_threshold
+                 $no_warn_pattern $should_build_msgs $apt_get $sudo
+                 $schroot $autoclean_interval $secondary_daemon_threshold
                  $admin_mail $statistics_mail $dupload_to
                  $dupload_to_non_us $dupload_to_security
                  $log_queued_messages $wanna_build_dbbase read);
@@ -90,6 +90,7 @@ our $no_warn_pattern = '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ss
 our $should_build_msgs = 1;
 our $apt_get = "/usr/bin/apt-get";
 our $sudo = "/usr/bin/sudo";
+out $schroot = "/usr/bin/schroot";
 our $autoclean_interval = 86400;
 our $secondary_daemon_threshold = 70;
 our $admin_mail = "USER-porters";
