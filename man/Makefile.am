@@ -50,3 +50,4 @@ install-data-hook:
 	ln -sf wanna-build-catdb.1 $(DESTDIR)$(man1dir)/wanna-build-catmldbm.1
 	ln -sf wanna-build-merge-packages.1 $(DESTDIR)$(man1dir)/wanna-build-merge-quinn.1
 	ln -sf buildd-mail.1 $(DESTDIR)$(man1dir)/buildd-mail-wrapper.1
+	ln -sf sbuild-abort.1 $(DESTDIR)$(man1dir)/buildd-abort.1
