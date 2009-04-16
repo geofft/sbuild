@@ -44,6 +44,7 @@ sub df ($);
 sub append_to_REDO ($$@);
 sub read_FINISHED ();
 sub shutdown ($);
+sub reread_config ($);
 sub check_restart ();
 sub block_signals ();
 sub unblock_signals ();
@@ -109,6 +110,7 @@ foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
     };
 }
 $SIG{'HUP'} = \&reopen_log;
+$SIG{'USR1'} = \&reread_config;
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 undef $ENV{'DISPLAY'};
@@ -724,6 +726,13 @@ sub shutdown ($) {
     exit 1;
 }
 
+sub reread_config ($) {
+    my $signame = shift;
+
+    logger("buildd ($$) received SIG$signame -- rereading configuration\n");
+    # We don't need to reread, since we will do so after breaking the
+    # sleep in the mainloop.
+}
 sub check_restart () {
     my @stats = stat( $my_binary );
 
