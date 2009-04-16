@@ -730,9 +730,10 @@ sub reread_config ($) {
     my $signame = shift;
 
     logger("buildd ($$) received SIG$signame -- rereading configuration\n");
-    # We don't need to reread, since we will do so after breaking the
-    # sleep in the mainloop.
+
+    $Buildd::Conf::reread_config = 1;
 }
+
 sub check_restart () {
     my @stats = stat( $my_binary );
 
