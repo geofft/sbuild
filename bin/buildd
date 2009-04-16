@@ -153,7 +153,7 @@ MAINLOOP: while( 1 ) {
 	$max_build = $conf->get('MAX_BUILD');
 	while( <PIPE> ) {
 	    my $socket = $conf->get('SSH_SOCKET');
-	    if ($conf->get('SSH_SOCKET') &&
+	    if ($socket &&
 		(/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
 		 /^Control socket connect\($socket\): Connection refused[\r]?$/)) {
 		unlink($socket);
