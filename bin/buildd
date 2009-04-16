@@ -74,7 +74,7 @@ open( STDIN, "</dev/null" )
 if (open( PID, "<buildd.pid" )) {
     my $pid = <PID>;
     close( PID );
-    $pid =~ /^(\d+)/; $pid = $1;
+    $pid =~ /^[[:space:]]*(\d+)/; $pid = $1;
     if (!$pid || (kill( 0, $pid ) == 0 && $! == ESRCH)) {
 	warn "Removing stale pid file (process $pid dead)\n";
     }
