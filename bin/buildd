@@ -142,7 +142,8 @@ MAINLOOP: while( 1 ) {
 	check_restart();
 	$conf->read_config();
 	my %givenback = read_givenback();
-	if (!open( PIPE, $conf->get('SSH_CMD'). " wanna-build --list=needs-build --dist=$dist ".
+	if (!open( PIPE, $conf->get('SSH_CMD').
+		   " wanna-build --list=needs-build --dist=$dist ".
 		   ($conf->get('WANNA_BUILD_DBBASE') ?
 		    "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
 		   ($conf->get('WANNA_BUILD_USER') ?
