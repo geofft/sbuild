@@ -2,7 +2,7 @@
 # Conf.pm: configuration library for buildd
 # Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 # Copyright © 2005 Ryan Murray <rmurray@debian.org>
-# Copyright © 2006-2008 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006-2009 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,137 +24,353 @@ package Buildd::Conf;
 
 use strict;
 use warnings;
-use Cwd qw(cwd);
-use Buildd;
+
+use Sbuild::ConfBase;
+use Sbuild::Sysconfig;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter);
+    @ISA = qw(Exporter Sbuild::ConfBase);
 
-    @EXPORT = qw($HOME $arch $max_build $nice_level $idle_sleep_time
-                 $min_free_space @take_from_dists @no_auto_build
-                 $no_build_regex $build_regex @weak_no_auto_build
-                 $delay_after_give_back $pkg_log_keep $pkg_log_keep
-                 $build_log_keep $daemon_log_rotate $daemon_log_send
-                 $daemon_log_keep $warning_age $error_mail_window
-                 $statistics_period $sshcmd $wanna_build_user
-                 $no_warn_pattern $should_build_msgs $apt_get $sudo
-                 $schroot $autoclean_interval $secondary_daemon_threshold
-                 $admin_mail $statistics_mail $dupload_to
-                 $dupload_to_non_us $dupload_to_security
-                 $log_queued_messages $wanna_build_dbbase read);
+    @EXPORT = qw($reread_config);
 }
-
-sub read_file ($\$);
-sub read ();
-sub convert_sshcmd ();
-sub init ();
 
 my $reread_config = 0;
 
-# Originally from the main namespace.
-(our $HOME = $ENV{'HOME'})
-    or die "HOME not defined in environment!\n";
-# Configuration files.
-my $config_global = "/etc/buildd.conf";
-my $config_user = "$HOME/.builddrc";
-my $config_global_time = 0;
-my $config_user_time = 0;
+sub init_allowed_keys {
+    my $self = shift;
 
-# Defaults.
-chomp( our $arch = `dpkg --print-architecture 2>/dev/null` );
-our $max_build = 10;
-our $nice_level = 10;
-our $idle_sleep_time = 5*60;
-our $min_free_space = 50*1024;
-our @take_from_dists = qw();
-our @no_auto_build = ();
-our $no_build_regex = "^(contrib/|non-free/)?non-US/";
-our $build_regex = "";
-our @weak_no_auto_build = ();
-our $delay_after_give_back = 8 * 60; # 8 hours
-our $pkg_log_keep = 7;
-our $build_log_keep = 2;
-our $daemon_log_rotate = 1;
-our $daemon_log_send = 1;
-our $daemon_log_keep = 7;
-our $warning_age = 7;
-our $error_mail_window = 8*60*60;
-our $statistics_period = 7;
-our $sshcmd = "";
-our $sshsocket = "";
-our $wanna_build_user = $Buildd::username;
-our $no_warn_pattern = '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$';
-our $should_build_msgs = 1;
-our $apt_get = "/usr/bin/apt-get";
-our $sudo = "/usr/bin/sudo";
-out $schroot = "/usr/bin/schroot";
-our $autoclean_interval = 86400;
-our $secondary_daemon_threshold = 70;
-our $admin_mail = "USER-porters";
-our $statistics_mail = 'USER-porters';
-our $dupload_to = "anonymous-ftp-master";
-our $dupload_to_non_us = "anonymous-non-us";
-our $dupload_to_security = "security";
-our $log_queued_messages = 0;
-our $wanna_build_dbbase = "$arch/build-db";
+    $self->SUPER::init_allowed_keys();
 
-sub ST_MTIME () { 9 }
+    my $validate_program = sub {
+	my $self = shift;
+	my $entry = shift;
+	my $key = $entry->{'NAME'};
+	my $program = $self->get($key);
 
-sub read_file ($\$) {
-    my $filename = shift;
-    my $time_var = shift;
-    if (-r $filename) {
-        my @stat = stat( $filename );
-        $$time_var = $stat[ST_MTIME];
-        delete $INC{$filename};
-        require $filename;
+	die "$key binary is not defined"
+	    if !defined($program) || !$program;
+
+	die "$key binary '$program' does not exist or is not executable"
+	    if !-x $program;
+    };
+
+    my $validate_directory = sub {
+	my $self = shift;
+	my $entry = shift;
+	my $key = $entry->{'NAME'};
+	my $directory = $self->get($key);
+
+	die "$key directory is not defined"
+	    if !defined($directory) || !$directory;
+
+	die "$key directory '$directory' does not exist"
+	    if !-d $directory;
+    };
+
+    my $validate_ssh = sub {
+	my $self = shift;
+	my $entry = shift;
+
+	my $sshcmd = $self->get('SSH_CMD');
+	my $sshuser;
+	my $sshhost;
+
+	if ($sshcmd) {
+	    if ($sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
+		($sshuser, $sshhost) = ($1, $2);
+	    } elsif ($sshcmd =~ /(\S+)\@(\S+)/) {
+		($sshuser, $sshhost) = ($1, $2);
+	    } else {
+		$sshcmd =~ /(\S+)\s*$/;
+		($sshuser, $sshhost) = ("", $1);
+	    }
+	    $self->set('SSH_USER', $sshuser);
+	    $self->set('SSH_HOST', $sshhost);
+	}
+    };
+
+    my $validate_ssh_socket = sub {
+	my $self = shift;
+	my $entry = shift;
+
+	my $sshcmd = $self->get('SSH_CMD');
+	my $sshsocket = $self->get('SSH_SOCKET');
+
+	if ($sshcmd) {
+	    if ($sshsocket) {
+		# TODO: This is NOT idempotent!  RL 13/04/09
+		$sshcmd .= " -S $sshsocket";
+		$self->set('SSH_CMD', $sshcmd);
+	    }
+	}
+    };
+
+    my $HOME = $self->get('HOME');
+    $main::HOME = $HOME; # TODO: Remove once Buildd.pm uses $conf
+    my $arch = $self->get('ARCH');
+
+    my %buildd_keys = (
+	'ADMIN_MAIL'				=> {
+	    DEFAULT => 'USER-porters'
+	},
+	'APT_GET'				=> {
+	    CHECK => $validate_program,
+	    DEFAULT => $Sbuild::Sysconfig::programs{'APT_GET'}
+	},
+	'AUTOCLEAN_INTERVAL'			=> {
+	    DEFAULT => 86400
+	},
+	'BUILD_LOG_KEEP'			=> {
+	    DEFAULT => 2
+	},
+	'BUILD_LOG_REGEX'			=> {
+	    DEFAULT => undef
+	},
+	'DAEMON_LOG_KEEP'			=> {
+	    DEFAULT => 7
+	},
+	'DAEMON_LOG_ROTATE'			=> {
+	    DEFAULT => 1
+	},
+	'DAEMON_LOG_SEND'			=> {
+	    DEFAULT => 1
+	},
+	'DELAY_AFTER_GIVE_BACK'			=> {
+	    DEFAULT => 8 * 60 # 8 hours
+	},
+	'DUPLOAD_TO'				=> {
+	    DEFAULT => 'anonymous-ftp-master'
+	},
+	'DUPLOAD_TO_NON_US'			=> {
+	    DEFAULT => 'anonymous-non-us'
+	},
+	'DUPLOAD_TO_SECURITY'			=> {
+	    DEFAULT => 'security'
+	},
+	'ERROR_MAIL_WINDOW'			=> {
+	    DEFAULT => 8*60*60
+	},
+	'IDLE_SLEEP_TIME'			=> {
+	    DEFAULT => 5*60
+	},
+	'LOG_QUEUED_MESSAGES'			=> {
+	    DEFAULT => 0
+	},
+	'MAX_BUILD'				=> {
+	    DEFAULT => 10
+	},
+	'MIN_FREE_SPACE'			=> {
+	    DEFAULT => 50*1024
+	},
+	'NICE_LEVEL'				=> {
+	    DEFAULT => 10
+	},
+	'NO_AUTO_BUILD'				=> {
+	    DEFAULT => []
+	},
+	'BUILD_REGEX'				=> {
+	    DEFAULT => ''
+	},
+	'NO_BUILD_REGEX'			=> {
+	    DEFAULT => '^(contrib/|non-free/)?non-US/'
+	},
+	'NO_WARN_PATTERN'			=> {
+	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$'
+	},
+	'PKG_LOG_KEEP'				=> {
+	    DEFAULT => 7
+	},
+	'SECONDARY_DAEMON_THRESHOLD'		=> {
+	    DEFAULT => 70
+	},
+	'SHOULD_BUILD_MSGS'			=> {
+	    DEFAULT => 1
+	},
+	'SSH_CMD'				=> {
+	    DEFAULT => '',
+	    CHECK => $validate_ssh,
+	},
+	'SSH_USER'				=> {
+	    DEFAULT => ''
+	},
+	'SSH_HOST'				=> {
+	    DEFAULT => ''
+	},
+	'SSH_SOCKET'				=> {
+	    DEFAULT => '',
+	    CHECK => $validate_ssh_socket,
+	},
+	'STATISTICS_MAIL'			=> {
+	    DEFAULT => 'USER-porters'
+	},
+	'STATISTICS_PERIOD'			=> {
+	    DEFAULT => 7
+	},
+	'SUDO'					=> {
+	    CHECK => $validate_program,
+	    DEFAULT => $Sbuild::Sysconfig::programs{'SUDO'}
+	},
+	'TAKE_FROM_DISTS'			=> {
+	    DEFAULT => []
+	},
+	'WANNA_BUILD_DBBASE'			=> {
+	    DEFAULT => "$arch/build-db"
+	},
+	'WANNA_BUILD_USER'			=> {
+	    DEFAULT => $Buildd::username
+	},
+	'WARNING_AGE'				=> {
+	    DEFAULT => 7
+	},
+	'WEAK_NO_AUTO_BUILD'			=> {
+	    DEFAULT => []
+	},
+	'CONFIG_GLOBAL_TIME'			=> {
+	    DEFAULT => 0
+	},
+	'CONFIG_USER_TIME'			=> {
+	    DEFAULT => 0
+	});
+
+    $self->set_allowed_keys(\%buildd_keys);
+}
+
+sub read_config {
+    my $self = shift;
+
+    # Set here to allow user to override.
+    if (-t STDIN && -t STDOUT && $self->get('VERBOSE') == 0) {
+	$self->set('VERBOSE', 1);
     }
-}
 
-# read conf files
-sub read () {
-    read_file( $config_global, $config_global_time );
-    read_file( $config_user, $config_user_time );
-    convert_sshcmd();
-}
+    my $HOME = $self->get('HOME');
 
-sub convert_sshcmd () {
-    if ($sshcmd) {
-	if ($sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
-	    ($main::sshuser, $main::sshhost) = ($1, $2);
-	}
-	elsif ($sshcmd =~ /(\S+)\@(\S+)/) {
-	    ($main::sshuser, $main::sshhost) = ($1, $2);
-	}
-	else {
-	    $sshcmd =~ /(\S+)\s*$/;
-	    ($main::sshuser, $main::sshhost) = ("", $1);
-	}
-	if ($sshsocket) {
-	    $sshcmd .= " -S $sshsocket";
+    # Variables are undefined, so config will default to DEFAULT if unset.
+    our $admin_mail = undef;
+    our $apt_get = undef;
+    our $arch = undef;
+    our $autoclean_interval = undef;
+    our $build_log_keep = undef;
+    our $build_regex = undef; # Should this be user settable?
+    our $daemon_log_keep = undef;
+    our $daemon_log_rotate = undef;
+    our $daemon_log_send = undef;
+    our $delay_after_give_back = undef;
+    our $dupload_to = undef;
+    our $dupload_to_non_us = undef;
+    our $dupload_to_security = undef;
+    our $error_mail_window = undef;
+    our $idle_sleep_time = undef;
+    our $log_queued_messages = undef;
+    our $max_build = undef;
+    our $min_free_space = undef;
+    our $nice_level = undef;
+    our @no_auto_build;
+    our $no_build_regex = undef;
+    our $no_warn_pattern = undef;
+    our $pkg_log_keep = undef;
+    our $secondary_daemon_threshold = undef;
+    our $should_build_msgs = undef;
+    our $sshcmd = undef;
+    our $statistics_mail = undef;
+    our $statistics_period = undef;
+    our $sudo = undef;
+    our @take_from_dists;
+    our $wanna_build_dbbase = undef;
+    our $wanna_build_user = undef;
+    our $warning_age = undef;
+    our @weak_no_auto_build;
+
+    my $global = $Sbuild::Sysconfig::paths{'BUILDD_CONF'};
+    my $user = "$HOME/.builddrc";
+    my $global_time = 0;
+    my $user_time = 0;
+
+    my $reread = 0;
+
+    sub ST_MTIME () { 9 }
+
+    if (-r $global) {
+        my @stat = stat($global);
+	if ($self->get('CONFIG_GLOBAL_TIME') < $stat[ST_MTIME]) {
+	    $global_time = $stat[ST_MTIME];
 	}
     }
-}
 
-sub init () {
-    Buildd::Conf::read();
-}
+    if (-r $user) {
+        my @stat = stat($user);
+	if ($self->get('CONFIG_USER_TIME') < $stat[ST_MTIME]) {
+	    $user_time = $stat[ST_MTIME];
+	}
+    }
 
-$SIG{'USR1'} = sub ($) { $reread_config = 1; };
+    $reread = 1 if ($reread_config || $global_time || $user_time);
+    $reread_config = 0;
 
-sub check_reread_config () {
-    my @stat_user = stat( $config_user );
-    my @stat_global = stat( $config_global );
+    # Need to reread all config files, even if one is updated.
 
-    if ( $reread_config ||
-        (@stat_user && $config_user_time != $stat_user[ST_MTIME]) ||
-        (@stat_global && $config_global_time != $stat_global[ST_MTIME])) {
-        logger( "My config file has been updated -- rereading it\n" );
-        Buildd::Conf::read();
-        $reread_config = 0;
+    if ($reread && -r $global) {
+	delete $INC{$global};
+	require $global;
+	if ($self->get('CONFIG_GLOBAL_TIME') == 0) {
+	    logger("Reading global configuration from $global\n");
+	} else {
+	    logger("Re-reading global configuration from $global\n");
+	}
+	$self->set('CONFIG_GLOBAL_TIME', $global_time);
+    }
+
+    if ($reread && -r $user) {
+	delete $INC{$user};
+	require $user;
+	if ($self->get('CONFIG_USER_TIME') == 0) {
+	    logger("Reading user configuration from $user\n");
+	} else {
+	    logger("Re-reading user configuration from $user\n");
+	}
+	$self->set('CONFIG_USER_TIME', $user_time);
+    }
+
+    # Set configuration if updated.
+    if ($reread) {
+	$self->set('ADMIN_MAIL', $admin_mail);
+	$self->set('APT_GET', $apt_get);
+	$self->set('ARCH', $arch);
+	$self->set('AUTOCLEAN_INTERVAL', $autoclean_interval);
+	$self->set('BUILD_LOG_KEEP', $build_log_keep);
+	$self->set('BUILD_REGEX', $build_regex);
+	$self->set('DAEMON_LOG_KEEP', $daemon_log_keep);
+	$self->set('DAEMON_LOG_ROTATE', $daemon_log_rotate);
+	$self->set('DAEMON_LOG_SEND', $daemon_log_send);
+	$self->set('DELAY_AFTER_GIVE_BACK', $delay_after_give_back);
+	$self->set('DUPLOAD_TO', $dupload_to);
+	$self->set('DUPLOAD_TO_NON_US', $dupload_to_non_us);
+	$self->set('DUPLOAD_TO_SECURITY', $dupload_to_security);
+	$self->set('ERROR_MAIL_WINDOW', $error_mail_window);
+	$self->set('IDLE_SLEEP_TIME', $idle_sleep_time);
+	$self->set('LOG_QUEUED_MESSAGES', $log_queued_messages);
+	$self->set('MAX_BUILD', $max_build);
+	$self->set('MIN_FREE_SPACE', $min_free_space);
+	$self->set('NICE_LEVEL', $nice_level);
+	$self->set('NO_AUTO_BUILD', \@no_auto_build);
+	$self->set('NO_BUILD_REGEX', $no_build_regex);
+	$self->set('BUILD_REGEX', $build_regex);
+	$self->set('NO_WARN_PATTERN', $no_warn_pattern);
+	$self->set('PKG_LOG_KEEP', $pkg_log_keep);
+	$self->set('SECONDARY_DAEMON_THRESHOLD', $secondary_daemon_threshold);
+	$self->set('SHOULD_BUILD_MSGS', $should_build_msgs);
+	$self->set('SSH_CMD', $sshcmd);
+	$self->set('STATISTICS_MAIL', $statistics_mail);
+	$self->set('STATISTICS_PERIOD', $statistics_period);
+	$self->set('SUDO', $sudo);
+	$self->set('TAKE_FROM_DISTS', \@take_from_dists);
+	$self->set('WANNA_BUILD_DBBASE', $wanna_build_dbbase);
+	$self->set('WANNA_BUILD_USER', $wanna_build_user);
+	$self->set('WARNING_AGE', $warning_age);
+	$self->set('WEAK_NO_AUTO_BUILD', \@weak_no_auto_build);
     }
 }
 

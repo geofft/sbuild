@@ -24,6 +24,7 @@ use warnings;
 use Buildd;
 use Buildd::Conf;
 use Sbuild qw(binNMU_version);
+use Sbuild::OptionsBase;
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
@@ -55,9 +56,12 @@ sub reply ($);
 sub is_blacklisted ($);
 sub add_error_mail ();
 
-Buildd::Conf::init();
+my $conf = Buildd::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd-mail", "1");
+exit 1 if !defined($options);
 
-chdir( $Buildd::Conf::HOME );
+chdir($conf->get('HOME'));
 
 lock_file( "daemon.log" );
 END { unlock_file( "daemon.log" ); }
@@ -116,7 +120,7 @@ sub process_mail () {
 	my $n = add_error_mail();
 	if ($n > 5) {
 	    logger( "Too much error mails ($n) within ",
-		    int($Buildd::Conf::error_mail_window/(60*60)), " hours\n",
+		    int($conf->get('ERROR_MAIL_WINDOW')/(60*60)), " hours\n",
 		    "Not forwarding mail from $header{'from'}\n",
 		    "Subject: $header{'subject'}\n" );
 	    return;
@@ -275,13 +279,13 @@ sub process_mail () {
 	# mail from Erlangen queue daemon: forward all non-success messages
 	goto forward_mail if $body_text !~ /uploaded successfully/mi;
 	logger( "$job processed by upload queue\n" )
-	    if $Buildd::Conf::log_queued_messages;
+	    if $conf->get('LOG_QUEUED_MESSAGES');
     }
     elsif ($subject =~ /^([-+~\.\w]+\.changes) (INSTALL|ACCEPT)ED/) {
 	# success mail from dinstall
 	my $changes_f = $1;
 	my( @to_remove, $upload_f, $pkgv );
-	my $upload_dir = "$Buildd::Conf::HOME/upload";
+	my $upload_dir = $conf->get('HOME') . "/upload";
 	$upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
 	if (-f "$upload_dir/$changes_f" && open( F, "<$upload_dir/$changes_f" )) {
@@ -318,12 +322,15 @@ FILE:	foreach (@to_remove) {
     if (/\.deb$/) {
 	# first listed wins
 	foreach my $dist (@dists) {
-	    if ( -d "$Buildd::Conf::HOME/build/chroot-$dist" && -w "$Buildd::Conf::HOME/build/chroot-$dist/var/cache/apt/archives/") {
+	    if ( -d $conf->get('HOME') . "/build/chroot-$dist" &&
+		 -w $conf->get('HOME') . "/build/chroot-$dist/var/cache/apt/archives/") {
 		# TODO: send all of to_remove to perl-apt if it's available, setting a try_mv list
 		# that only has build-depends in it.
 		# if that's too much cpu, have buildd use perl-apt if avail to export the
 		# build-depends list, which could then be read in at this point
-		if (system "mv $upload_dir/$_ $Buildd::Conf::HOME/build/chroot-$dist/var/cache/apt/archives/") {
+		if (system "mv $upload_dir/$_ " .
+		    $conf->get('HOME') .
+		    "/build/chroot-$dist/var/cache/apt/archives/") {
 		    logger( "Cannot move $upload_dir/$_ to cache dir\n" );
 		} else {
 		    next FILE;
@@ -391,7 +398,7 @@ forward_mail:
     }
     else {
 	logger( "Not for me, forwarding to admin\n" );
-	ll_send_mail( $Buildd::Conf::admin_mail,
+	ll_send_mail( $conf->get('ADMIN_MAIL'),
 		      "To: $header{'to'}\n".
 		      ($header{'cc'} ? "Cc: $header{'cc'}\n" : "").
 		      "From: $header{'from'}\n".
@@ -402,7 +409,7 @@ forward_mail:
 		      ($header{'in-reply-to'} ? "In-Reply-To: $header{'in-reply-to'}\n" : "").
 		      ($header{'references'} ? "References: $header{'references'}\n" : "").
 		      "Resent-From: $Buildd::gecos <$Buildd::username\@$Buildd::hostname>\n".
-		      "Resent-To: $Buildd::Conf::admin_mail\n\n".
+		      "Resent-To: " . $conf->get('ADMIN_MAIL') . "\n\n".
 		      $body_text );
     }
 }
@@ -445,11 +452,12 @@ sub prepare_for_upload ($$) {
     }
 
     for( $i = 0; $i < @files; ++$i ) {
-	if (! -f "$Buildd::Conf::HOME/build/$files[$i]") {
+	if (! -f $conf->get('HOME') . "/build/$files[$i]") {
 	    push( @missing, $files[$i] ) ;
 	}
 	else {
-	    chomp( my $sum = `md5sum $Buildd::Conf::HOME/build/$files[$i]` );
+	    my $home = $conf->get('HOME');
+	    chomp( my $sum = `md5sum $home/build/$files[$i]` );
 	    push( @md5fail, $files[$i] ) if (split(/\s+/,$sum))[0] ne $md5[$i];
 	}
     }
@@ -468,7 +476,7 @@ sub prepare_for_upload ($$) {
 	return 0;
     }
 
-    my $upload_dir = "$Buildd::Conf::HOME/upload" .
+    my $upload_dir = $conf->get('HOME') . "/upload" .
 	(is_for_security( $changes ) ? "-security" : "");
 
     if (! -d $upload_dir &&!mkdir( $upload_dir, 0750 )) {
@@ -480,7 +488,7 @@ sub prepare_for_upload ($$) {
     lock_file( "$upload_dir" );
     my $errs = 0;
     foreach (@files) {
-	if (system "mv $Buildd::Conf::HOME/build/$_ $upload_dir/$_") {
+	if (system "mv " . $conf->get('HOME') . "/build/$_ $upload_dir/$_") {
 	    logger( "Cannot move $_ to upload dir\n" );
 	    ++$errs;
 	}
@@ -492,9 +500,9 @@ sub prepare_for_upload ($$) {
 
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes_name = "${pkg_noep}_$Buildd::Conf::arch.changes";
-    unlink( "$Buildd::Conf::HOME/build/$changes_name" )
-	or logger( "Cannot remove ~/build/$changes_name: $!\n" );
+    my $changes_name = "${pkg_noep}_" . $conf->get('ARCH') . ".changes";
+    unlink( $conf->get('HOME') . "/build/$changes_name" )
+	or logger( "Cannot remove " . $conf->get('HOME') . "/$changes_name: $!\n" );
     open( F, ">$upload_dir/$changes_name" );
     print F $changes;
     close( F );
@@ -508,9 +516,11 @@ sub redo_new_version ($$$) {
     my $newv = shift;
     my $err = 0;
 
-    if (open( PIPE,"$Buildd::Conf::sshcmd wanna-build -v ".
-	      ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":"").
-	      "--user=$Buildd::Conf::wanna_build_user --dist=$dist $newv 2>&1 |")) {
+    if (open( PIPE, $conf->get('SSH_CMD'). " wanna-build -v ".
+	      ($conf->get('WANNA_BUILD_DBBASE')?
+	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	      "--user=" . $conf->get('WANNA_BUILD_USER') .
+	      " --dist=$dist $newv 2>&1 |")) {
 	while( <PIPE> ) {
 	    next if /^wanna-build Revision/ ||
 		/^\S+: Warning: Older version / ||
@@ -545,7 +555,7 @@ sub purge_pkg ($$) {
     # remove .changes and .deb in build dir (if existing)
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes = "${pkg_noep}_$Buildd::Conf::arch.changes";
+    my $changes = "${pkg_noep}_" . $conf->get('ARCH') . ".changes";
     if (-f "build/$changes" && open( F, "<build/$changes" )) {
 	local($/); undef $/;
 	my $changetext = <F>;
@@ -588,8 +598,8 @@ sub remove_from_upload ($) {
     logger( "Remove $pkg from upload dir\n" );
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    $changes_f = "${pkg_noep}_$Buildd::Conf::arch.changes";
-    my $upload_dir = "$Buildd::Conf::HOME/upload";
+    $changes_f = "${pkg_noep}_" . $conf->get('ARCH') . ".changes";
+    my $upload_dir = $conf->get('HOME') . "/upload";
     $upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
     if (!-f "$upload_dir/$changes_f") {
@@ -817,9 +827,12 @@ sub set_to_failed ($$$) {
 
     open( PIPE, "|-" )
 	or (open( STDOUT, ">/dev/null"),
-	    exec "$Buildd::Conf::sshcmd wanna-build --failed --no-down-propagation ".
-	    "--user=$Buildd::Conf::wanna_build_user ".($Buildd::Conf::wanna_build_dbbase?
-					       "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
+	    exec $conf->get('SSH_CMD') .
+	    " wanna-build --failed --no-down-propagation ".
+	    "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
+	    ($conf->get('WANNA_BUILD_DBBASE')?
+	     "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	    "--dist=$dist $pkg");
     print PIPE "${text}.\n";
     close( PIPE );
     if ($?) {
@@ -843,9 +856,12 @@ sub set_to_depwait ($$$) {
 
     open( PIPE, "|-" )
 	or (open( STDOUT, ">/dev/null"),
-	    exec "$Buildd::Conf::sshcmd wanna-build --dep-wait --no-down-propagation ".
-	    "--user=$Buildd::Conf::wanna_build_user ".($Buildd::Conf::wanna_build_dbbase?
-					       "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
+	    exec "$conf->get('SSH_CMD')" .
+	    " wanna-build --dep-wait --no-down-propagation ".
+	    "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
+	    ($conf->get('WANNA_BUILD_DBBASE')?
+	     "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	    "--dist=$dist $pkg");
     print PIPE "$deps\n";
     close( PIPE );
     if ($?) {
@@ -864,8 +880,12 @@ sub give_back ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --give-back --no-down-propagation --user=$Buildd::Conf::wanna_build_user ".
-	($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
+    $answer_cmd = $conf->get('SSH_CMD') .
+	" wanna-build --give-back --no-down-propagation ".
+	"--user=" . $conf->get('WANNA_BUILD_USER'). " ".
+	($conf->get('WANNA_BUILD_DBBASE')?
+	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	 "--dist=$dist $pkg";
     my $answer = `$answer_cmd`;
     if ($?) {
 	$error .= "wanna-build --give-back failed:\n$answer";
@@ -880,8 +900,12 @@ sub no_build ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --no-build --no-down-propagation --user=$Buildd::Conf::wanna_build_user ".
-	($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
+    $answer_cmd = $conf->get('SSH_CMD').
+	" wanna-build --no-build --no-down-propagation ".
+	"--user=" . $conf->get('WANNA_BUILD_USER') . " ".
+	($conf->get('WANNA_BUILD_DBBASE')?
+	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	 "--dist=$dist $pkg";
     my $answer = `$answer_cmd`;
     if ($?) {
 	$error .= "no-build failed:\n$answer";
@@ -898,8 +922,11 @@ sub get_fail_msg ($$) {
     local( *PIPE );
 
     $pkg =~ s/_.*//;
-    if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build --info --dist=$dist ".
-	      ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "$pkg |" )) {
+    if (open( PIPE, $conf->get('SSH_CMD') .
+	      " wanna-build --info --dist=$dist ".
+	      ($conf->get('WANNA_BUILD_DBBASE')?
+	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	      "$pkg |" )) {
 	my $msg = "";
 	while( <PIPE> ) {
 	    if (/^\s*Old-Failed\s*:/) {
@@ -935,8 +962,11 @@ sub check_state ($$@) {
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
-    if (!open( PIPE, "$Buildd::Conf::sshcmd wanna-build --info ".
-	       ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg |" )){
+    if (!open( PIPE, $conf->get('SSH_CMD') .
+	       " wanna-build --info ".
+	       ($conf->get('WANNA_BUILD_DBBASE')?
+		"--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	       "--dist=$dist $pkg |" )){
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return 0;
     }
@@ -951,7 +981,7 @@ sub check_state ($$@) {
     close( PIPE );
 
     my $msg = "$pkgv($dist) check_state(@wanted_states): ";
-    $av = binNMU_version($av,$an) if (defined $an);
+    $av = binNMU_version($av,$an,undef) if (defined $an);
     if ($av ne $vers) {
 	$error .= $msg."version $av registered as $as\n";
 	return 0;
@@ -960,7 +990,7 @@ sub check_state ($$@) {
 	$error .= $msg."state is $as\n";
 	return 0;
     }
-    if ($as eq "Building" && $ab ne $Buildd::Conf::wanna_build_user) {
+    if ($as eq "Building" && $ab ne $conf->get('WANNA_BUILD_USER')) {
 	$error .= $msg."is building by $ab\n";
 	return 0;
     }
@@ -974,8 +1004,10 @@ sub check_building_any_dist ($) {
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
-    if (!open( PIPE, "$Buildd::Conf::sshcmd wanna-build --info ".
-	       ($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=all $pkg |" )){
+    if (!open( PIPE, $conf->get('SSH_CMD') . " wanna-build --info ".
+	       ($conf->get('WANNA_BUILD_DBBASE')?
+		"--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	       "--dist=all $pkg |" )){
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return 0;
     }
@@ -993,7 +1025,7 @@ sub check_building_any_dist ($) {
 	$ab = $1 if $info =~ /^\s*Builder\s*:\s*(\S+)/mi;
 	push( @dists, $dist )
 	    if $av eq $vers && $as eq "Building" &&
-	    $ab eq $Buildd::Conf::wanna_build_user;
+	    $ab eq $conf->get('WANNA_BUILD_USER');
     }
     return @dists;
 }
@@ -1084,7 +1116,7 @@ sub add_error_mail () {
 	close( F );
     }
     push( @em, $now );
-    shift @em while @em && ($now - $em[0]) > $Buildd::Conf::error_mail_window;
+    shift @em while @em && ($now - $em[0]) > $conf->get('ERROR_MAIL_WINDOW');
 
     if (@em) {
 	open( F, ">mail-errormails" );

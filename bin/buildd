@@ -30,6 +30,7 @@ use warnings;
 use POSIX;
 use Buildd;
 use Buildd::Conf;
+use Sbuild::OptionsBase;
 use Cwd;
 
 sub ST_MTIME ();
@@ -43,12 +44,18 @@ sub df ($);
 sub append_to_REDO ($$@);
 sub read_FINISHED ();
 sub shutdown ($);
+sub reread_config ($);
 sub check_restart ();
 sub block_signals ();
 sub unblock_signals ();
 sub check_ssh_master ();
 
 sub ST_MTIME () { 9 }
+
+my $conf = Buildd::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
+exit 1 if !defined($options);
 
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
@@ -67,7 +74,7 @@ open( STDIN, "</dev/null" )
 if (open( PID, "<buildd.pid" )) {
     my $pid = <PID>;
     close( PID );
-    $pid =~ /^(\d+)/; $pid = $1;
+    $pid =~ /^[[:space:]]*(\d+)/; $pid = $1;
     if (!$pid || (kill( 0, $pid ) == 0 && $! == ESRCH)) {
 	warn "Removing stale pid file (process $pid dead)\n";
     }
@@ -76,11 +83,9 @@ if (open( PID, "<buildd.pid" )) {
     }
 }
 
-# Initialise the configuration.
-Buildd::Conf::init();
-
-@Buildd::Conf::take_from_dists
-    or die "take_from_dists is empty, aborting.";
+if (@{$conf->get('TAKE_FROM_DISTS')}) {
+    die "take_from_dists is empty, aborting.";
+}
 
 defined(my $pid = fork) or die "can't fork: $!\n";
 exit if $pid; # parent exits
@@ -105,6 +110,7 @@ foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
     };
 }
 $SIG{'HUP'} = \&reopen_log;
+$SIG{'USR1'} = \&reread_config;
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
 undef $ENV{'DISPLAY'};
@@ -113,7 +119,7 @@ undef $ENV{'DISPLAY'};
 my $dist;
 MAINLOOP: while( 1 ) {
     check_restart();
-    Buildd::Conf::check_reread_config();
+    $conf->read_config();
     check_ssh_master();
 
     my $done = 0;
@@ -121,9 +127,9 @@ MAINLOOP: while( 1 ) {
     my %binNMUlog;
     do {
 	$thisdone = 0;
-	foreach $dist (@Buildd::Conf::take_from_dists) {
+	foreach $dist (@{$conf->get('TAKE_FROM_DISTS')}) {
 	    check_restart();
-	    Buildd::Conf::check_reread_config();
+	    $conf->read_config();
 	    my @redo = get_from_REDO( $dist, %binNMUlog );
 	    next if !@redo;
 	    do_build( $dist, %binNMUlog, @redo );
@@ -132,23 +138,28 @@ MAINLOOP: while( 1 ) {
 	}
     } while( $thisdone );
 
-    foreach $dist (@Buildd::Conf::take_from_dists) {
+    foreach $dist (@{$conf->get('TAKE_FROM_DISTS')}) {
 	check_restart();
-	Buildd::Conf::check_reread_config();
+	$conf->read_config();
 	my %givenback = read_givenback();
-	if (!open( PIPE, "$Buildd::Conf::sshcmd wanna-build --list=needs-build --dist=$dist ".
-		   ($Buildd::Conf::wanna_build_dbbase ?
-		    "--database=$Buildd::Conf::wanna_build_dbbase ":"").
-		   ($Buildd::Conf::wanna_build_user?"--user=$Buildd::Conf::wanna_build_user " : "")."2>&1 |" )) {
+	if (!open( PIPE, $conf->get('SSH_CMD').
+		   " wanna-build --list=needs-build --dist=$dist ".
+		   ($conf->get('WANNA_BUILD_DBBASE') ?
+		    "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+		   ($conf->get('WANNA_BUILD_USER') ?
+		    "--user=" . $conf->get('WANNA_BUILD_USER') . " " : "").
+		   "2>&1 |" )) {
 	    logger( "Can't spawn wanna-build --list=needs-build: $!\n" );
 	    next MAINLOOP;
 	}
 	my(@todo, $total, $nonex, @lowprio_todo, $max_build);
-	$max_build = $Buildd::Conf::max_build;
+	$max_build = $conf->get('MAX_BUILD');
 	while( <PIPE> ) {
-	    if ($Buildd::Conf::sshsocket and (/^Couldn't connect to $Buildd::Conf::sshsocket: Connection refused[\r]?$/ or
-				      /^Control socket connect\($Buildd::Conf::sshsocket\): Connection refused[\r]?$/)) {
-		unlink( $Buildd::Conf::sshsocket );
+	    my $socket = $conf->get('SSH_SOCKET');
+	    if ($socket &&
+		(/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
+		 /^Control socket connect\($socket\): Connection refused[\r]?$/)) {
+		unlink($socket);
 		check_ssh_master();
 	    }
 	    elsif (/^Total (\d+) package/) {
@@ -162,14 +173,16 @@ MAINLOOP: while( 1 ) {
 	    next if @todo >= $max_build;
 	    my @line = (split( /\s+/, $_));
 	    my $pv = $line[0];
-	    next if $Buildd::Conf::no_build_regex && $pv =~ m,$Buildd::Conf::no_build_regex,;
-	    next if $Buildd::Conf::build_regex && $pv !~ m,$Buildd::Conf::build_regex,;
+	    my $no_build_regex = $conf->get('NO_BUILD_REGEX');
+	    my $build_regex = $conf->get('BUILD_REGEX');
+	    next if $no_build_regex && $pv =~ m,$no_build_regex,;
+	    next if $build_regex && $pv !~ m,$build_regex,;
 	    $pv =~ s,^.*/,,;
 	    my $p;
 	    ($p = $pv) =~ s/_.*$//;
-	    next if Buildd::isin( $p, @Buildd::Conf::no_auto_build );
+	    next if Buildd::isin( $p, @{$conf->get('NO_AUTO_BUILD')} );
 	    next if $givenback{$pv};
-	    if (Buildd::isin( $p, @Buildd::Conf::weak_no_auto_build )) {
+	    if (Buildd::isin( $p, @{$conf->get('WEAK_NO_AUTO_BUILD')} )) {
 		push( @lowprio_todo, $pv );
 		next;
 	    }
@@ -187,8 +200,8 @@ MAINLOOP: while( 1 ) {
 	    next;
 	}
 	logger( "$dist: total $total packages to build.\n" ) if $total;
-	if ($total && $Buildd::Conf::secondary_daemon_threshold &&
-	    $total < $Buildd::Conf::secondary_daemon_threshold) {
+	if ($total && $conf->get('SECONDARY_DAEMON_THRESHOLD') &&
+	    $total < $conf->get('SECONDARY_DAEMON_THRESHOLD')) {
 	    logger( "Not enough packages to build -- ".
 		    "secondary daemon not starting\n" );
 	    next;
@@ -209,9 +222,10 @@ MAINLOOP: while( 1 ) {
 
     # sleep a little bit if there was nothing to do this time
     if (!$done) {
-	logger( "Nothing to do -- sleeping $Buildd::Conf::idle_sleep_time seconds\n" );
+	logger( "Nothing to do -- sleeping " .
+		$conf->get('IDLE_SLEEP_TIME') . " seconds\n" );
 	my $idle_start_time = time;
-	sleep( $Buildd::Conf::idle_sleep_time );
+	sleep( $conf->get('IDLE_SLEEP_TIME') );
 	my $idle_end_time = time;
 	write_stats( "idle-time", $idle_end_time - $idle_start_time );
     }
@@ -238,7 +252,7 @@ sub get_from_REDO ($\%) {
 		"Raw contents:\n@lines\n" );
 	goto end;
     }
-    my $max_build = $Buildd::Conf::max_build;
+    my $max_build = $conf->get('MAX_BUILD');
     foreach (@lines) {
 	if (!/^(\S+)\s+(\S+)(?:\s*|\s+(\d+)\s+(\S.*))?$/) {
 	    logger( "Ignoring/deleting bad line in REDO: $_" );
@@ -284,7 +298,7 @@ sub read_givenback () {
 
     if (open( F, ">SBUILD-GIVEN-BACK" )) {
 	foreach (keys %gb) {
-	    if ($now - $gb{$_} > $Buildd::Conf::delay_after_give_back*60) {
+	    if ($now - $gb{$_} > $conf->get('DELAY_AFTER_GIVE_BACK') *60) {
 		delete $gb{$_};
 	    }
 	    else {
@@ -310,9 +324,12 @@ sub do_wanna_build ($\%@) {
     local( *PIPE );
 
     block_signals();
-    if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build -v --no-down-propagation ".
-	      ($Buildd::Conf::wanna_build_dbbase?"--database=$Buildd::Conf::wanna_build_dbbase ":"").
-	      ($Buildd::Conf::wanna_build_user?"--user=$Buildd::Conf::wanna_build_user ":"").
+    if (open( PIPE, $conf->get('SSH_CMD') .
+	      " wanna-build -v --no-down-propagation ".
+	      ($conf->get('WANNA_BUILD_DBBASE')?
+	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	      ($conf->get('WANNA_BUILD_USER')?
+	       "--user=" . $conf->get('WANNA_BUILD_USER') . " ":"").
 	      "--dist=$dist @_ 2>&1 |" )) {
 	while( <PIPE> ) {
 	    next if /^wanna-build Revision/;
@@ -331,7 +348,7 @@ sub do_wanna_build ($\%@) {
 	    elsif (/^(\S+):.*previous version failed/i) {
 		my $pkg = $1;
 		++$n;
-		if ($Buildd::Conf::should_build_msgs) {
+		if ($conf->get('SHOULD_BUILD_MSGS')) {
 		    handle_prevfailed( $dist, grep( /^\Q$pkg\E_/, @_ ) );
 		} else {
 		    push( @output, grep( /^\Q$pkg\E_/, @_ ) );
@@ -375,7 +392,7 @@ sub do_build ($\%@) {
     return if !@_;
     my $free_space;
 
-    while (($free_space = df(".")) < $Buildd::Conf::min_free_space) {
+    while (($free_space = df(".")) < $conf->get('MIN_FREE_SPACE')) {
 	logger( "Delaying build, because free space is low ($free_space KB)\n" );
 	my $idle_start_time = time;
 	sleep( 10*60 );
@@ -387,26 +404,28 @@ sub do_build ($\%@) {
     write_stats( "builds", scalar(@_) );
     my $binNMUver;
 
-    my @sbuild_args = ( 'nice', '-n', "$Buildd::Conf::nice_level", 'sbuild',
+    my @sbuild_args = ( 'nice', '-n', $conf->get('NICE_LEVEL'), 'sbuild',
 			'--apt-update',
 			'--batch',
 			"--stats-dir=$main::HOME/stats",
 			"--dist=$dist" );
     my $sbuild_gb = '--auto-give-back';
-    if ($Buildd::Conf::sshcmd) {
+    if ($conf->get('SSH_CMD')) {
 	$sbuild_gb .= "=";
-	$sbuild_gb .= "$Buildd::Conf::sshsocket\@" if $Buildd::Conf::sshsocket;
-	$sbuild_gb .= "$Buildd::Conf::wanna_build_user\@" if $Buildd::Conf::wanna_build_user;
-	$sbuild_gb .= "$main::sshuser\@" if $main::sshuser;
-	$sbuild_gb .= "$main::sshhost";
+	$sbuild_gb .= $conf->get('SSH_SOCKET') . "\@"
+	    if $conf->get('SSH_SOCKET');
+	$sbuild_gb .= $conf->get('WANNA_BUILD_USER') . "\@"
+	    if $conf->get('WANNA_BUILD_USER');
+	$sbuild_gb .= $conf->get('SSH_USER') ."\@" if $conf->get('SSH_USER');
+	$sbuild_gb .= $conf->get('SSH_HOST');
     } else {
 	# Otherwise newer sbuild will take the package name as an --auto-give-back
 	# parameter (changed from regexp to GetOpt::Long parsing)
 	$sbuild_gb .= "=yes"
     }
     push ( @sbuild_args, $sbuild_gb );
-    push ( @sbuild_args, "--database=$Buildd::Conf::wanna_build_dbbase" )
-	if $Buildd::Conf::wanna_build_dbbase;
+    push ( @sbuild_args, "--database=" . $conf->get('WANNA_BUILD_DBBASE') )
+	if $conf->get('WANNA_BUILD_DBBASE');
 
     if (scalar(@_) == 1 and $_[0] =~ s/^!(\d+)!//) {
 	$binNMUver = $1;
@@ -477,7 +496,7 @@ sub do_build ($\%@) {
 	if (++$main::sbuild_fails > 2) {
 	    logger( "sbuild now failed $main::sbuild_fails times in ".
 		    "a row; going to sleep\n" );
-	    send_mail( $Buildd::Conf::admin_mail,
+	    send_mail( $conf->get('ADMIN_MAIL'),
 		       "Repeated mess with sbuild",
 		       <<EOF );
 The execution of sbuild now failed for $main::sbuild_fails times.
@@ -511,8 +530,10 @@ sub handle_prevfailed ($@) {
 
     logger( "$pkgv previously failed -- asking admin first\n" );
     ($pkg = $pkgv) =~ s/_.*$//;
-    $fail_cmd = "$Buildd::Conf::sshcmd wanna-build ".($Buildd::Conf::wanna_build_dbbase?
-					      "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--info --dist=$dist $pkg";
+    $fail_cmd = $conf->get('SSH_CMD') . " wanna-build ".
+	($conf->get('WANNA_BUILD_DBBASE')?
+	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
+	 "--info --dist=$dist $pkg";
     $fail_msg = `$fail_cmd`;
 
     {
@@ -521,7 +542,7 @@ sub handle_prevfailed ($@) {
     }
     $changelog = "ERROR: FTP timeout" if $@;
 
-    send_mail( $Buildd::Conf::admin_mail,
+    send_mail( $conf->get('ADMIN_MAIL'),
 	       "Should I build $pkgv (dist=$dist)?",
 	       "The package $pkg failed to build in a previous version. ".
 	       "The fail\n".
@@ -554,16 +575,19 @@ sub get_changelog ($$) {
     my $pkg_ne = "${n}_${v_ne}";
 
 retry:
-    my $schroot = "$Buildd::Conf::schroot -c $dist-$Buildd::Conf::arch-sbuild --";
-    my $schroot_root = "$Buildd::Conf::schroot -c $dist-$Buildd::Conf::arch-sbuild -u root --";
-    $msg = `$schroot $Buildd::Conf::apt_get -q -d --diff-only source $n=$v 2>&1`;
+    my $schroot = $conf->get('SCHROOT') .
+	" -c $dist-" . $conf->get('ARCH') . "-sbuild --";
+    my $schroot_root = $conf->get('SCHROOT') .
+	" -c $dist-" . $conf->get('ARCH') . "-sbuild' -u root --";
+    my $apt_get = $conf->get('APT_GET');
+    $msg = `$schroot $apt_get -q -d --diff-only source $n=$v 2>&1`;
     if ($? == 0 && $msg !~ /get 0B/) {
 	$analyze = "diff";
 	$file = "${n}_${v_ne}.diff.gz";
     }
 
     if (!$analyze) {
-	$msg = `$schroot $Buildd::Conf::apt_get -q -d --tar-only source $n=$v 2>&1`;
+	$msg = `$schroot $apt_get' -q -d --tar-only source $n=$v 2>&1`;
 	if ($? == 0 && $msg !~ /get 0B/) {
 	    $analyze = "tar";
 	    $file = "${n}_${v_ne}.tar.gz";
@@ -571,8 +595,7 @@ retry:
     }
 
     if (!$analyze && !$retried) {
-	system "$schroot_root $Buildd::Conf::apt_get ".
-	    "-qq update &>/dev/null";
+	system "$schroot_root $apt_get -qq update &>/dev/null";
 	$retried = 1;
 	goto retry;
     }
@@ -704,6 +727,14 @@ sub shutdown ($) {
     exit 1;
 }
 
+sub reread_config ($) {
+    my $signame = shift;
+
+    logger("buildd ($$) received SIG$signame -- rereading configuration\n");
+
+    $Buildd::Conf::reread_config = 1;
+}
+
 sub check_restart () {
     my @stats = stat( $my_binary );
 
@@ -729,8 +760,8 @@ sub unblock_signals () {
 }
 
 sub check_ssh_master () {
-    return 1 if (!$Buildd::Conf::sshsocket);
-    return 1 if ( -S $Buildd::Conf::sshsocket );
+    return 1 if (!$conf->get('SSH_SOCKET'));
+    return 1 if ( -S $conf->get('SSH_SOCKET') );
 
     if ($main::ssh_pid)
     {
@@ -739,14 +770,14 @@ sub check_ssh_master () {
     }
 
     ($main::ssh_pid = fork)
-	or exec "$Buildd::Conf::sshcmd -MN";
+	or exec $conf->get('SSH_CMD'). " -MN";
 
     if (!defined $main::ssh_pid) {
 	logger( "Cannot fork for ssh master: $!\n" );
 	return 0;
     }
 
-    while ( ! -S $Buildd::Conf::sshsocket )
+    while ( ! -S $conf->get('SSH_SOCKET') )
     {
 	sleep 1;
 	my $wpid = waitpid ( $main::ssh_pid, WNOHANG );
