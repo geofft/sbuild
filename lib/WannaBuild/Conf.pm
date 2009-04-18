@@ -225,7 +225,7 @@ sub read_config {
 	$self->set('VERBOSE', 1);
     }
 
-    my $HOME = $self->get('HOME');
+    our $HOME = $self->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
 

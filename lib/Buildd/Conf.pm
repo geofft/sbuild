@@ -108,7 +108,7 @@ sub init_allowed_keys {
 	}
     };
 
-    my $HOME = $self->get('HOME');
+    our $HOME = $self->get('HOME');
     $main::HOME = $HOME; # TODO: Remove once Buildd.pm uses $conf
     my $arch = $self->get('ARCH');
 
