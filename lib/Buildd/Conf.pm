@@ -307,6 +307,8 @@ sub read_config {
 	}
     }
 
+    print STDERR "Forced re-reading of configuration\n" if ($reread_config);
+
     $reread = 1 if ($reread_config || $global_time || $user_time);
     $reread_config = 0;
 
@@ -316,9 +318,9 @@ sub read_config {
 	delete $INC{$global};
 	require $global;
 	if ($self->get('CONFIG_GLOBAL_TIME') == 0) {
-	    logger("Reading global configuration from $global\n");
+	    print STDERR "Reading global configuration from $global\n";
 	} else {
-	    logger("Re-reading global configuration from $global\n");
+	    print STDERR "Re-reading global configuration from $global\n";
 	}
 	$self->set('CONFIG_GLOBAL_TIME', $global_time);
     }
@@ -327,9 +329,9 @@ sub read_config {
 	delete $INC{$user};
 	require $user;
 	if ($self->get('CONFIG_USER_TIME') == 0) {
-	    logger("Reading user configuration from $user\n");
+	    print STDERR "Reading user configuration from $user\n";
 	} else {
-	    logger("Re-reading user configuration from $user\n");
+	    print STDERR "Re-reading user configuration from $user\n";
 	}
 	$self->set('CONFIG_USER_TIME', $user_time);
     }
