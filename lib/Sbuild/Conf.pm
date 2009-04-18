@@ -549,10 +549,12 @@ sub read_config {
     $self->set('PGP_OPTIONS', $pgp_options);
     $self->set('LOG_DIR', $log_dir);
     $self->set('MAILTO', $mailto);
-    $self->set('MAILTO_HASH', \%mailto);
+    $self->set('MAILTO_HASH', \%mailto)
+	if (%mailto);
     $self->set('MAILFROM', $mailfrom);
     $self->set('PURGE_BUILD_DIRECTORY', $purge_build_directory);
-    $self->set('TOOLCHAIN_REGEX', \@toolchain_regex);
+    $self->set('TOOLCHAIN_REGEX', \@toolchain_regex)
+	if (@toolchain_regex);
     $self->set('STALLED_PKG_TIMEOUT', $stalled_pkg_timeout);
     $self->set('SRCDEP_LOCK_DIR', $srcdep_lock_dir);
     $self->set('SRCDEP_LOCK_WAIT', $srcdep_lock_wait);
@@ -561,14 +563,17 @@ sub read_config {
     $self->set('APT_POLICY', $apt_policy);
     $self->set('CHECK_WATCHES', $check_watches);
     $self->set('IGNORE_WATCHES_NO_BUILD_DEPS',
-	       \@ignore_watches_no_build_deps);
-    $self->set('WATCHES', \%watches);
+	       \@ignore_watches_no_build_deps)
+	if (@ignore_watches_no_build_deps);
+    $self->set('WATCHES', \%watches)
+	if (%watches);
     $self->set('CHROOT_MODE', $chroot_mode);
     $self->set('CHROOT_SPLIT', $chroot_split);
     $self->set('SBUILD_MODE', $sbuild_mode);
     $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
     $self->set('INDIVIDUAL_STALLED_PKG_TIMEOUT',
-	       \%individual_stalled_pkg_timeout);
+	       \%individual_stalled_pkg_timeout)
+	if (%individual_stalled_pkg_timeout);
     $self->set('PATH', $path);
     $self->set('LD_LIBRARY_PATH', $ld_library_path);
     $self->set('MAINTAINER_NAME', $maintainer_name);
@@ -576,7 +581,8 @@ sub read_config {
     $self->set('KEY_ID', $key_id);
     $self->set('APT_UPDATE', $apt_update);
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
-    $self->set('ALTERNATIVES', \%alternatives);
+    $self->set('ALTERNATIVES', \%alternatives)
+	if (%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
     $self->set('JOB_FILE', $job_file);
 
