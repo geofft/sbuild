@@ -9,8 +9,10 @@ sbuild (0.58.3-1) unstable; urgency=low
   * When using the --help or --version options, don't abort if not
     in the sbuild group (Closes: #523670).  Group membership is now
     only performed after options parsing, and only if required.
+  * Allow config files to use $HOME (Closes: #524564).  Thanks to
+    James Vega for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 12 Apr 2009 16:42:42 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 18 Apr 2009 11:10:35 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 
