@@ -66,3 +66,31 @@ Copyright details of new files.
 ConfBase get/set code doesn't distinguish between undefined and empty
    hashes (and also arrays?)  Due to Perl automatically creating an
    instance if the reference is undefined (autovivification).
+
+Validate programs and paths only if required
+- programs which only work inside the chroot
+- programs which only work outside the chroot (if required by config)
+- programs which may or may not be required inside and/or outside
+
+gzip log files
+
+send gzipped log mail, with correct headers
+Content-Transfer-Encoding and Content-Type need setting.
+message['Content-Transfer-Encoding'] = 'base64'
+message['Content-Type'] = 'application/x-gzip'
+https://buildd.debian.org/docs/log-compressor.py
+
+
+Where did the 0.57.7 debian/changelog go to?
+
+buildd-mail: Why do we use lockfiles rather than real fcntl locks?
+
+sbuild: Add alternative build-dep resolver support:
+ - traditional (current)
+ - apt_get (apt-get build-dep)
+ - apt_package (dependency package)
+ - aptitude (aptitude build-dep)
+ - aptitude_package (dependency package)
+
+Move locking functions out of Sbuild::Build.  Use proper locking in
+place of lockfiles.
