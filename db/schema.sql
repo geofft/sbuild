@@ -1,8 +1,6 @@
 --- Debian Source Builder: Database Schema for PostgreSQL            -*- sql -*-
 ---
---- Copyright © 2008-2009 Roger Leigh <rleigh@debian.org>
---- Copyright © 2008-2009 Marc 'HE' Brockschmidt <he@debian.org>
---- Copyright © 2008-2009 Adeodato Simó <adeodato@debian.org>
+--- Copyright © 2009 Roger Leigh <rleigh@debian.org>
 ---
 --- This program is free software: you can redistribute it and/or modify
 --- it under the terms of the GNU General Public License as published by
@@ -18,15 +16,12 @@
 --- along with this program.  If not, see
 --- <http://www.gnu.org/licenses/>.
 
-\i /usr/share/postgresql/8.3/contrib/debversion.sql
+CREATE TABLE schema (
+	version integer
+	  CONSTRAINT schema_pkey PRIMARY KEY,
+	description text NOT NULL
+);
 
-SET search_path = public;
-
-\i SQL_PATHNAME/language.sql
-\i SQL_PATHNAME/schema.sql
-\i SQL_PATHNAME/archive.sql
-\i SQL_PATHNAME/build.sql
-\i SQL_PATHNAME/functions.sql
-
-\i SQL_PATHNAME/archive-data.sql
-\i SQL_PATHNAME/build-data.sql
+COMMENT ON TABLE schema IS 'Schema revision history';
+COMMENT ON COLUMN schema.version IS 'Schema version';
+COMMENT ON COLUMN schema.description IS 'Schema change description';
