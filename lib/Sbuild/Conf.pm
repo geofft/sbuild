@@ -82,7 +82,7 @@ sub init_allowed_keys {
 	}
     };
 
-    my $HOME = $self->get('HOME');
+    our $HOME = $self->get('HOME');
 
     my %sbuild_keys = (
 	'CHROOT'				=> {
