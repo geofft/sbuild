@@ -15,7 +15,7 @@
 .\" <http://www.gnu.org/licenses/>.
 .TH SBUILD\-HOLD 1 "28 Dec 2007" "Version 0.57.0" "Debian sbuild"
 .SH NAME
-sbuild\-hold \- run a hold in an sbuild chroot
+sbuild\-hold \- hold packages in an sbuild chroot
 .SH SYNOPSIS
 .BR sbuild\-hold
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
