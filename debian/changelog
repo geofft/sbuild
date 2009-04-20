@@ -11,8 +11,9 @@ sbuild (0.58.3-1) unstable; urgency=low
     only performed after options parsing, and only if required.
   * Allow config files to use $HOME (Closes: #524564).  Thanks to
     James Vega for this patch.
+  * Restore buildd package.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 18 Apr 2009 11:10:35 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 20 Apr 2009 21:06:59 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 

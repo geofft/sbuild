@@ -1,0 +1,9 @@
+# This is a configuration file for /etc/init.d/buildd; it allows you
+# to perform common modifications to the behavior of buildd
+# initialization without editing the init script (and thus getting
+# prompted by dpkg on upgrades).  Note that the defaults defined here
+# are not used when invoking the buildd command; to configure buildd
+# behaviour have a look at /etc/buildd/* and the buildd manual page
+# ("man buildd").
+
+

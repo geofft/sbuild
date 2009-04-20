@@ -1,0 +1,91 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          buildd
+# Required-Start:    $local_fs $network $remote_fs
+# Required-Stop:
+# Should-Start:      schroot
+# Should-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Debian package autobuilder daemon
+# Description:       Control the buildd daemon.
+### END INIT INFO
+#
+# Copyright © 2006-2009  Roger Leigh <rleigh@debian.org>
+# Copyright © 2007       Federico Di Gregorio <fog@debian.org>
+#
+# sbuild is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# sbuild is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+BUILDD=/usr/bin/buildd
+BUILDD_WATCHER=/usr/bin/buildd-watcher
+BUILDD_PID=/var/run/buildd.pid
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+NAME=buildd
+
+. /lib/lsb/init-functions
+
+test -x $BUILDD || exit 0
+test -x $BUILDD_WATCHER || exit 0
+
+# Include buildd defaults if available
+if [ -f "/etc/default/$NAME" ] ; then
+    . "/etc/default/$NAME"
+fi
+
+set -e
+
+recover_sessions()
+{
+    log_daemon_msg "Recovering buildd sessions"
+    for chroot in `$BUILDD --all-sessions --list --quiet`
+    do
+      $BUILDD --chroot=$chroot --recover-session || true
+      log_progress_msg "$chroot"
+    done
+    log_end_msg 0
+}
+
+end_sessions()
+{
+    log_daemon_msg "Ending buildd sessions"
+    for chroot in `$BUILDD --all-sessions --list --quiet`
+      do
+      $BUILDD --chroot=$chroot --end-session || true
+      log_progress_msg "$chroot"
+    done
+    log_end_msg 0
+}
+
+case "$1" in
+    start|restart|force-reload)
+        if [ "$SESSIONS_RECOVER" = "end" ] ; then
+            end_sessions
+	else
+            recover_sessions
+	fi
+	;;
+    stop)
+	;;
+    status)
+	;;
+    *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0
