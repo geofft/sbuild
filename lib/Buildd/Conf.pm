@@ -241,11 +241,6 @@ sub init_allowed_keys {
 sub read_config {
     my $self = shift;
 
-    # Set here to allow user to override.
-    if (-t STDIN && -t STDOUT && $self->get('VERBOSE') == 0) {
-	$self->set('VERBOSE', 1);
-    }
-
     my $HOME = $self->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
@@ -307,8 +302,6 @@ sub read_config {
 	}
     }
 
-    print STDERR "Forced re-reading of configuration\n" if ($reread_config);
-
     $reread = 1 if ($reread_config || $global_time || $user_time);
     $reread_config = 0;
 
@@ -317,22 +310,12 @@ sub read_config {
     if ($reread && -r $global) {
 	delete $INC{$global};
 	require $global;
-	if ($self->get('CONFIG_GLOBAL_TIME') == 0) {
-	    print STDERR "Reading global configuration from $global\n";
-	} else {
-	    print STDERR "Re-reading global configuration from $global\n";
-	}
 	$self->set('CONFIG_GLOBAL_TIME', $global_time);
     }
 
     if ($reread && -r $user) {
 	delete $INC{$user};
 	require $user;
-	if ($self->get('CONFIG_USER_TIME') == 0) {
-	    print STDERR "Reading user configuration from $user\n";
-	} else {
-	    print STDERR "Re-reading user configuration from $user\n";
-	}
 	$self->set('CONFIG_USER_TIME', $user_time);
     }
 
@@ -372,8 +355,15 @@ sub read_config {
 	$self->set('WANNA_BUILD_DBBASE', $wanna_build_dbbase);
 	$self->set('WANNA_BUILD_USER', $wanna_build_user);
 	$self->set('WARNING_AGE', $warning_age);
-	$self->set('WEAK_NO_AUTO_BUILD', \@weak_no_auto_build);
+	$self->set('WEAK_NO_AUTO_BUILD', \@weak_no_auto_build)
+	    if (@weak_no_auto_build);
+
+	# Set here to allow user to override.
+	if (-t STDIN && -t STDOUT && $self->get('NO_DETACH')) {
+	    $self->set('VERBOSE', 1);
+	}
     }
+
 }
 
 1;
