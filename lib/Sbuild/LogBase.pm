@@ -64,7 +64,7 @@ sub open_log ($$$) {
 	$SIG{'PIPE'} = 'IGNORE';
 	while (<STDIN>) {
 	    $logfunc->($F, $_)
-	        if ($conf->get('NOLOG') && defined($F));
+	        if (!$conf->get('NOLOG') && defined($F));
 	    $logfunc->(\*STDOUT, $_)
 		if ($conf->get('VERBOSE'));
 	}
