@@ -114,7 +114,7 @@ sub init_allowed_keys {
 
     my %buildd_keys = (
 	'ADMIN_MAIL'				=> {
-	    DEFAULT => 'USER-porters'
+	    DEFAULT => 'root'
 	},
 	'APT_GET'				=> {
 	    CHECK => $validate_program,
@@ -204,7 +204,7 @@ sub init_allowed_keys {
 	    CHECK => $validate_ssh_socket,
 	},
 	'STATISTICS_MAIL'			=> {
-	    DEFAULT => 'USER-porters'
+	    DEFAULT => 'root'
 	},
 	'STATISTICS_PERIOD'			=> {
 	    DEFAULT => 7
