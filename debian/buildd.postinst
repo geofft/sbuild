@@ -59,11 +59,30 @@ Please fix this and reinstall this package." >&2
 	fi
 
 	# Home directory ownership
-        chown buildd:buildd /var/lib/buildd /var/lib/buildd/.forward
+        chown buildd:buildd /var/lib/buildd
+	chown buildd:buildd /var/lib/buildd/.forward
+	chown buildd:buildd /var/lib/buildd/.ssh
+	chown buildd:buildd /var/lib/buildd/build
+	chown buildd:buildd /var/lib/buildd/logs
+	chown buildd:buildd /var/lib/buildd/mqueue
+	chown buildd:buildd /var/lib/buildd/old-logs
+	chown buildd:buildd /var/lib/buildd/stats
+	chown buildd:buildd /var/lib/buildd/stats/graphs
+	chown buildd:buildd /var/lib/buildd/upload
+	chown buildd:buildd /var/lib/buildd/upload-security
 
 	# Home directory permissions
-        chmod 2775 /var/lib/buildd
-	chmod 0640 /var/lib/buildd/.forward
+        chmod 2770 /var/lib/buildd
+	chmod 2640 /var/lib/buildd/.forward
+	chmod 2700 /var/lib/buildd/.ssh
+	chmod 2770 /var/lib/buildd/build
+	chmod 2770 /var/lib/buildd/logs
+	chmod 2770 /var/lib/buildd/mqueue
+	chmod 2770 /var/lib/buildd/old-logs
+	chmod 2770 /var/lib/buildd/stats
+	chmod 2770 /var/lib/buildd/stats/graphs
+	chmod 2770 /var/lib/buildd/upload
+	chmod 2770 /var/lib/buildd/upload-security
 
         ;;
 
