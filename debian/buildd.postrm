@@ -58,7 +58,7 @@ case "$1" in
 
     purge|disappear)
 
-        if [ getent group buildd > /dev/null ]; then
+        if getent group buildd > /dev/null; then
             deluser --system buildd || true
         fi
 

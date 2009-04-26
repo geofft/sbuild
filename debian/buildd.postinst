@@ -41,7 +41,7 @@ case "$1" in
 	    mv_conffile "/etc/buildd.conf" "/etc/buildd/buildd.conf"
 	fi
 
-        if [ ! getent passwd buildd > /dev/null ]; then
+        if ! getent passwd buildd > /dev/null; then
             adduser --system --quiet --home /var/lib/buildd --no-create-home \
 		--shell /bin/bash --group --gecos "Debian build daemon" buildd
         fi

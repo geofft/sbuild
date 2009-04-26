@@ -37,7 +37,7 @@ mv_conffile() {
 case "$1" in
     configure)
 
-        if [ ! getent group sbuild > /dev/null ]; then
+        if ! getent group sbuild > /dev/null; then
             adduser --group --quiet sbuild
         fi
 

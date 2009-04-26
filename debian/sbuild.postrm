@@ -58,7 +58,7 @@ case "$1" in
 
     purge|disappear)
 
-        if [ getent group sbuild > /dev/null ]; then
+        if getent group sbuild > /dev/null; then
             deluser --system --group --quiet sbuild
         fi
 
