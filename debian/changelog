@@ -12,8 +12,12 @@ sbuild (0.58.3-1) unstable; urgency=low
   * Allow config files to use $HOME (Closes: #524564).  Thanks to
     James Vega for this patch.
   * Restore buildd package.
+  * debian/sbuild.(preinst|postinst|postrm): Remove special cases for
+    versions older than oldstable.  Update addition and removal of
+    sbuild group to use return value of getent rather than parsing
+    getent output. 
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 20 Apr 2009 21:06:59 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 26 Apr 2009 20:22:33 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 

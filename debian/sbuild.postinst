@@ -37,25 +37,13 @@ mv_conffile() {
 case "$1" in
     configure)
 
-	if dpkg --compare-versions "$2" le "0.42"; then
-	    mv_conffile "/etc/sbuild.conf.local" "/etc/sbuild/sbuild.conf"
-	fi
-
-        if [ -z "`getent group sbuild`" ]; then
+        if [ ! getent group sbuild > /dev/null ]; then
             adduser --group --quiet sbuild
         fi
 
         chmod 2775 /var/lib/sbuild /var/lib/sbuild/srcdep-lock
-        touch -a /var/lib/sbuild/source-dependencies-stable \
-            /var/lib/sbuild/source-dependencies-testing \
-            /var/lib/sbuild/source-dependencies-unstable
-        chmod 664 /var/lib/sbuild/source-dependencies-*
         # avg-* files from previous purge might have wrong GID
-        chown -R :sbuild /var/lib/sbuild
-
-	if dpkg --compare-versions "$2" le-nl "0.34"; then
-	    ln -sf ../share/sbuild /usr/lib/sbuild
-	fi
+        chown :sbuild /var/lib/sbuild /var/lib/sbuild/srcdep-lock
 
         ;;
 

@@ -58,8 +58,8 @@ case "$1" in
 
     purge|disappear)
 
-        if [ -z "`getent group sbuild`" ]; then
-            deluser --group sbuild
+        if [ getent group sbuild > /dev/null ]; then
+            deluser --system --group --quiet sbuild
         fi
 
 	rm_conffile "/etc/sbuild.conf"
