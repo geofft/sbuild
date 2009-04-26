@@ -370,7 +370,7 @@ sub fetch_source_files {
 	      PRIORITY => 0,
 	      DIR => '/'});
 	if (!$pipe) {
-	    print main::PLOG "Can't open pipe to $conf::apt_cache: $!\n";
+	    $self->log("Can't open pipe to $conf::apt_cache: $!\n");
 	    return 0;
 	}
 
@@ -1144,7 +1144,7 @@ sub uninstall_debs {
 	  DIR => '/' });
 
     if (!$pipe) {
-	print main::PLOG "Can't open pipe to dpkg: $!\n";
+	$self->log("Can't open pipe to dpkg: $!\n");
 	return 0;
     }
 
@@ -1197,7 +1197,7 @@ sub run_apt {
 	  PRIORITY => 0,
 	  DIR => '/' });
     if (!$pipe) {
-	print main::PLOG "Can't open pipe to apt-get: $!\n";
+	$self->log("Can't open pipe to apt-get: $!\n");
 	return 0;
     }
 
@@ -1217,7 +1217,7 @@ sub run_apt {
 	  DIR => '/' });
 
 	if (!$pipe) {
-	    print main::PLOG "Can't open pipe to apt-get: $!\n";
+	    $self->log("Can't open pipe to apt-get: $!\n");
 	    return 0;
 	}
 
