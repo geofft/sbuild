@@ -27,8 +27,9 @@ BEGIN {
 
 use strict;
 use warnings;
+
 use POSIX;
-use Buildd;
+use Buildd qw(logger open_log close_log);
 use Buildd::Conf;
 use Sbuild::OptionsBase;
 use Cwd;

@@ -44,6 +44,7 @@ bin_SCRIPTS = 				\
 	buildd				\
 	buildd-mail			\
 	buildd-uploader			\
+	buildd-vlog			\
 	buildd-watcher
 
 sbin_SCRIPTS = 			\
