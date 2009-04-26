@@ -66,6 +66,8 @@ install-exec-hook:
 # Links for compatibility.
 	$(MKDIR_P) "$(DESTDIR)$(sbuildlibexecdir)"
 	$(MKDIR_P) "$(DESTDIR)$(wblibexecdir)"
+	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd"
+	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/sbuild"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/wanna-build"
 
 	ln -sf "$(bindir)/wanna-build-catdb" "$(DESTDIR)$(bindir)/wanna-build-catgdbm"
