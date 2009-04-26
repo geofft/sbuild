@@ -47,7 +47,6 @@ sub open_log ($$$) {
 	    my $message = shift;
 
 	    print $F $message;
-	    print STDOUT $_;
 	}
     }
 
