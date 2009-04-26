@@ -18,14 +18,18 @@
 #
 #######################################################################
 
-BEGIN {
-    ($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
-}
-
 use strict;
 use warnings;
-use vars qw($debianroot @dists @components $verbose);
+use vars qw($debianroot @dists @components);
+
+use Buildd;
+use Buildd::Conf;
+use Sbuild::OptionsBase;
+
+my $conf = Buildd::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd-clean-upload", "1");
+exit 1 if !defined($options);
 
 sub in_archive ($);
 sub get_files_from_changes ($);
@@ -34,17 +38,6 @@ sub split_debname ($);
 $debianroot = "/pub/Linux/debian";
 @dists = qw(unstable);
 @components = qw(main non-US/main);
-
-
-while( @ARGV && $ARGV[0] =~ /^-/ ) {
-    $_ = shift @ARGV;
-    if (/^-v$/ || /^--verbose$/) {
-	$verbose++;
-    }
-    else {
-	die "Unknown option: $_\n";
-    }
-}
 
 chdir( "$main::HOME/upload" ) or die "Can't cd to ~/upload: $!\n";
 
@@ -67,13 +60,13 @@ foreach $job (@jobs) {
 	}
     }
     if (!$in_arch) {
-	print "Not deleting $job\n" if $verbose;
+	print "Not deleting $job\n" if $conf->get('VERBOSE');
 	next;
     }
 
     (my $upload = $job) =~ s/\.changes$/.upload/;
     unlink @files, $job, $upload;
-    print "Removed $job\n" if $verbose;
+    print "Removed $job\n" if $conf->get('VERBOSE');
 }
 
 
