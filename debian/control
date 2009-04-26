@@ -42,7 +42,7 @@ Description: Database to track building of Debian binary packages from Debian so
 
 Package: buildd
 Architecture: all
-Depends: ${perl:Depends}, libfilesys-statvfs-perl, sbuild (>= 0.58), dupload, cron, exim4 | mail-transport-agent
+Depends: ${perl:Depends}, libfilesys-statvfs-perl, adduser, sbuild (>= 0.58), dupload, cron, exim4 | mail-transport-agent
 Suggests: wanna-build
 Description: Daemon for automatically building Debian binary packages from Debian sources
  buildd is a daemon which will build Debian packages automatically.
