@@ -106,6 +106,7 @@ our %programs = (
     'SCHROOT' => '@SCHROOT@',
     'SENDMAIL' => '@SENDMAIL@',
     'SHELL' => '@SHELL@',
+    'SSH' => '@SSH@',
     'SU' => '@SU@',
     'SUDO' => '@SUDO@',
     'TEMPFILE' => '@TEMPFILE@'

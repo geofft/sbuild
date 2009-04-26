@@ -14,6 +14,7 @@ debian/build/config.status: configure
 	  --localstatedir=/var --mandir=\$${prefix}/share/man \
 	  DCMD=/usr/bin/dcmd \
 	  SCHROOT=/usr/bin/schroot \
+	  SSH=/usr/bin/ssh \
 	  SUDO=/usr/bin/sudo
 
 build: debian/build/config.status debian/build-stamp
