@@ -258,9 +258,13 @@ sub run {
 	      DIR => '/'});
 
 	if ($?) {
+	    # Since apt-update was requested specifically, fail on
+	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
-	    $self->set_status('skipped');
-	    goto cleanup_close;
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		$self->set_status('skipped');
+		goto cleanup_close;
+	    }
 	}
     }
 
