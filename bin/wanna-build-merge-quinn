@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# do-merge-quinn: merge current quinn-diff output into wanna-build
+# wanna-build-merge-quinn: merge current quinn-diff output into wanna-build
 # database and make wanna-build statistics
 # Copyright © 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 #

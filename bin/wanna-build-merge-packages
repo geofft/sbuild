@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# do-merge-packages: merge current Packages and Sources files into
+# wanna-build-merge-packages: merge current Packages and Sources files into
 # wanna-build database
 # Copyright © 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
 #
