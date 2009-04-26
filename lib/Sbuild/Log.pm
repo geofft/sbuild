@@ -28,8 +28,9 @@ use POSIX;
 use FileHandle;
 use File::Basename qw(basename);
 use Sbuild qw(send_mail);
+use Sbuild::LogBase;
 
-sub open_log ($$);
+sub open_log ($);
 sub close_log ($);
 
 BEGIN {
@@ -43,58 +44,26 @@ BEGIN {
 
 my $main_logfile;
 
-sub open_log ($$) {
-    my $main_distribution = shift;
+sub open_log ($) {
     my $conf = shift;
 
+    my $main_distribution = $conf->get('DISTRIBUTION');
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
-    if ($conf->get('NOLOG')) {
-	open( main::LOG, ">&STDOUT" );
-	select( main::LOG );
-	return;
+    my $F = undef;
+    $main_logfile = undef;
+
+    if (!$conf->get('NOLOG')) {
+	my $F = new File::Temp( TEMPLATE => "build-${main_distribution}-$date.XXXXXX",
+				DIR => $conf->get('BUILD_DIR'),
+				SUFFIX => '.log',
+				UNLINK => 0)
+	    or die "Can't open logfile: $!\n";
+	$F->autoflush(1);
+	$main_logfile = $F->filename;
     }
 
-    my $F = new File::Temp( TEMPLATE => "build-${main_distribution}-$date.XXXXXX",
-			    DIR => $conf->get('BUILD_DIR'),
-			    SUFFIX => '.log',
-			    UNLINK => 0)
-	or die "Can't open logfile: $!\n";
-    $F->autoflush(1);
-    $main_logfile = $F->filename;
-
-    if ($conf->get('VERBOSE')) {
-	my $pid;
-	($pid = open( main::LOG, "|-"));
-	if (!defined $pid) {
-	    warn "Cannot open pipe to '$main_logfile': $!\n";
-	}
-	elsif ($pid == 0) {
-	    $SIG{'INT'} = 'IGNORE';
-	    $SIG{'QUIT'} = 'IGNORE';
-	    $SIG{'TERM'} = 'IGNORE';
-	    $SIG{'PIPE'} = 'IGNORE';
-	    while (<STDIN>) {
-		print $F $_;
-		print STDOUT $_;
-	    }
-	    undef $F;
-	    exit 0;
-	}
-    }
-    else {
-	open( main::LOG, ">$F" )
-	    or warn "Cannot open log file $main_logfile: $!\n";
-    }
-    undef $F;
-    main::LOG->autoflush(1);
-    select(main::LOG);
-    if ($conf->get('VERBOSE')) {
-	open( main::SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
-	open( main::SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
-    }
-    open( STDOUT, ">&main::LOG" ) or warn "Can't redirect stdout\n";
-    open( STDERR, ">&main::LOG" ) or warn "Can't redirect stderr\n";
+    Sbuild::LogBase::open_log($conf, $F, undef);
 }
 
 sub close_log ($) {
@@ -102,15 +71,8 @@ sub close_log ($) {
 
     my $date = strftime("%Y%m%d-%H%M",localtime);
 
-    close( STDERR );
-    close( STDOUT );
-    close( main::LOG );
-    if ($conf->get('VERBOSE')) {
-	open( STDOUT, ">&main::SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
-	open( STDERR, ">&main::SAVED_STDERR" ) or warn "Can't redirect stderr\n";
-	close (main::SAVED_STDOUT);
-	close (main::SAVED_STDERR);
-    }
+    Sbuild::LogBase::close_log($conf);
+
     if (!$conf->get('NOLOG') && !$conf->get('VERBOSE') &&
 	-s $main_logfile && $conf->get('MAILTO')) {
 	send_mail( $conf,

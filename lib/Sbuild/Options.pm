@@ -128,7 +128,7 @@ sub set_options {
 			   $self->set_conf('UPLOADER_NAME', $_[1]);
 		       },
 		       "n|nolog" => sub {
-			   $self->set('NOLOG', 1);
+			   $self->set_conf('NOLOG', 1);
 		       },
 		       "p|purge=s" => sub {
 			   $self->set_conf('PURGE_BUILD_DIRECTORY', $_[1]);

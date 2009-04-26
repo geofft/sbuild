@@ -41,7 +41,7 @@ sbuild \- build debian packages from source
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
 .RB [ \-\-purge=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
-.RB [ \-\-nolog ]
+.RB [ \-n \[or] \-\-nolog ]
 .BR PACKAGE1_VERSION[.dsc] " [" PACKAGE2_VERSION[.dsc] " [" PACKAGE\f[BI]n\fP_VERSION[.dsc] ]]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version

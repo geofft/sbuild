@@ -2509,16 +2509,18 @@ sub open_build_log {
     }
 
     # Create 'current' symlinks
-    if (-f $filename &&
-	$self->get_conf('SBUILD_MODE') eq 'buildd') {
-	$self->log_symlink($filename,
-			   $self->get_conf('BUILD_DIR') . '/current-' .
-			   $self->get_conf('DISTRIBUTION'));
-    } else {
-	$self->log_symlink($filename,
-			   $self->get_conf('BUILD_DIR') . '/' .
-			   $self->get('Package_SVersion') . '_' .
-			   $self->get('Arch') . '.build');
+    if (!$self->get_conf('NOLOG')) {
+	if (-f $filename &&
+	    $self->get_conf('SBUILD_MODE') eq 'buildd') {
+	    $self->log_symlink($filename,
+			       $self->get_conf('BUILD_DIR') . '/current-' .
+			       $self->get_conf('DISTRIBUTION'));
+	} else {
+	    $self->log_symlink($filename,
+			       $self->get_conf('BUILD_DIR') . '/' .
+			       $self->get('Package_SVersion') . '_' .
+			       $self->get('Arch') . '.build');
+	}
     }
 
     $PLOG->autoflush(1);
@@ -2599,8 +2601,8 @@ sub log_symlink {
     my $log = shift;
     my $dest = shift;
 
-    unlink $dest || return;
-    symlink $log, $dest || return;
+    unlink $dest; # Don't return on failure, since the symlink will fail.
+    symlink $log, $dest;
 }
 
 sub add_time_entry {

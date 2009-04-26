@@ -39,6 +39,7 @@ MODULES =			\
 	Conf.pm			\
 	ConfBase.pm		\
 	Log.pm			\
+	LogBase.pm		\
 	Options.pm		\
 	OptionsBase.pm		\
 	Utility.pm
