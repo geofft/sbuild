@@ -1,7 +1,9 @@
 sbuild
+buildd
 files
 build
 install
 wanna-build
 *.substvars
+*.debhelper
 *.log
