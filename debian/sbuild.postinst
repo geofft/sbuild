@@ -41,9 +41,9 @@ case "$1" in
             adduser --group --quiet sbuild
         fi
 
-        chmod 2775 /var/lib/sbuild /var/lib/sbuild/srcdep-lock
+        chmod 2775 /var/lib/sbuild
         # avg-* files from previous purge might have wrong GID
-        chown :sbuild /var/lib/sbuild /var/lib/sbuild/srcdep-lock
+        chown :sbuild /var/lib/sbuild
 
         ;;
 

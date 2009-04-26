@@ -59,10 +59,11 @@ Please fix this and reinstall this package." >&2
 	fi
 
 	# Home directory ownership
-        chown buildd:buildd /var/lib/buildd
+        chown buildd:buildd /var/lib/buildd /var/lib/buildd/.forward
 
 	# Home directory permissions
         chmod 2775 /var/lib/buildd
+	chmod 0640 /var/lib/buildd/.forward
 
         ;;
 
