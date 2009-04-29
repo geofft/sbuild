@@ -58,10 +58,14 @@ sub open_log ($$$) {
 	warn "Cannot open pipe to log: $!\n";
     }
     elsif ($pid == 0) {
+	# We ignore SIG(INT|QUIT|TERM) because they will be caught in
+	# the parent which will subsequently close the logging stream
+	# resulting in our termination.  This is needed to ensure the
+	# final log messages are sent and the parent doesn't die with
+	# SIGPIPE.
 	$SIG{'INT'} = 'IGNORE';
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'TERM'} = 'IGNORE';
-	$SIG{'PIPE'} = 'IGNORE';
 	while (<STDIN>) {
 	    $logfunc->($LOG, $_)
 	        if (!$conf->get('NOLOG') && defined($LOG));
@@ -76,20 +80,24 @@ sub open_log ($$$) {
     main::LOG->autoflush(1);
     select(main::LOG);
 
-    open( main::SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
-    open( main::SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
-    open( STDOUT, ">&main::LOG" ) or warn "Can't redirect stdout\n";
-    open( STDERR, ">&main::LOG" ) or warn "Can't redirect stderr\n";
+    open(main::SAVED_STDOUT, ">&STDOUT") or warn "Can't redirect stdout\n";
+    open(main::SAVED_STDERR, ">&STDERR") or warn "Can't redirect stderr\n";
+    open(STDOUT, ">&main::LOG") or warn "Can't redirect stdout\n";
+    open(STDERR, ">&main::LOG") or warn "Can't redirect stderr\n";
 }
 
 sub close_log ($) {
     my $conf = shift;
 
-    close( main::LOG );
-    open( STDOUT, ">&main::SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
-    open( STDERR, ">&main::SAVED_STDERR" ) or warn "Can't redirect stderr\n";
-    close (main::SAVED_STDOUT);
-    close (main::SAVED_STDERR);
+    # Note: It's imperative to close and reopen in the exact order in
+    # which we originally opened and reopened, or else we can deadlock
+    # in wait4 when closing the log stream due to waiting on the child
+    # forever.
+    open(STDERR, ">&main::SAVED_STDERR") or warn "Can't redirect stderr\n";
+    open(STDOUT, ">&main::SAVED_STDOUT") or warn "Can't redirect stdout\n";
+    close(main::SAVED_STDERR);
+    close(main::SAVED_STDOUT);
+    close(main::LOG );
 }
 
 1;
