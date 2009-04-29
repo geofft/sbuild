@@ -2610,7 +2610,7 @@ sub add_time_entry {
     return if !$self->get_conf('AVG_TIME_DB');
     my %db;
     if (!tie %db, 'GDBM_File', $self->get_conf('AVG_TIME_DB'), GDBM_WRCREAT, 0664) {
-	print "Can't open average time db " . $self->get_conf('AVG_TIME_DB') . '\n';
+	print "Can't open average time db " . $self->get_conf('AVG_TIME_DB') . "\n";
 	return;
     }
     $pkg =~ s/_.*//;
@@ -2639,7 +2639,7 @@ sub add_space_entry {
     return if !$self->get_conf('AVG_SPACE_DB') || $space == 0;
     my %db;
     if (!tie %db, 'GDBM_File', $self->get_conf('AVG_SPACE_DB'), &GDBM_WRCREAT, 0664) {
-	print "Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . '\n';
+	print "Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . "\n";
 	return;
     }
     $pkg =~ s/_.*//;
