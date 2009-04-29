@@ -38,19 +38,19 @@ BEGIN {
 
 sub open_log ($$$) {
     my $conf = shift;
-    my $F = shift; # File to log to
+    my $LOG = shift; # File to log to
     my $logfunc = shift; # Function to handle logging
 
     if (!defined($logfunc)) {
 	$logfunc = sub {
-	    my $F = shift;
+	    my $LOG = shift;
 	    my $message = shift;
 
-	    print $F $message;
+	    print $LOG $message;
 	}
     }
 
-    $F->autoflush(1) if defined($F);
+    $LOG->autoflush(1) if defined($LOG);
 
     my $pid;
     ($pid = open( main::LOG, "|-"));
@@ -63,23 +63,21 @@ sub open_log ($$$) {
 	$SIG{'TERM'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
 	while (<STDIN>) {
-	    $logfunc->($F, $_)
-	        if (!$conf->get('NOLOG') && defined($F));
+	    $logfunc->($LOG, $_)
+	        if (!$conf->get('NOLOG') && defined($LOG));
 	    $logfunc->(\*STDOUT, $_)
 		if ($conf->get('VERBOSE'));
 	}
-	undef $F;
+	undef $LOG;
 	exit 0;
     }
 
-    undef $F;
+    undef $LOG;
     main::LOG->autoflush(1);
     select(main::LOG);
 
-    if ($conf->get('VERBOSE')) {
-	open( main::SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
-	open( main::SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
-    }
+    open( main::SAVED_STDOUT, ">&STDOUT" ) or warn "Can't redirect stdout\n";
+    open( main::SAVED_STDERR, ">&STDERR" ) or warn "Can't redirect stderr\n";
     open( STDOUT, ">&main::LOG" ) or warn "Can't redirect stdout\n";
     open( STDERR, ">&main::LOG" ) or warn "Can't redirect stderr\n";
 }
@@ -87,15 +85,11 @@ sub open_log ($$$) {
 sub close_log ($) {
     my $conf = shift;
 
-    close( STDERR );
-    close( STDOUT );
     close( main::LOG );
-    if ($conf->get('VERBOSE')) {
-	open( STDOUT, ">&main::SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
-	open( STDERR, ">&main::SAVED_STDERR" ) or warn "Can't redirect stderr\n";
-	close (main::SAVED_STDOUT);
-	close (main::SAVED_STDERR);
-    }
+    open( STDOUT, ">&main::SAVED_STDOUT" ) or warn "Can't redirect stdout\n";
+    open( STDERR, ">&main::SAVED_STDERR" ) or warn "Can't redirect stderr\n";
+    close (main::SAVED_STDOUT);
+    close (main::SAVED_STDERR);
 }
 
 1;
