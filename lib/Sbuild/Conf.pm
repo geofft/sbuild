@@ -256,14 +256,6 @@ sub init_allowed_keys {
 	    DEFAULT => 150 # minutes
 	},
 	'SRCDEP_LOCK_DIR'			=> {
-	    CHECK => sub {
-		my $self = shift;
-		my $entry = shift;
-		my $key = $entry->{'NAME'};
-
-		die $self->get('SRCDEP_LOCK_DIR') . " is not a directory\n"
-		    if ! -d $self->get('SRCDEP_LOCK_DIR');
-	    },
 	    # Note: inside chroot only
 	    DEFAULT => "/var/lib/sbuild/srcdep-lock"
 	},
