@@ -2143,7 +2143,7 @@ sub check_srcdep_conflicts {
 
 	while( <F> ) {
 	    my ($neg, $pkg) = /^(!?)(\S+)/;
-	    debug(print "Found ", ($neg ? "neg " : ""), "entry $pkg\n");
+	    debug("Found ", ($neg ? "neg " : ""), "entry $pkg\n");
 
 	    if (isin( $pkg, @$to_inst, @$to_remove )) {
 		$self->log("Source dependency conflict with build of " .
