@@ -230,17 +230,50 @@ sub run_command_internal {
     my $self = shift;
     my $options = shift;
 
-    $options->{'PIPE'} = 'in';
-    my $pipe = $self->pipe_command($options);
+    my $pid = fork();
 
-    if (defined($pipe)) {
-	while (<$pipe>) {
-	    $self->log("$_");
+    if (!defined $pid) {
+	warn "Cannot fork: $!\n";
+    } elsif ($pid == 0) { # child
+	# redirect stdout
+	my $in = undef;
+	$in = $self->get('Defaults')->{'STREAMIN'} if
+	    (defined($self->get('Defaults')) &&
+	     defined($self->get('Defaults')->{'STREAMIN'}));
+	$in = $options->{'STREAMIN'} if defined($options->{'STREAMIN'});
+	if (defined($in) && $in && \*STDIN != $in) {
+	    open(STDIN, '<&', $in)
+		or warn "Can't redirect stdin\n";
 	}
-	return close($pipe);
-    } else {
-	return 1;
+	# redirect stdout
+	my $out = undef;
+	$out = $self->get('Defaults')->{'STREAMOUT'} if
+	    (defined($self->get('Defaults')) &&
+	     defined($self->get('Defaults')->{'STREAMOUT'}));
+	$out = $options->{'STREAMOUT'} if defined($options->{'STREAMOUT'});
+	if (defined($out) && $out && \*STDOUT != $out) {
+	    open(STDOUT, '>&', $out)
+		or warn "Can't redirect stdout\n";
+	}
+	# redirect stderr
+	my $err = undef;
+	$err = $self->get('Defaults')->{'STREAMERR'} if
+	    (defined($self->get('Defaults')) &&
+	     defined($self->get('Defaults')->{'STREAMERR'}));
+	$err = $options->{'STREAMERR'} if defined($options->{'STREAMERR'});
+	if (defined($err) && $err && \*STDERR != $err) {
+	    open(STDERR, '>&', $err)
+		or warn "Can't redirect stderr\n";
+	}
+
+	$self->exec_command($options);
     }
+
+    debug("Pipe (PID $pid) created for: ",
+	  join(" ", @{$options->{'COMMAND'}}),
+	  "\n");
+
+    waitpid($pid, 0);
 }
 
 # Note, do not run with $user="root", and $chroot=0, because root
