@@ -2492,6 +2492,18 @@ sub open_build_log {
 	    open( CPLOG, ">$filename" ) or
 		die "Can't open logfile $filename: $!\n";
 	    CPLOG->autoflush(1);
+
+	    # Create 'current' symlinks
+	    if ($self->get_conf('SBUILD_MODE') eq 'buildd') {
+		$self->log_symlink($filename,
+				   $self->get_conf('BUILD_DIR') . '/current-' .
+				   $self->get_conf('DISTRIBUTION'));
+	    } else {
+		$self->log_symlink($filename,
+				   $self->get_conf('BUILD_DIR') . '/' .
+				   $self->get('Package_SVersion') . '_' .
+				   $self->get('Arch') . '.build');
+	    }
 	}
 
 	while (<STDIN>) {
@@ -2506,21 +2518,6 @@ sub open_build_log {
 
 	close CPLOG;
 	exit 0;
-    }
-
-    # Create 'current' symlinks
-    if (!$self->get_conf('NOLOG')) {
-	if (-f $filename &&
-	    $self->get_conf('SBUILD_MODE') eq 'buildd') {
-	    $self->log_symlink($filename,
-			       $self->get_conf('BUILD_DIR') . '/current-' .
-			       $self->get_conf('DISTRIBUTION'));
-	} else {
-	    $self->log_symlink($filename,
-			       $self->get_conf('BUILD_DIR') . '/' .
-			       $self->get('Package_SVersion') . '_' .
-			       $self->get('Arch') . '.build');
-	}
     }
 
     $PLOG->autoflush(1);
