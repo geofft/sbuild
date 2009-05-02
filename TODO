@@ -94,3 +94,10 @@ sbuild: Add alternative build-dep resolver support:
 
 Move locking functions out of Sbuild::Build.  Use proper locking in
 place of lockfiles.
+
+Wannabuild::Database::send_reupload_mail unused.
+
+Wannabuild::Database: Move priority, section and category values into
+configuration file to allow customisation.
+
+Sbuild::Base: Add append method to simplify set(get() . ) idiom.
