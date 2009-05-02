@@ -1,21 +1,25 @@
 sbuild (0.58.3-1) unstable; urgency=low
 
   [ Roger Leigh ]
-  * New release. 
+  * New release.
   * debian/control:
-    - Update to Standards Version 3.8.1 
+    - Update to Standards Version 3.8.1.
+    - Add buildd package.
+    - Add libsbuild-perl package.
+    - All packages depend upon libsbuild-perl.
   * Add support for appending a tag to version numbers (Closes: #475777).
-    Thanks to Timothy G Abbott for this patch. 
+    Thanks to Timothy G Abbott for this patch.
   * When using the --help or --version options, don't abort if not
     in the sbuild group (Closes: #523670).  Group membership is now
     only performed after options parsing, and only if required.
   * Allow config files to use $HOME (Closes: #524564).  Thanks to
     James Vega for this patch.
   * Restore buildd package.
+  * Split common library functions into new libsbuild-perl package.
   * debian/sbuild.(preinst|postinst|postrm): Remove special cases for
     versions older than oldstable.  Update addition and removal of
     sbuild group to use return value of getent rather than parsing
-    getent output. 
+    getent output.
   * debian/buildd.(preinst|postinst|postrm): Add maintainer scripts for
     buildd package.  Move configuration file from /etc/buildd.conf to
     /etc/buildd/buildd.conf if present.  Also create buildd user and
