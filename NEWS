@@ -24,6 +24,9 @@ configuration.
      name" error, then the option $x is not valid and should be
      removed from the configuration file indicated.
 
+  4) The maintainer name no longer defaults to DEBEMAIL as in most
+     cases the maintainer in the .dsc should be used.
+
 * Major changes in 0.58.2:
 
   None.
