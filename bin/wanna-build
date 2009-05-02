@@ -35,8 +35,7 @@ use Sbuild::DB::MLDBM;
 use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
-our ($db, %databases, %prioval,
-     %sectval, %catval);
+our ($db, %databases);
 
 BEGIN {
     use Exporter ();
@@ -88,6 +87,68 @@ sub new {
 
     $self->set('Merge Src Version', {});
     $self->set('Merge Bin Src', {});
+
+    $self->set('Priority Values', {
+	required	=> -5,
+	important	=> -4,
+	standard	=> -3,
+	optional	=> -2,
+	extra		=> -1,
+	unknown		=> -1});
+
+    my $sectval = {
+	libs			=> -200,
+	'debian-installer'	=> -199,
+	base			=> -198,
+	devel			=> -197,
+	shells			=> -196,
+	perl			=> -195,
+	python			=> -194,
+	graphics		=> -193,
+	admin			=> -192,
+	utils			=> -191,
+	x11			=> -190,
+	editors			=> -189,
+	net			=> -188,
+	mail			=> -187,
+	news			=> -186,
+	tex			=> -185,
+	text			=> -184,
+	web			=> -183,
+	doc			=> -182,
+	interpreters		=> -181,
+	gnome			=> -180,
+	kde			=> -179,
+	games			=> -178,
+	misc			=> -177,
+	otherosfs		=> -176,
+	oldlibs			=> -175,
+	libdevel		=> -174,
+	sound			=> -173,
+	math			=> -172,
+	science			=> -171,
+	comm			=> -170,
+	electronics		=> -169,
+	hamradio		=> -168,
+	embedded		=> -166
+    };
+    foreach my $i (keys %{$sectval}) {
+	$sectval->{"contrib/$i"} = $sectval->{$i}+40;
+	$sectval->{"non-free/$i"} = $sectval->{$i}+80;
+    }
+    $sectval->{'unknown'}	= -165;
+    $self->set('Section Values', $sectval);
+
+    $self->set('Category Values', {
+	"none"			=> -20,
+	"uploaded-fixed-pkg"	=> -19,
+	"fix-expected"		=> -18,
+	"reminder-sent"		=> -17,
+	"nmu-offered"		=> -16,
+	"easy"			=> -15,
+	"medium"		=> -14,
+	"hard"			=> -13,
+	"compiler-error"	=> -12});
 
     return $self;
 }
@@ -1529,68 +1590,6 @@ sub send_reupload_mail {
 	"(best with buildd-reupload).\n");
 }
 
-
-# for sorting priorities and sections
-BEGIN {
-    %prioval = ( required             => -5,
-		 important            => -4,
-		 standard             => -3,
-		 optional             => -2,
-		 extra                => -1,
-		 unknown              => -1 );
-    %sectval = (
-	libs			=> -200,
-	'debian-installer'	=> -199,
-	base			=> -198,
-	devel			=> -197,
-	shells			=> -196,
-	perl			=> -195,
-	python			=> -194,
-	graphics		=> -193,
-	admin			=> -192,
-	utils			=> -191,
-	x11			=> -190,
-	editors		=> -189,
-	net			=> -188,
-	mail			=> -187,
-	news			=> -186,
-	tex			=> -185,
-	text			=> -184,
-	web			=> -183,
-	doc			=> -182,
-	interpreters		=> -181,
-	gnome			=> -180,
-	kde			=> -179,
-	games			=> -178,
-	misc			=> -177,
-	otherosfs		=> -176,
-	oldlibs		=> -175,
-	libdevel		=> -174,
-	sound			=> -173,
-	math			=> -172,
-	science		=> -171,
-	comm			=> -170,
-	electronics		=> -169,
-	hamradio		=> -168,
-	embedded		=> -166,
-	);
-    foreach my $i (keys %sectval) {
-	$sectval{"contrib/$i"} = $sectval{$i}+40;
-	$sectval{"non-free/$i"} = $sectval{$i}+80;
-    }
-    $sectval{'unknown'}	= -165;
-
-    %catval =  ( "none"			      => -20,
-		 "uploaded-fixed-pkg" => -19,
-		 "fix-expected"       => -18,
-		 "reminder-sent"      => -17,
-		 "nmu-offered"        => -16,
-		 "easy"               => -15,
-		 "medium"		      => -14,
-		 "hard"		          => -13,
-		 "compiler-error"     => -12 );
-}
-
 sub sort_list_func {
     my $self = shift;
 
@@ -1609,14 +1608,14 @@ sub sort_list_func {
 		  last SWITCH;
 	      };
 	      /p/ && do {
-		  $x = $prioval{$a->{'Priority'}} <=> $prioval{$b->{'Priority'}};
+		  $x = $self->get('Priority Values')->{$a->{'Priority'}} <=> $self->get('Priority Values')->{$b->{'Priority'}};
 		  return $x if $x != 0;
 		  last SWITCH;
 	      };
 	      /s/ && do {
-		  $sectval{$a->{'Section'}} = -125 if(!$sectval{$a->{'Section'}});
-		  $sectval{$b->{'Section'}} = -125 if(!$sectval{$b->{'Section'}});
-		  $x = $sectval{$a->{'Section'}} <=> $sectval{$b->{'Section'}};
+		  $self->get('Section Values')->{$a->{'Section'}} = -125 if(!$self->get('Section Values')->{$a->{'Section'}});
+		  $self->get('Section Values')->{$b->{'Section'}} = -125 if(!$self->get('Section Values')->{$b->{'Section'}});
+		  $x = $self->get('Section Values')->{$a->{'Section'}} <=> $self->get('Section Values')->{$b->{'Section'}};
 		  return $x if $x != 0;
 		  last SWITCH;
 	      };
@@ -1654,15 +1653,15 @@ sub sort_list_func {
 		      $a->{'Failed-Category'} : "none";
 		  my $cb = exists $b->{'Failed-Category'} ?
 		      $b->{'Failed-Category'} : "none";
-		  $x = $catval{$ca} <=> $catval{$cb};
+		  $x = $self->get('Category Values')->{$ca} <=> $self->get('Category Values')->{$cb};
 		  return $x if $x != 0;
 		  last SWITCH;
 	      };
 	      /S/ && do {
-		  my $pa = $prioval{$a->{'Priority'}} >
-		      $prioval{'standard'};
-		  my $pb = $prioval{$b->{'Priority'}} >
-		      $prioval{'standard'};
+		  my $pa = $self->get('Priority Values')->{$a->{'Priority'}} >
+		      $self->get('Priority Values')->{'standard'};
+		  my $pb = $self->get('Priority Values')->{$b->{'Priority'}} >
+		      $self->get('Priority Values')->{'standard'};
 		  $x = $pa <=> $pb;
 		  return $x if $x != 0;
 		  last SWITCH;
