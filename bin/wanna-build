@@ -36,7 +36,7 @@ use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
 our ($db, %databases, %prioval,
-     %sectval, %catval, %merge_binsrc);
+     %sectval, %catval);
 
 BEGIN {
     use Exporter ();
@@ -87,6 +87,7 @@ sub new {
     $self->set('New Version', {});
 
     $self->set('Merge Src Version', {});
+    $self->set('Merge Bin Src', {});
 
     return $self;
 }
@@ -1094,7 +1095,7 @@ sub parse_sources {
     # of binary packages from the Sources point of view
     foreach $name (keys %pkgs) {
 	foreach my $bin (split( /\s*,\s*/, $pkgs{$name}{'bin'} ) ) {
-	    $merge_binsrc{$bin} = $name;
+	    $self->get('Merge Bin Src')->{$bin} = $name;
 	}
     }
     # remove installed packages that no longer have source available
@@ -2213,7 +2214,7 @@ sub get_unsatisfied_dep {
 
                     if (defined($dep->{'Rel'}) and $dep->{'Rel'} =~ '^>' and defined ($pkgs->{$dep->{'Package'}}) and
                         version_compare($bd->{$pkgs->{$dep->{'Package'}}{'Source'}}{'ver'},'>>',$pkgs->{$dep->{'Package'}}{'Sourcev'})) {
-                        if (not defined($merge_binsrc{$dep->{'Package'}})) {
+                        if (not defined($self->get('Merge Bin Src')->{$dep->{'Package'}})) {
                             # the uninstallable package doesn't exist in the new source; look for something else that does.
                             delete $$retdep{$dep->{'Package'}};
                             foreach (sort (split( /\s*,\s*/, $bd->{$pkgs->{$dep->{'Package'}}{'Source'}}{'bin'}))) {
@@ -2227,7 +2228,7 @@ sub get_unsatisfied_dep {
                         }
                     } else {
                         # sanity check to make sure the depending binary still exists, and the depended binary exists and dep-wait on a new version of it
-                        if ( defined($merge_binsrc{$pkgname}) and defined($pkgs->{$dep->{'Package'}}{'Version'}) ) {
+                        if ( defined($self->get('Merge Bin Src')->{$pkgname}) and defined($pkgs->{$dep->{'Package'}}{'Version'}) ) {
                             delete $$retdep{$dep->{'Package'}};
                             $dep->{'Package'} = $pkgname;
                             $dep->{'Rel'} = '>>';
@@ -2276,7 +2277,7 @@ sub auto_dep_wait {
                 foreach (%$newdeps) {
                     my $dep = $$newdeps{$_};
                     # ensure we're not waiting on ourselves, or a package that has been removed
-                    next if (not defined($merge_binsrc{$dep->{'Package'}})) or ($merge_binsrc{$dep->{'Package'}} eq $key);
+                    next if (not defined($self->get('Merge Bin Src')->{$dep->{'Package'}})) or ($self->get('Merge Bin Src')->{$dep->{'Package'}} eq $key);
                     if ($dep->{'Rel'} =~ '^>') {
                         $deplist->{$dep->{'Package'}} = $dep;
                         $change++;
