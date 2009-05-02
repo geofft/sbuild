@@ -24,8 +24,10 @@ sbuild (0.58.3-1) unstable; urgency=low
     buildd package.  Move configuration file from /etc/buildd.conf to
     /etc/buildd/buildd.conf if present.  Also create buildd user and
     group for running the buildd daemon.
+  * Buildd::Conf: Don't default MAINTAINER_NAME to $DEBEMAIL if unset
+    in the configuration file (Closes: #520158).
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 26 Apr 2009 20:24:23 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 02 May 2009 15:58:57 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 
