@@ -47,22 +47,6 @@ BEGIN {
 # global vars
 $| = 1;
 
-# map program invocation names to operation modes
-my %prognames = ( "uploaded-build"  => "set-uploaded",
-		  "failed-build"    => "set-failed",
-		  "no-build"		=> "set-not-for-us",
-		  "give-back-build" => "set-needs-build",
-		  "dep-wait-build"  => "set-dep-wait",
-		  "forget-build"	=> "forget",
-		  "merge-quinn"		=> "merge-quinn",
-		  "merge-packages"  => "merge-packages",
-		  "merge-sources"   => "merge-sources",
-		  "build-info"		=> "info" );
-
-
-my $progname;
-($progname = $0) =~ s,.*/,,;
-
 sub new {
     my $class = shift;
     my $conf = shift;
@@ -156,14 +140,6 @@ sub new {
 
 sub run {
     my $self = shift;
-
-    if ($prognames{$progname}) {
-	$self->set_conf('DB_OPERATION',  $prognames{$progname});
-    }
-    elsif ($progname =~ /^list-(.*)$/) {
-	$self->set_conf('DB_OPERATION', 'list');
-	$self->set_conf('DB_LIST_STATE', ($1 eq "all") ? "" : $1);
-    }
 
     $self->set_conf('DB_OPERATION', $self->get_conf('DB_CATEGORY') ? "set-failed" : "set-building")
 	if !$self->get_conf('DB_OPERATION'); # default operation
@@ -2323,6 +2299,29 @@ my $options = WannaBuild::Options->new($conf, "wanna-build", 1);
 exit 1 if !defined($options);
 my $database = Wannabuild::Database->new($conf);
 exit 1 if !defined($database);
+
+# map program invocation names to operation modes
+my %prognames = ( "uploaded-build"  => "set-uploaded",
+		  "failed-build"    => "set-failed",
+		  "no-build"		=> "set-not-for-us",
+		  "give-back-build" => "set-needs-build",
+		  "dep-wait-build"  => "set-dep-wait",
+		  "forget-build"	=> "forget",
+		  "merge-quinn"		=> "merge-quinn",
+		  "merge-packages"  => "merge-packages",
+		  "merge-sources"   => "merge-sources",
+		  "build-info"		=> "info" );
+
+
+my $progname;
+($progname = $0) =~ s,.*/,,;
+
+if ($prognames{$progname}) {
+    $conf->set('DB_OPERATION', $prognames{$progname});
+} elsif ($progname =~ /^list-(.*)$/) {
+    $conf->set('DB_OPERATION', 'list');
+    $conf->set('DB_LIST_STATE', ($1 eq "all") ? "" : $1);
+}
 
 # All logging is to standard out and error; no log stream to set.
 my $status = $database->run();
