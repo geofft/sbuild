@@ -25,6 +25,7 @@ perlmodwannabuilddir = $(perlmoddir)/WannaBuild
 
 MODULES =		\
 	Conf.pm		\
+	Database.pm
 	Options.pm
 
 perlmodwannabuild_DATA =	\
