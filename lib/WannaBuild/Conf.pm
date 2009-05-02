@@ -277,63 +277,39 @@ sub read_config {
     our $db_web_stats = undef;
 
     # read conf files
-    my $legacy_db = 0;
-    if (-r $Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'}) {
-	warn "W: Reading obsolete configuration file $Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'}";
-	warn "I: This file has been merged with $Sbuild::Sysconfig::paths{'SBUILD_CONF'}";
-	$legacy_db = 1;
-	require $Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'};
+    foreach ($Sbuild::Sysconfig::paths{'WANNA_BUILD_CONF'},
+	     "$HOME/.wanna-buildrc") {
+	if (-r $_) {
+	    my $e = eval `cat "$_"`;
+	    if (!defined($e)) {
+		print STDERR "E: $_: Errors found in configuration file:\n$@";
+		exit(1);
+	    }
+	}
     }
-    if (-r "$HOME/.wanna-buildrc") {
-	warn "W: Reading obsolete configuration file $HOME/.wanna-buildrc";
-	warn "W: This file has been merged with $HOME/.sbuildrc";
-	$legacy_db = 1;
-	require "$HOME/.wanna-buildrc";
-    }
-    require $Sbuild::Sysconfig::paths{'SBUILD_CONF'}
-        if -r $Sbuild::Sysconfig::paths{'SBUILD_CONF'};
-    require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 
-    if ($legacy_db) { # Using old wanna-build.conf
-	$self->set('DB_TYPE', 'mldbm');
-	$self->set('DB_BASE_DIR', $basedir);
-	# TODO: Don't allow slash in name
-	$self->set('DB_BASE_NAME', $dbbase);
-	$self->set('DB_TRANSACTION_LOG', $transactlog);
-#	$self->set('DB_DISTRIBUTIONS', \@distributions);
-# TODO: Warn if using old value.  Obsolete old options.
-	$self->set('DB_DISTRIBUTIONS', \%dist_order);
-	$self->set('DB_DISTRIBUTIONS', \%distributions);
-	$self->set('DB_SECTIONS', \@sections);
-	$self->set('DB_PACKAGES_SOURCE', $pkgs_source);
-	$self->set('DB_QUINN_SOURCE', $quinn_source);
-	$self->set('DB_ADMIN_USERS', \@admin_users);
-	$self->set('DB_MAINTAINER_EMAIL', $maint);
-	$self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $notforus_maint);
-	$self->set('DB_LOG_MAIL', $log_mail);
-	$self->set('DB_STAT_MAIL', $stat_mail);
-	$self->set('DB_MAIL_DOMAIN', $buildd_domain);
-	$self->set('DB_WEB_STATS', $web_stats);
-    } else { # Using sbuild.conf
-	$self->set('DB_TYPE', $db_type);
-	$self->set('DB_BASE_DIR', $db_base_dir);
-	$self->set('DB_BASE_NAME', $db_base_name);
-	$self->set('DB_TRANSACTION_LOG', $db_transaction_log);
+    $self->set('DB_TYPE', $db_type);
+    $self->set('DB_BASE_DIR', $db_base_dir);
+    $self->set('DB_BASE_NAME', $db_base_name);
+    $self->set('DB_TRANSACTION_LOG', $db_transaction_log);
 #	$self->set('DB_DISTRIBUTIONS', \@db_distributions);
 # TODO: Warn if using old value.  Obsolete old options.
-	$self->set('DB_DISTRIBUTIONS', \%db_distribution_order);
-	$self->set('DB_DISTRIBUTIONS', \%db_distributions);
-	$self->set('DB_SECTIONS', \@db_sections);
-	$self->set('DB_PACKAGES_SOURCE', $db_packages_source);
-	$self->set('DB_QUINN_SOURCE', $db_quinn_source);
-	$self->set('DB_ADMIN_USERS', \@db_admin_users);
-	$self->set('DB_MAINTAINER_EMAIL', $db_maintainer_email);
-	$self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $db_notforus_maintainer_email);
-	$self->set('DB_LOG_MAIL', $db_log_mail);
-	$self->set('DB_STAT_MAIL', $db_stat_mail);
-	$self->set('DB_MAIL_DOMAIN', $db_mail_domain);
-	$self->set('DB_WEB_STATS', $db_web_stats);
-    }
+    $self->set('DB_DISTRIBUTIONS', \%db_distribution_order)
+    	if (%db_distribution_order);
+    $self->set('DB_DISTRIBUTIONS', \%db_distributions)
+    	if (%db_distributions);
+    $self->set('DB_SECTIONS', \@db_sections)
+	if (@db_sections);
+    $self->set('DB_PACKAGES_SOURCE', $db_packages_source);
+    $self->set('DB_QUINN_SOURCE', $db_quinn_source);
+    $self->set('DB_ADMIN_USERS', \@db_admin_users)
+	if (@db_admin_users);
+    $self->set('DB_MAINTAINER_EMAIL', $db_maintainer_email);
+    $self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $db_notforus_maintainer_email);
+    $self->set('DB_LOG_MAIL', $db_log_mail);
+    $self->set('DB_STAT_MAIL', $db_stat_mail);
+    $self->set('DB_MAIL_DOMAIN', $db_mail_domain);
+    $self->set('DB_WEB_STATS', $db_web_stats);
 }
 
 1;

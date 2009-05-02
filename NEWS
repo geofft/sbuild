@@ -15,6 +15,15 @@ configuration.
      dependency, using the same dependency syntax one would use in
      debian/control.
 
+  2) The wanna-build configuration has been moved back to
+     /etc/buildd/wanna-build.conf.  However, the option names have
+     been renamed and your configuration will require updating.
+
+  3) When reading configuration files, stricter checking is performed.
+     If you see a "Global symbol "$x" requires explicit package
+     name" error, then the option $x is not valid and should be
+     removed from the configuration file indicated.
+
 * Major changes in 0.58.2:
 
   None.

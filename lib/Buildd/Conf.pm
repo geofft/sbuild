@@ -228,11 +228,8 @@ sub init_allowed_keys {
 	'WEAK_NO_AUTO_BUILD'			=> {
 	    DEFAULT => []
 	},
-	'CONFIG_GLOBAL_TIME'			=> {
-	    DEFAULT => 0
-	},
-	'CONFIG_USER_TIME'			=> {
-	    DEFAULT => 0
+	'CONFIG_TIME'				=> {
+	    DEFAULT => {}
 	});
 
     $self->set_allowed_keys(\%buildd_keys);
@@ -244,79 +241,78 @@ sub read_config {
     my $HOME = $self->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
-    our $admin_mail = undef;
-    our $apt_get = undef;
-    our $arch = undef;
-    our $autoclean_interval = undef;
-    our $build_log_keep = undef;
-    our $build_regex = undef; # Should this be user settable?
-    our $daemon_log_keep = undef;
-    our $daemon_log_rotate = undef;
-    our $daemon_log_send = undef;
-    our $delay_after_give_back = undef;
-    our $dupload_to = undef;
-    our $dupload_to_non_us = undef;
-    our $dupload_to_security = undef;
-    our $error_mail_window = undef;
-    our $idle_sleep_time = undef;
-    our $log_queued_messages = undef;
-    our $max_build = undef;
-    our $min_free_space = undef;
-    our $nice_level = undef;
-    our @no_auto_build;
-    our $no_build_regex = undef;
-    our $no_warn_pattern = undef;
-    our $pkg_log_keep = undef;
-    our $secondary_daemon_threshold = undef;
-    our $should_build_msgs = undef;
-    our $sshcmd = undef;
-    our $statistics_mail = undef;
-    our $statistics_period = undef;
-    our $sudo = undef;
-    our @take_from_dists;
-    our $wanna_build_dbbase = undef;
-    our $wanna_build_user = undef;
-    our $warning_age = undef;
-    our @weak_no_auto_build;
+    my $admin_mail = undef;
+    my $apt_get = undef;
+    my $arch = undef;
+    my $autoclean_interval = undef;
+    my $build_log_keep = undef;
+    my $build_regex = undef; # Should this be user settable?
+    my $daemon_log_keep = undef;
+    my $daemon_log_rotate = undef;
+    my $daemon_log_send = undef;
+    my $delay_after_give_back = undef;
+    my $dupload_to = undef;
+    my $dupload_to_non_us = undef;
+    my $dupload_to_security = undef;
+    my $error_mail_window = undef;
+    my $idle_sleep_time = undef;
+    my $log_queued_messages = undef;
+    my $max_build = undef;
+    my $min_free_space = undef;
+    my $nice_level = undef;
+    my @no_auto_build;
+    my $no_build_regex = undef;
+    my $no_warn_pattern = undef;
+    my $pkg_log_keep = undef;
+    my $secondary_daemon_threshold = undef;
+    my $should_build_msgs = undef;
+    my $sshcmd = undef;
+    my $statistics_mail = undef;
+    my $statistics_period = undef;
+    my $sudo = undef;
+    my @take_from_dists;
+    my $wanna_build_dbbase = undef;
+    my $wanna_build_user = undef;
+    my $warning_age = undef;
+    my @weak_no_auto_build;
 
     my $global = $Sbuild::Sysconfig::paths{'BUILDD_CONF'};
     my $user = "$HOME/.builddrc";
-    my $global_time = 0;
+    my %config_time = ();
     my $user_time = 0;
 
     my $reread = 0;
 
     sub ST_MTIME () { 9 }
 
-    if (-r $global) {
-        my @stat = stat($global);
-	if ($self->get('CONFIG_GLOBAL_TIME') < $stat[ST_MTIME]) {
-	    $global_time = $stat[ST_MTIME];
+    my @config_files = ($global, $user);
+
+    $reread = 1 if $reread_config;
+
+    foreach (@config_files) {
+	if (-r $_) {
+	    $config_time{$_} = 0;
+	    my @stat = stat($_);
+	    if (!defined($self->get('CONFIG_TIME')->{$_}) ||
+		$self->get('CONFIG_TIME')->{$_} < $stat[ST_MTIME]) {
+		$config_time{$_} = $stat[ST_MTIME];
+		$reread = 1;
+	    }
 	}
     }
-
-    if (-r $user) {
-        my @stat = stat($user);
-	if ($self->get('CONFIG_USER_TIME') < $stat[ST_MTIME]) {
-	    $user_time = $stat[ST_MTIME];
-	}
-    }
-
-    $reread = 1 if ($reread_config || $global_time || $user_time);
-    $reread_config = 0;
 
     # Need to reread all config files, even if one is updated.
-
-    if ($reread && -r $global) {
-	delete $INC{$global};
-	require $global;
-	$self->set('CONFIG_GLOBAL_TIME', $global_time);
-    }
-
-    if ($reread && -r $user) {
-	delete $INC{$user};
-	require $user;
-	$self->set('CONFIG_USER_TIME', $user_time);
+    if ($reread) {
+	foreach (@config_files) {
+	    if (-r $_) {
+		my $e = eval `cat "$_"`;
+		if (!defined($e)) {
+		    print STDERR "E: $_: Errors found in configuration file:\n$@";
+		    exit(1);
+		}
+		$self->get('CONFIG_TIME')->{$_} = $config_time{$_};
+	    }
+	}
     }
 
     # Set configuration if updated.
