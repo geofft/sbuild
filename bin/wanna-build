@@ -35,7 +35,7 @@ use Sbuild::DB::MLDBM;
 use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
-our ($mail_logs, $curr_date, $db, %databases, %prioval,
+our ($curr_date, $db, %databases, %prioval,
      %sectval, %catval, $short_date, %new_vers, %merge_binsrc, %merge_srcvers);
 
 BEGIN {
@@ -49,7 +49,6 @@ BEGIN {
 
 
 # Temporarily set globals from conf object:
-$mail_logs = "";
 my @curr_time = gmtime();
 +$curr_date = strftime("%Y %b %d %H:%M:%S",@curr_time);
 +$short_date = strftime("%m/%d/%y",@curr_time);
@@ -82,6 +81,8 @@ sub new {
 
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
+
+    $self->set('Mail Logs', '');
 
     return $self;
 }
@@ -179,13 +180,14 @@ sub run {
 
     $self->process();
 
-    if ($mail_logs &&
+    if ($self->get('Mail Logs') &&
 	defined($self->get_conf('DB_LOG_MAIL')) && $self->get_conf('DB_LOG_MAIL')) {
 	$self->send_mail($self->get_conf('DB_LOG_MAIL'),
 			 "wanna-build " . $self->get_conf('DISTRIBUTION') .
 			 " state changes $curr_date",
 			 "State changes at $curr_date for distribution ".
-			 $self->get_conf('DISTRIBUTION') . ":\n\n$mail_logs\n");
+			 $self->get_conf('DISTRIBUTION') . ":\n\n".
+			 $self->get('Mail Logs') . "\n");
     }
 
     return 0;
@@ -2001,7 +2003,8 @@ sub log_ta {
     if (!($prevstate eq 'Failed' && $pkg->{'State'} eq 'Failed')) {
 	$str .= " (with --override)"
 	    if $self->get_conf('DB_OVERRIDE');
-	$mail_logs .= "$str\n";
+	$self->set('Mail Logs',
+		   $self->get('Mail Logs') . "$str\n");
     }
 }
 
