@@ -36,7 +36,7 @@ use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
 our ($db, %databases, %prioval,
-     %sectval, %catval, %merge_binsrc, %merge_srcvers);
+     %sectval, %catval, %merge_binsrc);
 
 BEGIN {
     use Exporter ();
@@ -46,10 +46,6 @@ BEGIN {
 
     @EXPORT = qw();
 }
-
-
-
-# %merge_srcvers
 
 # global vars
 $| = 1;
@@ -89,6 +85,8 @@ sub new {
     # Note: specific contents are only incremented, never initially set.
     # This might be a bug.
     $self->set('New Version', {});
+
+    $self->set('Merge Src Version', {});
 
     return $self;
 }
@@ -1113,7 +1111,7 @@ sub parse_sources {
 	    $db->del_package($name);
 	} else {
 	    next if !isin( $pkg->{'State'}, qw(Installed) );
-	    if ($full && not defined $merge_srcvers{$name}) {
+	    if ($full && not defined $self->get('Merge Src Version')->{$name}) {
 		$self->change_state( $pkg, 'deleted' );
 		$self->log_ta( $pkg, "--merge-sources" );
 		print "$name ($pkg->{'Version'}): ".
@@ -1121,10 +1119,10 @@ sub parse_sources {
 		    "binaries don't exist anymore\n"
 		    if $self->get_conf('VERBOSE');
 		$db->del_package($name);
-	    } elsif ($full && version_less( $merge_srcvers{$name}, $pkg->{'Version'})) {
+	    } elsif ($full && version_less( $self->get('Merge Src Version')->{$name}, $pkg->{'Version'})) {
 		print "$name ($pkg->{'Version'}): ".
 		    "package is Installed but binaries are from ".
-		    $merge_srcvers{$name}. "\n"
+		    $self->get('Merge Src Version')->{$name}. "\n"
 		    if $self->get_conf('VERBOSE');
 	    }
 	}
@@ -1179,9 +1177,9 @@ sub parse_packages {
 
 	next if $architecture ne $self->get_conf('ARCH');
 	$name = $source if $source;
-	next if defined($merge_srcvers{$name}) and $merge_srcvers{$name} eq $version;
+	next if defined($self->get('Merge Src Version')->{$name}) and $self->get('Merge Src Version')->{$name} eq $version;
 
-	$merge_srcvers{$name} = $version;
+	$self->get('Merge Src Version')->{$name} = $version;
 
 	my $pkg = $db->get_package($name);
 
