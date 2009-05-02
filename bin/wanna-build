@@ -35,8 +35,8 @@ use Sbuild::DB::MLDBM;
 use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
-our ($curr_date, $db, %databases, %prioval,
-     %sectval, %catval, $short_date, %new_vers, %merge_binsrc, %merge_srcvers);
+our ($db, %databases, %prioval,
+     %sectval, %catval, %new_vers, %merge_binsrc, %merge_srcvers);
 
 BEGIN {
     use Exporter ();
@@ -48,11 +48,6 @@ BEGIN {
 }
 
 
-# Temporarily set globals from conf object:
-my @curr_time = gmtime();
-+$curr_date = strftime("%Y %b %d %H:%M:%S",@curr_time);
-+$short_date = strftime("%m/%d/%y",@curr_time);
-my $ctime = time;
 
 # Undefined: %new_vers %merge_srcvers
 
@@ -83,6 +78,13 @@ sub new {
     bless($self, $class);
 
     $self->set('Mail Logs', '');
+
+    my @curr_time = gmtime();
+    my $ctime = time();
+
+    $self->set('Current Date', strftime("%Y %b %d %H:%M:%S", @curr_time));
+    $self->set('Short Date', strftime("%m/%d/%y", @curr_time));
+    $self->set('Current Time', $ctime);
 
     return $self;
 }
@@ -184,8 +186,9 @@ sub run {
 	defined($self->get_conf('DB_LOG_MAIL')) && $self->get_conf('DB_LOG_MAIL')) {
 	$self->send_mail($self->get_conf('DB_LOG_MAIL'),
 			 "wanna-build " . $self->get_conf('DISTRIBUTION') .
-			 " state changes $curr_date",
-			 "State changes at $curr_date for distribution ".
+			 " state changes " . $self->get('Current Date'),
+			 "State changes at " . $self->get('Current Date') .
+			 " for distribution ".
 			 $self->get_conf('DISTRIBUTION') . ":\n\n".
 			 $self->get('Mail Logs') . "\n");
     }
@@ -312,7 +315,7 @@ sub process {
 	my $ui = $db->get_user($self->get_conf('DB_USER'));
 	$ui = {} if (!defined($ui));
 
-	$ui->{'Last-Seen'} = $curr_date;
+	$ui->{'Last-Seen'} = $self->get('Current Date');
 	$ui->{'User'} = $self->get_conf('DB_USER');
 
 	$db->set_user($ui);
@@ -709,7 +712,8 @@ sub add_one_failed {
 	$pkg->{'Failed-Category'} ne $cat) {
 	(my $action = $cat) =~ s/-/ /;
 	$self->set_conf('DB_FAIL_REASON',
-		   $self->get_conf('DB_FAIL_REASON') . "\n$short_date: $action");
+			$self->get_conf('DB_FAIL_REASON') . "\n" .
+			$self->get('Short Date') . ": $action");
     }
 
     $self->change_state( $pkg, 'Failed' );
@@ -1661,8 +1665,8 @@ sub sort_list_func {
 		  last SWITCH;
 	      };
 	      /a/ && do {
-		  my $x = $ctime - $self->parse_date($a->{'State-Change'}) <=>
-		      $ctime - $self->parse_date($b->{'State-Change'});
+		  my $x = $self->get('Current Time') - $self->parse_date($a->{'State-Change'}) <=>
+		      $self->get('Current Time') - $self->parse_date($b->{'State-Change'});
 		  return $x if $x != 0;
 		  last SWITCH;
 	      };
@@ -1692,9 +1696,9 @@ sub list_packages {
 	next if $self->get_conf('DB_CATEGORY') && $pkg->{'State'} eq "Failed" &&
 	    $pkg->{'Failed-Category'} ne $self->get_conf('DB_CATEGORY');
 	next if ($self->get_conf('DB_LIST_MIN_AGE') > 0 &&
-		 ($ctime - $self->parse_date($pkg->{'State-Change'})) < $self->get_conf('DB_LIST_MIN_AGE'))||
+		 ($self->get('Current Time') - $self->parse_date($pkg->{'State-Change'})) < $self->get_conf('DB_LIST_MIN_AGE'))||
 		 ($self->get_conf('DB_LIST_MIN_AGE') < 0 &&
-		  ($ctime - $self->parse_date($pkg->{'State-Change'})) > -$self->get_conf('DB_LIST_MIN_AGE'));
+		  ($self->get('Current Time') - $self->parse_date($pkg->{'State-Change'})) > -$self->get_conf('DB_LIST_MIN_AGE'));
 	push( @list, $pkg );
     }
 
@@ -1936,7 +1940,7 @@ sub change_state {
     return if defined($state) and $state eq $newstate;
     $pkg->{'Previous-State'} = $state if defined($state);
 
-    $pkg->{'State-Change'} = $curr_date;
+    $pkg->{'State-Change'} = $self->get('Current Date');
 
     if (defined($state) and $state eq 'Failed') {
 	$pkg->{'Old-Failed'} =
@@ -1997,7 +2001,7 @@ sub log_ta {
 	warn "Can't open log file $transactlog: $!\n";
 	return;
     }
-    print LOG "$curr_date: $str\n";
+    print LOG $self->get('Current Date') . ": $str\n";
     close( LOG );
 
     if (!($prevstate eq 'Failed' && $pkg->{'State'} eq 'Failed')) {
