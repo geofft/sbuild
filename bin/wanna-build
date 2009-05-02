@@ -234,13 +234,6 @@ sub run {
     if (!-f $self->db_filename( $self->get_conf('DISTRIBUTION') ) && !$self->get_conf('DB_CREATE')) {
 	die "Database for " . $self->get_conf('DISTRIBUTION') . " doesn't exist\n";
     }
-    END {
-
-	foreach (keys %databases) {
-	    $self->get('Databases')->{$_}->close();
-	    undef $self->get('Databases')->{$_};
-	}
-    }
 
     # TODO: Use 'Databases' only.
     $self->set('Current Database',
@@ -2335,3 +2328,13 @@ exit 1 if !defined($database);
 my $status = $database->run();
 
 exit $status;
+
+END {
+    if (defined($database)) {
+	my $databases = $database->get('Databases');
+	foreach (keys %{$databases}) {
+	    $databases->{$_}->close();
+	    undef $databases->{$_};
+	}
+    }
+}
