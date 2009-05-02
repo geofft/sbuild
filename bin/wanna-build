@@ -36,7 +36,7 @@ use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
 our ($db, %databases, %prioval,
-     %sectval, %catval, %new_vers, %merge_binsrc, %merge_srcvers);
+     %sectval, %catval, %merge_binsrc, %merge_srcvers);
 
 BEGIN {
     use Exporter ();
@@ -49,7 +49,7 @@ BEGIN {
 
 
 
-# Undefined: %new_vers %merge_srcvers
+# %merge_srcvers
 
 # global vars
 $| = 1;
@@ -85,6 +85,10 @@ sub new {
     $self->set('Current Date', strftime("%Y %b %d %H:%M:%S", @curr_time));
     $self->set('Short Date', strftime("%m/%d/%y", @curr_time));
     $self->set('Current Time', $ctime);
+
+    # Note: specific contents are only incremented, never initially set.
+    # This might be a bug.
+    $self->set('New Version', {});
 
     return $self;
 }
@@ -1308,7 +1312,7 @@ sub check_dep_wait {
 	    delete $pkg->{'Depends'};
 	    print "$name ($pkg->{'Version'}) has all ",
 	    "dependencies available now\n" if $self->get_conf('VERBOSE');
-	    $new_vers{$name}++;
+	    $self->get('New Version')->{$name}++;
 	    $db->set_package($pkg);
 	}
 	elsif (@removed_deps) {
@@ -1430,7 +1434,7 @@ sub parse_quinn_diff {
 	    delete $pkg->{'Binary-NMU-Version'};
 	    delete $pkg->{'Binary-NMU-Changelog'};
 	    $self->log_ta( $pkg, "--merge-quinn" );
-	    $new_vers{$name}++;
+	    $self->get('New Version')->{$name}++;
 	    $change++;
 	    print "$name ($version) needs rebuilding now.\n" if $self->get_conf('VERBOSE');
 	}
