@@ -35,8 +35,6 @@ use Sbuild::DB::MLDBM;
 use Sbuild::DB::Postgres;
 use WannaBuild::Options;
 
-our ($db, %databases);
-
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
@@ -71,6 +69,9 @@ sub new {
 
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
+
+    $self->set('Current Database', undef);
+    $self->set('Databases', {});
 
     $self->set('Mail Logs', '');
 
@@ -236,13 +237,14 @@ sub run {
     END {
 
 	foreach (keys %databases) {
-	    $databases{$_}->close();
-	    undef $databases{$_};
+	    $self->get('Databases')->{$_}->close();
+	    undef $self->get('Databases')->{$_};
 	}
     }
 
-    # TODO: Use %databases only.
-    $db = $self->open_db($self->get_conf('DISTRIBUTION'));
+    # TODO: Use 'Databases' only.
+    $self->set('Current Database',
+	       $self->open_db($self->get_conf('DISTRIBUTION')));
 
     $self->process();
 
@@ -331,19 +333,19 @@ sub process {
 	  @ARGV = ( $ARGS[2] );
 	  my $build_deps = $self->parse_sources(1);
 	  $self->auto_dep_wait( $build_deps, $pkgs );
-	  $db->clean();
+	  $self->get('Current Database')->clean();
 	  last SWITCH;
       };
       /^import/ && do {
 	  die "This operation is restricted to admin users\n"
 	      if (defined @{$self->get_conf('DB_ADMIN_USERS')} and
 		  !isin( $self->get_conf('USERNAME'), @{$self->get_conf('DB_ADMIN_USERS')}));
-	  $db->clear(); # clear all current contents
-	  $db->restore($self->get_conf('DB_IMPORT_FILE'));
+	  $self->get('Current Database')->clear(); # clear all current contents
+	  $self->get('Current Database')->restore($self->get_conf('DB_IMPORT_FILE'));
 	  last SWITCH;
       };
       /^export/ && do {
-	  $db->dump($self->get_conf('DB_EXPORT_FILE'));
+	  $self->get('Current Database')->dump($self->get_conf('DB_EXPORT_FILE'));
 	  last SWITCH;
       };
       /^manual-edit/ && do {
@@ -356,12 +358,12 @@ sub process {
 	      $tmpfile = $tmpfile_pattern . $i;
 	      last if ! -e $tmpfile;
 	  }
-	  $db->dump($tmpfile);
+	  $self->get('Current Database')->dump($tmpfile);
 	  my $editor = $ENV{'VISUAL'} ||
 	      "/usr/bin/sensible-editor";
 	  system "$editor $tmpfile";
-	  $db->clear(); # clear all current contents
-	  $db->restore($tmpfile);
+	  $self->get('Current Database')->clear(); # clear all current contents
+	  $self->get('Current Database')->restore($tmpfile);
 	  unlink( $tmpfile );
 	  last SWITCH;
       };
@@ -369,20 +371,20 @@ sub process {
 	  die "This operation is restricted to admin users\n"
 	      if (defined @{$self->get_conf('DB_ADMIN_USERS')} and
 		  !isin( $self->get_conf('USERNAME'), @{$self->get_conf('DB_ADMIN_USERS')}));
-	  $db->clean();
+	  $self->get('Current Database')->clean();
 	  last SWITCH;
       };
 
       die "Unexpected operation mode " . $self->get_conf('DB_OPERATION') . "\n";
   }
     if (not -t and $self->get_conf('DB_USER') =~ /-/) {
-	my $ui = $db->get_user($self->get_conf('DB_USER'));
+	my $ui = $self->get('Current Database')->get_user($self->get_conf('DB_USER'));
 	$ui = {} if (!defined($ui));
 
 	$ui->{'Last-Seen'} = $self->get('Current Date');
 	$ui->{'User'} = $self->get_conf('DB_USER');
 
-	$db->set_user($ui);
+	$self->get('Current Database')->set_user($ui);
     }
 
 }
@@ -450,7 +452,7 @@ sub add_one_building {
     my( $ok, $reason );
 
     $ok = 1;
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
     if (defined($pkg)) {
 	if ($pkg->{'State'} eq "Not-For-Us") {
 	    $ok = 0;
@@ -577,7 +579,7 @@ sub add_one_building {
 	$pkg->{'Version'} = $version;
 	$pkg->{'Builder'} = $self->get_conf('DB_USER');
 	$self->log_ta( $pkg, "--take" );
-	$db->set_package($pkg);
+	$self->get('Current Database')->set_package($pkg);
 	print "$name: $ok\n" if $self->get_conf('VERBOSE');
     }
     else {
@@ -590,7 +592,7 @@ sub add_one_attempted {
     my $name = shift;
     my $version = shift;
 
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
 	if (!defined($pkg)) {
 		print "$name: not registered yet.\n";
@@ -615,7 +617,7 @@ sub add_one_attempted {
 
 	$self->change_state( $pkg, 'Build-Attempted' );
 	$self->log_ta( $pkg, "--attempted" );
-	$db->set_package($pkg);
+	$self->get('Current Database')->set_package($pkg);
 	print "$name: registered as uploaded\n" if $self->get_conf('VERBOSE');
 }
 
@@ -624,7 +626,7 @@ sub add_one_built {
     my $name = shift;
     my $version = shift;
 
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
 	if (!defined($pkg)) {
 		print "$name: not registered yet.\n";
@@ -648,7 +650,7 @@ sub add_one_built {
 	}
 	$self->change_state( $pkg, 'Built' );
 	$self->log_ta( $pkg, "--built" );
-	$db->set_package($pkg);
+	$self->get('Current Database')->set_package($pkg);
 	print "$name: registered as built\n" if $self->get_conf('VERBOSE');
 }
 
@@ -657,7 +659,7 @@ sub add_one_uploaded {
     my $name = shift;
     my $version = shift;
 
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
     if (!defined($pkg)) {
 	print "$name: not registered yet.\n";
@@ -698,7 +700,7 @@ sub add_one_uploaded {
 
     $self->change_state( $pkg, 'Uploaded' );
     $self->log_ta( $pkg, "--uploaded" );
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
     print "$name: registered as uploaded\n" if $self->get_conf('VERBOSE');
 }
 
@@ -708,7 +710,7 @@ sub add_one_failed {
     my $version = shift;
 
     my ($state, $cat);
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
     if (!defined($pkg)) {
 	print "$name: not registered yet.\n";
@@ -791,7 +793,7 @@ sub add_one_failed {
 	delete $pkg->{'BuildPri'};
     }
     $self->log_ta( $pkg, "--failed" );
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
     print "$name: registered as failed\n" if $self->get_conf('VERBOSE');
 }
 
@@ -800,7 +802,7 @@ sub add_one_notforus {
     my $name = shift;
     my $version = shift;
 
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
     if ($pkg->{'State'} eq 'Not-For-Us') {
 	# reset Not-For-Us state in case it's called twice; this is
@@ -846,7 +848,7 @@ sub add_one_notforus {
 	    "the Not-For-Us state is wrong.\n")
 	    if $self->get_conf('DB_NOTFORUS_MAINTAINER_EMAIL');
     }
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
 }
 
 sub add_one_needsbuild {
@@ -855,7 +857,7 @@ sub add_one_needsbuild {
     my $version = shift;
 
     my $state;
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
     if (!defined($pkg)) {
 	print "$name: not registered; can't give back.\n";
@@ -899,7 +901,7 @@ sub add_one_needsbuild {
     delete $pkg->{'Builder'};
     delete $pkg->{'Depends'};
     $self->log_ta( $pkg, "--give-back" );
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
     print "$name: given back\n" if $self->get_conf('VERBOSE');
 }
 
@@ -908,7 +910,7 @@ sub set_one_binnmu {
     my $name = shift;
     my $version = shift;
 
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
     my $state;
 
     if (!defined($pkg)) {
@@ -942,7 +944,7 @@ sub set_one_binnmu {
 	    if (defined $pkg->{'PermBuildPri'});
 	}
 	$self->log_ta( $pkg, "--binNMU" );
-	$db->set_package($pkg);
+	$self->get('Current Database')->set_package($pkg);
 	return;
     } elsif ($self->get_conf('DB_BIN_NMU_VERSION')) {
 	print "${name}_$version: no scheduled binNMU to cancel.\n";
@@ -967,7 +969,7 @@ sub set_one_binnmu {
     $pkg->{'Binary-NMU-Changelog'} = $self->get_conf('DB_FAIL_REASON');
     $pkg->{'Notes'} = 'out-of-date';
     $self->log_ta( $pkg, "--binNMU" );
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
     print "${name}: registered for binNMU $fullver\n" if $self->get_conf('VERBOSE');
 }
 
@@ -976,7 +978,7 @@ sub set_one_buildpri {
     my $name = shift;
     my $version = shift;
     my $key = shift;
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
     my $state;
 
     if (!defined($pkg)) {
@@ -1007,7 +1009,7 @@ sub set_one_buildpri {
 	    if $key eq 'PermBuildPri';
 	$pkg->{$key} = $self->get_conf('DB_BUILD_PRIORITY');
     }
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
     print "$name: set to build priority " .
 	$self->get_conf('DB_BUILD_PRIORITY') . "\n" if $self->get_conf('VERBOSE');
 }
@@ -1017,7 +1019,7 @@ sub add_one_depwait {
     my $name = shift;
     my $version = shift;
     my $state;
-    my $pkg = $db->get_package($name);
+    my $pkg = $self->get('Current Database')->get_package($name);
 
     if (!defined($pkg)) {
 	print "$name: not registered yet.\n";
@@ -1081,7 +1083,7 @@ sub add_one_depwait {
     }
     $pkg->{'Depends'} = $self->build_deplist($deplist);
     $self->log_ta( $pkg, "--dep-wait" );
-    $db->set_package($pkg);
+    $self->get('Current Database')->set_package($pkg);
     print "$name: registered as waiting for dependencies\n" if $self->get_conf('VERBOSE');
 }
 
@@ -1121,7 +1123,7 @@ sub parse_sources {
 	$pkgs{$name}{'dep'} = defined $builddep ? $builddep : "";
 	$pkgs{$name}{'ver'} = $version;
 	$pkgs{$name}{'bin'} = $binaries;
-	my $pkg = $db->get_package($name);
+	my $pkg = $self->get('Current Database')->get_package($name);
 
 	if (defined $pkg) {
 	    my $change = 0;
@@ -1133,7 +1135,7 @@ sub parse_sources {
 		print "$name ($pkg->{'Version'}): deleted ".
 		    "from database, because now Arch: all\n"
 		    if $self->get_conf('VERBOSE');
-		$db->del_package($pkg);
+		$self->get('Current Database')->del_package($pkg);
 		next;
 	    }
 
@@ -1149,7 +1151,7 @@ sub parse_sources {
 	    $pkg->{'Section'} = $section, $change++
 		if defined $section && (!defined($pkg->{'Section'}) ||
 					$pkg->{'Section'} ne $section);
-	    $db->set_package($pkg) if $change;
+	    $self->get('Current Database')->set_package($pkg) if $change;
 	}
     }
     # Now that we only have the latest source version, build the list
@@ -1161,8 +1163,8 @@ sub parse_sources {
     }
     # remove installed packages that no longer have source available
     # or binaries installed
-    foreach $name ($db->list_packages()) {
-	my $pkg = $db->get_package($name);
+    foreach $name ($self->get('Current Database')->list_packages()) {
+	my $pkg = $self->get('Current Database')->get_package($name);
 	if (not defined($pkgs{$name})) {
 	    $self->change_state( $pkg, 'deleted' );
 	    $self->log_ta( $pkg, "--merge-sources" );
@@ -1170,7 +1172,7 @@ sub parse_sources {
 		"deleted from database, because ".
 		"not in Sources anymore\n"
 		if $self->get_conf('VERBOSE');
-	    $db->del_package($name);
+	    $self->get('Current Database')->del_package($name);
 	} else {
 	    next if !isin( $pkg->{'State'}, qw(Installed) );
 	    if ($full && not defined $self->get('Merge Src Version')->{$name}) {
@@ -1180,7 +1182,7 @@ sub parse_sources {
 		    "deleted from database, because ".
 		    "binaries don't exist anymore\n"
 		    if $self->get_conf('VERBOSE');
-		$db->del_package($name);
+		$self->get('Current Database')->del_package($name);
 	    } elsif ($full && version_less( $self->get('Merge Src Version')->{$name}, $pkg->{'Version'})) {
 		print "$name ($pkg->{'Version'}): ".
 		    "package is Installed but binaries are from ".
@@ -1243,7 +1245,7 @@ sub parse_packages {
 
 	$self->get('Merge Src Version')->{$name} = $version;
 
-	my $pkg = $db->get_package($name);
+	my $pkg = $self->get('Current Database')->get_package($name);
 
 	if (defined $pkg) {
 	    if (isin( $pkg->{'State'}, qw(Not-For-Us)) ||
@@ -1299,7 +1301,7 @@ sub parse_packages {
 	delete $pkg->{'Binary-NMU-Version'};
 	delete $pkg->{'Binary-NMU-Changelog'};
 	$self->log_ta( $pkg, "--merge-packages" );
-	$db->set_package($name) = $pkg;
+	$self->get('Current Database')->set_package($name) = $pkg;
 	print "$name ($version) is up-to-date now.\n" if $self->get_conf('VERBOSE');
     }
 
@@ -1338,8 +1340,8 @@ sub check_dep_wait {
     # check all packages in state Dep-Wait if dependencies are all
     # available now
     my $name;
-    foreach $name ($db->list_packages()) {
-	my $pkg = $db->get_package($name);
+    foreach $name ($self->get('Current Database')->list_packages()) {
+	my $pkg = $self->get('Current Database')->get_package($name);
 	next if $pkg->{'State'} ne "Dep-Wait";
 	my $deps = $pkg->{'Depends'};
 	if (!$deps) {
@@ -1373,14 +1375,14 @@ sub check_dep_wait {
 	    print "$name ($pkg->{'Version'}) has all ",
 	    "dependencies available now\n" if $self->get_conf('VERBOSE');
 	    $self->get('New Version')->{$name}++;
-	    $db->set_package($pkg);
+	    $self->get('Current Database')->set_package($pkg);
 	}
 	elsif (@removed_deps) {
 	    $pkg->{'Depends'} = $self->build_deplist( $new_deplist );
 	    print "$name ($pkg->{'Version'}): some dependencies ",
 	    "(@removed_deps) available now, but not all yet\n"
 		if $self->get_conf('VERBOSE');
-	    $db->set_package($pkg);
+	    $self->get('Current Database')->set_package($pkg);
 	}
     }
 }
@@ -1409,7 +1411,7 @@ sub parse_quinn_diff {
 	$priority = "unknown" if $priority eq "-";
 	$priority = "standard" if ($name eq "debian-installer");
 
-	my $pkg = $db->get_package($name);
+	my $pkg = $self->get('Current Database')->get_package($name);
 
 	# Always update section and priority.
 	if (defined($pkg)) {
@@ -1521,7 +1523,7 @@ sub parse_quinn_diff {
 		    "what quinn-diff says ($version)\n";
 	    }
 	}
-	$db->set_package($pkg) if $change;
+	$self->get('Current Database')->set_package($pkg) if $change;
     }
 
     if ($dubious) {
@@ -1543,8 +1545,8 @@ sub parse_quinn_diff {
     # or Dep-Wait and remove them if they're not listed anymore by quinn-diff.
     if ( !$partial ) {
 	my $name;
-	foreach $name ($db->list_packages()) {
-	    my $pkg = $db->get_package($name);
+	foreach $name ($self->get('Current Database')->list_packages()) {
+	    my $pkg = $self->get('Current Database')->get_package($name);
 	    next if defined $pkg->{'Binary-NMU-Version'};
 	    next if !isin($pkg->{'State'},
 			  qw(Needs-Build Building Built
@@ -1562,9 +1564,9 @@ sub parse_quinn_diff {
 		    "from database, because not in quinn-diff anymore\n"
 		    if $self->get_conf('VERBOSE');
 		if ($virtual_delete) {
-		    $db->set_package($pkg);
+		    $self->get('Current Database')->set_package($pkg);
 		} else {
-		    $db->set_package($name);
+		    $self->get('Current Database')->set_package($name);
 		}
 	    }
 	}
@@ -1689,8 +1691,8 @@ sub list_packages {
     my %scnt;
     my $user = $self->get_conf('DB_USER');
 
-    foreach $name ($db->list_packages()) {
-	$pkg = $db->get_package($name);
+    foreach $name ($self->get('Current Database')->list_packages()) {
+	$pkg = $self->get('Current Database')->get_package($name);
 	next if $state ne "all" && $pkg->{'State'} !~ /^\Q$state\E$/i;
 	next if $user && (lc($state) ne 'needs-build' &&
 			  defined($pkg->{'Builder'}) &&
@@ -1768,10 +1770,10 @@ sub info_packages {
     foreach $name (@_) {
 	$name =~ s/_.*$//; # strip version
 	foreach $dist (@dists) {
-	    my $db = $databases{$dist};
+	    my $self->get('Current Database') = $self->get('Databases')->{$dist};
 	    my $pname = "$name" . ($self->get_conf('DB_INFO_ALL_DISTS') ? "($dist)" : "");
 
-	    $pkg = $db->get_package($name);
+	    $pkg = $self->get('Current Database')->get_package($name);
 	    if (!defined( $pkg )) {
 		print "$pname: not registered\n";
 		next;
@@ -1805,7 +1807,7 @@ sub forget_packages {
 
     foreach $name (@_) {
 	$name =~ s/_.*$//; # strip version
-	$pkg = $db->get_package($name);
+	$pkg = $self->get('Current Database')->get_package($name);
 	if (!defined( $pkg )) {
 	    print "$name: not registered\n";
 	    next;
@@ -1828,7 +1830,7 @@ sub forget_packages {
 	    if $self->get_conf('DB_MAINTAINER_EMAIL');
 	$self->change_state( $pkg, 'deleted' );
 	$self->log_ta( $pkg, "--forget" );
-	$db->set_package($name);
+	$self->get('Current Database')->set_package($name);
 	print "$name: deleted from database\n" if $self->get_conf('VERBOSE');
     }
 }
@@ -1839,7 +1841,7 @@ sub forget_users {
     my( $name, $ui );
 
     foreach $name (@_) {
-	if (!$db->del_user($name)) {
+	if (!$self->get('Current Database')->del_user($name)) {
 	    print "$name: not registered\n";
 	    next;
 	}
@@ -1960,7 +1962,7 @@ sub open_db {
     my $self = shift;
     my $dist = shift;
 
-    my $newdb = $databases{$dist};
+    my $newdb = $self->get('Databases')->{$dist};
 
     if (!defined($newdb)) {
 	if ($self->get_conf('DB_TYPE') eq 'mldbm') {
@@ -1974,7 +1976,7 @@ sub open_db {
 	$newdb->open($self->db_filename($dist));
 	$newdb->lock();
 
-	$databases{$dist} = $newdb;
+	$self->get('Databases')->{$dist} = $newdb;
     }
 
     return $newdb;
@@ -2259,8 +2261,8 @@ sub auto_dep_wait {
 
     # We need to walk all of needs-build, as any new upload could make
     # something in needs-build have uninstallable deps
-    foreach $key ($db->list_packages()) {
-	my $pkg = $db->get_package($key);
+    foreach $key ($self->get('Current Database')->list_packages()) {
+	my $pkg = $self->get('Current Database')->get_package($key);
 	next
 	    if not defined $pkg or $pkg->{'State'} ne "Needs-Build";
 	my $srcdeps = $self->parse_srcdeplist($key,$bd->{$key}{'dep'},
@@ -2286,7 +2288,7 @@ sub auto_dep_wait {
                     $pkg->{'Depends'} = $self->build_deplist($deplist);
                     $self->change_state( $pkg, 'Dep-Wait' );
                     $self->log_ta( $pkg, "--merge-all" );
-                    $db->set_package($pkg);
+                    $self->get('Current Database')->set_package($pkg);
                     print "Auto-Dep-Waiting ${key}_$pkg->{'Version'} to $pkg->{'Depends'}\n" if $self->get_conf('VERBOSE');
                 }
                 last;
