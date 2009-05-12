@@ -302,7 +302,7 @@ sub init_allowed_keys {
 	'SBUILD_MODE'				=> {
 	    DEFAULT => 'user'
 	},
-	'SETUP_HOOK'				=> {
+	'CHROOT_SETUP_SCRIPT'				=> {
 	    DEFAULT => undef
 	},
 	'FORCE_ORIG_SOURCE'			=> {
@@ -495,7 +495,7 @@ sub read_config {
     my $sbuild_mode = undef;
     my $debug = undef;
     my $force_orig_source = undef;
-    my $setup_hook = undef;
+    my $chroot_setup_script = undef;
     my %individual_stalled_pkg_timeout;
     undef %individual_stalled_pkg_timeout;
     my $path = undef;
@@ -573,7 +573,7 @@ sub read_config {
     $self->set('CHROOT_SPLIT', $chroot_split);
     $self->set('SBUILD_MODE', $sbuild_mode);
     $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
-    $self->set('SETUP_HOOK', $setup_hook);
+    $self->set('CHROOT_SETUP_SCRIPT', $chroot_setup_script);
     $self->set('INDIVIDUAL_STALLED_PKG_TIMEOUT',
 	       \%individual_stalled_pkg_timeout)
 	if (%individual_stalled_pkg_timeout);

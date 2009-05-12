@@ -274,9 +274,9 @@ sub run {
     }
 
     # Run setup-hook before processing deps and build
-    if ($self->get_conf('SETUP_HOOK')) {
+    if ($self->get_conf('CHROOT_SETUP_SCRIPT')) {
 	$session->run_command(
-	    { COMMAND => [$self->get_conf('SETUP_HOOK')],
+	    { COMMAND => [$self->get_conf('CHROOT_SETUP_SCRIPT')],
 	      ENV => $self->get_env('SBUILD_BUILD_'),
 	      USER => "root",
 	      PRIORITY => 0,
@@ -2628,8 +2628,10 @@ sub close_build_log {
 	    $self->get_conf('MAILTO'));
 
     $self->set('Log File', undef);
-    $self->get('Log Stream')->close(); # Close child logger process
-    $self->set('Log Stream', undef);
+    if (defined($self->get('Log Stream'))) {
+	$self->get('Log Stream')->close(); # Close child logger process
+	$self->set('Log Stream', undef);
+    }
 }
 
 sub log_symlink {
