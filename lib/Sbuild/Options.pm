@@ -142,6 +142,9 @@ sub set_options {
 		       "stats-dir=s" => sub {
 			   $self->set_conf('STATS_DIR', $_[1]);
 		       },
+		       "setup-hook=s" => sub {
+			   $self->set_conf('SETUP_HOOK', $_[1]);
+		       },
 		       "use-snapshot" => sub {
 			   $self->set_conf('GCC_SNAPSHOT', 1);
 			   $self->set_conf('LD_LIBRARY_PATH',

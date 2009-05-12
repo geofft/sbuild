@@ -273,6 +273,21 @@ sub run {
 	goto cleanup_close;
     }
 
+    # Run setup-hook before processing deps and build
+    if ($self->get_conf('SETUP_HOOK')) {
+	$session->run_command(
+	    { COMMAND => [$self->get_conf('SETUP_HOOK')],
+	      ENV => $self->get_env('SBUILD_BUILD_'),
+	      USER => "root",
+	      PRIORITY => 0,
+	      CHROOT => 1 });
+	if ($?) {
+	    $self->log("setup-hook failed\n");
+	    $self->set_status('skipped');
+	    goto cleanup_close;
+	}
+    }
+
     $self->set('Pkg Fail Stage', 'install-deps');
     if (!$self->install_deps()) {
 	$self->log("Source-dependencies not satisfied; skipping " .
@@ -1537,6 +1552,30 @@ sub check_dependencies {
     }
 
     return $fail;
+}
+
+# Produce a hash suitable for ENV export
+sub get_env ($$) {
+    my $self = shift;
+    my $prefix = shift;
+
+    sub _env_loop ($$$$) {
+	my ($env,$ref,$keysref,$prefix) = @_;
+
+	foreach my $key (keys( %{ $keysref } )) {
+	    my $value = $ref->get($key);
+	    next if (!defined($value));
+	    next if (ref($value));
+	    my $name = "${prefix}${key}";
+	    $name =~ s/ /_/g;
+	    $env->{$name} = $value;
+        }
+    }
+
+    my $envlist = {};
+    _env_loop($envlist, $self, $self, $prefix);
+    _env_loop($envlist, $self->get('Config'), $self->get('Config')->{'KEYS'}, "${prefix}CONF_");
+    return $envlist;
 }
 
 sub get_apt_policy {
