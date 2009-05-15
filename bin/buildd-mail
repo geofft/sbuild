@@ -817,7 +817,7 @@ sub set_to_failed ($$$) {
 
     open( PIPE, "|-" )
 	or (open( STDOUT, ">/dev/null"),
-	    exec "$Buildd::Conf::sshcmd wanna-build --failed --no-down-propagation ".
+	    exec "$Buildd::Conf::sshcmd wanna-build --failed ".
 	    "--user=$Buildd::Conf::wanna_build_user ".($Buildd::Conf::wanna_build_dbbase?
 					       "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
     print PIPE "${text}.\n";
@@ -843,7 +843,7 @@ sub set_to_depwait ($$$) {
 
     open( PIPE, "|-" )
 	or (open( STDOUT, ">/dev/null"),
-	    exec "$Buildd::Conf::sshcmd wanna-build --dep-wait --no-down-propagation ".
+	    exec "$Buildd::Conf::sshcmd wanna-build --dep-wait ".
 	    "--user=$Buildd::Conf::wanna_build_user ".($Buildd::Conf::wanna_build_dbbase?
 					       "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg");
     print PIPE "$deps\n";
@@ -864,7 +864,7 @@ sub give_back ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --give-back --no-down-propagation --user=$Buildd::Conf::wanna_build_user ".
+    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --give-back --user=$Buildd::Conf::wanna_build_user ".
 	($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
     my $answer = `$answer_cmd`;
     if ($?) {
@@ -880,7 +880,7 @@ sub no_build ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --no-build --no-down-propagation --user=$Buildd::Conf::wanna_build_user ".
+    $answer_cmd = "$Buildd::Conf::sshcmd wanna-build --no-build --user=$Buildd::Conf::wanna_build_user ".
 	($Buildd::Conf::wanna_build_dbbase? "--database=$Buildd::Conf::wanna_build_dbbase ":""). "--dist=$dist $pkg";
     my $answer = `$answer_cmd`;
     if ($?) {

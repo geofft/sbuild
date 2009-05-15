@@ -310,7 +310,7 @@ sub do_wanna_build ($\%@) {
     local( *PIPE );
 
     block_signals();
-    if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build -v --no-down-propagation ".
+    if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build -v ".
 	      ($Buildd::Conf::wanna_build_dbbase?"--database=$Buildd::Conf::wanna_build_dbbase ":"").
 	      ($Buildd::Conf::wanna_build_user?"--user=$Buildd::Conf::wanna_build_user ":"").
 	      "--dist=$dist @_ 2>&1 |" )) {

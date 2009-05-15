@@ -75,7 +75,7 @@ sub uploaded ($@) {
 	my $msgs = "";
 	if (open( PIPE, "$Buildd::Conf::sshcmd wanna-build --uploaded --user=$Buildd::Conf::wanna_build_user ".
 		  ($Buildd::Conf::wanna_build_dbbase?"--database=$Buildd::Conf::wanna_build_dbbase ":"").
-		  "--no-down-propagation --dist=$dist ".
+		  " --dist=$dist ".
 		  "$pkg 2>&1 |" )) {
 	    while( <PIPE> ) {
 		if (/^(\S+): Propagating new state /) {

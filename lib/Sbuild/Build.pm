@@ -799,7 +799,7 @@ sub analyze_fail_stage {
 	    if $self->get_conf('AUTO_GIVEBACK_HOST');
 	$cmd .= "-S " . $self->get_conf('AUTO_GIVEBACK_SOCKET') . " "
 	    if $self->get_conf('AUTO_GIVEBACK_SOCKET');
-	$cmd .= "wanna-build --give-back --no-down-propagation ".
+	$cmd .= "wanna-build --give-back ".
 	    "--dist=" . $self->get_conf('DISTRIBUTION') . " ";
 	$cmd .= "--database=" . $self->get_conf('WANNABUILD_DATABASE') . " "
 	    if $self->get_conf('WANNABUILD_DATABASE');
