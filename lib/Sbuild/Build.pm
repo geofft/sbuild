@@ -50,8 +50,6 @@ BEGIN {
     @EXPORT = qw();
 }
 
-
-# TODO: put in all package version data and job ID (for indexing in job list)
 sub new {
     my $class = shift;
     my $dsc = shift;
