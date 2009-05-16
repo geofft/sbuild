@@ -180,6 +180,11 @@ sub init_allowed_keys {
 	'NO_WARN_PATTERN'			=> {
 	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$'
 	},
+	'PIDFILE'                               => {
+# Set once running as a system service.
+#          DEFAULT => "${Sbuild::Sysconfig::paths{'LOCALSTATEDIR'}/run/buildd.pid"
+	    DEFAULT => "$HOME/build/buildd.pid"
+	},
 	'PKG_LOG_KEEP'				=> {
 	    DEFAULT => 7
 	},
@@ -263,6 +268,7 @@ sub read_config {
     my @no_auto_build;
     my $no_build_regex = undef;
     my $no_warn_pattern = undef;
+    my $pidfile = undef;
     my $pkg_log_keep = undef;
     my $secondary_daemon_threshold = undef;
     my $should_build_msgs = undef;
@@ -340,6 +346,7 @@ sub read_config {
 	$self->set('NO_BUILD_REGEX', $no_build_regex);
 	$self->set('BUILD_REGEX', $build_regex);
 	$self->set('NO_WARN_PATTERN', $no_warn_pattern);
+	$self->set('PIDFILE', $pidfile);
 	$self->set('PKG_LOG_KEEP', $pkg_log_keep);
 	$self->set('SECONDARY_DAEMON_THRESHOLD', $secondary_daemon_threshold);
 	$self->set('SHOULD_BUILD_MSGS', $should_build_msgs);

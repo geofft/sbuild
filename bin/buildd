@@ -45,6 +45,7 @@ sub df ($);
 sub append_to_REDO ($$@);
 sub read_FINISHED ();
 sub shutdown ($);
+sub shutdown_fast ($);
 sub reread_config ($);
 sub check_restart ();
 sub block_signals ();
@@ -72,7 +73,7 @@ chdir( "$main::HOME/build" )
 open( STDIN, "</dev/null" )
     or die "$0: can't redirect stdin to /dev/null: $!\n";
 
-if (open( PID, "<buildd.pid" )) {
+if (open( PID, "<" . $conf->get('PIDFILE') )) {
     my $pid = <PID>;
     close( PID );
     $pid =~ /^[[:space:]]*(\d+)/; $pid = $1;
@@ -92,25 +93,21 @@ defined(my $pid = fork) or die "can't fork: $!\n";
 exit if $pid; # parent exits
 setsid or die "can't start a new session: $!\n";
 
-open( PID, ">buildd.pid" )
-    or die "can't create buildd.pid: $!\n";
+open( PID, ">" . $conf->get('PIDFILE') )
+    or die "can't create " . $conf->get('PIDFILE') . ": $!\n";
 printf PID "%5d\n", $$;
 close( PID );
-END { unlink( "buildd.pid" ) if (defined($pid) and $pid == 0); }
+END { unlink( $conf->get('PIDFILE') )
+	  if (defined($pid) and $pid == 0); }
 
 open_log();
 
 logger( "Daemon started. (pid=$$)\n" );
 
 foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
-    $SIG{$_} = sub ($) {
-	my $signame = shift;
-	logger( "buildd ($$) killed by SIG$signame\n" );
-	unlink( "buildd.pid" );
-	exit 1;
-    };
+    $SIG{$_} = \&shutdown_fast;
 }
-$SIG{'HUP'} = \&reopen_log;
+$SIG{'HUP'} = \&Buildd::reopen_log;
 $SIG{'USR1'} = \&reread_config;
 $SIG{'INT'} = \&shutdown;
 $SIG{'TERM'} = \&shutdown;
@@ -699,6 +696,13 @@ sub read_FINISHED () {
     return @pkgs;
 }
 
+sub shutdown_fast ($) {
+    my $signame = shift;
+    logger( "buildd ($$) killed by SIG$signame\n" );
+    unlink( $conf->get('PIDFILE') );
+    exit 1;
+}
+
 sub shutdown ($) {
     my $signame = shift;
 
@@ -722,7 +726,7 @@ sub shutdown ($) {
 	}
 	unlink( "SBUILD-REDO-DUMPED" );
     }
-    unlink( "buildd.pid" );
+    unlink( $conf->get('PIDFILE') );
     logger( "exiting now\n" );
     close_log();
     exit 1;
@@ -741,7 +745,7 @@ sub check_restart () {
 
     if (@stats && $my_bin_time != $stats[ST_MTIME]) {
 	logger( "My binary has been updated -- restarting myself (pid=$$)\n" );
-	unlink( "buildd.pid" );
+	unlink( $conf->get('PIDFILE') );
 	kill ( 15, $main::ssh_pid ) if $main::ssh_pid;
 	exec $my_binary;
     }

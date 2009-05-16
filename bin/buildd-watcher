@@ -82,7 +82,7 @@ END { unlink( "watcher-running" ); }
 # check if buildd is still running, restart it if needed.
 my $restart = 0;
 my $daemon_pid;
-if (open( PID, "<build/buildd.pid" )) {
+if (open( PID, "<" . $conf->get('PIDFILE') )) {
     $daemon_pid = <PID>;
     close( PID );
     $daemon_pid =~ /^\s*(\d+)/; $daemon_pid = $1;
