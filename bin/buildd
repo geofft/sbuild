@@ -31,7 +31,10 @@ use warnings;
 use POSIX;
 use Buildd qw(logger open_log close_log write_stats);
 use Buildd::Conf;
+use Sbuild qw($devnull);
 use Sbuild::OptionsBase;
+use Sbuild::Sysconfig;
+use Sbuild::ChrootRoot;
 use Cwd;
 
 sub ST_MTIME ();
@@ -52,6 +55,7 @@ sub check_restart ();
 sub block_signals ();
 sub unblock_signals ();
 sub check_ssh_master ();
+sub wannabuild_command ();
 
 sub ST_MTIME () { 9 }
 
@@ -59,6 +63,8 @@ my $conf = Buildd::Conf->new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
 exit 1 if !defined($options);
+
+my $host = Sbuild::ChrootRoot->new($conf);
 
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
@@ -141,19 +147,21 @@ MAINLOOP: while( 1 ) {
 	check_restart();
 	$conf->read_config();
 	my %givenback = read_givenback();
-	if (!open( PIPE, $conf->get('SSH_CMD').
-		   " wanna-build --list=needs-build --dist=$dist ".
-		   ($conf->get('WANNA_BUILD_DBBASE') ?
-		    "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-		   ($conf->get('WANNA_BUILD_USER') ?
-		    "--user=" . $conf->get('WANNA_BUILD_USER') . " " : "").
-		   "2>&1 |" )) {
+	my $pipe = $host->pipe_command(
+	    { COMMAND => [wannabuild_command(),
+			  '--list=needs-build',
+			  "--dist=$dist"],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	    });
+	if (!$pipe) {
 	    logger( "Can't spawn wanna-build --list=needs-build: $!\n" );
 	    next MAINLOOP;
 	}
 	my(@todo, $total, $nonex, @lowprio_todo, $max_build);
 	$max_build = $conf->get('MAX_BUILD');
-	while( <PIPE> ) {
+	while( <$pipe> ) {
 	    my $socket = $conf->get('SSH_SOCKET');
 	    if ($socket &&
 		(/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
@@ -191,7 +199,7 @@ MAINLOOP: while( 1 ) {
 	    }
 	    push( @todo, $pv );
 	}
-	close( PIPE );
+	close($pipe);
 	next if $nonex;
 	if ($?) {
 	    logger( "wanna-build --list=needs-build --dist=$dist failed; status ",
@@ -320,17 +328,19 @@ sub do_wanna_build ($\%@) {
     my $binNMUlog = shift;
     my @output = ();
     my $n = 0;
-    local( *PIPE );
 
     block_signals();
-    if (open( PIPE, $conf->get('SSH_CMD') .
-	      " wanna-build -v --no-down-propagation ".
-	      ($conf->get('WANNA_BUILD_DBBASE')?
-	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	      ($conf->get('WANNA_BUILD_USER')?
-	       "--user=" . $conf->get('WANNA_BUILD_USER') . " ":"").
-	      "--dist=$dist @_ 2>&1 |" )) {
-	while( <PIPE> ) {
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command(),
+		      '-v', '--no-down-propagation',
+		      "--dist=$dist",
+		      @_],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
+       while( <$pipe> ) {
 	    next if /^wanna-build Revision/;
 	    if (/^(\S+):\s*ok/) {
 		my $pkg = $1;
@@ -339,7 +349,7 @@ sub do_wanna_build ($\%@) {
 	    }
 	    elsif (/^(\S+):.*NOT OK/) {
 		my $pkg = $1;
-		my $nextline = <PIPE>;
+		my $nextline = <$pipe>;
 		chomp( $nextline );
 		$nextline =~ s/^\s+//;
 		logger( "Can't take $pkg: $nextline\n" );
@@ -353,14 +363,14 @@ sub do_wanna_build ($\%@) {
 		    push( @output, grep( /^\Q$pkg\E_/, @_ ) );
 		}
 		# skip until ok line
-		while( <PIPE> ) {
+		while( <$pipe> ) {
 		    last if /^\Q$pkg\E:\s*ok/;
 		}
 	    }
 	    elsif (/^(\S+):.*needs binary NMU (\d+)/) {
 		my $pkg = $1;
 		my $binNMUver = $2;
-		chop (my $changelog = <PIPE>);
+		chop (my $changelog = <$pipe>);
 		my $newpkg;
 		++$n;
 
@@ -368,12 +378,12 @@ sub do_wanna_build ($\%@) {
 		$binNMUlog->{$output[$#output]} = $changelog;
 		$output[$#output] = "!$binNMUver!" . $output[$#output];
 		# skip until ok line
-		while( <PIPE> ) {
+		while( <$pipe> ) {
 		    last if /^\Q$pkg\E:\s*aok/;
 		}
 	    }
 	}
-	close( PIPE );
+	close($pipe);
 	unblock_signals();
 	write_stats( "taken", $n ) if $n;
 	return @output;
@@ -525,15 +535,32 @@ EOF
 sub handle_prevfailed ($@) {
     my $dist = shift;
     my $pkgv = shift;
-    my( $pkg, $fail_msg, $changelog, $fail_cmd);
+    my( $pkg, $fail_msg, $changelog);
 
     logger( "$pkgv previously failed -- asking admin first\n" );
     ($pkg = $pkgv) =~ s/_.*$//;
-    $fail_cmd = $conf->get('SSH_CMD') . " wanna-build ".
-	($conf->get('WANNA_BUILD_DBBASE')?
-	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	 "--info --dist=$dist $pkg";
-    $fail_msg = `$fail_cmd`;
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command(),
+		      '--info',
+		      "--dist=$dist",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
+	logger("Can't run wanna-build: $!\n");
+	return;
+    }
+
+    $fail_msg = <$pipe>;
+
+    close($pipe);
+    if ($?) {
+	logger("wanna-build exited with error $?\n");
+	return;
+    }
 
     {
 	local $SIG{'ALRM'} = sub ($) { die "Timeout!\n" };
@@ -563,10 +590,8 @@ sub get_changelog ($$) {
     my $changelog = "";
     my $analyze = "";
     my $chroot_apt_options;
-    my $msg;
     my $file;
     my $retried = 0;
-    local( *PIPE, *F );
 
     $pkg =~ /^([\w\d.+-]+)_([\w\d:.~+-]+)/;
     my ($n, $v) = ($1, $2);
@@ -574,19 +599,54 @@ sub get_changelog ($$) {
     my $pkg_ne = "${n}_${v_ne}";
 
 retry:
-    my $schroot = $conf->get('SCHROOT') .
-	" -c $dist-" . $conf->get('ARCH') . "-sbuild --";
-    my $schroot_root = $conf->get('SCHROOT') .
-	" -c $dist-" . $conf->get('ARCH') . "-sbuild' -u root --";
+    my @schroot = ($conf->get('SCHROOT'), '-c',
+		   "$dist-" . $conf->get('ARCH') . '-sbuild', '--');
+    my @schroot_root = ($conf->get('SCHROOT'), '-c',
+			"$dist-" . $conf->get('ARCH') . '-sbuild',
+			'-u', 'root', '--');
+
     my $apt_get = $conf->get('APT_GET');
-    $msg = `$schroot $apt_get -q -d --diff-only source $n=$v 2>&1`;
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [@schroot,
+		      "$apt_get", '-q', '-d',
+		      '--diff-only', 'source', "$n=$v"],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
+	logger("Can't run schroot: $!\n");
+	return;
+    }
+
+    my $msg = <$pipe>;
+
+    close($pipe);
+
     if ($? == 0 && $msg !~ /get 0B/) {
 	$analyze = "diff";
 	$file = "${n}_${v_ne}.diff.gz";
     }
 
     if (!$analyze) {
-	$msg = `$schroot $apt_get' -q -d --tar-only source $n=$v 2>&1`;
+	my $pipe2 = $host->pipe_command(
+	    { COMMAND => [@schroot,
+			  "$apt_get", '-q', '-d',
+			  '--tar-only', 'source', "$n=$v"],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	    });
+	if (!$pipe2) {
+	    logger("Can't run schroot: $!\n");
+	    return;
+	}
+
+	my $msg = <$pipe2>;
+
+	close($pipe2);
+
 	if ($? == 0 && $msg !~ /get 0B/) {
 	    $analyze = "tar";
 	    $file = "${n}_${v_ne}.tar.gz";
@@ -594,7 +654,16 @@ retry:
     }
 
     if (!$analyze && !$retried) {
-	system "$schroot_root $apt_get -qq update &>/dev/null";
+	$host->run_command(
+	    { COMMAND => [@schroot_root,
+			  $apt_get, '-qq',
+			  'update'],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	      STREAMOUT => $devnull
+	    });
+
 	$retried = 1;
 	goto retry;
     }
@@ -643,10 +712,30 @@ retry:
 }
 
 # TODO: Merge with sbuild function
+# TODO: This is *totally* broken (df can split over lines);
+# use statvfs directly
 sub df ($) {
     my $dir = shift;
 
-    my $free = `/bin/df $dir | tail -1`;
+    my $dfpipe = $host->pipe_command(
+	{ COMMAND => [$Sbuild::Sysconfig::programs{'DF'},
+		      "$dir"],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$dfpipe) {
+	logger("Can't run schroot: $!\n");
+	return;
+    }
+
+    my @msg = <$dfpipe>;
+
+    close($dfpipe);
+
+    my $msglines = @msg;
+    my $free = $msg[$msglines];
+
     my @free = split( /\s+/, $free );
     return $free[3];
 }
@@ -798,4 +887,14 @@ sub check_ssh_master () {
 	return 0 if ($wpid == -1 or $wpid == $main::ssh_pid);
     }
     return 1;
+}
+
+sub wannabuild_command () {
+    my @command = ($conf->get('SSH_CMD'), 'wanna-build');
+    push(@command, "--database=" . $conf->get('WANNA_BUILD_DBBASE'))
+       if $conf->get('WANNA_BUILD_DBBASE');
+    push(@command, "--user=" . $conf->get('WANNA_BUILD_USER'))
+       if $conf->get('WANNA_BUILD_USER');
+
+    return @command;
 }
