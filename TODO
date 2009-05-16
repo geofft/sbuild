@@ -109,3 +109,13 @@ buildd-mail: %header (to|from|subject|message-id|date) are mandatory.
 Check for these and bail out if not present.
 
 buildd*: Most programs do not call close_log, but should be doing.
+
+buildd: Hook Host ChrootRoot into stderr logger
+
+Buildd::Conf: Add Sbuild::Chroot heirarchy-specific configuration
+   keys.
+- split into separate initialisation function,
+- split wanna-build config into separate function also.
+
+buildd*: Use Sbuild::Base logging infrastructure (tie in logger()
+log formatting and semantics into log())
