@@ -74,38 +74,28 @@ sub init_allowed_keys {
 	my $self = shift;
 	my $entry = shift;
 
-	my $sshcmd = $self->get('SSH_CMD');
-	my $sshuser;
-	my $sshhost;
+# TODO: Provide self, config and entry contexts, which functions to
+# get at needed data.  Provide generic configuration functions.
+#
+	$validate_program->($self, $self->{'KEYS'}->{'SSH'});
 
-	if ($sshcmd) {
-	    if ($sshcmd =~ /-l\s*(\S+)\s+(\S+)/) {
-		($sshuser, $sshhost) = ($1, $2);
-	    } elsif ($sshcmd =~ /(\S+)\@(\S+)/) {
-		($sshuser, $sshhost) = ($1, $2);
-	    } else {
-		$sshcmd =~ /(\S+)\s*$/;
-		($sshuser, $sshhost) = ("", $1);
-	    }
-	    $self->set('SSH_USER', $sshuser);
-	    $self->set('SSH_HOST', $sshhost);
-	}
-    };
-
-    my $validate_ssh_socket = sub {
-	my $self = shift;
-	my $entry = shift;
-
-	my $sshcmd = $self->get('SSH_CMD');
+	my $ssh = $self->get('SSH');
+	my $sshuser = $self->get('SSH_USER');
+	my $sshhost = $self->get('SSH_HOST');
+	my @sshoptions = @{$self->get('SSH_OPTIONS')};
 	my $sshsocket = $self->get('SSH_SOCKET');
 
-	if ($sshcmd) {
-	    if ($sshsocket) {
-		# TODO: This is NOT idempotent!  RL 13/04/09
-		$sshcmd .= " -S $sshsocket";
-		$self->set('SSH_CMD', $sshcmd);
-	    }
+	my @command = ();
+
+	if ($sshhost) {
+	    push (@command, $ssh);
+	    push (@command, '-l', $sshuser) if $sshuser;
+	    push (@command, '-S', $sshsocket) if $sshsocket;
+	    push (@command, @sshoptions) if @sshoptions;
+	    push (@command, $sshhost);
 	}
+
+	$self->set('SSH_CMD', \@command);
     };
 
     our $HOME = $self->get('HOME');
@@ -198,18 +188,27 @@ sub init_allowed_keys {
 	    DEFAULT => 1
 	},
 	'SSH_CMD'				=> {
-	    DEFAULT => '',
+	    DEFAULT => []
+	},
+	'SSH'					=> {
+	    DEFAULT => $Sbuild::Sysconfig::programs{'SSH'},
 	    CHECK => $validate_ssh,
 	},
 	'SSH_USER'				=> {
-	    DEFAULT => ''
+	    DEFAULT => '',
+	    CHECK => $validate_ssh,
 	},
 	'SSH_HOST'				=> {
-	    DEFAULT => ''
+	    DEFAULT => '',
+	    CHECK => $validate_ssh,
 	},
 	'SSH_SOCKET'				=> {
 	    DEFAULT => '',
-	    CHECK => $validate_ssh_socket,
+	    CHECK => $validate_ssh,
+	},
+	'SSH_OPTIONS'				=> {
+	    DEFAULT => [],
+	    CHECK => $validate_ssh,
 	},
 	'STATISTICS_MAIL'			=> {
 	    DEFAULT => 'root'
@@ -276,7 +275,11 @@ sub read_config {
     my $pkg_log_keep = undef;
     my $secondary_daemon_threshold = undef;
     my $should_build_msgs = undef;
-    my $sshcmd = undef;
+    my $ssh = undef;
+    my $ssh_user = undef;
+    my $ssh_host = undef;
+    my @ssh_options;
+    my $ssh_socket = undef;
     my $statistics_mail = undef;
     my $statistics_period = undef;
     my $sudo = undef;
@@ -347,7 +350,8 @@ sub read_config {
 	$self->set('MAX_BUILD', $max_build);
 	$self->set('MIN_FREE_SPACE', $min_free_space);
 	$self->set('NICE_LEVEL', $nice_level);
-	$self->set('NO_AUTO_BUILD', \@no_auto_build);
+	$self->set('NO_AUTO_BUILD', \@no_auto_build)
+	    if (@no_auto_build);
 	$self->set('NO_BUILD_REGEX', $no_build_regex);
 	$self->set('BUILD_REGEX', $build_regex);
 	$self->set('NO_WARN_PATTERN', $no_warn_pattern);
@@ -355,11 +359,17 @@ sub read_config {
 	$self->set('PKG_LOG_KEEP', $pkg_log_keep);
 	$self->set('SECONDARY_DAEMON_THRESHOLD', $secondary_daemon_threshold);
 	$self->set('SHOULD_BUILD_MSGS', $should_build_msgs);
-	$self->set('SSH_CMD', $sshcmd);
+	$self->set('SSH', $ssh);
+	$self->set('SSH_USER', $ssh_user);
+	$self->set('SSH_HOST', $ssh_host);
+	$self->set('SSH_OPTIONS', \@ssh_options)
+	    if (@ssh_options);
+	$self->set('SSH_SOCKET', $ssh_socket);
 	$self->set('STATISTICS_MAIL', $statistics_mail);
 	$self->set('STATISTICS_PERIOD', $statistics_period);
 	$self->set('SUDO', $sudo);
-	$self->set('TAKE_FROM_DISTS', \@take_from_dists);
+	$self->set('TAKE_FROM_DISTS', \@take_from_dists)
+	    if (@take_from_dists);
 	$self->set('WANNA_BUILD_DBBASE', $wanna_build_dbbase);
 	$self->set('WANNA_BUILD_USER', $wanna_build_user);
 	$self->set('WARNING_AGE', $warning_age);

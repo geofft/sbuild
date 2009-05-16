@@ -29,7 +29,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use Buildd qw(logger open_log close_log write_stats);
+use Buildd qw(isin logger open_log close_log write_stats wannabuild_command);
 use Buildd::Conf;
 use Sbuild qw($devnull);
 use Sbuild::OptionsBase;
@@ -55,7 +55,6 @@ sub check_restart ();
 sub block_signals ();
 sub unblock_signals ();
 sub check_ssh_master ();
-sub wannabuild_command ();
 
 sub ST_MTIME () { 9 }
 
@@ -151,7 +150,7 @@ MAINLOOP: while( 1 ) {
 	$conf->read_config();
 	my %givenback = read_givenback();
 	my $pipe = $host->pipe_command(
-	    { COMMAND => [wannabuild_command(),
+	    { COMMAND => [wannabuild_command($conf),
 			  '--list=needs-build',
 			  "--dist=$dist"],
 	      USER => $conf->get('USERNAME'),
@@ -190,9 +189,9 @@ MAINLOOP: while( 1 ) {
 	    $pv =~ s,^.*/,,;
 	    my $p;
 	    ($p = $pv) =~ s/_.*$//;
-	    next if Buildd::isin( $p, @{$conf->get('NO_AUTO_BUILD')} );
+	    next if isin( $p, @{$conf->get('NO_AUTO_BUILD')} );
 	    next if $givenback{$pv};
-	    if (Buildd::isin( $p, @{$conf->get('WEAK_NO_AUTO_BUILD')} )) {
+	    if (isin( $p, @{$conf->get('WEAK_NO_AUTO_BUILD')} )) {
 		push( @lowprio_todo, $pv );
 		next;
 	    }
@@ -334,7 +333,7 @@ sub do_wanna_build ($\%@) {
 
     block_signals();
     my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command(),
+	{ COMMAND => [wannabuild_command($conf),
 		      '-v', '--no-down-propagation',
 		      "--dist=$dist",
 		      @_],
@@ -486,7 +485,7 @@ sub do_build ($\%@) {
 	    logger( "sbuild has already finished:\n@finished\n" );
 	    my @unfinished;
 	    for (@_) {
-		push( @unfinished, $_ ) if !Buildd::isin( $_, @finished );
+		push( @unfinished, $_ ) if !isin( $_, @finished );
 	    }
 	    logger( "Adding rest to REDO:\n@unfinished\n" );
 	    append_to_REDO( $dist, '', @unfinished );
@@ -544,7 +543,7 @@ sub handle_prevfailed ($@) {
     ($pkg = $pkgv) =~ s/_.*$//;
 
     my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command(),
+	{ COMMAND => [wannabuild_command($conf),
 		      '--info',
 		      "--dist=$dist",
 		      $pkg],
@@ -876,7 +875,7 @@ sub check_ssh_master () {
     }
 
     ($main::ssh_pid = fork)
-	or exec $conf->get('SSH_CMD'). " -MN";
+	or exec (@{$conf->get('SSH_CMD')}, "-MN");
 
     if (!defined $main::ssh_pid) {
 	logger( "Cannot fork for ssh master: $!\n" );
@@ -890,14 +889,4 @@ sub check_ssh_master () {
 	return 0 if ($wpid == -1 or $wpid == $main::ssh_pid);
     }
     return 1;
-}
-
-sub wannabuild_command () {
-    my @command = ($conf->get('SSH_CMD'), 'wanna-build');
-    push(@command, "--database=" . $conf->get('WANNA_BUILD_DBBASE'))
-       if $conf->get('WANNA_BUILD_DBBASE');
-    push(@command, "--user=" . $conf->get('WANNA_BUILD_USER'))
-       if $conf->get('WANNA_BUILD_USER');
-
-    return @command;
 }
