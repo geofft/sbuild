@@ -66,6 +66,7 @@ exit 1 if !defined($options);
 
 my $host = Sbuild::ChrootRoot->new($conf);
 
+my $daemon = 0;
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
 $my_binary = cwd . "/" . $my_binary if $my_binary !~ m,^/,;
@@ -100,12 +101,14 @@ defined(my $pid = fork) or die "can't fork: $!\n";
 exit if $pid; # parent exits
 setsid or die "can't start a new session: $!\n";
 
+$daemon = 1;
+
 open( PID, ">" . $conf->get('PIDFILE') )
     or die "can't create " . $conf->get('PIDFILE') . ": $!\n";
 printf PID "%5d\n", $$;
 close( PID );
 END { unlink( $conf->get('PIDFILE') )
-	  if (defined($pid) and $pid == 0); }
+	  if ($daemon); }
 
 open_log($conf);
 
