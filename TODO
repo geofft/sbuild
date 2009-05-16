@@ -119,3 +119,6 @@ Buildd::Conf: Add Sbuild::Chroot heirarchy-specific configuration
 
 buildd*: Use Sbuild::Base logging infrastructure (tie in logger()
 log formatting and semantics into log())
+
+buildd: shutdown_* should check if we are a daemon before removing
+the pidfile, as for END.
