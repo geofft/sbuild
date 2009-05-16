@@ -63,9 +63,16 @@ exit 1 if !defined($options);
 
 chdir($conf->get('HOME'));
 
-lock_file( "daemon.log" );
-END { unlock_file( "daemon.log" ); }
-open_log();
+lock_file( $conf->get('DAEMON_LOG_FILE') );
+
+END {
+    unlock_file($conf->get('DAEMON_LOG_FILE'))
+	if (defined($conf) &&
+	    defined($conf->get('DAEMON_LOG_FILE')) &&
+	    $conf->get('DAEMON_LOG_FILE'));
+}
+
+open_log($conf);
 
 my($error, $short_error, %header, $body_text);
 
@@ -75,6 +82,8 @@ exit 0;
 
 sub process_mail () {
 
+# Note: %header (to|from|subject|message-id|date) are mandatory.
+# Check for these and bail out if not present.
     my $header_text = "";
     my $lastheader = "";
     $body_text = "";
@@ -107,7 +116,7 @@ sub process_mail () {
     while( <STDIN> ) {
 	last if !/^\s*$/;
     }
-    $body_text .= $_;
+    $body_text .= $_ if defined($_);
 
     if (!eof)
     { local($/); undef $/; $body_text .= <STDIN>; }

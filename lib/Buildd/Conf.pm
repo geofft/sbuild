@@ -129,6 +129,9 @@ sub init_allowed_keys {
 	'BUILD_LOG_REGEX'			=> {
 	    DEFAULT => undef
 	},
+	'DAEMON_LOG_FILE'			=> {
+	    DEFAULT => "$HOME/daemon.log"
+	},
 	'DAEMON_LOG_KEEP'			=> {
 	    DEFAULT => 7
 	},
@@ -252,6 +255,7 @@ sub read_config {
     my $autoclean_interval = undef;
     my $build_log_keep = undef;
     my $build_regex = undef; # Should this be user settable?
+    my $daemon_log_file = undef;
     my $daemon_log_keep = undef;
     my $daemon_log_rotate = undef;
     my $daemon_log_send = undef;
@@ -329,6 +333,7 @@ sub read_config {
 	$self->set('AUTOCLEAN_INTERVAL', $autoclean_interval);
 	$self->set('BUILD_LOG_KEEP', $build_log_keep);
 	$self->set('BUILD_REGEX', $build_regex);
+	$self->set('DAEMON_LOG_FILE', $daemon_log_file);
 	$self->set('DAEMON_LOG_KEEP', $daemon_log_keep);
 	$self->set('DAEMON_LOG_ROTATE', $daemon_log_rotate);
 	$self->set('DAEMON_LOG_SEND', $daemon_log_send);

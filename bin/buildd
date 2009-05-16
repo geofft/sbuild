@@ -29,7 +29,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use Buildd qw(logger open_log close_log);
+use Buildd qw(logger open_log close_log write_stats);
 use Buildd::Conf;
 use Sbuild::OptionsBase;
 use Cwd;
@@ -47,6 +47,7 @@ sub read_FINISHED ();
 sub shutdown ($);
 sub shutdown_fast ($);
 sub reread_config ($);
+sub reopen_log ($);
 sub check_restart ();
 sub block_signals ();
 sub unblock_signals ();
@@ -100,17 +101,17 @@ close( PID );
 END { unlink( $conf->get('PIDFILE') )
 	  if (defined($pid) and $pid == 0); }
 
-open_log();
+open_log($conf);
 
 logger( "Daemon started. (pid=$$)\n" );
 
 foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
-    $SIG{$_} = \&shutdown_fast;
+    $SIG{$_} = \&main::shutdown_fast;
 }
-$SIG{'HUP'} = \&Buildd::reopen_log;
-$SIG{'USR1'} = \&reread_config;
-$SIG{'INT'} = \&shutdown;
-$SIG{'TERM'} = \&shutdown;
+$SIG{'HUP'} = \&main::reopen_log;
+$SIG{'USR1'} = \&main::reread_config;
+$SIG{'INT'} = \&main::shutdown;
+$SIG{'TERM'} = \&main::shutdown;
 undef $ENV{'DISPLAY'};
 
 # the main loop
@@ -728,7 +729,7 @@ sub shutdown ($) {
     }
     unlink( $conf->get('PIDFILE') );
     logger( "exiting now\n" );
-    close_log();
+    close_log($conf);
     exit 1;
 }
 
@@ -738,6 +739,14 @@ sub reread_config ($) {
     logger("buildd ($$) received SIG$signame -- rereading configuration\n");
 
     $Buildd::Conf::reread_config = 1;
+}
+
+sub reopen_log ($) {
+    my $signame = shift;
+
+    logger("buildd ($$) received SIG$signame -- reopening logfile\n");
+
+    Buildd::reopen_log($conf);
 }
 
 sub check_restart () {

@@ -44,13 +44,20 @@ unset_env();
 
 my $log_locked = 0;
 my $locked = 0;
-END { unlock_file( "$main::HOME/daemon.log" ) if $log_locked;
-      unlock_file( "$main::HOME/buildd-uploader" ) if $locked; }
+END {
+    unlock_file($conf->get('DAEMON_LOG_FILE'))
+	if ($log_locked &&
+	    defined($conf) &&
+	    defined($conf->get('DAEMON_LOG_FILE')) &&
+	    $conf->get('DAEMON_LOG_FILE'));
+    unlock_file("$main::HOME/buildd-uploader")
+	if $locked;
+}
 
-lock_file( "$main::HOME/daemon.log" );
+lock_file( $conf->get('DAEMON_LOG_FILE') );
 $log_locked = 1;
 
-open_log();
+open_log($conf);
 
 if (lock_file( "$main::HOME/buildd-uploader", 1 ) == 0) {
     logger( "exiting; another buildd-uploader is still running" );
@@ -95,22 +102,22 @@ sub uploaded ($@) {
 	    }
 	    close( PIPE );
 	    if ($msgs or $?) {
-		lock_file( "$main::HOME/daemon.log" );
+		lock_file( $conf->get('DAEMON_LOG_FILE') );
 		$log_locked = 1;
 		logger( $msgs ) if $msgs;
 		logger( "uploaded-build failed with status ", exitstatus($?), "\n" )
 		    if $?;
-		unlock_file( "$main::HOME/daemon.log" );
+		unlock_file( $conf->get('DAEMON_LOG_FILE') );
 		$log_locked = 0;
 	    } else {
 		$uploaded_pkgs{$dist} .= " $pkg";
 	    }
 	}
 	else {
-	    lock_file( "$main::HOME/daemon.log" );
+	    lock_file( $conf->get('DAEMON_LOG_FILE') );
 	    $log_locked = 1;
 	    logger( "Cannot spawn uploaded-build: $!\n" );
-	    unlock_file( "$main::HOME/daemon.log" );
+	    unlock_file( $conf->get('DAEMON_LOG_FILE') );
 	    $log_locked = 0;
 	}
     }
@@ -137,7 +144,7 @@ sub upload ($$) {
     }
 
     logger( scalar(@before), " jobs to upload in $udir: @before\n" );
-    unlock_file( "$main::HOME/daemon.log" );
+    unlock_file( $conf->get('DAEMON_LOG_FILE') );
     $log_locked = 0;
 
     foreach $f (@before) {
@@ -147,13 +154,13 @@ sub upload ($$) {
 	if (defined $logref and scalar(@$logref) > 0) {
 	    my $line;
 
-	    lock_file( "$main::HOME/daemon.log" );
+	    lock_file( $conf->get('DAEMON_LOG_FILE') );
 	    $log_locked = 1;
 
 	    foreach $line (@$logref) {
 		logger $line;
 	    }
-	    unlock_file( "$main::HOME/daemon.log" );
+	    unlock_file( $conf->get('DAEMON_LOG_FILE') );
 	    $log_locked = 0;
 	}
 
@@ -166,10 +173,10 @@ sub upload ($$) {
 	    { local($/); undef $/; $text = <F>; }
 	    close( F );
 	    if ($text !~ /^Distribution:\s*(.*)\s*$/m) {
-		lock_file( "$main::HOME/daemon.log" );
+		lock_file( $conf->get('DAEMON_LOG_FILE') );
 		$log_locked = 1;
 		logger( "$f doesn't have a Distribution: field\n" );
-		unlock_file( "$main::HOME/daemon.log" );
+		unlock_file( $conf->get('DAEMON_LOG_FILE') );
 		$log_locked = 0;
 		next;
 	    }
@@ -192,7 +199,7 @@ sub upload ($$) {
 	}
     }
 
-    lock_file( "$main::HOME/daemon.log" );
+    lock_file( $conf->get('DAEMON_LOG_FILE') );
     $log_locked = 1;
     if (@after) {
 	logger( "The following jobs were not processed (successfully):\n".

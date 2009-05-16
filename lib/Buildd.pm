@@ -49,10 +49,10 @@ sub unset_env ();
 sub lock_file ($;$);
 sub unlock_file ($);
 sub write_stats ($$);
-sub open_log ();
+sub open_log ($);
 sub logger (@);
-sub close_log ();
-sub reopen_log ();
+sub close_log ($);
+sub reopen_log ($);
 sub send_mail ($$$;$);
 sub ll_send_mail ($$);
 sub exitstatus ($);
@@ -148,16 +148,20 @@ sub write_stats ($$) {
     unlock_file( "$main::HOME/stats" );
 }
 
-sub open_log () {
-    open( LOG, ">>$main::HOME/daemon.log" )
-	or die "$0: Cannot open my logfile $main::HOME/daemon.log: $!\n";
-    chmod( 0640, "$main::HOME/daemon.log" )
-	or die "$0: Cannot set modes of $main::HOME/daemon.log: $!\n";
+sub open_log ($) {
+    my $conf = shift;
+
+    my $logfile = $conf->get('DAEMON_LOG_FILE');
+
+    open( LOG, ">>$logfile" )
+	or die "$0: Cannot open my logfile $logfile: $!\n";
+    chmod( 0640, "$logfile" )
+	or die "$0: Cannot set modes of $logfile: $!\n";
     select( (select(LOG), $| = 1)[0] );
     open( STDOUT, ">&LOG" )
-	or die "$0: Can't redirect stdout to $main::HOME/daemon.log: $!\n";
+	or die "$0: Can't redirect stdout to $logfile: $!\n";
     open( STDERR, ">&LOG" )
-	or die "$0: Can't redirect stderr to $main::HOME/daemon.log: $!\n";
+	or die "$0: Can't redirect stderr to $logfile: $!\n";
 }
 
 sub logger (@) {
@@ -173,16 +177,21 @@ sub logger (@) {
     print LOG $text;
 }
 
-sub close_log () {
+sub close_log ($) {
+    my $conf = shift;
+
     close( LOG );
     close( STDOUT );
     close( STDERR );
 }
 
-sub reopen_log () {
+sub reopen_log ($) {
+    my $conf = shift;
+
     my $errno = $!;
-    close_log();
-    open_log();
+
+    close_log($conf);
+    open_log($conf);
     $! = $errno;
 }
 

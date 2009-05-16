@@ -101,3 +101,11 @@ Wannabuild::Database: Move priority, section and category values into
 configuration file to allow customisation.
 
 Sbuild::Base: Add append method to simplify set(get() . ) idiom.
+
+buildd auto-restart isn't useful due to loss of @INC and failure to
+detect changes in modules.  Create init script instead.
+
+buildd-mail: %header (to|from|subject|message-id|date) are mandatory.
+Check for these and bail out if not present.
+
+buildd*: Most programs do not call close_log, but should be doing.
