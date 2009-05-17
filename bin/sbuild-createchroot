@@ -67,6 +67,9 @@ sub init_allowed_keys {
 	},
 	'KEYRING'				=> {
 	    DEFAULT => $keyring
+	},
+	'SETUP_ONLY'				=> {
+	    DEFAULT => 0
 	}
     );
 
@@ -117,6 +120,9 @@ sub set_options {
 	},
 	"keyring=s" => sub {
 	    $self->set_conf('KEYRING', $_[1]);
+	},
+	"setup-only" => sub {
+	    $self->set_conf('SETUP_ONLY', 1);
 	});
 }
 
@@ -182,7 +188,9 @@ if ($conf->get('VERBOSE')) {
 }
 
 # Run debootstrap with specified options.
-!system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
+if (!$conf->get('SETUP_ONLY')) {
+    !system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
+}
 
 # Set up minimal /etc/hosts.
 my $hosts = "${target}/etc/hosts";
