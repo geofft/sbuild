@@ -2520,8 +2520,8 @@ sub open_build_log {
 	warn "Cannot open pipe to '$filename': $!\n";
     } elsif ($pid == 0) {
 	$SIG{'INT'} = 'IGNORE';
-#	$SIG{'TERM'} = 'IGNORE';
-#	$SIG{'QUIT'} = 'IGNORE';
+	$SIG{'TERM'} = 'IGNORE';
+	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
 
 	if (!$self->get_conf('NOLOG') &&
