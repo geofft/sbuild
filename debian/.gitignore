@@ -4,6 +4,7 @@ files
 build
 install
 wanna-build
+libsbuild-perl
 *.substvars
 *.debhelper
 *.log
