@@ -20,70 +20,84 @@
 #
 #######################################################################
 
-BEGIN {
-    ($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
-}
+package Buildd::Uploader;
 
 use strict;
 use warnings;
-use Buildd qw(logger open_log close_log lock_file unlock_file unset_env exitstatus);
+
+use Buildd qw(lock_file unlock_file unset_env exitstatus);
+use Buildd::Base;
 use Buildd::Conf;
 use Sbuild::ChrootRoot;
-use Sbuild::OptionsBase;
 
-my $conf = Buildd::Conf->new();
-exit 1 if !defined($conf);
-my $options = Sbuild::OptionsBase->new($conf, "buildd-uploader", "1");
-exit 1 if !defined($options);
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
 
-my $host = Sbuild::ChrootRoot->new($conf);
+    @ISA = qw(Exporter Buildd::Base);
 
-sub uploaded ($@);
-sub upload ($$);
-sub do_dupload ($@);
-
-unset_env();
-
-my $locked = 0;
-END {
-    unlock_file("$main::HOME/buildd-uploader")
-	if $locked;
+    @EXPORT = qw();
 }
 
-open_log($conf);
-$host->set('Log Stream', \*LOG);
+sub new {
+    my $class = shift;
+    my $conf = shift;
 
-if (lock_file( "$main::HOME/buildd-uploader", 1 ) == 0) {
-    logger( "exiting; another buildd-uploader is still running" );
-    exit 1;
-}
-$locked = 1;
+    my $self = $class->SUPER::new($conf);
+    bless($self, $class);
 
-my %uploaded_pkgs;
+    $self->set('Uploader Lock', undef);
+    $self->set('Uploaded Pkgs', {});
 
-upload( "upload-security", $conf->get('DUPLOAD_TO_SECURITY') );
-upload( "upload", $conf->get('DUPLOAD_TO') );
-
-foreach my $dist (keys %uploaded_pkgs) {
-    logger( "Set to Uploaded($dist):$uploaded_pkgs{$dist}" );
+    return $self;
 }
 
-exit 0;
+sub run {
+    my $self = shift;
+
+    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
+    $host->set('Log Stream', $self->get('Log Stream'));
+    $self->set('Host', $host);
+
+    unset_env();
+
+    $self->set('Uploader Lock',
+	       lock_file("$main::HOME/buildd-uploader", 1));
+
+    if (!$self->get('Uploader Lock')) {
+	$self->log("exiting; another buildd-uploader is still running");
+	return 1;
+    }
+
+
+    $self->upload( "upload-security", $self->get_conf('DUPLOAD_TO_SECURITY') );
+    $self->upload( "upload", $self->get_conf('DUPLOAD_TO') );
+
+    my $uploaded_pkgs = $self->get('Uploaded Pkgs');
+
+    foreach my $dist (keys %{$uploaded_pkgs}) {
+	$self->log("Set to Uploaded($dist):$uploaded_pkgs->{$dist}");
+    }
+
+    return 0;
+}
 
 sub uploaded ($@) {
+    my $self = shift;
     my $pkg = shift;
+
     my @propagated_pkgs = ();
+
     foreach my $dist (@_) {
 	my $msgs = "";
 
-	my $pipe = $host->pipe_command(
-	    { COMMAND => [wannabuild_command($conf),
+	my $pipe = $self->get_conf('Host')->pipe_command(
+	    { COMMAND => [wannabuild_command($self->get('Config')),
 			  '--uploaded',
 			  '--no-down-propagation',
 			  "--dist=$dist",
 			  "$pkg"],
-	      USER => $conf->get('USERNAME'),
+	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 1,
 	      PRIORITY => 0,
 	    });
@@ -103,20 +117,22 @@ sub uploaded ($@) {
 	    }
 	    close($pipe);
 	    if ($msgs or $?) {
-		logger( $msgs ) if $msgs;
-		logger( "wanna-build --uploaded failed with status ", exitstatus($?), "\n" )
+		$self->log($msgs) if $msgs;
+		$self->log("wanna-build --uploaded failed with status ",
+			   exitstatus($?), "\n" )
 		    if $?;
 	    } else {
-		$uploaded_pkgs{$dist} .= " $pkg";
+		$self->get('Uploaded Pkgs')->{$dist} .= " $pkg";
 	    }
 	}
 	else {
-	    logger( "Cannot spawn wanna-build --uploaded: $!\n" );
+	    $self->log("Can't spawn wanna-build --uploaded: $!\n");
 	}
     }
 }
 
 sub upload ($$) {
+    my $self = shift;
     my $udir = shift;
     my $upload_to = shift;
 
@@ -124,6 +140,7 @@ sub upload ($$) {
     lock_file( "$main::HOME/$udir" );
 
     my( $f, $g, @before, @after );
+
     foreach $f (<*.changes>) {
 	($g = $f) =~ s/\.changes$/\.upload/;
 	push( @before, $f ) if ! -f $g;
@@ -132,34 +149,34 @@ sub upload ($$) {
     unlock_file( "$main::HOME/$udir" );
 
     if (!@before) {
-	logger( "Nothing to do for $udir\n" );
+	$self->log("Nothing to do for $udir\n");
 	return;
     }
 
-    logger( scalar(@before), " jobs to upload in $udir: @before\n" );
+    $self->log(scalar(@before), " jobs to upload in $udir: @before\n");
 
     foreach $f (@before) {
 	($g = $f) =~ s/\.changes$/\.upload/;
-	my $logref = do_dupload( $upload_to, $f );
+	my $logref = $self->do_dupload( $upload_to, $f );
 
 	if (defined $logref and scalar(@$logref) > 0) {
 	    my $line;
 
 	    foreach $line (@$logref) {
-		logger $line;
+		$self->log($line);
 	    }
 	}
 
 	if ( -f $g ) {
 	    if (!open( F, "<$f" )) {
-		logger( "Cannot open $f: $!\n" );
+		$self->log("Cannot open $f: $!\n");
 		next;
 	    }
 	    my $text;
 	    { local($/); undef $/; $text = <F>; }
 	    close( F );
 	    if ($text !~ /^Distribution:\s*(.*)\s*$/m) {
-		logger( "$f doesn't have a Distribution: field\n" );
+		$self->log("$f doesn't have a Distribution: field\n");
 		next;
 	    }
 	    my @dists = split( /\s+/, $1 );
@@ -175,24 +192,26 @@ sub upload ($$) {
 	    } else {
 		($pkg = $f) =~ s/_\S+\.changes$//;
 	    }
-	    uploaded($pkg,@dists);
+	    $self->uploaded($pkg,@dists);
 	} else {
 	    push (@after, $f);
 	}
     }
 
     if (@after) {
-	logger( "The following jobs were not processed (successfully):\n".
-		"@after\n" );
+	$self->log("The following jobs were not processed (successfully):\n" .
+		   "@after\n");
     }
     else {
-	logger( "dupload successful.\n" );
+	$self->log("dupload successful.\n");
     }
-    write_stats( "uploads", scalar(@before) - scalar(@after) );
+    $self->write_stats("uploads", scalar(@before) - scalar(@after));
 }
 
 sub do_dupload ($@) {
+    my $self = shift;
     my $upload_to = shift;
+
     my @jobs = @_;
     my @log;
     local( *PIPE );
@@ -259,7 +278,39 @@ sub do_dupload ($@) {
 
     if ($errs) {
 	$errs .= "\nComplete output from dupload:\n\n$dup_log";
-	send_mail($conf->get('ADMIN_MAIL'), "dupload errors", $errs);
+	send_mail($self->get_conf('ADMIN_MAIL'), "dupload errors", $errs);
     }
     return \@log;
+}
+
+package main;
+
+use strict;
+use warnings;
+
+use Buildd qw(open_log close_log lock_file unlock_file);
+use Buildd::Conf;
+use Sbuild::OptionsBase;
+
+my $conf = Buildd::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd-uploader", "1");
+exit 1 if !defined($options);
+my $uploader = Buildd::Uploader->new($conf);
+exit 1 if !defined($uploader);
+
+my $log = open_log($uploader->get('Config'));
+$uploader->set('Log Stream', $log);
+
+my $status = $uploader->run();
+
+close_log($conf);
+
+exit $status;
+
+END {
+    unlock_file($conf->get('HOME') . "/buildd-uploader")
+	if (defined($conf) &&
+	    defined($uploader) &&
+	    defined($uploader->get('Uploader Lock')));
 }
