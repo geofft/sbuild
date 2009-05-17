@@ -126,3 +126,22 @@ the pidfile, as for END.
 buildd*: Objectify and use ChrootRoot
 
 ChrootRoot: Tie in to logger
+
+run|pipe_apt_command should be generic functions, not class
+methods.
+
+Use ChrootRoot to run commands on host system.  Remove CHROOT
+parameter?  Only needed for run_apt_command, which can work
+accordingly without CHROOT.
+
+Logging functions should take array rather than scalar for
+logger() compatibility.
+
+buildd-vlog: Rather than tailing the output of sbuild logs, once
+buildd uses Sbuild::Build directly, the daemon will be able to
+do its own output (if desired).
+
+buildd-mail: Moves built packages directly into the chroot
+   /var/cache/apt/archives.  It should use Sbuild::Chroot.
+
+buildd: SIGHUP should reread config, not SIGUSR1.  Swap?
