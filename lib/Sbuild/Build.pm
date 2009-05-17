@@ -251,7 +251,7 @@ sub run {
 
     # Update APT cache.
     if ($self->get_conf('APT_UPDATE')) {
-	if (upgrade($session)) {
+	if (upgrade($session, $self->get('Config'))) {
 	    # Since apt-update was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
@@ -420,7 +420,7 @@ sub fetch_source_files {
 	    if (!$retried) {
 		$self->log_subsubsection("Update APT");
 		# try to update apt's cache if nothing found
-		update($self->get('Session'));
+		update($self->get('Session'), $self->get('Config'));
 		$retried = 1;
 		goto retry;
 	    }
@@ -1214,7 +1214,7 @@ sub run_apt {
     $status = $?;
 
     if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-	my $status = update($self->get('Session'));
+	my $status = update($self->get('Session'), $self->get('Config'));
 	$self->log("apt-get update failed\n") if $status;
 	goto repeat;
     }
