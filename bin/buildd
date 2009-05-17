@@ -96,9 +96,11 @@ if (@{$conf->get('TAKE_FROM_DISTS')}) {
     die "take_from_dists is empty, aborting.";
 }
 
-defined(my $pid = fork) or die "can't fork: $!\n";
-exit if $pid; # parent exits
-setsid or die "can't start a new session: $!\n";
+if (!$conf->get('NO_DETACH')) {
+    defined(my $pid = fork) or die "can't fork: $!\n";
+    exit if $pid; # parent exits
+    setsid or die "can't start a new session: $!\n";
+}
 
 $daemon = 1;
 

@@ -170,6 +170,9 @@ sub init_allowed_keys {
 	'NO_BUILD_REGEX'			=> {
 	    DEFAULT => '^(contrib/|non-free/)?non-US/'
 	},
+	'NO_DETACH'				=> {
+	    DEFAULT => 0
+	},
 	'NO_WARN_PATTERN'			=> {
 	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$'
 	},
@@ -270,6 +273,7 @@ sub read_config {
     my $nice_level = undef;
     my @no_auto_build;
     my $no_build_regex = undef;
+    my $no_detach = undef;
     my $no_warn_pattern = undef;
     my $pidfile = undef;
     my $pkg_log_keep = undef;
@@ -353,6 +357,7 @@ sub read_config {
 	$self->set('NO_AUTO_BUILD', \@no_auto_build)
 	    if (@no_auto_build);
 	$self->set('NO_BUILD_REGEX', $no_build_regex);
+	$self->set('NO_DETACH', $no_detach);
 	$self->set('BUILD_REGEX', $build_regex);
 	$self->set('NO_WARN_PATTERN', $no_warn_pattern);
 	$self->set('PIDFILE', $pidfile);
