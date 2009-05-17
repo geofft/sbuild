@@ -26,13 +26,15 @@ use strict;
 use warnings;
 use POSIX;
 use FileHandle;
+use Sbuild::LogBase;
 
 require Exporter;
 @Buildd::ISA = qw(Exporter);
 
 @Buildd::EXPORT = qw(unset_env lock_file unlock_file open_log
  		     reopen_log close_log logger send_mail
- 		     ll_send_mail exitstatus write_stats);
+ 		     ll_send_mail exitstatus write_stats isin
+ 		     wannabuild_command);
 
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
@@ -49,13 +51,14 @@ sub unset_env ();
 sub lock_file ($;$);
 sub unlock_file ($);
 sub write_stats ($$);
-sub open_log ();
+sub open_log ($);
 sub logger (@);
-sub close_log ();
-sub reopen_log ();
+sub close_log ($);
+sub reopen_log ($);
 sub send_mail ($$$;$);
 sub ll_send_mail ($$);
 sub exitstatus ($);
+sub wannabuild_command ($);
 
 sub isin ($@) {
     my $val = shift;
@@ -148,41 +151,55 @@ sub write_stats ($$) {
     unlock_file( "$main::HOME/stats" );
 }
 
-sub open_log () {
-    open( LOG, ">>$main::HOME/daemon.log" )
-	or die "$0: Cannot open my logfile $main::HOME/daemon.log: $!\n";
-    chmod( 0640, "$main::HOME/daemon.log" )
-	or die "$0: Cannot set modes of $main::HOME/daemon.log: $!\n";
-    select( (select(LOG), $| = 1)[0] );
-    open( STDOUT, ">&LOG" )
-	or die "$0: Can't redirect stdout to $main::HOME/daemon.log: $!\n";
-    open( STDERR, ">&LOG" )
-	or die "$0: Can't redirect stderr to $main::HOME/daemon.log: $!\n";
+sub open_log ($) {
+    my $conf = shift;
+
+    my $logfile = $conf->get('DAEMON_LOG_FILE');
+
+    my $log = new FileHandle(">>$logfile")
+	or die "$0: Cannot open logfile $logfile: $!\n";
+    chmod( 0640, "$logfile" )
+	or die "$0: Cannot set modes of $logfile: $!\n";
+
+    my $logfunc = sub {
+	my $F = shift;
+	my $message = shift;
+
+	my $t;
+	my $text = "";
+
+	# omit weekday and year for brevity
+	($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
+	$message =~ s/\n+$/\n/; # remove newlines at end
+	$message .= "\n" if $message !~ /\n$/; # ensure newline at end
+	$message =~ s/^/$t $Buildd::progname: /mg;
+
+	print $F $message;
+    };
+
+    Sbuild::LogBase::open_log($conf, $log, $logfunc);
 }
 
 sub logger (@) {
-    my $t;
     my $text = "";
 
-    # omit weekday and year for brevity
-    ($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
     foreach (@_) { $text .= $_; }
-    $text =~ s/\n+$/\n/; # remove newlines at end
-    $text .= "\n" if $text !~ /\n$/; # ensure newline at end
-    $text =~ s/^/$t $Buildd::progname: /mg;
-    print LOG $text;
+    print main::LOG $text;
 }
 
-sub close_log () {
-    close( LOG );
-    close( STDOUT );
-    close( STDERR );
+sub close_log ($) {
+    my $conf = shift;
+
+    Sbuild::LogBase::close_log($conf);
 }
 
-sub reopen_log () {
+sub reopen_log ($) {
+    my $conf = shift;
+
     my $errno = $!;
-    close_log();
-    open_log();
+
+    close_log($conf);
+    open_log($conf);
     $! = $errno;
 }
 
@@ -220,12 +237,22 @@ sub ll_send_mail ($$) {
     return 1;
 }
 
-
 sub exitstatus ($) {
     my $stat = shift;
 
     return ($stat >> 8) . "/" . ($stat % 256);
 }
 
+sub wannabuild_command ($) {
+    my $conf = shift;
+
+    my @command = ($conf->get('SSH_CMD'), 'wanna-build');
+    push(@command, "--database=" . $conf->get('WANNA_BUILD_DBBASE'))
+	if $conf->get('WANNA_BUILD_DBBASE');
+    push(@command, "--user=" . $conf->get('WANNA_BUILD_USER'))
+	if $conf->get('WANNA_BUILD_USER');
+
+    return @command;
+}
 
 1;

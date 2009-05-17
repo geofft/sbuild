@@ -20,10 +20,7 @@
 #
 #######################################################################
 
-BEGIN {
-    ($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
-}
+# Note: close_log never called.
 
 use strict;
 use warnings;
@@ -53,8 +50,8 @@ my $options = Sbuild::OptionsBase->new($conf, "buildd-watcher", "1");
 exit 1 if !defined($options);
 
 unset_env();
-chdir( "$main::HOME" );
-open_log();
+chdir($conf->get('HOME'));
+open_log($conf);
 
 # check if another watcher is still running
 my $watcher_pid;
@@ -82,7 +79,7 @@ END { unlink( "watcher-running" ); }
 # check if buildd is still running, restart it if needed.
 my $restart = 0;
 my $daemon_pid;
-if (open( PID, "<build/buildd.pid" )) {
+if (open( PID, "<" . $conf->get('PIDFILE') )) {
     $daemon_pid = <PID>;
     close( PID );
     $daemon_pid =~ /^\s*(\d+)/; $daemon_pid = $1;
@@ -215,23 +212,24 @@ if (!-f "old-logs/daemon-stamp" ||
     system "touch old-logs/daemon-stamp";
 
     my $d = format_time(time);
-    if (-f "daemon.log.old") {
-	system "mv daemon.log.old old-logs/daemon-$d.log";
+    if (-f $conf->get('DAEMON_LOG_FILE') . ".old") {
+	system "mv " . $conf->get('DAEMON_LOG_FILE') . ".old old-logs/daemon-$d.log";
 	system "gzip -9 old-logs/daemon-$d.log";
     }
 
-    lock_file( "daemon.log" );
-    rename( "daemon.log", "daemon.log.old" );
+    lock_file( $conf->get('DAEMON_LOG_FILE') );
+    rename( $conf->get('DAEMON_LOG_FILE'),
+	    $conf->get('DAEMON_LOG_FILE') . ".old" );
     my $old_umask = umask 0007;
-    system "touch daemon.log";
+    system "touch " . $conf->get('DAEMON_LOG_FILE');
     umask $old_umask;
     kill( 1, $daemon_pid ) if $daemon_pid;
-    reopen_log();
-    unlock_file( "daemon.log" );
+    reopen_log($conf);
+    unlock_file( $conf->get('DAEMON_LOG_FILE') );
 
     if ($conf->get('DAEMON_LOG_SEND')) {
 	my $text;
-	open( F, "<daemon.log.old" );
+	open( F, "<" . $conf->get('DAEMON_LOG_FILE') . ".old" );
 	{ local($/); undef $/; $text = <F>; }
 	close( F );
 	send_mail( $conf->get('ADMIN_MAIL'), "Build Daemon Log $d", $text );
@@ -314,14 +312,15 @@ sub archive_logs ($$$$) {
     if (@todo) {
 	$oldt = format_time($oldest);
 	$newt = format_time($newest);
-	$file = "$main::HOME/$destpat-$oldt-$newt.tar";
+	$file = $conf->get('HOME') . "/$destpat-$oldt-$newt.tar";
 
 	system "tar cf $file @todo";
 	system "gzip -9 $file";
 
 	if ($dir eq "logs") {
 	    local (*F);
-	    if (open( F, ">$main::HOME/$destpat-$oldt-$newt.index" )) {
+	    my $index = $conf->get('HOME') . "/$destpat-$oldt-$newt.index";
+	    if (open( F, ">$index" )) {
 		print F join( "\n", @todo ), "\n";
 		close( F );
 	    }

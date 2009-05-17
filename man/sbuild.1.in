@@ -42,6 +42,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-purge=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
 .RB [ \-n \[or] \-\-nolog ]
+.RB [ \-\-setup\-hook=\fIhook-script\fP ]
 .BR PACKAGE1_VERSION[.dsc] " [" PACKAGE2_VERSION[.dsc] " [" PACKAGE\f[BI]n\fP_VERSION[.dsc] ]]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version
@@ -208,6 +209,12 @@ used for binary NMUs.
 This option is similar to --make-binNMU except that it allows the user to
 specify an arbitrary string to be appended to the version number (immediately
 before the '+' in the Debian revision if --make-binNMU is also provided).
+.TP
+.BR "\-\-setup\-hook=\fIhook-script\fP"
+Run the specified script inside the chroot before building.  This script may
+perform any required actions to customise or configure the chroot.  Note that
+the script will be run inside the chroot, and so the script must exist inside
+the chroot rather than the host system.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
 .IP "DEBEMAIL"

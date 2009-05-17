@@ -101,3 +101,81 @@ Wannabuild::Database: Move priority, section and category values into
 configuration file to allow customisation.
 
 Sbuild::Base: Add append method to simplify set(get() . ) idiom.
+
+buildd auto-restart isn't useful due to loss of @INC and failure to
+detect changes in modules.  Create init script instead.
+
+buildd-mail: %header (to|from|subject|message-id|date) are mandatory.
+Check for these and bail out if not present.
+
+buildd*: Most programs do not call close_log, but should be doing.
+
+buildd: Hook Host ChrootRoot into stderr logger
+
+Buildd::Conf: Add Sbuild::Chroot heirarchy-specific configuration
+   keys.
+- split into separate initialisation function,
+- split wanna-build config into separate function also.
+
+buildd*: Use Sbuild::Base logging infrastructure (tie in logger()
+log formatting and semantics into log())
+
+buildd: shutdown_* should check if we are a daemon before removing
+the pidfile, as for END.
+
+buildd*: Objectify and use ChrootRoot
+
+ChrootRoot: Tie in to logger
+
+run|pipe_apt_command should be generic functions, not class
+methods.
+
+Use ChrootRoot to run commands on host system.  Remove CHROOT
+parameter?  Only needed for run_apt_command, which can work
+accordingly without CHROOT.
+
+Logging functions should take array rather than scalar for
+logger() compatibility.
+
+buildd-vlog: Rather than tailing the output of sbuild logs, once
+buildd uses Sbuild::Build directly, the daemon will be able to
+do its own output (if desired).
+
+buildd-mail: Moves built packages directly into the chroot
+   /var/cache/apt/archives.  It should use Sbuild::Chroot.
+
+buildd: SIGHUP should reread config, not SIGUSR1.  Swap?
+
+buildd mails: Statistics start from 01-01-1970 when first started up.
+
+Buildd::*: Don't set Host until after object construction, since
+   the Log Stream isn't yet initialised.
+
+bin/*, lib/*: Kill use of main:: globals
+
+Kill main::HOME hardcoding
+
+Kill PATH hardcoding
+
+Kill LOG/PLOG
+
+Kill all globals
+
+
+sbuild: Move chroot setup from 50sbuild into Sbuild Build or Chroot
+   setup.
+
+
+wanna-build: Objectify
+
+wanna-build: Replace logger with Sbuild::Base logging
+
+buildd-watcher: Objectify
+
+buildd-watcher: Replace logger with Sbuild::Base logging
+
+bin/*: Remove last logger() traces
+
+lib/Buildd: Remove logger()
+
+lib/Buildd: Move logger vfunc into Sbuild::Log as the default logger?

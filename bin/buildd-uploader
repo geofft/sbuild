@@ -27,8 +27,9 @@ BEGIN {
 
 use strict;
 use warnings;
-use Buildd;
+use Buildd qw(logger open_log close_log lock_file unlock_file unset_env exitstatus);
 use Buildd::Conf;
+use Sbuild::ChrootRoot;
 use Sbuild::OptionsBase;
 
 my $conf = Buildd::Conf->new();
@@ -36,21 +37,22 @@ exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd-uploader", "1");
 exit 1 if !defined($options);
 
+my $host = Sbuild::ChrootRoot->new($conf);
+
 sub uploaded ($@);
 sub upload ($$);
 sub do_dupload ($@);
 
 unset_env();
 
-my $log_locked = 0;
 my $locked = 0;
-END { unlock_file( "$main::HOME/daemon.log" ) if $log_locked;
-      unlock_file( "$main::HOME/buildd-uploader" ) if $locked; }
+END {
+    unlock_file("$main::HOME/buildd-uploader")
+	if $locked;
+}
 
-lock_file( "$main::HOME/daemon.log" );
-$log_locked = 1;
-
-open_log();
+open_log($conf);
+$host->set('Log Stream', \*LOG);
 
 if (lock_file( "$main::HOME/buildd-uploader", 1 ) == 0) {
     logger( "exiting; another buildd-uploader is still running" );
@@ -74,14 +76,20 @@ sub uploaded ($@) {
     my @propagated_pkgs = ();
     foreach my $dist (@_) {
 	my $msgs = "";
-	if (open( PIPE, $conf->get('SSHCMD') .
-		  " wanna-build --uploaded ".
-		  "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
-		  ($conf->get('WANNA_BUILD_DBBASE')?
-		   "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-		  "--no-down-propagation --dist=$dist ".
-		  "$pkg 2>&1 |" )) {
-	    while( <PIPE> ) {
+
+	my $pipe = $host->pipe_command(
+	    { COMMAND => [wannabuild_command($conf),
+			  '--uploaded',
+			  '--no-down-propagation',
+			  "--dist=$dist",
+			  "$pkg"],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	    });
+
+	if ($pipe) {
+	    while(<$pipe>) {
 		if (/^(\S+): Propagating new state /) {
 		    push( @propagated_pkgs, $1 );
 		}
@@ -93,25 +101,17 @@ sub uploaded ($@) {
 		    $msgs .= $_;
 		}
 	    }
-	    close( PIPE );
+	    close($pipe);
 	    if ($msgs or $?) {
-		lock_file( "$main::HOME/daemon.log" );
-		$log_locked = 1;
 		logger( $msgs ) if $msgs;
-		logger( "uploaded-build failed with status ", exitstatus($?), "\n" )
+		logger( "wanna-build --uploaded failed with status ", exitstatus($?), "\n" )
 		    if $?;
-		unlock_file( "$main::HOME/daemon.log" );
-		$log_locked = 0;
 	    } else {
 		$uploaded_pkgs{$dist} .= " $pkg";
 	    }
 	}
 	else {
-	    lock_file( "$main::HOME/daemon.log" );
-	    $log_locked = 1;
-	    logger( "Cannot spawn uploaded-build: $!\n" );
-	    unlock_file( "$main::HOME/daemon.log" );
-	    $log_locked = 0;
+	    logger( "Cannot spawn wanna-build --uploaded: $!\n" );
 	}
     }
 }
@@ -137,8 +137,6 @@ sub upload ($$) {
     }
 
     logger( scalar(@before), " jobs to upload in $udir: @before\n" );
-    unlock_file( "$main::HOME/daemon.log" );
-    $log_locked = 0;
 
     foreach $f (@before) {
 	($g = $f) =~ s/\.changes$/\.upload/;
@@ -147,14 +145,9 @@ sub upload ($$) {
 	if (defined $logref and scalar(@$logref) > 0) {
 	    my $line;
 
-	    lock_file( "$main::HOME/daemon.log" );
-	    $log_locked = 1;
-
 	    foreach $line (@$logref) {
 		logger $line;
 	    }
-	    unlock_file( "$main::HOME/daemon.log" );
-	    $log_locked = 0;
 	}
 
 	if ( -f $g ) {
@@ -166,11 +159,7 @@ sub upload ($$) {
 	    { local($/); undef $/; $text = <F>; }
 	    close( F );
 	    if ($text !~ /^Distribution:\s*(.*)\s*$/m) {
-		lock_file( "$main::HOME/daemon.log" );
-		$log_locked = 1;
 		logger( "$f doesn't have a Distribution: field\n" );
-		unlock_file( "$main::HOME/daemon.log" );
-		$log_locked = 0;
 		next;
 	    }
 	    my @dists = split( /\s+/, $1 );
@@ -192,8 +181,6 @@ sub upload ($$) {
 	}
     }
 
-    lock_file( "$main::HOME/daemon.log" );
-    $log_locked = 1;
     if (@after) {
 	logger( "The following jobs were not processed (successfully):\n".
 		"@after\n" );

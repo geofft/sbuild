@@ -23,7 +23,8 @@ use strict;
 use warnings;
 use Buildd;
 use Buildd::Conf;
-use Sbuild qw(binNMU_version);
+use Sbuild qw(binNMU_version $devnull);
+use Sbuild::ChrootRoot;
 use Sbuild::OptionsBase;
 use POSIX;
 use File::Basename;
@@ -61,11 +62,11 @@ exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd-mail", "1");
 exit 1 if !defined($options);
 
+my $host = Sbuild::ChrootRoot->new($conf);
+
 chdir($conf->get('HOME'));
 
-lock_file( "daemon.log" );
-END { unlock_file( "daemon.log" ); }
-open_log();
+open_log($conf);
 
 my($error, $short_error, %header, $body_text);
 
@@ -75,6 +76,8 @@ exit 0;
 
 sub process_mail () {
 
+# Note: %header (to|from|subject|message-id|date) are mandatory.
+# Check for these and bail out if not present.
     my $header_text = "";
     my $lastheader = "";
     $body_text = "";
@@ -107,7 +110,7 @@ sub process_mail () {
     while( <STDIN> ) {
 	last if !/^\s*$/;
     }
-    $body_text .= $_;
+    $body_text .= $_ if defined($_);
 
     if (!eof)
     { local($/); undef $/; $body_text .= <STDIN>; }
@@ -516,21 +519,25 @@ sub redo_new_version ($$$) {
     my $newv = shift;
     my $err = 0;
 
-    if (open( PIPE, $conf->get('SSH_CMD'). " wanna-build -v ".
-	      ($conf->get('WANNA_BUILD_DBBASE')?
-	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	      "--user=" . $conf->get('WANNA_BUILD_USER') .
-	      " --dist=$dist $newv 2>&1 |")) {
-	while( <PIPE> ) {
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '-v',
+		      "--dist=$dist",
+		      $newv],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if ($pipe) {
+	while(<$pipe>) {
 	    next if /^wanna-build Revision/ ||
 		/^\S+: Warning: Older version / ||
 		/^\S+: ok$/;
 	    $error .= "$_";
 	    $err = 1;
 	}
-	close( PIPE );
-    }
-    else {
+	close($pipe);
+    } else {
 	logger( "Can't spawn wanna-build: $!\n" );
 	$error .= "Can't spawn wanna-build: $!\n";
 	return;
@@ -825,22 +832,27 @@ sub set_to_failed ($$$) {
     $is_bugno = 1 if $text =~ /^\(see #\d+\)$/;
     return if !check_state( $pkg, $dist, $is_bugno ? "Failed" : "Building" );
 
-    open( PIPE, "|-" )
-	or (open( STDOUT, ">/dev/null"),
-	    exec $conf->get('SSH_CMD') .
-	    " wanna-build --failed --no-down-propagation ".
-	    "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
-	    ($conf->get('WANNA_BUILD_DBBASE')?
-	     "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	    "--dist=$dist $pkg");
-    print PIPE "${text}.\n";
-    close( PIPE );
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--failed',
+		      '--no-down-propagation',
+		      "--dist=$dist",
+		      $pkg],
+	  PIPE => 'out',
+	  STREAMOUT => $devnull,
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if ($pipe) {
+	print $pipe "${text}.\n";
+	close($pipe);
+    }
     if ($?) {
 	my $t = "wanna-build --failed failed with status ".exitstatus($?)."\n";
 	logger( $t );
 	$error .= $t;
-    }
-    elsif ($is_bugno) {
+    } elsif ($is_bugno) {
 	logger( "Bug# appended to fail message of $pkg ($dist)\n" );
     }
     else {
@@ -854,16 +866,22 @@ sub set_to_depwait ($$$) {
     my $dist = shift;
     my $deps = shift;
 
-    open( PIPE, "|-" )
-	or (open( STDOUT, ">/dev/null"),
-	    exec "$conf->get('SSH_CMD')" .
-	    " wanna-build --dep-wait --no-down-propagation ".
-	    "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
-	    ($conf->get('WANNA_BUILD_DBBASE')?
-	     "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	    "--dist=$dist $pkg");
-    print PIPE "$deps\n";
-    close( PIPE );
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--dep-wait',
+		      '--no-down-propagation',
+		      "--dist=$dist",
+		      $pkg],
+	  PIPE => 'out',
+	  STREAMOUT => $devnull,
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if ($pipe) {
+	print $pipe "$deps\n";
+	close($pipe);
+    }
     if ($?) {
 	my $t = "wanna-build --dep-wait failed with status ".exitstatus($?)."\n";
 	logger( $t );
@@ -878,15 +896,23 @@ sub set_to_depwait ($$$) {
 sub give_back ($$) {
     my $pkg = shift;
     my $dist = shift;
-    my $answer_cmd;
 
-    $answer_cmd = $conf->get('SSH_CMD') .
-	" wanna-build --give-back --no-down-propagation ".
-	"--user=" . $conf->get('WANNA_BUILD_USER'). " ".
-	($conf->get('WANNA_BUILD_DBBASE')?
-	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	 "--dist=$dist $pkg";
-    my $answer = `$answer_cmd`;
+    my $answer;
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--give-back',
+		      '--no-down-propagation',
+		      "--dist=$dist",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if ($pipe) {
+	$answer = <$pipe>;
+	close($pipe);
+    }
     if ($?) {
 	$error .= "wanna-build --give-back failed:\n$answer";
     }
@@ -900,13 +926,22 @@ sub no_build ($$) {
     my $dist = shift;
     my $answer_cmd;
 
-    $answer_cmd = $conf->get('SSH_CMD').
-	" wanna-build --no-build --no-down-propagation ".
-	"--user=" . $conf->get('WANNA_BUILD_USER') . " ".
-	($conf->get('WANNA_BUILD_DBBASE')?
-	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	 "--dist=$dist $pkg";
-    my $answer = `$answer_cmd`;
+    my $answer;
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--no-build',
+		      '--no-down-propagation',
+		      "--dist=$dist",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if ($pipe) {
+	$answer = <$pipe>;
+	close($pipe);
+    }
     if ($?) {
 	$error .= "no-build failed:\n$answer";
     }
@@ -919,18 +954,23 @@ sub no_build ($$) {
 sub get_fail_msg ($$) {
     my $pkg = shift;
     my $dist = shift;
-    local( *PIPE );
 
     $pkg =~ s/_.*//;
-    if (open( PIPE, $conf->get('SSH_CMD') .
-	      " wanna-build --info --dist=$dist ".
-	      ($conf->get('WANNA_BUILD_DBBASE')?
-	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	      "$pkg |" )) {
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--info',
+		      "--dist=$dist",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if ($pipe) {
 	my $msg = "";
-	while( <PIPE> ) {
+	while(<$pipe>) {
 	    if (/^\s*Old-Failed\s*:/) {
-		while( <PIPE> ) {
+		while(<$pipe>) {
 		    last if /^  \S+\s*/;
 		    $_ =~ s/^\s+//;
 		    if (/^----+\s+\S+\s+----+$/) {
@@ -943,12 +983,11 @@ sub get_fail_msg ($$) {
 		last;
 	    }
 	}
-	close( PIPE );
+	close($pipe);
 	return $msg if $msg;
 	$error .= "Couldn't find Old-Failed in info for $pkg\n";
 	return "Same as previous version (couldn't extract the text)\n";
-    }
-    else {
+    } else {
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return "Same as previous version (couldn't extract the text)\n";
     }
@@ -958,27 +997,32 @@ sub check_state ($$@) {
     my $pkgv = shift;
     my $dist = shift;
     my @wanted_states = @_;
-    local( *PIPE );
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
-    if (!open( PIPE, $conf->get('SSH_CMD') .
-	       " wanna-build --info ".
-	       ($conf->get('WANNA_BUILD_DBBASE')?
-		"--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	       "--dist=$dist $pkg |" )){
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--info',
+		      "--dist=$dist",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return 0;
     }
 
     my ($av, $as, $ab, $an);
-    while( <PIPE> ) {
+    while(<$pipe>) {
 	$av = $1 if /^\s*Version\s*:\s*(\S+)/;
 	$as = $1 if /^\s*State\s*:\s*(\S+)/;
 	$ab = $1 if /^\s*Builder\s*:\s*(\S+)/;
 	$an = $1 if /^\s*Binary-NMU-Version\s*:\s*(\d+)/;
     }
-    close( PIPE );
+    close($pipe);
 
     my $msg = "$pkgv($dist) check_state(@wanted_states): ";
     $av = binNMU_version($av,$an,undef) if (defined $an);
@@ -1000,21 +1044,27 @@ sub check_state ($$@) {
 sub check_building_any_dist ($) {
     my $pkgv = shift;
     my @dists;
-    local( *PIPE );
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
-    if (!open( PIPE, $conf->get('SSH_CMD') . " wanna-build --info ".
-	       ($conf->get('WANNA_BUILD_DBBASE')?
-		"--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	       "--dist=all $pkg |" )){
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--info',
+		      "--dist=all",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
 	$error .= "Couldn't start wanna-build --info: $!\n";
 	return 0;
     }
 
     my $text;
-    { local ($/); $text = <PIPE>; }
-    close( PIPE );
+    { local ($/); $text = <$pipe>; }
+    close($pipe);
 
     while( $text =~ /^\Q$pkg\E\((\w+)\):(.*)\n((\s.*\n)*)/mg ) {
 	my ($dist, $rest, $info) = ($1, $2, $3);

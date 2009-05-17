@@ -29,9 +29,12 @@ use strict;
 use warnings;
 
 use POSIX;
-use Buildd qw(logger open_log close_log);
+use Buildd qw(isin logger open_log close_log write_stats wannabuild_command);
 use Buildd::Conf;
+use Sbuild qw($devnull);
 use Sbuild::OptionsBase;
+use Sbuild::Sysconfig;
+use Sbuild::ChrootRoot;
 use Cwd;
 
 sub ST_MTIME ();
@@ -45,7 +48,9 @@ sub df ($);
 sub append_to_REDO ($$@);
 sub read_FINISHED ();
 sub shutdown ($);
+sub shutdown_fast ($);
 sub reread_config ($);
+sub reopen_log ($);
 sub check_restart ();
 sub block_signals ();
 sub unblock_signals ();
@@ -58,6 +63,10 @@ exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
 exit 1 if !defined($options);
 
+my $host = Sbuild::ChrootRoot->new($conf);
+$host->set('Log Stream', \*LOG);
+
+my $daemon = 0;
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
 my $my_binary = $0;
 $my_binary = cwd . "/" . $my_binary if $my_binary !~ m,^/,;
@@ -72,7 +81,7 @@ chdir( "$main::HOME/build" )
 open( STDIN, "</dev/null" )
     or die "$0: can't redirect stdin to /dev/null: $!\n";
 
-if (open( PID, "<buildd.pid" )) {
+if (open( PID, "<" . $conf->get('PIDFILE') )) {
     my $pid = <PID>;
     close( PID );
     $pid =~ /^[[:space:]]*(\d+)/; $pid = $1;
@@ -88,32 +97,33 @@ if (@{$conf->get('TAKE_FROM_DISTS')}) {
     die "take_from_dists is empty, aborting.";
 }
 
-defined(my $pid = fork) or die "can't fork: $!\n";
-exit if $pid; # parent exits
-setsid or die "can't start a new session: $!\n";
+if (!$conf->get('NO_DETACH')) {
+    defined(my $pid = fork) or die "can't fork: $!\n";
+    exit if $pid; # parent exits
+    setsid or die "can't start a new session: $!\n";
+}
 
-open( PID, ">buildd.pid" )
-    or die "can't create buildd.pid: $!\n";
+$daemon = 1;
+
+open( PID, ">" . $conf->get('PIDFILE') )
+    or die "can't create " . $conf->get('PIDFILE') . ": $!\n";
 printf PID "%5d\n", $$;
 close( PID );
-END { unlink( "buildd.pid" ) if (defined($pid) and $pid == 0); }
+END { unlink( $conf->get('PIDFILE') )
+	  if ($daemon); }
 
-open_log();
+open_log($conf);
+$host->set('Log Stream', \*LOG);
 
 logger( "Daemon started. (pid=$$)\n" );
 
 foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
-    $SIG{$_} = sub ($) {
-	my $signame = shift;
-	logger( "buildd ($$) killed by SIG$signame\n" );
-	unlink( "buildd.pid" );
-	exit 1;
-    };
+    $SIG{$_} = \&main::shutdown_fast;
 }
-$SIG{'HUP'} = \&reopen_log;
-$SIG{'USR1'} = \&reread_config;
-$SIG{'INT'} = \&shutdown;
-$SIG{'TERM'} = \&shutdown;
+$SIG{'HUP'} = \&main::reopen_log;
+$SIG{'USR1'} = \&main::reread_config;
+$SIG{'INT'} = \&main::shutdown;
+$SIG{'TERM'} = \&main::shutdown;
 undef $ENV{'DISPLAY'};
 
 # the main loop
@@ -143,19 +153,21 @@ MAINLOOP: while( 1 ) {
 	check_restart();
 	$conf->read_config();
 	my %givenback = read_givenback();
-	if (!open( PIPE, $conf->get('SSH_CMD').
-		   " wanna-build --list=needs-build --dist=$dist ".
-		   ($conf->get('WANNA_BUILD_DBBASE') ?
-		    "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-		   ($conf->get('WANNA_BUILD_USER') ?
-		    "--user=" . $conf->get('WANNA_BUILD_USER') . " " : "").
-		   "2>&1 |" )) {
+	my $pipe = $host->pipe_command(
+	    { COMMAND => [wannabuild_command($conf),
+			  '--list=needs-build',
+			  "--dist=$dist"],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	    });
+	if (!$pipe) {
 	    logger( "Can't spawn wanna-build --list=needs-build: $!\n" );
 	    next MAINLOOP;
 	}
 	my(@todo, $total, $nonex, @lowprio_todo, $max_build);
 	$max_build = $conf->get('MAX_BUILD');
-	while( <PIPE> ) {
+	while( <$pipe> ) {
 	    my $socket = $conf->get('SSH_SOCKET');
 	    if ($socket &&
 		(/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
@@ -181,9 +193,9 @@ MAINLOOP: while( 1 ) {
 	    $pv =~ s,^.*/,,;
 	    my $p;
 	    ($p = $pv) =~ s/_.*$//;
-	    next if Buildd::isin( $p, @{$conf->get('NO_AUTO_BUILD')} );
+	    next if isin( $p, @{$conf->get('NO_AUTO_BUILD')} );
 	    next if $givenback{$pv};
-	    if (Buildd::isin( $p, @{$conf->get('WEAK_NO_AUTO_BUILD')} )) {
+	    if (isin( $p, @{$conf->get('WEAK_NO_AUTO_BUILD')} )) {
 		push( @lowprio_todo, $pv );
 		next;
 	    }
@@ -193,7 +205,7 @@ MAINLOOP: while( 1 ) {
 	    }
 	    push( @todo, $pv );
 	}
-	close( PIPE );
+	close($pipe);
 	next if $nonex;
 	if ($?) {
 	    logger( "wanna-build --list=needs-build --dist=$dist failed; status ",
@@ -322,17 +334,19 @@ sub do_wanna_build ($\%@) {
     my $binNMUlog = shift;
     my @output = ();
     my $n = 0;
-    local( *PIPE );
 
     block_signals();
-    if (open( PIPE, $conf->get('SSH_CMD') .
-	      " wanna-build -v --no-down-propagation ".
-	      ($conf->get('WANNA_BUILD_DBBASE')?
-	       "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	      ($conf->get('WANNA_BUILD_USER')?
-	       "--user=" . $conf->get('WANNA_BUILD_USER') . " ":"").
-	      "--dist=$dist @_ 2>&1 |" )) {
-	while( <PIPE> ) {
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '-v', '--no-down-propagation',
+		      "--dist=$dist",
+		      @_],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
+       while( <$pipe> ) {
 	    next if /^wanna-build Revision/;
 	    if (/^(\S+):\s*ok/) {
 		my $pkg = $1;
@@ -341,7 +355,7 @@ sub do_wanna_build ($\%@) {
 	    }
 	    elsif (/^(\S+):.*NOT OK/) {
 		my $pkg = $1;
-		my $nextline = <PIPE>;
+		my $nextline = <$pipe>;
 		chomp( $nextline );
 		$nextline =~ s/^\s+//;
 		logger( "Can't take $pkg: $nextline\n" );
@@ -355,14 +369,14 @@ sub do_wanna_build ($\%@) {
 		    push( @output, grep( /^\Q$pkg\E_/, @_ ) );
 		}
 		# skip until ok line
-		while( <PIPE> ) {
+		while( <$pipe> ) {
 		    last if /^\Q$pkg\E:\s*ok/;
 		}
 	    }
 	    elsif (/^(\S+):.*needs binary NMU (\d+)/) {
 		my $pkg = $1;
 		my $binNMUver = $2;
-		chop (my $changelog = <PIPE>);
+		chop (my $changelog = <$pipe>);
 		my $newpkg;
 		++$n;
 
@@ -370,12 +384,12 @@ sub do_wanna_build ($\%@) {
 		$binNMUlog->{$output[$#output]} = $changelog;
 		$output[$#output] = "!$binNMUver!" . $output[$#output];
 		# skip until ok line
-		while( <PIPE> ) {
+		while( <$pipe> ) {
 		    last if /^\Q$pkg\E:\s*aok/;
 		}
 	    }
 	}
-	close( PIPE );
+	close($pipe);
 	unblock_signals();
 	write_stats( "taken", $n ) if $n;
 	return @output;
@@ -475,7 +489,7 @@ sub do_build ($\%@) {
 	    logger( "sbuild has already finished:\n@finished\n" );
 	    my @unfinished;
 	    for (@_) {
-		push( @unfinished, $_ ) if !Buildd::isin( $_, @finished );
+		push( @unfinished, $_ ) if !isin( $_, @finished );
 	    }
 	    logger( "Adding rest to REDO:\n@unfinished\n" );
 	    append_to_REDO( $dist, '', @unfinished );
@@ -527,15 +541,32 @@ EOF
 sub handle_prevfailed ($@) {
     my $dist = shift;
     my $pkgv = shift;
-    my( $pkg, $fail_msg, $changelog, $fail_cmd);
+    my( $pkg, $fail_msg, $changelog);
 
     logger( "$pkgv previously failed -- asking admin first\n" );
     ($pkg = $pkgv) =~ s/_.*$//;
-    $fail_cmd = $conf->get('SSH_CMD') . " wanna-build ".
-	($conf->get('WANNA_BUILD_DBBASE')?
-	 "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-	 "--info --dist=$dist $pkg";
-    $fail_msg = `$fail_cmd`;
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [wannabuild_command($conf),
+		      '--info',
+		      "--dist=$dist",
+		      $pkg],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
+	logger("Can't run wanna-build: $!\n");
+	return;
+    }
+
+    $fail_msg = <$pipe>;
+
+    close($pipe);
+    if ($?) {
+	logger("wanna-build exited with error $?\n");
+	return;
+    }
 
     {
 	local $SIG{'ALRM'} = sub ($) { die "Timeout!\n" };
@@ -565,10 +596,8 @@ sub get_changelog ($$) {
     my $changelog = "";
     my $analyze = "";
     my $chroot_apt_options;
-    my $msg;
     my $file;
     my $retried = 0;
-    local( *PIPE, *F );
 
     $pkg =~ /^([\w\d.+-]+)_([\w\d:.~+-]+)/;
     my ($n, $v) = ($1, $2);
@@ -576,19 +605,54 @@ sub get_changelog ($$) {
     my $pkg_ne = "${n}_${v_ne}";
 
 retry:
-    my $schroot = $conf->get('SCHROOT') .
-	" -c $dist-" . $conf->get('ARCH') . "-sbuild --";
-    my $schroot_root = $conf->get('SCHROOT') .
-	" -c $dist-" . $conf->get('ARCH') . "-sbuild' -u root --";
+    my @schroot = ($conf->get('SCHROOT'), '-c',
+		   "$dist-" . $conf->get('ARCH') . '-sbuild', '--');
+    my @schroot_root = ($conf->get('SCHROOT'), '-c',
+			"$dist-" . $conf->get('ARCH') . '-sbuild',
+			'-u', 'root', '--');
+
     my $apt_get = $conf->get('APT_GET');
-    $msg = `$schroot $apt_get -q -d --diff-only source $n=$v 2>&1`;
+
+    my $pipe = $host->pipe_command(
+	{ COMMAND => [@schroot,
+		      "$apt_get", '-q', '-d',
+		      '--diff-only', 'source', "$n=$v"],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$pipe) {
+	logger("Can't run schroot: $!\n");
+	return;
+    }
+
+    my $msg = <$pipe>;
+
+    close($pipe);
+
     if ($? == 0 && $msg !~ /get 0B/) {
 	$analyze = "diff";
 	$file = "${n}_${v_ne}.diff.gz";
     }
 
     if (!$analyze) {
-	$msg = `$schroot $apt_get' -q -d --tar-only source $n=$v 2>&1`;
+	my $pipe2 = $host->pipe_command(
+	    { COMMAND => [@schroot,
+			  "$apt_get", '-q', '-d',
+			  '--tar-only', 'source', "$n=$v"],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	    });
+	if (!$pipe2) {
+	    logger("Can't run schroot: $!\n");
+	    return;
+	}
+
+	my $msg = <$pipe2>;
+
+	close($pipe2);
+
 	if ($? == 0 && $msg !~ /get 0B/) {
 	    $analyze = "tar";
 	    $file = "${n}_${v_ne}.tar.gz";
@@ -596,7 +660,16 @@ retry:
     }
 
     if (!$analyze && !$retried) {
-	system "$schroot_root $apt_get -qq update &>/dev/null";
+	$host->run_command(
+	    { COMMAND => [@schroot_root,
+			  $apt_get, '-qq',
+			  'update'],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	      STREAMOUT => $devnull
+	    });
+
 	$retried = 1;
 	goto retry;
     }
@@ -645,10 +718,30 @@ retry:
 }
 
 # TODO: Merge with sbuild function
+# TODO: This is *totally* broken (df can split over lines);
+# use statvfs directly
 sub df ($) {
     my $dir = shift;
 
-    my $free = `/bin/df $dir | tail -1`;
+    my $dfpipe = $host->pipe_command(
+	{ COMMAND => [$Sbuild::Sysconfig::programs{'DF'},
+		      "$dir"],
+	  USER => $conf->get('USERNAME'),
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	});
+    if (!$dfpipe) {
+	logger("Can't run schroot: $!\n");
+	return;
+    }
+
+    my @msg = <$dfpipe>;
+
+    close($dfpipe);
+
+    my $msglines = @msg;
+    my $free = $msg[$msglines];
+
     my @free = split( /\s+/, $free );
     return $free[3];
 }
@@ -699,6 +792,13 @@ sub read_FINISHED () {
     return @pkgs;
 }
 
+sub shutdown_fast ($) {
+    my $signame = shift;
+    logger( "buildd ($$) killed by SIG$signame\n" );
+    unlink( $conf->get('PIDFILE') );
+    exit 1;
+}
+
 sub shutdown ($) {
     my $signame = shift;
 
@@ -722,9 +822,9 @@ sub shutdown ($) {
 	}
 	unlink( "SBUILD-REDO-DUMPED" );
     }
-    unlink( "buildd.pid" );
+    unlink( $conf->get('PIDFILE') );
     logger( "exiting now\n" );
-    close_log();
+    close_log($conf);
     exit 1;
 }
 
@@ -736,12 +836,20 @@ sub reread_config ($) {
     $Buildd::Conf::reread_config = 1;
 }
 
+sub reopen_log ($) {
+    my $signame = shift;
+
+    logger("buildd ($$) received SIG$signame -- reopening logfile\n");
+
+    Buildd::reopen_log($conf);
+}
+
 sub check_restart () {
     my @stats = stat( $my_binary );
 
     if (@stats && $my_bin_time != $stats[ST_MTIME]) {
 	logger( "My binary has been updated -- restarting myself (pid=$$)\n" );
-	unlink( "buildd.pid" );
+	unlink( $conf->get('PIDFILE') );
 	kill ( 15, $main::ssh_pid ) if $main::ssh_pid;
 	exec $my_binary;
     }
@@ -771,7 +879,7 @@ sub check_ssh_master () {
     }
 
     ($main::ssh_pid = fork)
-	or exec $conf->get('SSH_CMD'). " -MN";
+	or exec (@{$conf->get('SSH_CMD')}, "-MN");
 
     if (!defined $main::ssh_pid) {
 	logger( "Cannot fork for ssh master: $!\n" );

@@ -50,8 +50,6 @@ BEGIN {
     @EXPORT = qw();
 }
 
-
-# TODO: put in all package version data and job ID (for indexing in job list)
 sub new {
     my $class = shift;
     my $dsc = shift;
@@ -271,6 +269,21 @@ sub run {
     $self->set('Pkg Fail Stage', 'fetch-src');
     if (!$self->fetch_source_files()) {
 	goto cleanup_close;
+    }
+
+    # Run setup-hook before processing deps and build
+    if ($self->get_conf('CHROOT_SETUP_SCRIPT')) {
+	$session->run_command(
+	    { COMMAND => [$self->get_conf('CHROOT_SETUP_SCRIPT')],
+	      ENV => $self->get_env('SBUILD_BUILD_'),
+	      USER => "root",
+	      PRIORITY => 0,
+	      CHROOT => 1 });
+	if ($?) {
+	    $self->log("setup-hook failed\n");
+	    $self->set_status('skipped');
+	    goto cleanup_close;
+	}
     }
 
     $self->set('Pkg Fail Stage', 'install-deps');
@@ -1539,6 +1552,30 @@ sub check_dependencies {
     return $fail;
 }
 
+# Produce a hash suitable for ENV export
+sub get_env ($$) {
+    my $self = shift;
+    my $prefix = shift;
+
+    sub _env_loop ($$$$) {
+	my ($env,$ref,$keysref,$prefix) = @_;
+
+	foreach my $key (keys( %{ $keysref } )) {
+	    my $value = $ref->get($key);
+	    next if (!defined($value));
+	    next if (ref($value));
+	    my $name = "${prefix}${key}";
+	    $name =~ s/ /_/g;
+	    $env->{$name} = $value;
+        }
+    }
+
+    my $envlist = {};
+    _env_loop($envlist, $self, $self, $prefix);
+    _env_loop($envlist, $self->get('Config'), $self->get('Config')->{'KEYS'}, "${prefix}CONF_");
+    return $envlist;
+}
+
 sub get_apt_policy {
     my $self = shift;
     my @interest = @_;
@@ -2483,8 +2520,8 @@ sub open_build_log {
 	warn "Cannot open pipe to '$filename': $!\n";
     } elsif ($pid == 0) {
 	$SIG{'INT'} = 'IGNORE';
-#	$SIG{'TERM'} = 'IGNORE';
-#	$SIG{'QUIT'} = 'IGNORE';
+	$SIG{'TERM'} = 'IGNORE';
+	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
 
 	if (!$self->get_conf('NOLOG') &&
@@ -2589,8 +2626,10 @@ sub close_build_log {
 	    $self->get_conf('MAILTO'));
 
     $self->set('Log File', undef);
-    $self->get('Log Stream')->close(); # Close child logger process
-    $self->set('Log Stream', undef);
+    if (defined($self->get('Log Stream'))) {
+	$self->get('Log Stream')->close(); # Close child logger process
+	$self->set('Log Stream', undef);
+    }
 }
 
 sub log_symlink {
