@@ -179,3 +179,6 @@ bin/*: Remove last logger() traces
 lib/Buildd: Remove logger()
 
 lib/Buildd: Move logger vfunc into Sbuild::Log as the default logger?
+
+Add sbuild configuration option to disable package removal on cleanup.
+(#528312)
