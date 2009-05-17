@@ -66,15 +66,6 @@ my $host = Sbuild::ChrootRoot->new($conf);
 
 chdir($conf->get('HOME'));
 
-lock_file( $conf->get('DAEMON_LOG_FILE') );
-
-END {
-    unlock_file($conf->get('DAEMON_LOG_FILE'))
-	if (defined($conf) &&
-	    defined($conf->get('DAEMON_LOG_FILE')) &&
-	    $conf->get('DAEMON_LOG_FILE'));
-}
-
 open_log($conf);
 
 my($error, $short_error, %header, $body_text);
