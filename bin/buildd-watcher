@@ -20,11 +20,6 @@
 #
 #######################################################################
 
-BEGIN {
-    ($main::HOME = $ENV{'HOME'})
-	or die "HOME not defined in environment!\n";
-}
-
 # Note: close_log never called.
 
 use strict;
@@ -55,7 +50,7 @@ my $options = Sbuild::OptionsBase->new($conf, "buildd-watcher", "1");
 exit 1 if !defined($options);
 
 unset_env();
-chdir( "$main::HOME" );
+chdir($conf->get('HOME'));
 open_log($conf);
 
 # check if another watcher is still running
@@ -317,14 +312,15 @@ sub archive_logs ($$$$) {
     if (@todo) {
 	$oldt = format_time($oldest);
 	$newt = format_time($newest);
-	$file = "$main::HOME/$destpat-$oldt-$newt.tar";
+	$file = $conf->get('HOME') . "/$destpat-$oldt-$newt.tar";
 
 	system "tar cf $file @todo";
 	system "gzip -9 $file";
 
 	if ($dir eq "logs") {
 	    local (*F);
-	    if (open( F, ">$main::HOME/$destpat-$oldt-$newt.index" )) {
+	    my $index = $conf->get('HOME') . "/$destpat-$oldt-$newt.index";
+	    if (open( F, ">$index" )) {
 		print F join( "\n", @todo ), "\n";
 		close( F );
 	    }
