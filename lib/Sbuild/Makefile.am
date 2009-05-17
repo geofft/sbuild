@@ -33,6 +33,7 @@ MODULES =			\
 	ChrootRoot.pm		\
 	ChrootSchroot.pm	\
 	ChrootSudo.pm		\
+	ChrootSetup.pm		\
 	ChrootInfo.pm		\
 	ChrootInfoSchroot.pm	\
 	ChrootInfoSudo.pm	\
