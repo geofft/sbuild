@@ -157,5 +157,25 @@ Kill main::HOME hardcoding
 
 Kill PATH hardcoding
 
+Kill LOG/PLOG
+
+Kill all globals
+
+
 sbuild: Move chroot setup from 50sbuild into Sbuild Build or Chroot
    setup.
+
+
+wanna-build: Objectify
+
+wanna-build: Replace logger with Sbuild::Base logging
+
+buildd-watcher: Objectify
+
+buildd-watcher: Replace logger with Sbuild::Base logging
+
+bin/*: Remove last logger() traces
+
+lib/Buildd: Remove logger()
+
+lib/Buildd: Move logger vfunc into Sbuild::Log as the default logger?
