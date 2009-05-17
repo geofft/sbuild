@@ -32,7 +32,7 @@ require Exporter;
 @Buildd::ISA = qw(Exporter);
 
 @Buildd::EXPORT = qw(unset_env lock_file unlock_file open_log
- 		     reopen_log close_log logger send_mail
+ 		     reopen_log close_log send_mail
  		     ll_send_mail exitstatus write_stats isin
  		     wannabuild_command);
 
@@ -53,7 +53,6 @@ sub lock_file ($;$);
 sub unlock_file ($);
 sub write_stats ($$);
 sub open_log ($);
-sub logger (@);
 sub close_log ($);
 sub reopen_log ($);
 sub send_mail ($$$;$);
@@ -180,13 +179,6 @@ sub open_log ($) {
     Sbuild::LogBase::open_log($conf, $log, $logfunc);
 }
 
-sub logger (@) {
-    my $text = "";
-
-    foreach (@_) { $text .= $_; }
-    print main::LOG $text;
-}
-
 sub close_log ($) {
     my $conf = shift;
 
@@ -223,15 +215,18 @@ sub ll_send_mail ($$) {
     my $text = shift;
     local( *MAIL );
 
+    # TODO: Don't log to STDERR: Implement as class method using
+    # standard pipe interface using normal log streams.
+
     $text =~ s/^\.$/../mg;
     local $SIG{'PIPE'} = 'IGNORE';
     if (!open( MAIL, "|/usr/sbin/sendmail -oem '$to'" )) {
-	logger( "Could not open pipe to /usr/sbin/sendmail: $!\n" );
+	print STDERR "Could not open pipe to /usr/sbin/sendmail: $!\n";
 	return 0;
     }
     print MAIL $text;
     if (!close( MAIL )) {
-	logger( "sendmail failed (exit status ", exitstatus($?), ")\n" );
+	print STDERR "sendmail failed (exit status ", exitstatus($?), ")\n";
 	return 0;
     }
     return 1;
