@@ -122,7 +122,7 @@ sub basesetup ($$) {
     }
 
     $session->run_command(
-	{ COMMAND => ['chmod', '0750', '/build'],
+	{ COMMAND => ['chmod', '0770', '/build'],
 	  USER => 'root',
 	  PRIORITY => 1,
 	  DIR => '/' });
