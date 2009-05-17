@@ -41,8 +41,8 @@ exit 1 if !defined($options);
 my $daemon = Buildd::Daemon->new($conf);
 exit 1 if !defined($daemon);
 
-open_log($daemon->get('Config'));
-$daemon->set('Log Stream', \*LOG);
+my $log = open_log($daemon->get('Config'));
+$daemon->set('Log Stream', $log);
 
 # Global signal handling
 foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {

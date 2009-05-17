@@ -190,7 +190,7 @@ sub should_skip ($) {
 	foreach (@pkgs) {
 	    if (/^\Q$pkgv\E$/) {
 		++$found;
-		print LOG "$pkgv found in SKIP file -- skipping building it\n";
+		print "$pkgv found in SKIP file -- skipping building it\n";
 	    }
 	    else {
 		print F $_;
@@ -263,7 +263,7 @@ sub shutdown ($) {
 	    push(@npkgs, $job->get('Package_OVersion'))
 		if $job->get('Pkg Status') ne "successful";
 	}
-	print LOG "The following jobs were not finished: @npkgs\n";
+	print "The following jobs were not finished: @npkgs\n";
 
 	my $f = "REDO";
 	if (-f "REDO.lock") {
@@ -292,7 +292,7 @@ sub shutdown ($) {
 	}
 	open(F, ">SBUILD-REDO-DUMPED");
 	close(F);
-	print LOG "SBUILD-REDO-DUMPED created\n";
+	print "SBUILD-REDO-DUMPED created\n";
 
 	unlink("SBUILD-FINISHED");
 

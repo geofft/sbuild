@@ -176,7 +176,7 @@ sub open_log ($) {
 	print $F $message;
     };
 
-    Sbuild::LogBase::open_log($conf, $log, $logfunc);
+    return Sbuild::LogBase::open_log($conf, $log, $logfunc);
 }
 
 sub close_log ($) {

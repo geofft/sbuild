@@ -132,7 +132,7 @@ sub get_command_internal {
 	    $dir = $tmpdir;
 	}
 	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
-	    print main::LOG "Command \"$command\" cannot be run as user $user on the host system\n";
+	    $self->log_warning("Command \"$command\" cannot be run as user $user on the host system\n");
 	} elsif ($user eq 'root') {
 	    @cmdline = ($self->get_conf('SUDO'));
 	}

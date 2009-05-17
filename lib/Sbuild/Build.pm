@@ -34,6 +34,7 @@ use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
+use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 
 use strict;
@@ -2522,7 +2523,7 @@ sub open_build_log {
 		print CPLOG $_;
 	    }
 	    if ($self->get_conf('NOLOG') || $self->get_conf('VERBOSE')) {
-		print main::SAVED_STDOUT $_;
+		print $saved_stdout $_;
 	    }
 	}
 
@@ -2622,7 +2623,7 @@ sub add_time_entry {
     return if !$self->get_conf('AVG_TIME_DB');
     my %db;
     if (!tie %db, 'GDBM_File', $self->get_conf('AVG_TIME_DB'), GDBM_WRCREAT, 0664) {
-	print "Can't open average time db " . $self->get_conf('AVG_TIME_DB') . "\n";
+	$self->log("Can't open average time db " . $self->get_conf('AVG_TIME_DB') . "\n");
 	return;
     }
     $pkg =~ s/_.*//;
@@ -2651,7 +2652,7 @@ sub add_space_entry {
     return if !$self->get_conf('AVG_SPACE_DB') || $space == 0;
     my %db;
     if (!tie %db, 'GDBM_File', $self->get_conf('AVG_SPACE_DB'), &GDBM_WRCREAT, 0664) {
-	print "Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . "\n";
+	$self->log("Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . "\n");
 	return;
     }
     $pkg =~ s/_.*//;

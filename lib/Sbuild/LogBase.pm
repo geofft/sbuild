@@ -27,33 +27,37 @@ use warnings;
 sub open_log ($$$);
 sub close_log ($);
 
+our $log = undef;
+our $saved_stdout = undef;
+our $saved_stderr = undef;
+
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT_OK);
 
     @ISA = qw(Exporter);
 
-    @EXPORT_OK = qw(open_log close_log);
+    @EXPORT_OK = qw(open_log close_log $log $saved_stdout $saved_stderr);
 }
 
 sub open_log ($$$) {
     my $conf = shift;
-    my $LOG = shift; # File to log to
+    my $log_file = shift; # File to log to
     my $logfunc = shift; # Function to handle logging
 
     if (!defined($logfunc)) {
 	$logfunc = sub {
-	    my $LOG = shift;
+	    my $log_file = shift;
 	    my $message = shift;
 
-	    print $LOG $message;
+	    print $log_file $message;
 	}
     }
 
-    $LOG->autoflush(1) if defined($LOG);
+    $log_file->autoflush(1) if defined($log_file);
 
     my $pid;
-    ($pid = open( main::LOG, "|-"));
+    ($pid = open($log, "|-"));
     if (!defined $pid) {
 	warn "Cannot open pipe to log: $!\n";
     }
@@ -67,23 +71,25 @@ sub open_log ($$$) {
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'TERM'} = 'IGNORE';
 	while (<STDIN>) {
-	    $logfunc->($LOG, $_)
-	        if (!$conf->get('NOLOG') && defined($LOG));
+	    $logfunc->($log_file, $_)
+	        if (!$conf->get('NOLOG') && defined($log_file));
 	    $logfunc->(\*STDOUT, $_)
 		if ($conf->get('VERBOSE'));
 	}
-	undef $LOG;
+	undef $log_file;
 	exit 0;
     }
 
-    undef $LOG;
-    main::LOG->autoflush(1);
-    select(main::LOG);
+    undef $log_file; # Close in parent
+    $log->autoflush(1); # Automatically flush
+    select($log); # It's the default stream
 
-    open(main::SAVED_STDOUT, ">&STDOUT") or warn "Can't redirect stdout\n";
-    open(main::SAVED_STDERR, ">&STDERR") or warn "Can't redirect stderr\n";
-    open(STDOUT, ">&main::LOG") or warn "Can't redirect stdout\n";
-    open(STDERR, ">&main::LOG") or warn "Can't redirect stderr\n";
+    open($saved_stdout, ">&STDOUT") or warn "Can't redirect stdout\n";
+    open($saved_stderr, ">&STDERR") or warn "Can't redirect stderr\n";
+    open(STDOUT, '>&', $log) or warn "Can't redirect stdout\n";
+    open(STDERR, '>&', $log) or warn "Can't redirect stderr\n";
+
+    return $log;
 }
 
 sub close_log ($) {
@@ -93,11 +99,16 @@ sub close_log ($) {
     # which we originally opened and reopened, or else we can deadlock
     # in wait4 when closing the log stream due to waiting on the child
     # forever.
-    open(STDERR, ">&main::SAVED_STDERR") or warn "Can't redirect stderr\n";
-    open(STDOUT, ">&main::SAVED_STDOUT") or warn "Can't redirect stdout\n";
-    close(main::SAVED_STDERR);
-    close(main::SAVED_STDOUT);
-    close(main::LOG );
+    open(STDERR, '>&', $saved_stderr) or warn "Can't redirect stderr\n"
+	if defined($saved_stderr);
+    open(STDOUT, '>&', $saved_stdout) or warn "Can't redirect stdout\n"
+	if defined($saved_stdout);
+    $saved_stderr->close();
+    undef $saved_stderr;
+    $saved_stdout->close();
+    undef $saved_stdout;
+    $log->close();
+    undef $log;
 }
 
 1;

@@ -63,7 +63,7 @@ sub open_log ($) {
 	$main_logfile = $F->filename;
     }
 
-    Sbuild::LogBase::open_log($conf, $F, undef);
+    return Sbuild::LogBase::open_log($conf, $F, undef);
 }
 
 sub close_log ($) {
