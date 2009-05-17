@@ -26,6 +26,7 @@ use Sbuild qw(copy debug);
 use Sbuild::Base;
 use Sbuild::Conf;
 use Sbuild::ChrootInfo;
+use Sbuild::ChrootSetup qw(basesetup);
 
 use strict;
 use warnings;
@@ -95,6 +96,10 @@ sub _setup_options {
     $self->set('Srcdep Lock Dir', $self->get('Location') . '/' . $self->get_conf('SRCDEP_LOCK_DIR'));
     $self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
 
+    if (basesetup($self, $self->get('Config'))) {
+	print STDERR "Failed to set up chroot\n";
+	return 0;
+    }
     my $aptconf = "/var/lib/sbuild/apt.conf";
     $self->set('APT Conf', $aptconf);
 
@@ -108,10 +113,12 @@ sub _setup_options {
 	$self->_setup_aptconf($F);
 
 	if (! rename $F->filename, $chroot_aptconf) {
-	    die "Can't rename $F->filename to $chroot_aptconf: $!\n";
+	    print STDERR "Can't rename $F->filename to $chroot_aptconf: $!\n";
+	    return 0;
 	}
     } else {
-	die "Can't create $chroot_aptconf: $!";
+	print STDERR "Can't create $chroot_aptconf: $!";
+	return 0;
     }
 
     # unsplit mode uses an absolute path inside the chroot, rather
@@ -132,6 +139,8 @@ sub _setup_options {
 	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('APT Conf');
     }
+
+    return 1;
 }
 
 sub strip_chroot_path {
@@ -326,7 +335,7 @@ sub exec_command {
     }
 
     debug("Environment set:\n");
-    foreach (keys %ENV) {
+    foreach (sort keys %ENV) {
 	debug("  $_=$ENV{$_}\n");
     }
 
@@ -347,7 +356,8 @@ sub get_apt_command_internal {
     my $command = $options->{'COMMAND'};
     my $apt_options = $self->get('APT Options');
 
-    debug("APT Options: ", join(" ", @$apt_options), "\n");
+    debug("APT Options: ", join(" ", @$apt_options), "\n")
+	if defined($apt_options);
 
     my @aptcommand = ();
     if (defined($apt_options)) {
