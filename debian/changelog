@@ -16,18 +16,22 @@ sbuild (0.58.3-1) unstable; urgency=low
     James Vega for this patch.
   * Restore buildd package.
   * Split common library functions into new libsbuild-perl package.
-  * debian/sbuild.(preinst|postinst|postrm): Remove special cases for
-    versions older than oldstable.  Update addition and removal of
-    sbuild group to use return value of getent rather than parsing
-    getent output.
+  * debian/sbuild.(preinst|postinst|postrm):
+    - Remove special cases for versions older than oldstable.  Update
+      addition and removal of sbuild group to use return value of getent
+      rather than parsing getent output.
+    - Use addgroup/delgroup in place of adduser/deluser.
+    - Use --system when adding and deleting group, to ensure creation
+      of a system group.
   * debian/buildd.(preinst|postinst|postrm): Add maintainer scripts for
     buildd package.  Move configuration file from /etc/buildd.conf to
     /etc/buildd/buildd.conf if present.  Also create buildd user and
     group for running the buildd daemon.
   * Buildd::Conf: Don't default MAINTAINER_NAME to $DEBEMAIL if unset
     in the configuration file (Closes: #520158).
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 02 May 2009 15:58:57 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 17 May 2009 15:01:04 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 
