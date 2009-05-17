@@ -236,7 +236,7 @@ sub run {
     return 0;
 }
 
-sub get_from_REDO ($\%) {
+sub get_from_REDO {
     my $self = shift;
     my $wanted_dist = shift;
     my $binNMUlog = shift;
@@ -290,7 +290,7 @@ sub get_from_REDO ($\%) {
     return @redo;
 }
 
-sub read_givenback () {
+sub read_givenback {
     my $self = shift;
 
     my %gb;
@@ -324,7 +324,7 @@ sub read_givenback () {
     return %gb;
 }
 
-sub do_wanna_build ($\%@) {
+sub do_wanna_build {
     my $self = shift;
 
     my $dist = shift;
@@ -399,7 +399,7 @@ sub do_wanna_build ($\%@) {
     }
 }
 
-sub do_build ($\%@) {
+sub do_build {
     my $self = shift;
     my $dist = shift;
     my $binNMUlog = shift;
@@ -538,7 +538,7 @@ EOF
     $self->log("Build finished.\n");
 }
 
-sub handle_prevfailed ($@) {
+sub handle_prevfailed {
     my $self = shift;
     my $dist = shift;
     my $pkgv = shift;
@@ -592,7 +592,7 @@ sub handle_prevfailed ($@) {
 	       "or 'fail'.\n" );
 }
 
-sub get_changelog ($$) {
+sub get_changelog {
     my $self = shift;
     my $dist = shift;
     my $pkg = shift;
@@ -723,7 +723,7 @@ retry:
 # TODO: Merge with sbuild function
 # TODO: This is *totally* broken (df can split over lines);
 # use statvfs directly
-sub df ($) {
+sub df {
     my $self = shift;
     my $dir = shift;
 
@@ -749,7 +749,7 @@ sub df ($) {
     return $free[3];
 }
 
-sub append_to_REDO ($$@) {
+sub append_to_REDO {
     my $self = shift;
     my $dist = shift;
     my $postfix = shift;
@@ -783,7 +783,7 @@ sub append_to_REDO ($$@) {
     $self->unblock_signals();
 }
 
-sub read_FINISHED () {
+sub read_FINISHED {
     my $self = shift;
 
     local( *F );
@@ -799,7 +799,7 @@ sub read_FINISHED () {
     return @pkgs;
 }
 
-sub check_restart () {
+sub check_restart {
     my $self = shift;
     my @stats = stat( $self->get('MY_BINARY') );
 
@@ -816,19 +816,19 @@ sub check_restart () {
     }
 }
 
-sub block_signals () {
+sub block_signals {
     my $self = shift;
 
     POSIX::sigprocmask( SIG_BLOCK, $main::block_sigset );
 }
 
-sub unblock_signals () {
+sub unblock_signals {
     my $self = shift;
 
     POSIX::sigprocmask( SIG_UNBLOCK, $main::block_sigset );
 }
 
-sub check_ssh_master () {
+sub check_ssh_master {
     my $self = shift;
 
     return 1 if (!$self->get_conf('SSH_SOCKET'));
