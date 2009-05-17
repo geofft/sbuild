@@ -26,6 +26,7 @@ use strict;
 use warnings;
 use POSIX;
 use FileHandle;
+use Sbuild::LogBase;
 
 require Exporter;
 @Buildd::ISA = qw(Exporter);
@@ -155,36 +156,41 @@ sub open_log ($) {
 
     my $logfile = $conf->get('DAEMON_LOG_FILE');
 
-    open( LOG, ">>$logfile" )
-	or die "$0: Cannot open my logfile $logfile: $!\n";
+    my $log = new FileHandle(">>$logfile")
+	or die "$0: Cannot open logfile $logfile: $!\n";
     chmod( 0640, "$logfile" )
 	or die "$0: Cannot set modes of $logfile: $!\n";
-    select( (select(LOG), $| = 1)[0] );
-    open( STDOUT, ">&LOG" )
-	or die "$0: Can't redirect stdout to $logfile: $!\n";
-    open( STDERR, ">&LOG" )
-	or die "$0: Can't redirect stderr to $logfile: $!\n";
+
+    my $logfunc = sub {
+	my $F = shift;
+	my $message = shift;
+
+	my $t;
+	my $text = "";
+
+	# omit weekday and year for brevity
+	($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
+	$message =~ s/\n+$/\n/; # remove newlines at end
+	$message .= "\n" if $message !~ /\n$/; # ensure newline at end
+	$message =~ s/^/$t $Buildd::progname: /mg;
+
+	print $F $message;
+    };
+
+    Sbuild::LogBase::open_log($conf, $log, $logfunc);
 }
 
 sub logger (@) {
-    my $t;
     my $text = "";
 
-    # omit weekday and year for brevity
-    ($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
     foreach (@_) { $text .= $_; }
-    $text =~ s/\n+$/\n/; # remove newlines at end
-    $text .= "\n" if $text !~ /\n$/; # ensure newline at end
-    $text =~ s/^/$t $Buildd::progname: /mg;
-    print LOG $text;
+    print main::LOG $text;
 }
 
 sub close_log ($) {
     my $conf = shift;
 
-    close( LOG );
-    close( STDOUT );
-    close( STDERR );
+    Sbuild::LogBase::close_log($conf);
 }
 
 sub reopen_log ($) {
