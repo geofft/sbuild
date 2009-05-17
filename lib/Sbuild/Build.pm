@@ -29,6 +29,7 @@ use File::Temp qw(tempdir);
 use GDBM_File;
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug);
 use Sbuild::Base;
+use Sbuild::ChrootSetup qw(update upgrade);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig qw($version $release_date);
@@ -249,13 +250,7 @@ sub run {
 
     # Update APT cache.
     if ($self->get_conf('APT_UPDATE')) {
-	$session->run_apt_command(
-	    { COMMAND => [$self->get_conf('APT_GET'), 'update'],
-	      USER => 'root',
-	      PRIORITY => 1,
-	      DIR => '/'});
-
-	if ($?) {
+	if (upgrade($session)) {
 	    # Since apt-update was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
@@ -424,11 +419,7 @@ sub fetch_source_files {
 	    if (!$retried) {
 		$self->log_subsubsection("Update APT");
 		# try to update apt's cache if nothing found
-		$self->get('Session')->run_apt_command(
-		    { COMMAND => [$self->get_conf('APT_GET'), 'update'],
-		      USER => 'root',
-		      PRIORITY => 0,
-		      DIR => '/'});
+		update($self->get('Session'));
 		$retried = 1;
 		goto retry;
 	    }
@@ -1222,26 +1213,8 @@ sub run_apt {
     $status = $?;
 
     if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-	my $pipe =
-	    $self->get('Session')->pipe_apt_command(
-	{ COMMAND => [$self->get_conf('APT_GET'), '-q', 'update'],
-	  USER => 'root',
-	  PRIORITY => 1,
-	  DIR => '/' });
-
-	if (!$pipe) {
-	    $self->log("Can't open pipe to apt-get: $!\n");
-	    return 0;
-	}
-
-	$msgs = "";
-	while(<$pipe>) {
-	    $msgs .= $_;
-	    $self->log($_);
-	}
-	close($pipe);
-	$self->log("apt-get update failed\n") if $?;
-	$msgs = "";
+	my $status = update($self->get('Session'));
+	$self->log("apt-get update failed\n") if $status;
 	goto repeat;
     }
 
