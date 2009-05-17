@@ -1,3 +1,20 @@
+sbuild (0.58.3-1) unstable; urgency=low
+
+  * The sbuild group was previously created as a non-sytem group.
+    When upgrading from older versions of sbuild, the group will be
+    deleted and re-created as a system group.
+
+    Group membership will be transferred to the new group, and system
+    files and directories owned by group sbuild will be updated to be
+    owned by the new group.  Files and directories which are set to be
+    owned by group sbuild on the system or inside any build chroots
+    will need to be manually updated.  The group database inside any
+    build chroots may also need updating.  If using schroot to access
+    chroots, the group database should normally be updated
+    automatically, as should file and directory ownership.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 17 May 2009 19:16:30 +0100
+
 sbuild (0.58.0) unstable; urgency=low
 
   * The configuration option @no_auto_upgrade, which was no longer
