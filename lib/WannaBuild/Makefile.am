@@ -1,7 +1,7 @@
 # sbuild Makefile template
 #
 #
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2009  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ perlmodwannabuilddir = $(perlmoddir)/WannaBuild
 
 MODULES =		\
 	Conf.pm		\
-	Database.pm
+	Database.pm	\
+	Mail.pm		\
 	Options.pm
 
 perlmodwannabuild_DATA =	\
