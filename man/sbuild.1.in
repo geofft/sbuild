@@ -264,12 +264,23 @@ Copyright \[co] 2003-2006 Ryan Murray <rmurray\@debian.org>
 Copyright \[co] 2001-2003 Rick Younie <younie\@debian.org>
 Copyright \[co] 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
 Copyright \[co] 2005      Michael Banck <mbanck\@debian.org>
-Copyright \[co] 2005-2008 Roger Leigh <rleigh\@debian.org>
+Copyright \[co] 2005-2009 Roger Leigh <rleigh\@debian.org>
 .fi
 .SH "SEE ALSO"
-.BR avg\-pkg\-build\-time (1),
-.BR schroot (1),
+.BR sbuild\-abort (1),
+.BR sbuild\-adduser (8),
+.BR sbuild\-apt (1),
+.BR sbuild\-checkpackages (1),
+.BR sbuild\-createchroot (8),
+.BR sbuild\-distupgrade (1),
+.BR sbuild\-hold (1),
 .BR sbuild\-setup (7).
+.BR sbuild\-shell (1),
+.BR sbuild\-stats (1),
+.BR sbuild\-unhold (1),
+.BR sbuild\-update (1),
+.BR sbuild\-upgrade (1),
+.BR schroot (1),
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:
