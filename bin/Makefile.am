@@ -31,6 +31,7 @@ bin_SCRIPTS = 				\
 	sbuild-checkpackages		\
 	sbuild-update			\
 	sbuild-upgrade			\
+	sbuild-distupgrade		\
 	sbuild-shell			\
 	sbuild-stats			\
 	sbuild-hold			\

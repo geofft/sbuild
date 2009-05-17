@@ -24,6 +24,7 @@ use warnings;
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup);
+use Sbuild::ChrootSetup qw(update);
 use Sbuild::Conf;
 use Sbuild::OptionsBase;
 
@@ -41,15 +42,8 @@ foreach (@ARGV) {
 
     my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
 
-    print STDOUT "Updating $chroot chroot...\n";
-    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), 'update'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  PRIORITY => 1,
-	  DIR => '/' });
-    my $status = $? >> 8;
+    my $status = update($session, $conf);
+    $status >>= 8;
 
     cleanup($conf);
 

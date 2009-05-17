@@ -1,4 +1,4 @@
-.\" Copyright © 2005-2008  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2005-2009  Roger Leigh <rleigh@debian.org>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -15,14 +15,21 @@
 .\" <http://www.gnu.org/licenses/>.
 .TH SBUILD\-UPDATE 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
-sbuild\-update \- run apt-get update in an sbuild chroot
+sbuild\-update \- update and upgrade an sbuild chroot with apt-get
 .SH SYNOPSIS
 .BR sbuild\-update
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.BR sbuild\-upgrade
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.BR sbuild\-distupdate
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
 .SH DESCRIPTION
-\fBsbuild\-update\fR runs \f[CB]apt\-get update\fP
-inside the specified chroot.
+\fBsbuild\-update\fR runs \f[CB]apt\-get update\fP inside the specified chroot.
+\fBsbuild\-upgrade\fR and \fBsbuild\-distupgrade\fR run \f[CB]apt\-get
+upgrade\fP and \f[CB]apt\-get dist-upgrade\fP, respectively.
 .SH OPTIONS
 .SS Actions
 .TP
@@ -49,7 +56,7 @@ Roger Leigh.
 .fi
 .SH COPYRIGHT
 .nf
-Copyright \[co] 2006\[en]2008 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2006\[en]2009 Roger Leigh <rleigh@debian.org>.
 .fi
 .SH "SEE ALSO"
 .BR sbuild (1),
