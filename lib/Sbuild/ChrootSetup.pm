@@ -47,7 +47,6 @@ sub update ($$) {
 	{ COMMAND => [$conf->get('APT_GET'), 'update'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     return $?;
 }
@@ -60,7 +59,6 @@ sub upgrade ($$) {
 	{ COMMAND => [$conf->get('APT_GET'), '-uy', 'upgrade'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     return $?;
 }
@@ -73,7 +71,6 @@ sub distupgrade ($$) {
 	{ COMMAND => [$conf->get('APT_GET'), '-uy', 'dist-upgrade'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     return $?;
 }
@@ -86,7 +83,6 @@ sub basesetup ($$) {
     $session->run_command(
 	{ COMMAND => ['getent', 'group', 'sbuild'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  STREAMIN => $devnull,
 	  STREAMOUT => $devnull,
 	  DIR => '/' });
@@ -105,7 +101,6 @@ sub basesetup ($$) {
 	{ COMMAND => ['/bin/sh', '-c',
 		      'set -e; if [ ! -d /build ] ; then mkdir -m 0775 /build; fi'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     if ($?) {
 	print STDERR "E: Failed to create build directory /build\n";
@@ -115,7 +110,6 @@ sub basesetup ($$) {
     $session->run_command(
 	{ COMMAND => ['chown', 'root:sbuild', '/build'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     return $? if $?;
     if ($?) {
@@ -126,7 +120,6 @@ sub basesetup ($$) {
     $session->run_command(
 	{ COMMAND => ['chmod', '0770', '/build'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     return $? if $?;
     if ($?) {
@@ -138,7 +131,6 @@ sub basesetup ($$) {
 	{ COMMAND => ['/bin/sh', '-c',
 		      'set -e; if [ ! -d /var/lib/sbuild ] ; then mkdir -m 2770 /var/lib/sbuild; fi'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     if ($?) {
 	print STDERR "E: Failed to create build directory /var/lib/sbuild\n";
@@ -149,7 +141,6 @@ sub basesetup ($$) {
 	{ COMMAND => ['/bin/sh', '-c',
 		      'set -e; if [ ! -d /var/lib/sbuild/srcdep-lock ] ; then mkdir -m 2770 /var/lib/sbuild/srcdep-lock; fi'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     if ($?) {
 	print STDERR "E: Failed to create sbuild directory /var/lib/sbuild/srcdep-lock\n";
@@ -159,7 +150,6 @@ sub basesetup ($$) {
     $session->run_command(
 	{ COMMAND => ['chown', '-R', 'root:sbuild', '/var/lib/sbuild'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     if ($?) {
 	print STDERR "E: Failed to set root:sbuild ownership on /var/lib/sbuild/\n";
@@ -169,7 +159,6 @@ sub basesetup ($$) {
     $session->run_command(
 	{ COMMAND => ['chmod', '02770', '/var/lib/sbuild'],
 	  USER => 'root',
-	  PRIORITY => 1,
 	  DIR => '/' });
     if ($?) {
 	print STDERR "E: Failed to set 02770 permissions on /var/lib/sbuild/\n";
