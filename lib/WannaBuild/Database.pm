@@ -41,9 +41,6 @@ BEGIN {
     @EXPORT = qw();
 }
 
-# global vars
-$| = 1;
-
 sub new {
     my $class = shift;
     my $conf = shift;

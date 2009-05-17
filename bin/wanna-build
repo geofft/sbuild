@@ -33,6 +33,9 @@ use Sbuild::DB::Postgres;
 use WannaBuild::Database;
 use WannaBuild::Options;
 
+# global vars
+$| = 1;
+
 my $conf = WannaBuild::Conf->new();
 exit 1 if !defined($conf);
 my $options = WannaBuild::Options->new($conf, "wanna-build", 1);
