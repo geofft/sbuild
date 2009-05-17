@@ -27,6 +27,9 @@ All programs must use Getopt::Long for options parsing
 sbuild-stats option formatting and option processing perform more than
 one action at once?  Only set mode once?  actions have multiple args?
 
+sbuild-stats only has a single database.  There's no distinguishing
+between different distributions or architectures.  Fix with wannab.
+
 run_*_command should take an arrayref instead of a string for running
 commands.  They can then be passed directly to schroot avoiding
 quoting issues.
@@ -184,3 +187,9 @@ Add sbuild configuration option to disable package removal on cleanup.
 (#528312)
 
 sbuild-* should use ChrootSetup.
+
+sbuild-checkpackage: Make functions to get and set the package list
+in Sbuild::ChrootSetup.
+
+sbuild-hold|unhold: Make functions to get and set the package list
+in Sbuild::ChrootSetup.
