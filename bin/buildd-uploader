@@ -27,14 +27,17 @@ BEGIN {
 
 use strict;
 use warnings;
-use Buildd;
+use Buildd qw(logger open_log close_log lock_file unlock_file unset_env exitstatus);
 use Buildd::Conf;
+use Sbuild::ChrootRoot;
 use Sbuild::OptionsBase;
 
 my $conf = Buildd::Conf->new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd-uploader", "1");
 exit 1 if !defined($options);
+
+my $host = Sbuild::ChrootRoot->new($conf);
 
 sub uploaded ($@);
 sub upload ($$);
@@ -58,6 +61,7 @@ lock_file( $conf->get('DAEMON_LOG_FILE') );
 $log_locked = 1;
 
 open_log($conf);
+$host->set('Log Stream', \*LOG);
 
 if (lock_file( "$main::HOME/buildd-uploader", 1 ) == 0) {
     logger( "exiting; another buildd-uploader is still running" );
@@ -81,14 +85,20 @@ sub uploaded ($@) {
     my @propagated_pkgs = ();
     foreach my $dist (@_) {
 	my $msgs = "";
-	if (open( PIPE, $conf->get('SSHCMD') .
-		  " wanna-build --uploaded ".
-		  "--user=" . $conf->get('WANNA_BUILD_USER') . " ".
-		  ($conf->get('WANNA_BUILD_DBBASE')?
-		   "--database=" . $conf->get('WANNA_BUILD_DBBASE') . " ":"").
-		  "--no-down-propagation --dist=$dist ".
-		  "$pkg 2>&1 |" )) {
-	    while( <PIPE> ) {
+
+	my $pipe = $host->pipe_command(
+	    { COMMAND => [wannabuild_command($conf),
+			  '--uploaded',
+			  '--no-down-propagation',
+			  "--dist=$dist",
+			  "$pkg"],
+	      USER => $conf->get('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	    });
+
+	if ($pipe) {
+	    while(<$pipe>) {
 		if (/^(\S+): Propagating new state /) {
 		    push( @propagated_pkgs, $1 );
 		}
@@ -100,12 +110,12 @@ sub uploaded ($@) {
 		    $msgs .= $_;
 		}
 	    }
-	    close( PIPE );
+	    close($pipe);
 	    if ($msgs or $?) {
 		lock_file( $conf->get('DAEMON_LOG_FILE') );
 		$log_locked = 1;
 		logger( $msgs ) if $msgs;
-		logger( "uploaded-build failed with status ", exitstatus($?), "\n" )
+		logger( "wanna-build --uploaded failed with status ", exitstatus($?), "\n" )
 		    if $?;
 		unlock_file( $conf->get('DAEMON_LOG_FILE') );
 		$log_locked = 0;
@@ -116,7 +126,7 @@ sub uploaded ($@) {
 	else {
 	    lock_file( $conf->get('DAEMON_LOG_FILE') );
 	    $log_locked = 1;
-	    logger( "Cannot spawn uploaded-build: $!\n" );
+	    logger( "Cannot spawn wanna-build --uploaded: $!\n" );
 	    unlock_file( $conf->get('DAEMON_LOG_FILE') );
 	    $log_locked = 0;
 	}

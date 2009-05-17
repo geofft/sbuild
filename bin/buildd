@@ -64,6 +64,7 @@ my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
 exit 1 if !defined($options);
 
 my $host = Sbuild::ChrootRoot->new($conf);
+$host->set('Log Stream', \*LOG);
 
 my $daemon = 0;
 my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
@@ -112,6 +113,7 @@ END { unlink( $conf->get('PIDFILE') )
 	  if ($daemon); }
 
 open_log($conf);
+$host->set('Log Stream', \*LOG);
 
 logger( "Daemon started. (pid=$$)\n" );
 
