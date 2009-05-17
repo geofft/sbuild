@@ -39,6 +39,7 @@ require Exporter;
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
 ($Buildd::progname = $0) =~ s,.*/,,;
+$Buildd::progpid = $$;
 my @pwinfo = getpwuid($>);
 $Buildd::username = $pwinfo[0];
 $Buildd::gecos = $pwinfo[6];
@@ -170,9 +171,8 @@ sub open_log ($) {
 
 	# omit weekday and year for brevity
 	($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
-	$message =~ s/\n+$/\n/; # remove newlines at end
-	$message .= "\n" if $message !~ /\n$/; # ensure newline at end
-	$message =~ s/^/$t $Buildd::progname: /mg;
+	$message =~ s/\n+$//; # remove newlines at end
+	$message = "$t $Buildd::progname\[$Buildd::progpid\]: $message\n";
 
 	print $F $message;
     };
