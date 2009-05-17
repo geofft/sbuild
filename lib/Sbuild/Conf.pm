@@ -237,7 +237,7 @@ sub init_allowed_keys {
 		    if !isin($self->get('PURGE_BUILD_DIRECTORY'),
 			     qw(always successful never));
 	    },
-	    DEFAULT => 'successful'
+	    DEFAULT => 'always'
 	},
 	'TOOLCHAIN_REGEX'			=> {
 	    DEFAULT => ['binutils$',
