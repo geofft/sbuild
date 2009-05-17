@@ -24,6 +24,8 @@
 use strict;
 use warnings;
 
+use Sbuild::ChrootSetup qw(update distupgrade);
+
 package Conf;
 
 use Sbuild::Conf;
@@ -293,28 +295,6 @@ if (! -f $chrootlink) {
     print "W: Failed to symlink $target to $chrootlink: \n"
 }
 
-if (! -d "$target/build") {
-    print "I: Creating build directory: /build\n";
-    makedir("$target/build", 0775);
-}
-!system("chown", "root:sbuild", "$target/build")
-    or die "E: Failed to set root:sbuild ownership on $target/build";
-!system("chmod", "0775", "$target/build")
-    or die "E: Failed to set 0755 permissions on $target/build";
-
-if (! -d "$target/var/lib/sbuild") {
-    print "I: Creating sbuild directory: /var/lib/sbuild\n";
-    makedir("$target/var/lib/sbuild/srcdep", 02775);
-}
-if (! -d "$target/var/lib/sbuild/srcdep-lock") {
-    print "I: Creating sbuild lock directory: /var/lib/sbuild/srcdep-lock\n";
-    makedir("$target/var/lib/sbuild/srcdep-lock", 02775);
-}
-!system("chown", "-R", "root:sbuild", "$target/var/lib/sbuild")
-    or die "E: Failed to set root:sbuild ownership on $target/var/lib/sbuild";
-!system("chmod", "-R", "02775", "$target/var/lib/sbuild")
-    or die "E: Failed to set 02755 permissions on $target/var/lib/sbuild";
-
 my $session = Sbuild::ChrootPlain->new($conf, $target);
 if (defined($session)) {
     $session->set('Log Stream', \*STDOUT);
@@ -326,24 +306,13 @@ if (defined($session)) {
 	check_packages($session, "set");
 
 	print "I: Updating chroot.\n";
-	$session->run_apt_command(
-	    { COMMAND => [$conf->get('APT_GET'), 'update'],
-	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	      USER => 'root',
-	      PRIORITY => 1,
-	      DIR => '/'});
+	my $status = update($session, $conf);
 	print "W: Failed to update APT package lists\n"
-	    if ($?);
+	    if ($status);
 
-
-	$session->run_apt_command(
-	    { COMMAND => [$conf->get('APT_GET'), '-uy', 'upgrade'],
-	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	      USER => 'root',
-	      PRIORITY => 1,
-	      DIR => '/' });
+	$status = distupgrade($session, $conf);
 	print "W: Failed to upgrade chroot\n"
-	    if ($?);
+	    if ($status);
 	$session->end_session();
 	$session = undef;
     }
