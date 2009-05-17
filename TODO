@@ -145,3 +145,5 @@ buildd-mail: Moves built packages directly into the chroot
    /var/cache/apt/archives.  It should use Sbuild::Chroot.
 
 buildd: SIGHUP should reread config, not SIGUSR1.  Swap?
+
+buildd mails: Statistics start from 01-01-1970 when first started up.
