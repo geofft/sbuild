@@ -91,6 +91,8 @@ sub basesetup ($$) {
 	  STREAMOUT => $devnull,
 	  DIR => '/' });
     if ($?) {
+	# This will require root privileges.  However, this should
+	# only get run at initial chroot setup time.
 	my $groupfile = $session->get('Location') . "/etc/group";
 	system '/bin/sh', '-c', "getent group sbuild >> $groupfile";
 	if ($?) {
