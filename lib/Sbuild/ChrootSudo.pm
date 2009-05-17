@@ -66,7 +66,7 @@ sub begin_session {
 	die $self->get('Chroot ID') . " chroot does not exist\n";
     }
 
-    $self->_setup_options();
+    return 0 if !$self->_setup_options();
 
     return 1;
 }

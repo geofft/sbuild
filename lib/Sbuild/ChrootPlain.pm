@@ -65,7 +65,7 @@ sub begin_session {
     $self->set('Location', $self->get('Chroot ID'));
     $self->set('Session Purged', 0);
 
-    $self->_setup_options();
+    return 0 if !$self->_setup_options();
 
     return 1;
 }
