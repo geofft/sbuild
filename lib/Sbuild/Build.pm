@@ -300,7 +300,13 @@ sub run {
 	$session->get('Session Purged') == 1) {
 	$self->log("Not removing build depends: cloned chroot in use\n");
     } else {
-	$self->uninstall_deps();
+	if ($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
+	    ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
+	     $self->get_status() eq 'successful')) {
+	    $self->uninstall_deps();
+	} else {
+	    $self->log("Not removing build depends: as requested\n");
+	}
     }
     $self->remove_srcdep_lock_file();
   cleanup_close:

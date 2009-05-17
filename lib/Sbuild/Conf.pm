@@ -226,6 +226,19 @@ sub init_allowed_keys {
 	'MAILFROM'				=> {
 	    DEFAULT => "Source Builder <sbuild>"
 	},
+	'PURGE_BUILD_DEPS'			=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		die "Bad purge mode \'" .
+		    $self->get('PURGE_BUILD_DEPS') . "\'"
+		    if !isin($self->get('PURGE_BUILD_DEPS'),
+			     qw(always successful never));
+	    },
+	    DEFAULT => 'always'
+	},
 	'PURGE_BUILD_DIRECTORY'			=> {
 	    CHECK => sub {
 		my $self = shift;
@@ -476,6 +489,7 @@ sub read_config {
     my %mailto;
     undef %mailto;
     my $mailfrom = undef;
+    my $purge_build_deps = undef;
     my $purge_build_directory = undef;
     my @toolchain_regex;
     undef @toolchain_regex;
@@ -554,6 +568,7 @@ sub read_config {
     $self->set('MAILTO_HASH', \%mailto)
 	if (%mailto);
     $self->set('MAILFROM', $mailfrom);
+    $self->set('PURGE_BUILD_DEPS', $purge_build_deps);
     $self->set('PURGE_BUILD_DIRECTORY', $purge_build_directory);
     $self->set('TOOLCHAIN_REGEX', \@toolchain_regex)
 	if (@toolchain_regex);

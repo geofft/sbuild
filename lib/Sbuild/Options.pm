@@ -133,6 +133,9 @@ sub set_options {
 		       "p|purge=s" => sub {
 			   $self->set_conf('PURGE_BUILD_DIRECTORY', $_[1]);
 		       },
+		       "purge-deps=s" => sub {
+			   $self->set_conf('PURGE_BUILD_DEPS', $_[1]);
+		       },
 		       "s|source" => sub {
 			   $self->set_conf('BUILD_SOURCE', 1);
 		       },

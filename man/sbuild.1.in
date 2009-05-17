@@ -40,6 +40,7 @@ sbuild \- build debian packages from source
 .RB [ \-e \[or] \-\-uploader=\fIuploader\fP ]
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
 .RB [ \-\-purge=\fPpurge-mode\fP ]
+.RB [ \-\-purge\-deps=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
 .RB [ \-n \[or] \-\-nolog ]
 .RB [ \-\-setup\-hook=\fIhook-script\fP ]
@@ -169,6 +170,10 @@ log mails.
 .TP
 .BR \-p ", " "\-\-purge=\fIpurge-mode\fP"
 \fIpurge-mode\fR determines if the build directory will be deleted after a
+build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
+.TP
+.BR \-p ", " "\-\-purge\-deps=\fIpurge-mode\fP"
+\fIpurge-mode\fR determines if the build dependencies will be removed after a
 build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .TP
 .BR \-s ", " "\-\-source"
