@@ -23,8 +23,9 @@ include $(top_srcdir)/scripts/global.mk
 
 perlmodbuildddir = $(perlmoddir)/Buildd
 
-MODULES =	\
-	Conf.pm	
+MODULES =		\
+	Base.pm		\
+	Conf.pm
 
 perlmodbuildd_DATA =	\
 	$(MODULES)
