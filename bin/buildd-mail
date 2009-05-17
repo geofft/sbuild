@@ -2,6 +2,8 @@
 #
 # buildd-mail: mail answer processor for buildd
 # Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright © 2009 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005 Ryan Murray <rmurray@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,70 +21,79 @@
 #
 #######################################################################
 
+package Buildd::Mail;
+
 use strict;
 use warnings;
-use Buildd;
+
+use Buildd qw(ll_send_mail);
 use Buildd::Conf;
+use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
 use Sbuild::ChrootRoot;
-use Sbuild::OptionsBase;
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
 use MIME::Base64;
 
-sub process_mail ();
-sub prepare_for_upload ($$);
-sub redo_new_version ($$$);
-sub purge_pkg ($$);
-sub remove_from_upload ($);
-sub append_to_REDO ($$);
-sub remove_from_REDO ($);
-sub append_to_SKIP ($);
-sub check_is_outdated ($$);
-sub is_outdated ($$);
-sub register_outdated ($$$);
-sub set_to_failed ($$$);
-sub set_to_depwait ($$$);
-sub give_back ($$);
-sub no_build ($$);
-sub get_fail_msg ($$);
-sub check_state ($$@);
-sub check_building_any_dist ($);
-sub get_files_from_changes ($);
-sub is_for_non_us ($$);
-sub is_for_security ($);
-sub get_dists_from_changes ($);
-sub reply ($);
-sub is_blacklisted ($);
-sub add_error_mail ();
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
 
-my $conf = Buildd::Conf->new();
-exit 1 if !defined($conf);
-my $options = Sbuild::OptionsBase->new($conf, "buildd-mail", "1");
-exit 1 if !defined($options);
+    @ISA = qw(Exporter Buildd::Base);
 
-my $host = Sbuild::ChrootRoot->new($conf);
+    @EXPORT = qw();
+}
 
-chdir($conf->get('HOME'));
+sub new {
+    my $class = shift;
+    my $conf = shift;
 
-open_log($conf);
+    my $self = $class->SUPER::new($conf);
+    bless($self, $class);
 
-my($error, $short_error, %header, $body_text);
+    $self->set('Mail Error', undef);
+    $self->set('Mail Short Error', undef);
+    $self->set('Mail Header', {});
+    $self->set('Mail Body Text', '');
 
-process_mail();
-exit 0;
+    return $self;
+}
+
+sub run {
+    my $self = shift;
+
+    chdir($self->get_conf('HOME'));
+
+    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
+    $host->set('Log Stream', $self->get('Log Stream'));
+    $self->set('Host', $host);
+
+    $self->set('Mail Error', undef);
+    $self->set('Mail Short Error', undef);
+    $self->set('Mail Header', {});
+    $self->set('Mail Body Text', '');
+
+    $self->process_mail();
+
+    return 0;
+}
 
 
 sub process_mail () {
+    my $self = shift;
 
-# Note: %header (to|from|subject|message-id|date) are mandatory.
+# Note: Mail Header (to|from|subject|message-id|date) are mandatory.
 # Check for these and bail out if not present.
     my $header_text = "";
     my $lastheader = "";
-    $body_text = "";
-    undef %header;
-    $error = $short_error = "";
+
+    $self->set('Mail Header', {});
+
+    $self->set('Mail Error', '');
+    $self->set('Mail Short Error', '');
+    $self->set('Mail Header', {});
+    $self->set('Mail Body Text', '');
 
     while( <STDIN> ) {
 	$header_text .= $_;
@@ -99,7 +110,7 @@ sub process_mail () {
 	if (/^([\w\d-]+):\s*(.*)\s*$/) {
 	    my $hname;
 	    ($hname = $1) =~ y/A-Z/a-z/;
-	    $header{$hname} = $2;
+	    $self->get('Mail Header')->{$hname} = $2;
 	    $lastheader = $_;
 	    chomp( $lastheader );
 	}
@@ -110,194 +121,221 @@ sub process_mail () {
     while( <STDIN> ) {
 	last if !/^\s*$/;
     }
-    $body_text .= $_ if defined($_);
+
+    $self->set('Mail Body Text',
+	       $self->get('Mail Body Text') . $_)
+	if defined($_);
 
     if (!eof)
-    { local($/); undef $/; $body_text .= <STDIN>; }
+    {
+	local($/);
+	undef $/;
+	$self->set('Mail Body Text',
+		   $self->get('Mail Body Text') . <STDIN>);
+    }
 
-    if ($header{'from'} =~ /mail\s+delivery\s+(sub)?system|mailer.\s*daemon/i) {
+    if ($self->get('Mail Header')->{'from'} =~ /mail\s+delivery\s+(sub)?system|mailer.\s*daemon/i) {
 	# is an error mail from a mailer daemon
 	# To avoid mail loops if this error resulted from a mail we sent
 	# outselves, we break the loop by not forwarding this mail after the 5th
 	# error mail within 8 hours or so.
-	my $n = add_error_mail();
+	my $n = $self->add_error_mail();
 	if ($n > 5) {
-	    logger( "Too much error mails ($n) within ",
-		    int($conf->get('ERROR_MAIL_WINDOW')/(60*60)), " hours\n",
-		    "Not forwarding mail from $header{'from'}\n",
-		    "Subject: $header{'subject'}\n" );
+	    $self->log("Too much error mails ($n) within ",
+		       int($self->get_conf('ERROR_MAIL_WINDOW')/(60*60)), " hours\n",
+		       "Not forwarding mail from ".$self->get('Mail Header')->{'from'}."\n",
+		       "Subject: " . $self->get('Mail Header')->{'subject'} . "\n");
 	    return;
 	}
     }
 
-    goto forward_mail if !$header{'subject'};
-    my $subject = $header{'subject'};
+    goto forward_mail if !$self->get('Mail Header')->{'subject'};
+    my $subject = $self->get('Mail Header')->{'subject'};
 
     if ($subject =~ /^Re: Log for \S+ build of (\S+)(?: on [\w-]+)? \(dist=(\S+)\)/i) {
 	# reply to a build log
 	my( $package, $dist ) = ( $1, $2 );
-	$body_text =~ /^(\S+)/;
-	if (defined($header{'content-transfer-encoding'})) {
+
+	my $text = $self->get('Mail Body Text');
+	$text =~ /^(\S+)/;
+	$self->set('Mail Body Text', $text);
+	if (defined($self->get('Mail Header')->{'content-transfer-encoding'})) {
 	    # Decode the mail if necessary.
-	    if ($header{'content-transfer-encoding'} =~ /quoted-printable/) {
-		$body_text = decode_qp($body_text);
-	    } elsif ($header{'content-transfer-encoding'} =~ /base64/) {
-		$body_text = decode_base64($body_text);
+	    if ($self->get('Mail Header')->{'content-transfer-encoding'} =~ /quoted-printable/) {
+		$self->set('Mail Body Text',
+			   decode_qp($self->get('Mail Body Text')));
+	    } elsif ($self->get('Mail Header')->{'content-transfer-encoding'} =~ /base64/) {
+		$self->set('Mail Body Text',
+			   decode_base64($self->get('Mail Body Text')));
 	    }
 	}
 	my $keyword = $1;
-	my $from = $header{'from'};
+	my $from = $self->get('Mail Header')->{'from'};
 	$from = $1 if $from =~ /<(.+)>/;
-	logger( "Log reply from $from\n" );
+	$self->log("Log reply from $from\n");
 	my %newv;
 
 	if ($keyword =~ /^not-for-us/) {
-	    no_build( $package, $dist );
-	    purge_pkg( $package, $dist );
+	    $self->no_build( $package, $dist );
+	    $self->purge_pkg( $package, $dist );
 	}
 	elsif ($keyword =~ /^up(l(oad)?)?-rem/) {
-	    remove_from_upload( $package );
+	    $self->remove_from_upload( $package );
 	}
-	elsif (check_is_outdated( $dist, $package )) {
-	    # $error has been set already -> no action here
+	elsif ($self->check_is_outdated( $dist, $package )) {
+	    # Error has been set already -> no action here
 	}
 	elsif ($keyword =~ /^fail/) {
-	    my $text = $body_text;
+	    my $text = $self->get('Mail Body Text');
 	    $text =~ s/^fail.*\n(\s*\n)*//;
 	    $text =~ s/\n+$/\n/;
-	    set_to_failed( $package, $dist, $text );
-	    purge_pkg( $package, $dist );
+	    $self->set_to_failed( $package, $dist, $text );
+	    $self->purge_pkg( $package, $dist );
 	}
 	elsif ($keyword =~ /^ret/) {
-	    if (!check_state( $package, $dist, "Building" )) {
-		# $error already set
+	    if (!$self->check_state( $package, $dist, "Building" )) {
+		# Error already set
 	    }
 	    else {
-		append_to_REDO( $package, $dist );
+		$self->append_to_REDO( $package, $dist );
 	    }
 	}
 	elsif ($keyword =~ /^d(ep(endency)?)?-(ret|w)/) {
-	    if (!check_state( $package, $dist, "Building" )) {
-		# $error already set
+	    if (!$self->check_state( $package, $dist, "Building" )) {
+		# Error already set
 	    }
 	    else {
-		$body_text =~ /^\S+\s+(.*)$/m;
+		$self->get('Mail Body Text') =~ /^\S+\s+(.*)$/m;
 		my $deps = $1;
-		set_to_depwait( $package, $dist, $deps );
-		purge_pkg( $package, $dist );
+		$self->set_to_depwait( $package, $dist, $deps );
+		$self->purge_pkg( $package, $dist );
 	    }
 	}
 	elsif ($keyword =~ /^man/) {
-	    if (!check_state( $package, $dist, "Building" )) {
-		# $error already set
+	    if (!$self->check_state( $package, $dist, "Building" )) {
+		# Error already set
 	    }
 	    else {
 		# no action
-		logger( "$package($dist) will be finished manually\n" );
+		$self->log("$package($dist) will be finished manually\n");
 	    }
 	}
 	elsif ($keyword =~ /^newv/) {
 	    # build a newer version instead
-	    $body_text =~ /^newv\S*\s+(\S+)/;
+	    $self->get('Mail Body Text') =~ /^newv\S*\s+(\S+)/;
 	    my $newv = $1;
 	    if ($newv =~ /_/) {
-		logger( "Removing unneeded package name from $newv\n" );
+		$self->log("Removing unneeded package name from $newv\n");
 		$newv =~ s/^.*_//;
-		logger( "Result: $newv\n" );
+		$self->log("Result: $newv\n");
 	    }
 	    my $pkgname;
 	    ($pkgname = $package) =~ s/_.*$//;
-	    redo_new_version( $dist, $package, "${pkgname}_${newv}" );
-	    purge_pkg( $package, $dist );
+	    $self->redo_new_version( $dist, $package, "${pkgname}_${newv}" );
+	    $self->purge_pkg( $package, $dist );
 	}
 	elsif ($keyword =~ /^(give|back)/) {
-	    $body_text =~ /^(give|back) ([-0-9]+)/;
+	    $self->get('Mail Body Text') =~ /^(give|back) ([-0-9]+)/;
 	    my $pri = $1;
-	    if (!check_state( $package, $dist, "Building" )) {
-		# $error already set
+	    if (!$self->check_state( $package, $dist, "Building" )) {
+		# Error already set
 	    }
 	    else {
-		give_back( $package, $dist );
-		purge_pkg( $package, $dist );
+		$self->give_back( $package, $dist );
+		$self->purge_pkg( $package, $dist );
 	    }
 	}
 	elsif ($keyword =~ /^purge/) {
-	    purge_pkg( $package, $dist );
+	    $self->purge_pkg( $package, $dist );
 	}
-	elsif ($body_text =~ /^---+\s*BEGIN PGP SIGNED MESSAGE/) {
-	    if (prepare_for_upload( $package, $body_text )) {
-		purge_pkg( $package, $dist );
+	elsif ($self->get('Mail Body Text') =~ /^---+\s*BEGIN PGP SIGNED MESSAGE/) {
+	    if ($self->prepare_for_upload( $package,
+					   $self->get('Mail Body Text') )) {
+		$self->purge_pkg( $package, $dist );
 	    }
 	}
-	elsif ($body_text =~ /^--/ && $header{'content-type'} =~ m,multipart/signed,) {
-	    my ($prot)  = ($header{'content-type'} =~ m,protocol="([^"]*)",);
-	    my ($bound) = ($header{'content-type'} =~ m,boundary="([^"]*)",);
-	    $body_text =~ s,^--\Q$bound\E\nContent-Type: text/plain; charset=us-ascii\n\n,-----BEGIN PGP SIGNED MESSAGE-----\n\n,;
-	    $body_text =~ s,--\Q$bound\E\nContent-Type: application/pgp-signature\n\n,,;
-	    $body_text =~ s,\n\n--\Q$bound\E--\n,,;
-	    if (prepare_for_upload( $package, $body_text )) {
-		purge_pkg( $package, $dist );
+	elsif ($self->get('Mail Body Text') =~ /^--/ &&
+	       $self->get('Mail Header')->{'content-type'} =~ m,multipart/signed,) {
+	    my ($prot)  = ($self->get('Mail Header')->{'content-type'} =~ m,protocol="([^"]*)",);
+	    my ($bound) = ($self->get('Mail Header')->{'content-type'} =~ m,boundary="([^"]*)",);
+	    my $text = $self->get('Mail Body Text');
+	    $text =~ s,^--\Q$bound\E\nContent-Type: text/plain; charset=us-ascii\n\n,-----BEGIN PGP SIGNED MESSAGE-----\n\n,;
+	    $text =~ s,--\Q$bound\E\nContent-Type: application/pgp-signature\n\n,,;
+	    $text =~ s,\n\n--\Q$bound\E--\n,,;
+	    $self->set('Mail Body Text', $text);
+	    if ($self->prepare_for_upload($package,
+					  $self->get('Mail Body Text'))) {
+		$self->purge_pkg( $package, $dist );
 	    }
 	}
 	else {
-	    $short_error .= "Bad keyword in answer $keyword\n";
-	    $error .= "Answer not understood (expected retry, failed, manual,\n".
-		"dep-wait, giveback, not-for-us, purge, upload-rem,\n".
-		"newvers, or a signed changes file)\n";
+	    $self->set('Mail Short Error',
+		       $self->get('Mail Short Error') .
+		       "Bad keyword in answer $keyword\n");
+	    $self->set('Mail Error',
+		       $self->get('Mail Error') .
+		       "Answer not understood (expected retry, failed, manual,\n".
+		       "dep-wait, giveback, not-for-us, purge, upload-rem,\n".
+		       "newvers, or a signed changes file)\n");
 	}
     }
     elsif ($subject =~ /^Re: Should I build (\S+) \(dist=(\S+)\)/i) {
 	# reply whether a prev-failed package should be built
 	my( $package, $dist ) = ( $1, $2 );
-	$body_text =~ /^(\S+)/;
+	$self->get('Mail Body Text') =~ /^(\S+)/;
 	my $keyword = $1;
-	logger( "Should-build reply for $package($dist)\n" );
-	if (check_is_outdated( $dist, $package )) {
-	    # $error has been set already -> no action here
+	$self->log("Should-build reply for $package($dist)\n");
+	if ($self->check_is_outdated( $dist, $package )) {
+	    # Error has been set already -> no action here
 	}
-	elsif (!check_state( $package, $dist, "Building" )) {
-	    # $error already set
+	elsif (!$self->check_state( $package, $dist, "Building" )) {
+	    # Error already set
 	}
 	elsif ($keyword =~ /^(build|ok)/) {
-	    append_to_REDO( $package, $dist );
+	    $self->append_to_REDO( $package, $dist );
 	}
 	elsif ($keyword =~ /^fail/) {
-	    my $text = get_fail_msg( $package, $dist );
-	    set_to_failed( $package, $dist, $text );
+	    my $text = $self->get_fail_msg( $package, $dist );
+	    $self->set_to_failed( $package, $dist, $text );
 	}
 	elsif ($keyword =~ /^(not|no-b)/) {
-	    no_build( $package, $dist );
+	    $self->no_build( $package, $dist );
 	}
 	elsif ($keyword =~ /^(give|back)/) {
-	    give_back( $package, $dist );
+	    $self->give_back( $package, $dist );
 	}
 	else {
-	    $short_error .= "Bad keyword in answer $keyword\n";
-	    $error .= "Answer not understood (expected build, ok, fail, ".
-		"give-back, or no-build)\n";
+	    $self->set('Mail Short Error',
+		       $self->get('Mail Short Error') .
+		       "Bad keyword in answer $keyword\n");
+	    $self->set('Mail Error',
+		       $self->get('Mail Error') .
+		       "Answer not understood (expected build, ok, fail, ".
+		       "give-back, or no-build)\n");
 	}
     }
     elsif ($subject =~ /^Processing of (\S+)/) {
 	my $job = $1;
 	# mail from Erlangen queue daemon: forward all non-success messages
-	goto forward_mail if $body_text !~ /uploaded successfully/mi;
-	logger( "$job processed by upload queue\n" )
-	    if $conf->get('LOG_QUEUED_MESSAGES');
+	my $text = $self->get('Mail Body Text');
+	goto forward_mail if $text !~ /uploaded successfully/mi;
+	$self->log("$job processed by upload queue\n")
+	    if $self->get_conf('LOG_QUEUED_MESSAGES');
     }
     elsif ($subject =~ /^([-+~\.\w]+\.changes) (INSTALL|ACCEPT)ED/) {
 	# success mail from dinstall
 	my $changes_f = $1;
 	my( @to_remove, $upload_f, $pkgv );
-	my $upload_dir = $conf->get('HOME') . "/upload";
+	my $upload_dir = $self->get_conf('HOME') . "/upload";
 	$upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
 	if (-f "$upload_dir/$changes_f" && open( F, "<$upload_dir/$changes_f" )) {
 	    local($/); undef $/;
 	    my $changetext = <F>;
 	    close( F );
-	    push( @to_remove, get_files_from_changes( $changetext ) );
+	    push( @to_remove, $self->get_files_from_changes( $changetext ) );
 	} else {
-	    foreach (split( "\n", $body_text )) {
+	    foreach (split( "\n", $self->get('Mail Body Text'))) {
 		if (/^(\[-+~\.\w]+\.(u?deb))$/) {
 		    my $f = $1;
 		    push( @to_remove, $f ) if !grep { $_ eq $f } @to_remove;
@@ -307,17 +345,17 @@ sub process_mail () {
 	($upload_f = $changes_f) =~ s/\.changes$/\.upload/;
 	push( @to_remove, $changes_f, $upload_f );
 	($pkgv = $changes_f) =~ s/_(\S+)\.changes//;
-	logger( "$pkgv has been installed; removing from upload dir:\n",
-		"@to_remove\n" );
+	$self->log("$pkgv has been installed; removing from upload dir:\n",
+		   "@to_remove\n");
 
 	my @dists;
 	if (open( F, "<$upload_dir/$changes_f" )) {
 	    my $changes_text;
 	    { local($/); undef $/; $changes_text = <F>; }
 	    close( F );
-	    @dists = get_dists_from_changes( $changes_text );
+	    @dists = $self->get_dists_from_changes( $changes_text );
 	} else {
-	    logger( "Cannot get dists from $upload_dir/$changes_f: $! (assuming unstable)\n" );
+	    $self->log("Cannot get dists from $upload_dir/$changes_f: $! (assuming unstable)\n");
 	    @dists = ( "unstable" );
 	}
 
@@ -325,16 +363,16 @@ FILE:	foreach (@to_remove) {
     if (/\.deb$/) {
 	# first listed wins
 	foreach my $dist (@dists) {
-	    if ( -d $conf->get('HOME') . "/build/chroot-$dist" &&
-		 -w $conf->get('HOME') . "/build/chroot-$dist/var/cache/apt/archives/") {
+	    if ( -d $self->get_conf('HOME') . "/build/chroot-$dist" &&
+		 -w $self->get_conf('HOME') . "/build/chroot-$dist/var/cache/apt/archives/") {
 		# TODO: send all of to_remove to perl-apt if it's available, setting a try_mv list
 		# that only has build-depends in it.
 		# if that's too much cpu, have buildd use perl-apt if avail to export the
 		# build-depends list, which could then be read in at this point
 		if (system "mv $upload_dir/$_ " .
-		    $conf->get('HOME') .
+		    $self->get_conf('HOME') .
 		    "/build/chroot-$dist/var/cache/apt/archives/") {
-		    logger( "Cannot move $upload_dir/$_ to cache dir\n" );
+		    $self->log("Cannot move $upload_dir/$_ to cache dir\n");
 		} else {
 		    next FILE;
 		}
@@ -342,7 +380,7 @@ FILE:	foreach (@to_remove) {
 	}
     }
     unlink "$upload_dir/$_"
-	or logger( "Can't remove $upload_dir/$_: $!\n" );
+	or $self->log("Can't remove $upload_dir/$_: $!\n");
 }
     }
     elsif ($subject =~ /^(\S+\.changes) is NEW$/) {
@@ -350,83 +388,93 @@ FILE:	foreach (@to_remove) {
 	my $changes_f = $1;
 	my $pkgv;
 	($pkgv = $changes_f) =~ s/_(\S+)\.changes//;
-	logger( "$pkgv must be manually dinstall-ed -- delayed\n" );
+	$self->log("$pkgv must be manually dinstall-ed -- delayed\n");
     }
     elsif ($subject =~ /^new version of (\S+) \(dist=(\S+)\)$/) {
 	# notice from wanna-build
 	my ($pkg, $dist) = ($1, $2);
-	goto forward if $body_text !~ /^in version (\S+)\.$/m;
+	goto forward if $self->get('Mail Body Text') !~ /^in version (\S+)\.$/m;
 	my $pkgv = $pkg."_".$1;
-	$body_text =~ /new source version (\S+)\./m;
+	$self->get('Mail Body Text') =~ /new source version (\S+)\./m;
 	my $newv = $1;
-	logger( "Build of $pkgv ($dist) obsolete -- new version $newv\n" );
-	register_outdated( $dist, $pkgv, $pkg."_".$newv );
+	$self->log("Build of $pkgv ($dist) obsolete -- new version $newv\n");
+	$self->register_outdated( $dist, $pkgv, $pkg."_".$newv );
 
 	my @ds;
-	if (!(@ds = check_building_any_dist( $pkgv ))) {
-	    if (!remove_from_REDO( $pkgv )) {
-		append_to_SKIP( $pkgv );
+	if (!(@ds = $self->check_building_any_dist( $pkgv ))) {
+	    if (!$self->remove_from_REDO( $pkgv )) {
+		$self->append_to_SKIP( $pkgv );
 	    }
-	    purge_pkg( $pkgv, $dist );
+	    $self->purge_pkg( $pkgv, $dist );
 	}
 	else {
-	    logger( "Not deleting, still building for @ds\n" );
+	    $self->log("Not deleting, still building for @ds\n");
 	}
     }
-    elsif ($body_text =~ /^blacklist (\S+)\n$/) {
+    elsif ($self->get('Mail Body Text') =~ /^blacklist (\S+)\n$/) {
 	my $pattern = "\Q$1\E";
 	if (open( F, ">>mail-blacklist" )) {
 	    print F "$pattern\n";
 	    close( F );
-	    logger( "Added $pattern to blacklist.\n" );
+	    $self->log("Added $pattern to blacklist.\n");
 	}
 	else {
-	    logger( "Can't open mail-blacklist for appending: $!\n" );
+	    $self->log("Can't open mail-blacklist for appending: $!\n");
 	}
     }
     else {
 	goto forward_mail;
     }
 
-    if ($error) {
-	logger( "Error: ", $short_error || $error );
-	reply( "Your mail could not be processed:\n$error" );
+
+    if ($self->get('Mail Error')) {
+	$self->log("Error: ",
+		   $self->get('Mail Short Error') || $self->get('Mail Error'));
+	$self->reply("Your mail could not be processed:\n" .
+		     $self->get('Mail Error'));
     }
     return;
 
 forward_mail:
-    logger( "Mail from $header{'from'}\nSubject: $subject\n" );
-    if (is_blacklisted( $header{'from'} )) {
-	logger( "Address is blacklisted, deleting mail.\n" );
+    my $header = $self->get('Mail Header');
+    $self->log("Mail from $header->{'from'}\nSubject: $subject\n");
+    if ($self->is_blacklisted( $self->get('Mail Header')->{'from'} )) {
+	$self->log("Address is blacklisted, deleting mail.\n");
     }
     else {
-	logger( "Not for me, forwarding to admin\n" );
-	ll_send_mail( $conf->get('ADMIN_MAIL'),
-		      "To: $header{'to'}\n".
-		      ($header{'cc'} ? "Cc: $header{'cc'}\n" : "").
-		      "From: $header{'from'}\n".
-		      "Subject: $header{'subject'}\n".
-		      "Date: $header{'date'}\n".
-		      "Message-Id: $header{'message-id'}\n".
-		      ($header{'reply-to'} ? "Reply-To: $header{'reply-to'}\n" : "").
-		      ($header{'in-reply-to'} ? "In-Reply-To: $header{'in-reply-to'}\n" : "").
-		      ($header{'references'} ? "References: $header{'references'}\n" : "").
+	$self->log("Not for me, forwarding to admin\n");
+	ll_send_mail( $self->get_conf('ADMIN_MAIL'),
+		      "To: $header->{'to'}\n".
+		      ($header->{'cc'} ? "Cc: $header->{'cc'}\n" : "").
+		      "From: $header->{'from'}\n".
+		      "Subject: $header->{'subject'}\n".
+		      "Date: $header->{'date'}\n".
+		      "Message-Id: $header->{'message-id'}\n".
+		      ($header->{'reply-to'} ? "Reply-To: $header->{'reply-to'}\n" : "").
+		      ($header->{'in-reply-to'} ? "In-Reply-To: $header->{'in-reply-to'}\n" : "").
+		      ($header->{'references'} ? "References: $header->{'references'}\n" : "").
 		      "Resent-From: $Buildd::gecos <$Buildd::username\@$Buildd::hostname>\n".
-		      "Resent-To: " . $conf->get('ADMIN_MAIL') . "\n\n".
-		      $body_text );
+		      "Resent-To: " . $self->get_conf('ADMIN_MAIL') . "\n\n".
+		      $self->get('Mail Body Text') );
     }
 }
 
 
 sub prepare_for_upload ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $changes = shift;
+
     my( @files, @md5, @missing, @md5fail, $i );
 
-    my @to_dists = get_dists_from_changes( $changes );
+    my @to_dists = $self->get_dists_from_changes( $changes );
     if (!@to_dists) { # probably not a valid changes
-	$short_error = $error;
-	$error .= "Couldn't find a valid Distribution: line.\n";
+
+	$self->set('Mail Short Error',
+		   $self->get('Mail Error'));
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Couldn't find a valid Distribution: line.\n");
 	return 0;
     }
     $changes =~ /^Files:\s*\n((^[ 	]+.*\n)*)/m;
@@ -435,96 +483,116 @@ sub prepare_for_upload ($$) {
 	push( @files, (split( /\s+/, $_ ))[5] );
     }
     if (!@files) { # probably not a valid changes
-	$short_error = $error;
-	$error .= "No files listed in changes.\n";
+	$self->set('Mail Short Error',
+		   $self->get('Mail Error'));
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "No files listed in changes.\n");
 	return 0;
     }
     my @wrong_dists = ();
     foreach my $d (@to_dists) {
 	push( @wrong_dists, $d )
-	    if !check_state($pkg, $d, qw(Building Install-Wait Reupload-Wait));
+	    if !$self->check_state($pkg, $d, qw(Building Install-Wait Reupload-Wait));
     }
     if (@wrong_dists) {
-	$short_error = $error;
-	$error .= "Package $pkg has target distributions @wrong_dists\n".
-	    "for which it isn't registered as Building.\n".
-	    "Please fix this by either modifying the Distribution: ".
-	    "header or\n".
-	    "taking the package in those distributions, too.\n";
+	$self->set('Mail Short Error',
+		   $self->get('Mail Error'));
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Package $pkg has target distributions @wrong_dists\n".
+		   "for which it isn't registered as Building.\n".
+		   "Please fix this by either modifying the Distribution: ".
+		   "header or\n".
+		   "taking the package in those distributions, too.\n");
 	return 0;
     }
 
     for( $i = 0; $i < @files; ++$i ) {
-	if (! -f $conf->get('HOME') . "/build/$files[$i]") {
+	if (! -f $self->get_conf('HOME') . "/build/$files[$i]") {
 	    push( @missing, $files[$i] ) ;
 	}
 	else {
-	    my $home = $conf->get('HOME');
+	    my $home = $self->get_conf('HOME');
 	    chomp( my $sum = `md5sum $home/build/$files[$i]` );
 	    push( @md5fail, $files[$i] ) if (split(/\s+/,$sum))[0] ne $md5[$i];
 	}
     }
     if (@missing) {
-	$short_error .= "Missing files for move: @missing\n";
-	$error .= "While trying to move the built package $pkg to upload,\n".
-	    "the following files mentioned in the .changes were not found:\n".
-	    "@missing\n";
+	$self->set('Mail Short Error',
+		   $self->get('Mail Short Error') .
+		   "Missing files for move: @missing\n");
+    	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "While trying to move the built package $pkg to upload,\n".
+		   "the following files mentioned in the .changes were not found:\n".
+		   "@missing\n");
 	return 0;
     }
     if (@md5fail) {
-	$short_error .= "md5 failure during move: @md5fail\n";
-	$error .= "While trying to move the built package $pkg to upload,\n".
-	    "the following files had bad md5 checksums:\n".
-	    "@md5fail\n";
+	$self->set('Mail Short Error',
+		   $self->get('Mail Short Error') .
+		   "md5 failure during move: @md5fail\n");
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "While trying to move the built package $pkg to upload,\n".
+		   "the following files had bad md5 checksums:\n".
+		   "@md5fail\n");
 	return 0;
     }
 
-    my $upload_dir = $conf->get('HOME') . "/upload" .
-	(is_for_security( $changes ) ? "-security" : "");
+    my $upload_dir = $self->get_conf('HOME') . "/upload" .
+	($self->is_for_security( $changes ) ? "-security" : "");
 
     if (! -d $upload_dir &&!mkdir( $upload_dir, 0750 )) {
-	$error .= "Cannot create directory $upload_dir";
-	logger( "Cannot create dir $upload_dir\n" );
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Cannot create directory $upload_dir");
+	$self->log("Cannot create dir $upload_dir\n");
 	return 0;
     }
 
     lock_file( "$upload_dir" );
     my $errs = 0;
     foreach (@files) {
-	if (system "mv " . $conf->get('HOME') . "/build/$_ $upload_dir/$_") {
-	    logger( "Cannot move $_ to upload dir\n" );
+	if (system "mv " . $self->get_conf('HOME') . "/build/$_ $upload_dir/$_") {
+	    $self->log("Cannot move $_ to upload dir\n");
 	    ++$errs;
 	}
     }
     if ($errs) {
-	$error .= "Could not move all files to upload dir.";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Could not move all files to upload dir.");
 	return 0;
     }
 
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes_name = "${pkg_noep}_" . $conf->get('ARCH') . ".changes";
-    unlink( $conf->get('HOME') . "/build/$changes_name" )
-	or logger( "Cannot remove " . $conf->get('HOME') . "/$changes_name: $!\n" );
+    my $changes_name = "${pkg_noep}_" . $self->get_conf('ARCH') . ".changes";
+    unlink( $self->get_conf('HOME') . "/build/$changes_name" )
+	or $self->log("Cannot remove " . $self->get_conf('HOME') . "/$changes_name: $!\n");
     open( F, ">$upload_dir/$changes_name" );
     print F $changes;
     close( F );
     unlock_file( "$upload_dir" );
-    logger( "Moved $pkg to ", basename($upload_dir), "\n" );
+    $self->log("Moved $pkg to ", basename($upload_dir), "\n");
 }
 
 sub redo_new_version ($$$) {
+    my $self = shift;
     my $dist = shift;
     my $oldv = shift;
     my $newv = shift;
+
     my $err = 0;
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '-v',
 		      "--dist=$dist",
 		      $newv],
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
@@ -533,43 +601,48 @@ sub redo_new_version ($$$) {
 	    next if /^wanna-build Revision/ ||
 		/^\S+: Warning: Older version / ||
 		/^\S+: ok$/;
-	    $error .= "$_";
+	    $self->set('Mail Error',
+		       $self->get('Mail Error') . $_);
 	    $err = 1;
 	}
 	close($pipe);
     } else {
-	logger( "Can't spawn wanna-build: $!\n" );
-	$error .= "Can't spawn wanna-build: $!\n";
+	$self->log("Can't spawn wanna-build: $!\n");
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Can't spawn wanna-build: $!\n");
 	return;
     }
     if ($err) {
-	logger( "Can't take newer version $newv due to wanna-build errors\n" );
+	$self->log("Can't take newer version $newv due to wanna-build errors\n");
 	return;
     }
-    logger( "Going to build $newv instead of $oldv\n" );
+    $self->log("Going to build $newv instead of $oldv\n");
 
-    append_to_REDO( $newv, $dist );
+    $self->append_to_REDO( $newv, $dist );
 }
 
 sub purge_pkg ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
+
     my $dir;
     local( *F );
 
-    remove_from_REDO( $pkg );
+    $self->remove_from_REDO( $pkg );
 
     # remove .changes and .deb in build dir (if existing)
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes = "${pkg_noep}_" . $conf->get('ARCH') . ".changes";
+    my $changes = "${pkg_noep}_" . $self->get_conf('ARCH') . ".changes";
     if (-f "build/$changes" && open( F, "<build/$changes" )) {
 	local($/); undef $/;
 	my $changetext = <F>;
 	close( F );
-	my @files = get_files_from_changes( $changetext );
+	my @files = $self->get_files_from_changes( $changetext );
 	push( @files, $changes );
-	logger( "Purging files: $changes\n" );
+	$self->log("Purging files: $changes\n");
 	unlink( map { "build/$_" } @files );
     }
 
@@ -588,52 +661,58 @@ sub purge_pkg ($$) {
     if (open( F, ">>build/PURGE" )) {
 	print F "$dir\n";
 	close( F );
-	logger( "Scheduled $dir for purging\n" );
+	$self->log("Scheduled $dir for purging\n");
     }
     else {
-	$error .= "Can't open build/PURGE: $!\n";
-	logger( "Can't open build/PURGE: $!\n" );
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Can't open build/PURGE: $!\n");
+	$self->log("Can't open build/PURGE: $!\n");
     }
     unlock_file( "build/PURGE" );
 }
 
 sub remove_from_upload ($) {
+    my $self = shift;
     my $pkg = shift;
+
     my($changes_f, $upload_f, $changes_text, @to_remove);
     local( *F );
 
-    logger( "Remove $pkg from upload dir\n" );
+    $self->log("Remove $pkg from upload dir\n");
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    $changes_f = "${pkg_noep}_" . $conf->get('ARCH') . ".changes";
-    my $upload_dir = $conf->get('HOME') . "/upload";
+    $changes_f = "${pkg_noep}_" . $self->get_conf('ARCH') . ".changes";
+    my $upload_dir = $self->get_conf('HOME') . "/upload";
     $upload_dir .= "-security" if -f "$upload_dir-security/$changes_f";
 
     if (!-f "$upload_dir/$changes_f") {
-	logger( "$changes_f does not exist\n" );
+	$self->log("$changes_f does not exist\n");
 	return;
     }
     if (!open( F, "<$upload_dir/$changes_f" )) {
-	logger( "Cannot open $upload_dir/$changes_f: $!\n" );
+	$self->log("Cannot open $upload_dir/$changes_f: $!\n");
 	return;
     }
     { local($/); undef $/; $changes_text = <F>; }
     close( F );
-    @to_remove = get_files_from_changes( $changes_text );
+    @to_remove = $self->get_files_from_changes( $changes_text );
 
     ($upload_f = $changes_f) =~ s/\.changes$/\.upload/;
     push( @to_remove, $changes_f, $upload_f );
 
-    logger( "Removing files:\n", "@to_remove\n" );
+    $self->log("Removing files:\n", "@to_remove\n");
     foreach (@to_remove) {
 	unlink "$upload_dir/$_"
-	    or logger( "Can't remove $upload_dir/$_: $!\n" );
+	    or $self->log("Can't remove $upload_dir/$_: $!\n");
     }
 }
 
 sub append_to_REDO ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
+
     local( *F );
 
     lock_file( "build/REDO" );
@@ -642,7 +721,7 @@ sub append_to_REDO ($$) {
 	my @pkgs = <F>;
 	close( F );
 	if (grep( /^\Q$pkg\E\s/, @pkgs )) {
-	    logger( "$pkg is already in REDO -- not rescheduled\n" );
+	    $self->log("$pkg is already in REDO -- not rescheduled\n");
 	    goto unlock;
 	}
     }
@@ -650,11 +729,13 @@ sub append_to_REDO ($$) {
     if (open( F, ">>build/REDO" )) {
 	print F "$pkg $dist\n";
 	close( F );
-	logger( "Scheduled $pkg for rebuild\n" );
+	$self->log("Scheduled $pkg for rebuild\n");
     }
     else {
-	$error .= "Can't open build/REDO: $!\n";
-	logger( "Can't open build/REDO: $!\n" );
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Can't open build/REDO: $!\n");
+	$self->log("Can't open build/REDO: $!\n");
     }
 
   unlock:
@@ -662,7 +743,9 @@ sub append_to_REDO ($$) {
 }
 
 sub remove_from_REDO ($) {
+    my $self = shift;
     my $pkg = shift;
+
     local( *F );
 
     lock_file( "build/REDO" );
@@ -670,8 +753,8 @@ sub remove_from_REDO ($) {
     my @pkgs = <F>;
     close( F );
     if (!open( F, ">build/REDO" )) {
-	logger( "Can't open REDO for writing: $!\n",
-		"Would write: @pkgs\nminus $pkg\n" );
+	$self->log("Can't open REDO for writing: $!\n",
+		   "Would write: @pkgs\nminus $pkg\n");
 	goto unlock;
     }
     my $done = 0;
@@ -684,14 +767,16 @@ sub remove_from_REDO ($) {
 	}
     }
     close( F );
-    logger( "Deleted $pkg from REDO list.\n" ) if $done;
+    $self->log("Deleted $pkg from REDO list.\n") if $done;
   unlock:
     unlock_file( "build/REDO" );
     return $done;
 }
 
 sub append_to_SKIP ($) {
+    my $self = shift;
     my $pkg = shift;
+
     local( *F );
 
     return if !open( F, "<build/build-progress" );
@@ -705,21 +790,23 @@ sub append_to_SKIP ($) {
 	if (open( F, ">>build/SKIP" )) {
 	    print F "$pkg\n";
 	    close( F );
-	    logger( "Told sbuild to skip $pkg\n" );
+	    $self->log("Told sbuild to skip $pkg\n");
 	}
 	unlock_file( "build/SKIP" );
     }
 }
 
 sub check_is_outdated ($$) {
+    my $self = shift;
     my $dist = shift;
     my $package = shift;
+
     my %newv;
     my $have_changes = 0;
 
-    return 0 if !(%newv = is_outdated( $dist, $package ));
+    return 0 if !(%newv = $self->is_outdated( $dist, $package ));
 
-    $have_changes = 1 if $body_text =~ /^---+\s*BEGIN PGP SIGNED MESSAGE/;
+    $have_changes = 1 if $self->get('Mail Body Text') =~ /^---+\s*BEGIN PGP SIGNED MESSAGE/;
 
     # If we have a changes file, we can see which distributions that
     # package is aimed to. Otherwise, we're out of luck because we can't see
@@ -734,7 +821,7 @@ sub check_is_outdated ($$) {
     goto all_outdated if !$have_changes;
 
     my @check_dists = ();
-    @check_dists = get_dists_from_changes( $body_text );
+    @check_dists = $self->get_dists_from_changes($self->get('Mail Body Text'));
 
     my @not_outdated = ();
     my @outdated = ();
@@ -748,30 +835,38 @@ sub check_is_outdated ($$) {
     }
     return 0 if !@outdated;
     if (@not_outdated) {
-	$short_error .= "$package ($dist) partially outdated ".
-	    "(ok for @not_outdated)\n";
-	$error .=
-	    "Package $package ($dist) is partially outdated.\n".
-	    "The following new versions have appeared in the meantime:\n ".
-	    join( "\n ", map { "$_: $newv{$_}" } keys %newv )."\n\n".
-	    "Please send a .changes for the following distributions only:\n".
-	    " Distribution: ".join( " ", @not_outdated )."\n";
+	$self->set('Mail Short Error',
+		   $self->get('Mail Short Error') .
+		   "$package ($dist) partially outdated ".
+		   "(ok for @not_outdated)\n");
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Package $package ($dist) is partially outdated.\n".
+		   "The following new versions have appeared in the meantime:\n ".
+		   join( "\n ", map { "$_: $newv{$_}" } keys %newv )."\n\n".
+		   "Please send a .changes for the following distributions only:\n".
+		   " Distribution: ".join( " ", @not_outdated )."\n");
     }
     else {
       all_outdated:
-	$short_error .= "$package ($dist) outdated; new versions ".
-	    join( ", ", map { "$_:$newv{$_}" } keys %newv )."\n";
-	$error .=
-	    "Package $package ($dist) is outdated.\n".
-	    "The following new versions have appeared in the meantime:\n ".
-	    join( "\n ", map { "$_: $newv{$_}" } keys %newv )."\n";
+	$self->set('Mail Short Error',
+		   $self->get('Mail Short Error') .
+		   "$package ($dist) outdated; new versions ".
+		   join( ", ", map { "$_:$newv{$_}" } keys %newv )."\n");
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Package $package ($dist) is outdated.\n".
+		   "The following new versions have appeared in the meantime:\n ".
+		   join( "\n ", map { "$_: $newv{$_}" } keys %newv )."\n");
     }
     return 1;
 }
 
 sub is_outdated ($$) {
+    my $self = shift;
     my $dist = shift;
     my $pkg = shift;
+
     my %result = ();
     local( *F );
 
@@ -791,9 +886,11 @@ sub is_outdated ($$) {
 }
 
 sub register_outdated ($$$) {
+    my $self = shift;
     my $dist = shift;
     my $oldv = shift;
     my $newv = shift;
+
     my(@pkgs);
     local( *F );
 
@@ -805,7 +902,7 @@ sub register_outdated ($$$) {
     }
 
     if (!open( F, ">outdated-packages" )) {
-	logger( "Cannot open outdated-packages for writing: $!\n" );
+	$self->log("Cannot open outdated-packages for writing: $!\n");
 	goto unlock;
     }
     my $now = time;
@@ -823,24 +920,26 @@ sub register_outdated ($$$) {
 }
 
 sub set_to_failed ($$$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
     my $text = shift;
+
     my $is_bugno = 0;
 
     $text =~  s/^\.$/../mg;
     $is_bugno = 1 if $text =~ /^\(see #\d+\)$/;
-    return if !check_state( $pkg, $dist, $is_bugno ? "Failed" : "Building" );
+    return if !$self->check_state( $pkg, $dist, $is_bugno ? "Failed" : "Building" );
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--failed',
 		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  PIPE => 'out',
 	  STREAMOUT => $devnull,
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
@@ -850,31 +949,33 @@ sub set_to_failed ($$$) {
     }
     if ($?) {
 	my $t = "wanna-build --failed failed with status ".exitstatus($?)."\n";
-	logger( $t );
-	$error .= $t;
+	$self->log($t);
+	$self->set('Mail Error',
+		   $self->get('Mail Error') . $t);
     } elsif ($is_bugno) {
-	logger( "Bug# appended to fail message of $pkg ($dist)\n" );
+	$self->log("Bug# appended to fail message of $pkg ($dist)\n");
     }
     else {
-	logger( "Set package $pkg ($dist) to Failed\n" );
-	write_stats( "failed", 1 );
+	$self->log("Set package $pkg ($dist) to Failed\n");
+	$self->write_stats("failed", 1);
     }
 }
 
 sub set_to_depwait ($$$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
     my $deps = shift;
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--dep-wait',
 		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  PIPE => 'out',
 	  STREAMOUT => $devnull,
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
@@ -884,28 +985,30 @@ sub set_to_depwait ($$$) {
     }
     if ($?) {
 	my $t = "wanna-build --dep-wait failed with status ".exitstatus($?)."\n";
-	logger( $t );
-	$error .= $t;
+	$self->log($t);
+	$self->set('Mail Error',
+		   $self->get('Mail Error') . $t);
     }
     else {
-	logger( "Set package $pkg ($dist) to Dep-Wait\nDependencies: $deps\n" );
+	$self->log("Set package $pkg ($dist) to Dep-Wait\nDependencies: $deps\n");
     }
-    write_stats( "dep-wait", 1 );
+    $self->write_stats("dep-wait", 1);
 }
 
 sub give_back ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
 
     my $answer;
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--give-back',
 		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
@@ -914,27 +1017,30 @@ sub give_back ($$) {
 	close($pipe);
     }
     if ($?) {
-	$error .= "wanna-build --give-back failed:\n$answer";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "wanna-build --give-back failed:\n$answer");
     }
     else {
-	logger( "Given back package $pkg ($dist)\n" );
+	$self->log("Given back package $pkg ($dist)\n");
     }
 }
 
 sub no_build ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
     my $answer_cmd;
 
     my $answer;
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--no-build',
 		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
@@ -943,26 +1049,29 @@ sub no_build ($$) {
 	close($pipe);
     }
     if ($?) {
-	$error .= "no-build failed:\n$answer";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "no-build failed:\n$answer");
     }
     else {
-	logger( "Package $pkg ($dist) to set Not-For-Us\n" );
+	$self->log("Package $pkg ($dist) to set Not-For-Us\n");
     }
-    write_stats( "no-build", 1 );
+    $self->write_stats("no-build", 1);
 }
 
 sub get_fail_msg ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $dist = shift;
 
     $pkg =~ s/_.*//;
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--info',
 		      "--dist=$dist",
 		      $pkg],
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
@@ -985,15 +1094,20 @@ sub get_fail_msg ($$) {
 	}
 	close($pipe);
 	return $msg if $msg;
-	$error .= "Couldn't find Old-Failed in info for $pkg\n";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Couldn't find Old-Failed in info for $pkg\n");
 	return "Same as previous version (couldn't extract the text)\n";
     } else {
-	$error .= "Couldn't start wanna-build --info: $!\n";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Couldn't start wanna-build --info: $!\n");
 	return "Same as previous version (couldn't extract the text)\n";
     }
 }
 
 sub check_state ($$@) {
+    my $self = shift;
     my $pkgv = shift;
     my $dist = shift;
     my @wanted_states = @_;
@@ -1001,17 +1115,19 @@ sub check_state ($$@) {
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--info',
 		      "--dist=$dist",
 		      $pkg],
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
     if (!$pipe) {
-	$error .= "Couldn't start wanna-build --info: $!\n";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Couldn't start wanna-build --info: $!\n");
 	return 0;
     }
 
@@ -1027,38 +1143,48 @@ sub check_state ($$@) {
     my $msg = "$pkgv($dist) check_state(@wanted_states): ";
     $av = binNMU_version($av,$an,undef) if (defined $an);
     if ($av ne $vers) {
-	$error .= $msg."version $av registered as $as\n";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   $msg."version $av registered as $as\n");
 	return 0;
     }
     if (!Buildd::isin( $as, @wanted_states)) {
-	$error .= $msg."state is $as\n";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   $msg."state is $as\n");
 	return 0;
     }
-    if ($as eq "Building" && $ab ne $conf->get('WANNA_BUILD_USER')) {
-	$error .= $msg."is building by $ab\n";
+    if ($as eq "Building" && $ab ne $self->get_conf('WANNA_BUILD_USER')) {
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   $msg."is building by $ab\n");
 	return 0;
     }
     return 1;
 }
 
 sub check_building_any_dist ($) {
+    my $self = shift;
     my $pkgv = shift;
+
     my @dists;
 
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
 
-    my $pipe = $host->pipe_command(
-	{ COMMAND => [wannabuild_command($conf),
+    my $pipe = $self->get_conf('Host')->pipe_command(
+	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--info',
 		      "--dist=all",
 		      $pkg],
-	  USER => $conf->get('USERNAME'),
+	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
     if (!$pipe) {
-	$error .= "Couldn't start wanna-build --info: $!\n";
+	$self->set('Mail Error',
+		   $self->get('Mail Error') .
+		   "Couldn't start wanna-build --info: $!\n");
 	return 0;
     }
 
@@ -1075,13 +1201,15 @@ sub check_building_any_dist ($) {
 	$ab = $1 if $info =~ /^\s*Builder\s*:\s*(\S+)/mi;
 	push( @dists, $dist )
 	    if $av eq $vers && $as eq "Building" &&
-	    $ab eq $conf->get('WANNA_BUILD_USER');
+	    $ab eq $self->get_conf('WANNA_BUILD_USER');
     }
     return @dists;
 }
 
 sub get_files_from_changes ($) {
+    my $self = shift;
     my $changes_text = shift;
+
     my(@filelines, @files);
 
     $changes_text =~ /^Files:\s*\n((^[ 	]+.*\n)*)/m;
@@ -1093,6 +1221,7 @@ sub get_files_from_changes ($) {
 }
 
 sub is_for_non_us ($$) {
+    my $self = shift;
     my $pkg = shift;
     my $changes_text = shift;
 
@@ -1108,10 +1237,11 @@ sub is_for_non_us ($$) {
 }
 
 sub is_for_security ($) {
+    my $self = shift;
     my $changes_text = shift;
 
     # check if there's a "-security" in the distribution
-    my @dists = get_dists_from_changes( $changes_text );
+    my @dists = $self->get_dists_from_changes( $changes_text );
     foreach (@dists) {
 	return 1 if /-security$/;
     }
@@ -1119,6 +1249,7 @@ sub is_for_security ($) {
 }
 
 sub get_dists_from_changes ($) {
+    my $self = shift;
     my $changes_text = shift;
 
     $changes_text =~ /^Distribution:\s*(.*)\s*$/mi;
@@ -1126,21 +1257,26 @@ sub get_dists_from_changes ($) {
 }
 
 sub reply ($) {
+    my $self = shift;
     my $text = shift;
+
     my( $to, $subj, $quoting );
 
-    $to = $header{'reply-to'} || $header{'from'};
-    $subj = $header{'subject'};
+    $to = $self->get('Mail Header')->{'reply-to'} ||
+	$self->get('Mail Header')->{'from'};
+    $subj = $self->get('Mail Header')->{'subject'};
     $subj = "Re: $subj" if $subj !~ /^Re\S{0,2}:/;
-    ($quoting = $body_text) =~ s/\n+$/\n/;
+    ($quoting = $self->get('Mail Body Text')) =~ s/\n+$/\n/;
     $quoting =~ s/^/> /mg;
 
     send_mail( $to, $subj, "$quoting\n$text",
-	       "In-Reply-To: $header{'message-id'}\n" );
+	       "In-Reply-To: ". $self->get('Mail Header')->{'message-id'}. "\n" );
 }
 
 sub is_blacklisted ($) {
+    my $self = shift;
     my $addr = shift;
+
     local( *BL );
 
     $addr = $1 if $addr =~ /<(.*)>/;
@@ -1157,6 +1293,8 @@ sub is_blacklisted ($) {
 }
 
 sub add_error_mail () {
+    my $self = shift;
+
     local( *F );
     my $now = time;
     my @em = ();
@@ -1166,7 +1304,7 @@ sub add_error_mail () {
 	close( F );
     }
     push( @em, $now );
-    shift @em while @em && ($now - $em[0]) > $conf->get('ERROR_MAIL_WINDOW');
+    shift @em while @em && ($now - $em[0]) > $self->get_conf('ERROR_MAIL_WINDOW');
 
     if (@em) {
 	open( F, ">mail-errormails" );
@@ -1180,3 +1318,34 @@ sub add_error_mail () {
     return scalar(@em);
 }
 
+package main;
+
+use strict;
+use warnings;
+
+use Buildd qw(open_log close_log lock_file unlock_file);
+use Buildd::Conf;
+use Sbuild::OptionsBase;
+
+my $conf = Buildd::Conf->new();
+exit 1 if !defined($conf);
+my $options = Sbuild::OptionsBase->new($conf, "buildd-mail", "1");
+exit 1 if !defined($options);
+my $mail = Buildd::Mail->new($conf);
+exit 1 if !defined($mail);
+
+my $log = open_log($mail->get('Config'));
+$mail->set('Log Stream', $log);
+
+my $status = $mail->run();
+
+close_log($conf);
+
+exit $status;
+
+END {
+    unlock_file($conf->get('DAEMON_LOG_FILE'))
+	if (defined($conf) &&
+	    defined($conf->get('DAEMON_LOG_FILE')) &&
+	    $conf->get('DAEMON_LOG_FILE'));
+}
