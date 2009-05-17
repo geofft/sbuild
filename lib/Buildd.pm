@@ -33,7 +33,7 @@ require Exporter;
 
 @Buildd::EXPORT = qw(unset_env lock_file unlock_file open_log
  		     reopen_log close_log send_mail
- 		     ll_send_mail exitstatus write_stats isin
+ 		     ll_send_mail exitstatus isin
  		     wannabuild_command);
 
 $Buildd::lock_interval = 15;
@@ -51,7 +51,6 @@ sub isin ($@);
 sub unset_env ();
 sub lock_file ($;$);
 sub unlock_file ($);
-sub write_stats ($$);
 sub open_log ($);
 sub close_log ($);
 sub reopen_log ($);
@@ -137,18 +136,6 @@ sub unlock_file ($) {
     my $lockfile = "$file.lock";
 
     unlink( $lockfile );
-}
-
-
-sub write_stats ($$) {
-    my ($cat, $val) = @_;
-    local( *F );
-
-    lock_file( "$main::HOME/stats" );
-    open( F, ">>$main::HOME/stats/$cat" );
-    print F "$val\n";
-    close( F );
-    unlock_file( "$main::HOME/stats" );
 }
 
 sub open_log ($) {
