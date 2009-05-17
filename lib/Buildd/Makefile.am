@@ -28,7 +28,8 @@ MODULES =		\
 	Conf.pm		\
 	Daemon.pm	\
 	Mail.pm		\
-	Uploader.pm
+	Uploader.pm	\
+	Watcher.pm
 
 perlmodbuildd_DATA =	\
 	$(MODULES)
