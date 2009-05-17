@@ -115,12 +115,12 @@ sub set_options {
 	});
 }
 
+package main;
+
 use GDBM_File;
 use File::Basename;
 use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(help_text version_text usage_error);
-
-package main;
 
 sub align ($);
 sub sortfunc ();
