@@ -23,6 +23,8 @@ package Buildd::Base;
 use strict;
 use warnings;
 
+use Buildd qw(lock_file unlock_file);
+
 use Sbuild::Base;
 
 BEGIN {
