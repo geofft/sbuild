@@ -82,7 +82,7 @@ sub setup ($$) {
     $conf->set('VERBOSE', 1);
     $conf->set('NOLOG', 1);
 
-    Sbuild::Log::open_log($chroot, $conf);
+    Sbuild::Log::open_log($conf);
 
     $chroot = get_dist($chroot);
 
