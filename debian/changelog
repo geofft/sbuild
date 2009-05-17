@@ -1,3 +1,10 @@
+sbuild (0.58.4-1) unstable; urgency=low
+
+  [ Roger Leigh ]
+  * New release. 
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 17 May 2009 23:44:38 +0100
+
 sbuild (0.58.3-1) unstable; urgency=low
 
   [ Roger Leigh ]
