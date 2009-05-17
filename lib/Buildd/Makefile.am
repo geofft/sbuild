@@ -27,6 +27,7 @@ MODULES =		\
 	Base.pm		\
 	Conf.pm		\
 	Daemon.pm	\
+	Mail.pm		\
 	Uploader.pm
 
 perlmodbuildd_DATA =	\
