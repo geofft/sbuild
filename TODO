@@ -147,3 +147,15 @@ buildd-mail: Moves built packages directly into the chroot
 buildd: SIGHUP should reread config, not SIGUSR1.  Swap?
 
 buildd mails: Statistics start from 01-01-1970 when first started up.
+
+Buildd::*: Don't set Host until after object construction, since
+   the Log Stream isn't yet initialised.
+
+bin/*, lib/*: Kill use of main:: globals
+
+Kill main::HOME hardcoding
+
+Kill PATH hardcoding
+
+sbuild: Move chroot setup from 50sbuild into Sbuild Build or Chroot
+   setup.
