@@ -182,3 +182,5 @@ lib/Buildd: Move logger vfunc into Sbuild::Log as the default logger?
 
 Add sbuild configuration option to disable package removal on cleanup.
 (#528312)
+
+sbuild-* should use ChrootSetup.
