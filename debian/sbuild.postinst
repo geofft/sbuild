@@ -57,7 +57,7 @@ case "$1" in
 
         chmod 2775 /var/lib/sbuild
         # avg-* files from previous purge might have wrong GID
-        chown :sbuild /var/lib/sbuild
+        chown -R :sbuild /var/lib/sbuild
 
         ;;
 
