@@ -45,20 +45,11 @@ sub do_dupload ($@);
 
 unset_env();
 
-my $log_locked = 0;
 my $locked = 0;
 END {
-    unlock_file($conf->get('DAEMON_LOG_FILE'))
-	if ($log_locked &&
-	    defined($conf) &&
-	    defined($conf->get('DAEMON_LOG_FILE')) &&
-	    $conf->get('DAEMON_LOG_FILE'));
     unlock_file("$main::HOME/buildd-uploader")
 	if $locked;
 }
-
-lock_file( $conf->get('DAEMON_LOG_FILE') );
-$log_locked = 1;
 
 open_log($conf);
 $host->set('Log Stream', \*LOG);
@@ -112,23 +103,15 @@ sub uploaded ($@) {
 	    }
 	    close($pipe);
 	    if ($msgs or $?) {
-		lock_file( $conf->get('DAEMON_LOG_FILE') );
-		$log_locked = 1;
 		logger( $msgs ) if $msgs;
 		logger( "wanna-build --uploaded failed with status ", exitstatus($?), "\n" )
 		    if $?;
-		unlock_file( $conf->get('DAEMON_LOG_FILE') );
-		$log_locked = 0;
 	    } else {
 		$uploaded_pkgs{$dist} .= " $pkg";
 	    }
 	}
 	else {
-	    lock_file( $conf->get('DAEMON_LOG_FILE') );
-	    $log_locked = 1;
 	    logger( "Cannot spawn wanna-build --uploaded: $!\n" );
-	    unlock_file( $conf->get('DAEMON_LOG_FILE') );
-	    $log_locked = 0;
 	}
     }
 }
@@ -154,8 +137,6 @@ sub upload ($$) {
     }
 
     logger( scalar(@before), " jobs to upload in $udir: @before\n" );
-    unlock_file( $conf->get('DAEMON_LOG_FILE') );
-    $log_locked = 0;
 
     foreach $f (@before) {
 	($g = $f) =~ s/\.changes$/\.upload/;
@@ -164,14 +145,9 @@ sub upload ($$) {
 	if (defined $logref and scalar(@$logref) > 0) {
 	    my $line;
 
-	    lock_file( $conf->get('DAEMON_LOG_FILE') );
-	    $log_locked = 1;
-
 	    foreach $line (@$logref) {
 		logger $line;
 	    }
-	    unlock_file( $conf->get('DAEMON_LOG_FILE') );
-	    $log_locked = 0;
 	}
 
 	if ( -f $g ) {
@@ -183,11 +159,7 @@ sub upload ($$) {
 	    { local($/); undef $/; $text = <F>; }
 	    close( F );
 	    if ($text !~ /^Distribution:\s*(.*)\s*$/m) {
-		lock_file( $conf->get('DAEMON_LOG_FILE') );
-		$log_locked = 1;
 		logger( "$f doesn't have a Distribution: field\n" );
-		unlock_file( $conf->get('DAEMON_LOG_FILE') );
-		$log_locked = 0;
 		next;
 	    }
 	    my @dists = split( /\s+/, $1 );
@@ -209,8 +181,6 @@ sub upload ($$) {
 	}
     }
 
-    lock_file( $conf->get('DAEMON_LOG_FILE') );
-    $log_locked = 1;
     if (@after) {
 	logger( "The following jobs were not processed (successfully):\n".
 		"@after\n" );
