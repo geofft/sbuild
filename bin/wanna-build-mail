@@ -19,235 +19,256 @@
 #
 #######################################################################
 
+package Wannabuild::Mail;
+
 use strict;
 use warnings;
+use English;
 
 use Sbuild::Sysconfig;
 
-sub read_users ();
-sub pgp_check ($);
-sub reply (@);
-sub fatal (@);
-sub logger (@);
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @ISA = qw(Exporter Sbuild::Base);
+
+    @EXPORT = qw();
+}
+
+sub new {
+    my $class = shift;
+    my $conf = shift;
+
+    my $self = $class->SUPER::new($conf);
+    bless($self, $class);
+
+    return $self;
+}
 
 # TODO: Convert to use WannaBuild::Conf and Sbuild::Sysconfig
 
-$main::tempfile = "/bin/tempfile";
-$main::wanna_build = -f "/usr/local/bin/wanna-build" ?
-    "/usr/local/bin/wanna-build" : "/usr/bin/wanna-build";
-$main::pgp = "/usr/bin/pgp";
-$main::gpp = "/usr/bin/gpg";
-$main::sendmail = "/usr/sbin/sendmail";
-$main::libdir = "/var/lib/wanna-build";
-$main::pgp_keyring = "$main::libdir/mail-keyring.pgp";
-$main::gpg_keyring = "$main::libdir/mail-keyring.gpg";
-$main::userdb = "$main::libdir/mail-users";
-$main::logfile = "$main::libdir/mail-processor.log";
-chomp( $main::date = `/bin/date '+%Y %b %d %H:%M:%S'` );
+sub run {
+    my $self = shift;
 
-my $tmpf = `$main::tempfile -p .wanna-build-mail -m 600`;
-chomp( $tmpf );
-$tmpf =~ /^(.*)$/; $tmpf = $1; # untaint
-open( F, ">$tmpf" ) or fatal( "Can't create temp file $tmpf: $!" );
-END { unlink( $tmpf ); }
+    $main::tempfile = "/bin/tempfile";
+    $main::wanna_build = -f "/usr/local/bin/wanna-build" ?
+	"/usr/local/bin/wanna-build" : "/usr/bin/wanna-build";
+    $main::pgp = "/usr/bin/pgp";
+    $main::gpg = "/usr/bin/gpg";
+    $main::sendmail = "/usr/sbin/sendmail";
+    $main::libdir = "/var/lib/wanna-build";
+    $main::pgp_keyring = "$main::libdir/mail-keyring.pgp";
+    $main::gpg_keyring = "$main::libdir/mail-keyring.gpg";
+    $main::userdb = "$main::libdir/mail-users";
+    $main::logfile = "$main::libdir/mail-processor.log";
+    chomp( $main::date = `/bin/date '+%Y %b %d %H:%M:%S'` );
 
-my $in_headers = 1;
-my $lastheader = "";
-while( <> ) {
-    print F;
-    chomp;
-    next if !$in_headers;
-    if (/^$/) {
-	$in_headers = 0;
-	next;
-    }
-    elsif (/^\s/ && $lastheader) {
-	s/^\s+//;
-	$_ = "$lastheader $_";
-    }
-    if (/^From:\s*/i) {
-	$main::from_addr = $';
-		chomp( $lastheader = $_ );
+# TODO: Use File::Temp
+    my $tmpf = `$main::tempfile -p .wanna-build-mail -m 600`;
+    chomp( $tmpf );
+    $tmpf =~ /^(.*)$/; $tmpf = $1; # untaint
+    open( F, ">$tmpf" ) or $self->fatal( "Can't create temp file $tmpf: $!" );
+
+    my $in_headers = 1;
+    my $lastheader = "";
+    while( <> ) {
+	print F;
+	chomp;
+	next if !$in_headers;
+	if (/^$/) {
+	    $in_headers = 0;
+	    next;
+	}
+	elsif (/^\s/ && $lastheader) {
+	    s/^\s+//;
+	    $_ = "$lastheader $_";
+	}
+	if (/^From:\s*/i) {
+	    $main::from_addr = $POSTMATCH;
+	    chomp( $lastheader = $_ );
 	}
 	elsif (/^Reply-To:\s*/i) {
-		$main::reply_to = $';
-	chomp( $lastheader = $_ );
-    }
-    elsif (/^Subject:\s*/i) {
-	$main::subject = $';
-		chomp( $lastheader = $_ );
+	    $main::reply_to = $POSTMATCH;
+	    chomp( $lastheader = $_ );
+	}
+	elsif (/^Subject:\s*/i) {
+	    $main::subject = $POSTMATCH;
+	    chomp( $lastheader = $_ );
 	}
 	elsif (/^Message-Id:\s*/i) {
-		$main::msgid = $';
-	chomp( $lastheader = $_ );
-    }
-    else {
-	$lastheader = "";
-    }
-}
-close( F );
-$main::reply_addr = $main::reply_to || $main::from_addr;
-fatal( "No reply address known!" ) if !$main::reply_addr;
-logger( "Mail from $main::reply_addr" );
-
-my $signator;
-fatal( "Your message cannot be processed because it is not ".
-       "signed with PGP." )
-    if !($signator = pgp_check( $tmpf ));
-
-read_users();
-fatal( "The signator of this message\n($signator)\n".
-       "is not authorized to use this mail interface." )
-    if !exists $main::users{$signator};
-$main::user = $main::users{$signator};
-
-
-my $in_sig = 0;
-my $reply = "";
-my $n_depwait = 0;
-my $nn_depwait = 0;
-my $n_failed = 0;
-my $nn_failed = 0;
-my( @wanna_args, @uploaded_args, @giveback_args, @depwait_args,
-    @depwait_deps, @failed_args, @failed_msg, @info_args, @list_args,
-    @vlist_args );
-open( F, "<$tmpf" ) or fatal( "Can't open $tmpf: $!" );
-while( <F> && !/^$/ ) {} # skip headers
-while( <F> ) {
-  repeat_outer:
-    $in_sig = 1, next if /^---+\s*BEGIN PGP SIGNATURE/;
-    $in_sig = 0, next if /^---+\s*END PGP SIGNATURE/;
-    next if $in_sig || /^\s*$/ || /^---/;
-    next if !/^([\w]+)\s+(.*)\s*$/;
-    my( $command, $args ) = ($1, $2);
-    if ($command =~ /^w/) {
-	push( @wanna_args, split( /\s+/, $args ));
-    }
-    elsif ($command =~ /^u/) {
-	push( @uploaded_args, split( /\s+/, $args ));
-    }
-    elsif ($command =~ /^g/) {
-	push( @giveback_args, split( /\s+/, $args ));
-    }
-    elsif ($command =~ /^f/) {
-	push( @{$failed_args[$n_failed]}, split( /\s+/, $args ));
-	while( <F> ) {
-	    last if !/^\s+/;
-	    my $text = $';
-	    chomp( $text );
-	    $text =~ s/'/'\\''/g;
-	    $failed_msg[$n_failed] .= "$text\n";
-	}
-	if (!$failed_msg[$n_failed]) {
-	    $reply .= "Error on command \"$command $args\": ".
-		"no failure message specified\n";
+	    $main::msgid = $POSTMATCH;
+	    chomp( $lastheader = $_ );
 	}
 	else {
-	    chop( $failed_msg[$n_failed] );
-	    ++$n_failed;
+	    $lastheader = "";
 	}
-	goto repeat_outer;
     }
-    elsif ($command =~ /^d/) {
-	push( @{$depwait_args[$n_depwait]}, split( /\s+/, $args ));
-	my $deps = <F>;
-	if ($deps !~ /^\s/) {
-	    $reply .= "Error on command \"$command $args\": ".
-		"no dependency line specified\n";
-	    $_ = $deps;
+    close( F );
+    $main::reply_addr = $main::reply_to || $main::from_addr;
+    $self->fatal( "No reply address known!" ) if !$main::reply_addr;
+    $self->logger( "Mail from $main::reply_addr" );
+
+    my $signator;
+    $self->fatal( "Your message cannot be processed because it is not ".
+		  "signed with PGP." )
+	if !($signator = $self->pgp_check( $tmpf ));
+
+    $self->read_users();
+    $self->fatal( "The signator of this message\n($signator)\n".
+		  "is not authorized to use this mail interface." )
+	if !exists $main::users{$signator};
+    $main::user = $main::users{$signator};
+
+
+    my $in_sig = 0;
+    my $reply = "";
+    my $n_depwait = 0;
+    my $nn_depwait = 0;
+    my $n_failed = 0;
+    my $nn_failed = 0;
+    my( @wanna_args, @uploaded_args, @giveback_args, @depwait_args,
+	@depwait_deps, @failed_args, @failed_msg, @info_args, @list_args,
+	@vlist_args );
+    open( F, "<$tmpf" ) or $self->fatal( "Can't open $tmpf: $!" );
+    while( <F> && !/^$/ ) {} # skip headers
+    while( <F> ) {
+      repeat_outer:
+	$in_sig = 1, next if /^---+\s*BEGIN PGP SIGNATURE/;
+	$in_sig = 0, next if /^---+\s*END PGP SIGNATURE/;
+	next if $in_sig || /^\s*$/ || /^---/;
+	next if !/^([\w]+)\s+(.*)\s*$/;
+	my( $command, $args ) = ($1, $2);
+	if ($command =~ /^w/) {
+	    push( @wanna_args, split( /\s+/, $args ));
+	}
+	elsif ($command =~ /^u/) {
+	    push( @uploaded_args, split( /\s+/, $args ));
+	}
+	elsif ($command =~ /^g/) {
+	    push( @giveback_args, split( /\s+/, $args ));
+	}
+	elsif ($command =~ /^f/) {
+	    push( @{$failed_args[$n_failed]}, split( /\s+/, $args ));
+	    while( <F> ) {
+		last if !/^\s+/;
+		my $text = $POSTMATCH;
+		chomp( $text );
+		$text =~ s/'/'\\''/g;
+		$failed_msg[$n_failed] .= "$text\n";
+	    }
+	    if (!$failed_msg[$n_failed]) {
+		$reply .= "Error on command \"$command $args\": ".
+		    "no failure message specified\n";
+	    }
+	    else {
+		chop( $failed_msg[$n_failed] );
+		++$n_failed;
+	    }
 	    goto repeat_outer;
 	}
-	chomp( $deps );
-	$deps =~ s/^\s+//;
-	$deps =~ s/\s+$//;
-	$depwait_deps[$n_depwait] = $deps;
-	++$n_depwait;
+	elsif ($command =~ /^d/) {
+	    push( @{$depwait_args[$n_depwait]}, split( /\s+/, $args ));
+	    my $deps = <F>;
+	    if ($deps !~ /^\s/) {
+		$reply .= "Error on command \"$command $args\": ".
+		    "no dependency line specified\n";
+		$_ = $deps;
+		goto repeat_outer;
+	    }
+	    chomp( $deps );
+	    $deps =~ s/^\s+//;
+	    $deps =~ s/\s+$//;
+	    $depwait_deps[$n_depwait] = $deps;
+	    ++$n_depwait;
+	}
+	elsif ($command =~ /^i/) {
+	    push( @info_args, split( /\s+/, $args ));
+	}
+	elsif ($command =~ /^l/) {
+	    push( @list_args, split( /\s+/, $args ));
+	}
+	elsif ($command =~ /^v/) {
+	    push( @vlist_args, split( /\s+/, $args ));
+	}
+	else {
+	    $reply .= "Unknown command: \"$command\"\n";
+	}
     }
-    elsif ($command =~ /^i/) {
-	push( @info_args, split( /\s+/, $args ));
-    }
-    elsif ($command =~ /^l/) {
-	push( @list_args, split( /\s+/, $args ));
-    }
-    elsif ($command =~ /^v/) {
-	push( @vlist_args, split( /\s+/, $args ));
-    }
-    else {
-	$reply .= "Unknown command: \"$command\"\n";
-    }
-}
-close( F );
+    close( F );
 
-if (@wanna_args) {
-    $reply .= "\nRunning wanna-build:\n";
-    logger( "take @wanna_args" );
-    $reply .= `$main::wanna_build -U $main::user -v --take @wanna_args 2>&1`;
-}
-if (@uploaded_args) {
-    $reply .= "\nRunning uploaded-build:\n";
-    logger( "uploaded @uploaded_args" );
-    $reply .= `$main::wanna_build -U $main::user -v --uploaded @uploaded_args 2>&1`;
-}
-if (@giveback_args) {
-    $reply .= "\nRunning give-back-build:\n";
-    logger( "giveback @uploaded_args" );
-    $reply .= `$main::wanna_build -U $main::user -v --give-back @giveback_args 2>&1`;
-}
-if ($n_failed > 0) {
-    my $i;
-    $reply .= "\nRunning failed-build (may be different messages):\n";
-    for( $i = 0; $i < $n_failed; ++$i ) {
-	logger( "failed @{$failed_args[$i]}" );
-	$reply .= `$main::wanna_build -U $main::user -v --failed -m'$failed_msg[$i]' @{$failed_args[$i]} 2>&1`;
-	$nn_failed += @{$failed_args[$i]};
+    if (@wanna_args) {
+	$reply .= "\nRunning wanna-build:\n";
+	$self->logger( "take @wanna_args" );
+	$reply .= `$main::wanna_build -U $main::user -v --take @wanna_args 2>&1`;
     }
-}
-if ($n_depwait > 0) {
-    my $i;
-    $reply .= "\nRunning dep-wait-build (may be different dependencies):\n";
-    for( $i = 0; $i < $n_depwait; ++$i ) {
-	logger( "dep-wait @{$depwait_args[$i]} ($depwait_deps[$i])" );
-	$reply .= `$main::wanna_build -U $main::user -v --dep-wait -m'$depwait_deps[$i]' @{$depwait_args[$i]} 2>&1`;
-	$nn_depwait += @{$depwait_args[$i]};
+    if (@uploaded_args) {
+	$reply .= "\nRunning uploaded-build:\n";
+	$self->logger( "uploaded @uploaded_args" );
+	$reply .= `$main::wanna_build -U $main::user -v --uploaded @uploaded_args 2>&1`;
     }
-}
-if (@info_args) {
-    $reply .= "\nRunning build-info:\n";
-    logger( "info @info_args" );
-    $reply .= `$main::wanna_build -v --info @info_args 2>&1`;
-}
-logger( "list @list_args" ) if @list_args;
-foreach (@list_args) {
-    $reply .= "\nRunning list-$_:\n";
-    $reply .= `$main::wanna_build --list=$_ 2>&1`;
-}
-logger( "vlist @vlist_args" ) if @vlist_args;
-foreach (@vlist_args) {
-    $reply .= "\nRunning list-$_ -v:\n";
-    $reply .= `$main::wanna_build -v --list=$_ 2>&1`;
-}
+    if (@giveback_args) {
+	$reply .= "\nRunning give-back-build:\n";
+	$self->logger( "giveback @uploaded_args" );
+	$reply .= `$main::wanna_build -U $main::user -v --give-back @giveback_args 2>&1`;
+    }
+    if ($n_failed > 0) {
+	my $i;
+	$reply .= "\nRunning failed-build (may be different messages):\n";
+	for( $i = 0; $i < $n_failed; ++$i ) {
+	    $self->logger( "failed @{$failed_args[$i]}" );
+	    $reply .= `$main::wanna_build -U $main::user -v --failed -m'$failed_msg[$i]' @{$failed_args[$i]} 2>&1`;
+	    $nn_failed += @{$failed_args[$i]};
+	}
+    }
+    if ($n_depwait > 0) {
+	my $i;
+	$reply .= "\nRunning dep-wait-build (may be different dependencies):\n";
+	for( $i = 0; $i < $n_depwait; ++$i ) {
+	    $self->logger( "dep-wait @{$depwait_args[$i]} ($depwait_deps[$i])" );
+	    $reply .= `$main::wanna_build -U $main::user -v --dep-wait -m'$depwait_deps[$i]' @{$depwait_args[$i]} 2>&1`;
+	    $nn_depwait += @{$depwait_args[$i]};
+	}
+    }
+    if (@info_args) {
+	$reply .= "\nRunning build-info:\n";
+	$self->logger( "info @info_args" );
+	$reply .= `$main::wanna_build -v --info @info_args 2>&1`;
+    }
+    $self->logger( "list @list_args" ) if @list_args;
+    foreach (@list_args) {
+	$reply .= "\nRunning list-$_:\n";
+	$reply .= `$main::wanna_build --list=$_ 2>&1`;
+    }
+    $self->logger( "vlist @vlist_args" ) if @vlist_args;
+    foreach (@vlist_args) {
+	$reply .= "\nRunning list-$_ -v:\n";
+	$reply .= `$main::wanna_build -v --list=$_ 2>&1`;
+    }
 
-$reply = "No commands, nothing done.\n" if !$reply;
-$reply =~ s/^wanna-build Revision:.*\n//mg;
-reply( $reply );
+    $reply = "No commands, nothing done.\n" if !$reply;
+    $reply =~ s/^wanna-build Revision:.*\n//mg;
+    $self->reply( $reply );
 
-logger( "Processed: ",
-	scalar(@wanna_args), " taken, ",
-	scalar(@uploaded_args), " upl, ",
-	scalar(@giveback_args), " giveb, ",
-	$nn_depwait, " dwait, ",
-	$nn_failed, " failed, ",
-	scalar(@info_args), " infos, ",
-	scalar(@list_args)+scalar(@vlist_args), " lists" );
+    $self->logger( "Processed: ",
+		   scalar(@wanna_args), " taken, ",
+		   scalar(@uploaded_args), " upl, ",
+		   scalar(@giveback_args), " giveb, ",
+		   $nn_depwait, " dwait, ",
+		   $nn_failed, " failed, ",
+		   scalar(@info_args), " infos, ",
+		   scalar(@list_args)+scalar(@vlist_args), " lists" );
 
-exit 0;
+    return 0;
+	       }
 
+sub read_users {
+    my $self = shift;
 
-sub read_users () {
     local( *F );
 
     open( F, "<$main::userdb" )
-	or fatal( "Cannot open $main::userdb: $!" );
+	or $self->fatal( "Cannot open $main::userdb: $!" );
     while( <F> ) {
 	next if !/^([\w\d]+)\s+(.+)\s*/;
 	$main::users{$2} = $1;
@@ -255,8 +276,10 @@ sub read_users () {
     close( F );
 }
 
-sub pgp_check ($) {
+sub pgp_check {
+    my $self = shift;
     my $file = shift;
+
     my $output = "";
     my $signator;
     my $is_tmpfile = 0;
@@ -264,7 +287,7 @@ sub pgp_check ($) {
     my $stat;
     local( *PIPE );
 
-    fatal( "No keyring (PGP or GnuPG) exists!" )
+    $self->fatal( "No keyring (PGP or GnuPG) exists!" )
 	if ! -f $main::pgp_keyring && ! -f $main::gpg_keyring;
 
     if ($main::content_type &&
@@ -274,11 +297,11 @@ sub pgp_check ($) {
 	my $file2 = "$file.pgptmp";
 	local( *F, *F2 );
 	if (!open( F, "<$file" )) {
-	    fatal( "Can't open $file: $!" );
+	    $self->fatal( "Can't open $file: $!" );
 	    return "LOCAL ERROR";
 	}
 	if (!open( F2, ">$file2" )) {
-	    fatal( "Can't open $file2: $!" );
+	    $self->fatal( "Can't open $file2: $!" );
 	    return "LOCAL ERROR";
 	}
 	my $state = 0;
@@ -309,7 +332,7 @@ sub pgp_check ($) {
     if (-x $main::pgp && -f $main::pgp_keyring) {
 	if (!open( PIPE, "$main::pgp -f +batchmode +verbose=0 ".
 		   "+pubring=$main::pgp_keyring <'$file' 2>&1 >/dev/null |" )) {
-	    fatal( "Can't open pipe to $main::pgp: $!" );
+	    $self->fatal( "Can't open pipe to $main::pgp: $!" );
 	    unlink( $file ) if $is_tmpfile;
 	    return "LOCAL ERROR";
 	}
@@ -323,7 +346,7 @@ sub pgp_check ($) {
 	if (!open( PIPE, "$main::gpg --no-options --batch ".
 		   "--no-default-keyring --keyring $main::gpg_keyring ".
 		   " --verify '$file' 2>&1 |" )) {
-	    fatal( "Can't open pipe to $main::gpg: $!" );
+	    $self->fatal( "Can't open pipe to $main::gpg: $!" );
 	    unlink( $file ) if $is_tmpfile;
 	    return "LOCAL ERROR";
 	}
@@ -340,17 +363,18 @@ sub pgp_check ($) {
 }
 
 
-sub reply (@) {
+sub reply {
+    my $self = shift;
     my $subject;
 
     if (!$main::reply_addr) {
-	logger( "no reply address set" );
+	$self->logger( "no reply address set" );
 	return;
     }
 
     $main::no_reply = 1;
     if (!open( MAIL, "|$main::sendmail -t -oem" )) {
-	fatal( "Could not open pipe to $conf::mail: $!" );
+	$self->fatal( "Could not open pipe to $main::sendmail: $!" );
 	goto out;
     }
 
@@ -366,7 +390,7 @@ print MAIL "In-Reply-To: $main::msgid\n" if $main::msgid;
     print MAIL @_;
     print MAIL "\nGreetings,\n\n\tYour wanna-build mail processor\n";
     if (!close( MAIL )) {
-	fatal( "$main::sendmail failed (exit status ", $? >> 8, ")\n" );
+	$self->fatal( "$main::sendmail failed (exit status ", $? >> 8, ")\n" );
 	goto out;
     }
 
@@ -375,10 +399,12 @@ print MAIL "In-Reply-To: $main::msgid\n" if $main::msgid;
 }
 
 
-sub fatal (@) {
-    logger( @_ );
+sub fatal {
+    my $self = shift;
+
+    $self->logger( @_ );
     if ($main::reply_addr && !$main::no_reply) {
-	reply( "FATAL ERROR: ", @_, "\n" );
+	$self->reply( "FATAL ERROR: ", @_, "\n" );
 	exit 1;
     }
     else {
@@ -386,7 +412,9 @@ sub fatal (@) {
     }
 }
 
-sub logger (@) {
+sub logger {
+    my $self = shift;
+
     local( *F );
     my( $str, @lines );
 
@@ -399,4 +427,29 @@ sub logger (@) {
 	print F "$main::date: ", $_, "\n";
     }
     close( F );
+}
+
+package main;
+
+use strict;
+use warnings;
+
+use WannaBuild::Conf;
+use WannaBuild::Options;
+
+my $conf = WannaBuild::Conf->new();
+exit 1 if !defined($conf);
+my $options = WannaBuild::Options->new($conf, "wanna-build", 1);
+exit 1 if !defined($options);
+my $mail = Wannabuild::Mail->new($conf);
+exit 1 if !defined($mail);
+
+# All logging is to standard out and error; no log stream to set.
+my $status = $mail->run();
+
+exit $status;
+
+END {
+    #TODO: unlink real tempfile
+#    unlink( $tmpf );
 }
