@@ -1,5 +1,6 @@
 # buildd-uploader: upload finished packages for buildd
 # Copyright © 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright © 2009 Roger Leigh <rleigh@debian.org>
 # Copyright © 2005 Ryan Murray <rmurray@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
