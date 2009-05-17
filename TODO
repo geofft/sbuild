@@ -8,8 +8,6 @@ sbuild-createchroot should import most of buildd-make-chroot.
 Split utility programs into library functions. Functions should operate on
 chroot objects, or plain files where appropriate.
 
-*/Conf.pm need to be classes.
-
 Chroot.pm: Move chroot naming out of begin_session.
 
 Are 'Build Start Time' and 'Pkg Start Time' different?
@@ -30,10 +28,6 @@ one action at once?  Only set mode once?  actions have multiple args?
 sbuild-stats only has a single database.  There's no distinguishing
 between different distributions or architectures.  Fix with wannab.
 
-run_*_command should take an arrayref instead of a string for running
-commands.  They can then be passed directly to schroot avoiding
-quoting issues.
-
 buildd-clean-upload hard-codes $HOME/upload.  Configure location.
 
 All perl programs and modules should
@@ -49,20 +43,15 @@ buildd-watcher should use strftime in place of own functions
 
 sbuild utilities should allow specification of chroot architecture
 
-Directory passed to dpkg-source includes Debian version.  Should be upstream only.
-
 Document and add examples for %mailto.
 
 sbuild-adduser should do schroot/sudo-specific setup depending on
-$chroot_mode.
+$chroot_mode.  Now done in basesetup().  But, it may be useful to
+do additional setup here such as user/group database updates for
+sudo chroots and schroot when using plain chroot type (no
+automated setup).
 
 Use 'dcmd cp' to copy build files
-
-Buildd.pm: *_command use:
- - Split host only chroot use only into ChrootHost object.  No root.
-
-Unify utility command-line options (help, version) and add verbose/debug
-options.
 
 Copyright details of new files.
 
@@ -82,7 +71,6 @@ Content-Transfer-Encoding and Content-Type need setting.
 message['Content-Transfer-Encoding'] = 'base64'
 message['Content-Type'] = 'application/x-gzip'
 https://buildd.debian.org/docs/log-compressor.py
-
 
 Where did the 0.57.7 debian/changelog go to?
 
@@ -111,24 +99,18 @@ detect changes in modules.  Create init script instead.
 buildd-mail: %header (to|from|subject|message-id|date) are mandatory.
 Check for these and bail out if not present.
 
-buildd*: Most programs do not call close_log, but should be doing.
-
-buildd: Hook Host ChrootRoot into stderr logger
-
 Buildd::Conf: Add Sbuild::Chroot heirarchy-specific configuration
    keys.
 - split into separate initialisation function,
 - split wanna-build config into separate function also.
-
-buildd*: Use Sbuild::Base logging infrastructure (tie in logger()
-log formatting and semantics into log())
+- may be useful to have different config files here or else
+  we get parsing errors if variables aren't defined in the
+  parsing sandbox.
 
 buildd: shutdown_* should check if we are a daemon before removing
 the pidfile, as for END.
 
-buildd*: Objectify and use ChrootRoot
-
-ChrootRoot: Tie in to logger
+END blocks should be inside object destructors.
 
 run|pipe_apt_command should be generic functions, not class
 methods.
@@ -137,22 +119,21 @@ Use ChrootRoot to run commands on host system.  Remove CHROOT
 parameter?  Only needed for run_apt_command, which can work
 accordingly without CHROOT.
 
-Logging functions should take array rather than scalar for
-logger() compatibility.
-
 buildd-vlog: Rather than tailing the output of sbuild logs, once
 buildd uses Sbuild::Build directly, the daemon will be able to
 do its own output (if desired).
 
 buildd-mail: Moves built packages directly into the chroot
    /var/cache/apt/archives.  It should use Sbuild::Chroot.
+   This should also update the source chroot.
 
 buildd: SIGHUP should reread config, not SIGUSR1.  Swap?
 
 buildd mails: Statistics start from 01-01-1970 when first started up.
 
 Buildd::*: Don't set Host until after object construction, since
-   the Log Stream isn't yet initialised.
+   the Log Stream isn't yet initialised.  If log stream opening
+   is moved into Buildd::Base, this can be done automatically.
 
 bin/*, lib/*: Kill use of main:: globals
 
@@ -163,23 +144,6 @@ Kill PATH hardcoding
 Kill LOG/PLOG
 
 Kill all globals
-
-
-sbuild: Move chroot setup from 50sbuild into Sbuild Build or Chroot
-   setup.
-
-
-wanna-build: Objectify
-
-wanna-build: Replace logger with Sbuild::Base logging
-
-buildd-watcher: Objectify
-
-buildd-watcher: Replace logger with Sbuild::Base logging
-
-bin/*: Remove last logger() traces
-
-lib/Buildd: Remove logger()
 
 lib/Buildd: Move logger vfunc into Sbuild::Log as the default logger?
 
