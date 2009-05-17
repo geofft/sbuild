@@ -64,6 +64,7 @@ case "$1" in
 
 	rm_conffile "/etc/sbuild.conf"
 	rm_conffile "/etc/sbuild.conf.local"
+	rm_conffile "/etc/schroot/setup.d/50sbuild"
 
 	rm -f /var/lib/sbuild/apt.conf
 	rm -f /var/lib/sbuild/avg-build-space

@@ -23,15 +23,17 @@ sbuild (0.58.3-1) unstable; urgency=low
     - Use addgroup/delgroup in place of adduser/deluser.
     - Use --system when adding and deleting group, to ensure creation
       of a system group.
+    - Handle removal of 50sbuild setup script.
   * debian/buildd.(preinst|postinst|postrm): Add maintainer scripts for
     buildd package.  Move configuration file from /etc/buildd.conf to
     /etc/buildd/buildd.conf if present.  Also create buildd user and
     group for running the buildd daemon.
   * Buildd::Conf: Don't default MAINTAINER_NAME to $DEBEMAIL if unset
     in the configuration file (Closes: #520158).
-  * 
+  * /etc/schroot/setup.d/50sbuild: Remove.  The setup tasks performed by
+    this script are now handled internally by sbuild.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 17 May 2009 15:01:04 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 17 May 2009 15:52:53 +0100
 
 sbuild (0.58.2-1) unstable; urgency=low
 
