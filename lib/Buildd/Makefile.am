@@ -25,7 +25,8 @@ perlmodbuildddir = $(perlmoddir)/Buildd
 
 MODULES =		\
 	Base.pm		\
-	Conf.pm
+	Conf.pm		\
+	Daemon.pm
 
 perlmodbuildd_DATA =	\
 	$(MODULES)
