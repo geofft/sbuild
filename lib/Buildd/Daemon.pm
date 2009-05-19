@@ -29,7 +29,7 @@ use Buildd qw(isin wannabuild_command lock_file unlock_file send_mail
               exitstatus);
 use Buildd::Conf;
 use Buildd::Base;
-use Sbuild qw($devnull);
+use Sbuild qw($devnull df);
 use Sbuild::Sysconfig;
 use Sbuild::ChrootRoot;
 use Cwd;
@@ -407,7 +407,7 @@ sub do_build {
     return if !@_;
     my $free_space;
 
-    while (($free_space = $self->df(".")) < $self->get_conf('MIN_FREE_SPACE')) {
+    while (($free_space = df(".")) < $self->get_conf('MIN_FREE_SPACE')) {
 	$self->log("Delaying build, because free space is low ($free_space KB)\n");
 	my $idle_start_time = time;
 	sleep( 10*60 );
@@ -718,35 +718,6 @@ retry:
     }
 
     return $changelog;
-}
-
-# TODO: Merge with sbuild function
-# TODO: This is *totally* broken (df can split over lines);
-# use statvfs directly
-sub df {
-    my $self = shift;
-    my $dir = shift;
-
-    my $dfpipe = $self->get('Host')->pipe_command(
-	{ COMMAND => [$Sbuild::Sysconfig::programs{'DF'},
-		      "$dir"],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
-    if (!$dfpipe) {
-	$self->log("Can't run schroot: $!\n");
-	return;
-    }
-
-    my @msg = <$dfpipe>;
-
-    close($dfpipe);
-
-    my $msglines = @msg;
-    my $free = $msg[$msglines];
-    my @free = split( /\s+/, $free );
-    return $free[3];
 }
 
 sub append_to_REDO {

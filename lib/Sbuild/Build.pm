@@ -22,12 +22,18 @@
 
 package Sbuild::Build;
 
+use strict;
+use warnings;
+
+use POSIX;
 use Errno qw(:POSIX);
 use Fcntl;
 use File::Basename qw(basename dirname);
 use File::Temp qw(tempdir);
+use FileHandle;
 use GDBM_File;
-use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug);
+
+use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug df);
 use Sbuild::Base;
 use Sbuild::ChrootSetup qw(update upgrade);
 use Sbuild::ChrootInfoSchroot;
@@ -36,12 +42,6 @@ use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
-
-use strict;
-use warnings;
-use POSIX;
-use FileHandle;
-use File::Temp ();
 
 BEGIN {
     use Exporter ();
@@ -650,7 +650,7 @@ sub build {
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
     if ($current_usage) {
-	my $free = $self->df($dscdir);
+	my $free = df($dscdir);
 	if ($free < 2*$current_usage) {
 	    $self->log("Disc space is propably not enough for building.\n".
 		       "(Source needs $current_usage KB, free are $free KB.)\n");
@@ -2305,16 +2305,6 @@ sub unset_removed {
 	}
     }
     debug("Removed from removed list: @_\n");
-}
-
-sub df {
-    my $self = shift;
-    my $dir = shift;
-
-    my $df = $Sbuild::Sysconfig::programs{'DF'};
-    my $free = `"$df" $dir | tail -n 1`;
-    my @free = split( /\s+/, $free );
-    return $free[3];
 }
 
 sub fixup_pkgv {

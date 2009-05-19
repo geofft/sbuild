@@ -27,6 +27,7 @@ use strict;
 use warnings;
 use POSIX;
 use FileHandle;
+use Filesys::Df qw();
 use Time::Local;
 
 BEGIN {
@@ -39,7 +40,7 @@ BEGIN {
 		 version_eq version_compare split_version
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
-		 send_mail debug);
+		 send_mail debug df);
 }
 
 our $devnull;
@@ -472,6 +473,17 @@ sub debug (@) {
     if ($debug_level) {
 	print STDERR "D: ", @_;
     }
+}
+
+sub df {
+    my $dir = shift;
+
+    my $stat = Filesys::Df::df($dir);
+
+    return $stat->{used} if (defined($stat));
+
+# This only happens if $dir was not a valid file or directory.
+    return 0;
 }
 
 1;
