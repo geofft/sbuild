@@ -8,8 +8,12 @@ sbuild (0.58.4-1) unstable; urgency=low
       removal (Closes: #528312).
     - Use the isin function from the Sbuild module (Closes: #529470).
       Thanks to Gustavo Noronha Silva for spotting this.
+  * Sbuild:
+    - Use Filesys::Df (libfilesys-df-perl) in place of invoking /bin/df
+      and parsing its output.  This is more robust and efficient, and
+      works whatever the user environment (Closes: #509133).
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 19 May 2009 21:34:11 +0100
+ -- Roger Leigh <rleigh@debian.org>  Tue, 19 May 2009 22:16:46 +0100
 
 sbuild (0.58.3-1) unstable; urgency=low
 
