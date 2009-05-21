@@ -191,7 +191,7 @@ sub process_mail () {
 	    $self->purge_pkg( $package, $dist );
 	}
 	elsif ($keyword =~ /^ret/) {
-	    if (!$self->check_state( $package, $dist, "Building" )) {
+	    if (!$self->check_state( $package, $dist, qw(Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -199,7 +199,7 @@ sub process_mail () {
 	    }
 	}
 	elsif ($keyword =~ /^d(ep(endency)?)?-(ret|w)/) {
-	    if (!$self->check_state( $package, $dist, "Building" )) {
+	    if (!$self->check_state( $package, $dist, qw(Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -235,7 +235,7 @@ sub process_mail () {
 	elsif ($keyword =~ /^(give|back)/) {
 	    $self->get('Mail Body Text') =~ /^(give|back) ([-0-9]+)/;
 	    my $pri = $1;
-	    if (!$self->check_state( $package, $dist, "Building" )) {
+	    if (!$self->check_state( $package, $dist, qw(Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
