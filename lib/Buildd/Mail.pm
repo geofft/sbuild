@@ -932,7 +932,6 @@ sub set_to_failed ($$$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--failed',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  PIPE => 'out',
@@ -968,7 +967,6 @@ sub set_to_depwait ($$$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--dep-wait',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  PIPE => 'out',
@@ -1003,7 +1001,6 @@ sub give_back ($$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--give-back',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  USER => $self->get_conf('USERNAME'),
@@ -1035,7 +1032,6 @@ sub no_build ($$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--no-build',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  USER => $self->get_conf('USERNAME'),
