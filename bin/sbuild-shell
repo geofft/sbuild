@@ -25,6 +25,7 @@ use warnings;
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup);
+use Sbuild::ChrootSetup qw(shell);
 use Sbuild::Sysconfig;
 use Sbuild::Conf;
 use Sbuild::OptionsBase;
@@ -40,14 +41,8 @@ usage_error("sbuild-shell", "Incorrect number of options") if (@ARGV != 1);
 
 my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
 
-$session->run_command(
-    { COMMAND => [$Sbuild::Sysconfig::programs{'SHELL'}],
-      PRIORITY => 1,
-      STREAMIN => \*STDIN,
-      STREAMOUT => \*STDOUT,
-      STREAMERR => \*STDERR });
-
-my $status = $? >> 8;
+my $status = shell($session, $conf);
+$status >>= 8;
 
 cleanup($conf);
 

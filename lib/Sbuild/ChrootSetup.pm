@@ -31,7 +31,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(update upgrade distupgrade basesetup);
+    @EXPORT = qw(update upgrade distupgrade basesetup shell);
 }
 
 sub update ($$);
@@ -166,6 +166,19 @@ sub basesetup ($$) {
     }
 
     return 0;
+}
+
+sub shell ($$) {
+    my $session = shift;
+    my $conf = shift;
+
+    $session->run_command(
+	{ COMMAND => [$Sbuild::Sysconfig::programs{'SHELL'}],
+	  PRIORITY => 1,
+	  STREAMIN => \*STDIN,
+	  STREAMOUT => \*STDOUT,
+	  STREAMERR => \*STDERR });
+    return $?
 }
 
 1;
