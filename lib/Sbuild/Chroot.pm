@@ -314,14 +314,13 @@ sub exec_command {
 
     $self->get_command_internal($options);
 
-    debug("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
-    debug("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
-    debug("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
-
     $self->log_command($options);
 
     my $dir = $options->{'CHDIR'};
     my $command = $options->{'EXPCOMMAND'};
+
+    my $program = $command->[0];
+    $program = $options->{'PROGRAM'} if defined($options->{'PROGRAM'});
 
     my $chrootenv = $self->get('Defaults')->{'ENV'};
     foreach (keys %$chrootenv) {
@@ -332,6 +331,11 @@ sub exec_command {
     foreach (keys %$commandenv) {
 	$ENV{$_} = $commandenv->{$_};
     }
+
+    debug("PROGRAM: $program\n");
+    debug("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
+    debug("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
+    debug("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
 
     debug("Environment set:\n");
     foreach (sort keys %ENV) {
@@ -344,7 +348,7 @@ sub exec_command {
     }
 
     debug("Running command: ", join(" ", @$command), "\n");
-    exec @$command;
+    exec { $program } @$command;
     die "Failed to exec: $command->[0]: $!";
 }
 
