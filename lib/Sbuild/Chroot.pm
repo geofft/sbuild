@@ -144,6 +144,22 @@ sub _setup_options {
     return 1;
 }
 
+sub get_option {
+    my $self = shift;
+    my $options = shift;
+    my $option = shift;
+
+    my $value = undef;
+    $value = $self->get('Defaults')->{$option} if
+	(defined($self->get('Defaults')) &&
+	 defined($self->get('Defaults')->{$option}));
+    $value = $options->{$option} if
+	(defined($options) &&
+	 defined($options->{$option}));
+
+    return $value;
+}
+
 sub strip_chroot_path {
     my $self = shift;
     my $path = shift;
@@ -190,42 +206,26 @@ sub pipe_command_internal {
     } elsif ($pid == 0) { # child
 	if (!defined $options->{'PIPE'} ||
 	    $options->{'PIPE'} ne 'out') { # redirect stdin
-	    my $in = undef;
-	    $in = $self->get('Defaults')->{'STREAMIN'} if
-		(defined($self->get('Defaults')) &&
-		 defined($self->get('Defaults')->{'STREAMIN'}));
-	    $in = $options->{'STREAMIN'} if defined($options->{'STREAMIN'});
+	    my $in = $self->get_option($options, 'STREAMIN');
 	    if (defined($in) && $in && \*STDIN != $in) {
 		open(STDIN, '<&', $in)
 		    or warn "Can't redirect stdin\n";
 	    }
 	} else { # redirect stdout
-	    my $out = undef;
-	    $out = $self->get('Defaults')->{'STREAMOUT'} if
-		(defined($self->get('Defaults')) &&
-		 defined($self->get('Defaults')->{'STREAMOUT'}));
-	    $out = $options->{'STREAMOUT'} if defined($options->{'STREAMOUT'});
+	    my $out = $self->get_option($options, 'STREAMOUT');
 	    if (defined($out) && $out && \*STDOUT != $out) {
 		open(STDOUT, '>&', $out)
 		    or warn "Can't redirect stdout\n";
 	    }
 	}
 	# redirect stderr
-	my $err = undef;
-	$err = $self->get('Defaults')->{'STREAMERR'} if
-	    (defined($self->get('Defaults')) &&
-	     defined($self->get('Defaults')->{'STREAMERR'}));
-	$err = $options->{'STREAMERR'} if defined($options->{'STREAMERR'});
+	my $err = $self->get_option($options, 'STREAMERR');
 	if (defined($err) && $err && \*STDERR != $err) {
 	    open(STDERR, '>&', $err)
 		or warn "Can't redirect stderr\n";
 	}
 
-	my $setsid = undef;
-	$setsid = $self->get('Defaults')->{'SETSID'} if
-	    (defined($self->get('Defaults')) &&
-	     defined($self->get('Defaults')->{'SETSID'}));
-	$setsid = $options->{'SETSID'} if defined($options->{'SETSID'});
+	my $setsid = $self->get_option($options, 'SETSID');
 	setsid() if defined($setsid) && $setsid;
 
 	$self->exec_command($options);
@@ -253,41 +253,25 @@ sub run_command_internal {
 	warn "Cannot fork: $!\n";
     } elsif ($pid == 0) { # child
 	# redirect stdout
-	my $in = undef;
-	$in = $self->get('Defaults')->{'STREAMIN'} if
-	    (defined($self->get('Defaults')) &&
-	     defined($self->get('Defaults')->{'STREAMIN'}));
-	$in = $options->{'STREAMIN'} if defined($options->{'STREAMIN'});
+	my $in = $self->get_option($options, 'STREAMIN');
 	if (defined($in) && $in && \*STDIN != $in) {
 	    open(STDIN, '<&', $in)
 		or warn "Can't redirect stdin\n";
 	}
 	# redirect stdout
-	my $out = undef;
-	$out = $self->get('Defaults')->{'STREAMOUT'} if
-	    (defined($self->get('Defaults')) &&
-	     defined($self->get('Defaults')->{'STREAMOUT'}));
-	$out = $options->{'STREAMOUT'} if defined($options->{'STREAMOUT'});
+	my $out = $self->get_option($options, 'STREAMOUT');
 	if (defined($out) && $out && \*STDOUT != $out) {
 	    open(STDOUT, '>&', $out)
 		or warn "Can't redirect stdout\n";
 	}
 	# redirect stderr
-	my $err = undef;
-	$err = $self->get('Defaults')->{'STREAMERR'} if
-	    (defined($self->get('Defaults')) &&
-	     defined($self->get('Defaults')->{'STREAMERR'}));
-	$err = $options->{'STREAMERR'} if defined($options->{'STREAMERR'});
+	my $err = $self->get_option($options, 'STREAMERR');
 	if (defined($err) && $err && \*STDERR != $err) {
 	    open(STDERR, '>&', $err)
 		or warn "Can't redirect stderr\n";
 	}
 
-	my $setsid = undef;
-	$setsid = $self->get('Defaults')->{'SETSID'} if
-	    (defined($self->get('Defaults')) &&
-	     defined($self->get('Defaults')->{'SETSID'}));
-	$setsid = $options->{'SETSID'} if defined($options->{'SETSID'});
+	my $setsid = $self->get_option($options, 'SETSID');
 	setsid() if defined($setsid) && $setsid;
 
 	$self->exec_command($options);
