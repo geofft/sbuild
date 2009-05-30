@@ -790,6 +790,7 @@ sub build {
 	COMMAND => $buildcmd,
 	ENV => $buildenv,
 	USER => $self->get_conf('USERNAME'),
+	SETSID => 1,
 	CHROOT => 1,
 	PRIORITY => 0,
 	DIR => $bdir
