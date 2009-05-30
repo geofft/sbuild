@@ -74,7 +74,7 @@ sub init_allowed_keys {
 
     # Not user-settable.
     chomp(my $host_arch =
-	  readpipe("$Sbuild::Sysconfig::programs{'DPKG'} --print-installation-architecture"));
+	  readpipe("$Sbuild::Sysconfig::programs{'DPKG'} --print-architecture"));
 
     my %common_keys = (
 	'DISTRIBUTION'				=> {

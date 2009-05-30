@@ -2459,7 +2459,7 @@ sub chroot_arch {
 
     my $pipe = $self->get('Session')->pipe_command(
 	{ COMMAND => [$self->get_conf('DPKG'),
-		      '--print-installation-architecture'],
+		      '--print-architecture'],
 	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
