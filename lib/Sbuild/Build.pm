@@ -619,8 +619,9 @@ sub build {
 	my $pid = $command->{'PID'};
 	my $signal = ($timed_out > 0) ? "KILL" : "TERM";
 	$self->get('Session')->run_command(
-	    { COMMAND => ['perl', '-e',
-			  "\"kill( \\\"$signal\\\", $pid )\""],
+	    { COMMAND => ['perl',
+			  '-e',
+			  "kill( \"$signal\", -$pid )"],
 	      USER => 'root',
 	      CHROOT => 1,
 	      PRIORITY => 0,
