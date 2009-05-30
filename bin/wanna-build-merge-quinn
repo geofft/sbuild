@@ -43,7 +43,7 @@ chomp( my $date = `date` );
 print "-------------- merge-quinn $date --------------\n";
 
 $tmpdir = "/tmp/merge-quinn.$$";
-chomp( $arch = `dpkg --print-installation-architecture` );
+chomp( $arch = `dpkg --print-architecture` );
 
 mkdir( $tmpdir, 0755 ) or die "mkdir $tmpdir: $!\n";
 chdir( $tmpdir ) or die "chdir $tmpdir: $!\n";
