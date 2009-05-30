@@ -62,6 +62,7 @@ sub new {
 	'CHROOT' => 1,
 	'PRIORITY' => 0,
 	'DIR' => '/',
+	'SETSID' => 0,
 	'STREAMIN' => undef,
 	'STREAMOUT' => undef,
 	'STREAMERR' => undef});
@@ -211,6 +212,13 @@ sub pipe_command_internal {
 		or warn "Can't redirect stderr\n";
 	}
 
+	my $setsid = undef;
+	$setsid = $self->get('Defaults')->{'SETSID'} if
+	    (defined($self->get('Defaults')) &&
+	     defined($self->get('Defaults')->{'SETSID'}));
+	$setsid = $options->{'SETSID'} if defined($options->{'SETSID'});
+	setsid() if defined($setsid) && $setsid;
+
 	$self->exec_command($options);
     }
 
@@ -265,6 +273,13 @@ sub run_command_internal {
 	    open(STDERR, '>&', $err)
 		or warn "Can't redirect stderr\n";
 	}
+
+	my $setsid = undef;
+	$setsid = $self->get('Defaults')->{'SETSID'} if
+	    (defined($self->get('Defaults')) &&
+	     defined($self->get('Defaults')->{'SETSID'}));
+	$setsid = $options->{'SETSID'} if defined($options->{'SETSID'});
+	setsid() if defined($setsid) && $setsid;
 
 	$self->exec_command($options);
     }
