@@ -31,13 +31,17 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(update upgrade distupgrade basesetup shell);
+    @EXPORT = qw(update upgrade distupgrade basesetup shell
+                 list_packages set_package_status);
 }
 
 sub update ($$);
 sub upgrade ($$);
 sub distupgrade($$);
 sub basesetup ($$);
+sub shell ($$);
+sub list_packages ($$@);
+sub set_package_status ($$$@);
 
 sub update ($$) {
     my $session = shift;
@@ -179,6 +183,46 @@ sub shell ($$) {
 	  STREAMOUT => \*STDOUT,
 	  STREAMERR => \*STDERR });
     return $?
+}
+
+sub list_packages ($$@) {
+    my $session = shift;
+    my $conf = shift;
+
+    $session->run_command(
+	{COMMAND => [$conf->get('DPKG'), '--list', @_],
+	 USER => 'root',
+	 CHROOT => 1,
+	 PRIORITY => 0});
+    return $?;
+}
+
+sub set_package_status ($$$@) {
+    my $session = shift;
+    my $conf = shift;
+    my $status = shift;
+
+    my $pipe = $session->pipe_command(
+	{COMMAND => [$conf->get('DPKG'), '--set-selections'],
+	 PIPE => 'out',
+	 USER => 'root',
+	 CHROOT => 1,
+	 PRIORITY => 0});
+
+    if (!$pipe) {
+	print STDERR "Can't run dpkg --set-selections in chroot\n";
+	return 1;
+    }
+
+    foreach (@_) {
+	print $pipe "$_        $status\n";
+    }
+
+    if (!close $pipe) {
+	print STDERR "Can't run dpkg --set-selections in chroot\n";
+    }
+
+    return $?;
 }
 
 1;
