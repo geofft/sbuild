@@ -96,7 +96,7 @@ open_log();
 
 logger( "Daemon started. (pid=$$)\n" );
 
-foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
+foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ)) {
     $SIG{$_} = sub ($) {
 	my $signame = shift;
 	logger( "buildd ($$) killed by SIG$signame\n" );
