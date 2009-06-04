@@ -25,6 +25,7 @@ use warnings;
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup shutdown);
+use Sbuild::ChrootSetup qw(list_packages set_package_status);
 use Sbuild::Conf;
 use Sbuild::OptionsBase;
 
@@ -41,38 +42,16 @@ my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
 my $session = setup($ARGV[0], $conf) or die "Chroot setup failed for $chroot chroot";
 
 print STDOUT "Holding packages in $chroot chroot:";
-
-my $pipe = $session->pipe_command(
-    {COMMAND => [$conf->get('DPKG'), '--set-selections'],
-     PIPE => 'out',
-     USER => 'root',
-     CHROOT => 1,
-     PRIORITY => 0});
-
-if (!$pipe) {
-    print STDERR "Can't run dpkg --set-selections in chroot\n";
-    shutdown("TERM");
-}
-
 shift @ARGV;
 foreach (@ARGV) {
-    print $pipe "$_        hold\n";
     print STDOUT " $_";
 }
-
-if (!close $pipe) {
-    print STDERR "Can't run dpkg --set-selections in chroot\n";
-    shutdown("TERM");
-}
-
 print STDOUT ".\n\n";
 
-$session->run_command(
-    {COMMAND => [$conf->get('DPKG'), '--list', @ARGV],
-     USER => 'root',
-     CHROOT => 1,
-     PRIORITY => 0});
-my $status = $? >> 8;
+my $status = set_package_status($session, $conf, "hold", @ARGV);
+$status >>= 8;
+
+list_packages($session, $conf, @ARGV);
 
 cleanup($conf);
 

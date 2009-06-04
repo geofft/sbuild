@@ -22,7 +22,6 @@
 package main;
 use Sbuild qw($devnull);
 use Sbuild::Conf;
-use Sbuild::Log qw(open_log close_log);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig;
@@ -82,8 +81,6 @@ sub setup ($$) {
     $conf->set('VERBOSE', 1);
     $conf->set('NOLOG', 1);
 
-    Sbuild::Log::open_log($conf);
-
     $chroot = get_dist($chroot);
 
     # TODO: Allow user to specify arch.
@@ -128,7 +125,6 @@ sub cleanup ($) {
 	main::local_cleanup($Sbuild::Utility::current_session);
     }
     $Sbuild::Utility::current_session->end_session();
-    Sbuild::Log::close_log($conf);
 }
 
 sub shutdown ($) {

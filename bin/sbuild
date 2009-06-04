@@ -55,7 +55,7 @@ umask(022);
 
 # Job state
 my %jobs = ();
-my $current_job = "";
+my $current_job = undef;
 
 main();
 
@@ -87,7 +87,6 @@ sub main () {
 
 	my $job = $jobs{$jobname};
 	$current_job = $jobname;
-
 
 	# Do the build
 	if (should_skip($job)) {
@@ -253,7 +252,11 @@ sub shutdown ($) {
     $SIG{'ALRM'} = 'IGNORE';
     $SIG{'PIPE'} = 'IGNORE';
 
-    $jobs{$current_job}->log("sbuild received SIG$signame -- shutting down\n");
+# TODO: Use main log
+    if (defined($current_job) &&
+	defined($jobs{$current_job})) {
+	$jobs{$current_job}->log("sbuild received SIG$signame -- shutting down\n");
+    }
 
     if ($conf->get('BATCH_MODE')) {
 
@@ -310,7 +313,9 @@ sub shutdown ($) {
     }
 
     # Kill currently running command (if any)
-    if ($jobs{$current_job}->get('Sub PID')) {
+    if (defined($current_job) &&
+	defined($jobs{$current_job}) &&
+	$jobs{$current_job}->get('Sub PID')) {
 	print "Killing " . $jobs{$current_job}->get('Sub Task') .
 	    " subprocess " . $jobs{$current_job}->get('Sub PID') . "\n";
 	$jobs{$current_job}->get('Session')->run_command(
@@ -326,7 +331,9 @@ sub shutdown ($) {
     $jobs{$current_job}->remove_srcdep_lock_file();
 
     # Close logs and send mails
-    if ( $current_job && defined($jobs{$current_job}->get('Session'))) {
+    if (defined($current_job) &&
+	defined($jobs{$current_job}) &&
+	defined($jobs{$current_job}->get('Session'))) {
 	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
 	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
 	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
@@ -338,9 +345,6 @@ sub shutdown ($) {
 		  PRIORITY => 0,
 		  DIR => '/' });
 	}
-
-	$current_job =
-	    $jobs{$current_job}->fixup_pkgv($current_job);
 
 	$jobs{$current_job}->get('Session')->end_session();
 	$jobs{$current_job}->set('Session', undef);
