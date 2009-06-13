@@ -191,7 +191,7 @@ sub process_mail () {
 	    $self->purge_pkg( $package, $dist );
 	}
 	elsif ($keyword =~ /^ret/) {
-	    if (!$self->check_state( $package, $dist, "Building" )) {
+	    if (!$self->check_state( $package, $dist, qw(Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -199,7 +199,7 @@ sub process_mail () {
 	    }
 	}
 	elsif ($keyword =~ /^d(ep(endency)?)?-(ret|w)/) {
-	    if (!$self->check_state( $package, $dist, "Building" )) {
+	    if (!$self->check_state( $package, $dist, qw(Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -235,7 +235,7 @@ sub process_mail () {
 	elsif ($keyword =~ /^(give|back)/) {
 	    $self->get('Mail Body Text') =~ /^(give|back) ([-0-9]+)/;
 	    my $pri = $1;
-	    if (!$self->check_state( $package, $dist, "Building" )) {
+	    if (!$self->check_state( $package, $dist, qw(Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -932,7 +932,6 @@ sub set_to_failed ($$$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--failed',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  PIPE => 'out',
@@ -968,7 +967,6 @@ sub set_to_depwait ($$$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--dep-wait',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  PIPE => 'out',
@@ -1003,7 +1001,6 @@ sub give_back ($$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--give-back',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  USER => $self->get_conf('USERNAME'),
@@ -1035,7 +1032,6 @@ sub no_build ($$) {
     my $pipe = $self->get_conf('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
 		      '--no-build',
-		      '--no-down-propagation',
 		      "--dist=$dist",
 		      $pkg],
 	  USER => $self->get_conf('USERNAME'),

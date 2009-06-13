@@ -45,7 +45,7 @@ my $log = open_log($daemon->get('Config'));
 $daemon->set('Log Stream', $log);
 
 # Global signal handling
-foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ PWR)) {
+foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ)) {
     $SIG{$_} = \&shutdown_fast;
 }
 $SIG{'HUP'} = \&reopen_log;

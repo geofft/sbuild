@@ -93,7 +93,6 @@ sub uploaded ($@) {
 	my $pipe = $self->get_conf('Host')->pipe_command(
 	    { COMMAND => [wannabuild_command($self->get('Config')),
 			  '--uploaded',
-			  '--no-down-propagation',
 			  "--dist=$dist",
 			  "$pkg"],
 	      USER => $self->get_conf('USERNAME'),

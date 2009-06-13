@@ -336,7 +336,7 @@ sub do_wanna_build {
 
     my $pipe = $self->get('Host')->pipe_command(
 	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '-v', '--no-down-propagation',
+		      '-v', 
 		      "--dist=$dist",
 		      @_],
 	  USER => $self->get_conf('USERNAME'),
