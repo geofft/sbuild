@@ -1,0 +1,68 @@
+Working on sbuild                                                   -*- text -*-
+═════════════════
+
+This document is a short guide to the conventions used in the
+buildd-tools sbuild project.
+
+
+Coding
+──────
+
+The style should be apparent from the source.  It is the default Emacs
+perl-mode style.
+
+
+Documentation
+─────────────
+
+All the documentation is in UNIX manual page format.  GNU roff
+extensions are permitted, as is use of tbl.  Make sure the printed
+output is as good as terminal display.  Run "make ps" or "make pdf" to
+build the printed documentation.
+
+
+The following styles are used:
+
+  Style                  Formatting                Syntax
+  --------------------------------------------------------------------
+  New term               Bold                      .B or \fB
+  Option definition      Bold, args in italic      .BR and \fI
+  Option reference       Italic                    .I or \fI
+  File definition        Bold italic               \f[BI]
+  File reference         Italic                    .I or \fI
+  Config key definition  Courier bold italic       \f[CBI]
+  Config key reference   Courier italic            \f[CI]
+  Values                 Single quotes             \[oq] and \[cq]
+  Example text           Double quotes             \[lq] and \[rq]
+  Cross references       Italics in double quotes  \[lq]\fI...\fP\[rq]
+  Verbatim examples      Courier                   \f[CR]
+  Verbatim user input    Courier bold              \f[CB]
+
+
+Releasing
+─────────
+
+New upstream releases:
+
+• The code must pass the testsuite (make check).
+
+• The NEWS file must be up to date, and have the current version
+  number present on the line starting with "Welcome to sbuild
+  <version>.".
+
+• Run scripts/git-tag-release which will tag the git repository and
+  prompt for a GPG passphrase to sign the tag with your GPG public
+  key.  This is essential to get a correct version number in the
+  release in the next step, and can not be skipped.
+
+• Run ./bootstrap to create the VERSION file and regenerate the
+  configure script with the new version number.  This uses the last
+  release tag (generated with git-tag-release) to get the package name
+  and version number.
+
+• Run ./configure --enable-maintainer-mode and then "make distcheck"
+  to test and package up the release
+
+New Debian releases:
+
+• Run debian/git-tag-debian to tag the release.

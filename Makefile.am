@@ -37,7 +37,10 @@ dist-hook:
 EXTRA_DIST =				\
 	bootstrap			\
 	debian				\
-	scripts/sbuild_release.m4.in
+	scripts/git-tag-release		\
+	scripts/git-version		\
+	HACKING				\
+	VERSION
 
 ps:
 	$(MAKE) -C doc sbuild.ps

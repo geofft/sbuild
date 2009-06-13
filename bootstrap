@@ -1,26 +1,15 @@
 #!/bin/sh
-if [ -d m4 ]; then
-  :
-else
-  mkdir m4
-fi
-if [ -d scripts ]; then
-  :
-else
-  mkdir scripts
-fi
-sed -e "s/@RELEASE_DATE@/`date '+%d %b %Y'`/" -e "s/@RELEASE_UDATE@/`date '+%s'`/" scripts/sbuild_release.m4.in > m4/sbuild_release.m4
+
+set -e
+
+# Generate version information from git release tag
+
+./scripts/git-version > VERSION
 
 # To satisfy automake
 touch ChangeLog
 
+# Bootstrap autotools
+autoreconf --verbose --force --install
 
-echo "aclocal -I m4"
-aclocal -I m4
-echo "autoheader"
-autoheader
-echo "automake"
-automake --add-missing --gnu --force --copy
-echo "autoconf"
-autoconf
-
+rm -rf autom4te.cache

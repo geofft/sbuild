@@ -20,18 +20,18 @@
 # Process this file with autoconf to produce a configure script.
 #
 #####################################################################
-pushdef([SBUILD_NAME],              [sbuild])
-pushdef([SBUILD_MAJOR_VERSION],     [0])
-pushdef([SBUILD_MINOR_VERSION],     [58])
-pushdef([SBUILD_MICRO_VERSION],     [4])
-pushdef([SBUILD_EXTRA_VERSION],     [])
-pushdef([SBUILD_VERSION], SBUILD_MAJOR_VERSION.SBUILD_MINOR_VERSION.SBUILD_MICRO_VERSION[]SBUILD_EXTRA_VERSION)
-dnl
-dnl The minimum version of autoconf required.
+dnl m4 magic from Eric Blake <ebb9@byu.net>, prior to automake inclusion
+m4_define([sbuild_m4_chomp],
+[m4_format([[%.*s]], m4_bregexp(m4_translit([$1], [
+]]m4_dquote(_m4_defn([m4_cr_all]))[, [/]]m4_format([%255s], [])[),
+  [/*$]), [$1])])
+m4_define([sbuild_m4_esyscmd_s],
+[sbuild_m4_chomp(m4_esyscmd([$1]))])
 AC_PREREQ(2.59)
-dnl Initialise autoconf with the package name, version and
-dnl bug-reporting address.
-AC_INIT(SBUILD_NAME, SBUILD_VERSION, [buildd-tools-devel@lists.alioth.debian.org])
+dnl Quoting the first argument results in a bizarrely corrupted package tarname
+AC_INIT(sbuild_m4_esyscmd_s([sed -ne '/^Package:/{s/Package:[[:space:]][[:space:]]*//p;q}' VERSION]),
+        [sbuild_m4_esyscmd_s([sed -ne '/^Version:/{s/Version:[[:space:]][[:space:]]*//p;q}' VERSION])],
+        [buildd-tools-devel@lists.alioth.debian.org])
 dnl For safety, check we are in the right directory by
 dnl checking for a known unique file.
 AC_CONFIG_SRCDIR([bin/sbuild-createchroot])
@@ -59,27 +59,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ])
 
-[SBUILD_MAJOR_VERSION]=SBUILD_MAJOR_VERSION
-[SBUILD_MINOR_VERSION]=SBUILD_MINOR_VERSION
-[SBUILD_MICRO_VERSION]=SBUILD_MICRO_VERSION
-[SBUILD_EXTRA_VERSION]=SBUILD_EXTRA_VERSION
-[SBUILD_VERSION]=SBUILD_VERSION
-popdef([SBUILD_MAJOR_VERSION])
-popdef([SBUILD_MINOR_VERSION])
-popdef([SBUILD_MICRO_VERSION])
-popdef([SBUILD_EXTRA_VERSION])
-popdef([SBUILD_NAME])
-popdef([SBUILD_VERSION])
-
-AC_SUBST([SBUILD_MAJOR_VERSION])
-AC_SUBST([SBUILD_MINOR_VERSION])
-AC_SUBST([SBUILD_MICRO_VERSION])
-AC_SUBST([SBUILD_VERSION])
-
 dnl Initialise automake stuff.
 AM_INIT_AUTOMAKE([1.9 gnu check-news tar-pax])
 AM_MAINTAINER_MODE
-SBUILD_RELEASE_DATE
+RELEASE_DATE='sbuild_m4_esyscmd_s([sed -ne '/^Release-Date:/{s/Release-Date:[[:space:]][[:space:]]*//p;q}' VERSION])'
+RELEASE_DATE_S='sbuild_m4_esyscmd_s(date --date='sbuild_m4_esyscmd_s([sed -ne '/^Release-Date:/{s/Release-Date:[[:space:]][[:space:]]*//p;q}' VERSION])' '+%s')'
+AC_DEFINE_UNQUOTED([RELEASE_DATE], ["$RELEASE_DATE_S"], [Package release date.])
+AC_SUBST([RELEASE_DATE])
 
 AC_MSG_CHECKING([whether to enable debugging messages])
 AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug], [Enable debugging messages])],
