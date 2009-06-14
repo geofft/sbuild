@@ -1,3 +1,12 @@
+sbuild (0.58.5-1) unstable; urgency=low
+
+  [ Roger Leigh ]
+  * New release.
+  * Install README.Debian in sbuild package (rename to
+    debian/sbuild.README.Debian, Closes: #533029).
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 14 Jun 2009 10:31:45 +0100
+
 sbuild (0.58.4-1) unstable; urgency=low
 
   [ Roger Leigh ]
