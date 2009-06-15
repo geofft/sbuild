@@ -6,5 +6,4 @@ debian/install/usr/share/doc/sbuild                usr/share/doc
 debian/install/usr/share/man/man1/sbuild*          usr/share/man/man1
 debian/install/usr/share/man/man7/sbuild*          usr/share/man/man7
 debian/install/usr/share/man/man8/sbuild*          usr/share/man/man8
-debian/install/usr/share/perl5/Sbuild*             usr/share/perl5
 debian/install/var/lib/sbuild			   var/lib

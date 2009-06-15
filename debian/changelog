@@ -4,8 +4,14 @@ sbuild (0.58.5-1) unstable; urgency=low
   * New release.
   * Install README.Debian in sbuild package (rename to
     debian/sbuild.README.Debian, Closes: #533029).
+  * debian/sbuild.install: Don't install Perl modules, which should
+    only be included in libsbuild-perl (Closes: #533143).
+  * debian/control:
+    - libsbuild-perl: Replace sbuild <= 0.58.4 (due to also providing
+      perl modules)
+    - sbuild: Depend on the same version of libsbuild-perl.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 14 Jun 2009 10:31:45 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 15 Jun 2009 20:30:34 +0100
 
 sbuild (0.58.4-1) unstable; urgency=low
 
