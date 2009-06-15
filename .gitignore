@@ -18,6 +18,7 @@ autom4te.cache
 configure
 m4
 INSTALL
+VERSION
 *.o
 .deps
 .libs
