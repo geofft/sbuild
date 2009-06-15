@@ -1,6 +1,7 @@
 #!/bin/sh
 #
 # Copyright © 2005 Ryan Murray <rmurray@debian.org>
+# Copyright © 2009 Thibaut VARÈNE <varenet@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,22 +19,24 @@
 #
 #######################################################################
 
-if [ -d ~/build/chroot-* ]; then
-    cleanup() {
-	rm -f ~/NO-DAEMON-PLEASE
-	buildd-watcher
-    }
-    touch ~/NO-DAEMON-PLEASE
-    trap cleanup 0
-    touch ~/EXIT-DAEMON-PLEASE
-    echo -n Waiting for sbuild and buildd to exit...
-    while [ -f ~/EXIT-DAEMON-PLEASE ]; do
-	sleep 10
-    done
-    echo .
-    for chroot in ~/build/chroot-*; do
-	sudo chroot $chroot apt-get update
-	echo Upgrading $chroot:
-	sudo chroot $chroot apt-get upgrade
-    done
-fi
+cleanup() {
+        rm -f ~/NO-DAEMON-PLEASE
+}
+
+touch ~/NO-DAEMON-PLEASE
+trap cleanup 0
+
+touch ~/EXIT-DAEMON-PLEASE
+echo -n Waiting for sbuild and buildd to exit...
+while [ -f ~/EXIT-DAEMON-PLEASE ]; do
+        sleep 10
+done
+echo .
+
+schroot -a -u root -d /root -- apt-get update
+echo Upgrading chroots:
+schroot -a -u root -d /root -- apt-get dist-upgrade -y
+echo Cleaning chroots:
+schroot -a -u root -d /root -- apt-get autoremove -y
+schroot -a -u root -d /root -- debfoster -f
+

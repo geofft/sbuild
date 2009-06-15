@@ -44,6 +44,7 @@ bin_SCRIPTS = 				\
 	buildd				\
 	buildd-mail			\
 	buildd-uploader			\
+	buildd-update-chroots		\
 	buildd-watcher
 
 sbin_SCRIPTS = 			\
