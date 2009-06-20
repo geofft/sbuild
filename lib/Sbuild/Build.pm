@@ -168,7 +168,7 @@ sub set_version {
     $self->set('VersionEpoch', $epoch);
     $self->set('VersionUpstream', $uversion);
     $self->set('VersionDebian', $dversion);
-    $self->set('DSC File', "${pkg}_${oversion}.dsc");
+    $self->set('DSC File', "${pkg}_${sversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
 }
 
