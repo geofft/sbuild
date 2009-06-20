@@ -2,10 +2,13 @@ sbuild (0.58.6-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release.
+  * debian/control: Update package descriptions to use correct
+    English in full sentences (Closes: #531022).  Thanks to
+    Gerfried Fuchs for pointing this out.
   * Don't include Epoch in DSC filename (Closes: #529786).  Thanks
     to Gustavo Noronha Silva for spotting this.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 20 Jun 2009 10:26:02 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 20 Jun 2009 10:48:45 +0100
 
 sbuild (0.58.5-1) unstable; urgency=low
 
