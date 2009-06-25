@@ -210,7 +210,7 @@ The version number of the binary NMU.  This should be used in conjunction with
 \-\-make\-binNMU.  \fIversion\fP is a single number for the (+b\fIn\fR) format
 used for binary NMUs.
 .TP
-.BR "\-\-append\-to\-version=\fIstring\P"
+.BR "\-\-append\-to\-version=\fIstring\fP"
 This option is similar to --make-binNMU except that it allows the user to
 specify an arbitrary string to be appended to the version number (immediately
 before the '+' in the Debian revision if --make-binNMU is also provided).
