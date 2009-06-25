@@ -24,7 +24,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use Sbuild qw(isin usage_error);
+use Sbuild qw(isin usage_error version_less version_lesseq version_compare);
 use WannaBuild::Conf;
 use Sbuild::Sysconfig;
 use Sbuild::DB::Info;
