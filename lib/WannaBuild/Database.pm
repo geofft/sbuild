@@ -1733,7 +1733,7 @@ sub info_packages {
     foreach $name (@_) {
 	$name =~ s/_.*$//; # strip version
 	foreach $dist (@dists) {
-	    my $self->get('Current Database') = $self->get('Databases')->{$dist};
+	    $self->set('Current Database', $self->get('Databases')->{$dist});
 	    my $pname = "$name" . ($self->get_conf('DB_INFO_ALL_DISTS') ? "($dist)" : "");
 
 	    $pkg = $self->get('Current Database')->get_package($name);
