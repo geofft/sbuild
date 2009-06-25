@@ -2,8 +2,10 @@ sbuild (0.58.7-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release. 
+  * Use version comparison functions in WannaBuild::Database
+    (Closes: #521486).  Thanks to Florian Weimer. 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 21 Jun 2009 15:23:11 +0100
+ -- Roger Leigh <rleigh@debian.org>  Thu, 25 Jun 2009 22:58:53 +0100
 
 sbuild (0.58.6-1) unstable; urgency=low
 
