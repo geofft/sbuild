@@ -1065,7 +1065,7 @@ sub parse_sources {
 	s/\s*$//m;
 	/^Package:\s*(\S+)$/mi and $name = $1;
 	/^Version:\s*(\S+)$/mi and $version = $1;
-	/^Architecture:\s*(\S+)$/mi and $arch = $1;
+	/^Architecture:\s*(.+)$/mi and $arch = $1;
 	/^Section:\s*(\S+)$/mi and $section = $1;
 	/^Priority:\s*(\S+)$/mi and $priority = $1;
 	/^Build-Depends:\s*(.*)$/mi and $builddep = $1;
