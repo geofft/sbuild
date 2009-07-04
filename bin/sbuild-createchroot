@@ -321,6 +321,13 @@ if (defined($session)) {
 print "I: Successfully set up $suite chroot.\n";
 print "I: Run sbuild-adduser to add new sbuild users.\n";
 
+# Detect whether personality might be needed.
+if ($conf->get('ARCH') ne $conf->get('HOST_ARCH')) {
+    print "W: The selected architecture and the current architecture do not match\n";
+    print "W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n";
+    print "I: You probably need to add a personality option (see schroot(1)).\n";
+}
+
 exit 0;
 
 # Add items to the start of a comma-separated list, and remove the
