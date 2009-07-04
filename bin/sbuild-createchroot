@@ -265,6 +265,28 @@ root-groups=root,sbuild
 run-setup-scripts=true
 run-exec-scripts=true
 EOF
+
+    my ($personality, $personality_message);
+    # Detect whether personality might be needed.
+    if ($conf->get('ARCH') ne $conf->get('HOST_ARCH')) {
+	# Take care of the known case(s).
+	if ($conf->get('ARCH') eq 'i386' &&
+	    $conf->get('HOST_ARCH') eq 'amd64') {
+	    $personality='linux32';
+	    $personality_message =
+		"I: Added personality=$personality automatically (i386 on amd64).\n";
+	}
+	else {
+	    $personality_message =
+		"W: The selected architecture and the current architecture do not match\n" .
+		"W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n" .
+		"I: You probably need to add a personality option (see schroot(1)).\n";
+	}
+    }
+
+    # Add personality if detected.
+    print $SCHROOT_CONF "personality=$personality\n" if $personality;
+
     # Needed to display file below.
     $SCHROOT_CONF->flush();
 
@@ -272,6 +294,7 @@ EOF
 print "I: schroot chroot configuration written to $SCHROOT_CONF.\n";
 dump_file("$SCHROOT_CONF");
 print "I: Please rename and modify this file as required.\n";
+print $personality_message if $personality_message;
 }
 
 if (! -d "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot") {
