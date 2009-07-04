@@ -318,38 +318,39 @@ if (! -f $chrootlink) {
     print "W: Failed to symlink $target to $chrootlink: \n"
 }
 
-my $session = Sbuild::ChrootPlain->new($conf, $target);
-if (defined($session)) {
-    $session->set('Log Stream', \*STDOUT);
+if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
+    my $session = Sbuild::ChrootPlain->new($conf, $target);
+    if (defined($session)) {
+	$session->set('Log Stream', \*STDOUT);
 
-    if (!$session->begin_session()) {
-	print STDERR "E: Error creating chroot session: skipping apt update\n";
-    } else {
-	print "I: Setting reference package list.\n";
-	check_packages($session, "set");
+	if (!$session->begin_session()) {
+	    print STDERR "E: Error creating chroot session: skipping apt update\n";
+	} else {
+	    print "I: Setting reference package list.\n";
+	    check_packages($session, "set");
 
-	print "I: Updating chroot.\n";
-	my $status = update($session, $conf);
-	print "W: Failed to update APT package lists\n"
-	    if ($status);
+	    print "I: Updating chroot.\n";
+	    my $status = update($session, $conf);
+	    print "W: Failed to update APT package lists\n"
+		if ($status);
 
-	$status = distupgrade($session, $conf);
-	print "W: Failed to upgrade chroot\n"
-	    if ($status);
-	$session->end_session();
-	$session = undef;
+	    $status = distupgrade($session, $conf);
+	    print "W: Failed to upgrade chroot\n"
+		if ($status);
+	    $session->end_session();
+	    $session = undef;
+	}
     }
+} else {
+    print "W: The selected architecture and the current architecture do not match\n";
+    print "W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n";
+    print "W: Not automatically updating APT package lists.\n";
+    print "I: Run \"apt-get update\" and \"apt-get dist-upgrade\" prior to use.\n";
+    print "I: Run \"sbuild-checkpackages --set\" to set reference package list.\n";
 }
 
 print "I: Successfully set up $suite chroot.\n";
-print "I: Run sbuild-adduser to add new sbuild users.\n";
-
-# Detect whether personality might be needed.
-if ($conf->get('ARCH') ne $conf->get('HOST_ARCH')) {
-    print "W: The selected architecture and the current architecture do not match\n";
-    print "W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n";
-    print "I: You probably need to add a personality option (see schroot(1)).\n";
-}
+print "I: Run \"sbuild-adduser\" to add new sbuild users.\n";
 
 exit 0;
 
