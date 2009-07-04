@@ -534,11 +534,20 @@ sub fetch_source_files {
     $self->log_subsubsection("Check arch");
     if (!$dscarchs) {
 	$self->log("$dsc has no Architecture: field -- skipping arch check!\n");
-    }
-    else {
-	if ($dscarchs ne "any" && $dscarchs !~ /\b$arch\b/ &&
+    } else {
+	my $valid_arch;
+	for my $a (split(/\s+/, $dscarchs)) {
+	    if (system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
+		       '-a' . $arch, '-i' . $a) eq 0) {
+		$valid_arch = 1;
+		last;
+	    }
+	}
+	if ($dscarchs ne "any" && !($valid_arch) &&
 	    !($dscarchs eq "all" && $self->get_conf('BUILD_ARCH_ALL')) )  {
-	    $self->log("$dsc: $arch not in arch list: $dscarchs -- skipping\n");
+	    my $msg = "$dsc: $arch not in arch list or does not match any arch ";
+	    $msg .= "wildcards: $dscarchs -- skipping\n";
+	    $self->log($msg);
 	    $self->set('Pkg Fail Stage', "arch-check");
 	    return 0;
 	}
