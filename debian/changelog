@@ -6,8 +6,10 @@ sbuild (0.58.7-1) unstable; urgency=low
     (Closes: #521486).  Thanks to Florian Weimer. 
   * WannaBuild::Database: Allow whitespace in Architecture field
     (Closes: #535415).  Thanks to John Wright for this patch. 
+  * Sbuild::Build: Add support for architecture aliases/wildcards
+    (Closes: #501230).  Thanks to Andres Mejia for this patch. 
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 02 Jul 2009 23:03:09 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 04 Jul 2009 12:00:42 +0100
 
 sbuild (0.58.6-1) unstable; urgency=low
 
