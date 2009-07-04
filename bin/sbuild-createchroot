@@ -280,7 +280,9 @@ EOF
 	    $personality_message =
 		"W: The selected architecture and the current architecture do not match\n" .
 		"W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n" .
-		"I: You probably need to add a personality option (see schroot(1)).\n";
+		"I: You probably need to add a personality option (see schroot(1)).\n" .
+		"I: You may want to report your use case to the sbuild developers so that\n" .
+		"I: the appropriate option gets automatically added in the future.\n\n";
 	}
     }
 
