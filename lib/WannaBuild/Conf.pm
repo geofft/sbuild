@@ -182,14 +182,6 @@ sub init_allowed_keys {
 	'DB_LIST_STATE'				=> {
 	    DEFAULT => undef
 	},
-	# TODO: Remove obsolete option.
-	'DB_NO_DOWN_PROPAGATION'		=> {
-	    DEFAULT => 0
-	},
-	# TODO: Remove obsolete option.
-	'DB_NO_PROPAGATION'			=> {
-	    DEFAULT => 0
-	},
 	# TODO: Don't allow setting if already set.
 	'DB_OPERATION'				=> {
 	    DEFAULT => undef,
@@ -228,29 +220,6 @@ sub read_config {
     our $HOME = $self->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
-
-    # NOTE: For legacy wanna-build.conf format parsing
-    our $basedir = undef;
-    our $dbbase = undef;
-    our $transactlog = undef;
-    our %distributions;
-    undef %distributions;
-    our @distributions;
-    undef @distributions;
-    our %dist_order;
-    undef %dist_order;
-    our @sections;
-    undef @sections;
-    our $pkgs_source = undef;
-    our $quinn_source = undef;
-    our @admin_users;
-    undef @admin_users;
-    our $maint = undef;
-    our $notforus_maint = undef;
-    our $log_mail = undef;
-    our $stat_mail = undef;
-    our $buildd_domain = undef;
-    our $web_stats = undef;
 
     # New sbuild.conf format
     our $db_type = undef;

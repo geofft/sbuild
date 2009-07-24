@@ -68,21 +68,13 @@ sub set_options {
 	},
 
 	"o|override" => sub {
-	    $self->set_conf('DB_OVERRIDE', 1); # <- $opt_override
+	    $self->set_conf('DB_OVERRIDE', 1);
 	},
 	"create-db" => sub {
-	    $self->set_conf('DB_CREATE', 1); # <- $opt_create_db
+	    $self->set_conf('DB_CREATE', 1);
 	},
 	# TODO: Remove opt_ prefix...
 	"correct-compare" => \$Sbuild::opt_correct_version_cmp,
-	# TODO: remove after buildds no longer pass to wanna-build
-	"N|no-propagation" =>  => sub {
-#	    $self->set_conf('DB_NO_PROPAGATION', 1); # <- $opt_no_propagation
-	},
-	# TODO: remove after buildds no longer pass to wanna-build
-	"D|no-down-propagation" => sub {
-#	    $self->set_conf('DB_NO_DOWN_PROPAGATION', 1); # <- $opt_no_down_propagation
-	},
 	# normal actions
 	"take" => sub {
 	    $self->set_conf('DB_OPERATION', 'set-building');
@@ -142,19 +134,19 @@ sub set_options {
 	    die "Invalid binNMU version: $_[1]\n"
 		if $_[1] !~ /^([\d]*)$/ and $1 >= 0;
 	    $self->set_conf('DB_OPERATION', 'set-binary-nmu');
-	    $self->set_conf('DB_BIN_NMU_VERSION', $_[1]); # <- $binNMUver
+	    $self->set_conf('DB_BIN_NMU_VERSION', $_[1]);
 	},
 	"perm-build-priority=s" => sub {
 	    die "Invalid build priority: $_[1]\n"
 		if $_[1] !~ /^-?[\d]+$/;
 	    $self->set_conf('DB_OPERATION', 'set-permanent-build-priority');
-	    $self->set_conf('DB_BUILD_PRIORITY', $_[1]); # <- $build_priority
+	    $self->set_conf('DB_BUILD_PRIORITY', $_[1]);
 	},
 	"build-priority=s" => sub {
 	    die "Invalid build priority: $_[1]\n"
 		if $_[1] !~ /^-?[\d]+$/;
 	    $self->set_conf('DB_OPERATION', 'set-build-priority');
-	    $self->set_conf('DB_BUILD_PRIORITY', $_[1]); # <- $build_priority
+	    $self->set_conf('DB_BUILD_PRIORITY', $_[1]);
 	},
 	"l|list=s" => sub {
 	    die "Unknown state to list: $_[1]\n"
@@ -164,41 +156,41 @@ sub set_options {
 				    failed-removed install-wait
 				    reupload-wait));
 	    $self->set_conf('DB_OPERATION', 'list');
-	    $self->set_conf('DB_LIST_STATE', $_[1]); # <- $list_state
+	    $self->set_conf('DB_LIST_STATE', $_[1]);
 	},
 	"O|order=s" => sub {
 	    die "Bad ordering character\n"
 		if $_[1] !~ /^[PSpsncb]+$/;
-	    $self->set_conf('DB_LIST_ORDER', $_[1]); # <- $build_priority
+	    $self->set_conf('DB_LIST_ORDER', $_[1]);
 	},
 	"m|message=s" => sub {
-	    $self->set_conf('DB_FAIL_REASON', $_[1]); # <- $fail_reason
+	    $self->set_conf('DB_FAIL_REASON', $_[1]);
 	},
 	"b|database=s" => sub {
-	    $self->set_conf('DB_BASE_NAME', $_[1]); # <- $conf::dbbase
+	    $self->set_conf('DB_BASE_NAME', $_[1]);
 	},
 	"A|arch=s" => sub {
-	    $self->set_conf('ARCH', $_[1]); # <- $arch
+	    $self->set_conf('ARCH', $_[1]);
 	},
 	"U|user=s" => sub {
-	    $self->set_conf('DB_USER', $_[1]); # <- $user
+	    $self->set_conf('DB_USER', $_[1]);
 	},
 	"c|category=s" => sub {
 	    my $category = category($_[1]);
 	    die "Unknown category: $_[1]\n"
 		if !defined($category);
-	    $self->set_conf('DB_CATEGORY', $category); # <- $category
+	    $self->set_conf('DB_CATEGORY', $category);
 	},
 	"a|min-age=i" => sub {
 	    die "Minimum age must be a non-zero number\n"
 		if $_[1] == 0;
-	    $self->set_conf('DB_LIST_MIN_AGE', $_[1] * 24*60*60); # <- $list_min_age
+	    $self->set_conf('DB_LIST_MIN_AGE', $_[1] * 24*60*60);
 	},
 	"max-age=i" => sub {
 	    die "Maximum age must be a non-zero number\n"
 		if $_[1] == 0;
 	    # NOTE: Negative value
-	    $self->set_conf('DB_LIST_MIN_AGE', - $_[1] * 24*60*60); # <- $list_min_age
+	    $self->set_conf('DB_LIST_MIN_AGE', - $_[1] * 24*60*60);
 	},
 	# special actions
 	"import=s" => sub {

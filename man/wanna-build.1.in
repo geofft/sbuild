@@ -225,18 +225,6 @@ entered in the database as builder of the package (\-\-take). The default is
 the login name of the caller, but for maintainence purposes it can be
 changed on the command line.
 .TP
-\-N, \-\-no\-propagation
-Do not propagate a state change to other databases. (Propagation usually
-happens if the same version of the package in the same state appears in
-another distribution, too). This option is only for special purposes when
-propagation wouldn't be correct (it usually is).
-.TP
-\-D, \-\-no\-down\-propagation
-Like above, but only inhibit propagation to "lower" (i.e., older)
-distributions. For example, a change in frozen would be propagated to
-unstable, but not to stable. This option is often used by the build daemon
-because it also works only in "up" direction of distros.
-.TP
 \-c CATEGORY, \-\-category=CATEGORY
 Set/change the failed category (with \-\-failed) or list only failed packages
 in this category (with \-\-list). For more details on failed categories,

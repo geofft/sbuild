@@ -9,7 +9,12 @@ configuration.
 
 * Major changes in 0.58.7:
 
-  None.
+  1) The wanna-build options --no-propagation and
+     --no-down-propagation have been removed.  These options no longer
+     have any effect, and were only present for backward-compatibility
+     with older versions of buildd.  buildd no longer uses these
+     options, making it safe to remove them.
+
 
 * Major changes in 0.58.6:
 
