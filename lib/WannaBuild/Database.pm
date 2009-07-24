@@ -1959,9 +1959,6 @@ sub log_ta {
 	"changed from $prevstate to $pkg->{'State'} ".
 	"by " . $self->get_conf('USERNAME'). " as " . $self->get_conf('DB_USER') . ".";
 
-    my $dbbase = $self->get_conf('DB_BASE_NAME');
-    $dbbase =~ m#^([^/]+/)#;
-
     my $transactlog = $self->get_conf('DB_BASE_DIR') . "/$1" .
 	$self->get_conf('DB_TRANSACTION_LOG');
     if (!open( LOG, ">>$transactlog" )) {
