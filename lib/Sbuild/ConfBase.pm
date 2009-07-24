@@ -262,4 +262,14 @@ sub set_allowed_keys {
 
 }
 
+sub warn_deprecated {
+    my $oldtype = shift;
+    my $oldopt = shift;
+    my $newtype = shift;
+    my $newopt = shift;
+
+    warn "W: Obsolete $oldtype option '$oldopt' used in configuration";
+    warn "I: The replacement is $newtype option '$newopt'"
+}
+
 1;
