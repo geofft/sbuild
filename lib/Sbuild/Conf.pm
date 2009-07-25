@@ -30,6 +30,7 @@ use Sbuild qw(isin);
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
 use Sbuild::Log;
+use Sbuild::DB::ClientConf qw();
 
 BEGIN {
     use Exporter ();
@@ -398,21 +399,6 @@ sub init_allowed_keys {
 	'AUTO_GIVEBACK'				=> {
 	    DEFAULT => 0
 	},
-	'AUTO_GIVEBACK_HOST'			=> {
-	    DEFAULT => 0
-	},
-	'AUTO_GIVEBACK_SOCKET'			=> {
-	    DEFAULT => 0
-	},
-	'AUTO_GIVEBACK_USER'			=> {
-	    DEFAULT => 0
-	},
-	'AUTO_GIVEBACK_WANNABUILD_USER'		=> {
-	    DEFAULT => 0
-	},
-	'WANNABUILD_DATABASE'			=> {
-	    DEFAULT => 0
-	},
 	'BATCH_MODE'				=> {
 	    DEFAULT => 0
 	},
@@ -454,6 +440,7 @@ sub init_allowed_keys {
     );
 
     $self->set_allowed_keys(\%sbuild_keys);
+    Sbuild::DB::ClientConf::add_keys($self);
 }
 
 sub read_config {

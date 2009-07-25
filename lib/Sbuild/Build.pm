@@ -192,7 +192,7 @@ sub run {
     if ($self->get('Invalid Source')) {
 	$self->log("Invalid source: " . $self->get('DSC') . "\n");
 	$self->log("Skipping " . $self->get('Package') . " \n");
-	$self->set_status('skipped');
+	$self->set_status('failed');
 	goto cleanup_skip;
     }
 
@@ -210,7 +210,7 @@ sub run {
     if (!$session->begin_session()) {
 	$self->log("Error creating chroot session: skipping " .
 		   $self->get('Package') . "\n");
-	$self->set_status('skipped');
+	$self->set_status('failed');
 	goto cleanup_close;
     }
 
@@ -256,7 +256,7 @@ sub run {
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
 	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		$self->set_status('skipped');
+		$self->set_status('failed');
 		goto cleanup_close;
 	    }
 	}
@@ -264,7 +264,7 @@ sub run {
 
     $self->set('Pkg Fail Stage', 'fetch-src');
     if (!$self->fetch_source_files()) {
-	goto cleanup_close;
+	goto cleanup_packages;
     }
 
     # Run setup-hook before processing deps and build
@@ -277,8 +277,8 @@ sub run {
 	      CHROOT => 1 });
 	if ($?) {
 	    $self->log("setup-hook failed\n");
-	    $self->set_status('skipped');
-	    goto cleanup_close;
+	    $self->set_status('failed');
+	    goto cleanup_packages;
 	}
     }
 

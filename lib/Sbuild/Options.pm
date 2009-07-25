@@ -50,16 +50,16 @@ sub set_options {
 			   $self->set_conf('AUTO_GIVEBACK', 1);
 			   if ($_[1]) {
 			       my @parts = split( '@', $_[1] );
-			       $self->set_conf('AUTO_GIVEBACK_SOCKET',
+			       $self->set_conf('WANNA_BUILD_SSH_SOCKET',
 					  $parts[$#parts-3])
 				   if @parts > 3;
-			       $self->set_conf('AUTO_GIVEBACK_WANNABUILD_USER',
+			       $self->set_conf('WANNA_BUILD_DB_USER',
 					  $parts[$#parts-2])
 				   if @parts > 2;
-			       $self->set_conf('AUTO_GIVEBACK_USER',
+			       $self->set_conf('WANNA_BUILD_SSH_USER',
 					  $parts[$#parts-1])
 				   if @parts > 1;
-			       $self->set_conf('AUTO_GIVEBACK_HOST',
+			       $self->set_conf('WANNA_BUILD_SSH_HOST',
 					  $parts[$#parts]);
 			   }
 		       },
@@ -96,7 +96,7 @@ sub set_options {
 			   $self->set_conf('CHROOT', $_[1]);
 		       },
 		       "database=s" => sub {
-			   $self->set_conf('WANNABUILD_DATABASE', $_[1]);
+			   $self->set_conf('WANNA_BUILD_DB_NAME', $_[1]);
 		       },
 		       "apt-update" => sub {
 			   $self->set_conf('APT_UPDATE', $_[1]);

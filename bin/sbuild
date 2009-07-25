@@ -35,13 +35,15 @@ use Sbuild::Log qw(open_log close_log);
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
 use Sbuild::Build;
+use Sbuild::DB::Client;
 
 sub main ();
 sub write_jobs_file ();
 sub append_to_FINISHED ($);
 sub add_givenback ($$);
 sub should_skip ($);
-sub analyze_fail_stage ($);
+sub status_trigger ($$);
+sub wanna_build_status_trigger ($$);
 sub shutdown ($);
 sub dump_main_state ();
 
@@ -50,6 +52,8 @@ exit 1 if !defined($conf);
 my $options = Sbuild::Options->new($conf, "sbuild", "1");
 exit 1 if !defined($options);
 $conf->check_group_membership();
+
+my $db = Sbuild::DB::Client->new($conf);
 
 umask(022);
 
@@ -77,7 +81,7 @@ sub main () {
     # Create jobs
     foreach (@ARGV) {
 	$jobs{$_} = Sbuild::Build->new($_, $conf);
-	$jobs{$_}->set('Pkg Status Trigger', \&write_jobs_file)
+	$jobs{$_}->set('Pkg Status Trigger', \&status_trigger)
     }
     write_jobs_file(); # Will now update on trigger.
 
@@ -94,9 +98,6 @@ sub main () {
 	} else {
 	    $job->run();
 	}
-
-	# Give back if build failed
-	analyze_fail_stage($job);
 
 	dump_main_state() if $conf->get('DEBUG');
 
@@ -203,40 +204,61 @@ sub should_skip ($) {
 	}
 }
 
-sub analyze_fail_stage ($) {
+sub status_trigger ($$) {
     my $build = shift;
+    my $status = shift;
+
+    wanna_build_status_trigger($build, $status);
+    write_jobs_file();
+
+    # Rewrite status if we need to give back or mark attempted
+    # following failure.  Note that this must follow the above
+    # function calls because set_status will recursively trigger.
+    if ($status eq "failed" &&
+	isin($build->get('Pkg Fail Stage'),
+	     qw(fetch-src install-deps arch-check unpack
+		check-unpacked-version check-space hack-binNMU
+		install-deps-env))) {
+	$build->set_status('given-back');
+    } elsif ($status eq "failed" &&
+	     isin ($build->get('Pkg Fail Stage'),
+		   qw(build))) {
+	$build->set_status('attempted');
+    }
+}
+
+sub wanna_build_status_trigger ($$) {
+    my $build = shift;
+    my $status = shift;
+
+    my $wb_status = 0;
 
     if ($conf->get('BATCH_MODE')) {
 	my $pkgv = $build->get('Package_OVersion');
 
-	return if $build->get('Pkg Status') ne "failed";
 	return if !$build->get_conf('AUTO_GIVEBACK');
-	if (isin( $build->get('Pkg Fail Stage'),
-		  qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
+
+	if ($status eq "successful") {
+	    $db->run_query('--built', "$pkgv");
+	    $wb_status = $?;
+	} elsif ($status eq "attempted") {
+	    $db->run_query('--attempted', "$pkgv");
+	    $wb_status = $?;
+	} elsif ($status eq "given-back") {
+	    $db->run_query('--give-back', "$pkgv");
+	    $wb_status = $?;
 	    $build->set('Pkg Status', "given-back");
 	    $build->log("Giving back package $pkgv after failure in ".
-			"$build->{'Pkg Fail Stage'} stage.\n");
-	    my $cmd = "";
-	    $cmd = "ssh -l " . $build->get_conf('AUTO_GIVEBACK_USER') . " " .
-		$build->get_conf('AUTO_GIVEBACK_HOST') . " "
-		if $build->get_conf('AUTO_GIVEBACK_HOST');
-	    $cmd .= "-S " . $build->get_conf('AUTO_GIVEBACK_SOCKET') . " "
-		if $build->get_conf('AUTO_GIVEBACK_SOCKET');
-	    $cmd .= "wanna-build --give-back ".
-		"--dist=" . $build->get_conf('DISTRIBUTION') . " ";
-	    $cmd .= "--database=" . $build->get_conf('WANNABUILD_DATABASE') . " "
-		if $build->get_conf('WANNABUILD_DATABASE');
-	    $cmd .= "--user=" . $build->get_conf('AUTO_GIVEBACK_WANNABUILD_USER') . " "
-		if $build->get_conf('AUTO_GIVEBACK_WANNABUILD_USER');
-	    $cmd .= "$pkgv";
-	    system $cmd;
-	    if ($?) {
-		$build->log("wanna-build failed with status $?\n");
-	    }
-	    else {
+			$build->get('Pkg Fail Stage') ." stage.\n");
+
+	    if (!$wb_status) {
 		$build->add_givenback($build, time);
 		$build->write_stats('give-back', 1);
 	    }
+	}
+
+	if ($wb_status) {
+	    $build->log("wanna-build failed with status $?\n");
 	}
     }
 }
