@@ -33,8 +33,7 @@ require Exporter;
 
 @Buildd::EXPORT = qw(unset_env lock_file unlock_file open_log
  		     reopen_log close_log send_mail
- 		     ll_send_mail exitstatus isin
- 		     wannabuild_command);
+ 		     ll_send_mail exitstatus isin);
 
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
@@ -57,7 +56,6 @@ sub reopen_log ($);
 sub send_mail ($$$;$);
 sub ll_send_mail ($$);
 sub exitstatus ($);
-sub wannabuild_command ($);
 
 sub isin ($@) {
     my $val = shift;
@@ -223,18 +221,6 @@ sub exitstatus ($) {
     my $stat = shift;
 
     return ($stat >> 8) . "/" . ($stat % 256);
-}
-
-sub wannabuild_command ($) {
-    my $conf = shift;
-
-    my @command = ($conf->get('WANNA_BUILD_SSH_CMD'), 'wanna-build');
-    push(@command, "--database=" . $conf->get('WANNA_BUILD_DB_NAME'))
-	if $conf->get('WANNA_BUILD_DB_NAME');
-    push(@command, "--user=" . $conf->get('WANNA_BUILD_DB_USER'))
-	if $conf->get('WANNA_BUILD_DB_USER');
-
-    return @command;
 }
 
 1;
