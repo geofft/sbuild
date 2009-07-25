@@ -68,7 +68,10 @@ sub init_allowed_keys {
 
     my $home = $ENV{'HOME'}
         or die "HOME not defined in environment!\n";
-    my $username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
+    my @pwinfo = getpwuid($<);
+    my $username = $pwinfo[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
+    my $fullname = $pwinfo[6];
+    $fullname =~ s/,.*$//;
 
     chomp(my $hostname = `$Sbuild::Sysconfig::programs{'HOSTNAME'} -f`);
 
@@ -113,6 +116,9 @@ sub init_allowed_keys {
 	},
 	'USERNAME'				=> {
 	    DEFAULT => $username
+	},
+	'FULLNAME'				=> {
+	    DEFAULT => $fullname
 	},
 	'CWD'					=> {
 	    DEFAULT => cwd()
@@ -246,7 +252,7 @@ sub set {
 	$entry->{'NAME'} = $key;
 	return $value;
     } else {
-	warn "W: key \"$key\" is not allowed in sbuild configuration";
+	warn "W: key \"$key\" is not allowed in configuration";
 	return undef;
     }
 }
