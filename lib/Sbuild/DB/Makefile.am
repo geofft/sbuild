@@ -24,6 +24,8 @@ include $(top_srcdir)/scripts/global.mk
 perlmodsbuilddbdir = $(perlmoddir)/Sbuild/DB
 
 MODULES =			\
+	Client.pm		\
+	ClientConf.pm		\
 	Base.pm			\
 	Info.pm			\
 	MLDBM.pm		\
