@@ -27,6 +27,7 @@ use warnings;
 
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
+use Sbuild::DB::ClientConf qw();
 
 BEGIN {
     use Exporter ();
@@ -68,34 +69,6 @@ sub init_allowed_keys {
 
 	die "$key directory '$directory' does not exist"
 	    if !-d $directory;
-    };
-
-    my $validate_ssh = sub {
-	my $self = shift;
-	my $entry = shift;
-
-# TODO: Provide self, config and entry contexts, which functions to
-# get at needed data.  Provide generic configuration functions.
-#
-	$validate_program->($self, $self->{'KEYS'}->{'SSH'});
-
-	my $ssh = $self->get('SSH');
-	my $sshuser = $self->get('WANNA_BUILD_SSH_USER');
-	my $sshhost = $self->get('WANNA_BUILD_SSH_HOST');
-	my @sshoptions = @{$self->get('WANNA_BUILD_SSH_OPTIONS')};
-	my $sshsocket = $self->get('WANNA_BUILD_SSH_SOCKET');
-
-	my @command = ();
-
-	if ($sshhost) {
-	    push (@command, $ssh);
-	    push (@command, '-l', $sshuser) if $sshuser;
-	    push (@command, '-S', $sshsocket) if $sshsocket;
-	    push (@command, @sshoptions) if @sshoptions;
-	    push (@command, $sshhost);
-	}
-
-	$self->set('WANNA_BUILD_SSH_CMD', \@command);
     };
 
     our $HOME = $self->get('HOME');
@@ -190,29 +163,6 @@ sub init_allowed_keys {
 	'SHOULD_BUILD_MSGS'			=> {
 	    DEFAULT => 1
 	},
-	'WANNA_BUILD_SSH_CMD'			=> {
-	    DEFAULT => []
-	},
-	'SSH'					=> {
-	    DEFAULT => $Sbuild::Sysconfig::programs{'SSH'},
-	    CHECK => $validate_ssh,
-	},
-	'WANNA_BUILD_SSH_USER'			=> {
-	    DEFAULT => '',
-	    CHECK => $validate_ssh,
-	},
-	'WANNA_BUILD_SSH_HOST'			=> {
-	    DEFAULT => '',
-	    CHECK => $validate_ssh,
-	},
-	'WANNA_BUILD_SSH_SOCKET'		=> {
-	    DEFAULT => '',
-	    CHECK => $validate_ssh,
-	},
-	'WANNA_BUILD_SSH_OPTIONS'		=> {
-	    DEFAULT => [],
-	    CHECK => $validate_ssh,
-	},
 	'STATISTICS_MAIL'			=> {
 	    DEFAULT => 'root'
 	},
@@ -226,12 +176,6 @@ sub init_allowed_keys {
 	'TAKE_FROM_DISTS'			=> {
 	    DEFAULT => []
 	},
-	'WANNA_BUILD_DB_NAME'			=> {
-	    DEFAULT => "$arch/build-db"
-	},
-	'WANNA_BUILD_DB_USER'			=> {
-	    DEFAULT => $Buildd::username
-	},
 	'WARNING_AGE'				=> {
 	    DEFAULT => 7
 	},
@@ -243,6 +187,7 @@ sub init_allowed_keys {
 	});
 
     $self->set_allowed_keys(\%buildd_keys);
+    Sbuild::DB::ClientConf::add_keys($self);
 }
 
 sub read_config {
