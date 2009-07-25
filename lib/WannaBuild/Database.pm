@@ -2103,10 +2103,14 @@ sub parse_srcdeplist {
             my @archs = split( /\s+/, $archlist );
             my ($use_it, $ignore_it, $include) = (0, 0, 0);
             foreach (@archs) {
+                # Use 'dpkg-architecture' to support architecture
+                # wildcards.
                 if (/^!/) {
-                    $ignore_it = 1 if substr($_, 1) eq $arch;
+                    $ignore_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
+                        '-a' . $arch, '-i' . substr($_, 1)) eq 0;
                 } else {
-                    $use_it = 1 if $_ eq $arch;
+                    $use_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
+                        '-a' . $arch, '-i' . $_) eq 0;
                     $include = 1;
                 }
             }
