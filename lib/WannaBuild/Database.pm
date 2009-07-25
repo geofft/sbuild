@@ -1747,7 +1747,7 @@ sub info_packages {
 		my $val = $pkg->{$key};
 		chomp( $val );
 		$val = "\n$val" if isin( $key, qw(Failed Old-Failed));
-		$val =~ s/\n/\n /g;
+		$val =~ s/\n/\n    /g;
 		printf "  %-20s: %s\n", $key, $val;
 	    }
 	    foreach $key (sort keys %$pkg) {
@@ -1755,7 +1755,7 @@ sub info_packages {
 		my $val = $pkg->{$key};
 		chomp( $val );
 		$val = "\n$val" if isin( $key, qw(Failed Old-Failed));
-		$val =~ s/\n/\n /g;
+		$val =~ s/\n/\n    /g;
 		printf "  %-20s: %s\n", $key, $val;
 	    }
 	}
