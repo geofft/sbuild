@@ -31,6 +31,13 @@ configuration.
      │ @ssh_options          │ $wanna_build_ssh_options (hashref) │
      └───────────────────────┴────────────────────────────────────┘
 
+  3) sbuild will set the "attempted" and "given-back" states for
+     certain failures.  If wanna-build updates are configured with
+     --database and --auto-give-back by buildd, it will set the
+     "built" state on build completion, and "attempted" if the build
+     failed.  As before, "given-back" will be set for most other
+     failure conditions.
+
 * Major changes in 0.58.6:
 
   None.
