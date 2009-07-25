@@ -168,7 +168,6 @@ sub run {
 	    while(!eof(STDIN)) {
 		$line = <STDIN>;
 		last if $line eq ".\n";
-		$line = ".\n" if $line eq "\n";
 		$log .= $line;
 	    }
 	    chomp($log);
