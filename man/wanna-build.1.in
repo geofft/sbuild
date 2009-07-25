@@ -173,10 +173,11 @@ removed from the database completely. This is for maintainence purposes, not
 for day-by-day use. A mail will be sent to the database maintainer.
 .TP
 \-\-give\-back
-If you decide to stop building a package that you have taken before (i.e.,
-which is in state Building and you're the builder), but that package hasn't
-failed, you can give it back with this option. The state changes back to
-Needs-Build.
+Mark a package as ready to build that is in state Building, Built or
+Build-Attempted. To give back a package in state Failed, use \-\-override.  If
+you decide to stop building a package that you have taken before (i.e., which
+is in state Building and you're the builder), but that package hasn't failed,
+you can give it back with this option.  The state changes back to Needs-Build.
 .TP
 \-\-merge\-quinn
 Merge quinn\-diff output into database.
