@@ -29,6 +29,7 @@ use Buildd::Conf;
 use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
 use Sbuild::ChrootRoot;
+use Sbuild::DB::Client;
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
@@ -63,9 +64,9 @@ sub run {
 
     chdir($self->get_conf('HOME'));
 
-    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
-    $host->set('Log Stream', $self->get('Log Stream'));
-    $self->set('Host', $host);
+    my $db = Sbuild::DB::Client->new($self->get('Config'));
+    $db->set('Log Stream', $self->get('Log Stream'));
+    $self->set('DB', $db);
 
     $self->set('Mail Error', undef);
     $self->set('Mail Short Error', undef);
@@ -585,15 +586,7 @@ sub redo_new_version ($$$) {
 
     my $err = 0;
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '-v',
-		      "--dist=$dist",
-		      $newv],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('-v', "--dist=$dist", $newv);
     if ($pipe) {
 	while(<$pipe>) {
 	    next if /^wanna-build Revision/ ||
@@ -929,17 +922,7 @@ sub set_to_failed ($$$) {
     $is_bugno = 1 if $text =~ /^\(see #\d+\)$/;
     return if !$self->check_state( $pkg, $dist, $is_bugno ? "Failed" : "Building" );
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--failed',
-		      "--dist=$dist",
-		      $pkg],
-	  PIPE => 'out',
-	  STREAMOUT => $devnull,
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query_out('--failed', "--dist=$dist", $pkg);
     if ($pipe) {
 	print $pipe "${text}.\n";
 	close($pipe);
@@ -964,17 +947,7 @@ sub set_to_depwait ($$$) {
     my $dist = shift;
     my $deps = shift;
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--dep-wait',
-		      "--dist=$dist",
-		      $pkg],
-	  PIPE => 'out',
-	  STREAMOUT => $devnull,
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query_out('--dep-wait', "--dist=$dist", $pkg);
     if ($pipe) {
 	print $pipe "$deps\n";
 	close($pipe);
@@ -998,15 +971,8 @@ sub give_back ($$) {
 
     my $answer;
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--give-back',
-		      "--dist=$dist",
-		      $pkg],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('--give-back', "--dist=$dist",
+					    $pkg);
     if ($pipe) {
 	$answer = <$pipe>;
 	close($pipe);
@@ -1029,15 +995,7 @@ sub no_build ($$) {
 
     my $answer;
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--no-build',
-		      "--dist=$dist",
-		      $pkg],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('--no-build', "--dist=$dist", $pkg);
     if ($pipe) {
 	$answer = <$pipe>;
 	close($pipe);
@@ -1060,15 +1018,7 @@ sub get_fail_msg ($$) {
 
     $pkg =~ s/_.*//;
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--info',
-		      "--dist=$dist",
-		      $pkg],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('--info', "--dist=$dist", $pkg);
     if ($pipe) {
 	my $msg = "";
 	while(<$pipe>) {
@@ -1109,15 +1059,7 @@ sub check_state ($$@) {
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--info',
-		      "--dist=$dist",
-		      $pkg],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('--info', "--dist=$dist", $pkg);
     if (!$pipe) {
 	$self->set('Mail Error',
 		   $self->get('Mail Error') .
@@ -1166,15 +1108,7 @@ sub check_building_any_dist ($) {
     $pkgv =~ /^([^_]+)_(.+)/;
     my ($pkg, $vers) = ($1, $2);
 
-    my $pipe = $self->get_conf('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--info',
-		      "--dist=all",
-		      $pkg],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('--info', "--dist=all", $pkg);
     if (!$pipe) {
 	$self->set('Mail Error',
 		   $self->get('Mail Error') .

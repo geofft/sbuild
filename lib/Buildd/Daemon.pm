@@ -25,13 +25,13 @@ use strict;
 use warnings;
 
 use POSIX;
-use Buildd qw(isin wannabuild_command lock_file unlock_file send_mail
-              exitstatus);
+use Buildd qw(isin lock_file unlock_file send_mail exitstatus);
 use Buildd::Conf;
 use Buildd::Base;
 use Sbuild qw($devnull df);
 use Sbuild::Sysconfig;
 use Sbuild::ChrootRoot;
+use Sbuild::DB::Client;
 use Cwd;
 
 BEGIN {
@@ -63,6 +63,10 @@ sub run {
     my $host = Sbuild::ChrootRoot->new($self->get('Config'));
     $host->set('Log Stream', $self->get('Log Stream'));
     $self->set('Host', $host);
+
+    my $db = Sbuild::DB::Client->new($self->get('Config'));
+    $db->set('Log Stream', $self->get('Log Stream'));
+    $self->set('DB', $db);
 
     my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
     my $my_binary = $0;
@@ -141,14 +145,8 @@ sub run {
 	    $self->check_restart();
 	    $self->read_config();
 	    my %givenback = $self->read_givenback();
-	    my $pipe = $self->get('Host')->pipe_command(
-		{ COMMAND => [wannabuild_command($self->get('Config')),
-			      '--list=needs-build',
-			      "--dist=$dist"],
-		  USER => $self->get_conf('USERNAME'),
-		  CHROOT => 1,
-		  PRIORITY => 0,
-		});
+	    my $pipe = $self->get('DB')->pipe_query('--list=needs-build',
+						    "--dist=$dist");
 	    if (!$pipe) {
 		$self->log("Can't spawn wanna-build --list=needs-build: $!\n");
 		next MAINLOOP;
@@ -334,15 +332,7 @@ sub do_wanna_build {
 
     $self->block_signals();
 
-    my $pipe = $self->get('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '-v', 
-		      "--dist=$dist",
-		      @_],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('-v', "--dist=$dist", @_);
     if (!$pipe) {
 	while( <$pipe> ) {
 	    next if /^wanna-build Revision/;
@@ -548,15 +538,7 @@ sub handle_prevfailed {
     $self->log("$pkgv previously failed -- asking admin first\n");
     ($pkg = $pkgv) =~ s/_.*$//;
 
-    my $pipe = $self->get('Host')->pipe_command(
-	{ COMMAND => [wannabuild_command($self->get('Config')),
-		      '--info',
-		      "--dist=$dist",
-		      $pkg],
-	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	});
+    my $pipe = $self->get('DB')->pipe_query('--info', "--dist=$dist", $pkg);
     if (!$pipe) {
 	$self->log("Can't run wanna-build: $!\n");
 	return;

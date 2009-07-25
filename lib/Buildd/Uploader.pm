@@ -28,6 +28,7 @@ use Buildd qw(lock_file unlock_file unset_env exitstatus);
 use Buildd::Base;
 use Buildd::Conf;
 use Sbuild::ChrootRoot;
+use Sbuild::DB::Client;
 
 BEGIN {
     use Exporter ();
@@ -54,9 +55,9 @@ sub new {
 sub run {
     my $self = shift;
 
-    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
-    $host->set('Log Stream', $self->get('Log Stream'));
-    $self->set('Host', $host);
+    my $db = Sbuild::DB::Client->new($self->get('Config'));
+    $db->set('Log Stream', $self->get('Log Stream'));
+    $self->set('DB', $db);
 
     unset_env();
 
@@ -90,15 +91,8 @@ sub uploaded ($@) {
     foreach my $dist (@_) {
 	my $msgs = "";
 
-	my $pipe = $self->get_conf('Host')->pipe_command(
-	    { COMMAND => [wannabuild_command($self->get('Config')),
-			  '--uploaded',
-			  "--dist=$dist",
-			  "$pkg"],
-	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 1,
-	      PRIORITY => 0,
-	    });
+	my $pipe = $self->get('DB')->pipe_query('--uploaded', "--dist=$dist",
+						"$pkg");
 
 	if ($pipe) {
 	    while(<$pipe>) {
