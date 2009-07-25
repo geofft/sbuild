@@ -1148,7 +1148,7 @@ sub check_state ($$@) {
 		   $msg."state is $as\n");
 	return 0;
     }
-    if ($as eq "Building" && $ab ne $self->get_conf('WANNA_BUILD_USER')) {
+    if ($as eq "Building" && $ab ne $self->get_conf('WANNA_BUILD_DB_USER')) {
 	$self->set('Mail Error',
 		   $self->get('Mail Error') .
 		   $msg."is building by $ab\n");
@@ -1195,7 +1195,7 @@ sub check_building_any_dist ($) {
 	$ab = $1 if $info =~ /^\s*Builder\s*:\s*(\S+)/mi;
 	push( @dists, $dist )
 	    if $av eq $vers && $as eq "Building" &&
-	    $ab eq $self->get_conf('WANNA_BUILD_USER');
+	    $ab eq $self->get_conf('WANNA_BUILD_DB_USER');
     }
     return @dists;
 }

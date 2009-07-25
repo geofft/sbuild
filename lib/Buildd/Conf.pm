@@ -80,10 +80,10 @@ sub init_allowed_keys {
 	$validate_program->($self, $self->{'KEYS'}->{'SSH'});
 
 	my $ssh = $self->get('SSH');
-	my $sshuser = $self->get('SSH_USER');
-	my $sshhost = $self->get('SSH_HOST');
-	my @sshoptions = @{$self->get('SSH_OPTIONS')};
-	my $sshsocket = $self->get('SSH_SOCKET');
+	my $sshuser = $self->get('WANNA_BUILD_SSH_USER');
+	my $sshhost = $self->get('WANNA_BUILD_SSH_HOST');
+	my @sshoptions = @{$self->get('WANNA_BUILD_SSH_OPTIONS')};
+	my $sshsocket = $self->get('WANNA_BUILD_SSH_SOCKET');
 
 	my @command = ();
 
@@ -95,7 +95,7 @@ sub init_allowed_keys {
 	    push (@command, $sshhost);
 	}
 
-	$self->set('SSH_CMD', \@command);
+	$self->set('WANNA_BUILD_SSH_CMD', \@command);
     };
 
     our $HOME = $self->get('HOME');
@@ -190,26 +190,26 @@ sub init_allowed_keys {
 	'SHOULD_BUILD_MSGS'			=> {
 	    DEFAULT => 1
 	},
-	'SSH_CMD'				=> {
+	'WANNA_BUILD_SSH_CMD'			=> {
 	    DEFAULT => []
 	},
 	'SSH'					=> {
 	    DEFAULT => $Sbuild::Sysconfig::programs{'SSH'},
 	    CHECK => $validate_ssh,
 	},
-	'SSH_USER'				=> {
+	'WANNA_BUILD_SSH_USER'			=> {
 	    DEFAULT => '',
 	    CHECK => $validate_ssh,
 	},
-	'SSH_HOST'				=> {
+	'WANNA_BUILD_SSH_HOST'			=> {
 	    DEFAULT => '',
 	    CHECK => $validate_ssh,
 	},
-	'SSH_SOCKET'				=> {
+	'WANNA_BUILD_SSH_SOCKET'		=> {
 	    DEFAULT => '',
 	    CHECK => $validate_ssh,
 	},
-	'SSH_OPTIONS'				=> {
+	'WANNA_BUILD_SSH_OPTIONS'		=> {
 	    DEFAULT => [],
 	    CHECK => $validate_ssh,
 	},
@@ -226,10 +226,10 @@ sub init_allowed_keys {
 	'TAKE_FROM_DISTS'			=> {
 	    DEFAULT => []
 	},
-	'WANNA_BUILD_DBBASE'			=> {
+	'WANNA_BUILD_DB_NAME'			=> {
 	    DEFAULT => "$arch/build-db"
 	},
-	'WANNA_BUILD_USER'			=> {
+	'WANNA_BUILD_DB_USER'			=> {
 	    DEFAULT => $Buildd::username
 	},
 	'WARNING_AGE'				=> {
@@ -280,16 +280,16 @@ sub read_config {
     my $secondary_daemon_threshold = undef;
     my $should_build_msgs = undef;
     my $ssh = undef;
-    my $ssh_user = undef;
-    my $ssh_host = undef;
-    my @ssh_options;
-    my $ssh_socket = undef;
     my $statistics_mail = undef;
     my $statistics_period = undef;
     my $sudo = undef;
     my @take_from_dists;
-    my $wanna_build_dbbase = undef;
-    my $wanna_build_user = undef;
+    my $wanna_build_db_name = undef;
+    my $wanna_build_db_user = undef;
+    my $wanna_build_ssh_user = undef;
+    my $wanna_build_ssh_host = undef;
+    my $wanna_build_ssh_socket = undef;
+    my $wanna_build_ssh_options = undef;
     my $warning_age = undef;
     my @weak_no_auto_build;
 
@@ -365,18 +365,19 @@ sub read_config {
 	$self->set('SECONDARY_DAEMON_THRESHOLD', $secondary_daemon_threshold);
 	$self->set('SHOULD_BUILD_MSGS', $should_build_msgs);
 	$self->set('SSH', $ssh);
-	$self->set('SSH_USER', $ssh_user);
-	$self->set('SSH_HOST', $ssh_host);
-	$self->set('SSH_OPTIONS', \@ssh_options)
-	    if (@ssh_options);
-	$self->set('SSH_SOCKET', $ssh_socket);
 	$self->set('STATISTICS_MAIL', $statistics_mail);
 	$self->set('STATISTICS_PERIOD', $statistics_period);
 	$self->set('SUDO', $sudo);
 	$self->set('TAKE_FROM_DISTS', \@take_from_dists)
 	    if (@take_from_dists);
-	$self->set('WANNA_BUILD_DBBASE', $wanna_build_dbbase);
-	$self->set('WANNA_BUILD_USER', $wanna_build_user);
+
+	$self->set('WANNA_BUILD_DB_NAME', $wanna_build_db_name);
+	$self->set('WANNA_BUILD_DB_USER', $wanna_build_db_user);
+	$self->set('WANNA_BUILD_SSH_USER', $wanna_build_ssh_user);
+	$self->set('WANNA_BUILD_SSH_HOST', $wanna_build_ssh_host);
+	$self->set('WANNA_BUILD_SSH_SOCKET', $wanna_build_ssh_socket);
+	$self->set('WANNA_BUILD_SSH_OPTIONS', $wanna_build_ssh_options);
+
 	$self->set('WARNING_AGE', $warning_age);
 	$self->set('WEAK_NO_AUTO_BUILD', \@weak_no_auto_build)
 	    if (@weak_no_auto_build);

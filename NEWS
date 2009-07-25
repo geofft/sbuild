@@ -15,6 +15,21 @@ configuration.
      with older versions of buildd.  buildd no longer uses these
      options, making it safe to remove them.
 
+  2) The wanna-build configuration options used by buildd in
+     buildd.conf have been renamed for better compatibility with future
+     planned sbuild changes.  buildd.conf will require updating with the
+     new option names:
+
+     ┌───────────────────────┬────────────────────────────────────┐
+     │ old                   │ new                                │
+     ├───────────────────────┼────────────────────────────────────┤
+     │ $wanna_build_dbbase   │ $wanna_build_db_name               │
+     │ $wanna_build_user     │ $wanna_build_db_user               │
+     │ $ssh_user             │ $wanna_build_ssh_user              │
+     │ $ssh_host             │ $wanna_build_ssh_host              │
+     │ $ssh_socket           │ $wanna_build_ssh_socket            │
+     │ @ssh_options          │ $wanna_build_ssh_options (hashref) │
+     └───────────────────────┴────────────────────────────────────┘
 
 * Major changes in 0.58.6:
 

@@ -228,11 +228,11 @@ sub exitstatus ($) {
 sub wannabuild_command ($) {
     my $conf = shift;
 
-    my @command = ($conf->get('SSH_CMD'), 'wanna-build');
-    push(@command, "--database=" . $conf->get('WANNA_BUILD_DBBASE'))
-	if $conf->get('WANNA_BUILD_DBBASE');
-    push(@command, "--user=" . $conf->get('WANNA_BUILD_USER'))
-	if $conf->get('WANNA_BUILD_USER');
+    my @command = ($conf->get('WANNA_BUILD_SSH_CMD'), 'wanna-build');
+    push(@command, "--database=" . $conf->get('WANNA_BUILD_DB_NAME'))
+	if $conf->get('WANNA_BUILD_DB_NAME');
+    push(@command, "--user=" . $conf->get('WANNA_BUILD_DB_USER'))
+	if $conf->get('WANNA_BUILD_DB_USER');
 
     return @command;
 }

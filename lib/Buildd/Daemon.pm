@@ -157,7 +157,7 @@ sub run {
 	    my(@todo, $total, $nonex, @lowprio_todo, $max_build);
 	    $max_build = $self->get_conf('MAX_BUILD');
 	    while( <$pipe> ) {
-		my $socket = $self->get_conf('SSH_SOCKET');
+		my $socket = $self->get_conf('WANNA_BUILD_SSH_SOCKET');
 		if ($socket &&
 		    (/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
 		     /^Control socket connect\($socket\): Connection refused[\r]?$/)) {
@@ -425,22 +425,22 @@ sub do_build {
 			"--stats-dir=" . $self->get_conf('HOME') . "/stats",
 			"--dist=$dist" );
     my $sbuild_gb = '--auto-give-back';
-    if ($self->get_conf('SSH_CMD')) {
+    if ($self->get_conf('WANNA_BUILD_SSH_CMD')) {
 	$sbuild_gb .= "=";
-	$sbuild_gb .= $self->get_conf('SSH_SOCKET') . "\@"
-	    if $self->get_conf('SSH_SOCKET');
-	$sbuild_gb .= $self->get_conf('WANNA_BUILD_USER') . "\@"
-	    if $self->get_conf('WANNA_BUILD_USER');
-	$sbuild_gb .= $self->get_conf('SSH_USER') ."\@" if $self->get_conf('SSH_USER');
-	$sbuild_gb .= $self->get_conf('SSH_HOST');
+	$sbuild_gb .= $self->get_conf('WANNA_BUILD_SSH_SOCKET') . "\@"
+	    if $self->get_conf('WANNA_BUILD_SSH_SOCKET');
+	$sbuild_gb .= $self->get_conf('WANNA_BUILD_DB_USER') . "\@"
+	    if $self->get_conf('WANNA_BUILD_DB_USER');
+	$sbuild_gb .= $self->get_conf('WANNA_BUILD_SSH_USER') ."\@" if $self->get_conf('WANNA_BUILD_SSH_USER');
+	$sbuild_gb .= $self->get_conf('WANNA_BUILD_SSH_HOST');
     } else {
 	# Otherwise newer sbuild will take the package name as an --auto-give-back
 	# parameter (changed from regexp to GetOpt::Long parsing)
 	$sbuild_gb .= "=yes"
     }
     push ( @sbuild_args, $sbuild_gb );
-    push ( @sbuild_args, "--database=" . $self->get_conf('WANNA_BUILD_DBBASE') )
-	if $self->get_conf('WANNA_BUILD_DBBASE');
+    push ( @sbuild_args, "--database=" . $self->get_conf('WANNA_BUILD_DB_NAME') )
+	if $self->get_conf('WANNA_BUILD_DB_NAME');
 
     if (scalar(@_) == 1 and $_[0] =~ s/^!(\d+)!//) {
 	$binNMUver = $1;
@@ -802,8 +802,8 @@ sub unblock_signals {
 sub check_ssh_master {
     my $self = shift;
 
-    return 1 if (!$self->get_conf('SSH_SOCKET'));
-    return 1 if ( -S $self->get_conf('SSH_SOCKET') );
+    return 1 if (!$self->get_conf('WANNA_BUILD_SSH_SOCKET'));
+    return 1 if ( -S $self->get_conf('WANNA_BUILD_SSH_SOCKET') );
 
     if ($main::ssh_pid)
     {
@@ -812,14 +812,14 @@ sub check_ssh_master {
     }
 
     ($main::ssh_pid = fork)
-	or exec (@{$self->get_conf('SSH_CMD')}, "-MN");
+	or exec (@{$self->get_conf('WANNA_BUILD_SSH_CMD')}, "-MN");
 
     if (!defined $main::ssh_pid) {
 	$self->log("Cannot fork for ssh master: $!\n");
 	return 0;
     }
 
-    while ( ! -S $self->get_conf('SSH_SOCKET') )
+    while ( ! -S $self->get_conf('WANNA_BUILD_SSH_SOCKET') )
     {
 	sleep 1;
 	my $wpid = waitpid ( $main::ssh_pid, WNOHANG );
