@@ -2534,12 +2534,15 @@ sub open_build_log {
 	}
 
 	while (<STDIN>) {
-	    if (!$self->get_conf('NOLOG') &&
-		$self->get_conf('LOG_DIR_AVAILABLE')) {
-		print CPLOG $_;
-	    }
-	    if ($self->get_conf('NOLOG') || $self->get_conf('VERBOSE')) {
+	    if ($self->get_conf('NOLOG')) {
 		print $saved_stdout $_;
+	    } else {
+		if ($self->get_conf('LOG_DIR_AVAILABLE')) {
+		    print CPLOG $_;
+		}
+		if ($self->get_conf('VERBOSE')) {
+		    print $saved_stdout $_;
+		}
 	    }
 	}
 
