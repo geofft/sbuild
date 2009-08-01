@@ -127,6 +127,14 @@ sub set_options {
 		       "e|uploader=s" => sub {
 			   $self->set_conf('UPLOADER_NAME', $_[1]);
 		       },
+		       "debbuildopts=s" => sub {
+			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "debbuildopt=s" => sub {
+			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
+				$_[1]);
+		       },
 		       "n|nolog" => sub {
 			   $self->set_conf('NOLOG', 1);
 		       },

@@ -790,6 +790,11 @@ sub build {
     push (@{$buildcmd}, $binopt) if $binopt;
     push (@{$buildcmd}, "-r" . $self->get_conf('FAKEROOT'));
 
+    if (defined($self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')) &&
+	$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')) {
+	push (@{$buildcmd}, @{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')});
+    }
+
     my $buildenv = {};
     $buildenv->{'PATH'} = $self->get_conf('PATH');
     $buildenv->{'LD_LIBRARY_PATH'} = $self->get_conf('LD_LIBRARY_PATH')

@@ -39,6 +39,8 @@ sbuild \- build debian packages from source
 .RB [ \-m \[or] \-\-maintainer=\fImaintainer\fP ]
 .RB [ \-e \[or] \-\-uploader=\fIuploader\fP ]
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
+.RB [ \-\-debbuildopt=\fIoption\fP ]
+.RB [ \-\-debbuildopts=\fIoptions\fP ]
 .RB [ \-\-purge=\fPpurge-mode\fP ]
 .RB [ \-\-purge\-deps=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
@@ -162,6 +164,14 @@ the .changes file(s).
 .BR \-k ", " "\-\-keyid=\fIkey-id\fP"
 Passed to dpkg\-genchanges and is used to set the key to sign the .changes
 file(s).  Default is not using any key.
+.TP
+.BR \-\-debbuildopt=\fIoption\fP
+Pass the specified option directly to dpkg\-buildpackage.
+.TP
+.BR \-\-debbuildopts=\fIoptions\fP
+Pass the specified options directly to dpkg\-buildpackage.  The options should
+be separated by spaces.  If any options contain spaces, use \-\-debbuildopt
+instead.
 .TP
 .BR \-n ", " "\-\-nolog"
 Do not create a package log file in the $log_dir directory and no

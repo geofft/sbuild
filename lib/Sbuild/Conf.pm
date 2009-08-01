@@ -160,6 +160,9 @@ sub init_allowed_keys {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'APT_CACHE'}
 	},
+	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
+	    DEFAULT => []
+	},
 	'DPKG_SOURCE'				=> {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'DPKG_SOURCE'}
