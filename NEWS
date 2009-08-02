@@ -24,16 +24,16 @@ configuration.
      planned sbuild changes.  buildd.conf will require updating with the
      new option names:
 
-     ┌───────────────────────┬────────────────────────────────────┐
-     │ old                   │ new                                │
-     ├───────────────────────┼────────────────────────────────────┤
-     │ $wanna_build_dbbase   │ $wanna_build_db_name               │
-     │ $wanna_build_user     │ $wanna_build_db_user               │
-     │ $ssh_user             │ $wanna_build_ssh_user              │
-     │ $ssh_host             │ $wanna_build_ssh_host              │
-     │ $ssh_socket           │ $wanna_build_ssh_socket            │
-     │ @ssh_options          │ $wanna_build_ssh_options (hashref) │
-     └───────────────────────┴────────────────────────────────────┘
+     ┌───────────────────────┬─────────────────────────────────────┐
+     │ old                   │ new                                 │
+     ├───────────────────────┼─────────────────────────────────────┤
+     │ $wanna_build_dbbase   │ $wanna_build_db_name                │
+     │ $wanna_build_user     │ $wanna_build_db_user                │
+     │ $ssh_user             │ $wanna_build_ssh_user               │
+     │ $ssh_host             │ $wanna_build_ssh_host               │
+     │ $ssh_socket           │ $wanna_build_ssh_socket             │
+     │ @ssh_options          │ $wanna_build_ssh_options (arrayref) │
+     └───────────────────────┴─────────────────────────────────────┘
 
   3) sbuild will set the "attempted" and "given-back" states for
      certain failures.  If wanna-build updates are configured with
