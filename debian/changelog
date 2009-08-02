@@ -1,3 +1,10 @@
+sbuild (0.59.1~rc1) unstable; urgency=low
+
+  * debian/control:
+    - Bump to Standards-Version 3.8.2.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 02 Aug 2009 12:36:51 +0100
+
 sbuild (0.59.0-1) unstable; urgency=low
 
   [ Roger Leigh ]
