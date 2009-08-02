@@ -2409,6 +2409,8 @@ sub unlock_file {
 sub write_stats {
     my $self = shift;
 
+    return if (!$self->get_conf('BATCH_MODE'));
+
     my $stats_dir = $self->get_conf('STATS_DIR');
 
     return if not defined $stats_dir;

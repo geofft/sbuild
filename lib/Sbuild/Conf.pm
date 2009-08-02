@@ -182,7 +182,6 @@ sub init_allowed_keys {
 	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-space"
 	},
 	'STATS_DIR'				=> {
-	    CHECK => $validate_directory,
 	    DEFAULT => "$HOME/stats"
 	},
 	'PACKAGE_CHECKLIST'			=> {

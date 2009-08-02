@@ -9,8 +9,11 @@ sbuild (0.59.0-1) unstable; urgency=low
   * Sbuild::Build, WannaBuild::Database: Add support for architecture
     aliases/wildcards (Closes: #501230).  Thanks to Andres Mejia for
     these patches. 
+  * Sbuild::Conf doesn't require STATS_DIR to exist, and
+    Sbuild::Build::write_stats only uses STATS_DIR in batch mode
+    (Closes: #539570).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 25 Jul 2009 17:37:41 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 02 Aug 2009 11:15:26 +0100
 
 sbuild (0.58.6-1) unstable; urgency=low
 
