@@ -46,6 +46,7 @@ install: build
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/install
 
 	dh_install
+	cp debian/buildd.forward debian/buildd/var/lib/buildd/.forward
 
 # Build architecture-independent files here.
 binary-indep: build install

@@ -3,4 +3,3 @@ debian/install/usr/bin/buildd*			usr/bin
 debian/install/usr/share/man/man1/buildd*       usr/share/man/man1
 debian/install/usr/share/perl5/Buildd*		usr/share/perl5
 debian/install/var/lib/buildd			var/lib
-debian/buildd.forward				var/lib/buildd/.forward
