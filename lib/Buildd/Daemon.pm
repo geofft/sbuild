@@ -133,7 +133,7 @@ sub run {
 	    foreach $dist (@{$self->get_conf('TAKE_FROM_DISTS')}) {
 		$self->check_restart();
 		$self->read_config();
-		my @redo = $$self->get_from_REDO( $dist, %binNMUlog );
+		my @redo = $self->get_from_REDO( $dist, %binNMUlog );
 		next if !@redo;
 		$self->do_build( $dist, %binNMUlog, @redo );
 		++$done;
