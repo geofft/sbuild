@@ -95,7 +95,7 @@ sub run {
 	}
     }
 
-    if (@{$self->get_conf('TAKE_FROM_DISTS')}) {
+    if (!@{$self->get_conf('TAKE_FROM_DISTS')}) {
 	die "take_from_dists is empty, aborting.";
     }
 
