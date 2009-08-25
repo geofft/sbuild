@@ -23,12 +23,12 @@ use strict;
 use warnings;
 use Buildd;
 use Buildd::Conf;
-use Sbuild qw(binNMU_version);
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
 use MIME::Base64;
 
+sub binNMU_version ($$);
 sub process_mail ();
 sub prepare_for_upload ($$);
 sub redo_new_version ($$$);
@@ -68,6 +68,12 @@ my($error, $short_error, %header, $body_text);
 process_mail();
 exit 0;
 
+sub binNMU_version ($$) {
+	my $v = shift;
+	my $binNMUver = shift;
+
+	return "$v+b$binNMUver";
+}
 
 sub process_mail () {
 
