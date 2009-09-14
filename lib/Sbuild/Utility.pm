@@ -39,6 +39,9 @@ use warnings;
 
 use Sbuild::Conf;
 use Sbuild::Chroot;
+use File::Temp qw(tempfile);
+use LWP::UserAgent; # Needed to grab content from the WWW.
+use Time::HiRes qw ( time ); # Needed for high resolution timers
 
 sub get_dist ($);
 sub setup ($$);
@@ -53,7 +56,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(setup cleanup shutdown);
+    @EXPORT = qw(setup cleanup shutdown check_url download parse_file);
 
     $SIG{'INT'} = \&shutdown;
     $SIG{'TERM'} = \&shutdown;
@@ -130,6 +133,254 @@ sub cleanup ($) {
 sub shutdown ($) {
     cleanup($main::conf); # FIXME: don't use global
     exit 1;
+}
+
+# This method simply checks if a URL is valid.
+sub check_url {
+    my ($url) = @_;
+
+    # If $url is a readable plain file on the local system, just return true.
+    return 1 if (-f $url && -r $url);
+
+    # Setup the user agent.
+    my $ua = LWP::UserAgent->new;
+
+    # Determine if we need to specify any proxy settings.
+    $ua->env_proxy;
+    my $proxy = _get_proxy();
+    if ($proxy) {
+        $ua->proxy(['http', 'ftp'], $proxy);
+    }
+
+    # Dispatch a HEAD request, grab the response, and check the response for
+    # success.
+    my $res = $ua->head($url);
+    return 1 if ($res->is_success);
+
+    # URL wasn't valid.
+    return 0;
+}
+
+# This method is used to retrieve a file, usually from a location on the
+# Internet, but it can also be used for files in the local system.
+# $url is location of file, $file is path to write $url into.
+sub download {
+    # The parameters will be any URL and a location to save the file to.
+    my($url, $file) = @_;
+
+    # If $url is a readable plain file on the local system, just return the
+    # $url.
+    return $url if (-f $url && -r $url);
+
+    # Filehandle we'll be writing to.
+    my $fh;
+
+    # If $file isn't defined, a temporary file will be used instead.
+    ($fh, $file) = tempfile( UNLINK => 0 ) if (! $file);
+
+    # Setup the user agent.
+    my $ua = LWP::UserAgent->new;
+
+    # Determine if we need to specify any proxy settings.
+    $ua->env_proxy;
+    my $proxy = _get_proxy();
+    if ($proxy) {
+        $ua->proxy(['http', 'ftp'], $proxy);
+    }
+
+    # Download the file.
+    my $expected_length; # Total size we expect of content
+    my $bytes_received = 0; # Size of content as it is received
+    my $percent; # The percentage downloaded
+    my $tick; # Used for counting.
+    my $start_time = time; # Record of the start time
+    open($fh, '>', $file); # Destination file to download content to
+    my $response = $ua->get($url, ":content_cb" =>
+        sub {
+            my ($chunk, $response) = @_;
+
+            $bytes_received += length($chunk);
+            unless (defined $expected_length) {
+                $expected_length = $response->content_length or undef;
+            }
+            if ($expected_length) {
+                # Here we calculate the speed of the download to print out later
+                my $speed;
+                my $duration = time - $start_time;
+                if ($bytes_received/$duration >= 1024 * 1024) {
+                    $speed = sprintf("%.3g MB",
+                        ($bytes_received/$duration) / (1024.0 * 1024)) . "/s";
+                } elsif ($bytes_received/$duration >= 1024) {
+                    $speed = sprintf("%.3g KB",
+                        ($bytes_received/$duration) / 1024.0) . "/s";
+                } else {
+                    $speed = $bytes_received/$duration . " bytes/s";
+                }
+                # Calculate the percentage downloaded
+                $percent = sprintf("%d",
+                    100 * $bytes_received / $expected_length);
+                $tick++; # Keep count
+                # Here we print out a progress of the download. We start by
+                # printing out the amount of data retrieved so far, and then
+                # show a progress bar. After 50 ticks, the percentage is printed
+                # and the speed of the download is printed. A new line is
+                # started and the process repeats until the download is
+                # complete.
+                if (($tick == 250) or ($percent == 100)) {
+                    print STDERR ".]";
+                    printf STDERR "%5s", "$percent%";
+                    printf STDERR "%12s", "$speed\n";
+                    $tick = 0;
+                } elsif ($tick == 1) {
+                    printf STDERR "%8s", sprintf("%d",
+                        $bytes_received / 1024) . "KB";
+                    print STDERR " [.";
+                } elsif ($tick % 5 == 0) {
+                    print STDERR ".";
+                }
+            }
+            # Write the contents of the download to our specified file
+            if ($response->is_success) {
+                print $fh $chunk; # Print content to file
+            } else {
+                # Print message upon failure during download
+                print STDERR "\n" . $response->status_line . "\n";
+                return 0;
+            }
+        }
+    ); # Our GET request
+    close $fh; # Close the destination file
+
+    # Print error message in case we couldn't get a response at all.
+    if (!$response->is_success) {
+        print $response->status_line . "\n";
+        return 0;
+    }
+
+    # At this point, the download should have been successful. Print a success
+    # message and return the location of the file.
+    print STDERR "Download of $url successful.\n";
+    print STDERR "Total size of content downloaded: " .
+        sprintf("%d", $bytes_received/1024) . "KB\n";
+    return $file;
+}
+
+# This method is used to determine the proxy settings used on the local system.
+# It will return the proxy URL if a proxy setting is found.
+sub _get_proxy {
+    my $proxy;
+
+    # Attempt to acquire a proxy URL from apt-config.
+    if (open(my $apt_config_output, '-|', '/usr/bin/apt-config dump')) {
+        foreach my $tmp (<$apt_config_output>) {
+            if ($tmp =~ m/^.*Acquire::http::Proxy\s+/) {
+                $proxy = $tmp;
+                chomp($proxy);
+                # Trim the line to only the proxy URL
+                $proxy =~ s/^.*Acquire::http::Proxy\s+"|";$//g;
+                return $proxy;
+            }
+        }
+        close $apt_config_output;
+    }
+
+    # Attempt to acquire a proxy URL from the user's or system's wgetrc
+    # configuration.
+    # First try the user's wgetrc
+    if (open(my $wgetrc, '<', "$ENV{'HOME'}/.wgetrc")) {
+        foreach my $tmp (<$wgetrc>) {
+            if ($tmp =~ m/^[^#]*http_proxy/) {
+                $proxy = $tmp;
+                chomp($proxy);
+                # Trim the line to only the proxy URL
+                $proxy =~ s/^.*http_proxy\s*=\s*|\s+$//g;
+                return $proxy;
+            }
+        }
+        close($wgetrc);
+    }
+    # Now try the system's wgetrc
+    if (open(my $wgetrc, '<', '/etc/wgetrc')) {
+        foreach my $tmp (<$wgetrc>) {
+            if ($tmp =~ m/^[^#]*http_proxy/) {
+                $proxy = $tmp;
+                chomp($proxy);
+                # Trim the line to only the proxy URL
+                $proxy =~ s/^.*http_proxy\s*=\s*|\s+$//g;
+                return $proxy;
+            }
+        }
+        close($wgetrc);
+    }
+
+    # At this point there should be no proxy settings. Return undefined.
+    return 0;
+}
+
+# Method to parse a rfc822 type file, like Debian changes or control files.
+# It can also be used on files like Packages or Sources files in a Debian
+# archive.
+# This subroutine returns an array of hashes. Each hash is a stanza.
+sub parse_file {
+    # Takes one parameter, the file to parse.
+    my ($file) = @_;
+
+    # Variable we'll be returning from this subroutine.
+    my @array_of_fields;
+
+    # All our regex used in this method
+    # Regex to split each field and it's contents
+    my $split_pattern = qr{
+        ^\b   # Match the beginning of a line followed by the word boundary
+              # before a new field
+        }msx;
+    # Regex for detecting the beginning PGP block
+    my $beginning_pgp_block = qr{
+        ^\Q-----BEGIN PGP SIGNED MESSAGE-----\E
+        .*?   # Any block starting with the text above followed by some other
+              # text
+        }msx;
+    # Regex for detecting the ending PGP block
+    my $ending_pgp_block = qr{
+        ^\Q-----BEGIN PGP SIGNATURE-----\E
+        .*   # Any block starting with the text above followed by some other
+             # text
+        }msx;
+
+    # Enclose this in it's own block, since we change $/
+    {
+        # Attempt to open and read the file
+        my $fh;
+        open $fh, '<', $file or die "Could not read $file: $!";
+
+        # Read paragraph by paragraph
+        local $/ = "";
+        while (<$fh>) {
+            # Skip the beginning PGP block, stop at the ending PGP block
+            next if ($_ =~ $beginning_pgp_block);
+            last if ($_ =~ $ending_pgp_block);
+
+            # Chomp the paragraph and split by each field
+            chomp;
+            my @matches = split /$split_pattern/, "$_\n";
+
+            # Loop through the fields, placing them into a hash
+            my %fields;
+            foreach my $match (@matches) {
+                my ($field, $field_contents);
+                $field = $1 if ($match =~ /([^:]+?):/msx);
+                $field_contents = $1 if ($match =~ /[^:]+?:(.*)/msx);
+                $fields{$field} = $field_contents;
+            }
+
+            # Push each hash of fields as a ref onto our array
+            push @array_of_fields, \%fields;
+        }
+        close $fh or die "Problem encountered closing file $file: $!";
+    }
+
+    # Return a reference to the array
+    return \@array_of_fields;
 }
 
 1;
