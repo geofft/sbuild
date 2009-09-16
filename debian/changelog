@@ -2,8 +2,12 @@ sbuild (0.59.1~rc1) unstable; urgency=low
 
   * debian/control:
     - Bump to Standards-Version 3.8.2.
+  * Only run "schroot --info" once on startup, to speed up the startup
+    time when many chroots exist (Closes: #546624).  Thanks to
+    Nelson Elhage for finding this issue and suggesting a suitable
+    approach for fixing it. 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 02 Aug 2009 12:36:51 +0100
+ -- Roger Leigh <rleigh@debian.org>  Wed, 16 Sep 2009 22:23:56 +0100
 
 sbuild (0.59.0-1) unstable; urgency=low
 
