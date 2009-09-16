@@ -87,10 +87,12 @@ sub new {
     debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
     debug("Package_Version = " . $self->get('Package_Version') . "\n");
     debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
+    debug("Package_OSVersion = " . $self->get('Package_OSVersion') . "\n");
     debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
     debug("Package = " . $self->get('Package') . "\n");
     debug("Version = " . $self->get('Version') . "\n");
     debug("OVersion = " . $self->get('OVersion') . "\n");
+    debug("OSVersion = " . $self->get('OSVersion') . "\n");
     debug("SVersion = " . $self->get('SVersion') . "\n");
     debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
     debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
@@ -146,7 +148,10 @@ sub set_version {
     debug("Setting package version: $pkgv\n");
 
     my ($pkg, $version) = split /_/, $pkgv;
-    my $oversion = $version; # Original version (no binNMU addition)
+    # Original version (no binNMU or other addition)
+    my $oversion = $version;
+    # Original version with stripped epoch
+    (my $osversion = $version) =~ s/^\d+://;
 
     # Add binNMU to version if needed.
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
@@ -154,7 +159,8 @@ sub set_version {
 	    $self->get_conf('APPEND_TO_VERSION'));
     }
 
-    (my $sversion = $version) =~ s/^\d+://; # Strip epoch
+    # Version with binNMU or other additions and stripped epoch
+    (my $sversion = $version) =~ s/^\d+://;
 
     my ($epoch, $uversion, $dversion) = split_version($version);
 
@@ -162,13 +168,15 @@ sub set_version {
     $self->set('Version', $version);
     $self->set('Package_Version', "${pkg}_$version");
     $self->set('Package_OVersion', "${pkg}_$oversion");
+    $self->set('Package_OSVersion', "${pkg}_$osversion");
     $self->set('Package_SVersion', "${pkg}_$sversion");
     $self->set('OVersion', $oversion);
+    $self->set('OSVersion', $osversion);
     $self->set('SVersion', $sversion);
     $self->set('VersionEpoch', $epoch);
     $self->set('VersionUpstream', $uversion);
     $self->set('VersionDebian', $dversion);
-    $self->set('DSC File', "${pkg}_${sversion}.dsc");
+    $self->set('DSC File', "${pkg}_${osversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
 }
 
