@@ -45,24 +45,25 @@ sub new {
     return $self;
 }
 
-sub get_info {
+sub get_info_from_stream {
     my $self = shift;
-    my $chroot = shift;
+    my $stream = shift;
 
-    my $chroot_type = "";
-    my %tmp = ('Priority' => 0,
-	       'Location' => "",
+    my $chroot_type = '';
+    my %tmp = ('Name' => '',
+	       'Priority' => 0,
+	       'Location' => '',
 	       'Session Purged' => 0);
 
-    local %ENV;
-
-    $ENV{'LC_ALL'} = 'C';
-    $ENV{'LANGUAGE'} = 'C';
-
-    open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot
-	or die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
-    while (<CHROOT_DATA>) {
+    while (<$stream>) {
 	chomp;
+
+	last if ! $_;
+
+	if (/^\s*Name:?\s+(.*)$/ &&
+	    $tmp{'Name'} eq "") {
+	    $tmp{'Name'} = $1;
+	}
 	if (/^\s*Type:?\s+(.*)$/) {
 	    $chroot_type = $1;
 	}
@@ -88,16 +89,30 @@ sub get_info {
 	}
     }
 
-    close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
-
     if ($self->get_conf('DEBUG')) {
-	print STDERR "Found schroot chroot: $chroot\n";
+	print STDERR "Found schroot chroot: $tmp{'Name'}\n";
 	foreach (sort keys %tmp) {
 	    print STDERR "  $_ $tmp{$_}\n";
 	}
     }
 
     return \%tmp;
+}
+
+sub get_info {
+    my $self = shift;
+    my $chroot = shift;
+
+    my $chroot_type = "";
+
+    open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot
+	or die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
+
+    my $tmp = $self->get_info_from_stream(\*CHROOT_DATA);
+
+    close CHROOT_DATA or die "Can't close schroot pipe getting chroot data";
+
+    return $tmp;
 }
 
 sub get_info_all {
@@ -111,14 +126,11 @@ sub get_info_all {
     $ENV{'LC_ALL'} = 'C';
     $ENV{'LANGUAGE'} = 'C';
 
-    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--list'
+    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--info', '--all-chroots'
 	or die 'Can\'t run ' . $self->get_conf('SCHROOT');
     while (<CHROOTS>) {
-	chomp;
-	my $chroot = $_;
-	print STDERR "Getting info for $chroot chroot\n"
-	    if $self->get_conf('DEBUG');
-	$chroots->{$chroot} = $self->get_info($chroot);
+	my $tmp = $self->get_info_from_stream(\*CHROOTS);
+	$chroots->{$tmp->{'Name'}} = $tmp;
     }
     close CHROOTS or die "Can't close schroot pipe";
 
