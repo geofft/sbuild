@@ -9,8 +9,11 @@ sbuild (0.59.1~rc1) unstable; urgency=low
   * Don't append binNMU or extra version to version number for use
     in the DSC filename (Closes: #546647).  Thanks to Nelson Elhage
     for finding this issue.
+  * Allow the use of -C as well as --check-depends-algorithm as
+    documented (Closes: #546673).  Thanks to Nelson Elhage for this
+    patch.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 16 Sep 2009 23:20:40 +0100
+ -- Roger Leigh <rleigh@debian.org>  Wed, 16 Sep 2009 23:27:10 +0100
 
 sbuild (0.59.0-1) unstable; urgency=low
 
