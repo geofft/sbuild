@@ -13,3 +13,5 @@ touch ChangeLog
 autoreconf --verbose --force --install
 
 rm -rf autom4te.cache
+rm -f config.h.in~
+
