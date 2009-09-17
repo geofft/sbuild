@@ -306,18 +306,19 @@ if (! -d "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot") {
 my $chrootlink = "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname";
 if (-l $chrootlink) {
     unlink($chrootlink) or die "Can't unlink $chrootlink: $!";
-} else {
+} elsif (-e $chrootlink) {
     print STDERR "E: Can't remove $chrootlink: not a symbolic link\n";
+    $chrootlink = undef;
 }
 
-if (! -f $chrootlink) {
+if (defined $chrootlink) {
     if (symlink($target, $chrootlink)) {
 	print "I: sudo chroot configuration linked as $Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname.\n";
     } else {
 	print STDERR "E: Failed to symlink $target to $chrootlink: $!\n";
     }
 } else {
-    print "W: Failed to symlink $target to $chrootlink: \n"
+    print "W: Failed to symlink $target to $chrootlink: file already exists\n";
 }
 
 if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
