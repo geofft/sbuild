@@ -32,6 +32,8 @@ use File::Basename qw(basename dirname);
 use File::Temp qw(tempdir);
 use FileHandle;
 use GDBM_File;
+use File::Copy qw(); # copy is already exported from Sbuild, so don't export
+		     # anything.
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug df);
 use Sbuild::Base;
@@ -42,6 +44,7 @@ use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
+use Sbuild::Utility qw(check_url download parse_file);
 
 BEGIN {
     use Exporter ();
@@ -70,13 +73,14 @@ sub new {
     # Do we need to download?
     $self->set('Download', 0);
     $self->set('Download', 1)
-	if (!($self->get('DSC Base') =~ m/\.dsc$/));
+	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
+	    check_url($self->get('DSC'))); # Valid URL
 
     # Can sources be obtained?
     $self->set('Invalid Source', 0);
     $self->set('Invalid Source', 1)
-	if ((!$self->get('Download') && ! -f $self->get('DSC')) ||
-	    ($self->get('Download') &&
+	if ((!$self->get('Download')) ||
+	    (!($self->get('DSC Base') =~ m/\.dsc$/) && # Use apt to download
 	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
 	    (!defined $self->get('Version')));
 
@@ -368,18 +372,48 @@ sub fetch_source_files {
 	return 0;
     }
 
-    if (-f "$dir/$dsc" && !$self->get('Download')) {
-	$self->log_subsubsection("Local sources");
-	$self->log("$dsc exists in $dir; copying to chroot\n");
-	my @cwd_files = $self->dsc_files("$dir/$dsc");
-	foreach (@cwd_files) {
-	    if (system ("cp '$_' '$build_dir'")) {
-		$self->log_error("Could not copy $_ to $build_dir\n");
+    if ($self->get('DSC Base') =~ m/\.dsc$/) {
+	# Work with a .dsc file.
+	# $file is the name of the downloaded dsc file written in a tempfile.
+	my $file;
+	$file = download($self->get('DSC')) or
+	    $self->log_error("Could not download " . $self->get('DSC')) and
+	    return 0;
+	my @cwd_files = $self->dsc_files($file);
+	if (-f "$dir/$dsc") {
+	    # Copy the local source files into the build directory.
+	    $self->log_subsubsection("Local sources");
+	    $self->log("$dsc exists in $dir; copying to chroot\n");
+	    if (! File::Copy::copy("$dir/$dsc", "$build_dir")) {
+		$self->log_error("Could not copy $dir/$dsc to $build_dir\n");
 		return 0;
 	    }
-	    push(@fetched, "$build_dir/" . basename($_));
+	    push(@fetched, "$build_dir/$dsc");
+	    foreach (@cwd_files) {
+		if (! File::Copy::copy("$dir/$_", "$build_dir")) {
+		    $self->log_error("Could not copy $dir/$_ to $build_dir\n");
+		    return 0;
+		}
+		push(@fetched, "$build_dir/$_");
+	    }
+	} else {
+	    # Copy the remote source files into the build directory.
+	    $self->log_subsubsection("Remote sources");
+	    $self->log("Downloading source files from $dir.\n");
+	    if (! File::Copy::copy("$file", "$build_dir/" . $self->get('DSC File'))) {
+		$self->log_error("Could not copy downloaded file $file to $build_dir\n");
+		return 0;
+	    }
+	    push(@fetched, "$build_dir/" . $self->get('DSC File'));
+	    foreach (@cwd_files) {
+		download("$dir/$_", "$build_dir/$_") or
+		    $self->log_error("Could not download $dir/$_") and
+		    return 0;
+		push(@fetched, "$build_dir/$_");
+	    }
 	}
     } else {
+	# Use apt to download the source files
 	$self->log_subsubsection("Check APT");
 	my %entries = ();
 	my $retried = $self->get_conf('APT_UPDATE'); # Already updated if set
@@ -2467,16 +2501,16 @@ sub dsc_files {
 
     debug("Parsing $dsc\n");
 
-    if (-r $dsc && open(DSC, $self->get_conf('DCMD') . " $dsc|")) {
-	while (<DSC>) {
-	    chomp;
-	    push @files, $_;
-	    debug("  $_\n");
-	}
-	close( DSC ) or $self->log("Failed to close $dsc\n");
-    } else {
-	$self->log("Failed to open $dsc\n");
-    }
+    # The parse_file() subroutine returns a ref to an array of hashrefs.
+    my $stanzas = parse_file($dsc);
+
+    # A dsc file would only ever contain one stanza, so we only deal with
+    # the first entry which is a ref to a hash of fields for the stanza.
+    my $stanza = @{$stanzas}[0];
+
+    # We're only interested in the name of the files in the Files field.
+    my $entry = ${$stanza}{'Files'};
+    @files = grep(/\.tar\.gz$|\.diff\.gz$/, split(/\s/, $entry));
 
     return @files;
 }

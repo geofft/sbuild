@@ -25,6 +25,7 @@ use strict;
 use warnings;
 
 use Sbuild qw($devnull);
+use Sbuild::ChrootRoot;
 
 BEGIN {
     use Exporter ();
