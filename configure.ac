@@ -60,7 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ])
 
 dnl Initialise automake stuff.
-AM_INIT_AUTOMAKE([1.9 gnu check-news tar-pax])
+AM_INIT_AUTOMAKE([1.10 gnu check-news tar-pax silent-rules])
 AM_MAINTAINER_MODE
 RELEASE_DATE='sbuild_m4_esyscmd_s([sed -ne '/^Release-Date:/{s/Release-Date:[[:space:]][[:space:]]*//p;q}' VERSION])'
 RELEASE_DATE_S='sbuild_m4_esyscmd_s(date --date='sbuild_m4_esyscmd_s([sed -ne '/^Release-Date:/{s/Release-Date:[[:space:]][[:space:]]*//p;q}' VERSION])' '+%s')'
