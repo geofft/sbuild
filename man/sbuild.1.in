@@ -41,7 +41,7 @@ sbuild \- build debian packages from source
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
 .RB [ \-\-debbuildopt=\fIoption\fP ]
 .RB [ \-\-debbuildopts=\fIoptions\fP ]
-.RB [ \-\-purge=\fPpurge-mode\fP ]
+.RB [ \-p \[or] \-\-purge=\fPpurge-mode\fP ]
 .RB [ \-\-purge\-deps=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
 .RB [ \-n \[or] \-\-nolog ]
@@ -140,12 +140,6 @@ Fetch source packages from specified distribution.
 .BR \-\-archive=\fIarchive\fP
 Communicate with specified archive.
 .TP
-.BR \-f ", " "\-\-force\-depends=\fIdependency-line\fP"
-This option overrides source dependency information for a package. It
-can be given more than one time with accumulating effect. The argument
-is a line of source dependencies in the same format as in
-\fI/var/lib/sbuild/source\-dependencies\fR.
-.TP
 .BR \-D ", " "\-\-debug"
 Enable debug output.
 .TP
@@ -182,7 +176,7 @@ log mails.
 \fIpurge-mode\fR determines if the build directory will be deleted after a
 build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .TP
-.BR \-p ", " "\-\-purge\-deps=\fIpurge-mode\fP"
+.BR "\-\-purge\-deps=\fIpurge-mode\fP"
 \fIpurge-mode\fR determines if the build dependencies will be removed after a
 build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .TP
