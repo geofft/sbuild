@@ -6,7 +6,8 @@
 debian/build/config.status: configure
 	dh_testdir
 
-	mkdir debian/build; \
+	[ -d debian/build ] || mkdir debian/build
+
 	cd debian/build; \
 	CFLAGS="$(CFLAGS)" ../../configure \
 	  --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
@@ -21,8 +22,7 @@ build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status
 	dh_testdir
 
-	cd debian/build; \
-	$(MAKE) all
+	$(MAKE) -C debian/build all
 
 	touch debian/build-stamp
 
@@ -42,8 +42,7 @@ install: build
 	dh_prep
 	dh_installdirs
 
-	cd debian/build; \
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/install
+	$(MAKE) -C debian/build install DESTDIR=$(CURDIR)/debian/install
 
 	dh_install
 	cp debian/buildd.forward debian/buildd/var/lib/buildd/.forward
@@ -71,22 +70,6 @@ binary-indep: build install
 
 # Build architecture-dependent files here.
 binary-arch: build install
-#	dh_testdir -a
-#	dh_testroot -a
-#	dh_installchangelogs -a ChangeLog
-#	dh_installdocs -a -A debian/cvslogs.old
-#	dh_installexamples -a
-#	dh_installman -a
-#	dh_link -a
-#	dh_strip -a
-#	dh_compress -a
-#	dh_fixperms -a
-#	dh_makeshlibs -a
-#	dh_installdeb -a
-#	dh_shlibdeps -a
-#	dh_gencontrol -a
-#	dh_md5sums -a
-#	dh_builddeb -a
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install
