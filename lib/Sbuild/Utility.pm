@@ -40,7 +40,7 @@ use warnings;
 use Sbuild::Conf;
 use Sbuild::Chroot;
 use File::Temp qw(tempfile);
-use LWP::UserAgent; # Needed to grab content from the WWW.
+use Module::Load::Conditional qw(can_load); # Used to check for LWP::UserAgent
 use Time::HiRes qw ( time ); # Needed for high resolution timers
 
 sub get_dist ($);
@@ -142,6 +142,11 @@ sub check_url {
     # If $url is a readable plain file on the local system, just return true.
     return 1 if (-f $url && -r $url);
 
+    # Load LWP::UserAgent if possible, else return 0.
+    if (! can_load( modules => { 'LWP::UserAgent' => undef, } )) {
+	return 0;
+    }
+
     # Setup the user agent.
     my $ua = LWP::UserAgent->new;
 
@@ -172,6 +177,11 @@ sub download {
     # $url.
     return $url if (-f $url && -r $url);
 
+    # Load LWP::UserAgent if possible, else return 0.
+    if (! can_load( modules => { 'LWP::UserAgent' => undef, } )) {
+	return 0;
+    }
+
     # Filehandle we'll be writing to.
     my $fh;
 
@@ -189,14 +199,17 @@ sub download {
     }
 
     # Download the file.
+    print STDOUT "Downloading $url to $file.\n";
     my $expected_length; # Total size we expect of content
     my $bytes_received = 0; # Size of content as it is received
     my $percent; # The percentage downloaded
     my $tick; # Used for counting.
     my $start_time = time; # Record of the start time
     open($fh, '>', $file); # Destination file to download content to
-    my $response = $ua->get($url, ":content_cb" =>
+    my $request = HTTP::Request->new(GET => $url);
+    my $response = $ua->request($request,
         sub {
+	    # Our own content callback subroutine
             my ($chunk, $response) = @_;
 
             $bytes_received += length($chunk);
@@ -208,13 +221,14 @@ sub download {
                 my $speed;
                 my $duration = time - $start_time;
                 if ($bytes_received/$duration >= 1024 * 1024) {
-                    $speed = sprintf("%.3g MB",
+                    $speed = sprintf("%.4g MB",
                         ($bytes_received/$duration) / (1024.0 * 1024)) . "/s";
                 } elsif ($bytes_received/$duration >= 1024) {
-                    $speed = sprintf("%.3g KB",
+                    $speed = sprintf("%.4g KB",
                         ($bytes_received/$duration) / 1024.0) . "/s";
                 } else {
-                    $speed = $bytes_received/$duration . " bytes/s";
+                    $speed = sprintf("%.4g B",
+			($bytes_received/$duration)) . "/s";
                 }
                 # Calculate the percentage downloaded
                 $percent = sprintf("%d",
@@ -227,6 +241,17 @@ sub download {
                 # started and the process repeats until the download is
                 # complete.
                 if (($tick == 250) or ($percent == 100)) {
+		    if ($tick == 1) {
+			# In case we reach 100% from tick 1.
+			printf STDERR "%8s", sprintf("%d",
+			    $bytes_received / 1024) . "KB";
+			print STDERR " [.";
+		    }
+		    while ($tick != 250) {
+			# In case we reach 100% before reaching 250 ticks
+			print STDERR "." if ($tick % 5 == 0);
+			$tick++;
+		    }
                     print STDERR ".]";
                     printf STDERR "%5s", "$percent%";
                     printf STDERR "%12s", "$speed\n";
@@ -248,7 +273,7 @@ sub download {
                 return 0;
             }
         }
-    ); # Our GET request
+    ); # End of our content callback subroutine
     close $fh; # Close the destination file
 
     # Print error message in case we couldn't get a response at all.
@@ -257,11 +282,19 @@ sub download {
         return 0;
     }
 
-    # At this point, the download should have been successful. Print a success
-    # message and return the location of the file.
-    print STDERR "Download of $url successful.\n";
-    print STDERR "Total size of content downloaded: " .
-        sprintf("%d", $bytes_received/1024) . "KB\n";
+    # Print out amount of content received before returning the path of the
+    # file.
+    print STDOUT "Download of $url sucessful.\n";
+    print STDOUT "Size of content downloaded: ";
+    if ($bytes_received >= 1024 * 1024) {
+	print STDOUT sprintf("%.4g MB",
+	    $bytes_received / (1024.0 * 1024)) . "\n";
+    } elsif ($bytes_received >= 1024) {
+	print STDOUT sprintf("%.4g KB", $bytes_received / 1024.0) . "\n";
+    } else {
+	print STDOUT sprintf("%.4g B", $bytes_received) . "\n";
+    }
+
     return $file;
 }
 
