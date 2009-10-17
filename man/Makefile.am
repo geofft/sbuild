@@ -38,6 +38,7 @@ man_MANS =				\
 	sbuild-shell.1			\
 	sbuild-stats.1			\
 	sbuild-update.1			\
+	sbuild-clean.1			\
 	wanna-build.1			\
 	wanna-build-catdb.1		\
 	wanna-build-mail.1		\
