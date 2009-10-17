@@ -87,6 +87,9 @@ sub get_info_from_stream {
 		$tmp{'Session Purged'} = 1;
 	    }
 	}
+	if (/^\s*Aliases:?\s+(.*)$/) {
+	    $tmp{'Aliases'} = $1;
+	}
     }
 
     if ($self->get_conf('DEBUG')) {
@@ -131,6 +134,9 @@ sub get_info_all {
     while (<CHROOTS>) {
 	my $tmp = $self->get_info_from_stream(\*CHROOTS);
 	$chroots->{$tmp->{'Name'}} = $tmp;
+	foreach my $alias (split(/\s+/, $tmp->{'Aliases'})) {
+	    $chroots->{$alias} = $tmp;
+	}
     }
     close CHROOTS or die "Can't close schroot pipe";
 
