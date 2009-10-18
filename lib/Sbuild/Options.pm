@@ -135,6 +135,9 @@ sub set_options {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				$_[1]);
 		       },
+		       "mail-log-to=s" => sub {
+			   $self->set_conf('MAILTO', $_[1]);
+		       },
 		       "n|nolog" => sub {
 			   $self->set_conf('NOLOG', 1);
 		       },

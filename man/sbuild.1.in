@@ -167,10 +167,13 @@ Pass the specified options directly to dpkg\-buildpackage.  The options should
 be separated by spaces.  If any options contain spaces, use \-\-debbuildopt
 instead.
 .TP
+.BR "\-\-mail\-log\-to=\fIemail-address\fP"
+Send the build log to the specified email address.  This overrides the
+\fI$mailto\fP configuration option.
+.TP
 .BR \-n ", " "\-\-nolog"
-Do not create a package log file in the $log_dir directory and no
-build log file, but print everything to stdout. Also do not send any
-log mails.
+Do not create a package log file in the \fI$log_dir\fP directory and no build
+log file, but print everything to stdout. Also do not send any log mails.
 .TP
 .BR \-p ", " "\-\-purge=\fIpurge-mode\fP"
 \fIpurge-mode\fR determines if the build directory will be deleted after a
