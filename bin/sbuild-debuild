@@ -1,0 +1,403 @@
+#!/usr/bin/perl -w
+#
+# Copyright © 2005-2009  Roger Leigh <rleigh@debian.org>
+# Copyright © 2009  Andres Mejia <mcitadel@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+use strict;
+use warnings;
+
+package Conf;
+
+use Sbuild::Conf;
+
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @ISA = qw(Exporter Sbuild::Conf);
+
+    @EXPORT = qw();
+}
+
+sub init_allowed_keys {
+    my $self = shift;
+
+    $self->SUPER::init_allowed_keys();
+
+    my %update_keys = (
+	'DPKG_BUILDPACKAGE_OPTS'	=> {
+	    DEFAULT => ['-S',
+			'-us',
+			'-uc',
+		]
+	},
+	'DPKG_BUILDPACKAGE_EXTRA_OPTS'	=> {
+	    DEFAULT => []
+	},
+	'SBUILD_OPTS'			=> {
+	    DEFAULT => []
+	},
+	'SBUILD_EXTRA_OPTS'		=> {
+	    DEFAULT => []
+	},
+	'LINTIAN_OPTS'			=> {
+	    DEFAULT => []
+	},
+	'LINTIAN_EXTRA_OPTS'		=> {
+	    DEFAULT => []
+	},
+	'NO_LINTIAN'		=> {
+	    DEFAULT => 0
+	},
+	'PRE_DPKG_BUILDPACKAGE_COMMANDS' => {
+	    DEFAULT => []
+	},
+	'PRE_SBUILD_COMMANDS'		=> {
+	    DEFAULT => []
+	},
+	'PRE_LINTIAN_COMMANDS'		=> {
+	    DEFAULT => []
+	},
+	'PRE_EXIT_COMMANDS'		=> {
+	    DEFAULT => []
+	},
+    );
+
+    $self->set_allowed_keys(\%update_keys);
+}
+
+# This subroutine is used to read a different set of config files for
+# sbuild-debuild
+sub read_sbuild_debuild_config {
+    my $self = shift;
+
+    # Our HOME environment variable.
+    my $HOME = $self->get('HOME');
+
+    # Variables are undefined, so config will default to DEFAULT if unset.
+    my $dpkg_buildpackage_opts = undef;
+    my $dpkg_buildpackage_extra_opts = undef;
+    my $sbuild_opts = undef;
+    my $sbuild_extra_opts = undef;
+    my $lintian_opts = undef;
+    my $lintian_extra_opts = undef;
+    my $no_lintian = undef;
+    my $pre_dpkg_buildpackage_commands = undef;
+    my $pre_sbuild_commands = undef;
+    my $pre_lintian_commands = undef;
+    my $pre_exit_commands = undef;
+
+    foreach ("/etc/sbuild/sbuild-debuild.conf", "$HOME/.sbuild-debuildrc") {
+	if (-r $_) {
+	    my $e = eval `cat "$_"`;
+	    if (!defined($e)) {
+		print STDERR "E: $_: Errors found in configuration file:\n$@";
+		exit(1);
+	    }
+	}
+    }
+
+    $self->set('DPKG_BUILDPACKAGE_OPTS', $dpkg_buildpackage_opts)
+	if ($dpkg_buildpackage_opts);
+    push(@{$self->get('DPKG_BUILDPACKAGE_OPTS')},
+	@{$dpkg_buildpackage_extra_opts}) if ($dpkg_buildpackage_extra_opts);
+    $self->set('SBUILD_OPTS', $sbuild_opts)
+	if ($sbuild_opts);
+    push(@{$self->get('SBUILD_OPTS')}, @{$sbuild_extra_opts})
+	if ($sbuild_extra_opts);
+    $self->set('LINTIAN_OPTS', $lintian_opts)
+	if ($lintian_opts);
+    push(@{$self->get('LINTIAN_OPTS')}, @{$lintian_extra_opts})
+	if ($lintian_extra_opts);
+    $self->set('NO_LINTIAN', $no_lintian)
+	if ($no_lintian);
+    $self->set('PRE_DPKG_BUILDPACKAGE_COMMANDS',
+	$pre_dpkg_buildpackage_commands) if ($pre_dpkg_buildpackage_commands);
+    $self->set('PRE_SBUILD_COMMANDS', $pre_sbuild_commands)
+	if ($pre_sbuild_commands);
+    $self->set('PRE_LINTIAN_COMMANDS', $pre_lintian_commands)
+	if ($pre_lintian_commands);
+    $self->set('PRE_EXIT_COMMANDS', $pre_exit_commands)
+	if ($pre_exit_commands);
+}
+
+package Options;
+
+use Sbuild::OptionsBase;
+use Sbuild::Conf;
+
+BEGIN {
+    use Exporter ();
+    our (@ISA, @EXPORT);
+
+    @ISA = qw(Exporter Sbuild::OptionsBase);
+
+    @EXPORT = qw();
+}
+
+sub set_options {
+    my $self = shift;
+
+    $self->add_options(
+	"dpkg-buildpackage-opts=s" => sub {
+	    my @opt_values = split(/\s+/,$_[1]);
+	    $self->set_conf('DPKG_BUILDPACKAGE_OPTS', \@opt_values);
+	},
+	"dpkg-buildpackage-extra-opts=s" => sub {
+	    my @opt_values = split(/\s+/,$_[1]);
+	    push(@{$self->get_conf('DPKG_BUILDPACKAGE_OPTS')},
+		@opt_values);
+	},
+	"sbuild-opts=s" => sub {
+	    my @opt_values = split(/\s+/,$_[1]);
+	    $self->set_conf('SBUILD_OPTS', \@opt_values);
+	},
+	"sbuild-extra-opts=s" => sub {
+	    my @opt_values = split(/\s+/,$_[1]);
+	    push(@{$self->get_conf('SBUILD_OPTS')},
+		@opt_values);
+	},
+	"lintian-opts=s" => sub {
+	    my @opt_values = split(/\s+/,$_[1]);
+	    $self->set_conf('LINTIAN_OPTS', \@opt_values);
+	},
+	"lintian-extra-opts=s" => sub {
+	    my @opt_values = split(/\s+/,$_[1]);
+	    push(@{$self->get_conf('LINTIAN_OPTS')},
+		@opt_values);
+	},
+	"no-lintian" => sub {
+	    $self->set_conf('NO_LINTIAN', 1);
+	},
+	"pre-dpkg-buildpackage-commands=s" => sub {
+	    push(@{$self->get_conf('PRE_DPKG_BUILDPACKAGE_COMMANDS')}, $_[1]);
+	},
+	"pre-sbuild-commands=s" => sub {
+	    push(@{$self->get_conf('PRE_SBUILD_COMMANDS')}, $_[1]);
+	},
+	"pre-lintian-commands=s" => sub {
+	    push(@{$self->get_conf('PRE_LINTIAN_COMMANDS')}, $_[1]);
+	},
+	"pre-exit-commands=s" => sub {
+	    push(@{$self->get_conf('PRE_EXIT_COMMANDS')}, $_[1]);
+	},
+    );
+}
+
+package main;
+
+use Getopt::Long;
+use Cwd;
+use File::Basename;
+use Sbuild qw(help_text version_text usage_error);
+
+my $conf = Conf->new();
+exit 1 if !defined($conf);
+$conf->read_sbuild_debuild_config();
+my $options = Options->new($conf, "sbuild-debuild", "1");
+exit 1 if !defined($options);
+$conf->check_group_membership();
+
+# This subroutine determines the architecture we're building for.
+sub detect_arch {
+    # Detect if we're building for another architecture
+    my @values = grep {/--arch=.+/} @{$conf->get('SBUILD_OPTS')};
+    my $arch_opt = $values[0];
+    $arch_opt =~ s/--arch=// if ($arch_opt);
+
+    # Determine the arch using dpkg-architecture
+    my $dpkg_arch_command = '/usr/bin/dpkg-architecture -qDEB_HOST_ARCH';
+    $dpkg_arch_command .= " -a$arch_opt" if ($arch_opt);
+
+    # Grab the architecture and return it. We discard output from STDERR
+    # to suppress the "Specified GNU system ... does not match" warning that
+    # may occur from dpkg-architecture
+    my $arch = qx($dpkg_arch_command 2>/dev/null);
+    chomp $arch;
+    return $arch;
+}
+
+# This subroutine determines the package and version we're building for
+sub detect_package_and_version {
+    my ($build_input) = @_;
+
+    # chdir into package directories, but not dsc files
+    chdir($build_input) unless ($build_input =~ /.*\.dsc$/);
+
+    my $output;
+    if ($build_input =~ m/.*\.dsc$/) {
+	# Read the dsc file directly.
+	open($output, '<', $build_input);
+    } else {
+	# Grab the output from dpkg-parsechangelog
+	my $dpkg_parsechangelog = '/usr/bin/dpkg-parsechangelog';
+	open($output, '-|', $dpkg_parsechangelog);
+    }
+
+    # Grab the package and version info
+    my ($package, $version);
+    while (<$output>) {
+	$package = $1 if ($_ =~ /^Source: (.*)$/);
+	$version = $1 if ($_ =~ /^Version: (.*)$/);
+	last if (($package) and ($version));
+    }
+    return ($package, $version);
+}
+
+# This subroutine strips the epoch from a Debian package version.
+sub strip_epoch {
+    my ($version) = @_;
+    $version =~ s/^[^:]*?://;
+    return $version;
+}
+
+# This subroutine processes the array external ommands to run at the various
+# stages of sbuild-debuild's run
+sub process_commands {
+    my ($commands, $dsc, $source_changes, $bin_changes) = @_;
+
+    # Determine which set of commands to run based on the string $commands
+    my @commands;
+    if ($commands eq "pre_dpkg_buildpackage_commands") {
+	@commands = @{$conf->get('PRE_DPKG_BUILDPACKAGE_COMMANDS')};
+    } elsif ($commands eq "pre_sbuild_commands") {
+	@commands = @{$conf->get('PRE_SBUILD_COMMANDS')};
+    } elsif ($commands eq "pre_lintian_commands") {
+	@commands = @{$conf->get('PRE_LINTIAN_COMMANDS')};
+    } elsif ($commands eq "pre_exit_commands") {
+	@commands = @{$conf->get('PRE_EXIT_COMMANDS')};
+    }
+
+    # Run each command, substituting the various @SBUILD_DEBUILD_*@ options from
+    # the commands to run with the appropriate subsitutions.
+    my $returnval = 1;
+    foreach my $command (@commands) {
+	$command =~ s/\@SBUILD_DEBUILD_DSC@/$dsc/;
+	$command =~ s/\@SBUILD_DEBUILD_SOURCE_CHANGES@/$source_changes/;
+	$command =~ s/\@SBUILD_DEBUILD_BIN_CHANGES@/$bin_changes/;
+	my @args = split(/\s+/, $command);
+	print "Running $command\n";
+	system(@args);
+	if (($? >> 8) != 0) {
+	    print "Failed to run command ($command): $?";
+	    $returnval = 0;
+	}
+    }
+    return $returnval;
+}
+
+# Subroutine to determine various files we'll be working with.
+sub detect_files {
+    my ($build_input) = @_;
+
+    # Determine the dsc and changes files that we'll use
+    my ($package, $version) = detect_package_and_version($build_input);
+    $version = strip_epoch($version);
+    my $arch = detect_arch();
+    my ($dsc, $dirname);
+    if ($build_input =~ /.*\.dsc$/) {
+	$dsc = Cwd::abs_path("$build_input");
+	$dirname = Cwd::abs_path(dirname($build_input));
+    } else {
+	$dirname = Cwd::abs_path("$build_input/..");
+	$dsc = "$dirname/" . $package . "_" . "$version.dsc";
+    }
+    my $source_changes = "$dirname/" . $package . "_$version" .
+	"_source.changes";
+    my $bin_changes = "$dirname/" . $package . "_$version" . "_$arch.changes";
+
+    return ($dsc, $source_changes, $bin_changes);
+}
+
+# Process a debianized package directory or .dsc file.
+sub process_package {
+    my ($build_input) = @_;
+
+    # We use this to determine if there was a problem processing the external
+    # commands.
+    my $returnval = 1;
+
+    # Save the current directory we're in.
+    my $currentdir = getcwd();
+
+    # Determine the dsc and changes files that we'll use
+    my ($dsc, $source_changes, $bin_changes) = detect_files($build_input);
+
+    print "Processing pre dpkg-buildpackage commands.\n";
+    $returnval = 0 unless process_commands("pre_dpkg_buildpackage_commands",
+	$dsc, $source_changes, $bin_changes);
+
+    if ($build_input !~ /.*\.dsc$/) {
+	chdir($build_input);
+	print "Running dpkg-buildpackage.\n";
+	system('/usr/bin/dpkg-buildpackage',
+	    @{$conf->get('DPKG_BUILDPACKAGE_OPTS')});
+	if (($? >> 8) != 0) {
+	    print "Running dpkg-buildpckage failed: $?";
+	    chdir($currentdir);
+	    return 0;
+	}
+    }
+
+    print "Processing pre sbuild commands.\n";
+    $returnval = 0 unless process_commands("pre_sbuild_commands", $dsc,
+	$source_changes, $bin_changes);
+
+    chdir(dirname($dsc));
+    print "Running sbuild.\n";
+    system('/usr/bin/sbuild', @{$conf->get('SBUILD_OPTS')}, $dsc);
+    if (($? >> 8) != 0) {
+	print "Running sbuild failed: $?";
+	chdir($currentdir);
+	return 0;
+    }
+
+    print "Processing pre lintian commands.\n";
+    $returnval = 0 unless process_commands("pre_lintian_commands", $dsc,
+	$source_changes, $bin_changes);
+
+    if ((!$conf->get('NO_LINTIAN')) && (-x '/usr/bin/lintian')) {
+	print "Running lintian.\n";
+	system('/usr/bin/lintian', @{$conf->get('LINTIAN_OPTS')}, $bin_changes);
+	if (($? >> 8) != 0) {
+	    print "Running lintian failed: $?";
+	    chdir($currentdir);
+	    return 0;
+	}
+    }
+
+    print "Processing commands run before exiting.\n";
+    $returnval = 0 unless process_commands("pre_exit_commands", $dsc,
+	$source_changes, $bin_changes);
+
+    # Go back to the directory we were in earlier
+    chdir($currentdir);
+    return $returnval;
+}
+
+# Process each package directory and .dsc file.
+my $status = 0;
+if (!@ARGV) {
+    $status = 1 unless process_package(getcwd());
+} else {
+    foreach my $arg (@ARGV) {
+	$status = 1 unless process_package($arg);
+    }
+}
+exit $status;

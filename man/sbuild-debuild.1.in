@@ -1,0 +1,195 @@
+.\" Copyright © 2005-2009  Roger Leigh <rleigh@debian.org>
+.\" Copyright © 2009       Andres Mejia <mcitadel@gmail.com>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.TH SBUILD-DEBUILD 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.SH NAME
+sbuild\-debuild \- build debian packages from source in debuild\-like manner
+.SH SYNOPSIS
+.B sbuild\-debuild
+.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.RB [ \-\-dpkg\-buildpackage\-opts " " \fIstring\fP ]
+.RB [ \-\-dpkg\-buildpackage\-extra\-opts " " \fIstring\fP ]
+.RB [ \-\-sbuild\-opts " " \fIstring\fP ]
+.RB [ \-\-sbuild\-extra\-opts " " \fIstring\fP ]
+.RB [ \-\-lintian\-opts " " \fIstring\fP ]
+.RB [ \-\-lintian\-extra\-opts " " \fIstring\fP ]
+.RB [ \-\-no\-lintian ]
+.RB [ \-\-pre\-dpkg\-buildpackage\-commands " " \fIstring\fP ]
+.RB [ \-\-pre\-sbuild\-commands " " \fIstring\fP ]
+.RB [ \-\-pre\-lintian\-commands " " \fIstring\fP ]
+.RB [ \-\-pre\-exit\-commands " " \fIstring\fP ]
+.BR [PACKAGE1[.dsc] " [" PACKAGE2[.dsc] " [" PACKAGE\f[BI]n\fP[.dsc] ]]]
+.SH DESCRIPTION
+\fBsbuild\-debuild\fR rebuilds Debian binary packages from the corresponding
+Debian source in a manner similar to debuild.
+.PP
+sbuild\-debuild is given a list of packages to process as the arguments
+\fBPACKAGE\f[BI]i\fP[.dsc]\fR. These arguments are in the form of either
+debianized package source directories or a .dsc file.
+.PP
+For arguments given as source directories, dpkg-buildpackage is first run to
+produce a source .dsc file. Then, the package is built using the .dsc produced.
+For arguments given as .dsc files, running dpkg-buildpackage is skipped
+altogether. If no arguments are given, sbuild-debuild acts on the current
+working directory as a source directory to process.
+.PP
+Before a package is built, sbuild-debuild first changes into the directory where
+the corresponding .dsc file resides.
+.PP
+After a successful build, if lintian is installed on the system, lintian is run
+on the resulting .changes file produced after a build.
+.PP
+In between each run of dpkg-buildpackage, sbuild, and lintian for a package,
+a list of commands can be run, similar to running hooks, except that arguments
+can be given and "special" keywords can be given as an argument to these
+commands to have sbuild-debuild convert them into various arguments. See the
+section \fBEXTERNAL COMMANDS\fR for more on this.
+.PP
+The exit status from sbuild-debuild is either 0 or 1. When a package is
+processed, if dpkg-buildpackage, sbuild, or lintian fails, processing of that
+package is stopped immediately and processing of the next package is started
+instead. For external commands, if an external command fails, the next external
+command is run but processing of a package is not halted. If at any point the
+processing of a package failed or an external command failed, sbuild-debuild is
+marked to exit with value 1 (i.e. failure), otherwise it exits with value 0
+(i.e. success).
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display this manual.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.TP
+.BR "\-\-dpkg\-buildpackage\-opts \fIstring\fP"
+Override the default options passed to dpkg-buildpackage.
+.br
+Default is \fB"-S -us -uc"\fR.
+.TP
+.BR "\-\-dpkg\-buildpackage\-extra\-opts \fIstring\fP"
+Supply extra options to dpkg-buildpackage.
+.TP
+.BR "\-\-sbuild\-opts \fIstring\fP"
+Override the default options passed to sbuild.
+.br
+Default is no options are given.
+.TP
+.BR "\-\-sbuild\-extra\-opts \fIstring\fP"
+Supply extra options to sbuild.
+.TP
+.BR "\-\-lintian\-opts \fIstring\fP"
+Override the default options passed to lintian.
+.br
+Default is no options are given.
+.TP
+.BR "\-\-lintian\-extra\-opts \fIstring\fP"
+Supply extra options to lintian.
+.TP
+.BR "\-\-no\-lintian"
+Do not run lintian.
+.TP
+.BR "\-\-pre\-dpkg\-buildpackage\-commands \fIstring\fP"
+String of command to run before running dpkg-buildpackage.
+.br
+This option can be supplied multiple times to add more commands.
+.TP
+.BR "\-\-pre\-sbuild\-commands \fIstring\fP"
+String of command to run before running sbuild.
+.br
+This option can be supplied multiple times to add more commands.
+.TP
+.BR "\-\-pre\-lintian\-commands \fIstring\fP"
+String of command to run before running lintian.
+.br
+This option can be supplied multiple times to add more commands.
+.TP
+.BR "\-\-pre\-exit\-commands \fIstring\fP"
+String of command to run before ending the processing of a package.
+.br
+This option can be supplied multiple times to add more commands.
+.SH CONFIG FILES
+.TP
+.I /etc/sbuild/sbuild-debuild.conf
+Configuration, maintained by the system administrator.  This may be used to
+override the defaults.
+.TP
+.I ~/.sbuild-debuildrc
+User-specific configuration.
+.SH EXTERNAL COMMANDS
+Support to run external commands during an sbuild-debuild run is provided. A set
+of external commands can be run before running dpkg-buildpackage, before running
+sbuild, before running lintian, and before ending processing of a package.
+Providing commands to run is done through the \fI\-\-pre\-*\-commands\fP options
+given on the command line and through the use of the configuration files. In the
+configuration file, the list of commands to run are placed in an array of
+strings corresponding to the commands to run.
+.PP
+Here's an example of how to edit the configuration files to run "foo" and "bar"
+with arguments before dpkg-buildpackage is run.
+.PP
+\f[CB]$pre_dpkg_buildpackage_commands = ['foo arg1 arg2',\fP
+.br
+\f[CB]                                   'bar arg1 arg2 arg3',\fP
+.br
+\f[CB]                                  ];\fP
+.PP
+Here's an example of how to do the same with the previous example, except using
+the \fI\-\-pre\-dpkg\-buildpackage\-commands\fP option.
+.PP
+\f[CB]$ sbuild\-debuild \\\fP
+.br
+\f[CB]      \-\-pre\-dpkg\-buildpackage\-commands 'foo arg1 arg2' \\\fP
+.br
+\f[CB]      \-\-pre\-dpkg\-buildpackage\-commands 'bar arg1 arg2 arg3'\fP
+.PP
+Besides running external commands, sbuild\-debuild can also detect the use of
+certain keywords given as arguments. These keywords are used to allow for a
+command to be supplied with a certain argument depending on the keyword given.
+For example, it could be possible to have an external command be given the
+path to a .changes file.
+.PP
+Here is a listing of keywords and a description of what it's converted to.
+.IP \fB\@SBUILD_DEBUILD_DSC\@\fR
+This keyword is converted to the absolute path to a package's .dsc file.
+.IP \fB\@SBUILD_DEBUILD_SOURCE_CHANGES\@\fR
+This keyword is converted to the absolute path to a package's source .changes
+file.
+.IP \fB\@SBUILD_DEBUILD_BIN_CHANGES\@\fR
+This keyword is converted to the absolute path to a package's .changes file
+depending on architecture.
+.PP
+Here's an example of using a keyword to run piuparts on a .changes file before
+the processing of a package ends.
+.PP
+\f[CB]$ sbuild\-debuild \-\-pre\-exit\-commands \\\fP
+.br
+\f[CB]      'piuparts \@SBUILD_DEBUILD_BIN_CHANGES\@'\fP
+.PP
+One final note, external commands are processed in the order they are given.
+Also, the commands given in a configuration file are processed first, then the
+commands given through the command line options.
+.SH AUTHORS
+Andres Mejia.
+.SH COPYRIGHT
+.nf
+Copyright \[co] 2009      Andres Mejia <mcitadel\@gmail.com>
+.fi
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:
