@@ -41,12 +41,21 @@ sbuild \- build debian packages from source
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
 .RB [ \-\-debbuildopt=\fIoption\fP ]
 .RB [ \-\-debbuildopts=\fIoptions\fP ]
+.RB [ \-\-dpkg-source-opt=\fIoptions\fP ]
+.RB [ \-\-dpkg-source-opts=\fIoptions\fP ]
 .RB [ \-p \[or] \-\-purge=\fPpurge-mode\fP ]
 .RB [ \-\-purge\-deps=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
 .RB [ \-n \[or] \-\-nolog ]
+.RB [ \-\-run\-lintian ]
+.RB [ \-\-lintian\-opt=\fIoptions\fP ]
+.RB [ \-\-lintian\-opts=\fIoptions\fP ]
+.RB [ \-\-pre\-build\-commands=\fIstring\fP ]
+.RB [ \-\-post\-build\-commands=\fIstring\fP ]
+.RB [ \-\-log\-external\-command\-output ]
+.RB [ \-\-log\-external\-command\-error ]
 .RB [ \-\-setup\-hook=\fIhook-script\fP ]
-.BR PACKAGE1_VERSION[.dsc] " [" PACKAGE2_VERSION[.dsc] " [" PACKAGE\f[BI]n\fP_VERSION[.dsc] ]]
+.BR [PACKAGE1[.dsc] " [" PACKAGE2[.dsc] " [ " ... " " ]]]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version
 is maintained by the \fBbuildd-tools\fP project developers on Alioth
@@ -63,6 +72,22 @@ them, it knows about source dependencies.
 .PP
 \fBsbuild\fR can fetch the Debian source over a network, or it can use
 locally available sources.
+.PP
+sbuild is given a list of packages to process as the arguments
+\fBPACKAGE\f[BI]i\fP[.dsc]\fR. These arguments are in the form of either
+debianized package source directories, a source package name along with a
+version in the form \fIpackage_version\fP, or a .dsc file. If no arguments are
+given, the current working directory is passed as an argument.
+.PP
+For arguments given as source directories, dpkg-source is first run to produce a
+source .dsc file. Then, the package is built using the .dsc produced. For
+arguments in the form \fIpackage_version\fP, apt is used to download the source
+package. For arguments given as a .dsc file, sbuild builds the source packages
+directly. For .dsc files in remote locations, the source packages are downloaded
+first, then built.
+.PP
+It is also possible to run external commands with sbuild. See the section
+\fBEXTERNAL COMMANDS\fR for more on this.
 .PP
 \fBsbuild\fR mails the build logs to a user.  It is configured by the
 configuration files \fI/etc/sbuild/sbuild.conf\fP and \fI~/.sbuildrc\fP.  An
@@ -176,6 +201,15 @@ Pass the specified options directly to dpkg\-buildpackage.  The options should
 be separated by spaces.  If any options contain spaces, use \-\-debbuildopt
 instead.
 .TP
+.BR \-\-dpkg\-source\-opt=\fIoptions\fP
+Pass the specified options directly to dpkg-source. This is only used when
+creating a source package from a Debianized source directory.
+.br
+\fBNOTE:\fR The '\fI-b\fP' option will always be passed to dpkg-source.
+.TP
+.BR \-\-dpkg\-source\-opts=\fIoptions\fP
+Extra options to be appended to existing options passed to dpkg-source.
+.TP
 .BR "\-\-mail\-log\-to=\fIemail-address\fP"
 Send the build log to the specified email address.  This overrides the
 \fI$mailto\fP configuration option.
@@ -231,11 +265,93 @@ This option is similar to --make-binNMU except that it allows the user to
 specify an arbitrary string to be appended to the version number (immediately
 before the '+' in the Debian revision if --make-binNMU is also provided).
 .TP
+.BR \-\-run\-lintian
+Run lintian after a successful build.
+.TP
+.BR \-\-lintian\-opt=\fIoptions\fP
+Run lintian with the specified options.
+.TP
+.BR \-\-lintian\-opts=\fIoptions\fP
+Append extra options to existing options passed to lintian.
+.TP
+.BR \-\-pre\-build\-commands=\fIstring\fP
+Run this command before a build starts. This option can be used multiple times
+to add multiple commands.
+.TP
+.BR \-\-post\-build\-commands=\fIstring\fP
+Run this command after a successful build. This option can be used multiple
+times to add multiple commands.
+.TP
+.BR \-\-log\-external\-command\-output
+Write output from external commands to the build log.
+.TP
+.BR \-\-log\-external\-command\-error
+Write error output from external commands to the build log.
+.TP
 .BR "\-\-setup\-hook=\fIhook-script\fP"
 Run the specified script inside the chroot before building.  This script may
 perform any required actions to customise or configure the chroot.  Note that
 the script will be run inside the chroot, and so the script must exist inside
 the chroot rather than the host system.
+.SH EXTERNAL COMMANDS
+Support to run external commands during an sbuild run is provided. A set of
+external commands can be run before a build starts and after a successful build.
+Providing commands to run is done through the appropriate options given on the
+command line and through the use of the configuration files. In the
+configuration file, the list of commands to run are placed in an array of
+strings corresponding to the commands to run.
+.PP
+Here's an example of how to edit the configuration files to run "foo" and "bar"
+with arguments before a build starts.
+.PP
+\f[CB]@pre_build_commands = ('foo arg1 arg2',\fP
+.br
+\f[CB]    'bar arg1 arg2 arg3',\fP
+.br
+\f[CB]    );\fP
+.PP
+Here's an example of how to do the same with the previous example, except using
+the \fI\-\-pre\-build\-commands\fP option.
+.PP
+\f[CB]$ sbuild \\\fP
+.br
+\f[CB]      \-\-pre\-build\-commands='foo arg1 arg2' \\\fP
+.br
+\f[CB]      \-\-pre\-build\-commands=''bar arg1 arg2 arg3'\fP
+.PP
+Besides running external commands, sbuild can also detect the use of certain
+percent escapes given as arguments. These are used to allow for a command to be
+supplied with a certain argument depending on the escape given.
+For example, it could be possible to have an external command be given the
+path to a .changes file.
+.PP
+Here is a listing of keywords and a description of what it's converted to.
+.TP
+\fB%%\fR
+Used to escape a '\fI%\fP'.
+.TP
+\fB%d\fR, \fB%SBUILD_DSC\fR
+These escapes are converted to the absolute path to a package's .dsc file.
+.TP
+\fB%c\fR, \fB%SBUILD_CHANGES\fR
+These escapes are converted to the absolute path to a package's source .changes
+file.
+.PP
+Percent escapes are only substituted when an appropriate value is defined for
+them. At other times, it is left unchanged. For example, a .changes file is only
+defined at the end of a build, so using \fI%c\fR will only be substituted for
+post-build-commands.
+.PP
+Here's an example of using an escape to run piuparts on a .changes file after
+a build is done.
+.PP
+\f[CB]$ sbuild \-\-post\-build\-commands \\\fP
+.br
+\f[CB]      'sudo piuparts %SBUILD_CHANGES'\fP
+.PP
+One final note, external commands are processed in the order they are given.
+Also, the commands given in a configuration file are processed first, then the
+commands given through the command line options.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
 .IP "DEBEMAIL"
