@@ -16,7 +16,8 @@ debian/build/config.status: configure
 	  DCMD=/usr/bin/dcmd \
 	  SCHROOT=/usr/bin/schroot \
 	  SSH=/usr/bin/ssh \
-	  SUDO=/usr/bin/sudo
+	  SUDO=/usr/bin/sudo \
+	  LINTIAN=/usr/bin/lintian
 
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status
