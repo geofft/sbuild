@@ -270,15 +270,19 @@ sub run {
     # Build the source package if given a Debianized source directory
     if ($self->get('Debian Source Dir')) {
 	$self->log_subsection("Build Source Package");
+	my $clean_command = $self->get_conf('FAKEROOT') . " debian/rules clean";
 	my $dpkg_source = $self->get_conf('DPKG_SOURCE');
-	my $command = "$dpkg_source -b";
-	$command .= " " . $self->get_conf('DPKG_SOURCE_OPT')
+	my $dpkg_source_command = "$dpkg_source -b";
+	$dpkg_source_command .= " " . $self->get_conf('DPKG_SOURCE_OPT')
 	    if ($self->get_conf('DPKG_SOURCE_OPT'));
-	$command .= " " . $self->get('Debian Source Dir');
-	$self->log_subsubsection("$command");
-	my $curdir = getcwd(); # In case we're inside the source dir
+	$dpkg_source_command .= " " . $self->get('Debian Source Dir');
+	my $curdir = getcwd(); # To get back to the directory we were in
+	chdir($self->get('Debian Source Dir'));
+	$self->log_subsubsection("$clean_command");
+	$self->run_command($clean_command, 1, 1);
 	chdir($self->get_conf('BUILD_DIR'));
-	$self->run_command($command, 1, 1);
+	$self->log_subsubsection("$dpkg_source_command");
+	$self->run_command($dpkg_source_command, 1, 1);
 	chdir($curdir);
     }
 
