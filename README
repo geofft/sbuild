@@ -2,24 +2,31 @@ Build-essential and friends
 ===========================
 
 sbuild-createchroot installs build-essentials so your working
-environment should already be ok. You will need only to add a few more
-packages in the chroot, using e.g.
+environment should already be ok. You will only need to add a few more
+packages in the chroot, using sbuild-apt. eg.
 
-sbuild-apt <chroot> apt-get install sudo fakeroot ssmtp
+	sbuild-apt <chroot> apt-get install sudo fakeroot ssmtp
 
-sbuild-checkchroot <chroot>
-    shows what needs to be added to or deleted from the unstable
-    chroot.  You can use
+To show what needs to be added or removed from the unstable chroot you
+can use:
 
-        sbuild-apt <chroot> apt-get install
+	sbuild-checkchroot <chroot>
 
-    to add packages ("--purge remove: to delete them) or
+To add packages:
 
-        sbuild-shell <chroot>
+	sbuild-apt <chroot> apt-get install
 
-    to enter the chroot and work inside it.
+or if you wish to remove packages:
 
-With the new flavor of buildd.chroot is basically obsolete.
+	sbuild-apt <chroot> apt-get --purge remove
+
+
+Alternatively, to enter the chroot and work inside it, use:
+
+	sbuild-shell <chroot>
+
+
+With these new tools buildd.chroot has been made obsolete.
 
 
 Possible problems
@@ -42,6 +49,6 @@ $ dpkg-reconfigure -plow debconf
   Show all old questions again and again? [no] 
 
 md5sum mismatch when building a source package (sbuild --source):
-  - the original tarball has to be in the work directory,
-    $CHROOT/build/<user>, for a sourceful build or a new
+  - the original tarball has to be in the work directory -
+    $CHROOT/build/<user> - for a sourceful build or a new
     orig.tar.gz will be created with an incorrect md5sum.
