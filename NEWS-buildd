@@ -1,15 +1,15 @@
 2004-09-05  Ryan Murray  <rmurray@debian.org>
 
 	* buildd-mail: get filelist from changes file first when processing
-	  ACCEPTED/INSTALLED mail.  Limit filename pattern to valid filename
-	  characters if the changes file doesn't exist.  Solves possible
-	  remote execution vulnerability (non-existant in default setup).
+	ACCEPTED/INSTALLED mail.  Limit filename pattern to valid filename
+	characters if the changes file doesn't exist.  Solves possible
+	remote execution vulnerability (non-existant in default setup).
 
 2003-11-05  Ryan Murray  <rmurray@debian.org>
 
 	* sbuild: display toolchain package versions
 	* sbuild: get build-essential information from the chroot, not
-        the root.
+	the root.
 	* sbuild: new --use-snapshot option that installs the gcc-snapshot
 	package as a build-depends, and sets the environment variables needed
 	to use it.
@@ -40,13 +40,13 @@
 	* buildd: fork and call setsid so we don't have a controlling terminal.
 	* abort-current-build: use /bin/kill instead of shell builtin
 	* add EXIT-DAEMON-PLEASE flagfile.  buildd checks it once per loop
-          and will exit if found, taking the file with it.  sbuild checks it
-          after finishing each build, and will exit when finished a job.
+	and will exit if found, taking the file with it.  sbuild checks it
+	after finishing each build, and will exit when finished a job.
 	* Patch from Anthony Towns <ajt@debian.org> to sort standard and higher
-	  priorities higher, and add it to the front of the default order
-	  characters (the new character is S).  This has the effect of making
-	  standard and higher uncompiled sort higher than all optional and
-	  extra, which is ideal for Debian.
+	priorities higher, and add it to the front of the default order
+	characters (the new character is S).  This has the effect of making
+	standard and higher uncompiled sort higher than all optional and
+	extra, which is ideal for Debian.
 
 2001-01-11  Roman Hodek  <roman@caldera.de>
 
