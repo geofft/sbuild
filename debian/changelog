@@ -19,8 +19,10 @@ sbuild (0.59.1~rc1) unstable; urgency=low
   * wanna-build now reads its system configuration from the correct
     location (/etc/buildd/wanna-build.conf, not
     /etc/wanna-build/wanna-build.conf). 
+  * sbuild:
+    - Distinguish between failed/attempted builds (Closes: #538083).
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 22:49:44 +0000
+ -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 22:56:16 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
