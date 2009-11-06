@@ -21,8 +21,10 @@ sbuild (0.59.1~rc1) unstable; urgency=low
     /etc/wanna-build/wanna-build.conf). 
   * sbuild:
     - Distinguish between failed/attempted builds (Closes: #538083).
+  * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
+    Thanks to Andres Mejia for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 22:56:16 +0000
+ -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 23:02:16 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
