@@ -43,7 +43,7 @@ chomp( my $date = `date` );
 print "-------------- merge-packages $date --------------\n";
 
 $tmpdir = "/tmp/merge-packages.$$";
-$arch = `dpkg --print-architecture` );
+$arch = `dpkg --print-architecture`;
 
 # make backups of databases
 my $d;
