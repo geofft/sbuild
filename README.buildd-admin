@@ -49,7 +49,7 @@ Additionally, there is a file called REDO in ~/build, where
 some packages are occasionally dumped to be picked up later by buildd.
 This file is checked before new packages are requested from
 wanna-build. REDO also contains distributions for the packages, and
-here again stable has priority before frozen, Which has prioirity over
+here again stable has priority before frozen, which has priority over
 unstable. The rationale is that stable/frozen packages are usually more
 urgent than unstable ones.
 
@@ -63,7 +63,7 @@ those packages but asks its administrator first. This will be discussed in
 greater length in a following section ("Should I build" mails).
 
 If a set of packages are taken (either from wanna-build or from REDO),
-buildd starts a sbuild run to build all the packages. sbuild will send
+buildd starts an sbuild run to build all the packages. sbuild will send
 log mails to the admin, who will (later) send answers, but this doesn't
 touch buildd anymore. It goes back to the start of the loop and tries
 to take more packages and build them...

@@ -20,9 +20,9 @@ Ryan Murray			<rmurray@debian.org>
 	modifications for security building
 	maintenance
 
-Simon McVittie		<smcv@debian.org>
+Simon McVittie			<smcv@debian.org>
 	--chroot option for sbuild
 
-Timothy G Abbott	<tabbott@mit.edu>
+Timothy G Abbott		<tabbott@mit.edu>
 	support for running "apt-get update" in chroots prior to
 	fetching sources and building

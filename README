@@ -10,7 +10,7 @@ packages in the chroot, using sbuild-apt. eg.
 To show what needs to be added or removed from the unstable chroot you
 can use:
 
-	sbuild-checkchroot <chroot>
+	sbuild-checkpackages --list <chroot>
 
 To add packages:
 

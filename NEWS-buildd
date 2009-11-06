@@ -82,7 +82,7 @@
 	trees will be removed again. This can replace the dpkg-source
 	calls that were used in pre scripts. Their problem were that they
 	needed access to a local mirror, which can't be guaranteed now
-	with chroot environments. 
+	with chroot environments.
 
 2000-06-20  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
@@ -132,7 +132,7 @@
 	* buildd-setup-chroot: New script for setting up a chroot
 	environment for sbuild. See README.chroot-building for details.
 
-	* README.chroot-building: New documentation for the above.	
+	* README.chroot-building: New documentation for the above.
 
 2000-06-06  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
@@ -199,7 +199,7 @@
 	README.failcat for more details. (New option --category == -c)
 
 	* README.failcat: new file.
-	
+
 	* wanna-build: New options --min-age=DAYS (-a DAYS) and
 	--max-age=DAYS to restrict listed package depending on the time of
 	last state change.
@@ -213,14 +213,14 @@
 	package; used the same way as buildd-bug-change-category above,
 	but you can insert arbitrary text; with [CAT] you can also
 	set/change the category.
-	
+
 	I've also changed keybindings: C-c C-a (formerly
 	buildd-bug-ack-append) is now a prefix for 3 bindings that append
 	something to fail messages:
 	C-c C-a C-n -> buildd-bug-ack-append (i.e., append a bug number)
 	C-c C-a C-a -> buildd-bug-comment (append arbitrary text)
 	C-c C-a C-c -> buildd-bug-change-category
-	
+
 	* buildd: In get_changelog, remove an epoch if using the package
 	name as part of a file name.
 
@@ -280,7 +280,7 @@
 
 	* buildd, buildd-mail, buildd-uploader, sbuild: Use
 	--no-down-propagation in wanna-build calls.
-	
+
 2000-01-28  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* sbuild: Finally let it also accept abbrevs for distributions (s,
@@ -301,7 +301,7 @@
 	existing, non-NMU versions so that sources can be downloaded. The
 	version in the logfile etc. will be modified automatically. An
 	bin-NMU entry won't be created twice in the same build tree.
-	
+
 2000-01-27  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* buildd: Remove $DISPLAY from the environment. The variable
@@ -387,7 +387,7 @@
 	start building only if the primary daemon(s) are overloaded. The
 	threshold gives a number of Needs-Build packages that must be
 	reached before the secondary starts off.
-	
+
 1999-10-29  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* Fixed buildd statistics: The packages given back by sbuild
@@ -399,7 +399,7 @@
 
 	* buildd-addpkg: If apt-get update fails with "E: Could not get
 	lock", try again a minute later.
-	
+
 	* sbuild: Make apt always pass --force-confold to dpkg. The
 	</dev/null trick doesn't work anymore with dpkg >= 1.4.1.18 (it
 	gives an error on the conffile question if it read EOF.)
@@ -436,7 +436,7 @@
 	update-sourcedeps after installing a new file, and the reverse
 	index is stored as /etc/source-dependencies-DIST.rev. It is read
 	by sbuild if called with --store-built-packages.
-	
+
 	* sbuild: New option --store-built-packages=PROG. PROG is a
 	program that makes built packages available for apt and is usually
 	buildd-addpkg. If this option is given, sbuild checks after each
@@ -449,10 +449,10 @@
 	it's not in @conf::no_auto_upgrade, apt is called to install the
 	new version.
 
-	* buildd: Now calls sbuild with --store-built-packages=buildd-addpkg 
+	* buildd: Now calls sbuild with --store-built-packages=buildd-addpkg
 	if that tool exists and $conf::no_store_packages isn't set
 	(default).
-	
+
 1999-10-06  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* buildd-mail: before actions on retry, fail, dep-ret, man,
@@ -479,7 +479,7 @@
 
 	* buildd: Removed message "DEBUG: not taking ... because given
 	back recently".
-	
+
 1999-09-22  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* buildd-mail: Fix a bug that caused outdated packages to be added
@@ -501,7 +501,7 @@
 	values. To keep compability with the previous names, the local and
 	shared files are named as follows:
 
-	              | shared file             | local file 
+	              | shared file             | local file
 	 -------------+-------------------------+----------------------------
 	  wanna-build | /etc/wanna-build.conf   | /etc/wanna-build.conf.local
 	  sbuild      | /etc/sbuild.conf        | /etc/sbuild.conf.local
@@ -512,7 +512,7 @@
 	On installation the shared files can be replaced without
 	questions, so don't make modifications there. These should go into
 	the local files.
-	
+
 	* buildd: Additionally check /etc/buildd.conf.global for changes
 	and re-read configuration then.
 
@@ -604,12 +604,12 @@
 	just like any other package name. It will be replaced by "foo,
 	bar, yxy" later. Abbrevs can't be used with version relations and
 	inside alternatives.
-	
+
 	* New options: --arch-all (-A) also builds Arch: all packages
 	(uses  dpkg-buildpackage -b instead of -B); --add-depends (-a)
 	like -f, but doesn't override existing deps completely but adds to
 	them.
-	
+
 	* sbuild now only parses the src-deps for package which should be
 	compiled. This should reduce the start-up time a bit.
 
@@ -1049,7 +1049,7 @@
 	line parameters; the URL should point to a .dsc file. This feature
 	can be used to build packages in arbitrary locations, not only
 	those listed in @archive_locations. Also no searching is
-	necessary, since the path is given. 
+	necessary, since the path is given.
 
 1999-02-18  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
@@ -1059,7 +1059,7 @@
 
 	* wanna-build: --give-back can now change to state Needs-Build
 	from any state (not only Building) with --override.
-	
+
 	* wanna-build: --info and --forget (which take only package names
 	without version) now strip anything following a '_' to avoid
 	confusion.
@@ -1074,7 +1074,6 @@
 	used to let one buildd make this distrib, the other buildd the
 	next and so on. If this variable isn't initialized in buildd.conf,
 	it's set to (stable frozen unstable), i.e. all distributions.
-
 
 1999-02-08  James Troup  <james@nocrew.org>
 
@@ -1118,7 +1117,7 @@
 	it's really registered for building in all target distributions.
 	If this is not the case, it's an indication of error. Either it
 	should be registered, or some distributions should be deleted.
-	
+
 1999-02-01  James Troup  <james@nocrew.org>
 
 	* andrea's merger's ability to strip automatically generated
@@ -1146,7 +1145,7 @@
 	Wait 2 seconds and then try again for max. 30 times. Starting with
 	the switch to GDBM, it often happened that after a lock was gone
 	the database still couldn't be opened (file locking?).
-	
+
 1999-01-13  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* sbuild: Added --quiet option to patch call to avoid some blurb
@@ -1155,7 +1154,7 @@
 	greater than 0.
 	* wanna-build-statistics: If wanna-build --list=all dies with
 	error status, print the last message from it.
-	
+
 1999-01-08  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* wanna-build: Don't warn if a package goes Reupload-Wait ->
@@ -1183,13 +1182,13 @@
 	correct (dpkg is the only instance that really knows about version
 	ordering), a new option --correct-compare can be used to force
 	calling dpkg.
-	
+
 1998-12-16  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* New script wanna-build-statistics: Prints some nice statistics
 	about how much packages are in which state, who put them into that
 	state and so on.
-	
+
 	* do-merge-quinn now calls wanna-build-statistics after each merge
 	and sends the results to a mailing list.
 
@@ -1290,7 +1289,7 @@
 	Why this solution isn't perfect: If another unstable version is
 	installed before the previous version is needed for frozen, a
 	recompilation is needed.
-	
+
 	Similar: If a version of a package is Failed or Dep-Wait in some
 	other distrib and now is listed by quinn-diff for some dist, the
 	Failed/Dep-Wait state is copied to the new dist.
@@ -1361,7 +1360,7 @@
 	compability.
 
 1998-11-15  Roman Hodek  <rnhodek@emilio.informatik.uni-erlangen.de>
-	
+
 	* In source-dependencies, more than one dependency on the same
 	package is now possible. (For example, one with >= relation and
 	the other with <<.) Dependencies of this type can be produced by
@@ -1387,7 +1386,7 @@
 	changed. They're not anymore sorted alphabetically, but by some
 	kind of importance. This has been done because the build daemons
 	pick up packages in the order listed by wanna-build.
-	
+
 1998-11-09  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* buildd now also checks its config file (~/buildd.conf) for
@@ -1398,12 +1397,12 @@
 
 	* New script check-old-builds, which sends warning mails for
 	packages being in state Building for more than 10 days.
-	
+
 1998-11-05  James Troup  <james@nocrew.org>
 
 	* buildd-mail-wrapper now checks the pid in mailer-running files
 	for validity (i.e. if the pid mentioned there really still exists).
-	
+
 1998-11-04  Roman Hodek  <rnhodek@faui22c.informatik.uni-erlangen.de>
 
 	* wanna-build does not anymore send out mails for Failed->Failed
