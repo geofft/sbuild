@@ -1282,7 +1282,7 @@ sub parse_packages {
 	delete $pkg->{'Binary-NMU-Version'};
 	delete $pkg->{'Binary-NMU-Changelog'};
 	$self->log_ta( $pkg, "--merge-packages" );
-	$self->get('Current Database')->set_package($name) = $pkg;
+	$self->get('Current Database')->set_package($pkg);
 	print "$name ($version) is up-to-date now.\n" if $self->get_conf('VERBOSE');
     }
 
@@ -1970,14 +1970,15 @@ sub log_ta {
 
     my $dist = $self->get_conf('DISTRIBUTION');
     my $str;
-    my $prevstate;
+    my $prevstate = 'Unknown';
 
-    $prevstate = $pkg->{'Previous-State'};
+    $prevstate = $pkg->{'Previous-State'} if defined($pkg->{'Previous-State'});
+
     $str = "$action($dist): $pkg->{'Package'}_$pkg->{'Version'} ".
 	"changed from $prevstate to $pkg->{'State'} ".
 	"by " . $self->get_conf('USERNAME'). " as " . $self->get_conf('DB_USER') . ".";
 
-    my $transactlog = $self->get_conf('DB_BASE_DIR') . "/$1" .
+    my $transactlog = $self->get_conf('DB_BASE_DIR') . "/$dist-" .
 	$self->get_conf('DB_TRANSACTION_LOG');
     if (!open( LOG, ">>$transactlog" )) {
 	warn "Can't open log file $transactlog: $!\n";
