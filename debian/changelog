@@ -23,10 +23,15 @@ sbuild (0.59.1~rc1) unstable; urgency=low
     - Distinguish between failed/attempted builds (Closes: #538083).
     - Build directory cleaned under all failure conditions
       (Closes: #538085).
+    - --apt-update both updates and upgrades the chroot
+      (Closes: #521096).  Thanks to Gustavo Noronha Silva for this
+      patch.  Note the original bug report 'get_apt_command' error
+      was fixed on the 17th March 2009.
   * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
     Thanks to Andres Mejia for this patch.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 23:04:41 +0000
+ -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 23:15:57 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
