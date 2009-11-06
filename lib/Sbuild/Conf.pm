@@ -518,6 +518,7 @@ sub read_config {
     my $build_arch_all = undef;
     my $arch = undef;
     my $job_file = undef;
+    my $build_dir = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
 	if (-r $_) {
@@ -609,6 +610,7 @@ sub read_config {
 	if defined $self->get('KEY_ID');
     $self->set('MAINTAINER_NAME', $self->get('UPLOADER_NAME')) if defined $self->get('UPLOADER_NAME');
     $self->set('MAINTAINER_NAME', $self->get('KEY_ID')) if defined $self->get('KEY_ID');
+    $self->set('BUILD_DIR', $build_dir);
 
     if (!defined($self->get('MAINTAINER_NAME')) &&
 	$self->get('BIN_NMU')) {
