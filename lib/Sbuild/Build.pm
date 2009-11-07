@@ -2577,14 +2577,19 @@ sub open_build_log {
 	    }
 	}
 
+	# Cache vars to avoid repeated hash lookups.
+	my $nolog = $self->get_conf('NOLOG');
+	my $log = $self->get_conf('LOG_DIR_AVAILABLE');
+	my $verbose = $self->get_conf('VERBOSE');
+
 	while (<STDIN>) {
-	    if ($self->get_conf('NOLOG')) {
+	    if ($nolog) {
 		print $saved_stdout $_;
 	    } else {
-		if ($self->get_conf('LOG_DIR_AVAILABLE')) {
+		if ($log) {
 		    print CPLOG $_;
 		}
-		if ($self->get_conf('VERBOSE')) {
+		if ($verbose) {
 		    print $saved_stdout $_;
 		}
 	    }
