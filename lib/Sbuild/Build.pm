@@ -2563,6 +2563,7 @@ sub open_build_log {
 	    open( CPLOG, ">$filename" ) or
 		die "Can't open logfile $filename: $!\n";
 	    CPLOG->autoflush(1);
+	    $saved_stdout->autoflush(1);
 
 	    # Create 'current' symlinks
 	    if ($self->get_conf('SBUILD_MODE') eq 'buildd') {
@@ -2585,12 +2586,16 @@ sub open_build_log {
 	while (<STDIN>) {
 	    if ($nolog) {
 		print $saved_stdout $_;
+		# Manual flushing due to Perl 5.10 bug.  Should autoflush.
+		$saved_stdout->flush();
 	    } else {
 		if ($log) {
 		    print CPLOG $_;
 		}
 		if ($verbose) {
 		    print $saved_stdout $_;
+		    # Manual flushing due to Perl 5.10 bug.  Should autoflush.
+		    $saved_stdout->flush();
 		}
 	    }
 	}

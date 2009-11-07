@@ -27,11 +27,14 @@ sbuild (0.59.1~rc1) unstable; urgency=low
       (Closes: #521096).  Thanks to Gustavo Noronha Silva for this
       patch.  Note the original bug report 'get_apt_command' error
       was fixed on the 17th March 2009.
+    - Flush stdout explicitly in logger to avoid "choppy" output when
+      monitoring interactively.  Autoflushing stdout appears to be
+      broken in Perl 5.10 so flush explicitly in addition to
+      enabling autoflush.  Thanks to Ryan Niebur for spotting this.
   * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
     Thanks to Andres Mejia for this patch.
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 06 Nov 2009 23:15:57 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 07 Nov 2009 12:59:20 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
