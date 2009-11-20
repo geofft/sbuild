@@ -192,8 +192,8 @@ sub main () {
 	    goto cleanup_close;
 	}
 
-
 	# Update APT cache.
+	$build->set('Pkg Fail Stage', 'apt-get-update');
 	if ($conf->get('APT_UPDATE')) {
 	    $session->run_apt_command(
 		{ COMMAND => [$conf->get('APT_GET'), 'update'],
@@ -203,7 +203,7 @@ sub main () {
 
 	    if ($?) {
 		$build->log("apt-get update failed\n");
-		$build->set('Pkg Status', 'skipped');
+		$build->set('Pkg Status', 'failed');
 		goto cleanup_close;
 	    }
 	}

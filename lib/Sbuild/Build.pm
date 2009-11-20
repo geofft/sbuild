@@ -791,7 +791,7 @@ sub analyze_fail_stage {
     return if $self->get('Pkg Status') ne "failed";
     return if !$self->get_conf('AUTO_GIVEBACK');
     if (isin( $self->get('Pkg Fail Stage'),
-	      qw(find-dsc fetch-src unpack-check check-space install-deps-env))) {
+	      qw(apt-get-update find-dsc fetch-src unpack-check check-space install-deps-env))) {
 	$self->set('Pkg Status', "given-back");
 	$self->log("Giving back package $pkgv after failure in ".
 		   "$self->{'Pkg Fail Stage'} stage.\n");
