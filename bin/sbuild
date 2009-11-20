@@ -117,7 +117,7 @@ sub main () {
 	if ($build->get('Invalid Source')) {
 	    $build->log("Invalid source: $dscfile\n");
 	    $build->log("Skipping " . $build->get('Package') . " \n");
-	    $build->set('Pkg Status', 'skipped');
+	    $build->set('Pkg Status', 'failed');
 	    goto cleanup_skip;
 	}
 
@@ -135,7 +135,7 @@ sub main () {
 	if (!$session->begin_session()) {
 	    $build->log("Error creating chroot session: skipping " .
 		$build->get('Package') . "\n");
-	    $build->set('Pkg Status', 'skipped');
+	    $build->set('Pkg Status', 'failed');
 	    goto cleanup_close;
 	}
 
@@ -210,7 +210,7 @@ sub main () {
 
 	$build->set('Pkg Fail Stage', 'fetch-src');
 	if (!$build->fetch_source_files()) {
-	    goto cleanup_close;
+	    goto cleanup_packages;
 	}
 
 	$build->set('Pkg Fail Stage', 'install-deps');
