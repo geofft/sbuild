@@ -113,7 +113,8 @@ sub reopen_log ($) {
     $daemon->log("buildd ($$) received SIG$signame -- reopening logfile\n")
 	if defined($daemon);
 
-    Buildd::reopen_log($conf);
+    my $log = Buildd::reopen_log($conf);
+	$daemon->set('Log Stream', $log);
 }
 
 END {

@@ -176,8 +176,9 @@ sub reopen_log ($) {
     my $errno = $!;
 
     close_log($conf);
-    open_log($conf);
+    my $log = open_log($conf);
     $! = $errno;
+	return $log;
 }
 
 sub send_mail ($$$;$) {
