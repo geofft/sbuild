@@ -480,7 +480,7 @@ sub df {
 
     my $stat = Filesys::Df::df($dir);
 
-    return $stat->{used} if (defined($stat));
+    return $stat->{bfree} if (defined($stat));
 
 # This only happens if $dir was not a valid file or directory.
     return 0;
