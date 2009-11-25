@@ -82,7 +82,7 @@ sub run_query {
     my $pipe = $self->get('Host')->run_command(
 	{ COMMAND => [@command],
 	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
+	  CHROOT => 0,
 	  PRIORITY => 0,
 	});
 }
@@ -97,7 +97,7 @@ sub pipe_query {
     my $pipe = $self->get('Host')->pipe_command(
 	{ COMMAND => [@command],
 	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
+	  CHROOT => 0,
 	  PRIORITY => 0,
 	});
 
@@ -116,7 +116,7 @@ sub pipe_query_out {
 	  USER => $self->get_conf('USERNAME'),
 	  PIPE => 'out',
 	  STREAMOUT => $devnull,
-	  CHROOT => 1,
+	  CHROOT => 0,
 	  PRIORITY => 0,
 	});
 
