@@ -339,7 +339,7 @@ sub exec_command {
 
     debug("Environment set:\n");
     foreach (sort keys %ENV) {
-	debug("  $_=$ENV{$_}\n");
+	debug('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
     }
 
     if (defined($dir) && $dir) {
