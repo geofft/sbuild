@@ -62,7 +62,7 @@ sub setup {
 sub get_query {
     my $self = shift;
 
-    my @command = ($self->get_conf('WANNA_BUILD_SSH_CMD'), 'wanna-build');
+    my @command = (@{$self->get_conf('WANNA_BUILD_SSH_CMD')}, 'wanna-build');
     push(@command, "--database=" . $self->get_conf('WANNA_BUILD_DB_NAME'))
 	if $self->get_conf('WANNA_BUILD_DB_NAME');
     push(@command, "--user=" . $self->get_conf('WANNA_BUILD_DB_USER'))
