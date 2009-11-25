@@ -199,7 +199,7 @@ sub run {
 			   exitstatus($?), "\n");
 		next;
 	    }
-	    $self->log("$dist: total $total packages to build.\n") if $total;
+	    $self->log("$dist: total $total packages to build.\n") if defined($total);
 	    if ($total && $self->get_conf('SECONDARY_DAEMON_THRESHOLD') &&
 		$total < $self->get_conf('SECONDARY_DAEMON_THRESHOLD')) {
 		$self->log("Not enough packages to build -- ".
