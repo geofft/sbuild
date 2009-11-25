@@ -327,7 +327,7 @@ sub do_wanna_build {
     $self->block_signals();
 
     my $pipe = $self->get('DB')->pipe_query('-v', "--dist=$dist", @_);
-    if (!$pipe) {
+    if ($pipe) {
 	while( <$pipe> ) {
 	    next if /^wanna-build Revision/;
 	    if (/^(\S+):\s*ok/) {
