@@ -64,11 +64,6 @@ sub run {
     $host->set('Log Stream', $self->get('Log Stream'));
     $self->set('Host', $host);
 
-    my $db = Sbuild::DB::Client->new($self->get('Config'));
-    $db->set('Log Stream', $self->get('Log Stream'));
-    $self->set('DB', $db);
-
-    my @distlist = qw(oldstable-security stable-security testing-security stable testing unstable);
     my $my_binary = $0;
     $my_binary = cwd . "/" . $my_binary if $my_binary !~ m,^/,;
     $self->set('MY_BINARY', $my_binary);
@@ -95,8 +90,8 @@ sub run {
 	}
     }
 
-    if (!@{$self->get_conf('TAKE_FROM_DISTS')}) {
-	die "take_from_dists is empty, aborting.";
+    if (!@{$self->get_conf('DISTRIBUTIONS')}) {
+	die "distribution list is empty, aborting.";
     }
 
     if (!$self->get_conf('NO_DETACH')) {
@@ -118,7 +113,6 @@ sub run {
     undef $ENV{'DISPLAY'};
 
 # the main loop
-    my $dist;
   MAINLOOP:
     while( 1 ) {
 	$self->check_restart();
@@ -130,23 +124,26 @@ sub run {
 	my %binNMUlog;
 	do {
 	    $thisdone = 0;
-	    foreach $dist (@{$self->get_conf('TAKE_FROM_DISTS')}) {
+	    foreach my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
 		$self->check_restart();
 		$self->read_config();
-		my @redo = $self->get_from_REDO( $dist, %binNMUlog );
+		my @redo = $self->get_from_REDO( $dist_config, \%binNMUlog );
 		next if !@redo;
-		$self->do_build( $dist, %binNMUlog, @redo );
+		$self->do_build( $dist_config, \%binNMUlog, @redo );
 		++$done;
 		++$thisdone;
 	    }
 	} while( $thisdone );
 
-	foreach $dist (@{$self->get_conf('TAKE_FROM_DISTS')}) {
+	foreach my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
 	    $self->check_restart();
 	    $self->read_config();
+	    my $dist_name = $dist_config->get('DIST_NAME');
 	    my %givenback = $self->read_givenback();
-	    my $pipe = $self->get('DB')->pipe_query('--list=needs-build',
-						    "--dist=$dist");
+		my $db = $self->get_db_handle($dist_config);
+	    my $pipe = $db->pipe_query(
+		'--list=needs-build',
+		'--dist=' . $dist_name);
 	    if (!$pipe) {
 		$self->log("Can't spawn wanna-build --list=needs-build: $!\n");
 		next MAINLOOP;
@@ -155,7 +152,7 @@ sub run {
 	    my(@todo, $total, $nonex, @lowprio_todo, $max_build);
 	    $max_build = $self->get_conf('MAX_BUILD');
 	    while( <$pipe> ) {
-		my $socket = $self->get_conf('WANNA_BUILD_SSH_SOCKET');
+		my $socket = $dist_config->get('WANNA_BUILD_SSH_SOCKET');
 		if ($socket &&
 		    (/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
 		     /^Control socket connect\($socket\): Connection refused[\r]?$/)) {
@@ -173,16 +170,16 @@ sub run {
 		next if @todo >= $max_build;
 		my @line = (split( /\s+/, $_));
 		my $pv = $line[0];
-		my $no_build_regex = $self->get_conf('NO_BUILD_REGEX');
-		my $build_regex = $self->get_conf('BUILD_REGEX');
+		my $no_build_regex = $dist_config->get('NO_BUILD_REGEX');
+		my $build_regex = $dist_config->get('BUILD_REGEX');
 		next if $no_build_regex && $pv =~ m,$no_build_regex,;
 		next if $build_regex && $pv !~ m,$build_regex,;
 		$pv =~ s,^.*/,,;
 		my $p;
 		($p = $pv) =~ s/_.*$//;
-		next if isin( $p, @{$self->get_conf('NO_AUTO_BUILD')} );
+		next if isin( $p, @{$dist_config->get('NO_AUTO_BUILD')} );
 		next if $givenback{$pv};
-		if (isin( $p, @{$self->get_conf('WEAK_NO_AUTO_BUILD')} )) {
+		if (isin( $p, @{$dist_config->get('WEAK_NO_AUTO_BUILD')} )) {
 		    push( @lowprio_todo, $pv );
 		    next;
 		}
@@ -195,11 +192,11 @@ sub run {
 	    close( $pipe );
 	    next if $nonex;
 	    if ($?) {
-		$self->log("wanna-build --list=needs-build --dist=$dist failed; status ",
+		$self->log("wanna-build --list=needs-build --dist=${dist_name} failed; status ",
 			   exitstatus($?), "\n");
 		next;
 	    }
-	    $self->log("$dist: total $total packages to build.\n") if defined($total);
+	    $self->log("${dist_name}: total $total packages to build.\n") if defined($total);
 
 	    # Build weak_no_auto packages before the next dist
 	    if (!@todo && @lowprio_todo) {
@@ -207,9 +204,9 @@ sub run {
 	    }
 
 	    next if !@todo;
-	    @todo = $self->do_wanna_build( $dist, %binNMUlog, @todo );
+	    @todo = $self->do_wanna_build( $dist_config, \%binNMUlog, @todo );
 	    next if !@todo;
-	    $self->do_build( $dist, %binNMUlog, @todo );
+	    $self->do_build( $dist_config, \%binNMUlog, @todo );
 	    ++$done;
 	    last;
 	}
@@ -230,7 +227,7 @@ sub run {
 
 sub get_from_REDO {
     my $self = shift;
-    my $wanted_dist = shift;
+    my $wanted_dist_config = shift;
     my $binNMUlog = shift;
     my @redo = ();
     local( *F );
@@ -257,7 +254,7 @@ sub get_from_REDO {
 	    next;
 	}
 	my($pkg, $dist, $binNMUver, $changelog) = ($1, $2, $3, $4);
-	if ($dist eq $wanted_dist && @redo < $max_build) {
+	if ($dist eq $wanted_dist_config->get('DIST_NAME') && @redo < $max_build) {
 	    if (defined $binNMUver) {
 		if (scalar(@redo) == 0) {
 		    $binNMUlog->{$pkg} = $changelog;
@@ -319,14 +316,18 @@ sub read_givenback {
 sub do_wanna_build {
     my $self = shift;
 
-    my $dist = shift;
+    my $dist_config = shift;
     my $binNMUlog = shift;
     my @output = ();
     my $n = 0;
 
     $self->block_signals();
 
-    my $pipe = $self->get('DB')->pipe_query('-v', "--dist=$dist", @_);
+    my $db = $self->get_db_handle($dist_config);
+    my $pipe = $db->pipe_query(
+	'-v', 
+	'--dist=' . $dist_config->get('DIST_NAME'),
+       	@_);
     if ($pipe) {
 	while( <$pipe> ) {
 	    next if /^wanna-build Revision/;
@@ -346,7 +347,7 @@ sub do_wanna_build {
 		my $pkg = $1;
 		++$n;
 		if ($self->get_conf('SHOULD_BUILD_MSGS')) {
-		    $self->handle_prevfailed( $dist, grep( /^\Q$pkg\E_/, @_ ) );
+		    $self->handle_prevfailed( $dist_config, grep( /^\Q$pkg\E_/, @_ ) );
 		} else {
 		    push( @output, grep( /^\Q$pkg\E_/, @_ ) );
 		}
@@ -385,7 +386,7 @@ sub do_wanna_build {
 
 sub do_build {
     my $self = shift;
-    my $dist = shift;
+    my $dist_config = shift;
     my $binNMUlog = shift;
 
     return if !@_;
@@ -399,7 +400,7 @@ sub do_build {
 	$self->write_stats("idle-time", $idle_end_time - $idle_start_time);
     }
 
-    $self->log("Starting build (dist=$dist) of:\n@_\n");
+    $self->log("Starting build (dist=" . $dist_config->get('DIST_NAME') . ") of:\n@_\n");
     $self->write_stats("builds", scalar(@_));
     my $binNMUver;
 
@@ -407,24 +408,31 @@ sub do_build {
 			'--apt-update',
 			'--batch',
 			"--stats-dir=" . $self->get_conf('HOME') . "/stats",
-			"--dist=$dist" );
+			"--dist=" . $dist_config->get('DIST_NAME') );
     my $sbuild_gb = '--auto-give-back';
-    if ($self->get_conf('WANNA_BUILD_SSH_CMD')) {
+    if ($dist_config->get('WANNA_BUILD_SSH_CMD')) {
 	$sbuild_gb .= "=";
-	$sbuild_gb .= $self->get_conf('WANNA_BUILD_SSH_SOCKET') . "\@"
-	    if $self->get_conf('WANNA_BUILD_SSH_SOCKET');
-	$sbuild_gb .= $self->get_conf('WANNA_BUILD_DB_USER') . "\@"
-	    if $self->get_conf('WANNA_BUILD_DB_USER');
-	$sbuild_gb .= $self->get_conf('WANNA_BUILD_SSH_USER') ."\@" if $self->get_conf('WANNA_BUILD_SSH_USER');
-	$sbuild_gb .= $self->get_conf('WANNA_BUILD_SSH_HOST');
+	$sbuild_gb .= $dist_config->get('WANNA_BUILD_SSH_SOCKET') . "\@"
+	    if $dist_config->get('WANNA_BUILD_SSH_SOCKET');
+	$sbuild_gb .= $dist_config->get('WANNA_BUILD_DB_USER') . "\@"
+	    if $dist_config->get('WANNA_BUILD_DB_USER');
+	$sbuild_gb .= $dist_config->get('WANNA_BUILD_SSH_USER') ."\@" 
+	    if $dist_config->get('WANNA_BUILD_SSH_USER');
+	$sbuild_gb .= $dist_config->get('WANNA_BUILD_SSH_HOST');
     } else {
 	# Otherwise newer sbuild will take the package name as an --auto-give-back
 	# parameter (changed from regexp to GetOpt::Long parsing)
 	$sbuild_gb .= "=yes"
     }
     push ( @sbuild_args, $sbuild_gb );
-    push ( @sbuild_args, "--database=" . $self->get_conf('WANNA_BUILD_DB_NAME') )
-	if $self->get_conf('WANNA_BUILD_DB_NAME');
+    #multi-archive-buildd keeps the mailto configuration in the builddrc, so
+    #this needs to be passed over to sbuild. If the buildd config doesn't have
+    #it, we hope that the address is configured in .sbuildrc and the right one:
+    if ($dist_config->get('LOGS_MAILED_TO')) {
+	push @sbuild_args, '--mailto=' . $dist_config->get('LOGS_MAILED_TO');
+    }
+    push ( @sbuild_args, "--database=" . $dist_config->get('WANNA_BUILD_DB_NAME') )
+	if $dist_config->get('WANNA_BUILD_DB_NAME');
 
     if (scalar(@_) == 1 and $_[0] =~ s/^!(\d+)!//) {
 	$binNMUver = $1;
@@ -476,16 +484,16 @@ sub do_build {
 		push( @unfinished, $_ ) if !isin( $_, @finished );
 	    }
 	    $self->log("Adding rest to REDO:\n@unfinished\n");
-	    $self->append_to_REDO( $dist, '', @unfinished );
+	    $self->append_to_REDO( $dist_config, '', @unfinished );
 	    $self->write_stats("builds", -scalar(@unfinished));
 	}
 	else {
 	    if (defined $binNMUver) {
 		$self->log("Assuming binNMU failed and adding to REDO:\n@_\n");
-		$self->append_to_REDO( $dist, "$binNMUver $binNMUlog->{$_[0]}", @_ );
+		$self->append_to_REDO( $dist_config, "$binNMUver $binNMUlog->{$_[0]}", @_ );
 	    } else {
 		$self->log("Assuming all packages unbuilt and adding to REDO:\n@_\n");
-		$self->append_to_REDO( $dist, '', @_ );
+		$self->append_to_REDO( $dist_config, '', @_ );
 	    }
 	    $self->write_stats("builds", -scalar(@_));
 	}
@@ -524,15 +532,20 @@ EOF
 
 sub handle_prevfailed {
     my $self = shift;
-    my $dist = shift;
+    my $dist_config = shift;
     my $pkgv = shift;
 
+    my $dist_name = $dist_config->get('DIST_NAME');
     my( $pkg, $fail_msg, $changelog);
 
     $self->log("$pkgv previously failed -- asking admin first\n");
     ($pkg = $pkgv) =~ s/_.*$//;
 
-    my $pipe = $self->get('DB')->pipe_query('--info', "--dist=$dist", $pkg);
+    my $db = $self->get_db_handle($dist_config);
+    my $pipe = $db->pipe_query(
+	'--info',
+       	'--dist=' . $dist_name,
+       	$pkg);
     if (!$pipe) {
 	$self->log("Can't run wanna-build: $!\n");
 	return;
@@ -548,12 +561,12 @@ sub handle_prevfailed {
 
     {
 	local $SIG{'ALRM'} = sub ($) { die "Timeout!\n" };
-	eval { $changelog = $self->get_changelog( $dist, $pkgv ) };
+	eval { $changelog = $self->get_changelog( $dist_config, $pkgv ) };
     }
     $changelog = "ERROR: FTP timeout" if $@;
 
     send_mail( $self->get_conf('ADMIN_MAIL'),
-	       "Should I build $pkgv (dist=$dist)?",
+	       "Should I build $pkgv (dist=${dist_name})?",
 	       "The package $pkg failed to build in a previous version. ".
 	       "The fail\n".
 	       "messages are:\n\n$fail_msg\n".
@@ -570,9 +583,10 @@ sub handle_prevfailed {
 
 sub get_changelog {
     my $self = shift;
-    my $dist = shift;
+    my $dist_config = shift;
     my $pkg = shift;
 
+    my $dist_name = $dist_config->get('DIST_NAME');
     my $changelog = "";
     my $analyze = "";
     my $chroot_apt_options;
@@ -586,9 +600,9 @@ sub get_changelog {
 
 retry:
     my @schroot = ($self->get_conf('SCHROOT'), '-c',
-		   "$dist-" . $self->get_conf('ARCH') . '-sbuild', '--');
+		   $dist_name . '-' . $self->get_conf('ARCH') . '-sbuild', '--');
     my @schroot_root = ($self->get_conf('SCHROOT'), '-c',
-			"$dist-" . $self->get_conf('ARCH') . '-sbuild',
+			$dist_name . '-' . $self->get_conf('ARCH') . '-sbuild',
 			'-u', 'root', '--');
     my $apt_get = $self->get_conf('APT_GET');
 
@@ -698,7 +712,7 @@ retry:
 
 sub append_to_REDO {
     my $self = shift;
-    my $dist = shift;
+    my $dist_config = shift;
     my $postfix = shift;
 
     my @npkgs = @_;
@@ -717,7 +731,7 @@ sub append_to_REDO {
     if (open( F, ">>REDO" )) {
 	foreach $pkg (@npkgs) {
 	    next if grep( /^\Q$pkg\E\s/, @pkgs );
-	    print F "$pkg ${dist}$postfix\n";
+	    print F "$pkg " . $dist_config->get('DIST_NAME') . $postfix . "\n";
 	}
 	close( F );
     }

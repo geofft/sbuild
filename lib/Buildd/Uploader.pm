@@ -55,10 +55,6 @@ sub new {
 sub run {
     my $self = shift;
 
-    my $db = Sbuild::DB::Client->new($self->get('Config'));
-    $db->set('Log Stream', $self->get('Log Stream'));
-    $self->set('DB', $db);
-
     unset_env();
 
     $self->set('Uploader Lock',
@@ -69,9 +65,11 @@ sub run {
 	return 1;
     }
 
-
-    $self->upload( "upload-security", $self->get_conf('DUPLOAD_TO_SECURITY') );
-    $self->upload( "upload", $self->get_conf('DUPLOAD_TO') );
+    for my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
+	$self->upload( 
+		$dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR'), 
+		$dist_config->get('DUPLOAD_ARCHIVE_NAME'));
+    }
 
     my $uploaded_pkgs = $self->get('Uploaded Pkgs');
 
@@ -88,11 +86,13 @@ sub uploaded ($@) {
 
     my @propagated_pkgs = ();
 
-    foreach my $dist (@_) {
+    foreach my $dist_name (@_) {
 	my $msgs = "";
 
-	my $pipe = $self->get('DB')->pipe_query('--uploaded', "--dist=$dist",
-						"$pkg");
+	my $dist_config = $self->get_dist_config_by_name($dist_name);
+	my $db = $self->get_db_handle($dist_config);
+
+	my $pipe = $db->pipe_query('--uploaded', '--dist=' . $dist_name, $pkg);
 
 	if ($pipe) {
 	    while(<$pipe>) {
@@ -114,7 +114,7 @@ sub uploaded ($@) {
 			   exitstatus($?), "\n" )
 		    if $?;
 	    } else {
-		$self->get('Uploaded Pkgs')->{$dist} .= " $pkg";
+		$self->get('Uploaded Pkgs')->{$dist_name} .= " $pkg";
 	    }
 	}
 	else {

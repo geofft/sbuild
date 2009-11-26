@@ -61,4 +61,38 @@ sub write_stats ($$$) {
     unlock_file( "$home/stats" );
 }
 
+sub get_db_handle ($$) {
+    my $self = shift;
+    my $dist_config = shift;
+
+    my $db = Sbuild::DB::Client->new($dist_config);
+    $db->set('Log Stream', $self->get('Log Stream'));
+    return $db;
+}
+
+sub get_dist_config_by_name ($$) {
+    my $self = shift;
+    my $dist_name = shift;
+
+    my $dist_config;
+    for my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
+        if ($dist_config->get('DIST_NAME') eq $dist_name) {
+            $dist_config = $dist_config;
+        }
+    }
+
+    if (!$dist_config) {
+        $self->set('Mail Short Error',
+                $self->get('Mail Short Error') .
+                "No configuration found for dist $dist_name\n");
+        $self->set('Mail Error',
+                $self->get('Mail Error') .
+                "Answer could not be processed, as dist=$dist_name does not match any of\n".
+                "the entries in the buildd configuration.\n");
+    }
+
+    return $dist_config;
+}
+
+
 1;

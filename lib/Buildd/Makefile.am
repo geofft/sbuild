@@ -26,6 +26,7 @@ perlmodbuildddir = $(perlmoddir)/Buildd
 MODULES =		\
 	Base.pm		\
 	Conf.pm		\
+	DistConf.pm \
 	Daemon.pm	\
 	Mail.pm		\
 	Uploader.pm	\
