@@ -25,7 +25,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use Buildd qw(isin lock_file unlock_file send_mail exitstatus);
+use Buildd qw(isin lock_file unlock_file send_mail exitstatus close_log);
 use Buildd::Conf;
 use Buildd::Base;
 use Sbuild qw($devnull df);
@@ -773,7 +773,7 @@ sub check_restart {
 
     if ( -f $self->get_conf('HOME') . "/EXIT-DAEMON-PLEASE" ) {
 	unlink($self->get_conf('HOME') . "/EXIT-DAEMON-PLEASE");
-	&shutdown("NONE (flag file exit)");
+	$self->shutdown("NONE (flag file exit)");
     }
 }
 
@@ -822,6 +822,37 @@ sub read_config {
     my $self = shift;
 
     $self->get('Config')->read_config();
+}
+
+sub shutdown {
+    my $self = shift;
+    my $signame = shift;
+
+    $self->log("buildd ($$) received SIG$signame -- shutting down\n");
+
+    if (defined $main::ssh_pid) {
+	kill ( 15, $main::ssh_pid );
+    }
+    if (defined $main::sbuild_pid) {
+	$self->log("Killing sbuild (pid=$main::sbuild_pid)\n");
+	kill( 15, $main::sbuild_pid );
+	$self->log("Waiting max. 2 minutes for sbuild to finish\n");
+	$SIG{'ALRM'} = sub ($) { die "timeout\n"; };
+	alarm( 120 );
+	eval "waitpid( $main::sbuild_pid, 0 )";
+	alarm( 0 );
+	if ($@) {
+	    $self->log("sbuild did not die!");
+	}
+	else {
+	    $self->log("sbuild died normally");
+	}
+	unlink( "SBUILD-REDO-DUMPED" );
+    }
+    unlink( $self->get('Config')->get('PIDFILE') );
+    $self->log("exiting now\n");
+    close_log($self->get('Config'));
+    exit 1;
 }
 
 1;
