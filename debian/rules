@@ -56,7 +56,7 @@ binary-indep: build install
 	dh_installexamples -i
 	dh_installman -i
 	dh_installcron -i
-	dh_installinit -i
+	dh_installinit -i --no-start --no-restart-on-upgrade
 	dh_perl -i
 	dh_link -i
 	dh_compress -i
