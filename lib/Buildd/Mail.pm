@@ -24,7 +24,7 @@ package Buildd::Mail;
 use strict;
 use warnings;
 
-use Buildd qw(ll_send_mail);
+use Buildd qw(ll_send_mail lock_file unlock_file send_mail);
 use Buildd::Conf;
 use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
@@ -504,7 +504,10 @@ sub prepare_for_upload ($$) {
     my @wrong_dists = ();
     foreach my $d (@to_dists) {
 	push( @wrong_dists, $d )
-	    if !$self->check_state($pkg, $d, qw(Building Install-Wait Reupload-Wait));
+	    if !$self->check_state(
+			$pkg, 
+			$self->get_dist_config_by_name($d),
+		   	qw(Building Built Install-Wait Reupload-Wait));
     }
     if (@wrong_dists) {
 	$self->set('Mail Short Error',
@@ -704,7 +707,7 @@ sub remove_from_upload ($) {
     $pkg_noep =~ s/_\d*:/_/;
     $changes_f = "${pkg_noep}_" . $self->get_conf('ARCH') . ".changes";
 
-    my $upload_dir = $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
+    my $upload_dir = $self->get_conf('HOME') . '/' . $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
 
     if (!-f "$upload_dir/$changes_f") {
 	$self->log("$changes_f does not exist\n");
@@ -1208,7 +1211,7 @@ sub get_upload_queue_dirs ($) {
     my %upload_dirs;
     my @dists = $self->get_dists_from_changes( $changes_text );
     for my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
-	my $upload_dir = $self->get_conf('HOME') . $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
+	my $upload_dir = $self->get_conf('HOME') . '/' . $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
 
 	if (grep { $dist_config->get('DIST_NAME') eq $_ } @dists) {
 	    $upload_dirs{$upload_dir} = 1;
@@ -1224,7 +1227,7 @@ sub find_upload_dirs_for_changes_file ($) {
     my %dirs;
 
     for my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
-	my $upload_dir = $self->get_conf('HOME') . $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
+	my $upload_dir = $self->get_conf('HOME') . '/' . $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
 	if (-f "$upload_dir/$changes_file_name") {
 	    $dirs{$upload_dir} = 1;	
 	}

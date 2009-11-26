@@ -75,9 +75,9 @@ sub get_dist_config_by_name ($$) {
     my $dist_name = shift;
 
     my $dist_config;
-    for my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
-        if ($dist_config->get('DIST_NAME') eq $dist_name) {
-            $dist_config = $dist_config;
+    for my $dist_config_entry (@{$self->get_conf('DISTRIBUTIONS')}) {
+        if ($dist_config_entry->get('DIST_NAME') eq $dist_name) {
+            $dist_config = $dist_config_entry;
         }
     }
 
