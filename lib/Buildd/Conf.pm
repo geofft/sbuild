@@ -238,6 +238,12 @@ sub read_config {
     my $warning_age = undef;
     my @weak_no_auto_build;
 
+    #legacy fields:
+    my $sshcmd;
+    my $sshsocket;
+    my $wanna_build_user;
+    my $wanna_build_dbbase;
+
     my $global = $Sbuild::Sysconfig::paths{'BUILDD_CONF'};
     my $user = "$HOME/.builddrc";
     my %config_time = ();
@@ -275,10 +281,7 @@ sub read_config {
 		$self->get('CONFIG_TIME')->{$_} = $config_time{$_};
 	    }
 	}
-    }
 
-    # Set configuration if updated.
-    if ($reread) {
 	$self->set('ADMIN_MAIL', $admin_mail);
 	$self->set('APT_GET', $apt_get);
 	$self->set('ARCH', $arch);
@@ -315,6 +318,46 @@ sub read_config {
 	$self->set('SUDO', $sudo);
 	$self->set('TAKE_FROM_DISTS', \@take_from_dists)
 	    if (@take_from_dists);
+
+	#some heuristics to translate from the old config names to the new
+	#ones:
+	if ($sshcmd && $sshcmd =~ /^\s*(\S+)\s+(.+)/) {
+	    my $rest = $2;
+	    $self->set('SSH', $1);
+
+	    #Try to pry the user out:
+	    if ($rest =~ /(-l\s+(\S+))\s+/) {
+		$wanna_build_ssh_user = $2;
+		#purge this from the rest:
+		$rest =~ s/\Q$1//;
+	    } elsif ($rest =~ /\s+(\S+)\@/) {
+		$wanna_build_ssh_user = $1;
+		$rest =~ s/\Q$1\E\@//;
+	    }
+
+	    #Hope that the last argument is the host:
+	    if ($rest =~ /\s+(\S+)\s*$/) {
+		$wanna_build_ssh_host = $1;
+		$rest =~ s/\Q$1//;
+	    }
+
+	    #rest should be options:
+	    if ($rest !~ /\s*/) {
+		$wanna_build_ssh_options = [split $rest];
+	    }
+	}
+
+	if ($sshsocket) {
+	    $wanna_build_ssh_socket = $sshsocket;
+	}
+
+	if ($wanna_build_user) {
+	    $wanna_build_db_user = $wanna_build_user;
+	}
+
+	if ($wanna_build_dbbase) {
+	    $wanna_build_db_name = $wanna_build_dbbase;
+	}
 
 	$self->set('WANNA_BUILD_DB_NAME', $wanna_build_db_name);
 	$self->set('WANNA_BUILD_DB_USER', $wanna_build_db_user);
