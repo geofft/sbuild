@@ -27,6 +27,7 @@ MODULES =		\
 	Base.pm		\
 	Conf.pm		\
 	DistConf.pm \
+	UploadQueueConf.pm \
 	Daemon.pm	\
 	Mail.pm		\
 	Uploader.pm	\

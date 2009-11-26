@@ -26,6 +26,7 @@ use strict;
 use warnings;
 
 use Buildd::DistConf;
+use Buildd::UploadQueueConf;
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
 use Sbuild::DB::ClientConf qw();
@@ -165,6 +166,22 @@ sub init_allowed_keys {
 	'DISTRIBUTIONS'                         => {
 	    DEFAULT => []
 	},
+	'UPLOAD_QUEUES'                         => {
+	    DEFAULT => [
+	    	Buildd::UploadQueueConf->new(
+		    { 
+			DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
+			DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
+		    }
+		),
+	    	Buildd::UploadQueueConf->new(
+		    { 
+			DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
+			DUPLOAD_ARCHIVE_NAME    => 'security'
+		    }
+		),
+	    ]
+	},
     	);
 
     $self->set_allowed_keys(\%buildd_keys);
@@ -211,6 +228,7 @@ sub read_config {
     my $wanna_build_ssh_options = undef;
     my $warning_age = undef;
     my @distributions;
+    my @upload_queues;
 
     #legacy fields:
     my @weak_no_auto_build;
@@ -344,12 +362,8 @@ sub read_config {
 		$entry{SSH} = $ssh;
 
 		if ($dist =~ /security/) {
-		    $entry{DUPLOAD_ARCHIVE_NAME} = 'security';
 		    $entry{DUPLOAD_LOCAL_QUEUE_DIR} = 'upload-security';
-		} else {
-		    $entry{DUPLOAD_ARCHIVE_NAME} = $dupload_to;
 		}
-
 		if ($build_regex) {
 		    $entry{BUILD_REGEX} = $build_regex;
 		}
@@ -409,6 +423,18 @@ sub read_config {
 	}
 
 	$self->set('DISTRIBUTIONS', \@distributions_info);
+
+	if (@upload_queues) {
+	    my @upload_queue_configs;
+	    for my $raw_entry (@upload_queues) {
+		my %entry;
+		for my $key (keys %$raw_entry) {
+		    $entry{uc($key)} = $raw_entry->{$key};
+		}
+		my $dist_config = Buildd::UploadQueueConf->new(\%entry);
+	    }
+	    $self->set('UPLOAD_QUEUES', \@upload_queue_configs);
+	}
 
 	# Set here to allow user to override.
 	if (-t STDIN && -t STDOUT && $self->get('NO_DETACH')) {

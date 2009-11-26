@@ -65,10 +65,10 @@ sub run {
 	return 1;
     }
 
-    for my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
+    for my $queue_config (@{$self->get_conf('UPLOAD_QUEUES')}) {
 	$self->upload( 
-		$dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR'), 
-		$dist_config->get('DUPLOAD_ARCHIVE_NAME'));
+		$queue_config->get('DUPLOAD_LOCAL_QUEUE_DIR'), 
+		$queue_config->get('DUPLOAD_ARCHIVE_NAME'));
     }
 
     my $uploaded_pkgs = $self->get('Uploaded Pkgs');

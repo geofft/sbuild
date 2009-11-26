@@ -20,14 +20,13 @@
 #
 #######################################################################
 
-package Buildd::DistConf;
+package Buildd::UploadQueueConf;
 
 use strict;
 use warnings;
 
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
-use Sbuild::DB::ClientConf qw();
 
 BEGIN {
     use Exporter ();
@@ -38,14 +37,14 @@ BEGIN {
 
 sub new {
     my $class = shift;
-	my $data_hash = shift;
+    my $data_hash = shift;
 
     my $self  = {};
     $self->{'config'} = {};
     bless($self, $class);
 
     $self->init_allowed_keys();
-	$self->_fill_from_hash($data_hash);
+    $self->_fill_from_hash($data_hash);
 
     return $self;
 }
@@ -70,51 +69,17 @@ sub init_allowed_keys {
 	    if !-d $home_directory . "/" . $directory;
     };
 
-    my $arch = $self->get('ARCH');
-
-    my %buildd_dist_keys = (
-	'DIST_NAME'				=> {
-	    DEFAULT => 'unstable'
-	},
-	'WANNA_BUILD_SSH_HOST'			=> {
-	    DEFAULT => 'buildd.debian.org'
-	},
-	'WANNA_BUILD_SSH_USER'			=> {
-	    DEFAULT => 'buildd_' . $arch
-	},
-	'WANNA_BUILD_SSH_SOCKET'		=> {
-	    DEFAULT => undef
-	},
-	'WANNA_BUILD_SSH_OPTIONS'		=> {
-	    DEFAULT => []
-	},
-	'WANNA_BUILD_DB_NAME'			=> {
-	    DEFAULT => $arch . '/build-db'
-	},
-	'WANNA_BUILD_DB_USER'			=> {
-	    DEFAULT => $Buildd::username
-	},
+    my %dupload_queue_keys = (
 	'DUPLOAD_LOCAL_QUEUE_DIR'		=> {
 	    CHECK => $validate_directory_in_home,
 	    DEFAULT => 'upload'
 	},
-	'NO_AUTO_BUILD'				=> {
-	    DEFAULT => []
+	'DUPLOAD_ARCHIVE_NAME'		=> {
+	    DEFAULT => 'anonymous-ftp-master'
 	},
-	'WEAK_NO_AUTO_BUILD'			=> {
-	    DEFAULT => []
-	},
-	'NO_BUILD_REGEX'			=> {
-	    DEFAULT => undef
-	},
-	'BUILD_REGEX'				=> {
-	    DEFAULT => undef
-	},
-	'LOGS_MAILED_TO'			=> {
-	    DEFAULT => undef
-	});
+    );
 
-    $self->set_allowed_keys(\%buildd_dist_keys);
+    $self->set_allowed_keys(\%dupload_queue_keys);
 
     Sbuild::DB::ClientConf::add_keys($self);
 }
