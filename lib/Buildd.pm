@@ -96,6 +96,9 @@ sub lock_file ($;$) {
 	    goto repeat if !open( F, "<$lockfile" );
 	    my $line = <F>;
 	    close( F );
+	    # If this goes wrong it would be a spinlock and the world will
+	    # end.
+	    goto repeat if !defined( $line );
 	    if ($line !~ /^(\d+)\s+([\w\d.-]+)$/) {
 		warn "Bad lock file contents ($lockfile) -- still trying\n";
 	    }

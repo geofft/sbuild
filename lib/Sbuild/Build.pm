@@ -262,8 +262,9 @@ sub run {
     $self->set('Additional Deps', []);
 
     # Update APT cache.
+    $self->set('Pkg Fail Stage', 'apt-get-update');
     if ($self->get_conf('APT_UPDATE')) {
-	if (update($session, $self->get('Config')) || upgrade($session, $self->get('Config'))) {
+	if (update($session, $self->get('Config'))) {
 	    # Since apt-update was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");

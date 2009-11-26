@@ -218,7 +218,7 @@ sub status_trigger ($$) {
 	isin($build->get('Pkg Fail Stage'),
 	     qw(fetch-src install-deps arch-check unpack
 		check-unpacked-version check-space hack-binNMU
-		install-deps-env))) {
+		install-deps-env apt-get-update))) {
 	$build->set_status('given-back');
     } elsif ($status eq "failed" &&
 	     isin ($build->get('Pkg Fail Stage'),

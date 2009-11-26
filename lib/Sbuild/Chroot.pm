@@ -252,18 +252,21 @@ sub run_command_internal {
     if (!defined $pid) {
 	warn "Cannot fork: $!\n";
     } elsif ($pid == 0) { # child
+
 	# redirect stdout
 	my $in = $self->get_option($options, 'STREAMIN');
 	if (defined($in) && $in && \*STDIN != $in) {
 	    open(STDIN, '<&', $in)
 		or warn "Can't redirect stdin\n";
 	}
+
 	# redirect stdout
 	my $out = $self->get_option($options, 'STREAMOUT');
 	if (defined($out) && $out && \*STDOUT != $out) {
 	    open(STDOUT, '>&', $out)
 		or warn "Can't redirect stdout\n";
 	}
+
 	# redirect stderr
 	my $err = $self->get_option($options, 'STREAMERR');
 	if (defined($err) && $err && \*STDERR != $err) {
