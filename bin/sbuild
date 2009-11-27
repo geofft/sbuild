@@ -239,20 +239,20 @@ sub wanna_build_status_trigger ($$) {
 	return if !$build->get_conf('AUTO_GIVEBACK');
 
 	if ($status eq "successful") {
-	    $db->run_query('--built', "$pkgv");
+	    $db->run_query('--built', $pkgv);
 	    $wb_status = $?;
 	} elsif ($status eq "attempted") {
-	    $db->run_query('--attempted', "$pkgv");
+	    $db->run_query('--attempted', $pkgv);
 	    $wb_status = $?;
 	} elsif ($status eq "given-back") {
-	    $db->run_query('--give-back', "$pkgv");
+	    $db->run_query('--give-back', $pkgv);
 	    $wb_status = $?;
 	    $build->set('Pkg Status', "given-back");
 	    $build->log("Giving back package $pkgv after failure in ".
 			$build->get('Pkg Fail Stage') ." stage.\n");
 
 	    if (!$wb_status) {
-		$build->add_givenback($build, time);
+		add_givenback($build, time);
 		$build->write_stats('give-back', 1);
 	    }
 	}
