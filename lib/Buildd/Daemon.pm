@@ -429,7 +429,7 @@ sub do_build {
     #this needs to be passed over to sbuild. If the buildd config doesn't have
     #it, we hope that the address is configured in .sbuildrc and the right one:
     if ($dist_config->get('LOGS_MAILED_TO')) {
-	push @sbuild_args, '--mailto=' . $dist_config->get('LOGS_MAILED_TO');
+	push @sbuild_args, '--mail-log-to=' . $dist_config->get('LOGS_MAILED_TO');
     }
     push ( @sbuild_args, "--database=" . $dist_config->get('WANNA_BUILD_DB_NAME') )
 	if $dist_config->get('WANNA_BUILD_DB_NAME');
