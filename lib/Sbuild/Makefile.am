@@ -38,6 +38,7 @@ MODULES =			\
 	ChrootInfoSchroot.pm	\
 	ChrootInfoSudo.pm	\
 	BuildDepSatisfierBase.pm \
+	AptitudeBuildDepSatisfier.pm \
 	InternalBuildDepSatisfier.pm \
 	Conf.pm			\
 	ConfBase.pm		\
