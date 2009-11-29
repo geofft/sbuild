@@ -431,6 +431,11 @@ sub do_build {
     if ($dist_config->get('LOGS_MAILED_TO')) {
 	push @sbuild_args, '--mail-log-to=' . $dist_config->get('LOGS_MAILED_TO');
     }
+    #Some distributions (bpo, experimental) require a more complex dep resolver.
+    #Ask sbuild to use another build-dep resolver if the config says so:
+    if ($dist_config->get('BUILD_DEP_RESOLVER')) {
+	push @sbuild_args, '--build-dep-resolver=' . $dist_config->get('BUILD_DEP_RESOLVER');
+    }
     push ( @sbuild_args, "--database=" . $dist_config->get('WANNA_BUILD_DB_NAME') )
 	if $dist_config->get('WANNA_BUILD_DB_NAME');
 

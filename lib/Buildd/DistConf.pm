@@ -112,7 +112,10 @@ sub init_allowed_keys {
 	},
 	'LOGS_MAILED_TO'			=> {
 	    DEFAULT => undef
-	});
+	},
+	'BUILD_DEP_RESOLVER'			=> {
+	    DEFAULT => undef
+	},);
 
     $self->set_allowed_keys(\%buildd_dist_keys);
 
