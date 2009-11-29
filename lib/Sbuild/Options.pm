@@ -167,7 +167,10 @@ sub set_options {
 			   $self->set_conf('PATH',
 					   '/usr/lib/gcc-snapshot/bin' .
 					   $self->get_conf('PATH') ne '' ? ':' . $self->get_conf('PATH') : '');
-		       }
+		       },
+		       "build-dep-resolver=s" => sub {
+			   $self->set_conf('BUILD_DEP_RESOLVER', $_[1]);
+		       },
 	);
 }
 
