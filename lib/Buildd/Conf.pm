@@ -431,7 +431,8 @@ sub read_config {
 		for my $key (keys %$raw_entry) {
 		    $entry{uc($key)} = $raw_entry->{$key};
 		}
-		my $dist_config = Buildd::UploadQueueConf->new(\%entry);
+		my $queue_config = Buildd::UploadQueueConf->new(\%entry);
+		push @upload_queue_configs, $queue_config;
 	    }
 	    $self->set('UPLOAD_QUEUES', \@upload_queue_configs);
 	}
