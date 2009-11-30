@@ -67,10 +67,14 @@ sub install_deps {
     $builder->lock_file($session->get('Install Lock'), 1);
 
     #install aptitude first:
-    if (!$builder->run_apt('-y', [], [], 'aptitude')) {
+    my (@aptitude_installed_packages, @aptitude_removed_packages);
+    if (!$builder->run_apt('-y', \@aptitude_installed_packages, \@aptitude_removed_packages, 'aptitude')) {
 	$self->log_warning('Could not install aptitude!');
 	goto cleanup;
     }
+    $self->set_installed(@aptitude_installed_packages);
+    $self->set_removed(@aptitude_removed_packages);
+
 
     #Prepare a path to build a dummy package containing our deps:
     $self->set('Dummy package path',
@@ -140,6 +144,7 @@ EOF
 	      USER => 'root',
 	      CHROOT => 1,
 	      PRIORITY => 0});
+    $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, $dummy_pkg_name);
 
     my $pipe = $session->pipe_command(
 	    { COMMAND => [
@@ -187,10 +192,9 @@ EOF
     }
 
     my @installed_packages = split( /\s+/, $installed_pkgs);
-    push @installed_packages, ($dummy_pkg_name, 'aptitude');
 
-    $self->set_installed(@installed_packages);
-    $self->set_removed(split( /\s+/, $removed_pkgs));
+    $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, @installed_packages);
+    $self->set_removed(keys %{$self->get('Changes')->{'removed'}}, split( /\s+/, $removed_pkgs));
 
     #Seems it all went fine.
     $builder->unlock_file($builder->get('Session')->get('Install Lock'));
