@@ -176,11 +176,11 @@ EOF
     }
 
     my ($installed_pkgs, $removed_pkgs) = ("", "");
-    if ($aptitude_output =~ /The following NEW packages will be installed:\n((^[  ].*\n)*)/mi) {
+    while ($aptitude_output =~ /The following NEW packages will be installed:\n((^[  ].*\n)*)/gmi) {
 	($installed_pkgs = $1) =~ s/^[    ]*((.|\n)*)\s*$/$1/m;
 	$installed_pkgs =~ s/\*//g;
     }
-    if ($aptitude_output =~ /The following packages will be REMOVED:\n((^[    ].*\n)*)/mi) {
+    while ($aptitude_output =~ /The following packages will be REMOVED:\n((^[    ].*\n)*)/gmi) {
 	($removed_pkgs = $1) =~ s/^[   ]*((.|\n)*)\s*$/$1/m;
 	$removed_pkgs =~ s/\*//g;
 	$removed_pkgs =~ s/\{.\}//g; #remove {u}, {a} in output...
