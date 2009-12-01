@@ -30,10 +30,14 @@ builddsysconf_DATA = buildd.conf wanna-build.conf
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
+schrootsysconfdir = $(SCHROOT_SYSCONF_DIR)
+schrootsysconf_DATA = mount-defaults.buildd script-defaults.buildd
+
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
 schrootsetup_SCRIPTS = 25nssdatabases
 
 EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
 	$(builddsysconf_DATA)	\
-	$(exampleconf_DATA)
+	$(exampleconf_DATA)	\
+	$(schrootsysconf_DATA)
