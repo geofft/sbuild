@@ -203,7 +203,7 @@ EOF
 
   aptitude_cleanup:
     $session->run_command(
-	    { COMMAND => ['dpkg', '--purge', 'aptitude'],
+	    { COMMAND => ['dpkg', '--purge', keys %{$self->get('Changes')->{'installed'}}],
 	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 1,
 	      PRIORITY => 0});
