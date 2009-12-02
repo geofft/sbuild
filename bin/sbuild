@@ -323,14 +323,18 @@ sub shutdown ($) {
 	unlink("SBUILD-FINISHED");
 
 	# next: say which packages should be uninstalled
-	@pkgs = keys %{$jobs{$current_job}->get('Dependency Resolver')->get('Changes')->{'installed'}};
-	if (@pkgs) {
-	    if (open( F, ">>NEED-TO-UNINSTALL" )) {
-		print F "@pkgs\n";
-		close( F );
+	if (defined ($session->get('Session Purged')) && $session->get('Session Purged') == 1) {
+	    print "Not removing build depends: cloned chroot in use\n";
+	} else {
+	    @pkgs = keys %{$jobs{$current_job}->get('Dependency Resolver')->get('Changes')->{'installed'}};
+	    if (@pkgs) {
+		if (open( F, ">>NEED-TO-UNINSTALL" )) {
+		    print F "@pkgs\n";
+		    close( F );
+		}
+		print "The following packages still need to be uninstalled ",
+		"(--purge):\n@pkgs\n";
 	    }
-	    print "The following packages still need to be uninstalled ",
-	    "(--purge):\n@pkgs\n";
 	}
     }
 
