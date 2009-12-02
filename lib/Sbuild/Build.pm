@@ -1963,6 +1963,7 @@ sub open_build_log {
     $self->log("Package: " . $self->get('Package') . "\n");
     $self->log("Version: " . $self->get('Version') . "\n");
     $self->log("Architecture: " . $self->get('Arch') . "\n");
+    $self->log("Chroot Build Dir: " . $self->get('Chroot Build Dir') . "\n");
     $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");
 }
 
