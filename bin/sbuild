@@ -354,7 +354,10 @@ sub shutdown ($) {
 			  PRIORITY => 0,
 			  DIR => '/' });
     }
-    $jobs{$current_job}->remove_srcdep_lock_file();
+
+    if (defined($current_job) && $jobs{$current_job}->get('Dependency Resolver')) {
+	$jobs{$current_job}->get('Dependency Resolver')->remove_srcdep_lock_file();
+    }
 
     # Close logs and send mails
     if (defined($current_job) &&
