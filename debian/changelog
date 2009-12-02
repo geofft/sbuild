@@ -1,15 +1,3 @@
-sbuild (0.59.1~rc1+multiarchive+21) unstable; urgency=low
-
-  * Some more fixes...
-
- -- Marc 'HE' Brockschmidt <he@debian.org>  Tue, 01 Dec 2009 23:02:12 +0100
-
-sbuild (0.59.1~rc1+multiarchive+20) unstable; urgency=low
-
-  * Improve aptitude build-dep resolver.
-
- -- Marc 'HE' Brockschmidt <he@debian.org>  Mon, 30 Nov 2009 20:05:27 +0100
-
 sbuild (0.59.1~rc1) unstable; urgency=low
 
   * debian/control:

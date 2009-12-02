@@ -22,7 +22,7 @@ package Buildd::Watcher;
 
 use strict;
 use warnings;
-use Buildd;
+use Buildd qw(send_mail);
 use Buildd::Conf;
 use Buildd::Base;
 
