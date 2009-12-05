@@ -270,10 +270,8 @@ sub run {
 	    # Since apt-update was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
-	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		$self->set_status('failed');
-		goto cleanup_close;
-	    }
+	    $self->set_status('failed');
+	    goto cleanup_close;
 	}
     }
 
