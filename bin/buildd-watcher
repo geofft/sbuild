@@ -45,4 +45,4 @@ close_log($conf);
 
 exit $status;
 
-END { unlink( "watcher-running" ); }
+END { if ($watcher && !$watcher->get('Already running')) { unlink( "watcher-running" ); } }

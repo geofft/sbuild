@@ -79,6 +79,7 @@ sub run {
 	else {
 	    $self->log("Another buildd-watcher is still running ".
 		       "(pid $watcher_pid) -- exiting.\n");
+	    $self->set('Already running', $watcher_pid);
 	    return 0;
 	}
     }
