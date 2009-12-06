@@ -24,6 +24,7 @@ package Sbuild::InternalBuildDepSatisfier;
 use strict;
 use warnings;
 use Errno qw(:POSIX);
+use POSIX ();
 
 use Sbuild qw(isin debug version_compare);
 use Sbuild::Base;
@@ -379,7 +380,7 @@ sub check_dependencies {
     }
     $fail =~ s/\s+$//;
     if (!$fail && @{$builder->get('Toolchain Packages')}) {
-	my ($sysname, $nodename, $release, $version, $machine) = uname();
+	my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
 	my $arch = $builder->get('Arch');
 
 	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
