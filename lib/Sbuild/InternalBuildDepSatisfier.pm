@@ -67,15 +67,15 @@ sub install_deps {
     $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
 
     debug("Filtering dependencies\n");
-    if (!$builder->filter_dependencies($dep, \@positive, \@negative )) {
-	$self->log("Package installation not possible\n");
+    if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
+	$builder->log("Package installation not possible\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
-    $self->log("Checking for source dependency conflicts...\n");
+    $builder->log("Checking for source dependency conflicts...\n");
     if (!$builder->run_apt("-s", \@instd, \@rmvd, @positive)) {
-	$self->log("Test what should be installed failed.\n");
+	$builder->log("Test what should be installed failed.\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
@@ -83,7 +83,7 @@ sub install_deps {
     push( @rmvd, @negative );
     my @confl;
     if (@confl = $self->check_srcdep_conflicts(\@instd, \@rmvd)) {
-	$self->log("Waiting for job(s) @confl to finish\n");
+	$builder->log("Waiting for job(s) @confl to finish\n");
 
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	$self->wait_for_srcdep_conflicts(@confl);
@@ -93,19 +93,19 @@ sub install_deps {
     $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
-    $self->log("Installing positive dependencies: @positive\n");
+    $builder->log("Installing positive dependencies: @positive\n");
     if (!$builder->run_apt("-y", \@instd, \@rmvd, @positive)) {
-	$self->log("Package installation failed\n");
+	$builder->log("Package installation failed\n");
 	# try to reinstall removed packages
-	$self->log("Trying to reinstall removed packages:\n");
+	$builder->log("Trying to reinstall removed packages:\n");
 	debug("Reinstalling removed packages: @rmvd\n");
 	my (@instd2, @rmvd2);
-	$self->log("Failed to reinstall removed packages!\n")
+	$builder->log("Failed to reinstall removed packages!\n")
 	    if !$builder->run_apt("-y", \@instd2, \@rmvd2, @rmvd);
 	debug("Installed were: @instd2\n");
 	debug("Removed were: @rmvd2\n");
 	# remove additional packages
-	$self->log("Trying to uninstall newly installed packages:\n");
+	$builder->log("Trying to uninstall newly installed packages:\n");
 	$self->uninstall_debs($builder->get('Chroot Dir') ? "purge" : "remove",
 			      @instd);
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
@@ -114,10 +114,10 @@ sub install_deps {
     $self->set_installed(@instd);
     $self->set_removed(@rmvd);
 
-    $self->log("Removing negative dependencies: @negative\n");
+    $builder->log("Removing negative dependencies: @negative\n");
     if (!$self->uninstall_debs($builder->get('Chroot Dir') ? "purge" : "remove",
 			       @negative)) {
-	$self->log("Removal of packages failed\n");
+	$builder->log("Removal of packages failed\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
@@ -128,7 +128,7 @@ sub install_deps {
 
     my $fail = $self->check_dependencies($dep);
     if ($fail) {
-	$self->log("After installing, the following source dependencies are ".
+	$builder->log("After installing, the following source dependencies are ".
 		   "still unsatisfied:\n$fail\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
@@ -152,7 +152,7 @@ sub install_deps {
     }
     close($pipe);
     if ($?) {
-	$self->log($self->get_conf('DPKG') . ' --set-selections failed\n');
+	$builder->log($self->get_conf('DPKG') . ' --set-selections failed\n');
     }
 
     $builder->unlock_file($builder->get('Session')->get('Install Lock'));
@@ -170,7 +170,7 @@ sub filter_dependencies {
 
     my($dep, $d, $name, %names);
 
-    $self->log("Checking for already installed source dependencies...\n");
+    $builder->log("Checking for already installed source dependencies...\n");
 
     @$pos_list = @$neg_list = ();
     foreach $d (@$dependencies) {
@@ -200,19 +200,19 @@ sub filter_dependencies {
 		if (!$rel || version_compare( $ivers, $rel, $vers )){
 		    debug("$name: neg dep, installed, not versioned or ",
 				 "version relation satisfied --> remove\n");
-		    $self->log("$name: installed (negative dependency)");
-		    $self->log(" (bad version $ivers $rel $vers)")
+		    $builder->log("$name: installed (negative dependency)");
+		    $builder->log(" (bad version $ivers $rel $vers)")
 			if $rel;
-		    $self->log("\n");
+		    $builder->log("\n");
 		    push( @$neg_list, $name );
 		}
 		else {
-		    $self->log("$name: installed (negative dependency) (but version ok $ivers $rel $vers)\n");
+		    $builder->log("$name: installed (negative dependency) (but version ok $ivers $rel $vers)\n");
 		}
 	    }
 	    else {
 		debug("$name: neg dep, not installed\n");
-		$self->log("$name: already deinstalled\n");
+		$builder->log("$name: already deinstalled\n");
 	    }
 	    next;
 	}
@@ -226,26 +226,26 @@ sub filter_dependencies {
 	    my $stat = $status->{$name};
 	    if (!$stat->{'Installed'}) {
 		debug("$name: pos dep, not installed\n");
-		$self->log("$name: missing\n");
+		$builder->log("$name: missing\n");
 
 		if ($self->get_conf('APT_POLICY') &&
 		    defined($policy->{$name}) &&
 		    $rel) {
 		    if (!version_compare($policy->{$name}->{defversion}, $rel, $vers)) {
-			$self->log("Default version of $name not sufficient, ");
+			$builder->log("Default version of $name not sufficient, ");
 			foreach my $cvers (@{$policy->{$name}->{versions}}) {
 			    if (version_compare($cvers, $rel, $vers)) {
-				$self->log("using version $cvers\n");
+				$builder->log("using version $cvers\n");
 				$installable = $name . "=" . $cvers if !$installable;
 				last;
 			    }
 			}
 			if(!$installable) {
-			    $self->log("no suitable version found. Skipping for now, maybe there are alternatives.\n");
+			    $builder->log("no suitable version found. Skipping for now, maybe there are alternatives.\n");
 			    next if ($self->get_conf('CHECK_DEPENDS_ALGORITHM') eq "alternatives");
 			}
 		    } else {
-			$self->log("Using default version " . $policy->{$name}->{defversion} . "\n");
+			$builder->log("Using default version " . $policy->{$name}->{defversion} . "\n");
 		    }
 		}
 		$installable = $name if !$installable;
@@ -255,35 +255,35 @@ sub filter_dependencies {
 	    if (!$rel || version_compare( $ivers, $rel, $vers )) {
 		debug("$name: pos dep, installed, no versioned dep or ",
 			     "version ok\n");
-		$self->log("$name: already installed ($ivers");
-		$self->log(" $rel $vers is satisfied")
+		$builder->log("$name: already installed ($ivers");
+		$builder->log(" $rel $vers is satisfied")
 		    if $rel;
-		$self->log(")\n");
+		$builder->log(")\n");
 		$is_satisfied = 1;
 		last;
 	    }
 	    debug("$name: vers dep, installed $ivers ! $rel $vers\n");
-	    $self->log("$name: non-matching version installed ".
+	    $builder->log("$name: non-matching version installed ".
 		       "($ivers ! $rel $vers)\n");
 	    if ($rel =~ /^</ ||
 		($rel eq '=' && version_compare($ivers, '>>', $vers))) {
 		debug("$name: would be a downgrade!\n");
-		$self->log("$name: would have to downgrade!\n");
+		$builder->log("$name: would have to downgrade!\n");
 	    } elsif ($self->get_conf('APT_POLICY') &&
 		     defined($policy->{$name})) {
 		if (!version_compare($policy->{$name}->{defversion}, $rel, $vers)) {
-		    $self->log("Default version of $name not sufficient, ");
+		    $builder->log("Default version of $name not sufficient, ");
 		    foreach my $cvers (@{$policy->{$name}->{versions}}) {
 			if(version_compare($cvers, $rel, $vers)) {
-			    $self->log("using version $cvers\n");
+			    $builder->log("using version $cvers\n");
 			    $upgradeable = $name if ! $upgradeable;
 			    last;
 			}
 		    }
-		    $self->log("no suitable alternative found. I probably should dep-wait this one.\n") if !$upgradeable;
+		    $builder->log("no suitable alternative found. I probably should dep-wait this one.\n") if !$upgradeable;
 		    return 0;
 		} else {
-		    $self->log("Using default version " . $policy->{$name}->{defversion} . "\n");
+		    $builder->log("Using default version " . $policy->{$name}->{defversion} . "\n");
 		}
 		$upgradeable = $name if !$upgradeable;
 	    }
@@ -298,9 +298,9 @@ sub filter_dependencies {
 		push( @$pos_list, $installable );
 	    }
 	    else {
-		$self->log("This dependency could not be satisfied. Possible reasons:\n");
-		$self->log("* The package has a versioned dependency that is not yet available.\n");
-		$self->log("* The package has a versioned dependency on a package version that is\n  older than the currently-installed package. Downgrades are not implemented.\n");
+		$builder->log("This dependency could not be satisfied. Possible reasons:\n");
+		$builder->log("* The package has a versioned dependency that is not yet available.\n");
+		$builder->log("* The package has a versioned dependency on a package version that is\n  older than the currently-installed package. Downgrades are not implemented.\n");
 		return 0;
 	    }
 	}
@@ -316,7 +316,7 @@ sub check_dependencies {
     my $fail = "";
     my($dep, $d, $name, %names);
 
-    $self->log("Checking correctness of source dependencies...\n");
+    $builder->log("Checking correctness of source dependencies...\n");
 
     foreach $d (@$dependencies) {
 	my $name = $d->{'Package'};
@@ -382,17 +382,17 @@ sub check_dependencies {
 	my ($sysname, $nodename, $release, $version, $machine) = uname();
 	my $arch = $builder->get('Arch');
 
-	$self->log("Kernel: $sysname $release $arch ($machine)\n");
-	$self->log("Toolchain package versions:");
+	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
+	$builder->log("Toolchain package versions:");
 	foreach $name (@{$builder->get('Toolchain Packages')}) {
 	    if (defined($status->{$name}->{'Version'})) {
-		$self->log(' ' . $name . '_' . $status->{$name}->{'Version'});
+		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
 	    } else {
-		$self->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
+		$builder->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
 
 	    }
 	}
-	$self->log("\n");
+	$builder->log("\n");
     }
 
     return $fail;
@@ -409,7 +409,7 @@ sub get_dpkg_status {
     debug("Requesting dpkg status for packages: @interest\n");
     my $dpkg_status_file = $builder->{'Chroot Dir'} . '/var/lib/dpkg/status';
     if (!open( STATUS, '<', $dpkg_status_file)) {
-	$self->log("Can't open $dpkg_status_file: $!\n");
+	$builder->log("Can't open $dpkg_status_file: $!\n");
 	return ();
     }
     local( $/ ) = "";
@@ -420,7 +420,7 @@ sub get_dpkg_status {
 	/^Version:\s*(.*)\s*$/mi and $version = $1;
 	/^Provides:\s*(.*)\s*$/mi and $provides = $1;
 	if (!$pkg) {
-	    $self->log_error("parse error in $dpkg_status_file: no Package: field\n");
+	    $builder->log_error("parse error in $dpkg_status_file: no Package: field\n");
 	    next;
 	}
 	if (defined($version)) {
@@ -429,7 +429,7 @@ sub get_dpkg_status {
 	    debug("$pkg status: $status\n") if $self->get_conf('DEBUG') >= 2;
 	}
 	if (!$status) {
-	    $self->log_error("parse error in $dpkg_status_file: no Status: field for package $pkg\n");
+	    $builder->log_error("parse error in $dpkg_status_file: no Status: field for package $pkg\n");
 	    next;
 	}
 	if ($status !~ /\sinstalled$/) {
@@ -439,7 +439,7 @@ sub get_dpkg_status {
 	    next;
 	}
 	if (!defined $version || $version eq "") {
-	    $self->log_error("parse error in $dpkg_status_file: no Version: field for package $pkg\n");
+	    $builder->log_error("parse error in $dpkg_status_file: no Version: field for package $pkg\n");
 	    next;
 	}
 	$result{$pkg} = { Installed => 1, Version => $version }
