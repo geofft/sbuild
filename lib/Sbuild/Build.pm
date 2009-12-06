@@ -299,7 +299,7 @@ sub run {
     if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$self->set('Dependency Resolver', Sbuild::AptitudeBuildDepSatisfier->new($self));
     } else {
-	$self->set('Dependency Resolver', Sbuild::InteralBuildDepSatisfier->new($self));
+	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
     }
     if (!$self->get('Dependency Resolver')->install_deps()) {
 	$self->log("Source-dependencies not satisfied; skipping " .
