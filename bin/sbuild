@@ -323,6 +323,7 @@ sub shutdown ($) {
 	unlink("SBUILD-FINISHED");
 
 	# next: say which packages should be uninstalled
+	my $session = $jobs{$current_job}->get('Session');			
 	if (defined ($session->get('Session Purged')) && $session->get('Session Purged') == 1) {
 	    print "Not removing build depends: cloned chroot in use\n";
 	} else {
