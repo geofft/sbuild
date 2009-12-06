@@ -45,7 +45,6 @@ sub new {
     bless($self, $class);
 
     $self->set('Builder', $builder);
-    $self->set('Log Stream', $builder->get('Config')->get('Log Stream'));
     $self->set('Changes', {});
 
     return $self;
@@ -61,7 +60,7 @@ sub uninstall_deps {
 
     @pkgs = keys %{$self->get('Changes')->{'removed'}};
     debug("Reinstalling removed packages: @pkgs\n");
-    $self->log("Failed to reinstall removed packages!\n")
+    $builder->log("Failed to reinstall removed packages!\n")
 	if !$builder->run_apt("-y", \@instd, \@rmvd, @pkgs);
     debug("Installed were: @instd\n");
     debug("Removed were: @rmvd\n");
@@ -70,7 +69,7 @@ sub uninstall_deps {
 
     @pkgs = keys %{$self->get('Changes')->{'installed'}};
     debug("Removing installed packages: @pkgs\n");
-    $self->log("Failed to remove installed packages!\n")
+    $builder->log("Failed to remove installed packages!\n")
 	if !$self->uninstall_debs("purge", @pkgs);
     $self->unset_installed(@pkgs);
 
@@ -87,7 +86,7 @@ sub check_srcdep_conflicts {
     my %conflict_builds;
 
     if (!opendir( DIR, $builder->get('Session')->{'Srcdep Lock Dir'} )) {
-	$self->log("Cannot opendir $builder->{'Session'}->{'Srcdep Lock Dir'}: $!\n");
+	$builder->log("Cannot opendir $builder->{'Session'}->{'Srcdep Lock Dir'}: $!\n");
 	return 1;
     }
     my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
@@ -97,7 +96,7 @@ sub check_srcdep_conflicts {
     my $file;
     foreach $file (@files) {
 	if (!open( F, "<$builder->{'Session'}->{'Srcdep Lock Dir'}/$file" )) {
-	    $self->log("Cannot open $builder->{'Session'}->{'Srcdep Lock Dir'}/$file: $!\n");
+	    $builder->log("Cannot open $builder->{'Session'}->{'Srcdep Lock Dir'}/$file: $!\n");
 	    next;
 	}
 	<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
@@ -107,8 +106,8 @@ sub check_srcdep_conflicts {
 	# doesn't exist anymore
 	if (kill( 0, $pid ) == 0 && $! == ESRCH) {
 	    close( F );
-	    $self->log("Found stale srcdep lock file $file -- removing it\n");
-	    $self->log("Cannot remove: $!\n")
+	    $builder->log("Found stale srcdep lock file $file -- removing it\n");
+	    $builder->log("Cannot remove: $!\n")
 		if !unlink( "$builder->{'Session'}->{'Srcdep Lock Dir'}/$file" );
 	    next;
 	}
@@ -120,11 +119,11 @@ sub check_srcdep_conflicts {
 	    debug("Found ", ($neg ? "neg " : ""), "entry $pkg\n");
 
 	    if (isin( $pkg, @$to_inst, @$to_remove )) {
-		$self->log("Source dependency conflict with build of " .
+		$builder->log("Source dependency conflict with build of " .
 		           "$job by $user (pid $pid):\n");
-		$self->log("  $job " . ($neg ? "conflicts with" : "needs") .
+		$builder->log("  $job " . ($neg ? "conflicts with" : "needs") .
 		           " $pkg\n");
-		$self->log("  " . $builder->get('Package_SVersion') .
+		$builder->log("  " . $builder->get('Package_SVersion') .
 			   " wants to " .
 		           (isin( $pkg, @$to_inst ) ? "update" : "remove") .
 		           " $pkg\n");
@@ -157,9 +156,9 @@ sub wait_for_srcdep_conflicts {
 	    my $pid = $1;
 	    if (-f "$builder->{'Session'}->{'Srcdep Lock Dir'}/$_") {
 		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-		    $self->log("Ignoring stale src-dep lock $_\n");
+		    $builder->log("Ignoring stale src-dep lock $_\n");
 		    unlink( "$builder->{'Session'}->{'Srcdep Lock Dir'}/$_" ) or
-			$self->log("Cannot remove $builder->{'Session'}->{'Srcdep Lock Dir'}/$_: $!\n");
+			$builder->log("Cannot remove $builder->{'Session'}->{'Srcdep Lock Dir'}/$_: $!\n");
 		}
 		else {
 		    $allgone = 0;
@@ -180,7 +179,7 @@ sub write_srcdep_lock_file {
     ++$builder->{'Srcdep Lock Count'};
     my $f = "$builder->{'Session'}->{'Srcdep Lock Dir'}/$$-$builder->{'Srcdep Lock Count'}";
     if (!open( F, ">$f" )) {
-	$self->log_warning("cannot create srcdep lock file $f: $!\n");
+	$builder->log_warning("cannot create srcdep lock file $f: $!\n");
 	return;
     }
     debug("Writing srcdep lock file $f:\n");
@@ -204,7 +203,7 @@ sub remove_srcdep_lock_file {
 
     debug("Removing srcdep lock file $f\n");
     if (!unlink( $f )) {
-	$self->log_warning("cannot remove srcdep lock file $f: $!\n")
+	$builder->log_warning("cannot remove srcdep lock file $f: $!\n")
 	    if $! != ENOENT;
     }
 }
@@ -274,19 +273,19 @@ sub uninstall_debs {
 	  DIR => '/' });
 
     if (!$pipe) {
-	$self->log("Can't open pipe to dpkg: $!\n");
+	$builder->log("Can't open pipe to dpkg: $!\n");
 	return 0;
     }
 
     while (<$pipe>) {
 	$output .= $_;
-	$self->log($_);
+	$builder->log($_);
     }
     close($pipe);
     $status = $?;
 
     if (defined($output) && $output =~ /status database area is locked/mi) {
-	$self->log("Another dpkg is running -- retrying later\n");
+	$builder->log("Another dpkg is running -- retrying later\n");
 	$output = "";
 	sleep( 2*60 );
 	goto repeat;
@@ -294,7 +293,7 @@ sub uninstall_debs {
     my $remove_end_time = time;
     $builder->write_stats('remove-time',
 		       $remove_end_time - $remove_start_time);
-    $self->log("dpkg run to remove packages (@_) failed!\n") if $?;
+    $builder->log("dpkg run to remove packages (@_) failed!\n") if $?;
     return $status == 0;
 }
 

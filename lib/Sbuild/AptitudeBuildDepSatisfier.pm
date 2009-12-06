@@ -69,7 +69,7 @@ sub install_deps {
     #install aptitude first:
     my (@aptitude_installed_packages, @aptitude_removed_packages);
     if (!$builder->run_apt('-y', \@aptitude_installed_packages, \@aptitude_removed_packages, 'aptitude')) {
-	$self->log_warning('Could not install aptitude!');
+	$builder->log_warning('Could not install aptitude!');
 	goto cleanup;
     }
     $self->set_installed(@aptitude_installed_packages);
@@ -87,16 +87,16 @@ sub install_deps {
     my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
 
     if (!mkdir $dummy_dir) {
-	$self->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
+	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
  	goto cleanup;
     }
     if (!mkdir $dummy_dir . '/DEBIAN') {
-	$self->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . '/DEBIAN: ' . $!);
+	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . '/DEBIAN: ' . $!);
 	goto cleanup;
     }
 
     if (!open(DUMMY_CONTROL, '>', $dummy_dir . '/DEBIAN/control')) {
-	$self->log_warning('Could not open ' . $dummy_dir . '/DEBIAN/control for writing: ' . $!);
+	$builder->log_warning('Could not open ' . $dummy_dir . '/DEBIAN/control for writing: ' . $!);
 	goto cleanup;
     }
 
@@ -163,20 +163,20 @@ EOF
 	      DIR => '/' });
 
     if (!$pipe) {
-	$self->log_warning('Cannot open pipe from aptitude: ' . $! . "\n");
+	$builder->log_warning('Cannot open pipe from aptitude: ' . $! . "\n");
 	goto aptitude_cleanup;
     }
 
     my $aptitude_output = "";
     while(<$pipe>) {
 	$aptitude_output .= $_;
-	$self->log($_);
+	$builder->log($_);
     }
 
     close($pipe);
 
     if ($aptitude_output =~ /^E:/m) {
-	$self->log('Satisfying build-deps with aptitude failed.' . "\n");
+	$builder->log('Satisfying build-deps with aptitude failed.' . "\n");
 	goto aptitude_cleanup;
     }
 
