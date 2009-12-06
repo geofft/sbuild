@@ -184,6 +184,7 @@ EOF
     while ($aptitude_output =~ /The following NEW packages will be installed:\n((^[  ].*\n)*)/gmi) {
 	($installed_pkgs = $1) =~ s/^[    ]*((.|\n)*)\s*$/$1/m;
 	$installed_pkgs =~ s/\*//g;
+	$installed_pkgs =~ s/\{.\}//g;
     }
     while ($aptitude_output =~ /The following packages will be REMOVED:\n((^[    ].*\n)*)/gmi) {
 	($removed_pkgs = $1) =~ s/^[   ]*((.|\n)*)\s*$/$1/m;
