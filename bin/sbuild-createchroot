@@ -137,6 +137,7 @@ use Sbuild::ChrootPlain;
 use Sbuild::Sysconfig;
 use File::Path qw(mkpath);
 use File::Temp ();
+use Cwd qw(abs_path);
 
 sub add_items ($@);
 sub makedir ($$);
@@ -157,7 +158,7 @@ $conf->set('INCLUDE', add_items($conf->get('INCLUDE'),
 				"debfoster"));
 
 my $suite = $ARGV[0];
-my $target = $ARGV[1];
+my $target = abs_path($ARGV[1]);
 my $mirror = $ARGV[2];
 my $script = undef;
 
