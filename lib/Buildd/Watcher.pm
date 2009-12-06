@@ -22,7 +22,7 @@ package Buildd::Watcher;
 
 use strict;
 use warnings;
-use Buildd qw(send_mail);
+use Buildd qw(send_mail lock_file unlock_file unset_env reopen_log);
 use Buildd::Conf;
 use Buildd::Base;
 
@@ -79,7 +79,6 @@ sub run {
 	else {
 	    $self->log("Another buildd-watcher is still running ".
 		       "(pid $watcher_pid) -- exiting.\n");
-	    $self->set('Already running', $watcher_pid);
 	    return 0;
 	}
     }
