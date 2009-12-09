@@ -173,8 +173,8 @@ sub init_allowed_keys {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'DPKG_SOURCE'}
 	},
-	'DPKG_SOURCE_OPT'			=> {
-	    DEFAULT => undef
+	'DPKG_SOURCE_OPTIONS'			=> {
+	    DEFAULT => []
 	},
 	'DCMD'					=> {
 	    CHECK => $validate_program,
@@ -486,8 +486,8 @@ sub init_allowed_keys {
 	'RUN_LINTIAN'				=> {
 	    DEFAULT => 0
 	},
-	'LINTIAN_OPT'				=> {
-	    DEFAULT => undef
+	'LINTIAN_OPTIONS'			=> {
+	    DEFAULT => []
 	},
 	'PRE_BUILD_COMMANDS'			=> {
 	    DEFAULT => []
@@ -528,7 +528,6 @@ sub read_config {
     my $apt_get = undef;
     my $apt_cache = undef;
     my $dpkg_source = undef;
-    my $dpkg_source_opt = undef;
     my $dpkg_source_opts = undef;
     my $dcmd = undef;
     my $md5sum = undef;
@@ -591,7 +590,6 @@ sub read_config {
     my $build_dep_resolver = undef;
     my $lintian = undef;
     my $run_lintian = undef;
-    my $lintian_opt = undef;
     my $lintian_opts = undef;
     my @pre_build_commands;
     undef @pre_build_commands;
@@ -626,10 +624,7 @@ sub read_config {
     $self->set('APT_GET', $apt_get);
     $self->set('APT_CACHE', $apt_cache);
     $self->set('DPKG_SOURCE', $dpkg_source);
-    $self->set('DPKG_SOURCE_OPT', $dpkg_source_opt)
-	if ($dpkg_source_opt);
-    $self->set('DPKG_SOURCE_OPT', join(" ", $self->get('DPKG_SOURCE_OPT'),
-	$dpkg_source_opts)) if ($dpkg_source_opts);
+    $self->set('DPKG_SOURCE_OPTIONS', $dpkg_source_opts);
     $self->set('DCMD', $dcmd);
     $self->set('MD5SUM', $md5sum);
     $self->set('AVG_TIME_DB', $avg_time_db);
@@ -708,13 +703,9 @@ sub read_config {
 	$self->get('BIN_NMU')) {
 	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
-    $self->set('LINTIAN', $lintian) if ($lintian);
-    $self->set('RUN_LINTIAN', $run_lintian)
-	if ($run_lintian);
-    $self->set('LINTIAN_OPT', $lintian_opt)
-	if ($lintian_opt);
-    $self->set('LINTIAN_OPT', join(" ", $self->get('LINTIAN_OPT'),
-	$lintian_opts)) if ($lintian_opts);
+    $self->set('LINTIAN', $lintian);
+    $self->set('RUN_LINTIAN', $run_lintian);
+    $self->set('LINTIAN_OPTIONS', $lintian_opts);
     $self->set('PRE_BUILD_COMMANDS', \@pre_build_commands)
 	if (@pre_build_commands);
     $self->set('POST_BUILD_COMMANDS', \@post_build_commands)

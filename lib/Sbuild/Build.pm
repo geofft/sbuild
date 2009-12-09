@@ -273,7 +273,7 @@ sub run {
 	my $clean_command = $self->get_conf('FAKEROOT') . " debian/rules clean";
 	my $dpkg_source = $self->get_conf('DPKG_SOURCE');
 	my $dpkg_source_command = "$dpkg_source -b";
-	$dpkg_source_command .= " " . $self->get_conf('DPKG_SOURCE_OPT')
+	$dpkg_source_command .= " " . join(" ", @{$self->get_conf('DPKG_SOURCE_OPTIONS')})
 	    if ($self->get_conf('DPKG_SOURCE_OPT'));
 	$dpkg_source_command .= " " . $self->get('Debian Source Dir');
 	my $curdir = getcwd(); # To get back to the directory we were in
@@ -492,7 +492,7 @@ sub run {
 	my $lintian = $self->get_conf('LINTIAN');
 	if (($self->get_conf('RUN_LINTIAN')) && (-x $lintian)) {
 	    my $command = "$lintian";
-	    $command .= " " . $self->get_conf('LINTIAN_OPT')
+	    $command .= " " . join(" ", @{$self->get_conf('LINTIAN_OPT')})
 		if ($self->get_conf('LINTIAN_OPT'));
 	    $command .= " " . $self->get('Changes File');
 	    $self->log_subsubsection("$command");

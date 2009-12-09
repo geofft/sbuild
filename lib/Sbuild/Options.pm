@@ -124,18 +124,13 @@ sub set_options {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				$_[1]);
 		       },
-		       "dpkg-source-opt=s" => sub {
-			    $self->set_conf('DPKG_SOURCE_OPT', $_[1]);
-		       },
 		       "dpkg-source-opts=s" => sub {
-			    my $opt_values;
-			    if ($self->get_conf('DPKG_SOURCE_OPT')) {
-				$opt_values = join(" ",
-				    $self->get_conf('DPKG_SOURCE_OPT'),$_[1]);
-			    } else {
-				$opt_values = $_[1];
-			    }
-			    $self->set_conf('DPKG_SOURCE_OPT', $opt_values);
+			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "dpkg-source-opt=s" => sub {
+			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+				$_[1]);
 		       },
 		       "mail-log-to=s" => sub {
 			   $self->set_conf('MAILTO', $_[1]);
@@ -176,18 +171,13 @@ sub set_options {
 			"run-lintian" => sub {
 			    $self->set_conf('RUN_LINTIAN', 1);
 		       },
-			"lintian-opt=s" => sub {
-			    $self->set_conf('LINTIAN_OPT', $_[1]);
+		       "lintian-opts=s" => sub {
+			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
+				split(/\s+/, $_[1]));
 		       },
-			"lintian-opts=s" => sub {
-			    my $opt_values;
-			    if ($self->get_conf('LINTIAN_OPT')) {
-				$opt_values = join(" ",
-				    $self->get_conf('LINTIAN_OPT'),$_[1]);
-			    } else {
-				$opt_values = $_[1];
-			    }
-			    $self->set_conf('LINTIAN_OPT', $opt_values);
+		       "lintian-opt=s" => sub {
+			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
+				$_[1]);
 		       },
 			"pre-build-commands=s" => sub {
 			    push(@{$self->get_conf('PRE_BUILD_COMMANDS')},
