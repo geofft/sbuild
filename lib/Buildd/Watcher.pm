@@ -285,14 +285,7 @@ sub run {
 	    $self->log("NO-DAEMON-PLEASE exists, not starting daemon\n");
 	}
 	else {
-	    defined(my $pid = fork) or die "$0: can't fork to restart buildd: $!\n";
-	    if ($pid == 0) {
-		# Use curly braces to avoid a warning about unreachable
-		# statements.  See manpage of Perl's exec for details.
-		{ exec ("buildd"); }
-		$self->log("Failed to start daemon: $!\n");
-		exit( 1 );
-	    }
+	    system("buildd");
 	}
     }
 
