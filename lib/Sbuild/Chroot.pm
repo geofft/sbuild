@@ -64,9 +64,9 @@ sub new {
 	'PRIORITY' => 0,
 	'DIR' => '/',
 	'SETSID' => 0,
-	'STREAMIN' => undef,
-	'STREAMOUT' => undef,
-	'STREAMERR' => undef});
+	'STREAMIN' => \*STDIN,
+	'STREAMOUT' => \*STDOUT,
+	'STREAMERR' => \*STDERR});
 
     if (!defined($self->get('Chroot ID'))) {
 	return undef;
