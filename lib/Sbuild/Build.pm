@@ -41,6 +41,7 @@ use Sbuild::Base;
 use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
+use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
@@ -65,6 +66,9 @@ sub new {
 
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
+
+    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
+    $self->set('Host', $host);
 
     # DSC, package and version information:
     $self->set_dsc($dsc);
@@ -123,6 +127,7 @@ sub new {
     $self->set('Have DSC Build Deps', []);
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
+    $self->set('Debian Source Dir', undef);
 
     return $self;
 }
@@ -131,26 +136,48 @@ sub set_dsc {
     my $self = shift;
     my $dsc = shift;
 
-    # Check if argument given is a directory on the local system. This means
-    # we'll be building the source package via dpkg-source first.
+    debug("Setting DSC: $dsc\n");
+
+    # Check if the DSC given is a directory on the local system. This
+    # means we'll build the source package with dpkg-source first.
     if (-d $dsc) {
-	my $dpkg_parsechangelog =
-	    $Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'};
-	my $command = "$dpkg_parsechangelog -l$dsc/debian/changelog";
-	my $fh;
-	if (! open $fh, '-|', $command) {
+	my $pipe = $self->get('Host')->pipe_command(
+	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
+			  "-l$dsc/debian/changelog"],
+	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 0,
+	      PRIORITY => 0,
+	    });
+
+	if (! $pipe) {
 	    $self->log_error("Could not parse $dsc/debian/changelog: $!");
-	    return 0;
+	    $self->set('Invalid Source', 1);
+	    goto set_vars;
 	}
-	my $stanzas = parse_file($fh);
-	if (! close $fh) {
-	    $self->log_error("Could not close filehandle: $!");
-	    return 0;
+
+	my $stanzas = parse_file($pipe);
+
+	if (! close $pipe) {
+	    $self->log_error("Could not close pipe: $!");
+	    $self->set('Invalid Source', 1);
+	    goto set_vars;
 	}
+
 	my $stanza = @{$stanzas}[0];
 	my $package = ${$stanza}{'Source'};
-	my $version = $self->strip_epoch(${$stanza}{'Version'});
+	my $version = ${$stanza}{'Version'};
+
+	if (!defined($package) || !defined($version)) {
+	    $self->log_error("Missing Source or Version in $dsc/debian/changelog");
+	    $self->set('Invalid Source', 1);
+	    goto set_vars;
+	}
+
+	$version = $self->strip_epoch($version);
 	my $dir = getcwd();
+	# Note: need to support cases when invoked from a subdirectory
+	# of the build directory, i.e. $dsc/foo -> $dsc/.. in addition
+	# to $dsc -> $dsc/.. as below.
 	if ($dir eq abs_path($dsc)) {
 	    # We won't attempt to build the source package from the source
 	    # directory so the source package files will go to the parent dir.
@@ -158,14 +185,14 @@ sub set_dsc {
 	    $self->set_conf('BUILD_DIR', $dir);
 	}
 	$self->set('Debian Source Dir', abs_path($dsc));
-	$dsc = "$dir/$package" . "_$version.dsc";
+
+	$self->set_version("${package}_${version}");
+	$dsc = "$dir/" . $self->get('Package_OSVersion') . ".dsc";
     }
 
-    debug("Setting DSC: $dsc\n");
-
+set_vars:
     $self->set('DSC', $dsc);
     $self->set('Source Dir', dirname($dsc));
-
     $self->set('DSC Base', basename($dsc));
 }
 
@@ -176,6 +203,8 @@ sub set_version {
     debug("Setting package version: $pkgv\n");
 
     my ($pkg, $version) = split /_/, $pkgv;
+    return if (!defined($pkg) || !defined($version));
+
     # Original version (no binNMU or other addition)
     my $oversion = $version;
     # Original version with stripped epoch
@@ -227,6 +256,8 @@ sub get_status {
 sub run {
     my $self = shift;
 
+    $self->get('Host')->set('Log Stream', $self->get('Log Stream'));
+
     $self->set_status('building');
 
     $self->set('Pkg Start Time', time);
@@ -259,21 +290,40 @@ sub run {
 
     # Build the source package if given a Debianized source directory
     if ($self->get('Debian Source Dir')) {
+	$self->set('Pkg Fail Stage', 'pack-source');
 	$self->log_subsection("Build Source Package");
-	my $clean_command = $self->get_conf('FAKEROOT') . " debian/rules clean";
-	my $dpkg_source = $self->get_conf('DPKG_SOURCE');
-	my $dpkg_source_command = "$dpkg_source -b";
-	$dpkg_source_command .= " " . join(" ", @{$self->get_conf('DPKG_SOURCE_OPTIONS')})
-	    if ($self->get_conf('DPKG_SOURCE_OPT'));
-	$dpkg_source_command .= " " . $self->get('Debian Source Dir');
-	my $curdir = getcwd(); # To get back to the directory we were in
-	chdir($self->get('Debian Source Dir'));
-	$self->log_subsubsection("$clean_command");
-	$self->run_command($clean_command, 1, 1);
-	chdir($self->get_conf('BUILD_DIR'));
-	$self->log_subsubsection("$dpkg_source_command");
-	$self->run_command($dpkg_source_command, 1, 1);
-	chdir($curdir);
+
+	$self->log_subsubsection('clean');
+	$self->get('Host')->run_command(
+	    { COMMAND => [$self->get_conf('FAKEROOT'),
+			  'debian/rules',
+			  'clean'],
+	      USER => $self->get_conf('USERNAME'),
+	      DIR => $self->get('Debian Source Dir'),
+	      CHROOT => 0,
+	      PRIORITY => 0,
+	    });
+	if ($?) {
+	    $self->log_error("Failed to clean source directory");
+
+	    goto cleanup_skip;
+	}
+
+	$self->log_subsubsection('dpkg-source');
+	$self->get('Host')->run_command(
+	    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
+			  '-b',
+			  @{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+			  $self->get('Debian Source Dir')],
+	      USER => $self->get_conf('USERNAME'),
+	      DIR => $self->get_conf('BUILD_DIR'),
+	      CHROOT => 0,
+	      PRIORITY => 0,
+	    });
+	if ($?) {
+	    $self->log_error("Failed to build source package");
+	    goto cleanup_skip;
+	}
     }
 
     my $chroot_info;
@@ -481,17 +531,27 @@ sub run {
 	# Run lintian.
 	my $lintian = $self->get_conf('LINTIAN');
 	if (($self->get_conf('RUN_LINTIAN')) && (-x $lintian)) {
-	    my $command = "$lintian";
-	    $command .= " " . join(" ", @{$self->get_conf('LINTIAN_OPT')})
-		if ($self->get_conf('LINTIAN_OPT'));
-	    $command .= " " . $self->get('Changes File');
-	    $self->log_subsubsection("$command");
-	    my $return = $self->run_command($command, 1, 1);
+	    $self->log_subsubsection("lintian");
+
+	    $self->get('Host')->run_command(
+		{ COMMAND => [$lintian,
+			      @{$self->get_conf('LINTIAN_OPTIONS')},
+			      $self->get('Changes File')],
+		  USER => $self->get_conf('USERNAME'),
+		  CHROOT => 0,
+		  PRIORITY => 0,
+		});
+	    my $status = $? >> 8;
+
 	    $self->log("\n");
-	    if (!$return) {
-		$self->log_error("Lintian failed to run.\n");
-	    } else {
+	    if (! $?) {
 		$self->log_info("Lintian run was successful.\n");
+	    } else {
+		my $why = "unknown reason";
+		$why = "runtime error" if ($status == 2);
+		$why = "policy violation" if ($status == 1);
+		$why = "received signal " . $? & 127 if ($? & 127);
+		$self->log_error("Lintian run failed ($why)\n");
 	    }
 	}
 
@@ -675,7 +735,7 @@ sub fetch_source_files {
 	    $self->log($self->get_conf('APT_GET') . " for sources failed\n");
 	    return 0;
 	}
-	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
+	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]) || return 0;
     }
 
     if (!open( F, "<$build_dir/$dsc" )) {
