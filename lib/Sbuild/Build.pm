@@ -310,11 +310,12 @@ sub run {
 	}
 
 	$self->log_subsubsection('dpkg-source');
+	my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
+	push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')} if
+	    ($self->get_conf('DPKG_SOURCE_OPTIONS'));
+	push @dpkg_source_command, $self->get('Debian Source Dir');
 	$self->get('Host')->run_command(
-	    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
-			  '-b',
-			  @{$self->get_conf('DPKG_SOURCE_OPTIONS')},
-			  $self->get('Debian Source Dir')],
+	    { COMMAND => \@dpkg_source_command,
 	      USER => $self->get_conf('USERNAME'),
 	      DIR => $self->get_conf('BUILD_DIR'),
 	      CHROOT => 0,
@@ -533,10 +534,12 @@ sub run {
 	if (($self->get_conf('RUN_LINTIAN')) && (-x $lintian)) {
 	    $self->log_subsubsection("lintian");
 
+	    my @lintian_command = ($lintian);
+	    push @lintian_command, @{$self->get_conf('LINTIAN_OPT')} if
+		($self->get_conf('LINTIAN_OPT'));
+	    push @lintian_command, $self->get('Changes File');
 	    $self->get('Host')->run_command(
-		{ COMMAND => [$lintian,
-			      @{$self->get_conf('LINTIAN_OPTIONS')},
-			      $self->get('Changes File')],
+		{ COMMAND => \@lintian_command,
 		  USER => $self->get_conf('USERNAME'),
 		  CHROOT => 0,
 		  PRIORITY => 0,
