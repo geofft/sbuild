@@ -703,7 +703,7 @@ sub build {
     $current_usage = $1;
     if ($current_usage) {
 	my $free = df($dscdir);
-	if ($free < 2*$current_usage) {
+	if ($free < 2*$current_usage && $self->get_conf('CHECK_SPACE')) {
 	    $self->log("Disc space is propably not enough for building.\n".
 		       "(Source needs $current_usage KB, free are $free KB.)\n");
 	    # TODO: Only purge in a single place.

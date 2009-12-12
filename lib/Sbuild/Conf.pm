@@ -303,6 +303,9 @@ sub init_allowed_keys {
 	'APT_POLICY'				=> {
 	    DEFAULT => 1
 	},
+	'CHECK_SPACE'				=> {
+	    DEFAULT => 1
+	},
 	'CHECK_WATCHES'				=> {
 	    DEFAULT => 1
 	},
@@ -489,6 +492,7 @@ sub read_config {
     my $max_lock_trys = undef;
     my $lock_interval = undef;
     my $apt_policy = undef;
+    my $check_space = undef;
     my $check_watches = undef;
     my @ignore_watches_no_build_deps;
     undef @ignore_watches_no_build_deps;
@@ -570,6 +574,7 @@ sub read_config {
     $self->set('LOCK_INTERVAL', $lock_interval);
     $self->set('APT_POLICY', $apt_policy);
     $self->set('CHECK_WATCHES', $check_watches);
+    $self->set('CHECK_SPACE', $check_space);
     $self->set('IGNORE_WATCHES_NO_BUILD_DEPS',
 	       \@ignore_watches_no_build_deps)
 	if (@ignore_watches_no_build_deps);
