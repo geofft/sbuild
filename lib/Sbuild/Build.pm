@@ -67,6 +67,34 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    $self->set('Arch', undef);
+    $self->set('Chroot Dir', '');
+    $self->set('Chroot Build Dir', '');
+    $self->set('Max Lock Trys', 120);
+    $self->set('Lock Interval', 5);
+    $self->set('Srcdep Lock Count', 0);
+    $self->set('Pkg Status', 'pending');
+    $self->set('Pkg Status Trigger', undef);
+    $self->set('Pkg Start Time', 0);
+    $self->set('Pkg End Time', 0);
+    $self->set('Pkg Fail Stage', 0);
+    $self->set('Build Start Time', 0);
+    $self->set('Build End Time', 0);
+    $self->set('This Time', 0);
+    $self->set('This Space', 0);
+    $self->set('This Watches', {});
+    $self->set('Toolchain Packages', []);
+    $self->set('Sub Task', 'initialisation');
+    $self->set('Session', undef);
+    $self->set('Additional Deps', []);
+    $self->set('Changes', {});
+    $self->set('Dependencies', {});
+    $self->set('Have DSC Build Deps', []);
+    $self->set('Log File', undef);
+    $self->set('Log Stream', undef);
+    $self->set('Debian Source Dir', undef);
+    $self->set('Download', 0);
+
     my $host = Sbuild::ChrootRoot->new($self->get('Config'));
     $self->set('Host', $host);
 
@@ -78,7 +106,6 @@ sub new {
     $self->set_version($ver);
 
     # Do we need to download?
-    $self->set('Download', 0);
     $self->set('Download', 1)
 	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
 	    check_url($self->get('DSC')) || # Valid URL
@@ -101,33 +128,6 @@ sub new {
 	my $val = $self->get($_);
 	debug("$_ = " . $val . "\n") if defined($val);
     }
-
-    $self->set('Arch', undef);
-    $self->set('Chroot Dir', '');
-    $self->set('Chroot Build Dir', '');
-    $self->set('Max Lock Trys', 120);
-    $self->set('Lock Interval', 5);
-    $self->set('Srcdep Lock Count', 0);
-    $self->set('Pkg Status', 'pending');
-    $self->set('Pkg Status Trigger', undef);
-    $self->set('Pkg Start Time', 0);
-    $self->set('Pkg End Time', 0);
-    $self->set('Pkg Fail Stage', 0);
-    $self->set('Build Start Time', 0);
-    $self->set('Build End Time', 0);
-    $self->set('This Time', 0);
-    $self->set('This Space', 0);
-    $self->set('This Watches', {});
-    $self->set('Toolchain Packages', []);
-    $self->set('Sub Task', 'initialisation');
-    $self->set('Session', undef);
-    $self->set('Additional Deps', []);
-    $self->set('Dependency Resolver', undef);
-    $self->set('Dependencies', {});
-    $self->set('Have DSC Build Deps', []);
-    $self->set('Log File', undef);
-    $self->set('Log Stream', undef);
-    $self->set('Debian Source Dir', undef);
 
     return $self;
 }
