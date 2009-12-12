@@ -93,7 +93,6 @@ sub _setup_aptconf {
 sub _setup_options {
     my $self = shift;
 
-    $self->set('Build Location', $self->get('Location') . "/build");
     $self->set('Srcdep Lock Dir', $self->get('Location') . '/' . $self->get_conf('SRCDEP_LOCK_DIR'));
     $self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
 
@@ -311,6 +310,13 @@ sub pipe_command {
     return $self->pipe_command_internal($options);
 }
 
+sub exec_chdir {
+    my $self = shift;
+    my $dir = shift;
+
+    # No-op.
+}
+
 sub exec_command {
     my $self = shift;
     my $options = shift;
@@ -319,7 +325,7 @@ sub exec_command {
 
     $self->log_command($options);
 
-    my $dir = $options->{'CHDIR'};
+    my $dir = $options->{'DIR'};
     my $command = $options->{'EXPCOMMAND'};
 
     my $program = $command->[0];
@@ -345,10 +351,7 @@ sub exec_command {
 	debug('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
     }
 
-    if (defined($dir) && $dir) {
-	debug("Changing to directory: $dir\n");
-	chdir($dir) or die "Can't change directory to $dir: $!";
-    }
+    $self->exec_chdir($dir);
 
     debug("Running command: ", join(" ", @$command), "\n");
     exec { $program } @$command;
@@ -379,7 +382,6 @@ sub get_apt_command_internal {
     debug("APT Command: ", join(" ", @aptcommand), "\n");
 
     $options->{'CHROOT'} = $self->apt_chroot();
-    $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
 
     $options->{'INTCOMMAND'} = \@aptcommand;
 }

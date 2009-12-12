@@ -25,6 +25,7 @@ package Sbuild::ChrootRoot;
 use strict;
 use warnings;
 
+use Sbuild qw(debug);
 use Sbuild::Conf;
 use Sbuild::ChrootPlain;
 
@@ -69,6 +70,16 @@ sub end_session {
     # No-op.
 
     return 1;
+}
+
+sub exec_chdir {
+    my $self = shift;
+    my $dir = shift;
+
+    if (defined($dir) && $dir) {
+	debug("Changing to directory: $dir\n");
+	chdir($dir) or die "Can't change directory to $dir: $!";
+    }
 }
 
 sub get_command_internal {

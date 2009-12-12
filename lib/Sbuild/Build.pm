@@ -145,7 +145,6 @@ sub set_dsc {
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
 			  "-l$dsc/debian/changelog"],
 	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
 
@@ -300,7 +299,6 @@ sub run {
 			  'clean'],
 	      USER => $self->get_conf('USERNAME'),
 	      DIR => $self->get('Debian Source Dir'),
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
 	if ($?) {
@@ -318,7 +316,6 @@ sub run {
 	    { COMMAND => \@dpkg_source_command,
 	      USER => $self->get_conf('USERNAME'),
 	      DIR => $self->get_conf('BUILD_DIR'),
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
 	if ($?) {
@@ -352,10 +349,7 @@ sub run {
 	       tempdir($self->get_conf('USERNAME') . '-' .
 		       $self->get('Package_SVersion') . '-' .
 		       $self->get('Arch') . '-XXXXXX',
-		       DIR => $session->get('Build Location')));
-    # TODO: Don't hack the build location in; add a means to customise
-    # the chroot directly.
-    $session->set('Build Location', $self->get('Chroot Build Dir'));
+		       DIR => $session->get('Location') . '/build'));
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
@@ -363,7 +357,7 @@ sub run {
     # Chroot execution defaults
     my $chroot_defaults = $session->get('Defaults');
     $chroot_defaults->{'DIR'} =
-	$session->strip_chroot_path($session->get('Build Location'));
+	$session->strip_chroot_path($self->get('Chroot Build Dir'));
     $chroot_defaults->{'STREAMIN'} = $devnull;
     $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
     $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
@@ -461,8 +455,8 @@ sub run {
 	    { COMMAND => [$self->get_conf('CHROOT_SETUP_SCRIPT')],
 	      ENV => $self->get_env('SBUILD_BUILD_'),
 	      USER => "root",
-	      PRIORITY => 0,
-	      CHROOT => 1 });
+	      PRIORITY => 0
+	    });
 	if ($?) {
 	    $self->log("setup-hook failed\n");
 	    $self->set_status('failed');
@@ -541,7 +535,6 @@ sub run {
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@lintian_command,
 		  USER => $self->get_conf('USERNAME'),
-		  CHROOT => 0,
 		  PRIORITY => 0,
 		});
 	    my $status = $? >> 8;
@@ -1003,7 +996,6 @@ sub build {
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
 				  '-sn', '-x', $dscfile, $dscdir],
 		      USER => $self->get_conf('USERNAME'),
-		      CHROOT => 1,
 		      PRIORITY => 0});
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
@@ -1064,7 +1056,6 @@ sub build {
 		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
 			      '-rf', $build_dir],
 		  USER => 'root',
-		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	    return 0;
@@ -1151,7 +1142,6 @@ sub build {
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'CHMOD'},
 			  'a+r', '/etc/ld.so.conf'],
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1200,7 +1190,6 @@ sub build {
 	ENV => $buildenv,
 	USER => $self->get_conf('USERNAME'),
 	SETSID => 1,
-	CHROOT => 1,
 	PRIORITY => 0,
 	DIR => $bdir
     };
@@ -1227,7 +1216,6 @@ sub build {
 			  '-e',
 			  "kill( \"$signal\", -$pid )"],
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1952,10 +1940,9 @@ sub check_space {
     my $sum = 0;
 
     foreach (@files) {
-	my $pipe = $self->get('Session')->pipe_command(
+	my $pipe = $self->get('Host')->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DU'}, '-k', '-s', $_],
 	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	      DIR => '/'});
 
@@ -2212,7 +2199,6 @@ sub chroot_arch {
 	{ COMMAND => [$self->get_conf('DPKG'),
 		      '--print-architecture'],
 	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
 	  PRIORITY => 0,
 	  DIR => '/' }) || return undef;
 
