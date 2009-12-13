@@ -602,7 +602,9 @@ sub read_config {
 
     $self->set('MAILTO',
 	       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')})
-	if $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
+	if defined($self->get('DISTRIBUTION')) &&
+	   $self->get('DISTRIBUTION') &&
+	   $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
 
     $self->set('SIGNING_OPTIONS',
 	       "-m".$self->get('MAINTAINER_NAME')."")

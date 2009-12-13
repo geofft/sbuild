@@ -64,6 +64,12 @@ my $current_job = undef;
 main();
 
 sub main () {
+    my $dist = $conf->get('DISTRIBUTION');
+    if (!defined($dist) || !$dist) {
+	print STDERR "No distribution defined\n";
+	exit(1);
+    }
+
     print "Selected distribution " . $conf->get('DISTRIBUTION') . "\n"
 	if $conf->get('DEBUG');
     print "Selected chroot " . $conf->get('CHROOT') . "\n"

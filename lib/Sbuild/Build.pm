@@ -201,6 +201,12 @@ sub run {
 
     $self->set('Pkg Start Time', time);
 
+    my $dist = $self->get_conf('DISTRIBUTION');
+    if (!defined($dist) || !$dist) {
+	$self->log("No distribution defined\n");
+	goto cleanup_skip;
+    }
+
     if ($self->get('Invalid Source')) {
 	$self->log("Invalid source: " . $self->get('DSC') . "\n");
 	$self->log("Skipping " . $self->get('Package') . " \n");

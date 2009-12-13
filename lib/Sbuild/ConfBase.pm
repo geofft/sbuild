@@ -81,7 +81,6 @@ sub init_allowed_keys {
 
     my %common_keys = (
 	'DISTRIBUTION'				=> {
-	    DEFAULT => 'unstable',
 	    SET => sub {
 		my $self = shift;
 		my $entry = shift;
