@@ -1582,7 +1582,15 @@ sub check_dependencies {
 		$self->log(' ' . $name . '_' . $status->{$name}->{'Version'});
 	    } else {
 		$self->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
+	    }
+	}
+	$self->log("\n");
 
+	$self->log("Package versions:");
+	my $pkg_status = $self->get_dpkg_status();
+	foreach $name (sort keys %{$pkg_status}) {
+	    if (defined($pkg_status->{$name}->{'Version'})) {
+		$self->log(' ' . $name . '_' . $pkg_status->{$name}->{'Version'});
 	    }
 	}
 	$self->log("\n");
@@ -1647,7 +1655,6 @@ sub get_dpkg_status {
     my %result;
     local( *STATUS );
 
-    return () if !@_;
     debug("Requesting dpkg status for packages: @interest\n");
     if (!open( STATUS, "<$self->{'Chroot Dir'}/var/lib/dpkg/status" )) {
 	$self->log("Can't open $self->{'Chroot Dir'}/var/lib/dpkg/status: $!\n");
@@ -1684,7 +1691,7 @@ sub get_dpkg_status {
 	    next;
 	}
 	$result{$pkg} = { Installed => 1, Version => $version }
-	if isin( $pkg, @interest );
+	if (isin( $pkg, @interest) || !@interest);
 	if ($provides) {
 	    foreach (split( /\s*,\s*/, $provides )) {
 		$result{$_} = { Installed => 1, Version => '~*=PROVIDED=*=' }
