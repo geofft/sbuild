@@ -45,6 +45,10 @@ sbuild (0.59.1~rc1) unstable; urgency=low
       explicitly setting it in the configuration file.
     - Set the man-db man-db/auto-update parameter to false to disable
       unnecessary work in a build environment.
+    - Add command-line and configuration options to enable running
+      apt-get clean, upgrade and dist-upgrade prior to building.  These
+      complement the existing option to update the chroot, which is now
+      also fixed (Closes: #521096).
   * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
     Thanks to Andres Mejia for this patch.
   * sbuild-createchroot:  Compute an absolute path for the chroot
@@ -52,10 +56,8 @@ sbuild (0.59.1~rc1) unstable; urgency=low
   * wanna-build: Depend on postgresql-8.4-debversion in place of
     postgresql-8.3-debversion (Closes: #559607).  Thanks to Martin
     Pitt for reporting this.
-  * 
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 13 Dec 2009 21:18:43 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 13 Dec 2009 23:24:50 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
