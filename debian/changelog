@@ -34,12 +34,15 @@ sbuild (0.59.1~rc1) unstable; urgency=low
     - Add $check_space option to allow free space checking to be
       disabled (Closes: #551917).  Thanks to Bruno Kleinert for this
       suggestion.
+    - Print a list of all installed packages and versions, in addition
+      to toolchain packages (Closes: #553301).  Thanks to Felipe
+      Sateler for this suggestion.
   * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
     Thanks to Andres Mejia for this patch.
   * sbuild-createchroot:  Compute an absolute path for the chroot
     location.  Thanks to Cyril Brulebois for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 12 Dec 2009 14:29:56 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 13 Dec 2009 12:36:32 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
