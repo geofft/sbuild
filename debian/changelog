@@ -43,6 +43,8 @@ sbuild (0.59.1~rc1) unstable; urgency=low
       which can potentially cause serious breakage.  As a result, it is
       safer to require manually specifying the distribution, or
       explicitly setting it in the configuration file.
+    - Set the man-db man-db/auto-update parameter to false to disable
+      unnecessary work in a build environment.
   * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
     Thanks to Andres Mejia for this patch.
   * sbuild-createchroot:  Compute an absolute path for the chroot
@@ -51,8 +53,9 @@ sbuild (0.59.1~rc1) unstable; urgency=low
     postgresql-8.3-debversion (Closes: #559607).  Thanks to Martin
     Pitt for reporting this.
   * 
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 13 Dec 2009 20:30:50 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 13 Dec 2009 21:18:43 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
