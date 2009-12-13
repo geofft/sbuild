@@ -143,8 +143,17 @@ Communicate with specified archive.
 .BR \-D ", " "\-\-debug"
 Enable debug output.
 .TP
+.BR "\-\-apt\-clean"
+Run apt-get clean in the chroot before executing the build.
+.TP
 .BR "\-\-apt\-update"
 Run apt-get update in the chroot before executing the build.
+.TP
+.BR "\-\-apt\-upgrade"
+Run apt-get upgrade in the chroot before executing the build.
+.TP
+.BR "\-\-apt\-distupgrade"
+Run apt-get distupgrade in the chroot before executing the build.
 .TP
 .BR \-m ", " "\-\-maintainer=\fImaintainer\fP"
 Passed to dpkg\-genchanges and is used to set the Maintainer: field in

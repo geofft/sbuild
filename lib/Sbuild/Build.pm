@@ -37,7 +37,7 @@ use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug df);
 use Sbuild::Base;
-use Sbuild::ChrootSetup qw(update upgrade);
+use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig qw($version $release_date);
@@ -288,6 +288,20 @@ sub run {
 
     $self->set('Additional Deps', []);
 
+    # Clean APT cache.
+    $self->set('Pkg Fail Stage', 'apt-get-clean');
+    if ($self->get_conf('APT_CLEAN')) {
+	if (clean($session, $self->get('Config'))) {
+	    # Since apt-clean was requested specifically, fail on
+	    # error when not in buildd mode.
+	    $self->log("apt-get clean failed\n");
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		$self->set_status('failed');
+		goto cleanup_close;
+	    }
+	}
+    }
+
     # Update APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-update');
     if ($self->get_conf('APT_UPDATE')) {
@@ -298,6 +312,35 @@ sub run {
 	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
 		$self->set_status('failed');
 		goto cleanup_close;
+	    }
+	}
+    }
+
+    # Upgrade using APT.
+    if ($self->get_conf('APT_DISTUPGRADE')) {
+	$self->set('Pkg Fail Stage', 'apt-get-distupgrade');
+	if ($self->get_conf('APT_DISTUPGRADE')) {
+	    if (distupgrade($session, $self->get('Config'))) {
+		# Since apt-distupgrade was requested specifically, fail on
+		# error when not in buildd mode.
+		$self->log("apt-get dist-upgrade failed\n");
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    $self->set_status('failed');
+		    goto cleanup_close;
+		}
+	    }
+	}
+    } elsif ($self->get_conf('APT_UPGRADE')) {
+	$self->set('Pkg Fail Stage', 'apt-get-upgrade');
+	if ($self->get_conf('APT_UPGRADE')) {
+	    if (upgrade($session, $self->get('Config'))) {
+		# Since apt-upgrade was requested specifically, fail on
+		# error when not in buildd mode.
+		$self->log("apt-get upgrade failed\n");
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    $self->set_status('failed');
+		    goto cleanup_close;
+		}
 	    }
 	}
     }
