@@ -97,18 +97,14 @@ sub install_deps {
     $builder->log("Installing positive dependencies: @positive\n");
     if (!$builder->run_apt("-y", \@instd, \@rmvd, @positive)) {
 	$builder->log("Package installation failed\n");
-	# try to reinstall removed packages
-	$builder->log("Trying to reinstall removed packages:\n");
-	debug("Reinstalling removed packages: @rmvd\n");
-	my (@instd2, @rmvd2);
-	$builder->log("Failed to reinstall removed packages!\n")
-	    if !$builder->run_apt("-y", \@instd2, \@rmvd2, @rmvd);
-	debug("Installed were: @instd2\n");
-	debug("Removed were: @rmvd2\n");
-	# remove additional packages
-	$builder->log("Trying to uninstall newly installed packages:\n");
-	$self->uninstall_debs($builder->get('Chroot Dir') ? "purge" : "remove",
-			      @instd);
+	if (defined ($builder->get('Session')->get('Session Purged')) &&
+        $builder->get('Session')->get('Session Purged') == 1) {
+	    $builder->log("Not removing build depends: cloned chroot in use\n");
+	} else {
+	    $self->set_installed(@instd);
+	    $self->set_removed(@rmvd);
+	    $self->uninstall_deps();
+	}
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }

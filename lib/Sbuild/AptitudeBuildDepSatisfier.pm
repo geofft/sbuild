@@ -172,8 +172,8 @@ EOF
 	$aptitude_output .= $_;
 	$builder->log($_);
     }
-
     close($pipe);
+    my $aptitude_exit_code = $?;
 
     if ($aptitude_output =~ /^E:/m) {
 	$builder->log('Satisfying build-deps with aptitude failed.' . "\n");
@@ -197,22 +197,39 @@ EOF
     $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, @installed_packages);
     $self->set_removed(keys %{$self->get('Changes')->{'removed'}}, split( /\s+/, $removed_pkgs));
 
+    if ($aptitude_exit_code != 0) {
+	goto package_cleanup;
+    }
+
     #Seems it all went fine.
     $builder->unlock_file($builder->get('Session')->get('Install Lock'));
 
     return 1;
 
+  package_cleanup:
+    if (defined ($session->get('Session Purged')) &&
+	$session->get('Session Purged') == 1) {
+	$builder->log("Not removing build depends: cloned chroot in use\n");
+    } else {
+	$self->uninstall_deps();
+    }
+
   aptitude_cleanup:
-    $session->run_command(
-	    { COMMAND => ['dpkg', '--purge', 'aptitude'],
-	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 1,
-	      PRIORITY => 0});
-    $session->run_command(
-	    { COMMAND => ['dpkg', '--purge', $dummy_pkg_name],
-	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 1,
-	      PRIORITY => 0});
+    if (defined ($session->get('Session Purged')) &&
+        $session->get('Session Purged') == 1) {
+	$builder->log("Not removing additional packages: cloned chroot in use\n");
+    } else {
+	$session->run_command(
+		{ COMMAND => ['dpkg', '--purge', keys %{$self->get('Changes')->{'installed'}}],
+		USER => $self->get_conf('USERNAME'),
+		CHROOT => 1,
+		PRIORITY => 0});
+	$session->run_command(
+		{ COMMAND => ['dpkg', '--purge', $dummy_pkg_name],
+		USER => $self->get_conf('USERNAME'),
+		CHROOT => 1,
+		PRIORITY => 0});
+    }
 
   cleanup:
     $self->set('Dummy package path', undef);
