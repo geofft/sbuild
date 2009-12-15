@@ -224,6 +224,9 @@ sub init_allowed_keys {
 	    },
 	    DEFAULT => ""
 	},
+	'MAILTO_FORCED_BY_CLI'			=> {
+	    DEFAULT => {}
+	},
 	'MAILTO_HASH'				=> {
 	    DEFAULT => {}
 	},
