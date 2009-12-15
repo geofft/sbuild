@@ -146,6 +146,7 @@ sub set_options {
 		       },
 		       "mail-log-to=s" => sub {
 			   $self->set_conf('MAILTO', $_[1]);
+			   $self->set_conf('MAILTO_FORCED_BY_CLI', "yes");
 		       },
 		       "n|nolog" => sub {
 			   $self->set_conf('NOLOG', 1);
