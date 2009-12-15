@@ -393,8 +393,16 @@ sub check_dependencies {
 
 	    }
 	}
-	$builder->log("\n");
     }
+    $builder->log("\n");
+
+    $builder->log("Package versions:");
+    foreach $name (sort keys %{$status}) {
+	if (defined($status->{$name}->{'Version'})) {
+	    $builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
+	}
+    }
+    $builder->log("\n");
 
     return $fail;
 }
@@ -406,7 +414,6 @@ sub get_dpkg_status {
     my %result;
     local( *STATUS );
 
-    return () if !@interest;
     debug("Requesting dpkg status for packages: @interest\n");
     my $dpkg_status_file = $builder->{'Chroot Dir'} . '/var/lib/dpkg/status';
     if (!open( STATUS, '<', $dpkg_status_file)) {
@@ -444,7 +451,7 @@ sub get_dpkg_status {
 	    next;
 	}
 	$result{$pkg} = { Installed => 1, Version => $version }
-	if isin( $pkg, @interest );
+	    if (isin( $pkg, @interest ) || !@interest);
 	if ($provides) {
 	    foreach (split( /\s*,\s*/, $provides )) {
 		$result{$_} = { Installed => 1, Version => '~*=PROVIDED=*=' }

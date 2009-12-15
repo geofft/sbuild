@@ -303,6 +303,9 @@ sub init_allowed_keys {
 	'APT_POLICY'				=> {
 	    DEFAULT => 1
 	},
+	'CHECK_SPACE'				=> {
+	    DEFAULT => 1
+	},
 	'CHECK_WATCHES'				=> {
 	    DEFAULT => 1
 	},
@@ -346,7 +349,16 @@ sub init_allowed_keys {
 	'SIGNING_OPTIONS'			=> {
 	    DEFAULT => ""
 	},
+	'APT_CLEAN'				=> {
+	    DEFAULT => 0
+	},
 	'APT_UPDATE'				=> {
+	    DEFAULT => 0
+	},
+	'APT_UPGRADE'				=> {
+	    DEFAULT => 0
+	},
+	'APT_DISTUPGRADE'			=> {
 	    DEFAULT => 0
 	},
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
@@ -503,6 +515,7 @@ sub read_config {
     my $max_lock_trys = undef;
     my $lock_interval = undef;
     my $apt_policy = undef;
+    my $check_space = undef;
     my $check_watches = undef;
     my @ignore_watches_no_build_deps;
     undef @ignore_watches_no_build_deps;
@@ -521,7 +534,10 @@ sub read_config {
     my $maintainer_name = undef;
     my $uploader_name = undef;
     my $key_id = undef;
+    my $apt_clean = undef;
     my $apt_update = undef;
+    my $apt_upgrade = undef;
+    my $apt_distupgrade = undef;
     my $apt_allow_unauthenticated = undef;
     my %alternatives;
     undef %alternatives;
@@ -585,6 +601,7 @@ sub read_config {
     $self->set('LOCK_INTERVAL', $lock_interval);
     $self->set('APT_POLICY', $apt_policy);
     $self->set('CHECK_WATCHES', $check_watches);
+    $self->set('CHECK_SPACE', $check_space);
     $self->set('IGNORE_WATCHES_NO_BUILD_DEPS',
 	       \@ignore_watches_no_build_deps)
 	if (@ignore_watches_no_build_deps);
@@ -603,7 +620,10 @@ sub read_config {
     $self->set('MAINTAINER_NAME', $maintainer_name);
     $self->set('UPLOADER_NAME', $uploader_name);
     $self->set('KEY_ID', $key_id);
+    $self->set('APT_CLEAN', $apt_clean);
     $self->set('APT_UPDATE', $apt_update);
+    $self->set('APT_UPGRADE', $apt_upgrade);
+    $self->set('APT_DISTUPGRADE', $apt_distupgrade);
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
     $self->set('ALTERNATIVES', \%alternatives)
 	if (%alternatives);
@@ -612,7 +632,9 @@ sub read_config {
 
     $self->set('MAILTO',
 	       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')})
-	if $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
+	if defined($self->get('DISTRIBUTION')) &&
+	   $self->get('DISTRIBUTION') &&
+	   $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')};
 
     $self->set('SIGNING_OPTIONS',
 	       "-m".$self->get('MAINTAINER_NAME')."")

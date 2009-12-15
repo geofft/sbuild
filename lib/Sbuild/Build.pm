@@ -37,7 +37,7 @@ use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug df);
 use Sbuild::Base;
-use Sbuild::ChrootSetup qw(update upgrade);
+use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig qw($version $release_date);
@@ -203,6 +203,12 @@ sub run {
 
     $self->set('Pkg Start Time', time);
 
+    my $dist = $self->get_conf('DISTRIBUTION');
+    if (!defined($dist) || !$dist) {
+	$self->log("No distribution defined\n");
+	goto cleanup_skip;
+    }
+
     if ($self->get('Invalid Source')) {
 	$self->log("Invalid source: " . $self->get('DSC') . "\n");
 	$self->log("Skipping " . $self->get('Package') . " \n");
@@ -261,7 +267,42 @@ sub run {
 
     $self->set('Session', $session);
 
+    # Set up debconf selections.
+    my $pipe = $session->pipe_command(
+	{ COMMAND => ['/usr/bin/debconf-set-selections'],
+	  PIPE => 'out',
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	  DIR => '/' });
+
+    if (!$pipe) {
+	warn "Cannot open pipe: $!\n";
+    } else {
+	foreach my $selection ('man-db man-db/auto-update boolean false') {
+	    print $pipe "$selection\n";
+	}
+	close($pipe);
+	if ($?) {
+	    $self->log('debconf-set-selections failed\n');
+	}
+    }
+
     $self->set('Additional Deps', []);
+
+    # Clean APT cache.
+    $self->set('Pkg Fail Stage', 'apt-get-clean');
+    if ($self->get_conf('APT_CLEAN')) {
+	if (clean($session, $self->get('Config'))) {
+	    # Since apt-clean was requested specifically, fail on
+	    # error when not in buildd mode.
+	    $self->log("apt-get clean failed\n");
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		$self->set_status('failed');
+		goto cleanup_close;
+	    }
+	}
+    }
 
     # Update APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-update');
@@ -272,6 +313,35 @@ sub run {
 	    $self->log("apt-get update failed\n");
 	    $self->set_status('failed');
 	    goto cleanup_close;
+	}
+    }
+
+    # Upgrade using APT.
+    if ($self->get_conf('APT_DISTUPGRADE')) {
+	$self->set('Pkg Fail Stage', 'apt-get-distupgrade');
+	if ($self->get_conf('APT_DISTUPGRADE')) {
+	    if (distupgrade($session, $self->get('Config'))) {
+		# Since apt-distupgrade was requested specifically, fail on
+		# error when not in buildd mode.
+		$self->log("apt-get dist-upgrade failed\n");
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    $self->set_status('failed');
+		    goto cleanup_close;
+		}
+	    }
+	}
+    } elsif ($self->get_conf('APT_UPGRADE')) {
+	$self->set('Pkg Fail Stage', 'apt-get-upgrade');
+	if ($self->get_conf('APT_UPGRADE')) {
+	    if (upgrade($session, $self->get('Config'))) {
+		# Since apt-upgrade was requested specifically, fail on
+		# error when not in buildd mode.
+		$self->log("apt-get upgrade failed\n");
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    $self->set_status('failed');
+		    goto cleanup_close;
+		}
+	    }
 	}
     }
 
@@ -708,7 +778,7 @@ sub build {
     $current_usage = $1;
     if ($current_usage) {
 	my $free = df($dscdir);
-	if ($free < 2*$current_usage) {
+	if ($free < 2*$current_usage && $self->get_conf('CHECK_SPACE')) {
 	    $self->log("Disc space is propably not enough for building.\n".
 		       "(Source needs $current_usage KB, free are $free KB.)\n");
 	    # TODO: Only purge in a single place.

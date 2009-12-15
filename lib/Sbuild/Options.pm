@@ -98,8 +98,17 @@ sub set_options {
 		       "database=s" => sub {
 			   $self->set_conf('WANNA_BUILD_DB_NAME', $_[1]);
 		       },
+		       "apt-clean" => sub {
+			   $self->set_conf('APT_CLEAN', $_[1]);
+		       },
 		       "apt-update" => sub {
 			   $self->set_conf('APT_UPDATE', $_[1]);
+		       },
+		       "apt-upgrade" => sub {
+			   $self->set_conf('APT_UPGRADE', $_[1]);
+		       },
+		       "apt-distupgrade" => sub {
+			   $self->set_conf('APT_DISTUPGRADE', $_[1]);
 		       },
 		       "d|dist=s" => sub {
 			   $self->set_conf('DISTRIBUTION', $_[1]);

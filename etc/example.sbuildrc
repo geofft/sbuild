@@ -46,7 +46,12 @@
 ## SBUILD BEHAVIOUR
 ##
 
-# Default distribution
+# Default distribution.  By default, no distribution is defined, and
+# the user must specify it with the -d option.  However, a default may
+# be configured here if desired.  Users must take care not to upload
+# to the wrong distribution when this option is set, for example
+# experimental packages will be built for upload to unstable when this
+# is not what is required.
 #$distribution = 'unstable';
 
 # Default chroot (defaults to distribution[-arch][-sbuild])

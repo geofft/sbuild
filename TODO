@@ -157,3 +157,6 @@ in Sbuild::ChrootSetup.
 
 sbuild-hold|unhold: Make functions to get and set the package list
 in Sbuild::ChrootSetup.
+
+Generalise chroot setup logic in Build.pm and Chroot.pm
+Put all APT and debconf configuration into sbuild.conf.
