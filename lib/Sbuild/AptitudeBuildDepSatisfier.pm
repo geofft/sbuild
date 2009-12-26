@@ -25,7 +25,7 @@ use strict;
 use warnings;
 use File::Temp qw(tempdir);
 
-use Sbuild qw(debug copy);
+use Sbuild qw(debug copy version_compare);
 use Sbuild::Base;
 use Sbuild::BuildDepSatisfierBase;
 
@@ -146,16 +146,24 @@ EOF
 	      PRIORITY => 0});
     $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, $dummy_pkg_name);
 
+    my @non_default_deps = $self->get_non_default_deps(\@positive_deps, {});
+
+    my @aptitude_install_command = (
+	'aptitude', 
+	'-y', 
+	'--without-recommends', 
+	'-o', 'APT::Install-Recommends=false', 
+	'-o', 'Aptitude::CmdLine::Ignore-Trust-Violations=true', 
+	'-o', 'Aptitude::ProblemResolver::StepScore=100', 
+	'install',
+	$dummy_pkg_name,
+	(map { $_->[0] . "=" . $_->[1] } @non_default_deps)
+    );
+
+    $builder->log(join(" ", @aptitude_install_command), "\n");
+
     my $pipe = $session->pipe_command(
-	    { COMMAND => [
-		'aptitude', 
-		    '-y', 
-		    '--without-recommends', 
-		    '-o', 'APT::Install-Recommends=false', 
-		    '-o', 'Aptitude::CmdLine::Ignore-Trust-Violations=true', 
-		    '-o', 'Aptitude::ProblemResolver::StepScore=100', 
-		    'install',
-		    $dummy_pkg_name],
+	    { COMMAND => \@aptitude_install_comand,
 	      PIPE => 'in',
 	      USER => 'root',
 	      CHROOT => 1,
@@ -221,12 +229,12 @@ EOF
     } else {
 	$session->run_command(
 		{ COMMAND => ['dpkg', '--purge', keys %{$self->get('Changes')->{'installed'}}],
-		USER => $self->get_conf('USERNAME'),
+		USER => $builder->get_conf('USERNAME'),
 		CHROOT => 1,
 		PRIORITY => 0});
 	$session->run_command(
 		{ COMMAND => ['dpkg', '--purge', $dummy_pkg_name],
-		USER => $self->get_conf('USERNAME'),
+		USER => $builder->get_conf('USERNAME'),
 		CHROOT => 1,
 		PRIORITY => 0});
     }
@@ -238,4 +246,102 @@ EOF
     return 0;
 }
 
+sub get_non_default_deps {
+    my $self = shift;
+    my $deps = shift;
+    my $already_checked = shift;
+
+    my $builder = $self->get('Builder');
+
+    my @res;
+    foreach my $dep (@$deps) {
+	my ($name, $rel, $requested_version) =
+	    ($dep->{'Package'}, $dep->{'Rel'}, $dep->{'Version'});
+
+	#Check if we already did this, otherwise mark it as done:
+	if ($already_checked->{$name . "_" . ($requested_version || "")}) {
+	    next;
+	}
+
+	$already_checked->{$name . "_" . ($requested_version || "")} = "True";
+
+	my $dpkg_status = $self->get_dpkg_status($name);
+	my $apt_policy = $self->get_apt_policy($name);
+	my $default_version = $apt_policy->{$name}->{'defversion'};
+
+	#Check if the package default version is not high enough:
+	if (defined($rel) && $rel && $default_version && 
+		!version_compare($default_version, $rel, $requested_version)) {
+	    $builder->log("Need $name ($rel $requested_version), but default version is $default_version\n");
+
+	    #Check if some of the other versions would do the job:
+	    my $found_usable_version;
+	    foreach my $non_default_version (@{$apt_policy->{$name}->{versions}}) {
+		if (version_compare($non_default_version, $rel, $requested_version)) {
+		    #Yay, we can use this:
+		    $builder->log("... using version $non_default_version instead\n");
+		    push @res, [$name, $non_default_version];
+		    $found_usable_version = $non_default_version;
+
+		    #Try to get the deps of this version, then check if we
+		    #need additional stuff:
+		    my $deps = $self->get_deps($name, $non_default_version);
+		    my $expanded_dependencies = $builder->parse_one_srcdep($name, $deps);
+
+		    foreach my $exp_dep (@$expanded_dependencies) {
+			my $exp_dep_name = $exp_dep->{'Package'};
+
+			push @res, $self->get_non_default_deps([$exp_dep], $already_checked);
+		    }
+		    last;
+		} elsif ($default_version ne $non_default_version) {
+		    $builder->log("... can't use version $non_default_version instead\n");
+		}
+	    }
+	    if (!$found_usable_version) {
+		$builder->log("... couldn't find pkg to satisfy " . $builder->format_deps([$dep])  . "\n");
+	    }
+	}
+    }
+    return @res;
+}
+
+sub get_deps {
+    my $self = shift;
+    my $requested_pkg = shift;
+    my $requested_pkg_version = shift;
+
+    my $builder = $self->get('Builder');
+    my $pipe = $builder->get('Session')->pipe_command(
+	    { COMMAND => [ $builder->get_conf('APT_CACHE'), '-q', 'show', $requested_pkg ],
+	      PIPE => 'in',
+	      USER => $builder->get_conf('USERNAME'),
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	      DIR => '/' });
+
+    my ($version, $depends, $pre_depends, $res);
+    while (<$pipe>){
+	my $version = $1 if (/^Version: (.+)$/);
+        my $depends = $1 if (/^Depends: (.+)$/);
+	my $pre_depends = $1 if (/^Pre-Depends: (.+)$/);
+        if (/^\s*\n$/ || eof($pipe)) {
+	    if ($version eq $requested_pkg_version) {
+		if ($depends && $pre_depends) {
+		    $res = $depends . ", " . $pre_depends;
+		} elsif ($depends) {
+		    $res = $depends;			
+		} elsif ($pre_depends) {
+		    $res = $pre_depends;
+		} else {
+		    $res = "";
+		}
+		last;
+	    }
+	}
+    }
+    close ($pipe);
+
+    return $res;
+}
 1;

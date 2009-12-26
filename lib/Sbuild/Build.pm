@@ -1293,7 +1293,8 @@ sub merge_pkg_build_deps {
 	if $self->get_conf('BUILD_ARCH_ALL');
     @{$self->get('Dependencies')->{$pkg}} = @l;
     debug("Merging pkg deps: $deps\n");
-    $self->parse_one_srcdep($pkg, $deps);
+    my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $deps);
+    push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
 
     my $missing = ($self->cmp_dep_lists($old_deps,
 					$self->get('Dependencies')->{$pkg}))[1];
@@ -1302,7 +1303,8 @@ sub merge_pkg_build_deps {
     # expand their dependencies (those are implicitly essential)
     if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
 	my $ess = $self->read_build_essential();
-	$self->parse_one_srcdep('ESSENTIAL', $ess);
+	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
+	push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_essential_deps );
     }
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
     $exp_essential = $self->expand_dependencies($self->get('Dependencies')->{'ESSENTIAL'});
@@ -1597,6 +1599,8 @@ sub parse_one_srcdep {
     my $pkg = shift;
     my $deps = shift;
 
+    my @res;
+
     $deps =~ s/^\s*(.*)\s*$/$1/;
     foreach (split( /\s*,\s*/, $deps )) {
 	my @l;
@@ -1669,9 +1673,10 @@ sub parse_one_srcdep {
 	    foreach (@l) {
 		push( @{$l->{'Alternatives'}}, $_ );
 	    }
-	    push( @{$self->get('Dependencies')->{$pkg}}, $l );
+	    push @res, $l;
 	}
     }
+    return \@res;
 }
 
 sub check_space {
