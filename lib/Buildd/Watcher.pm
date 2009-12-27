@@ -240,7 +240,8 @@ sub run {
 	system "touch " . $self->get_conf('DAEMON_LOG_FILE');
 	umask $old_umask;
 	kill( 1, $daemon_pid ) if $daemon_pid;
-	reopen_log($self->get('Config'));
+	my $log = reopen_log($self->get('Config'));
+	$self->set('Log Stream', $log);
 	unlock_file( $self->get_conf('DAEMON_LOG_FILE') );
 
 	if ($self->get_conf('DAEMON_LOG_SEND')) {
@@ -285,10 +286,13 @@ sub run {
 	    $self->log("NO-DAEMON-PLEASE exists, not starting daemon\n");
 	}
 	else {
-	    system("buildd");
+	    close_log($self->get('Config'));
+	    unlink ("watcher-running");
+	    exec "buildd";
 	}
     }
 
+    unlink ("watcher-running");
     return 0;
 }
 
