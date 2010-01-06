@@ -1249,7 +1249,7 @@ sub reply ($) {
     ($quoting = $self->get('Mail Body Text')) =~ s/\n+$/\n/;
     $quoting =~ s/^/> /mg;
 
-    send_mail( $to, $subj, "$quoting\n$text",
+    send_mail( $to, $subj, "$text\n$quoting",
 	       "In-Reply-To: ". $self->get('Mail Header')->{'message-id'}. "\n" );
 }
 
