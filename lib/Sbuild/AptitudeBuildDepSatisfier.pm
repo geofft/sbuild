@@ -146,7 +146,7 @@ EOF
 	      PRIORITY => 0});
     $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, $dummy_pkg_name);
 
-    my @non_default_deps = $self->get_non_default_deps(\@positive_deps, {});
+    my @non_default_deps = $self->get_non_default_deps($dep, {});
 
     my @aptitude_install_command = (
 	'aptitude', 
@@ -255,8 +255,8 @@ sub get_non_default_deps {
 
     my @res;
     foreach my $dep (@$deps) {
-	my ($name, $rel, $requested_version) =
-	    ($dep->{'Package'}, $dep->{'Rel'}, $dep->{'Version'});
+	my ($neg, $name, $rel, $requested_version) =
+	    ($dep->{'Neg'}, $dep->{'Package'}, $dep->{'Rel'}, $dep->{'Version'});
 
 	#Check if we already did this, otherwise mark it as done:
 	if ($already_checked->{$name . "_" . ($requested_version || "")}) {
@@ -269,15 +269,25 @@ sub get_non_default_deps {
 	my $apt_policy = $self->get_apt_policy($name);
 	my $default_version = $apt_policy->{$name}->{'defversion'};
 
+	#Check if the package is not available at all:
+	if (!$neg && !$default_version) {
+	    $builder->log("Need $name, but it isn't available\n");
+
 	#Check if the package default version is not high enough:
-	if (defined($rel) && $rel && $default_version && 
-		!version_compare($default_version, $rel, $requested_version)) {
-	    $builder->log("Need $name ($rel $requested_version), but default version is $default_version\n");
+	} elsif (defined($rel) && $rel && 
+		(  (!$neg && !version_compare($default_version, $rel, $requested_version))
+	         ||( $neg &&  version_compare($default_version, $rel, $requested_version)))) {
+	    if (!$neg) {
+		$builder->log("Need $name ($rel $requested_version), but default version is $default_version\n");
+	    } else {
+		$builder->log("Can't use $name ($rel $requested_version), but default version is $default_version\n");
+	    }
 
 	    #Check if some of the other versions would do the job:
 	    my $found_usable_version;
 	    foreach my $non_default_version (@{$apt_policy->{$name}->{versions}}) {
-		if (version_compare($non_default_version, $rel, $requested_version)) {
+		if (  (!$neg && version_compare($non_default_version, $rel, $requested_version))
+                    ||( $neg && !version_compare($non_default_version, $rel, $requested_version))) {
 		    #Yay, we can use this:
 		    $builder->log("... using version $non_default_version instead\n");
 		    push @res, [$name, $non_default_version];
@@ -285,21 +295,24 @@ sub get_non_default_deps {
 
 		    #Try to get the deps of this version, then check if we
 		    #need additional stuff:
-		    my $deps = $self->get_deps($name, $non_default_version);
-		    my $expanded_dependencies = $builder->parse_one_srcdep($name, $deps);
-
-		    foreach my $exp_dep (@$expanded_dependencies) {
-			my $exp_dep_name = $exp_dep->{'Package'};
-
-			push @res, $self->get_non_default_deps([$exp_dep], $already_checked);
+		    my ($pos_deps, $neg_deps) = $self->get_deps($name, $non_default_version);
+		    my $expanded_pos_dependencies = $builder->parse_one_srcdep($name, $pos_deps);
+		    my $expanded_neg_dependencies = [];
+		    if ($neg_deps) {
+			$expanded_neg_dependencies = $builder->parse_one_srcdep($name, $neg_deps);
+			$_->{'Neg'} = 1 for (@$expanded_neg_dependencies);
 		    }
+		    my $expanded_dependencies = [@$expanded_pos_dependencies, @$expanded_neg_dependencies];
+		    $builder->log("Complete deps: " . $builder->format_deps(@$expanded_dependencies)  . "\n");			
+
+		    push @res, $self->get_non_default_deps($expanded_dependencies, $already_checked);
 		    last;
 		} elsif ($default_version ne $non_default_version) {
 		    $builder->log("... can't use version $non_default_version instead\n");
 		}
 	    }
 	    if (!$found_usable_version) {
-		$builder->log("... couldn't find pkg to satisfy " . $builder->format_deps([$dep])  . "\n");
+		$builder->log("... couldn't find pkg to satisfy " . $builder->format_deps($dep)  . "\n");
 	    }
 	}
     }
@@ -320,28 +333,27 @@ sub get_deps {
 	      PRIORITY => 0,
 	      DIR => '/' });
 
-    my ($version, $depends, $pre_depends, $res);
+    my ($version, @pos, @neg);
+    my ($pos_res, $neg_res) = ("", "");
     while (<$pipe>){
-	my $version = $1 if (/^Version: (.+)$/);
-        my $depends = $1 if (/^Depends: (.+)$/);
-	my $pre_depends = $1 if (/^Pre-Depends: (.+)$/);
+	$version = $1 if (/^Version: (.+)$/);
+	push @pos, $1 if (/^Depends: (.+)$/);
+	push @pos, $1 if (/^Pre-Depends: (.+)$/);
+	push @neg, $1 if (/^Conflicts: (.+)$/);
+	push @neg, $1 if (/^Breaks: (.+)$/);
         if (/^\s*\n$/ || eof($pipe)) {
-	    if ($version eq $requested_pkg_version) {
-		if ($depends && $pre_depends) {
-		    $res = $depends . ", " . $pre_depends;
-		} elsif ($depends) {
-		    $res = $depends;			
-		} elsif ($pre_depends) {
-		    $res = $pre_depends;
-		} else {
-		    $res = "";
-		}
+	    if ($version && $version eq $requested_pkg_version) {
+		$pos_res = join(",", @pos);
+		$neg_res = join(",", @neg);
 		last;
+	    } else {
+		$version = "";
+		@pos = @neg = ();
 	    }
 	}
     }
     close ($pipe);
 
-    return $res;
+    return ($pos_res, $neg_res);
 }
 1;
