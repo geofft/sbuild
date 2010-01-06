@@ -163,7 +163,7 @@ EOF
     $builder->log(join(" ", @aptitude_install_command), "\n");
 
     my $pipe = $session->pipe_command(
-	    { COMMAND => \@aptitude_install_comand,
+	    { COMMAND => \@aptitude_install_command,
 	      PIPE => 'in',
 	      USER => 'root',
 	      CHROOT => 1,
