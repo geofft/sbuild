@@ -22,7 +22,7 @@ package Buildd::Watcher;
 
 use strict;
 use warnings;
-use Buildd;
+use Buildd qw(send_mail lock_file unlock_file unset_env reopen_log close_log);
 use Buildd::Conf;
 use Buildd::Base;
 
