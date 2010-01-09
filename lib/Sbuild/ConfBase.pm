@@ -95,7 +95,7 @@ sub init_allowed_keys {
 		#Now, we might need to adjust the MAILTO based on the
 		#config data. We shouldn't do this if it was already
 		#explicitly set by the command line option:
-		if (!$self->('MAILTO_FORCED_BY_CLI') 
+		if (!$self->get('MAILTO_FORCED_BY_CLI') 
 		    && defined($self->get('DISTRIBUTION')) 
 		    && $self->get('DISTRIBUTION') 
 		    && $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')}) {
