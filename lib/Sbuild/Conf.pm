@@ -261,6 +261,7 @@ sub init_allowed_keys {
 	},
 	'TOOLCHAIN_REGEX'			=> {
 	    DEFAULT => ['binutils$',
+			'dpkg-dev$',
 			'gcc-[\d.]+$',
 			'g\+\+-[\d.]+$',
 			'libstdc\+\+',
