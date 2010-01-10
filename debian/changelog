@@ -52,6 +52,8 @@ sbuild (0.59.1~rc1) unstable; urgency=low
     - Add $build_source variable to sbuild.conf to complement the
       --source command-line options (Closes #564528).  Thanks to
       David Bremner for this suggestion.
+    - Don't give back packages failing the arch check (Closes: #561936).
+      Thanks to Philipp Kern for reporting this.
   * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
     Thanks to Andres Mejia for this patch.
   * sbuild-createchroot:  Compute an absolute path for the chroot
@@ -60,7 +62,7 @@ sbuild (0.59.1~rc1) unstable; urgency=low
     postgresql-8.3-debversion (Closes: #559607).  Thanks to Martin
     Pitt for reporting this.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 10 Jan 2010 17:44:26 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 10 Jan 2010 17:57:39 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
