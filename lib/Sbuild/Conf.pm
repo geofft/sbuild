@@ -82,6 +82,12 @@ sub init_allowed_keys {
 	    # See <http://bugs.debian.org/475777> for details
 	    die "The --append-to-version option is incompatible with a source upload\n";
 	}
+
+	if ($self->get('BUILD_SOURCE') &&
+	    $self->get('BIN_NMU')) {
+	    print STDERR "Not building source package for binNMU\n";
+	    $self->_set_value('BUILD_SOURCE', 0);
+	}
     };
 
     our $HOME = $self->get('HOME');
@@ -440,7 +446,8 @@ sub init_allowed_keys {
 	    DEFAULT => undef
 	},
 	'BIN_NMU'				=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    CHECK => $validate_append_version
 	},
 	'BIN_NMU_VERSION'			=> {
 	    DEFAULT => undef
@@ -529,6 +536,7 @@ sub read_config {
     my $chroot_split = undef;
     my $sbuild_mode = undef;
     my $debug = undef;
+    my $build_source = undef;
     my $force_orig_source = undef;
     my $chroot_setup_script = undef;
     my %individual_stalled_pkg_timeout;
@@ -615,6 +623,7 @@ sub read_config {
     $self->set('CHROOT_SPLIT', $chroot_split);
     $self->set('SBUILD_MODE', $sbuild_mode);
     $self->set('FORCE_ORIG_SOURCE', $force_orig_source);
+    $self->set('BUILD_SOURCE', $build_source);
     $self->set('CHROOT_SETUP_SCRIPT', $chroot_setup_script);
     $self->set('INDIVIDUAL_STALLED_PKG_TIMEOUT',
 	       \%individual_stalled_pkg_timeout)
