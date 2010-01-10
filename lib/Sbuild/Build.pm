@@ -45,6 +45,7 @@ use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download parse_file);
+use Sbuild::AptitudeBuildDepSatisfier;
 use Sbuild::InternalBuildDepSatisfier;
 
 BEGIN {
@@ -310,10 +311,8 @@ sub run {
 	    # Since apt-update was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
-	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		$self->set_status('failed');
-		goto cleanup_close;
-	    }
+	    $self->set_status('failed');
+	    goto cleanup_close;
 	}
     }
 
@@ -367,7 +366,15 @@ sub run {
     }
 
     $self->set('Pkg Fail Stage', 'install-deps');
+<<<<<<< HEAD
 	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
+=======
+    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
+	$self->set('Dependency Resolver', Sbuild::AptitudeBuildDepSatisfier->new($self));
+    } else {
+	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
+    }
+>>>>>>> buildd
     if (!$self->get('Dependency Resolver')->install_deps()) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
@@ -2033,6 +2040,7 @@ sub open_build_log {
     $self->log("Package: " . $self->get('Package') . "\n");
     $self->log("Version: " . $self->get('Version') . "\n");
     $self->log("Architecture: " . $self->get('Arch') . "\n");
+    $self->log("Chroot Build Dir: " . $self->get('Chroot Build Dir') . "\n");
     $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");
 }
 

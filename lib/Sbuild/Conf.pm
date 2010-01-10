@@ -225,7 +225,7 @@ sub init_allowed_keys {
 	    DEFAULT => ""
 	},
 	'MAILTO_FORCED_BY_CLI'			=> {
-	    DEFAULT => {}
+	    DEFAULT => 0
 	},
 	'MAILTO_HASH'				=> {
 	    DEFAULT => {}
@@ -454,7 +454,21 @@ sub init_allowed_keys {
 	},
 	'JOB_FILE'				=> {
 	    DEFAULT => 'build-progress'
-	}
+	},
+	'BUILD_DEP_RESOLVER'			=> {
+	    DEFAULT => 'internal',
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		die '$key: Invalid build-dependency resolver \'' .
+		    $self->get($key) .
+		    "'\nValid algorthms are 'internal' and 'aptitude'\n"
+		    if !isin($self->get($key),
+			     qw(internal aptitude));
+	    },
+	},
     );
 
     $self->set_allowed_keys(\%sbuild_keys);
@@ -539,6 +553,7 @@ sub read_config {
     my $arch = undef;
     my $job_file = undef;
     my $build_dir = undef;
+    my $build_dep_resolver = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
 	if (-r $_) {
@@ -637,6 +652,7 @@ sub read_config {
     $self->set('MAINTAINER_NAME', $self->get('UPLOADER_NAME')) if defined $self->get('UPLOADER_NAME');
     $self->set('MAINTAINER_NAME', $self->get('KEY_ID')) if defined $self->get('KEY_ID');
     $self->set('BUILD_DIR', $build_dir);
+    $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
 
     if (!defined($self->get('MAINTAINER_NAME')) &&
 	$self->get('BIN_NMU')) {

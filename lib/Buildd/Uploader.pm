@@ -24,7 +24,7 @@ package Buildd::Uploader;
 use strict;
 use warnings;
 
-use Buildd qw(lock_file unlock_file unset_env exitstatus);
+use Buildd qw(lock_file unlock_file unset_env exitstatus send_mail);
 use Buildd::Base;
 use Buildd::Conf;
 use Sbuild::ChrootRoot;

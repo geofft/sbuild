@@ -23,6 +23,7 @@ package Sbuild::LogBase;
 
 use strict;
 use warnings;
+use English;
 
 sub open_log ($$$);
 sub close_log ($);
@@ -70,6 +71,7 @@ sub open_log ($$$) {
 	$SIG{'INT'} = 'IGNORE';
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'TERM'} = 'IGNORE';
+	$PROGRAM_NAME = 'Sbuild::LogBase for ' . $PROGRAM_NAME;
 	while (<STDIN>) {
 	    $logfunc->($log_file, $_)
 	        if (!$conf->get('NOLOG') && defined($log_file));

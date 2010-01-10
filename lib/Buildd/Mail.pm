@@ -1133,7 +1133,7 @@ sub check_state ($$@) {
 		   $msg."state is $as\n");
 	return 0;
     }
-    if ($as eq "Building" && $ab ne $self->get_conf('WANNA_BUILD_DB_USER')) {
+    if ($as eq "Building" && $ab ne $dist_config->get('WANNA_BUILD_DB_USER')) {
 	$self->set('Mail Error',
 		   $self->get('Mail Error') .
 		   $msg."is building by $ab\n");
