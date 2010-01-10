@@ -222,9 +222,9 @@ sub status_trigger ($$) {
     # function calls because set_status will recursively trigger.
     if ($status eq "failed" &&
 	isin($build->get('Pkg Fail Stage'),
-	     qw(fetch-src install-deps arch-check unpack
-		check-unpacked-version check-space hack-binNMU
-		install-deps-env apt-get-update))) {
+	     qw(fetch-src install-deps unpack check-unpacked-version
+		check-space hack-binNMU install-deps-env
+		apt-get-update))) {
 	$build->set_status('given-back');
     } elsif ($status eq "failed" &&
 	     isin ($build->get('Pkg Fail Stage'),
