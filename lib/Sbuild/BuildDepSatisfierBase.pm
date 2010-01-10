@@ -388,14 +388,12 @@ sub dump_build_environment {
     my $status = $self->get_dpkg_status();
     my $toolchain = $builder->get('Toolchain Packages');
 
-    my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
-    my $arch = $builder->get('Arch');
+    if (@{$toolchain}) {
+	my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
+	my $arch = $builder->get('Arch');
 
-    $builder->log("Kernel: $sysname $release $arch ($machine)\n");
-
-    $builder->log("Toolchain packages:" . join(" ", @{$toolchain}));
-    $builder->log("Toolchain package versions:");
-    if (defined($toolchain)) {
+	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
+	$builder->log("Toolchain package versions:");
 	foreach my $name (@{$toolchain}) {
 	    if (defined($status->{$name}->{'Version'})) {
 		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
