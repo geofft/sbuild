@@ -323,9 +323,6 @@ sub check_dependencies {
 	    $names{$name} = 1 if $name !~ /^\*/;
 	}
     }
-    foreach $name (@{$builder->get('Toolchain Packages')}) {
-	$names{$name} = 1;
-    }
     my $status = $self->get_dpkg_status(keys %names);
 
     foreach $dep (@$dependencies) {
@@ -375,30 +372,6 @@ sub check_dependencies {
 	}
     }
     $fail =~ s/\s+$//;
-    if (!$fail && @{$builder->get('Toolchain Packages')}) {
-	my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
-	my $arch = $builder->get('Arch');
-
-	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
-	$builder->log("Toolchain package versions:");
-	foreach $name (@{$builder->get('Toolchain Packages')}) {
-	    if (defined($status->{$name}->{'Version'})) {
-		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
-	    } else {
-		$builder->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
-
-	    }
-	}
-    }
-    $builder->log("\n");
-
-    $builder->log("Package versions:");
-    foreach $name (sort keys %{$status}) {
-	if (defined($status->{$name}->{'Version'})) {
-	    $builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
-	}
-    }
-    $builder->log("\n");
 
     return $fail;
 }

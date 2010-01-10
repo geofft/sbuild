@@ -377,6 +377,8 @@ sub run {
 	goto cleanup_packages;
     }
 
+    $self->get('Dependency Resolver')->dump_build_environment();
+
     if ($self->build()) {
 	$self->set_status('successful');
     } else {

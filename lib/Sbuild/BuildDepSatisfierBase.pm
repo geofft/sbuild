@@ -381,4 +381,39 @@ sub get_apt_policy {
     return \%packages;
 }
 
+sub dump_build_environment {
+    my $self = shift;
+    my $builder = $self->get('Builder');
+
+    my $status = $self->get_dpkg_status();
+    my $toolchain = $builder->get('Toolchain Packages');
+
+    my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
+    my $arch = $builder->get('Arch');
+
+    $builder->log("Kernel: $sysname $release $arch ($machine)\n");
+
+    $builder->log("Toolchain packages:" . join(" ", @{$toolchain}));
+    $builder->log("Toolchain package versions:");
+    if (defined($toolchain)) {
+	foreach my $name (@{$toolchain}) {
+	    if (defined($status->{$name}->{'Version'})) {
+		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
+	    } else {
+		$builder->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
+	    }
+	}
+    }
+    $builder->log("\n");
+
+    $builder->log("Package versions:");
+    foreach my $name (sort keys %{$status}) {
+	if (defined($status->{$name}->{'Version'})) {
+	    $builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
+	}
+    }
+    $builder->log("\n");
+
+}
+
 1;
