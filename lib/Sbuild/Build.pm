@@ -367,7 +367,7 @@ sub run {
     }
 
     $self->set('Pkg Fail Stage', 'install-deps');
-	$self->set('Dependency Resolver', Sbuild::InteralBuildDepSatisfier->new($self));
+	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
     if (!$self->get('Dependency Resolver')->install_deps()) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
