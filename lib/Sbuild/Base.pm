@@ -58,7 +58,11 @@ sub set {
     my $key = shift;
     my $value = shift;
 
-    debug("Setting $key=$value\n");
+    if (defined($value)) {
+	debug("Setting $key=$value\n");
+    } else {
+	debug("Setting $key=undef\n");
+    }
 
     return $self->{$key} = $value;
 }
