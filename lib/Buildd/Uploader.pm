@@ -49,6 +49,8 @@ sub new {
     $self->set('Uploader Lock', undef);
     $self->set('Uploaded Pkgs', {});
 
+    $self->open_log();
+
     return $self;
 }
 

@@ -23,6 +23,7 @@ package Buildd::Base;
 use strict;
 use warnings;
 
+use IO::File;
 use Buildd qw(lock_file unlock_file);
 
 use Sbuild::Base;
@@ -43,7 +44,40 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    $self->open_log();
+
     return $self;
+}
+
+sub open_log ($) {
+    my $self = shift;
+
+    my $logfile = $self->get_conf('DAEMON_LOG_FILE');
+
+    my $log = IO::File->new("$logfile", O_CREAT|O_WRONLY|O_APPEND, 0640)
+	or die "$0: Cannot open logfile $logfile: $!\n";
+
+    $self->set('Log Stream', $log);
+
+    return $log;
+}
+
+sub close_log ($) {
+    my $self = shift;
+
+    return $self->get('Log Stream')->close();
+}
+
+sub reopen_log ($) {
+    my $self = shift;
+
+    my $log = $self->get('Log Stream');
+
+    if ($self->close_log()) {
+	$log = $self->open_log();
+    }
+
+    return $log;
 }
 
 sub write_stats ($$$) {

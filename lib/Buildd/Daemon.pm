@@ -25,7 +25,7 @@ use strict;
 use warnings;
 
 use POSIX;
-use Buildd qw(isin lock_file unlock_file send_mail exitstatus close_log);
+use Buildd qw(isin lock_file unlock_file send_mail exitstatus);
 use Buildd::Conf;
 use Buildd::Base;
 use Sbuild qw($devnull df);
@@ -856,7 +856,7 @@ sub shutdown {
     }
     unlink( $self->get('Config')->get('PIDFILE') );
     $self->log("exiting now\n");
-    close_log($self->get('Config'));
+    $self->close_log();
     exit 1;
 }
 

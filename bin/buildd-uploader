@@ -41,7 +41,7 @@ $uploader->set('Log Stream', $log);
 
 my $status = $uploader->run();
 
-close_log($conf);
+$uploader->close_log();
 
 exit $status;
 

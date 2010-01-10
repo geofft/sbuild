@@ -24,7 +24,6 @@
 use strict;
 use warnings;
 
-use Buildd qw(open_log close_log);
 use Buildd::Conf;
 use Buildd::Daemon;
 use Sbuild::OptionsBase;
@@ -39,9 +38,6 @@ my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
 exit 1 if !defined($options);
 my $daemon = Buildd::Daemon->new($conf);
 exit 1 if !defined($daemon);
-
-my $log = open_log($daemon->get('Config'));
-$daemon->set('Log Stream', $log);
 
 # Global signal handling
 foreach (qw(QUIT ILL TRAP ABRT BUS FPE USR2 SEGV PIPE XCPU XFSZ)) {
@@ -86,8 +82,7 @@ sub reopen_log ($) {
     $daemon->log("buildd ($$) received SIG$signame -- reopening logfile\n")
 	if defined($daemon);
 
-    my $log = Buildd::reopen_log($conf);
-	$daemon->set('Log Stream', $log);
+    $daemon->reopen_log();
 }
 
 END {

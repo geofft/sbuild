@@ -56,6 +56,8 @@ sub new {
     $self->set('Mail Header', {});
     $self->set('Mail Body Text', '');
 
+    $self->open_log();
+
     return $self;
 }
 

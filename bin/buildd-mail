@@ -24,7 +24,6 @@
 use strict;
 use warnings;
 
-use Buildd qw(open_log close_log lock_file unlock_file);
 use Buildd::Conf;
 use Buildd::Mail;
 use Sbuild::OptionsBase;
@@ -36,18 +35,8 @@ exit 1 if !defined($options);
 my $mail = Buildd::Mail->new($conf);
 exit 1 if !defined($mail);
 
-my $log = open_log($mail->get('Config'));
-$mail->set('Log Stream', $log);
-
 my $status = $mail->run();
 
-close_log($conf);
+$mail->close_log();
 
 exit $status;
-
-END {
-    unlock_file($conf->get('DAEMON_LOG_FILE'))
-	if (defined($conf) &&
-	    defined($conf->get('DAEMON_LOG_FILE')) &&
-	    $conf->get('DAEMON_LOG_FILE'));
-}
