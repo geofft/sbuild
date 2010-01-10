@@ -384,6 +384,22 @@ sub run {
     }
 
   cleanup_packages:
+    # Purge package build directory
+    if ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
+	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
+	 $self->get_status() eq 'successful')) {
+	$self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
+	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
+	$self->get('Session')->run_command(
+	    { COMMAND => ['rm', '-rf',
+			  $self->get('Session')->strip_chroot_path($self->get('DSC Dir'))],
+	      USER => 'root',
+	      CHROOT => 1,
+	      PRIORITY => 0,
+	      DIR => '/' });
+    }
+
+    # Purge installed packages
     if (defined ($session->get('Session Purged')) &&
 	$session->get('Session Purged') == 1) {
 	$self->log("Not removing build depends: cloned chroot in use\n");
@@ -398,6 +414,7 @@ sub run {
     }
     $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
   cleanup_close:
+    # End chroot session
     $session->end_session();
     $session = undef;
     $self->set('Session', $session);
@@ -1087,19 +1104,6 @@ sub build {
 
     $self->check_watches();
     $self->check_space(@space_files);
-
-    if ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
-	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
-	 $rv == 0)) {
-	$self->log("Purging $build_dir\n");
-	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
-	$self->get('Session')->run_command(
-	    { COMMAND => ['rm', '-rf', "$bdir"],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0,
-	      DIR => '/' });
-    }
 
     $self->log_sep();
     return $rv == 0 ? 1 : 0;
