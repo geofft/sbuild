@@ -56,7 +56,14 @@ sub open_log ($) {
 
     my $log = IO::File->new("$logfile", O_CREAT|O_WRONLY|O_APPEND, 0640)
 	or die "$0: Cannot open logfile $logfile: $!\n";
-	$log->autoflush('true');
+    $log->autoflush('true');
+
+    # Since we are a daemon, fully detach from terminal by reopening
+    # stdout and stderr to redirect to the log file.  Note messages
+    # should be printed using log(), not printing directly to the
+    # filehandle.  This is a fallback only.
+    open(STDOUT, '>&', $log) or warn "Can't redirect stderr\n";
+    open(STDERR, '>&', $log) or warn "Can't redirect stderr\n";
 
     $self->set('Log Stream', $log);
 
@@ -66,7 +73,14 @@ sub open_log ($) {
 sub close_log ($) {
     my $self = shift;
 
-    return $self->get('Log Stream')->close();
+    # We can't close stdout and stderr, so redirect to /dev/null.
+    open(STDOUT, '>&', "/dev/null") or warn "Can't redirect stderr\n";
+    open(STDERR, '>&', "/dev/null") or warn "Can't redirect stderr\n";
+
+    my $log = $self->get('Log Stream');
+    $self->set('Log Stream', undef);
+
+    return $log->close();
 }
 
 sub reopen_log ($) {
