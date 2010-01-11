@@ -193,7 +193,7 @@ sub process_mail () {
 	    $self->purge_pkg( $package, $dist_config );
 	}
 	elsif ($keyword =~ /^ret/) {
-	    if (!$self->check_state( $package, $dist_config, qw(Building Build-Attempted) )) {
+	    if (!$self->check_state( $package, $dist_config, qw(Built Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -201,7 +201,7 @@ sub process_mail () {
 	    }
 	}
 	elsif ($keyword =~ /^d(ep(endency)?)?-(ret|w)/) {
-	    if (!$self->check_state( $package, $dist_config, qw(Building Build-Attempted) )) {
+	    if (!$self->check_state( $package, $dist_config, qw(Built Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -212,7 +212,7 @@ sub process_mail () {
 	    }
 	}
 	elsif ($keyword =~ /^man/) {
-	    if (!$self->check_state( $package, $dist_config, "Building" )) {
+	    if (!$self->check_state( $package, $dist_config, qw(Built Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -237,7 +237,7 @@ sub process_mail () {
 	elsif ($keyword =~ /^(give|back)/) {
 	    $self->get('Mail Body Text') =~ /^(give|back) ([-0-9]+)/;
 	    my $pri = $1;
-	    if (!$self->check_state( $package, $dist_config, qw(Building Build-Attempted) )) {
+	    if (!$self->check_state( $package, $dist_config, qw(Built Building Build-Attempted) )) {
 		# Error already set
 	    }
 	    else {
@@ -292,7 +292,7 @@ sub process_mail () {
 	if ($self->check_is_outdated( $dist_config, $package )) {
 	    # Error has been set already -> no action here
 	}
-	elsif (!$self->check_state( $package, $dist_config, "Building" )) {
+	elsif (!$self->check_state( $package, $dist_config, qw(Built Building Build-Attempted) )) {
 	    # Error already set
 	}
 	elsif ($keyword =~ /^(build|ok)/) {
@@ -955,7 +955,7 @@ sub set_to_failed ($$$) {
 
     $text =~  s/^\.$/../mg;
     $is_bugno = 1 if $text =~ /^\(see #\d+\)$/;
-    return if !$self->check_state( $pkg, $dist_config, $is_bugno ? "Failed" : "Building" );
+    return if !$self->check_state( $pkg, $dist_config, $is_bugno ? "Failed" : qw(Built Building Build-Attempted) );
 
     my $db = $self->get_db_handle($dist_config);
     my $pipe = $db->pipe_query_out('--failed', "--dist=$dist_name", $pkg);
