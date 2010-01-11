@@ -56,6 +56,7 @@ sub open_log ($) {
 
     my $log = IO::File->new("$logfile", O_CREAT|O_WRONLY|O_APPEND, 0640)
 	or die "$0: Cannot open logfile $logfile: $!\n";
+	$log->autoflush('true');
 
     $self->set('Log Stream', $log);
 
