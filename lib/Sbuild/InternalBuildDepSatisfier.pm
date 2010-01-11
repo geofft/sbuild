@@ -97,6 +97,7 @@ sub install_deps {
     $builder->log("Installing positive dependencies: @positive\n");
     if (!$builder->run_apt("-y", \@instd, \@rmvd, @positive)) {
 	$builder->log("Package installation failed\n");
+	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	if (defined ($builder->get('Session')->get('Session Purged')) &&
         $builder->get('Session')->get('Session Purged') == 1) {
 	    $builder->log("Not removing build depends: cloned chroot in use\n");
@@ -105,7 +106,6 @@ sub install_deps {
 	    $self->set_removed(@rmvd);
 	    $self->uninstall_deps();
 	}
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
     $self->set_installed(@instd);
