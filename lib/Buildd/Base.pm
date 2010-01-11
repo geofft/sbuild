@@ -142,7 +142,9 @@ sub log {
 	$timestamp =~ s/^\w+\s(.*)\s\d+$/$1/;
 	my $prefix = "$timestamp $Buildd::progname\[$Buildd::progpid\]: ";
 
-	Sbuild::Base::log($self, $prefix, @_);
+	for my $line (split(/\n/, join("", @_))) {
+		Sbuild::Base::log($self, $prefix, $line, "\n");
+	}
 }
 
 1;
