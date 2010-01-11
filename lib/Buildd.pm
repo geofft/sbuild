@@ -31,8 +31,7 @@ use Sbuild::LogBase;
 require Exporter;
 @Buildd::ISA = qw(Exporter);
 
-@Buildd::EXPORT = qw(unset_env lock_file unlock_file open_log
- 		     reopen_log close_log send_mail
+@Buildd::EXPORT = qw(unset_env lock_file unlock_file send_mail
  		     ll_send_mail exitstatus isin);
 
 $Buildd::lock_interval = 15;
@@ -50,9 +49,6 @@ sub isin ($@);
 sub unset_env ();
 sub lock_file ($;$);
 sub unlock_file ($);
-sub open_log ($);
-sub close_log ($);
-sub reopen_log ($);
 sub send_mail ($$$;$);
 sub ll_send_mail ($$);
 sub exitstatus ($);
@@ -139,50 +135,6 @@ sub unlock_file ($) {
     unlink( $lockfile );
 }
 
-sub open_log ($) {
-    my $conf = shift;
-
-    my $logfile = $conf->get('DAEMON_LOG_FILE');
-
-    my $log = new FileHandle(">>$logfile")
-	or die "$0: Cannot open logfile $logfile: $!\n";
-    chmod( 0640, "$logfile" )
-	or die "$0: Cannot set modes of $logfile: $!\n";
-
-    my $logfunc = sub {
-	my $F = shift;
-	my $message = shift;
-
-	my $t;
-	my $text = "";
-
-	# omit weekday and year for brevity
-	($t = localtime) =~ /^\w+\s(.*)\s\d+$/; $t = $1;
-	$message =~ s/\n+$//; # remove newlines at end
-	$message = "$t $Buildd::progname\[$Buildd::progpid\]: $message\n";
-
-	print $F $message;
-    };
-
-    return Sbuild::LogBase::open_log($conf, $log, $logfunc);
-}
-
-sub close_log ($) {
-    my $conf = shift;
-
-    Sbuild::LogBase::close_log($conf);
-}
-
-sub reopen_log ($) {
-    my $conf = shift;
-
-    my $errno = $!;
-
-    close_log($conf);
-    my $log = open_log($conf);
-    $! = $errno;
-	return $log;
-}
 
 sub send_mail ($$$;$) {
     my $addr = shift;

@@ -24,7 +24,6 @@
 use strict;
 use warnings;
 
-use Buildd qw(open_log close_log lock_file unlock_file);
 use Buildd::Conf;
 use Buildd::Watcher;
 use Sbuild::OptionsBase;
@@ -36,11 +35,8 @@ exit 1 if !defined($options);
 my $watcher = Buildd::Watcher->new($conf);
 exit 1 if !defined($watcher);
 
-my $log = open_log($watcher->get('Config'));
-$watcher->set('Log Stream', $log);
-
 my $status = $watcher->run();
 
-close_log($conf);
+$watcher->close_log();
 
 exit $status;

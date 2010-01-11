@@ -22,7 +22,7 @@ package Buildd::Watcher;
 
 use strict;
 use warnings;
-use Buildd qw(send_mail lock_file unlock_file unset_env reopen_log close_log);
+use Buildd qw(send_mail lock_file unlock_file unset_env);
 use Buildd::Conf;
 use Buildd::Base;
 
@@ -57,6 +57,8 @@ sub new {
 	'time-per-build'	=> 10*60*60,
 	'build-time-percent'	=> 1,
 	'idle-time-percent'	=> 1});
+
+    $self->open_log();
 
     return $self;
 }
@@ -233,16 +235,13 @@ sub run {
 	    system "gzip -9 old-logs/daemon-$d.log";
 	}
 
-	lock_file( $self->get_conf('DAEMON_LOG_FILE') );
 	rename( $self->get_conf('DAEMON_LOG_FILE'),
 		$self->get_conf('DAEMON_LOG_FILE') . ".old" );
 	my $old_umask = umask 0007;
 	system "touch " . $self->get_conf('DAEMON_LOG_FILE');
 	umask $old_umask;
 	kill( 1, $daemon_pid ) if $daemon_pid;
-	my $log = reopen_log($self->get('Config'));
-	$self->set('Log Stream', $log);
-	unlock_file( $self->get_conf('DAEMON_LOG_FILE') );
+	$self->reopen_log();
 
 	if ($self->get_conf('DAEMON_LOG_SEND')) {
 	    my $text;
@@ -286,7 +285,7 @@ sub run {
 	    $self->log("NO-DAEMON-PLEASE exists, not starting daemon\n");
 	}
 	else {
-	    close_log($self->get('Config'));
+	    $self->close_log();
 	    unlink ("watcher-running");
 	    exec "buildd";
 	}
