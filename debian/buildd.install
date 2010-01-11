@@ -1,5 +1,5 @@
 debian/install/etc/buildd/buildd.conf		etc/buildd
-debian/install/etc/schroot/			etc/schroot
+debian/install/etc/schroot			etc
 debian/install/usr/bin/buildd*			usr/bin
 debian/install/usr/share/man/man1/buildd*       usr/share/man/man1
 debian/install/usr/share/perl5/Buildd*		usr/share/perl5
