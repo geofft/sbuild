@@ -59,6 +59,11 @@ sub open_log ($) {
 	$log->autoflush('true');
 
     $self->set('Log Stream', $log);
+    #Redirect all output:
+    close (STDOUT);
+    open (STDOUT, '>&', $log);
+    close (STDERR);
+    open (STDERR, '>&', $log);
 
     return $log;
 }
