@@ -1310,7 +1310,7 @@ sub merge_pkg_build_deps {
     if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
 	my $ess = $self->read_build_essential();
 	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
-	push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_essential_deps );
+	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
     }
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
     $exp_essential = $self->expand_dependencies($self->get('Dependencies')->{'ESSENTIAL'});
