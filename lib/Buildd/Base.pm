@@ -128,5 +128,15 @@ sub get_dist_config_by_name ($$) {
     return $dist_config;
 }
 
+sub log {
+	my $self = shift;
+
+	my $timestamp = localtime;
+	# omit weekday and year for brevity
+	$timestamp =~ s/^\w+\s(.*)\s\d+$/$1/;
+	my $prefix = "$timestamp $Buildd::progname\[$Buildd::progpid\]: ";
+
+	Sbuild::Base::log($self, $prefix, @_);
+}
 
 1;
