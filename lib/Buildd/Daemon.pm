@@ -117,7 +117,6 @@ sub run {
     while( 1 ) {
 	$self->check_restart();
 	$self->read_config();
-	$self->check_ssh_master();
 
 	my $done = 0;
 	my $thisdone;
@@ -138,6 +137,7 @@ sub run {
 	foreach my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
 	    $self->check_restart();
 	    $self->read_config();
+	    $self->check_ssh_master($dist_config);
 	    my $dist_name = $dist_config->get('DIST_NAME');
 	    my %givenback = $self->read_givenback();
 		my $db = $self->get_db_handle($dist_config);
@@ -157,7 +157,7 @@ sub run {
 		    (/^Couldn't connect to $socket: Connection refused[\r]?$/ ||
 		     /^Control socket connect\($socket\): Connection refused[\r]?$/)) {
 		    unlink($socket);
-		    $self->check_ssh_master();
+		    $self->check_ssh_master($dist_config);
 		}
 		elsif (/^Total (\d+) package/) {
 		    $total = $1;
@@ -796,29 +796,46 @@ sub unblock_signals {
 
 sub check_ssh_master {
     my $self = shift;
+    my $dist_config = shift;
 
-    return 1 if (!$self->get_conf('WANNA_BUILD_SSH_SOCKET'));
-    return 1 if ( -S $self->get_conf('WANNA_BUILD_SSH_SOCKET') );
+    my $ssh_socket = $dist_config->get('WANNA_BUILD_SSH_SOCKET');
 
-    if ($main::ssh_pid)
-    {
-	my $wpid = waitpid ( $main::ssh_pid, WNOHANG );
-	return 1 if ($wpid != -1 and $wpid != $main::ssh_pid);
+    return 1 if (!$ssh_socket);
+    return 1 if ( -S $ssh_socket );
+
+    my $ssh_master_pids = {};
+    if ($self->get('SSH_MASTER_PIDS')) {
+	$ssh_master_pids = $self->get('SSH_MASTER_PIDS');
+    } else {
+	$self->set('SSH_MASTER_PIDS', $ssh_master_pids);
     }
 
-    ($main::ssh_pid = fork)
-	or exec (@{$self->get_conf('WANNA_BUILD_SSH_CMD')}, "-MN");
+    if ($ssh_master_pids->{$ssh_socket})
+    {
+	my $wpid = waitpid ( $ssh_master_pids->{$ssh_socket}, WNOHANG );
+	return 1 if ($wpid != -1 and $wpid != $ssh_master_pids->{$ssh_socket});
+    }
 
-    if (!defined $main::ssh_pid) {
+    my $new_master_pid = fork;
+
+    #We are in the newly forked child:
+    if (defined($new_master_pid) && $new_master_pid == 0) {
+	exec (@{$dist_config->get('WANNA_BUILD_SSH_CMD')}, "-MN");
+    }
+
+    #We are the parent:
+    if (!defined $new_master_pid) {
 	$self->log("Cannot fork for ssh master: $!\n");
 	return 0;
     }
 
-    while ( ! -S $self->get_conf('WANNA_BUILD_SSH_SOCKET') )
+    $ssh_master_pids->{$ssh_socket} = $new_master_pid;
+
+    while ( ! -S $ssh_socket )
     {
 	sleep 1;
-	my $wpid = waitpid ( $main::ssh_pid, WNOHANG );
-	return 0 if ($wpid == -1 or $wpid == $main::ssh_pid);
+	my $wpid = waitpid ( $new_master_pid, WNOHANG );
+	return 0 if ($wpid == -1 or $wpid == $new_master_pid);
     }
     return 1;
 }
@@ -835,9 +852,15 @@ sub shutdown {
 
     $self->log("buildd ($$) received SIG$signame -- shutting down\n");
 
-    if (defined $main::ssh_pid) {
-	kill ( 15, $main::ssh_pid );
+    if ($self->get('SSH_MASTER_PIDS')) {
+	my $ssh_master_pids = $self->get('SSH_MASTER_PIDS');
+	for my $ssh_socket (keys %{$ssh_master_pids}) {
+	    my $master_pid = $ssh_master_pids->{$ssh_socket};
+	    kill ( 15, $master_pid );
+	    delete ( $ssh_master_pids->{$ssh_socket} );
+	}
     }
+
     if (defined $main::sbuild_pid) {
 	$self->log("Killing sbuild (pid=$main::sbuild_pid)\n");
 	kill( 15, $main::sbuild_pid );
