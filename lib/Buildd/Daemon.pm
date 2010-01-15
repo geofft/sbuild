@@ -438,6 +438,8 @@ sub do_build {
     }
     push ( @sbuild_args, "--database=" . $dist_config->get('WANNA_BUILD_DB_NAME') )
 	if $dist_config->get('WANNA_BUILD_DB_NAME');
+    push ( @sbuild_args, "--arch=" . $dist_config->get('BUILT_ARCHITECTURE') )
+	if $dist_config->get('BUILT_ARCHITECTURE');
 
     if (scalar(@_) == 1 and $_[0] =~ s/^!(\d+)!//) {
 	$binNMUver = $1;

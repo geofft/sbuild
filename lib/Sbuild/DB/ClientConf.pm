@@ -108,11 +108,14 @@ sub add_keys ($) {
 	    CHECK => $validate_ssh,
 	},
 	'WANNA_BUILD_DB_NAME'			=> {
-	    DEFAULT => "$arch/build-db"
+	    DEFAULT => undef,
 	},
 	'WANNA_BUILD_DB_USER'			=> {
 	    DEFAULT => $self->get('USERNAME')
-	});
+	},
+	'BUILT_ARCHITECTURE'			=> {
+	    DEFAULT => $arch,
+	},);
 
     $self->set_allowed_keys(\%db_keys);
 }

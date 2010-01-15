@@ -76,6 +76,9 @@ sub init_allowed_keys {
 	'DIST_NAME'				=> {
 	    DEFAULT => 'unstable'
 	},
+	'BUILT_ARCHITECTURE'			=> {
+	    DEFAULT => undef,
+	},
 	'WANNA_BUILD_SSH_HOST'			=> {
 	    DEFAULT => 'buildd.debian.org'
 	},
@@ -89,7 +92,7 @@ sub init_allowed_keys {
 	    DEFAULT => []
 	},
 	'WANNA_BUILD_DB_NAME'			=> {
-	    DEFAULT => $arch . '/build-db'
+	    DEFAULT => undef,
 	},
 	'WANNA_BUILD_DB_USER'			=> {
 	    DEFAULT => $Buildd::username
