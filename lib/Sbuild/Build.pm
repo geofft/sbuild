@@ -394,7 +394,7 @@ sub run {
 	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
 	my $dsc_dir = $self->get('Session')->strip_chroot_path($self->get('DSC Dir'));
 	$self->get('Session')->run_command(
-	    { COMMAND => ['rm', '-rf', $bdir, $dsc_dir],
+	    { COMMAND => ['rm', '-rf', $bdir],
 	      USER => 'root',
 	      CHROOT => 1,
 	      PRIORITY => 0,

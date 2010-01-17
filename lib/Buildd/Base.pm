@@ -27,6 +27,7 @@ use IO::File;
 use Buildd qw(lock_file unlock_file);
 
 use Sbuild::Base;
+use Sbuild qw($devnull);
 
 BEGIN {
     use Exporter ();
@@ -74,8 +75,8 @@ sub close_log ($) {
     my $self = shift;
 
     # We can't close stdout and stderr, so redirect to /dev/null.
-    open(STDOUT, '>', "/dev/null") or warn "Can't redirect stderr\n";
-    open(STDERR, '>', "/dev/null") or warn "Can't redirect stderr\n";
+    open(STDOUT, '>&', $devnull) or warn "Can't redirect stderr\n";
+    open(STDERR, '>&', $devnull) or warn "Can't redirect stderr\n";
 
     my $log = $self->get('Log Stream');
     $self->set('Log Stream', undef);
