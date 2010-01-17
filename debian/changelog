@@ -1,39 +1,23 @@
-sbuild (0.59.1~rc1) unstable; urgency=low
+sbuild (0.59.1-1) unstable; urgency=low
 
   * debian/control:
-    - Bump to Standards-Version 3.8.2.
-  * Only run "schroot --info" once on startup, to speed up the startup
-    time when many chroots exist (Closes: #546624).  Thanks to
-    Nelson Elhage for finding this issue and suggesting a suitable
-    approach for fixing it. 
-  * Don't append binNMU or extra version to version number for use
-    in the DSC filename (Closes: #546647).  Thanks to Nelson Elhage
-    for finding this issue.
-  * Allow the use of -C as well as --check-depends-algorithm as
-    documented (Closes: #546673).  Thanks to Nelson Elhage for this
-    patch.
-  * Add sbuild-clean script (Closes: #551310).  Thanks to Andres Mejia
-    for this patch.
-  * Remove extra parenthesis from wanna-build-merge-packages
-    (Closes: #553364).  Thanks to Felipe Sateler for this patch.
-  * wanna-build now reads its system configuration from the correct
-    location (/etc/buildd/wanna-build.conf, not
-    /etc/wanna-build/wanna-build.conf). 
+    - Upgrade to Standards-Version 3.8.3.
+    - Use ${misc:Depends} as required by debhelper.
   * sbuild:
+    - Only run "schroot --info" once on startup, to speed up the startup
+      time when many chroots exist (Closes: #546624).  Thanks to
+      Nelson Elhage for finding this issue and suggesting a suitable
+      approach for fixing it.
+    - Don't append binNMU or extra version to version number for use
+      in the DSC filename (Closes: #546647).  Thanks to Nelson Elhage
+      for finding this issue.
     - Distinguish between failed/attempted builds (Closes: #538083).
     - Build directory cleaned under all failure conditions
       (Closes: #538085).
-    - --apt-update both updates and upgrades the chroot
-      (Closes: #521096).  Thanks to Gustavo Noronha Silva for this
-      patch.  Note the original bug report 'get_apt_command' error
-      was fixed on the 17th March 2009.
     - Flush stdout explicitly in logger to avoid "choppy" output when
       monitoring interactively.  Autoflushing stdout appears to be
       broken in Perl 5.10 so flush explicitly in addition to
       enabling autoflush.  Thanks to Ryan Niebur for spotting this.
-    - Add $check_space option to allow free space checking to be
-      disabled (Closes: #551917).  Thanks to Bruno Kleinert for this
-      suggestion.
     - Print a list of all installed packages and versions, in addition
       to toolchain packages (Closes: #553301).  Thanks to Felipe
       Sateler for this suggestion.
@@ -45,24 +29,42 @@ sbuild (0.59.1~rc1) unstable; urgency=low
       explicitly setting it in the configuration file.
     - Set the man-db man-db/auto-update parameter to false to disable
       unnecessary work in a build environment.
+    - Don't give back packages failing the arch check (Closes: #561936).
+      Thanks to Philipp Kern for reporting this.
     - Add command-line and configuration options to enable running
       apt-get clean, upgrade and dist-upgrade prior to building.  These
       complement the existing option to update the chroot, which is now
       also fixed (Closes: #521096).
     - Add $build_source variable to sbuild.conf to complement the
-      --source command-line options (Closes #564528).  Thanks to
+      --source command-line options (Closes: #564528).  Thanks to
       David Bremner for this suggestion.
-    - Don't give back packages failing the arch check (Closes: #561936).
-      Thanks to Philipp Kern for reporting this.
-  * Allow setting of $build_dir in sbuild.conf (Closes: #535911).
-    Thanks to Andres Mejia for this patch.
+    - Allow setting of $build_dir in sbuild.conf (Closes: #535911).
+      Thanks to Andres Mejia for this patch.
+    - Add $check_space option to allow free space checking to be
+      disabled (Closes: #551917).  Thanks to Bruno Kleinert for this
+      suggestion.
+    - --apt-update both updates and upgrades the chroot
+      (Closes: #521096).  Thanks to Gustavo Noronha Silva for this
+      patch.  Note the original bug report 'get_apt_command' error
+      was fixed on the 17th March 2009.
+    - Allow the use of -C as well as --check-depends-algorithm as
+      documented (Closes: #546673).  Thanks to Nelson Elhage for this
+      patch.
+  * Add sbuild-clean script (Closes: #551310).  Thanks to Andres Mejia
+    for this patch.
   * sbuild-createchroot:  Compute an absolute path for the chroot
     location.  Thanks to Cyril Brulebois for this patch.
-  * wanna-build: Depend on postgresql-8.4-debversion in place of
-    postgresql-8.3-debversion (Closes: #559607).  Thanks to Martin
-    Pitt for reporting this.
+  * wanna-build:
+    - Depend on postgresql-8.4-debversion in place of
+      postgresql-8.3-debversion (Closes: #559607).  Thanks to Martin Pitt
+      for reporting this.
+    - wanna-build now reads its system configuration from the correct
+      location (/etc/buildd/wanna-build.conf, not
+      /etc/wanna-build/wanna-build.conf).
+    - Remove extra parenthesis from wanna-build-merge-packages
+      (Closes: #553364).  Thanks to Felipe Sateler for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 10 Jan 2010 17:57:39 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 17 Jan 2010 22:51:59 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
