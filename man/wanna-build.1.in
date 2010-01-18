@@ -169,7 +169,7 @@ the variable $default_dist in /etc/wanna\-build.conf. The distributions
 .TP
 \-\-forget
 This is another action: The named packages (only name, no version) will be
-removed from the database completely. This is for maintainence purposes, not
+removed from the database completely. This is for maintenance purposes, not
 for day-by-day use. A mail will be sent to the database maintainer.
 .TP
 \-\-give\-back
@@ -220,10 +220,10 @@ Select criteria for how to order \-\-list output (see above).
 \-U \fIuser\fP, \-\-user=\fIuser\fP
 Select user name for which listings should apply, if not given all
 users are listed.  if \-l is missing, set user name to be entered in
-db; usually automatically choosen.
+db; usually automatically chosen.
 Set the user whose name is logged with the transaction, or who will be
 entered in the database as builder of the package (\-\-take). The default is
-the login name of the caller, but for maintainence purposes it can be
+the login name of the caller, but for maintenance purposes it can be
 changed on the command line.
 .TP
 \-c CATEGORY, \-\-category=CATEGORY
