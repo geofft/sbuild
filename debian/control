@@ -59,6 +59,7 @@ Package: buildd
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, libsbuild-perl, adduser, sbuild (>= 0.58), dupload, cron, exim4 | mail-transport-agent
 Suggests: wanna-build
+Replaces: sbuild
 Description: Daemon for automatically building Debian binary packages from Debian sources
  The sbuild suite of programs (wanna-build, buildd and sbuild) are
  used to build binary packages from source packages.  The wanna-build
