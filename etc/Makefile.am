@@ -40,4 +40,5 @@ EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
 	$(builddsysconf_DATA)	\
 	$(exampleconf_DATA)	\
-	$(schrootsysconf_DATA)
+	$(schrootsysconf_DATA)	\
+	$(schrootsetup_SCRIPTS)

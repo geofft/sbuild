@@ -219,6 +219,7 @@ EOF
 	$session->get('Session Purged') == 1) {
 	$builder->log("Not removing build depends: cloned chroot in use\n");
     } else {
+    	$builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
 	$self->uninstall_deps();
     }
 
