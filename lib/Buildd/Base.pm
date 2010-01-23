@@ -57,7 +57,7 @@ sub open_log ($) {
 
     my $log = IO::File->new("$logfile", O_CREAT|O_WRONLY|O_APPEND, 0640)
 	or die "$0: Cannot open logfile $logfile: $!\n";
-    $log->autoflush('true');
+    $log->autoflush(1);
 
     # Since we are a daemon, fully detach from terminal by reopening
     # stdout and stderr to redirect to the log file.  Note messages
