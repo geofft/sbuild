@@ -31,6 +31,9 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ "\-\-setup\-only" ]
 .B SUITE TARGET-DIRECTORY DEBIAN-MIRROR-URI
 .RB [ SCRIPT ]
+.PP
+.B buildd\-create\-chroot
+.B USER SUITE TARGET-DIRECTORY DEBIAN-MIRROR-URI
 .SH DESCRIPTION
 \fBsbuild\-createchroot\fR runs
 .BR debootstrap (1)
@@ -47,6 +50,19 @@ The newly-created chroot is set up to work with
 by creating a chroot definition file under \fI/etc/schroot/chroot.d\fP.  This
 should be edited to finish the chroot configuration after
 sbuild\-createchroot has completed.
+.PP
+\fBbuildd\-create\-chroot\fP, like \fBsbuild\-createchroot\fR, runs
+.BR debootstrap (1)
+to create a chroot for package building.  However, this creates a chroot
+specifically for
+.BR buildd (1)
+with an additional mandatory option to specify a user who will be granted sudo
+access inside the chroot.  This script mainly differs in its additional
+customisation of \fI/etc/apt/sources.list\fP to use incoming.debian.org and
+security-master.debian.org.  It also removes some packages from the
+newly-created chroot.  Unless you are setting up an official Debian build
+daemon, \fBsbuild\-createchroot\fP should be used instead.  The extra
+functionality will be merged into \fBsbuild\-createchroot\fP in the future.
 .SH OPTIONS
 .SS Actions
 .TP

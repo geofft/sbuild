@@ -62,6 +62,8 @@ binary-indep: build install
 	dh_compress -i
 	mv debian/buildd/usr/share/man/man1/buildd-abort.1 \
 	  debian/buildd/usr/share/man/man1/buildd-abort.1.gz
+	mv debian/buildd/usr/share/man/man8/buildd-make-chroot.8 \
+	  debian/buildd/usr/share/man/man8/buildd-make-chroot.8.gz
 	dh_fixperms -i
 	dh_installdeb -i
 	dh_gencontrol -i
