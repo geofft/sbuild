@@ -150,7 +150,8 @@ sub log {
 	my $timestamp = localtime;
 	# omit weekday and year for brevity
 	$timestamp =~ s/^\w+\s(.*)\s\d+$/$1/;
-	my $prefix = "$timestamp $Buildd::progname\[$Buildd::progpid\]: ";
+	my $prefix = "$timestamp $Buildd::progname\[" .
+	    $self->get('PID') . "\]: ";
 
 	for my $line (split(/\n/, join("", @_))) {
 		Sbuild::Base::log($self, $prefix, $line, "\n");

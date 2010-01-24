@@ -37,7 +37,6 @@ require Exporter;
 $Buildd::lock_interval = 15;
 $Buildd::max_lock_trys = 120;
 ($Buildd::progname = $0) =~ s,.*/,,;
-$Buildd::progpid = $$;
 my @pwinfo = getpwuid($>);
 $Buildd::username = $pwinfo[0];
 $Buildd::gecos = $pwinfo[6];
