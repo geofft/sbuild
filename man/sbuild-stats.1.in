@@ -24,7 +24,7 @@ sbuild\-stats \- display or alter database of package build times/space
 .RB " \[or] [" \-d \[or] \-\-delete " \[or] " \-\-dump ]
 .BR PACKAGE1 " [" PACKAGE2 " [" PACKAGE\f[BI]n\fP... ]]]
 .RB [ \-t \[or] \-\-time " \[or] " \-s \[or] \-\-space ]
-.RB [ \-t \[or] \-\-top ]
+.RB \-\-top ]
 .SH VERSION
 This man page documents the packaged version of sbuild.  This version is
 maintained by the \fBbuildd-tools\fP project developers on Alioth
