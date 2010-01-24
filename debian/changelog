@@ -50,8 +50,6 @@ sbuild (0.59.1-1) unstable; urgency=low
     - Allow the use of -C as well as --check-depends-algorithm as
       documented (Closes: #546673).  Thanks to Nelson Elhage for this
       patch.
-    - Don't give back packages when installing build-deps failed. (Closes:
-      #566319) 
   * Add sbuild-clean script (Closes: #551310).  Thanks to Andres Mejia
     for this patch.
   * sbuild-createchroot:  Compute an absolute path for the chroot
