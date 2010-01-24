@@ -26,10 +26,14 @@ sbuild\-update \- update and upgrade an sbuild chroot with apt-get
 .BR sbuild\-distupdate
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.BR buildd\-update\-chroots
 .SH DESCRIPTION
 \fBsbuild\-update\fR runs \f[CB]apt\-get update\fP inside the specified chroot.
 \fBsbuild\-upgrade\fR and \fBsbuild\-distupgrade\fR run \f[CB]apt\-get
 upgrade\fP and \f[CB]apt\-get dist-upgrade\fP, respectively.
+\fBbuildd\-update\-chroots\fP does the equivalent (update, dist-upgrade,
+autoremove and debfoster) but for buildd systems where it will stop the buildd
+prior to updating and will act on all schroot-managed chroots.
 .SH OPTIONS
 .SS Actions
 .TP
