@@ -73,6 +73,7 @@ install-exec-hook:
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/.ssh"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/build"
+	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/build-trees"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/logs"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/mqueue"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/old-logs"
