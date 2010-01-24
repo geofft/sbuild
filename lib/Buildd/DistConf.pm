@@ -79,6 +79,9 @@ sub init_allowed_keys {
 	'BUILT_ARCHITECTURE'			=> {
 	    DEFAULT => undef,
 	},
+	'SBUILD_CHROOT'                         => {
+	    DEFAULT => undef,
+	},
 	'WANNA_BUILD_SSH_HOST'			=> {
 	    DEFAULT => 'buildd.debian.org'
 	},
