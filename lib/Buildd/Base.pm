@@ -45,6 +45,8 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    $self->set('PID', $$);
+
     $self->open_log();
 
     return $self;
