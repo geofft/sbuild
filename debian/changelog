@@ -65,6 +65,10 @@ sbuild (0.59.1-1) unstable; urgency=low
       (Closes: #553364).  Thanks to Felipe Sateler for this patch.
   * Remove absent -t option for --top from sbuild-stats.1
     (Closes: #566320).  Thanks to Kurt Roeckx.
+  * buildd:
+    - Don't bind-mount /home into the schroot. (Closes: #566315)
+    - Extract architecture for .changes filename from the .changes file
+      instead of just using the system arch. (Closes: #566398)
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 23 Jan 2010 12:16:36 +0000
 

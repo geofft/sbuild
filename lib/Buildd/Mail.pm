@@ -490,6 +490,18 @@ sub prepare_for_upload ($$) {
 		   "Couldn't find a valid Distribution: line.\n");
 	return 0;
     }
+
+    my $changes_filename_arch = $self->get_conf('ARCH');
+    #Try to extract the arch from the actual changes file (see #566398)
+    if ($changes =~ /^Architecture:\s*(.+)/m) {
+	my @arches = grep { $_ ne "all" } split /\s+/, $1;
+	if (@arches > 1) {
+	    $changes_filename_arch = "multi";
+	} else {
+	    $changes_filename_arch = $arches[0];
+	}
+    }
+
     $changes =~ /^Files:\s*\n((^[ 	]+.*\n)*)/m;
     foreach (split( "\n", $1 )) {
 	push( @md5, (split( /\s+/, $_ ))[1] );
@@ -561,7 +573,7 @@ sub prepare_for_upload ($$) {
 
     my $pkg_noep = $pkg;
     $pkg_noep =~ s/_\d*:/_/;
-    my $changes_name = "${pkg_noep}_" . $self->get_conf('ARCH') . ".changes";
+    my $changes_name = $pkg_noep . "_" . $changes_filename_arch . ".changes";
     
     for my $upload_dir (@upload_dirs) {
     if (! -d $upload_dir &&!mkdir( $upload_dir, 0750 )) {
