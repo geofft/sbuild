@@ -196,6 +196,12 @@ sub set_status {
     }
 }
 
+sub get_status {
+    my $self = shift;
+
+    return $self->get('Pkg Status');
+}
+
 sub run {
     my $self = shift;
 
@@ -2054,7 +2060,7 @@ sub close_build_log {
     }
     my $date = strftime("%Y%m%d-%H%M", localtime($time));
 
-    if ($self->get('Pkg Status') eq "successful") {
+    if ($self->get_status() eq "successful") {
 	$self->add_time_entry($self->get('Package_Version'), $self->get('This Time'));
 	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
     }
@@ -2073,11 +2079,11 @@ sub close_build_log {
     my $filename = $self->get('Log File');
 
     # Only report success or failure
-    if ($self->get('Pkg Status') ne "successful") {
+    if ($self->get_status() ne "successful") {
 	$self->set_status('failed');
     }
 
-    my $subject = "Log for " . $self->get('Pkg Status') .
+    my $subject = "Log for " . $self->get_status() .
 	" build of " . $self->get('Package_Version');
     if ($self->get('Arch')) {
 	$subject .= " on " . $self->get('Arch');

@@ -100,7 +100,7 @@ sub main () {
 
 	# Do the build
 	if (should_skip($job)) {
-	    $job->set('Pkg Status', 'skipped');
+	    $job->set_status('skipped');
 	} else {
 	    $job->run();
 	}
@@ -119,7 +119,7 @@ sub main () {
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
     if ($conf->get('SBUILD_MODE') eq "user" && defined($current_job) &&
 	defined($jobs{$current_job})) {
-	exit ($jobs{$current_job}->get('Pkg Status') ne "successful") ? 1 : 0;
+	exit ($jobs{$current_job}->get_status() ne "successful") ? 1 : 0;
     }
     exit 0;
 }
@@ -136,7 +136,7 @@ sub write_jobs_file () {
 	    my $job = $jobs{$_};
 
 	    print F $job->get('Package_OVersion') . ": " .
-		$job->get('Pkg Status') . "\n";
+		$job->get_status() . "\n";
 	}
 	close( F );
     }
@@ -253,7 +253,7 @@ sub wanna_build_status_trigger ($$) {
 	} elsif ($status eq "given-back") {
 	    $db->run_query('--give-back', $pkgv);
 	    $wb_status = $?;
-	    $build->set('Pkg Status', "given-back");
+	    $build->set('Pkg Status', 'given-back');
 	    $build->log("Giving back package $pkgv after failure in ".
 			$build->get('Pkg Fail Stage') ." stage.\n");
 
@@ -293,7 +293,7 @@ sub shutdown ($) {
 	    my $job = $jobs{$_};
 
 	    push(@npkgs, $job->get('Package_OVersion'))
-		if $job->get('Pkg Status') ne "successful";
+		if $job->get_status() ne "successful";
 	}
 	print "The following jobs were not finished: @npkgs\n";
 
