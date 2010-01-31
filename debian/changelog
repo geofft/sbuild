@@ -69,6 +69,8 @@ sbuild (0.59.1-1) unstable; urgency=low
     - Don't bind-mount /home into the schroot. (Closes: #566315)
     - Extract architecture for .changes filename from the .changes file
       instead of just using the system arch. (Closes: #566398)
+    - Fix NO_WARN_PATTERN default to not warn about sbuilds build/current-*
+      symlinks. (Closes: #566722)
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 23 Jan 2010 12:16:36 +0000
 

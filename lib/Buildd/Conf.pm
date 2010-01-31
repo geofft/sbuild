@@ -131,7 +131,7 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'NO_WARN_PATTERN'			=> {
-	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$'
+	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*|current-[^/]*)$'
 	},
 	'PIDFILE'                               => {
 # Set once running as a system service.
