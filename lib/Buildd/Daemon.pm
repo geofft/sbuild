@@ -126,9 +126,9 @@ sub run {
 	    foreach my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
 		$self->check_restart();
 		$self->read_config();
-		my @redo = $self->get_from_REDO( $dist_config, \%binNMUlog );
-		next if !@redo;
-		$self->do_build( $dist_config, \%binNMUlog, @redo );
+		my $pkg_ver = $self->get_from_REDO( $dist_config, \%binNMUlog );
+		next if !defined($pkg_ver);
+		$self->do_build( $dist_config, \%binNMUlog, $pkg_ver);
 		++$done;
 		++$thisdone;
 	    }
@@ -149,8 +149,7 @@ sub run {
 		next MAINLOOP;
 	    }
 
-	    my(@todo, $total, $nonex, @lowprio_todo, $max_build);
-	    $max_build = $self->get_conf('MAX_BUILD');
+	    my(@todo, $total, $nonex, @lowprio_todo);
 	    while( <$pipe> ) {
 		my $socket = $dist_config->get('WANNA_BUILD_SSH_SOCKET');
 		if ($socket &&
@@ -167,7 +166,7 @@ sub run {
 		    $nonex = 1;
 		}
 		next if $nonex;
-		next if @todo >= $max_build;
+		next if @todo >= 1; #we only want one!
 		my @line = (split( /\s+/, $_));
 		my $pv = $line[0];
 		my $no_build_regex = $dist_config->get('NO_BUILD_REGEX');
@@ -183,10 +182,6 @@ sub run {
 		    push( @lowprio_todo, $pv );
 		    next;
 		}
-		if ($line[1] =~ /:binNMU/) {
-		    $max_build = 1;
-		    @todo = ();
-		}
 		push( @todo, $pv );
 	    }
 	    close( $pipe );
@@ -200,13 +195,13 @@ sub run {
 
 	    # Build weak_no_auto packages before the next dist
 	    if (!@todo && @lowprio_todo) {
-		push ( @todo, @lowprio_todo );
+		push @todo, $lowprio_todo[0];
 	    }
 
 	    next if !@todo;
 	    @todo = $self->do_wanna_build( $dist_config, \%binNMUlog, @todo );
 	    next if !@todo;
-	    $self->do_build( $dist_config, \%binNMUlog, @todo );
+	    $self->do_build( $dist_config, \%binNMUlog, $todo[0] );
 	    ++$done;
 	    last;
 	}
@@ -229,7 +224,7 @@ sub get_from_REDO {
     my $self = shift;
     my $wanted_dist_config = shift;
     my $binNMUlog = shift;
-    my @redo = ();
+    my $pkg_ver = undef;
     local( *F );
 
     lock_file( "REDO" );
@@ -247,27 +242,20 @@ sub get_from_REDO {
 		   "Raw contents:\n@lines\n");
 	goto end;
     }
-    my $max_build = $self->get_conf('MAX_BUILD');
     foreach (@lines) {
 	if (!/^(\S+)\s+(\S+)(?:\s*|\s+(\d+)\s+(\S.*))?$/) {
 	    $self->log("Ignoring/deleting bad line in REDO: $_");
 	    next;
 	}
 	my($pkg, $dist, $binNMUver, $changelog) = ($1, $2, $3, $4);
-	if ($dist eq $wanted_dist_config->get('DIST_NAME') && @redo < $max_build) {
+	if ($dist eq $wanted_dist_config->get('DIST_NAME') && !defined($pkg_ver)) {
 	    if (defined $binNMUver) {
-		if (scalar(@redo) == 0) {
-		    $binNMUlog->{$pkg} = $changelog;
-		    push( @redo, "!$binNMUver!$pkg" );
-		} else {
-		    print F $_;
-		}
-		$max_build = scalar(@redo);
+		$binNMUlog->{$pkg} = $changelog;
+		$pkg_ver = "!$binNMUver!$pkg";
 	    } else {
-		push( @redo, $pkg );
+		$pkg_ver = $pkg;
 	    }
-	}
-	else {
+	} else {
 	    print F $_;
 	}
     }
@@ -276,7 +264,7 @@ sub get_from_REDO {
   end:
     unlock_file( "REDO" );
     $self->unblock_signals();
-    return @redo;
+    return $pkg_ver;
 }
 
 sub read_givenback {
@@ -388,8 +376,8 @@ sub do_build {
     my $self = shift;
     my $dist_config = shift;
     my $binNMUlog = shift;
+    my $pkg_ver = shift;
 
-    return if !@_;
     my $free_space;
 
     while (($free_space = df(".")) < $self->get_conf('MIN_FREE_SPACE')) {
@@ -400,8 +388,8 @@ sub do_build {
 	$self->write_stats("idle-time", $idle_end_time - $idle_start_time);
     }
 
-    $self->log("Starting build (dist=" . $dist_config->get('DIST_NAME') . ") of:\n@_\n");
-    $self->write_stats("builds", scalar(@_));
+    $self->log("Starting build (dist=" . $dist_config->get('DIST_NAME') . ") of $pkg_ver\n");
+    $self->write_stats("builds", 1);
     my $binNMUver;
 
     my @sbuild_args = ( 'nice', '-n', $self->get_conf('NICE_LEVEL'), 'sbuild',
@@ -444,12 +432,13 @@ sub do_build {
 	if $dist_config->get('SBUILD_CHROOT');
 
 
-    if (scalar(@_) == 1 and $_[0] =~ s/^!(\d+)!//) {
+    if ($pkg_ver =~ s/^!(\d+)!//) {
 	$binNMUver = $1;
 
-	push ( @sbuild_args, "--binNMU=$binNMUver", "--make-binNMU=" . $binNMUlog->{$_[0]});
+	push ( @sbuild_args, "--binNMU=$binNMUver", "--make-binNMU=" . $binNMUlog->{$pkg_ver});
     }
-    $self->log("command line: @sbuild_args @_\n");
+    push @sbuild_args, $pkg_ver;
+    $self->log("command line: @sbuild_args\n");
 
     if (($main::sbuild_pid = fork) == 0) {
 	{ exec (@sbuild_args, @_) };

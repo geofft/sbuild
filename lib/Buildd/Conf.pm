@@ -118,9 +118,6 @@ sub init_allowed_keys {
 	'LOG_QUEUED_MESSAGES'			=> {
 	    DEFAULT => 0
 	},
-	'MAX_BUILD'				=> {
-	    DEFAULT => 10
-	},
 	'MIN_FREE_SPACE'			=> {
 	    DEFAULT => 50*1024
 	},
@@ -299,7 +296,6 @@ sub read_config {
 	$self->set('ERROR_MAIL_WINDOW', $error_mail_window);
 	$self->set('IDLE_SLEEP_TIME', $idle_sleep_time);
 	$self->set('LOG_QUEUED_MESSAGES', $log_queued_messages);
-	$self->set('MAX_BUILD', $max_build);
 	$self->set('MIN_FREE_SPACE', $min_free_space);
 	$self->set('NICE_LEVEL', $nice_level);
 	$self->set('NO_DETACH', $no_detach);
