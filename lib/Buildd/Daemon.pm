@@ -267,6 +267,23 @@ sub get_from_REDO {
     return $pkg_ver;
 }
 
+sub add_given_back ($$) {
+    my $self = shift;
+    my $pkg_ver = shift;
+
+    local( *F );
+    lock_file("SBUILD-GIVEN-BACK", 0);
+
+    if (open( F, ">>SBUILD-GIVEN-BACK" )) {
+	print F $pkg_ver . " " . time() . "\n";
+	close( F );
+    } else {
+	$self->log("Can't open SBUILD-GIVEN-BACK: $!\n");
+    }
+
+    unlock_file("SBUILD-GIVEN-BACK");
+}
+
 sub read_givenback {
     my $self = shift;
 
@@ -397,22 +414,6 @@ sub do_build {
 			'--batch',
 			"--stats-dir=" . $self->get_conf('HOME') . "/stats",
 			"--dist=" . $dist_config->get('DIST_NAME') );
-    my $sbuild_gb = '--auto-give-back';
-    if ($dist_config->get('WANNA_BUILD_SSH_CMD')) {
-	$sbuild_gb .= "=";
-	$sbuild_gb .= $dist_config->get('WANNA_BUILD_SSH_SOCKET') . "\@"
-	    if $dist_config->get('WANNA_BUILD_SSH_SOCKET');
-	$sbuild_gb .= $dist_config->get('WANNA_BUILD_DB_USER') . "\@"
-	    if $dist_config->get('WANNA_BUILD_DB_USER');
-	$sbuild_gb .= $dist_config->get('WANNA_BUILD_SSH_USER') ."\@" 
-	    if $dist_config->get('WANNA_BUILD_SSH_USER');
-	$sbuild_gb .= $dist_config->get('WANNA_BUILD_SSH_HOST');
-    } else {
-	# Otherwise newer sbuild will take the package name as an --auto-give-back
-	# parameter (changed from regexp to GetOpt::Long parsing)
-	$sbuild_gb .= "=yes"
-    }
-    push ( @sbuild_args, $sbuild_gb );
     #multi-archive-buildd keeps the mailto configuration in the builddrc, so
     #this needs to be passed over to sbuild. If the buildd config doesn't have
     #it, we hope that the address is configured in .sbuildrc and the right one:
@@ -424,8 +425,6 @@ sub do_build {
     if ($dist_config->get('BUILD_DEP_RESOLVER')) {
 	push @sbuild_args, '--build-dep-resolver=' . $dist_config->get('BUILD_DEP_RESOLVER');
     }
-    push ( @sbuild_args, "--database=" . $dist_config->get('WANNA_BUILD_DB_NAME') )
-	if $dist_config->get('WANNA_BUILD_DB_NAME');
     push ( @sbuild_args, "--arch=" . $dist_config->get('BUILT_ARCHITECTURE') )
 	if $dist_config->get('BUILT_ARCHITECTURE');
     push ( @sbuild_args, "--chroot=" . $dist_config->get('SBUILD_CHROOT') )
@@ -440,8 +439,11 @@ sub do_build {
     push @sbuild_args, $pkg_ver;
     $self->log("command line: @sbuild_args\n");
 
-    if (($main::sbuild_pid = fork) == 0) {
-	{ exec (@sbuild_args, @_) };
+    $main::sbuild_pid = open(SBUILD_OUT, "-|");
+
+    #We're childish, so call sbuild:
+    if ($main::sbuild_pid == 0) {
+	{ exec (@sbuild_args) };
 	$self->log("Cannot execute sbuild: $!\n");
 	exit(64);
     }
@@ -450,6 +452,18 @@ sub do_build {
 	$self->log("Cannot fork for sbuild: $!\n");
 	goto failed;
     }
+
+    #We want to collect the first few lines of sbuild output:
+    my ($sbuild_output_line_count, @sbuild_output_buffer) = (0, ());
+    while (<SBUILD_OUT>) {
+	push @sbuild_output_buffer, $_;
+	#5 lines are enough:
+	if (++$sbuild_output_line_count >= 5) {
+	    last;
+	}
+    }
+
+    #We got enough output, now just wait for sbuild to die:
     my $rc;
     while (($rc = wait) != $main::sbuild_pid) {
 	if ($rc == -1) {
@@ -460,53 +474,43 @@ sub do_build {
 	    $self->log("wait for sbuild: returned unexpected pid $rc\n");
 	}
     }
+    my $sbuild_exit_code = $? >> 8;
     undef $main::sbuild_pid;
+    close(SBUILD_OUT);
 
-    if ($?) {
-	$self->log("sbuild failed with status ".exitstatus($?)."\n");
-      failed:
-	if (-f "SBUILD-REDO-DUMPED") {
-	    $self->log("Found SBUILD-REDO-DUMPED; sbuild already dumped ",
-		       "pkgs which need rebuiling/\n");
-	    local( *F );
-	    my $n = 0;
-	    open( F, "<REDO" );
-	    while( <F> ) { ++$n; }
-	    close( F );
-	    $self->write_stats("builds", -$n);
-	}
-	elsif (-f "SBUILD-FINISHED") {
-	    my @finished = $self->read_FINISHED();
-	    $self->log("sbuild has already finished:\n@finished\n");
-	    my @unfinished;
-	    for (@_) {
-		push( @unfinished, $_ ) if !isin( $_, @finished );
-	    }
-	    $self->log("Adding rest to REDO:\n@unfinished\n");
-	    $self->append_to_REDO( $dist_config, '', @unfinished );
-	    $self->write_stats("builds", -scalar(@unfinished));
-	}
-	else {
-	    if (defined $binNMUver) {
-		$self->log("Assuming binNMU failed and adding to REDO:\n@_\n");
-		$self->append_to_REDO( $dist_config, "$binNMUver $binNMUlog->{$_[0]}", @_ );
-	    } else {
-		$self->log("Assuming all packages unbuilt and adding to REDO:\n@_\n");
-		$self->append_to_REDO( $dist_config, '', @_ );
-	    }
-	    $self->write_stats("builds", -scalar(@_));
-	}
+    #Process sbuild's results:
+    my $db = $self->get_db_handle($dist_config);
+    if ($sbuild_exit_code == 0) {
+	$self->log("sbuild of $pkg_ver succeeded, marking as built in w-b");
+	$db->run_query('--built', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
+    } elsif ($sbuild_exit_code ==  2) {
+	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (build attempted, but failed");
+	$db->run_query('--attempted', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
+	$self->write_stats("failed", 1);
+    } else {
+	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem");
+	$db->run_query('--give-back', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
+	$self->add_given_back($pkg_ver);
+	$self->write_stats("give-back", 1);
+    }
 
+    #Check if something happened that wasn't a successs
+    if ($sbuild_exit_code > 0) {
 	delete $binNMUlog->{$_[0]} if defined $binNMUver;
 
-	if (++$main::sbuild_fails > 2) {
+	if ($sbuild_exit_code != 1 && $sbuild_exit_code != 2) {
+	    $main::sbuild_fails += 1;
+	}
+
+	if ($main::sbuild_fails > 2) {
 	    $self->log("sbuild now failed $main::sbuild_fails times in ".
 		       "a row; going to sleep\n");
 	    send_mail( $self->get_conf('ADMIN_MAIL'),
 		       "Repeated mess with sbuild",
 		       <<EOF );
 The execution of sbuild now failed for $main::sbuild_fails times.
-Something must be wrong here...
+These are the first $sbuild_output_line_count lines of the last failed sbuild call:
+@sbuild_output_buffer
 
 The daemon is going to sleep for 1 hour, or can be restarted with SIGUSR2.
 EOF
@@ -741,22 +745,6 @@ sub append_to_REDO {
   unlock:
     unlock_file( "REDO" );
     $self->unblock_signals();
-}
-
-sub read_FINISHED {
-    my $self = shift;
-
-    local( *F );
-    my @pkgs;
-
-    if (!open( F, "<SBUILD-FINISHED" )) {
-	$self->log("Can't open SBUILD-FINISHED: $!\n");
-	return ();
-    }
-    chomp( @pkgs = <F> );
-    close( F );
-    unlink( "SBUILD-FINISHED" );
-    return @pkgs;
 }
 
 sub check_restart {

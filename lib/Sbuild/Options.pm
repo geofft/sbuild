@@ -46,23 +46,6 @@ sub set_options {
 		       "A|arch-all" => sub {
 			   $self->set_conf('BUILD_ARCH_ALL', 1);
 		       },
-		       "auto-give-back=s" => sub {
-			   $self->set_conf('AUTO_GIVEBACK', 1);
-			   if ($_[1]) {
-			       my @parts = split( '@', $_[1] );
-			       $self->set_conf('WANNA_BUILD_SSH_SOCKET',
-					  $parts[$#parts-3])
-				   if @parts > 3;
-			       $self->set_conf('WANNA_BUILD_DB_USER',
-					  $parts[$#parts-2])
-				   if @parts > 2;
-			       $self->set_conf('WANNA_BUILD_SSH_USER',
-					  $parts[$#parts-1])
-				   if @parts > 1;
-			       $self->set_conf('WANNA_BUILD_SSH_HOST',
-					  $parts[$#parts]);
-			   }
-		       },
 		       "add-depends=s" => sub {
 			   push(@{$self->get_conf('MANUAL_DEPENDS')}, $_[1]);
 		       },
@@ -94,9 +77,6 @@ sub set_options {
 		       },
 		       "c|chroot=s" => sub {
 			   $self->set_conf('CHROOT', $_[1]);
-		       },
-		       "database=s" => sub {
-			   $self->set_conf('WANNA_BUILD_DB_NAME', $_[1]);
 		       },
 		       "apt-clean" => sub {
 			   $self->set_conf('APT_CLEAN', $_[1]);

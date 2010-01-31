@@ -71,6 +71,8 @@ sbuild (0.59.1-1) unstable; urgency=low
       instead of just using the system arch. (Closes: #566398)
     - Fix NO_WARN_PATTERN default to not warn about sbuilds build/current-*
       symlinks. (Closes: #566722)
+    - Do all w-b interaction, leave nothing of it to sbuild. (Closes: #567646,
+      #566321)
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 23 Jan 2010 12:16:36 +0000
 
