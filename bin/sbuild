@@ -213,7 +213,7 @@ sub status_trigger ($$) {
 	$build->set_status('given-back');
     } elsif ($status eq "failed" &&
 	     isin ($build->get('Pkg Fail Stage'),
-		   qw(build))) {
+		   qw(build arch-check))) {
 	$build->set_status('attempted');
     }
 }
