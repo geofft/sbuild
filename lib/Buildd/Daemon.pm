@@ -499,10 +499,10 @@ sub do_build {
 	delete $binNMUlog->{$_[0]} if defined $binNMUver;
 
 	if ($sbuild_exit_code != 1 && $sbuild_exit_code != 2) {
-	    $main::sbuild_fails += 1;
+	    $main::sbuild_fails = ($main::sbuild_fails || 0) + 1;
 	}
 
-	if ($main::sbuild_fails > 2) {
+	if (($main::sbuild_fails || 0) > 2) {
 	    $self->log("sbuild now failed $main::sbuild_fails times in ".
 		       "a row; going to sleep\n");
 	    send_mail( $self->get_conf('ADMIN_MAIL'),
