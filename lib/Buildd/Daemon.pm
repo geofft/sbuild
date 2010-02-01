@@ -481,14 +481,14 @@ sub do_build {
     #Process sbuild's results:
     my $db = $self->get_db_handle($dist_config);
     if ($sbuild_exit_code == 0) {
-	$self->log("sbuild of $pkg_ver succeeded, marking as built in w-b");
+	$self->log("sbuild of $pkg_ver succeeded -- marking as built in wanna-build");
 	$db->run_query('--built', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
     } elsif ($sbuild_exit_code ==  2) {
-	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (build attempted, but failed");
+	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (build failed) -- marking as attempted in wanna-build");
 	$db->run_query('--attempted', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
 	$self->write_stats("failed", 1);
     } else {
-	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem");
+	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem) -- giving back");
 	$db->run_query('--give-back', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
 	$self->add_given_back($pkg_ver);
 	$self->write_stats("give-back", 1);
@@ -529,7 +529,6 @@ EOF
     else {
 	$main::sbuild_fails = 0;
     }
-    unlink "SBUILD-REDO-DUMPED" if -f "SBUILD-REDO-DUMPED";
     $self->log("Build finished.\n");
 }
 
@@ -711,40 +710,6 @@ retry:
     }
 
     return $changelog;
-}
-
-sub append_to_REDO {
-    my $self = shift;
-    my $dist_config = shift;
-    my $postfix = shift;
-
-    my @npkgs = @_;
-    my @pkgs = ();
-    my $pkg;
-    local( *F );
-
-    $self->block_signals();
-    lock_file( "REDO" );
-
-    if (open( F, "REDO" )) {
-	@pkgs = <F>;
-	close( F );
-    }
-
-    if (open( F, ">>REDO" )) {
-	foreach $pkg (@npkgs) {
-	    next if grep( /^\Q$pkg\E\s/, @pkgs );
-	    print F "$pkg " . $dist_config->get('DIST_NAME') . $postfix . "\n";
-	}
-	close( F );
-    }
-    else {
-	$self->log("Can't open REDO: $!\n");
-    }
-
-  unlock:
-    unlock_file( "REDO" );
-    $self->unblock_signals();
 }
 
 sub check_restart {
