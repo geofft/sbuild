@@ -101,11 +101,6 @@ sub main () {
 	}
 
 	dump_main_state() if $conf->get('DEBUG');
-
-	if ($conf->get('BATCH_MODE') &&
-	    (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE')) {
-	    main::shutdown("NONE (flag file exit)");
-	}
     }
 
     close_log($conf);
