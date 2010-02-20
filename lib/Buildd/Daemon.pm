@@ -516,7 +516,7 @@ sub do_build {
     if ($failed) {
 	delete $binNMUlog->{$_[0]} if defined $binNMUver;
 
-	my $status 0;
+	my $status = 0;
 	if (WIFEXITED($sbuild_exit_code)) {
 	    $status = WEXITSTATUS($sbuild_exit_code);
 	}
