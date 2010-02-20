@@ -456,10 +456,9 @@ sub do_build {
     #We want to collect the first few lines of sbuild output:
     my ($sbuild_output_line_count, @sbuild_output_buffer) = (0, ());
     while (<SBUILD_OUT>) {
-	push @sbuild_output_buffer, $_;
 	#5 lines are enough:
-	if (++$sbuild_output_line_count >= 5) {
-	    last;
+	if (++$sbuild_output_line_count < 5) {
+	    push @sbuild_output_buffer, $_;
 	}
     }
 
@@ -474,31 +473,54 @@ sub do_build {
 	    $self->log("wait for sbuild: returned unexpected pid $rc\n");
 	}
     }
-    my $sbuild_exit_code = $? >> 8;
+    my $sbuild_exit_code = $?;
     undef $main::sbuild_pid;
     close(SBUILD_OUT);
 
     #Process sbuild's results:
     my $db = $self->get_db_handle($dist_config);
-    if ($sbuild_exit_code == 0) {
-	$self->log("sbuild of $pkg_ver succeeded -- marking as built in wanna-build");
-	$db->run_query('--built', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
-    } elsif ($sbuild_exit_code ==  2) {
-	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (build failed) -- marking as attempted in wanna-build");
-	$db->run_query('--attempted', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
-	$self->write_stats("failed", 1);
+    my $failed = 1;
+    my $giveback = 0;
+
+    if (WIFEXITED($sbuild_exit_code)) {
+	my $status = WEXITSTATUS($sbuild_exit_code);
+
+	if ($status == 0) {
+	    $failed = 0;
+	    $self->log("sbuild of $pkg_ver succeeded -- marking as built in wanna-build\n");
+	    $db->run_query('--built', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
+	} elsif ($status ==  2) {
+	    $self->log("sbuild of $pkg_ver failed with status $status (build failed) -- marking as attempted in wanna-build\n");
+	    $db->run_query('--attempted', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
+	    $self->write_stats("failed", 1);
+	} else {
+	    $self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem) -- giving back\n");
+	    $giveback = 1;
+	}
+    } elsif (WIFSIGNALED($sbuild_exit_code)) {
+	my $sig = WTERMSIG($sbuild_exit_code);
+	$self->log("sbuild of $pkg_ver failed with signal $sig (local problem) -- giving back\n");
+	$giveback = 1;
     } else {
-	$self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem) -- giving back");
+	$self->log("sbuild of $pkg_ver failed with unknown reason (local problem) -- giving back\n");
+	$giveback = 1;
+    }
+
+    if ($giveback) {
 	$db->run_query('--give-back', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
 	$self->add_given_back($pkg_ver);
 	$self->write_stats("give-back", 1);
     }
 
     #Check if something happened that wasn't a successs
-    if ($sbuild_exit_code > 0) {
+    if ($failed) {
 	delete $binNMUlog->{$_[0]} if defined $binNMUver;
 
-	if ($sbuild_exit_code != 1 && $sbuild_exit_code != 2) {
+	my $status 0;
+	if (WIFEXITED($sbuild_exit_code)) {
+	    $status = WEXITSTATUS($sbuild_exit_code);
+	}
+	if ($status != 1 && $status != 2) {
 	    $main::sbuild_fails = ($main::sbuild_fails || 0) + 1;
 	}
 
