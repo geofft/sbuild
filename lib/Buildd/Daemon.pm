@@ -514,7 +514,7 @@ sub do_build {
 
     #Check if something happened that wasn't a successs
     if ($failed) {
-	delete $binNMUlog->{$_[0]} if defined $binNMUver;
+	delete $binNMUlog->{$pkg_ver} if defined $binNMUver;
 
 	my $status = 0;
 	if (WIFEXITED($sbuild_exit_code)) {
