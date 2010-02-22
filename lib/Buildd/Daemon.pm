@@ -515,11 +515,6 @@ sub do_build {
     if ($giveback) {
 	delete $binNMUlog->{$pkg_ver} if defined $binNMUver;
 
-	my $status = 0;
-	if (WIFEXITED($sbuild_exit_code)) {
-	    $status = WEXITSTATUS($sbuild_exit_code);
-	}
-
 	if (!defined $main::sbuild_fails) {
 	    $main::sbuild_fails = 0;
 	}
