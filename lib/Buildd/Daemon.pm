@@ -496,7 +496,7 @@ sub do_build {
 	    $db->run_query('--attempted', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
 	    $self->write_stats("failed", 1);
 	} else {
-	    $self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem) -- giving back\n");
+	    $self->log("sbuild of $pkg_ver failed with status $status (local problem) -- giving back\n");
 	}
     } elsif (WIFSIGNALED($sbuild_exit_code)) {
 	my $sig = WTERMSIG($sbuild_exit_code);
