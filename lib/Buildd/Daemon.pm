@@ -480,30 +480,29 @@ sub do_build {
     #Process sbuild's results:
     my $db = $self->get_db_handle($dist_config);
     my $failed = 1;
-    my $giveback = 0;
+    my $giveback = 1;
 
     if (WIFEXITED($sbuild_exit_code)) {
 	my $status = WEXITSTATUS($sbuild_exit_code);
 
 	if ($status == 0) {
 	    $failed = 0;
+	    $giveback = 0;
 	    $self->log("sbuild of $pkg_ver succeeded -- marking as built in wanna-build\n");
 	    $db->run_query('--built', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
 	} elsif ($status ==  2) {
+	    $giveback = 0;
 	    $self->log("sbuild of $pkg_ver failed with status $status (build failed) -- marking as attempted in wanna-build\n");
 	    $db->run_query('--attempted', '--dist=' . $dist_config->get('DIST_NAME'), $pkg_ver);
 	    $self->write_stats("failed", 1);
 	} else {
 	    $self->log("sbuild of $pkg_ver failed with status $sbuild_exit_code (local problem) -- giving back\n");
-	    $giveback = 1;
 	}
     } elsif (WIFSIGNALED($sbuild_exit_code)) {
 	my $sig = WTERMSIG($sbuild_exit_code);
 	$self->log("sbuild of $pkg_ver failed with signal $sig (local problem) -- giving back\n");
-	$giveback = 1;
     } else {
 	$self->log("sbuild of $pkg_ver failed with unknown reason (local problem) -- giving back\n");
-	$giveback = 1;
     }
 
     if ($giveback) {
@@ -512,19 +511,22 @@ sub do_build {
 	$self->write_stats("give-back", 1);
     }
 
-    #Check if something happened that wasn't a successs
-    if ($failed) {
+    # Check if we encountered some local error to stop further building
+    if ($giveback) {
 	delete $binNMUlog->{$pkg_ver} if defined $binNMUver;
 
 	my $status = 0;
 	if (WIFEXITED($sbuild_exit_code)) {
 	    $status = WEXITSTATUS($sbuild_exit_code);
 	}
-	if ($status != 1 && $status != 2) {
-	    $main::sbuild_fails = ($main::sbuild_fails || 0) + 1;
+
+	if (!defined $main::sbuild_fails) {
+	    $main::sbuild_fails = 0;
 	}
 
-	if (($main::sbuild_fails || 0) > 2) {
+	$main::sbuild_fails++;
+
+	if ($main::sbuild_fails > 2) {
 	    $self->log("sbuild now failed $main::sbuild_fails times in ".
 		       "a row; going to sleep\n");
 	    send_mail( $self->get_conf('ADMIN_MAIL'),
@@ -549,6 +551,8 @@ EOF
 	}
     }
     else {
+	# Either a build success or an attempted build will cause the
+	# counter to reset.
 	$main::sbuild_fails = 0;
     }
     $self->log("Build finished.\n");
