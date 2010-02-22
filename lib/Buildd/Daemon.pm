@@ -582,22 +582,11 @@ sub handle_prevfailed {
 	return;
     }
 
-    {
-	local $SIG{'ALRM'} = sub ($) { die "Timeout!\n" };
-	eval { $changelog = $self->get_changelog( $dist_config, $pkgv ) };
-    }
-    $changelog = "ERROR: FTP timeout" if $@;
-
     send_mail( $self->get_conf('ADMIN_MAIL'),
 	       "Should I build $pkgv (dist=${dist_name})?",
 	       "The package $pkg failed to build in a previous version. ".
 	       "The fail\n".
 	       "messages are:\n\n$fail_msg\n".
-	       ($changelog !~ /^ERROR/ ?
-		"The changelog entry for the newest version is:\n\n".
-		"$changelog\n" :
-		"Sorry, the last changelog entry could not be extracted:\n".
-		"$changelog\n\n").
 	       "Should buildd try to build the new version, or should it ".
 	       "fail with the\n".
 	       "same messages again.? Please answer with 'build' (or 'ok'), ".
@@ -605,6 +594,11 @@ sub handle_prevfailed {
 }
 
 sub get_changelog {
+    # This method is currently broken.  It makes some assumptions about source
+    # layout that are no longer true.  Furthermore it tries fetching through
+    # the host instead of creating a session (which is necessary for snapshot-
+    # based chroots) and work in the chroot.
+
     my $self = shift;
     my $dist_config = shift;
     my $pkg = shift;
