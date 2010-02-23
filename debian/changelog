@@ -1,4 +1,4 @@
-sbuild (0.59.1-1) unstable; urgency=low
+sbuild (0.60.0-1) unstable; urgency=low
 
   * debian/control:
     - Upgrade to Standards-Version 3.8.3.
@@ -74,7 +74,7 @@ sbuild (0.59.1-1) unstable; urgency=low
     - Do all w-b interaction, leave nothing of it to sbuild. (Closes: #567646,
       #566321)
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 23 Jan 2010 12:16:36 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 23 Feb 2010 22:20:18 +0000
 
 sbuild (0.59.0-1) unstable; urgency=low
 
