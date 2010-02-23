@@ -35,15 +35,12 @@ use Sbuild::Log qw(open_log close_log);
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
 use Sbuild::Build;
-use Sbuild::DB::Client;
 
 sub main ();
 sub write_jobs_file ();
 sub append_to_FINISHED ($);
-sub add_givenback ($$);
 sub should_skip ($);
 sub status_trigger ($$);
-sub wanna_build_status_trigger ($$);
 sub shutdown ($);
 sub dump_main_state ();
 
@@ -52,8 +49,6 @@ exit 1 if !defined($conf);
 my $options = Sbuild::Options->new($conf, "sbuild", "1");
 exit 1 if !defined($options);
 $conf->check_group_membership();
-
-my $db = Sbuild::DB::Client->new($conf);
 
 umask(022);
 
@@ -106,20 +101,28 @@ sub main () {
 	}
 
 	dump_main_state() if $conf->get('DEBUG');
-
-	if ($conf->get('BATCH_MODE') &&
-	    (-f $conf->get('HOME') . '/EXIT-DAEMON-PLEASE')) {
-	    main::shutdown("NONE (flag file exit)");
-	}
     }
 
     close_log($conf);
     unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
-    if ($conf->get('SBUILD_MODE') eq "user" && defined($current_job) &&
-	defined($jobs{$current_job})) {
-	exit ($jobs{$current_job}->get_status() ne "successful") ? 1 : 0;
+    if (defined($current_job) && defined($jobs{$current_job})) {
+	if ($conf->get('SBUILD_MODE') eq "user") {
+	    exit ($jobs{$current_job}->get_status() ne "successful") ? 1 : 0;
+	} elsif ($conf->get('SBUILD_MODE') eq "buildd") {
+	    if ($jobs{$current_job}->get_status() eq "successful") {
+		exit 0;
+	    } elsif ($jobs{$current_job}->get_status() eq "attempted") {
+		exit 2;
+	    } elsif ($jobs{$current_job}->get_status() eq "given-back") {
+		#Probably needs a give back:
+		exit 3;
+	    }
+	    #Unknown status - probably needs a give back, but needs to be
+	    #reported to the admin as failure:
+	    exit 1;
+	}
     }
     exit 0;
 }
@@ -151,28 +154,6 @@ sub append_to_FINISHED ($) {
 	open(F, ">>SBUILD-FINISHED");
 	print F $job->get('Package_OVersion');
 	close(F);
-    }
-}
-
-sub add_givenback ($$) {
-    my $build = shift;
-    my $time = shift;
-
-    if ($conf->get('BATCH_MODE')) {
-	my $pkgv = $build->get('Package_OVersion');
-	local( *F );
-
-	$build->lock_file("SBUILD-GIVEN-BACK", 0);
-
-	if (open( F, ">>SBUILD-GIVEN-BACK" )) {
-	    print F "$pkgv $time\n";
-	    close( F );
-	}
-	else {
-	    $build->log("Can't open SBUILD-GIVEN-BACK: $!\n");
-	}
-
-	$build->unlock_file("SBUILD-GIVEN-BACK");
     }
 }
 
@@ -214,7 +195,6 @@ sub status_trigger ($$) {
     my $build = shift;
     my $status = shift;
 
-    wanna_build_status_trigger($build, $status);
     write_jobs_file();
 
     # Rewrite status if we need to give back or mark attempted
@@ -228,44 +208,8 @@ sub status_trigger ($$) {
 	$build->set_status('given-back');
     } elsif ($status eq "failed" &&
 	     isin ($build->get('Pkg Fail Stage'),
-		   qw(build))) {
+		   qw(build arch-check))) {
 	$build->set_status('attempted');
-    }
-}
-
-sub wanna_build_status_trigger ($$) {
-    my $build = shift;
-    my $status = shift;
-
-    my $wb_status = 0;
-
-    if ($conf->get('BATCH_MODE')) {
-	my $pkgv = $build->get('Package_OVersion');
-
-	return if !$build->get_conf('AUTO_GIVEBACK');
-
-	if ($status eq "successful") {
-	    $db->run_query('--built', $pkgv);
-	    $wb_status = $?;
-	} elsif ($status eq "attempted") {
-	    $db->run_query('--attempted', $pkgv);
-	    $wb_status = $?;
-	} elsif ($status eq "given-back") {
-	    $db->run_query('--give-back', $pkgv);
-	    $wb_status = $?;
-	    $build->set('Pkg Status', 'given-back');
-	    $build->log("Giving back package $pkgv after failure in ".
-			$build->get('Pkg Fail Stage') ." stage.\n");
-
-	    if (!$wb_status) {
-		add_givenback($build, time);
-		$build->write_stats('give-back', 1);
-	    }
-	}
-
-	if ($wb_status) {
-	    $build->log("wanna-build failed with status $?\n");
-	}
     }
 }
 
@@ -286,8 +230,7 @@ sub shutdown ($) {
 	$jobs{$current_job}->log("sbuild received SIG$signame -- shutting down\n");
     }
 
-    if ($conf->get('BATCH_MODE')) {
-
+    if ($conf->get('BATCH_MODE') && !$conf->get('SBUILD_MODE') eq "buildd") {
 	# Dump names of unfinished jobs to REDO
 	foreach (keys %jobs) {
 	    my $job = $jobs{$_};
@@ -394,7 +337,11 @@ sub shutdown ($) {
     if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;
     }
-    exit 0;
+
+    # Restore the signal handler to let a self-kill result in the appropriate
+    # exit code.
+    $SIG{$signame} = 'DEFAULT';
+    kill($signame, $$) or die("self-kill failed");
 }
 
 sub dump_main_state () {

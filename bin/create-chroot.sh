@@ -18,12 +18,12 @@ usage() {
     then
         echo "E: $message" >&2
     fi
-    echo "Usage: $0 http://some.debian.mirror/debian suite [vgname vgsize]" >&2
+    echo "Usage: $0 http://some.debian.mirror/debian suite [vgname lvsize]" >&2
     echo "Valid suites: oldstable, stable, testing, unstable," >&2
     echo "              oldstable-security, stable-security," >&2
-    echo "              testing-security, oldstable-bpo," >&2
-    echo "              stable-bpo, oldstable-skolelinux," >&2
-    echo "              stable-skolelinux, stable-volatile," >&2
+    echo "              testing-security, oldstable-backports," >&2
+    echo "              stable-backports, oldstable-edu," >&2
+    echo "              stable-edu, stable-volatile," >&2
     echo "              testing-volatile, experimental" >&2
     echo "If vgname is given, the script will setup schroot" >&2
     echo "to use snapshots based on a source lv." >&2
@@ -66,14 +66,14 @@ TESTING="squeeze"
 case "$SUITE" in
     oldstable) BASE=$OLDSTABLE ;;
     oldstable-security) BASE=$OLDSTABLE; VARIANT="security" ;;
-    oldstable-bpo) BASE=$OLDSTABLE; VARIANT="bpo" ;;
+    oldstable-backports) BASE=$OLDSTABLE; VARIANT="backports" ;;
     oldstable-volatile) BASE=$OLDSTABLE; VARIANT="volatile" ;;
-    oldstable-skolelinux) BASE=$OLDSTABLE; VARIANT="skolelinux" ;;
+    oldstable-edu) BASE=$OLDSTABLE; VARIANT="edu" ;;
     stable) BASE=$STABLE ;;
     stable-security) BASE=$STABLE; VARIANT="security" ;;
-    stable-bpo) BASE=$STABLE; VARIANT="bpo" ;;
+    stable-backports) BASE=$STABLE; VARIANT="backports" ;;
     stable-volatile) BASE=$STABLE; VARIANT="volatile" ;;
-    stable-skolelinux) BASE=$STABLE; VARIANT="skolelinux" ;;
+    stable-edu) BASE=$STABLE; VARIANT="edu" ;;
     testing) BASE=$TESTING ;;
     testing-security) BASE=$TESTING; VARIANT="security" ;;
     unstable) BASE="sid" ;;
@@ -109,7 +109,7 @@ do_debootstrap() {
     sudo debootstrap \
         --arch=$ARCH \
         --variant=buildd \
-        --include=sudo,fakeroot,build-essential,debfoster \
+        --include=sudo,fakeroot,build-essential,debfoster,apt \
         $BASE \
         $TARGET \
         $MIRROR
@@ -151,17 +151,17 @@ EOT
     else
         cat >>"${TEMPFILE}" <<EOT
 type=lvm-snapshot
-device=/dev/${VGNAME}/${IDENTIFIER}-${ARCH}-buildd
-lvm-snapshot-options=--size 10G"
+device=/dev/${VGNAME}/buildd-${IDENTIFIER}-${ARCH}
+lvm-snapshot-options=--size ${LVSIZE}
 source-users=buildd
 source-root-users=buildd
 script-config=script-defaults.buildd
 EOT
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild-source -u root -d /root --"
     fi
-    sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/${IDENTIFIER}-${ARCH}-buildd"
-    sudo chown root: "/etc/schroot/chroot.d/${IDENTIFIER}-${ARCH}-buildd"
-    sudo chmod 0644 "/etc/schroot/chroot.d/${IDENTIFIER}-${ARCH}-buildd"
+    sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}"
+    sudo chown root: "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}"
+    sudo chmod 0644 "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}"
 }
 
 setup_sources() {
@@ -173,15 +173,15 @@ deb ${MIRROR} ${BASE} main contrib
 deb-src ${MIRROR} ${BASE} main contrib
 EOT
 
-    if [ "$VARIANT" = "skolelinux" ]; then
-        echo "I: Adding skolelinux entries to sources.list..."
+    if [ "$VARIANT" = "edu" ]; then
+        echo "I: Adding edu entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb http://ftp.skolelinux.no/skolelinux/ ${BASE}-test local
 deb-src http://ftp.skolelinux.no/skolelinux/ ${BASE}-test local
 EOT
     fi
 
-    if [ "$VARIANT" = "bpo" ]; then     
+    if [ "$VARIANT" = "backports" ]; then     
         echo "I: Adding backports entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb http://www.backports.org/buildd/ ${BASE}-backports main contrib non-free
@@ -197,11 +197,41 @@ deb-src http://volatile.debian.net/debian-volatile      ${BASE}-proposed-updates
 EOT
     fi
 
+	if [ -z "$VARIANT" ] && [ "$BASE" != "sid" ]; then
+        echo "I: Adding proposed-updates entries to sources.list..."
+        cat >> "${TEMPFILE}" <<EOT
+deb http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
+deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
+EOT
+	fi
+
+    if [ "$BASE" = "sid" ]; then     
+        echo "I: Adding unstable incoming entries to sources.list..."
+        cat >> "${TEMPFILE}" <<EOT
+deb     http://incoming.debian.org/debian sid main contrib
+deb-src http://incoming.debian.org/debian sid main contrib
+deb     http://incoming.debian.org/buildd-unstable /
+deb-src http://incoming.debian.org/buildd-unstable /
+EOT
+    fi
+
     if [ "$VARIANT" = "experimental" ]; then     
         echo "I: Adding experimental entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb ${MIRROR} experimental main contrib
 deb-src ${MIRROR} experimental main contrib
+deb     http://incoming.debian.org/buildd-experimental /
+deb-src http://incoming.debian.org/buildd-experimental /
+EOT
+    fi
+
+    if [ "$VARIANT" = "security" ]; then
+        echo "I: Adding security entries to sources.list..."
+        cat >> "${TEMPFILE}" <<EOT
+deb http://security-master.debian.org/debian-security ${BASE}/updates main contrib
+deb-src http://security-master.debian.org/debian-security ${BASE}/updates main contrib
+deb http://security-master.debian.org/buildd ${BASE}/
+deb-src http://security-master.debian.org/buildd ${BASE}/
 EOT
     fi
 
@@ -249,7 +279,7 @@ adjust_debconf() {
 setup_sbuild() {
     echo "I: Setting up sbuild..."
     ensure_target_mounted
-    sudo mkdir "$TARGET/build"
+    sudo mkdir -p "$TARGET/build"
     sudo chown root:sbuild "$TARGET/build"
     sudo chmod 02770 "$TARGET/build"
     sudo mkdir -p "$TARGET/var/lib/sbuild/srcdep-lock"
@@ -320,34 +350,6 @@ EOT
     ensure_target_unmounted
 }
 
-setup_security_cred() {
-    if [ -f ~/.security ]
-    then
-        read ACCOUNT PASSWORD < ~/.security
-        [ ! -z "$ACCOUNT" ] || \
-            error "Invalid credentials in ~/.security (account)."
-        [ ! -z "$PASSWORD" ] || \
-            error "Invalid credentials in ~/.security (password)."
-        echo "I: Security credentials found."
-        return
-    fi
-
-    echo "W: Security credentials not found, setting up..."
-
-    echo "W: Please specify the password for security-master:" >&2
-    read PASSWORD
-    [ ! -z "$PASSWORD" ] || error "Password empty, aborting."
-
-    ACCOUNT="$(hostname -s)"
-    echo "W: Type enter to accept '$ACCOUNT' as account name or type in another one:" >&2
-    read ACCOUNT_IN
-    [ ! -z "$ACCOUNT_IN" ] && ACCOUNT="$ACCOUNT_IN"
-
-    touch ~/.security
-    chmod 0600 ~/.security
-    echo $ACCOUNT $PASSWORD > ~/.security
-}
-
 setup_security() {
     echo "I: Setting up security parts..."
 
@@ -361,26 +363,14 @@ EOT
     sudo chown root: "${TARGET}/etc/apt/apt.conf.d/allow-unauthenticated"
     sudo chmod 0644 "${TARGET}/etc/apt/apt.conf.d/allow-unauthenticated"
 
-    TEMPFILE="$(mktemp)"
-    cat "${TARGET}/etc/apt/sources.list" >> $TEMPFILE
-    cat >> "${TEMPFILE}" <<EOT
-
-deb http://${ACCOUNT}:${PASSWORD}@security-master.debian.org/debian-security ${BASE}/updates main contrib
-deb-src http://${ACCOUNT}:${PASSWORD}@security-master.debian.org/debian-security ${BASE}/updates main contrib
-deb http://${ACCOUNT}:${PASSWORD}@security-master.debian.org/buildd ${BASE}/
-deb-src http://${ACCOUNT}:${PASSWORD}@security-master.debian.org/buildd ${BASE}/
-EOT
-    sudo mv "${TEMPFILE}" "${TARGET}/etc/apt/sources.list"
-    sudo chown root: "${TARGET}/etc/apt/sources.list"
-    sudo chmod 0644 "${TARGET}/etc/apt/sources.list"
     ensure_target_unmounted
     update_apt_cache
 }
 
 setup_logical_volume() {
-    LVPATH="/dev/${VGNAME}/${IDENTIFIER}-${ARCH}-buildd"
+    LVPATH="/dev/${VGNAME}/buildd-${IDENTIFIER}-${ARCH}"
     echo "I: Setting up logical volume ${LVPATH}..."
-    sudo lvcreate --name "${IDENTIFIER}-${ARCH}-buildd" --size "${LVSIZE}" "${VGNAME}"
+    sudo lvcreate --name "buildd-${IDENTIFIER}-${ARCH}" --size "${LVSIZE}" "${VGNAME}"
     echo "I: Setting up file system on ${LVPATH}..."
     sudo mkfs.ext3 "${LVPATH}"
     TMPMOUNTDIR=$(mktemp -d)
@@ -402,8 +392,6 @@ ensure_target_unmounted() {
 
 cd ~buildd/chroots
 check_prerequisites
-
-[ "$VARIANT" = "security" ] && setup_security_cred
 
 if ! [ -z "$VGNAME" ]; then
     setup_logical_volume

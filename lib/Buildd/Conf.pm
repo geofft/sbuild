@@ -118,9 +118,6 @@ sub init_allowed_keys {
 	'LOG_QUEUED_MESSAGES'			=> {
 	    DEFAULT => 0
 	},
-	'MAX_BUILD'				=> {
-	    DEFAULT => 10
-	},
 	'MIN_FREE_SPACE'			=> {
 	    DEFAULT => 50*1024
 	},
@@ -131,7 +128,7 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'NO_WARN_PATTERN'			=> {
-	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*)$'
+	    DEFAULT => '^build/(SKIP|REDO|SBUILD-GIVEN-BACK|buildd\.pid|[^/]*.ssh|chroot-[^/]*|current-[^/]*)$'
 	},
 	'PIDFILE'                               => {
 # Set once running as a system service.
@@ -167,20 +164,7 @@ sub init_allowed_keys {
 	    DEFAULT => []
 	},
 	'UPLOAD_QUEUES'                         => {
-	    DEFAULT => [
-	    	Buildd::UploadQueueConf->new(
-		    { 
-			DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
-			DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
-		    }
-		),
-	    	Buildd::UploadQueueConf->new(
-		    { 
-			DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
-			DUPLOAD_ARCHIVE_NAME    => 'security'
-		    }
-		),
-	    ]
+	    DEFAULT => []
 	},
     	);
 
@@ -299,7 +283,6 @@ sub read_config {
 	$self->set('ERROR_MAIL_WINDOW', $error_mail_window);
 	$self->set('IDLE_SLEEP_TIME', $idle_sleep_time);
 	$self->set('LOG_QUEUED_MESSAGES', $log_queued_messages);
-	$self->set('MAX_BUILD', $max_build);
 	$self->set('MIN_FREE_SPACE', $min_free_space);
 	$self->set('NICE_LEVEL', $nice_level);
 	$self->set('NO_DETACH', $no_detach);
@@ -435,6 +418,20 @@ sub read_config {
 		push @upload_queue_configs, $queue_config;
 	    }
 	    $self->set('UPLOAD_QUEUES', \@upload_queue_configs);
+	} else {
+	    push @{$self->get('UPLOAD_QUEUES')},
+		Buildd::UploadQueueConf->new(
+		    { 
+			DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
+			DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
+		    }
+		),
+		Buildd::UploadQueueConf->new(
+		    { 
+			DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
+			DUPLOAD_ARCHIVE_NAME    => 'security'
+		    }
+		);
 	}
 
 	# Set here to allow user to override.

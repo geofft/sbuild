@@ -34,7 +34,7 @@ schrootsysconfdir = $(SCHROOT_SYSCONF_DIR)
 schrootsysconf_DATA = mount-defaults.buildd script-defaults.buildd
 
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
-schrootsetup_SCRIPTS = 25nssdatabases
+schrootsetup_SCRIPTS = 25nssdatabases 99builddsourceslist
 
 EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\

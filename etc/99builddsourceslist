@@ -1,0 +1,64 @@
+#!/bin/sh
+# Copyright © 2010 Marc Brockschmidt <he@debian.org>
+#
+# buildd is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# buildd is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#####################################################################
+
+set -e
+
+if [ -f "$CHROOT_SCRIPT_CONFIG" ]; then
+    . "$CHROOT_SCRIPT_CONFIG"
+elif [ "$2" = "ok" ]; then
+    echo "script-config file '$CHROOT_SCRIPT_CONFIG' does not exist"
+    exit 1
+fi
+
+VERBOSE=""
+if [ "$AUTH_VERBOSITY" = "verbose" ]; then
+	  VERBOSE="--verbose"
+fi
+
+if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
+	if [ -n "$SUITE_VARIANT" ]; then
+		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
+		SOURCES_FILE_PATH="/etc/schroot/buildd.d/${SOURCES_FILE_NAME}"
+
+		if [ -f "$SOURCES_FILE_PATH" ]; then
+			if [ "$SUITE_BASE" = "etch" ]; then
+				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+				if [ ! -z "$VERBOSE" ]; then
+					echo cat '<'${SOURCES_FILE_PATH} '>>'"${CHROOT_PATH}/etc/apt/sources.list"
+				fi
+				cat <${SOURCES_FILE_PATH} >>"${CHROOT_PATH}/etc/apt/sources.list"
+			else
+				cp $VERBOSE ${SOURCES_FILE_PATH} "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
+			fi
+		fi
+	fi
+elif [ "$1" = "setup-stop" ]; then
+	if [ -n "$SUITE_VARIANT" ]; then
+		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
+		SOURCES_FILE_PATH="/etc/schroot/buildd.d/${SOURCES_FILE_NAME}"
+
+		if [ -f "$SOURCES_FILE_PATH" ]; then
+			if [ "$SUITE_BASE" = "etch" ]; then
+				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
+			else
+				rm $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
+			fi
+		fi
+	fi
+fi
