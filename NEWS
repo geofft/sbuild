@@ -1,15 +1,44 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.59.1.  Please read these release notes carefully.
+Welcome to sbuild 0.60.0.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
 
-* Major changes in 0.59.1:
+* Major changes in 0.60.0:
 
-  None.
+  1) sbuild no longer defaults the distribution to "unstable", and
+     requires setting by hand with --distribution unless configured in
+     .sbuildrc.  This is to prevent accidental uploads to the wrong
+     distribution.
+
+  2) sbuild now lists all packages (including versions) installed in
+     the build chroot in the package build log.  This may aid
+     identifying problems with builds using buggy or outdated package
+     versions.
+
+  3) With a recent versions of man-db (>= 2.5.6-4), man-db will be
+     configured not to rebuild its database during package
+     installation and removal in the build chroot.
+
+  4) sbuild has added new options to allow APT cleaning, upgrading and
+     dist-upgrading of the build chroot, in addition to the existing
+     updating option.
+
+  5) buildd has been synched with the buildd code in use on the Debian
+     buildd infrastructure, and is now in use on most, if not all,
+     running buildds.  It has undergone extensive changes since the
+     previous release, and is now suitable for production use.  Note
+     that the packaged version of wanna-build is not yet ready for use
+     with buildd.
+
+  6) buildd no longer bind mounts /home into the chroot.
+
+  7) buildd now handles all wanna-build interaction.  All sbuild
+     wanna-build usage has been removed, including the
+     --auto-give-back and --database options.
 
 * Major changes in 0.59.0:
 

@@ -7,6 +7,12 @@ Ben Collins			<bcollins@debian.org>
 Enrico Zini			<enrico@debian.org>
 	support for disabling APT package authentication
 
+Marc 'HE' Brockschmidt		<he@debian.org>
+	buildd and sbuild maintenance
+
+Philipp Kern			<pkern@debian.org>
+	buildd and sbuild maintenance
+
 Roman Hodek			<Roman.Hodek@informatik.uni-erlangen.de>
 	wanna-build
 	sbuild
