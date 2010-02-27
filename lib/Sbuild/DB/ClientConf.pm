@@ -26,6 +26,7 @@ use strict;
 use warnings;
 
 use Sbuild::Sysconfig;
+use File::Spec;
 
 BEGIN {
     use Exporter ();
@@ -48,8 +49,17 @@ sub add_keys ($) {
 	die "$key binary is not defined"
 	    if !defined($program) || !$program;
 
+	# Emulate execvp behaviour by searching the binary in the PATH.
+	my @paths = split(/:/, $ENV{'PATH'});
+	# Also consider the empty path for absolute locations.
+	push (@paths, '');
+	my $found = 0;
+	foreach my $path (@paths) {
+	    $found = 1 if (-x File::Spec->catfile($path, $program));
+	}
+	        
 	die "$key binary '$program' does not exist or is not executable"
-	    if !-x $program;
+	    if !$found;
     };
 
     my $validate_ssh = sub {
