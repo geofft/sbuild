@@ -359,6 +359,7 @@ sub get_apt_policy {
     my $builder = $self->get('Builder');
     my @interest = @_;
     my $package;
+    my $ver;
     my %packages;
 
     my $pipe =
@@ -373,9 +374,30 @@ sub get_apt_policy {
 	$package=$1 if /^([0-9a-z+.-]+):$/;
 	$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
 	$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
-	push @{$packages{$package}->{versions}}, "$2" if /^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/;
+	if (/^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/) {
+	    $ver = "$2";
+	    push @{$packages{$package}->{versions}}, $ver;
+	}
+	if (/^ {5} *(-?\d+) /) {
+	    my $prio = $1;
+	    if (!defined $packages{$package}->{priority}{$ver} ||
+	        $packages{$package}->{priority}{$ver} < $prio) {
+		$packages{$package}->{priority}{$ver} = $prio;
+	    }
+	}
     }
     close($pipe);
+    # Resort by priority keeping current version order if priority is the same
+    use sort "stable";
+    foreach my $package (keys %packages) {
+	my $p = $packages{$package};
+	if (exists $p->{priority}) {
+	    $p->{versions} = [ sort(
+		{ -($p->{priority}{$a} <=> $p->{priority}{$b}) } @{$p->{versions}}
+	    ) ];
+	}
+    }
+    no sort "stable";
     die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return \%packages;

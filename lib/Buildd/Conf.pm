@@ -302,7 +302,7 @@ sub read_config {
 	    $self->set('SSH', $1);
 
 	    #Try to pry the user out:
-	    if ($rest =~ /(-l\s+(\S+))\s+/) {
+	    if ($rest =~ /(-l\s*(\S+))\s+/) {
 		$wanna_build_ssh_user = $2;
 		#purge this from the rest:
 		$rest =~ s/\Q$1//;
