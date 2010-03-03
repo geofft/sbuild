@@ -195,6 +195,10 @@ build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .BR \-s ", " "\-\-source"
 Also build source package, i.e. use dpkg\-buildpackage without \-B.
 .TP
+.BR "\-\-no-source"
+Don't build source package, i.e. use dpkg\-buildpackage with \-B.  This option
+is the opposite of \-\-source.
+.TP
 .BR "\-\-force\-orig\-source"
 When used with in conjunction with \-s, this option forces the inclusion of the
 orig.tar.gz file in the generated .changes file, even in cases where it would

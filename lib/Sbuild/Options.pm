@@ -140,6 +140,9 @@ sub set_options {
 		       "s|source" => sub {
 			   $self->set_conf('BUILD_SOURCE', 1);
 		       },
+		       "no-source" => sub {
+			   $self->set_conf('BUILD_SOURCE', 0);
+		       },
 		       "archive=s" => sub {
 			   $self->set_conf('ARCHIVE', $_[1]);
 		       },
