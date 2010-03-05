@@ -208,8 +208,9 @@ sub run {
 	    # subset was empty).
 	    redo if !@todo;
 	    # Ensure that we only got one item back.  As we only pass in one
-	    # that should never happen anyway.
-	    die "Got more than one item on --take." if $#todo != 1;
+	    # that should never happen anyway.  (In Perl $#todo will yield 0
+	    # if there's one item in the array and -1 if none.)
+	    die "Got more than one item on --take, dying." if $#todo != 0;
 	    $self->do_build( $dist_config, \%binNMUlog, $todo[0] );
 	    ++$done;
 	    last;
