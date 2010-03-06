@@ -100,6 +100,10 @@ check_prerequisites() {
     [ -d /etc/schroot/chroot.d ] || \
         error "/etc/schroot/chroot.d not found, schroot not installed?"
     [ ! -d $TARGET ] || error "Target $TARGET already exists."
+    if [ -z "$VGNAME" ]; then
+        mkdir -p ~buildd/chroots
+    fi
+    mkdir -p ~buildd/build-trees
 }
 
 do_debootstrap() {
@@ -390,8 +394,11 @@ ensure_target_unmounted() {
     fi
 }
 
-cd ~buildd/chroots
+cd ~buildd/
 check_prerequisites
+if [ -z "$VGNAME" ]; then
+    cd ~buildd/chroots
+fi
 
 if ! [ -z "$VGNAME" ]; then
     setup_logical_volume
