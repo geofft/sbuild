@@ -4,15 +4,17 @@
 # Filesystems to mount inside the chroot.
 FSTAB="/etc/schroot/mount-defaults.buildd"
 
-case $CHROOT_NAME in
-    *-*-*-buildd*)
-    SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
-    SUITE_VARIANT=$(echo $CHROOT_NAME | cut -f2 -d-)
-    case $CHROOT_DEVICE in
-        *${SUITE_VARIANT}*)
-        SUITE_BASE=""
-        SUITE_VARIANT=""
+if [ "${CHROOT_TYPE}" == lvm-snapshot ]; then
+    case $CHROOT_NAME in
+        *-*-*-sbuild*)
+        SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
+        SUITE_VARIANT=$(echo $CHROOT_NAME | cut -f2 -d-)
+        case $CHROOT_DEVICE in
+            *${SUITE_VARIANT}*)
+            SUITE_BASE=""
+            SUITE_VARIANT=""
+            ;;
+        esac
         ;;
     esac
-    ;;
-esac
+fi

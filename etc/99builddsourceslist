@@ -31,10 +31,15 @@ if [ "$AUTH_VERBOSITY" = "verbose" ]; then
 	  VERBOSE="--verbose"
 fi
 
+if [ -f /etc/schroot/conf.buildd ]; then
+    . /etc/schroot/conf.buildd
+fi
+
 if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
 	if [ -n "$SUITE_VARIANT" ]; then
 		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
 		SOURCES_FILE_PATH="/etc/schroot/buildd.d/${SOURCES_FILE_NAME}"
+                APT_LIST_AUTO="${CHROOT_PATH}/etc/apt/sources.list.d/auto.list"
 
 		if [ -f "$SOURCES_FILE_PATH" ]; then
 			if [ "$SUITE_BASE" = "etch" ]; then
@@ -46,6 +51,38 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
 			else
 				cp $VERBOSE ${SOURCES_FILE_PATH} "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
 			fi
+                elif [ ${SUITE_VARIANT} == 'security' ]; then
+                    if [ "$SUITE_BASE" = "etch" ]; then
+			cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+                        APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
+                    else
+                        : > ${APT_LIST_AUTO}
+                    fi
+                    if [ -n "${security_mirror}" ]; then
+                        echo deb ${security_mirror} ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
+                        echo deb-src ${security_mirror} ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
+                    fi
+                    echo deb http://security-master.debian.org/debian-security ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
+                    echo deb-src http://security-master.debian.org/debian-security ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
+                    echo deb http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
+                    echo deb-src http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
+                elif [ ${SUITE_VARIANT} == 'volatile' ]; then
+                    if [ "$SUITE_BASE" = "etch" ]; then
+			cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+                        APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
+                    else
+                        : > ${APT_LIST_AUTO}
+                    fi
+                    if [ -n "${security_mirror}" ]; then
+                        echo deb ${volatile_mirror} ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb ${volatile_mirror} ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb-src ${volatile_mirror} ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb-src ${volatile_mirror} ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                    fi
+                    echo deb http://volatile.debian.net/debian-volatile ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
 		fi
 	fi
 elif [ "$1" = "setup-stop" ]; then
@@ -58,6 +95,12 @@ elif [ "$1" = "setup-stop" ]; then
 				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
 			else
 				rm $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
+			fi
+                elif [ ${SUITE_VARIANT} == 'security' ] || [ ${SUITE_VARIANT} == 'volatile' ] ; then
+			if [ "$SUITE_BASE" = "etch" ]; then
+				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
+			else
+				rm $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/auto.list"
 			fi
 		fi
 	fi
