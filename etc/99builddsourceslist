@@ -73,7 +73,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     else
                         : > ${APT_LIST_AUTO}
                     fi
-                    if [ -n "${security_mirror}" ]; then
+                    if [ -n "${volatile_mirror}" ]; then
                         echo deb ${volatile_mirror} ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
                         echo deb ${volatile_mirror} ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
                         echo deb-src ${volatile_mirror} ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
