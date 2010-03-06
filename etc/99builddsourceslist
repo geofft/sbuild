@@ -83,6 +83,29 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
+                elif [ ${SUITE_VARIANT} == 'backports' ]; then
+                    if [ "$SUITE_BASE" = "etch" ]; then
+			cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+                        APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
+                    else
+                        : > ${APT_LIST_AUTO}
+                    fi
+                    if [ -n "${backports_mirror}" ]; then
+                        echo deb ${backports_mirror} ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb-src ${backports_mirror} ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                    fi
+                    echo deb http://www.backports.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb-src http://www.backports.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                elif [ ${SUITE_VARIANT} == 'experimental' ]; then
+                    : > ${APT_LIST_AUTO}
+                    if [ -n "${debian_mirror}" ]; then
+                        echo deb ${debian_mirror} experimental main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb-src ${debian_mirror} experimental main contrib non-free >> ${APT_LIST_AUTO}
+                    fi
+                    echo deb     http://ftp.debian.org/debian experimental main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb-src http://ftp.debian.org/debian experimental main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb     http://incoming.debian.org/buildd-experimental / >> ${APT_LIST_AUTO}
+                    echo deb-src http://incoming.debian.org/buildd-experimental / >> ${APT_LIST_AUTO}
 		fi
 	fi
 elif [ "$1" = "setup-stop" ]; then
@@ -96,7 +119,7 @@ elif [ "$1" = "setup-stop" ]; then
 			else
 				rm $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
 			fi
-                elif [ ${SUITE_VARIANT} == 'security' ] || [ ${SUITE_VARIANT} == 'volatile' ] ; then
+                elif [ ${SUITE_VARIANT} == 'security' ] || [ ${SUITE_VARIANT} == 'volatile' ] || [ ${SUITE_VARIANT} == 'backports' ] || [ ${SUITE_VARIANT} == 'experimental' ] ; then
 			if [ "$SUITE_BASE" = "etch" ]; then
 				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
 			else
