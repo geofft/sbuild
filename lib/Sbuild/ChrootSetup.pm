@@ -208,6 +208,28 @@ sub basesetup ($$) {
 	return $?
     }
 
+    # Set up debconf selections.
+    my $pipe = $session->pipe_command(
+	{ COMMAND => ['/usr/bin/debconf-set-selections'],
+	  PIPE => 'out',
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0,
+	  DIR => '/' });
+
+    if (!$pipe) {
+	warn "Cannot open pipe: $!\n";
+    } else {
+	foreach my $selection ('man-db man-db/auto-update boolean false') {
+	    print $pipe "$selection\n";
+	}
+	close($pipe);
+	if ($?) {
+	    print STDERR "E: debconf-set-selections failed\n";
+	    return $?
+	}
+    }
+
     return 0;
 }
 
