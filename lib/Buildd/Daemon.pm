@@ -149,7 +149,7 @@ sub run {
 		next MAINLOOP;
 	    }
 
-	    my(@todo, $total, $nonex, @lowprio_todo);
+	    my($pkg_ver, $total, $nonex, $lowprio_pkg_ver);
 	    while( <$pipe> ) {
 		my $socket = $dist_config->get('WANNA_BUILD_SSH_SOCKET');
 		if ($socket &&
@@ -166,7 +166,7 @@ sub run {
 		    $nonex = 1;
 		}
 		next if $nonex;
-		next if @todo >= 1; #we only want one!
+		next if defined($pkg_ver); #we only want one!
 		my @line = (split( /\s+/, $_));
 		my $pv = $line[0];
 		my $no_build_regex = $dist_config->get('NO_BUILD_REGEX');
@@ -179,10 +179,13 @@ sub run {
 		next if isin( $p, @{$dist_config->get('NO_AUTO_BUILD')} );
 		next if $givenback{$pv};
 		if (isin( $p, @{$dist_config->get('WEAK_NO_AUTO_BUILD')} )) {
-		    push( @lowprio_todo, $pv );
+		    # only consider the first lowprio item if there are
+		    # multiple ones
+		    next if defined($lowprio_pkg_ver);
+		    $lowprio_pkg_ver = $pv;
 		    next;
 		}
-		push( @todo, $pv );
+		$pkg_ver = $pv;
 	    }
 	    close( $pipe );
 	    next if $nonex;
@@ -194,13 +197,20 @@ sub run {
 	    $self->log("${dist_name}: total $total packages to build.\n") if defined($total);
 
 	    # Build weak_no_auto packages before the next dist
-	    if (!@todo && @lowprio_todo) {
-		push @todo, $lowprio_todo[0];
+	    if (!defined($pkg_ver) && defined($lowprio_pkg_ver)) {
+		$pkg_ver = $lowprio_pkg_ver;
 	    }
 
-	    next if !@todo;
-	    @todo = $self->do_wanna_build( $dist_config, \%binNMUlog, @todo );
-	    next if !@todo;
+	    next if !defined($pkg_ver);
+	    # Ask wanna-build to mark the package as taken.
+	    my @todo = $self->do_wanna_build( $dist_config, \%binNMUlog, $pkg_ver );
+	    # Redo the current distribution if the take failed (i.e. the returned
+	    # subset was empty).
+	    redo if !@todo;
+	    # Ensure that we only got one item back.  As we only pass in one
+	    # that should never happen anyway.  (In Perl $#todo will yield 0
+	    # if there's one item in the array and -1 if none.)
+	    die "Got more than one item on --take, dying." if $#todo != 0;
 	    $self->do_build( $dist_config, \%binNMUlog, $todo[0] );
 	    ++$done;
 	    last;
