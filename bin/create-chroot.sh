@@ -100,6 +100,13 @@ check_prerequisites() {
     [ -d /etc/schroot/chroot.d ] || \
         error "/etc/schroot/chroot.d not found, schroot not installed?"
     [ ! -d $TARGET ] || error "Target $TARGET already exists."
+    ! schroot -l | grep ${IDENTIFIER}-${ARCH}-sbuild$ -q || error "schroot target ${IDENTIFIER}-${ARCH}-sbuild exists"
+    ! schroot -l | grep ${SUITE}-${ARCH}-sbuild$ -q || error "schroot target ${SUITE}-${ARCH}-sbuild exists"
+    [ ! -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}" ] || error "schroot file /etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH} already exists"
+    if [ -z "$VGNAME" ]; then
+        mkdir -p ~buildd/chroots
+    fi
+    mkdir -p ~buildd/build-trees
 }
 
 do_debootstrap() {
@@ -136,11 +143,11 @@ setup_schroot() {
     echo "I: Setting up schroot configuration..."
     TEMPFILE="$(mktemp)"
     cat > "${TEMPFILE}" <<EOT
-[${IDENTIFIER}-${ARCH}-sbuild]
+[${IDENTIFIER}${EXTRA}-${ARCH}-sbuild]
 description=Debian ${IDENTIFIER} buildd chroot
 users=buildd
 root-users=buildd
-aliases=${SUITE}-${ARCH}-sbuild
+aliases=${SUITE}${EXTRA}-${ARCH}-sbuild
 run-setup-scripts=true
 run-exec-scripts=true
 EOT
@@ -159,9 +166,9 @@ script-config=script-defaults.buildd
 EOT
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild-source -u root -d /root --"
     fi
-    sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}"
-    sudo chown root: "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}"
-    sudo chmod 0644 "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}"
+    sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
+    sudo chown root: "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
+    sudo chmod 0644 "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
 }
 
 setup_sources() {
@@ -390,8 +397,11 @@ ensure_target_unmounted() {
     fi
 }
 
-cd ~buildd/chroots
+cd ~buildd/
 check_prerequisites
+if [ -z "$VGNAME" ]; then
+    cd ~buildd/chroots
+fi
 
 if ! [ -z "$VGNAME" ]; then
     setup_logical_volume
@@ -402,6 +412,19 @@ do_debootstrap
 # needed anymore.
 #setup_symlink
 setup_schroot
+if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
+    variants="security volatile backports"
+    if [ "$BASE" == "sid" ]; then variants="experimental"; fi
+    for EXTRA in $variants; do
+        EXTRA=-${EXTRA}
+        echo VARIANT: $EXTRA
+        if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
+            ! schroot -l | grep ${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
+            ! schroot -l | grep ${SUITE}${EXTRA}-${ARCH}-sbuild$ -q ; then
+            setup_schroot
+        fi
+    done
+fi
 setup_sources
 adjust_debconf
 setup_sbuild

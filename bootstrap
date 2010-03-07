@@ -7,7 +7,7 @@ set -e
 ./scripts/git-version > VERSION
 
 # To satisfy automake
-touch ChangeLog
+git log > ChangeLog
 
 # Bootstrap autotools
 autoreconf --verbose --force --install
