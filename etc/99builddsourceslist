@@ -117,13 +117,13 @@ elif [ "$1" = "setup-stop" ]; then
 			if [ "$SUITE_BASE" = "etch" ]; then
 				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
 			else
-				rm -f $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
+				rm $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
 			fi
                 elif [ ${SUITE_VARIANT} == 'security' ] || [ ${SUITE_VARIANT} == 'volatile' ] || [ ${SUITE_VARIANT} == 'backports' ] || [ ${SUITE_VARIANT} == 'experimental' ] ; then
 			if [ "$SUITE_BASE" = "etch" ]; then
 				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
 			else
-				rm -f $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/auto.list"
+				rm $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/auto.list"
 			fi
 		fi
 	fi
