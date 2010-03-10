@@ -35,7 +35,7 @@ use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
 
-use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_mail debug df);
+use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
 use Sbuild::Base;
 use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
@@ -2073,7 +2073,7 @@ sub close_build_log {
     else {
 	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
     }
-    send_mail($self->get('Config'), $self->get_conf('MAILTO'), $subject, $filename)
+    send_build_log($self->get('Config'), $self->get_conf('MAILTO'), $subject, $filename)
 	if (defined($filename) && -f $filename &&
 	    $self->get_conf('MAILTO'));
 
