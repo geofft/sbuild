@@ -4,6 +4,13 @@ sbuild (0.60.1-1) unstable; urgency=low
   * sbuild:
     - Add --no-source option (Closes: #571726).  Thanks to David
       Bremner for this suggestion.
+    - Hint aptitude to produce better solutions in AptitudeBuildDepSatisfier.
+      Thanks to Modestas Vainius.  (Closes: #570463)
+    - AptitudeBuildDepSatisfier: Handle the case when default negative dep is
+      not available gracefully.  Thanks to Modestas Vainius.
+      (Closes: #571565)
+  * buildd:
+    - Retry the current suite if --take fails.  (Closes: #570463)
 
  -- Roger Leigh <rleigh@debian.org>  Wed, 03 Mar 2010 23:31:54 +0000
 
