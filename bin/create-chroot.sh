@@ -100,8 +100,8 @@ check_prerequisites() {
     [ -d /etc/schroot/chroot.d ] || \
         error "/etc/schroot/chroot.d not found, schroot not installed?"
     [ ! -d $TARGET ] || error "Target $TARGET already exists."
-    ! schroot -l | grep ${IDENTIFIER}-${ARCH}-sbuild$ -q || error "schroot target ${IDENTIFIER}-${ARCH}-sbuild exists"
-    ! schroot -l | grep ${SUITE}-${ARCH}-sbuild$ -q || error "schroot target ${SUITE}-${ARCH}-sbuild exists"
+    ! schroot -l | grep ^${IDENTIFIER}-${ARCH}-sbuild$ -q || error "schroot target ${IDENTIFIER}-${ARCH}-sbuild exists"
+    ! schroot -l | grep ^${SUITE}-${ARCH}-sbuild$ -q || error "schroot target ${SUITE}-${ARCH}-sbuild exists"
     [ ! -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}" ] || error "schroot file /etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH} already exists"
     if [ -z "$VGNAME" ]; then
         mkdir -p ~buildd/chroots
@@ -419,8 +419,8 @@ if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
         EXTRA=-${EXTRA}
         echo VARIANT: $EXTRA
         if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
-            ! schroot -l | grep ${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
-            ! schroot -l | grep ${SUITE}${EXTRA}-${ARCH}-sbuild$ -q ; then
+            ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
+            ! schroot -l | grep ^${SUITE}${EXTRA}-${ARCH}-sbuild$ -q ; then
             setup_schroot
         fi
     done
