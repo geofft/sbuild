@@ -283,6 +283,31 @@ adjust_debconf() {
 #    $SCHROOT dpkg-reconfigure debconf
 }
 
+adjust_dpkg() {
+    if [ "${BASE}" != "etch" ] && [ "${BASE}" != "lenny" ]; then
+        ensure_target_mounted
+        echo "I: Adding apt.conf..."
+        TEMPFILE="$(mktemp)"
+        cat > "${TEMPFILE}" <<EOT
+APT::Install-Recommends 0;
+Acquire::PDiffs "false";
+EOT
+        sudo mv "${TEMPFILE}" "${TARGET}/etc/apt/apt.conf.d/99buildd"
+        sudo chown root: "${TARGET}/etc/apt/apt.conf.d/99buildd"
+        sudo chmod 0644 "${TARGET}/etc/apt/apt.conf.d/99buildd"
+
+        TEMPFILE="$(mktemp)"
+        cat > "${TEMPFILE}" <<EOT
+force-confnew
+EOT
+        sudo mv "${TEMPFILE}" "${TARGET}/etc/dpkg/dpkg.cfg.d/force-confnew"
+        sudo chown root: "${TARGET}/etc/dpkg/dpkg.cfg.d/force-confnew"
+        sudo chmod 0644 "${TARGET}/etc/dpkg/dpkg.cfg.d/force-confnew"
+
+        ensure_target_unmounted
+    fi
+}
+
 setup_sbuild() {
     echo "I: Setting up sbuild..."
     ensure_target_mounted
@@ -427,6 +452,7 @@ if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
 fi
 setup_sources
 adjust_debconf
+adjust_dpkg
 setup_sbuild
 old_sbuild_compat
 setup_debfoster
