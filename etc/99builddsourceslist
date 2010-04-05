@@ -65,6 +65,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             domirror "http://incoming.debian.org/debian SUITE COMPONENT" ${APT_LIST}
 
         elif [ "${SUITE_VARIANT}" = 'security' ]; then
+            SUITES="${SUITE_BASE}"
             [ -n "${debian_mirror}" ] && domirror "${debian_mirror} ${SUITE_BASE} COMPONENT" ${APT_LIST}
             domirror "http://ftp.debian.org/debian ${SUITE_BASE} COMPONENT" ${APT_LIST}
             [ -n "${security_mirror}" ] && domirror "${security_mirror} ${SUITE_BASE} COMPONENT" ${APT_LIST}
@@ -82,8 +83,9 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
             [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
-            [ -n "${backports_mirror}" && domirror "${backports_mirror} ${SUITE_BASE}-backports COMPONENT" ${APT_LIST}
-            domirror "http://www.backports.org/buildd/ ${SUITE_BASE}-backports COMPONENT" ${APT_LIST}
+            SUITES="${SUITE_BASE}"
+            [ -n "${backports_mirror}" && domirror "${backports_mirror} SUITE-backports COMPONENT" ${APT_LIST}
+            domirror "http://www.backports.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
 
         elif [ "${SUITE_BASE}" = 'sid' ]; then
             SUITES="unstable"
