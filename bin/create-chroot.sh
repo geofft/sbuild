@@ -204,7 +204,8 @@ deb-src http://volatile.debian.net/debian-volatile      ${BASE}-proposed-updates
 EOT
     fi
 
-	if [ -z "$VARIANT" ] && [ "$BASE" != "sid" ]; then
+	if [ -z "$VARIANT" ] && [ "$BASE" != "sid" ] && [ -z "$VGNAME" ]; then
+        # in case of lvm-chroots, we add the entries on the fly
         echo "I: Adding proposed-updates entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
@@ -212,7 +213,16 @@ deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
 EOT
 	fi
 
-    if [ "$BASE" = "sid" ]; then     
+	if [ -z "$VARIANT" ] && [ "$BASE" = "etch" ] && [ -n "$VGNAME" ]; then
+        echo "I: Adding proposed-updates entries to sources.list..."
+        cat >> "${TEMPFILE}" <<EOT
+deb http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
+deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
+EOT
+	fi
+
+    if [ "$BASE" = "sid" ] && [ -z "${VGNAME}" ] ; then     
+        # in case of lvm-chroots, we add the entries on the fly
         echo "I: Adding unstable incoming entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb     http://incoming.debian.org/debian sid main contrib
