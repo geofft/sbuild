@@ -1,5 +1,6 @@
 #!/bin/sh
 # Copyright © 2010 Marc Brockschmidt <he@debian.org>
+# Copyright © 2010 Andreas Barth <aba@not.so.argh.org>
 #
 # buildd is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -35,7 +36,79 @@ if [ -f /etc/schroot/conf.buildd ]; then
     . /etc/schroot/conf.buildd
 fi
 
+function domirror() {
+    for SUITE in ${SUITES:-SUITE}; do
+        echo deb $1     | sed -e "s,COMPONENT,${COMPONTENT},"     -e "s,SUITE,${SUITE}," >> $2
+        echo deb-src $1 | sed -e "s,COMPONENT,${COMPONTENT_SRC}," -e "s,SUITE,${SUITE}," >> $2
+    done
+}
+
 if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
+    if [ -n "${SUITE_BASE}" ] && [ "${SUITE_BASE}" != "etch" ] && [ -f /etc/schroot/conf.buildd ]; then
+        APT_LIST="${CHROOT_PATH}/etc/apt/sources.buildd.list"
+        APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf.d/99buildd.conf"
+        rm -f "${APT_LIST}" "${APT_CONF}"
+        if [ "${SUITE_BASE}" = 'lenny' ]; then
+            APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf"
+            if [ -f ${APT_CONF} ]; then
+                mv ${APT_CONF} ${APT_CONF}.PREBUILDD
+            fi
+        fi
+
+        COMPONTENT="main contrib"
+        COMPONTENT_SRC="main contrib non-free"
+
+        if [ "${SUITE_VARIANT}" = 'proposed-updates' ]; then
+            SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
+            [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
+            domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+            domirror "http://incoming.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+
+        elif [ "${SUITE_VARIANT}" = 'security' ]; then
+            [ -n "${debian_mirror}" ] && domirror "${debian_mirror} ${SUITE_BASE} COMPONENT" ${APT_LIST}
+            domirror "http://ftp.debian.org/debian ${SUITE_BASE} COMPONENT" ${APT_LIST}
+            [ -n "${security_mirror}" ] && domirror "${security_mirror} ${SUITE_BASE} COMPONENT" ${APT_LIST}
+            domirror "http://security-master.debian.org/debian-security ${SUITE_BASE}/updates COMPONENT" ${APT_LIST}
+            domirror "http://security-master.debian.org/buildd ${SUITE_BASE}/" ${APT_LIST}
+
+        elif [ "${SUITE_VARIANT}" = 'volatile' ]; then
+            SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
+            [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
+            domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+            [ -n "${volatile_mirror}" ] && domirror "${volatile_mirror} SUITE/volatile COMPONENT" ${APT_LIST}
+            domirror "http://volatile.debian.org/debian-volatile SUITE/volatile COMPONENT" ${APT_LIST}
+
+        elif [ "${SUITE_VARIANT}" = 'backports' ]; then
+            SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
+            [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
+            domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+            [ -n "${backports_mirror}" && domirror "${backports_mirror} ${SUITE_BASE}-backports COMPONENT" ${APT_LIST}
+            domirror "http://www.backports.org/buildd/ ${SUITE_BASE}-backports COMPONENT" ${APT_LIST}
+
+        elif [ "${SUITE_BASE}" = 'sid' ]; then
+            SUITES="unstable"
+            if [ "${SUITE_VARIANT}" == "experimental" ]; then
+                SUITES="unstable experimental"
+            fi
+            [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
+            if [ "${debian_incoming}" != 'no' ]; then
+                domirror "http://incoming.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+                domirror "http://incoming.debian.org/buildd-SUITE /" ${APT_LIST}
+            fi
+
+        else
+            echo "ERROR: cannot adjust sources.list: ${SUITE_BASE}/${SUITE_VARIANT} unknown - exiting"
+            exit 1
+
+        fi
+        echo 'Acquire::PDiffs "false";' >> ${APT_CONF}
+        echo 'APT::Install-Recommends 0;' >> ${APT_CONF}
+        echo 'Dir::Etc::SourceList "sources.buildd.list";' >> ${APT_CONF}
+
+        if [ "${SUITE_VARIANT}" = 'security' ]; then
+            echo 'APT::Get::AllowUnauthenticated 1;' >> ${APT_CONF}
+        fi
+    else
 	if [ -n "$SUITE_VARIANT" ]; then
 		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
 		SOURCES_FILE_PATH="/etc/schroot/buildd.d/${SOURCES_FILE_NAME}"
@@ -108,7 +181,20 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb-src http://incoming.debian.org/buildd-experimental / >> ${APT_LIST_AUTO}
 		fi
 	fi
+    fi
 elif [ "$1" = "setup-stop" ]; then
+    if [ -n "${SUITE_BASE}" ] && [ "${SUITE_BASE}" != "etch" ] && [ -f /etc/schroot/conf.buildd ]; then
+        APT_LIST="${CHROOT_PATH}/etc/apt/sources.buildd.list"
+        APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf.d/99buildd.conf"
+        rm -f "${APT_LIST}" "${APT_CONF}"
+        if [ "${SUITE_BASE}" = 'lenny' ]; then
+            APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf"
+            rm ${APT_CONF}
+            if [ -f ${APT_CONF}.PREBUILDD ]; then
+                mv ${APT_CONF}.PREBUILDD ${APT_CONF}
+            fi
+        fi
+    else
 	if [ -n "$SUITE_VARIANT" ]; then
 		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
 		SOURCES_FILE_PATH="/etc/schroot/buildd.d/${SOURCES_FILE_NAME}"
@@ -127,4 +213,5 @@ elif [ "$1" = "setup-stop" ]; then
 			fi
 		fi
 	fi
+    fi
 fi
