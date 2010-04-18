@@ -57,8 +57,7 @@ if echo "$1" | egrep -q '^--arch='; then
     ARCH=${1:7}
     shift
 fi
-echo $ARCH
-exit
+
 SUITE="$1"
 VGNAME="$2"
 LVSIZE="$3"
@@ -186,6 +185,13 @@ source-root-users=buildd
 script-config=script-defaults.buildd
 EOT
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild-source -u root -d /root --"
+    fi
+
+    if \
+        [ "$ARCH" == "mips" ] || \
+        [ "$ARCH" == "sparc" ] || \
+        [ "$ARCH" == "i386" ]; then
+            echo "personality=linux32" >>"${TEMPFILE}"
     fi
     sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
     sudo chown root: "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
