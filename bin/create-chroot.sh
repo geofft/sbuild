@@ -442,6 +442,12 @@ if ! [ -z "$VGNAME" ]; then
     setup_logical_volume
     TARGET=$TMPMOUNTDIR
 fi
+
+if ! [ -f /etc/schroot/conf.buildd ]; then
+    echo I: Adding ${MIRROR} to /etc/schroot/conf.buildd
+    echo debian_mirror=${MIRROR} > /etc/schroot/conf.buildd
+fi
+
 do_debootstrap
 # As chroots will be controlled by schroot anyway, the symlink should not be
 # needed anymore.
