@@ -3,6 +3,7 @@
 # GPLv2.
 # (C) 2009 Philipp Kern
 # (C) 2009 Marc Brockschmidt
+# (C) 2010 Andreas Barth
 
 set -e
 
@@ -18,7 +19,7 @@ usage() {
     then
         echo "E: $message" >&2
     fi
-    echo "Usage: $0 http://some.debian.mirror/debian suite [vgname lvsize]" >&2
+    echo "Usage: $0 [http://some.debian.mirror/debian] suite [vgname lvsize]" >&2
     echo "Valid suites: oldstable, stable, testing, unstable," >&2
     echo "              oldstable-security, stable-security," >&2
     echo "              testing-security, oldstable-backports," >&2
@@ -36,10 +37,23 @@ error() {
     exit 1
 }
 
-MIRROR="$1"
-SUITE="$2"
-VGNAME="$3"
-LVSIZE="$4"
+if [ -f /etc/schroot/conf.buildd ] ; then
+    set +e
+    . /etc/schroot/conf.buildd
+    set -e
+fi
+
+if echo "$1" | egrep -q '^(ht|f)tp://'; then
+    MIRROR="$1"
+    shift
+else
+    MIRROR="${debian_mirror}"
+    [ -z ${MIRROR} ] && error "no mirror specified (neither on command line nor in /etc/schroot/conf.buildd)"
+fi
+
+SUITE="$1"
+VGNAME="$2"
+LVSIZE="$3"
 # This might need an adjustment if you are creating chroots different
 # from the host architecture.  (Not tested.)
 ARCH="$(dpkg --print-architecture)"
