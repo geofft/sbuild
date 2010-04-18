@@ -19,7 +19,7 @@ usage() {
     then
         echo "E: $message" >&2
     fi
-    echo "Usage: $0 [http://some.debian.mirror/debian] suite [vgname lvsize]" >&2
+    echo "Usage: $0 [http://some.debian.mirror/debian] [--arch=arch] suite [vgname lvsize]" >&2
     echo "Valid suites: oldstable, stable, testing, unstable," >&2
     echo "              oldstable-security, stable-security," >&2
     echo "              testing-security, oldstable-backports," >&2
@@ -51,12 +51,19 @@ else
     [ -z ${MIRROR} ] && error "no mirror specified (neither on command line nor in /etc/schroot/conf.buildd)"
 fi
 
+
+ARCH="$(dpkg --print-architecture)"
+if echo "$1" | egrep -q '^--arch='; then
+    ARCH=${1:7}
+    shift
+fi
+echo $ARCH
+exit
 SUITE="$1"
 VGNAME="$2"
 LVSIZE="$3"
 # This might need an adjustment if you are creating chroots different
 # from the host architecture.  (Not tested.)
-ARCH="$(dpkg --print-architecture)"
 
 if [ -z "$MIRROR" ]
 then
