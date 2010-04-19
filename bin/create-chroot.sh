@@ -472,7 +472,7 @@ fi
 
 if ! [ -f /etc/schroot/conf.buildd ]; then
     echo I: Adding ${MIRROR} to /etc/schroot/conf.buildd
-    echo debian_mirror=${MIRROR} > /etc/schroot/conf.buildd
+    sudo bash -c "echo debian_mirror=${MIRROR} > /etc/schroot/conf.buildd"
 fi
 
 do_debootstrap
