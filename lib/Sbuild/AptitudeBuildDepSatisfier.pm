@@ -157,7 +157,7 @@ EOF
 	'-o', 'Aptitude::ProblemResolver::StepScore=100', 
 	'-o', "Aptitude::ProblemResolver::Hints::KeepDummy=reject $dummy_pkg_name :UNINST",
 	'-o', 'Aptitude::ProblemResolver::Keep-All-Tier=55000',
-	'-o', 'Aptitude::ProblemResolver::Remove-Essential-Tier=conflict',
+	'-o', 'Aptitude::ProblemResolver::Remove-Essential-Tier=maximum',
 	'install',
 	$dummy_pkg_name,
 	(map { $_->[0] . "=" . $_->[1] } @non_default_deps)
