@@ -110,8 +110,6 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
         if [ "${SUITE_VARIANT}" = 'security' ]; then
             echo 'APT::Get::AllowUnauthenticated 1;' >> ${APT_CONF}
         fi
-
-        chroot ${CHROOT_PATH} apt-get update >&2 || true
     else
 	if [ -n "$SUITE_VARIANT" ]; then
 		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
