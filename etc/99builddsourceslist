@@ -62,7 +62,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
             [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
-            domirror "http://incoming.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+            [ "${debian_incoming}" != 'no' ] && domirror "http://incoming.debian.org/debian SUITE COMPONENT" ${APT_LIST}
 
         elif [ "${SUITE_VARIANT}" = 'security' ]; then
             SUITES="${SUITE_BASE}"
@@ -110,6 +110,8 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
         if [ "${SUITE_VARIANT}" = 'security' ]; then
             echo 'APT::Get::AllowUnauthenticated 1;' >> ${APT_CONF}
         fi
+
+        chroot ${CHROOT_PATH} apt-get update >&2 || true
     else
 	if [ -n "$SUITE_VARIANT" ]; then
 		SOURCES_FILE_NAME="${SUITE_BASE}-${SUITE_VARIANT}.sources"
@@ -191,7 +193,7 @@ elif [ "$1" = "setup-stop" ]; then
         rm -f "${APT_LIST}" "${APT_CONF}"
         if [ "${SUITE_BASE}" = 'lenny' ]; then
             APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf"
-            rm ${APT_CONF}
+            rm -f ${APT_CONF}
             if [ -f ${APT_CONF}.PREBUILDD ]; then
                 mv ${APT_CONF}.PREBUILDD ${APT_CONF}
             fi
