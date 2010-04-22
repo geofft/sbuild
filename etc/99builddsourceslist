@@ -84,7 +84,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
             SUITES="${SUITE_BASE}"
-            [ -n "${backports_mirror}" && domirror "${backports_mirror} SUITE-backports COMPONENT" ${APT_LIST}
+            [ -n "${backports_mirror}" ] && domirror "${backports_mirror} SUITE-backports COMPONENT" ${APT_LIST}
             domirror "http://www.backports.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
 
         elif [ "${SUITE_BASE}" = 'sid' ]; then
