@@ -47,6 +47,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
     if [ -n "${SUITE_BASE}" ] && [ "${SUITE_BASE}" != "etch" ] && [ -f /etc/schroot/conf.buildd ]; then
         APT_LIST="${CHROOT_PATH}/etc/apt/sources.buildd.list"
         APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf.d/99buildd.conf"
+        APT_KEYS=""
         rm -f "${APT_LIST}" "${APT_CONF}"
         if [ "${SUITE_BASE}" = 'lenny' ]; then
             APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf"
@@ -86,6 +87,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             SUITES="${SUITE_BASE}"
             [ -n "${backports_mirror}" ] && domirror "${backports_mirror} SUITE-backports COMPONENT" ${APT_LIST}
             domirror "http://www.backports.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
+            APT_KEYS="${APT_KEYS} backports.org"
 
         elif [ "${SUITE_BASE}" = 'sid' ]; then
             SUITES="unstable"
@@ -109,6 +111,16 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
 
         if [ "${SUITE_VARIANT}" = 'security' ]; then
             echo 'APT::Get::AllowUnauthenticated 1;' >> ${APT_CONF}
+        fi
+
+        if [ -n "${APT_KEYS}" ]; then
+            for KEY in ${APT_KEYS}; do
+                if [ -f /usr/share/buildd/${KEY}.asc ]; then
+                    chroot ${CHROOT_PATH} apt-key add - < /usr/share/buildd/${KEY}.asc >&2
+                else
+                    echo W: should add apt key ${KEY} but not found >&2
+                fi
+            done
         fi
     else
 	if [ -n "$SUITE_VARIANT" ]; then

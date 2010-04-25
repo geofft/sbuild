@@ -153,7 +153,6 @@ EOF
 	'-y', 
 	'--without-recommends', 
 	'-o', 'APT::Install-Recommends=false', 
-	'-o', 'Aptitude::CmdLine::Ignore-Trust-Violations=true', 
 	'-o', 'Aptitude::ProblemResolver::StepScore=100', 
 	'-o', "Aptitude::ProblemResolver::Hints::KeepDummy=reject $dummy_pkg_name :UNINST",
 	'-o', 'Aptitude::ProblemResolver::Keep-All-Tier=55000',
