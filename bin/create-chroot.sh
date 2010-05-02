@@ -162,12 +162,13 @@ setup_symlink() {
 setup_schroot() {
     echo "I: Setting up schroot configuration..."
     TEMPFILE="$(mktemp)"
+    SUITEEXTRA=${SUITEEXTRA:-${SUITE}${EXTRA}}
     cat > "${TEMPFILE}" <<EOT
 [${IDENTIFIER}${EXTRA}-${ARCH}-sbuild]
 description=Debian ${IDENTIFIER} buildd chroot
 users=buildd
 root-users=buildd
-aliases=${SUITE}${EXTRA}-${ARCH}-sbuild
+aliases=${SUITEEXTRA}-${ARCH}-sbuild
 run-setup-scripts=true
 run-exec-scripts=true
 EOT
@@ -485,10 +486,12 @@ if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
     if [ "$BASE" == "sid" ]; then variants="experimental"; fi
     for EXTRA in $variants; do
         EXTRA=-${EXTRA}
+        SUITEEXTRA=${SUITE}${EXTRA}
+        if [ "$BASE" == "sid" ]; then SUITEEXTRA="experimental"; fi
         echo VARIANT: $EXTRA
         if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
             ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
-            ! schroot -l | grep ^${SUITE}${EXTRA}-${ARCH}-sbuild$ -q ; then
+            ! schroot -l | grep ^${SUITEEXTRA}-${ARCH}-sbuild$ -q ; then
             setup_schroot
         fi
     done
