@@ -47,6 +47,8 @@ sub get_dist ($);
 sub setup ($$);
 sub cleanup ($);
 sub shutdown ($);
+sub parse_file ($);
+sub dsc_files ($);
 
 my $current_session;
 
@@ -56,7 +58,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(setup cleanup shutdown check_url download parse_file);
+    @EXPORT = qw(setup cleanup shutdown check_url download parse_file dsc_files);
 
     $SIG{'INT'} = \&shutdown;
     $SIG{'TERM'} = \&shutdown;
@@ -358,7 +360,7 @@ sub _get_proxy {
 # It can also be used on files like Packages or Sources files in a Debian
 # archive.
 # This subroutine returns an array of hashes. Each hash is a stanza.
-sub parse_file {
+sub parse_file ($) {
     # Takes one parameter, the file to parse.
     my ($file) = @_;
 
@@ -418,6 +420,28 @@ sub parse_file {
 
     # Return a reference to the array
     return \@array_of_fields;
+}
+
+sub dsc_files ($) {
+    my $dsc = shift;
+
+    my @files;
+
+    # The parse_file() subroutine returns a ref to an array of hashrefs.
+    my $stanzas = parse_file($dsc);
+
+    # A dsc file would only ever contain one stanza, so we only deal with
+    # the first entry which is a ref to a hash of fields for the stanza.
+    my $stanza = @{$stanzas}[0];
+
+    # We're only interested in the name of the files in the Files field.
+    my $entry = ${$stanza}{'Files'};
+
+    foreach my $line (split("\n", $entry)) {
+	push @files, $1 if $line =~ /(\S+)\s*$/;
+    }
+
+    return @files;
 }
 
 1;
