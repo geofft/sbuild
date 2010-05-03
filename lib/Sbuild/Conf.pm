@@ -239,6 +239,9 @@ sub init_allowed_keys {
 	'MAILFROM'				=> {
 	    DEFAULT => "Source Builder <sbuild>"
 	},
+	'COMPRESS_BUILD_LOG_MAILS'              => {
+	    DEFAULT => 0
+	},
 	'PURGE_BUILD_DEPS'			=> {
 	    CHECK => sub {
 		my $self = shift;
@@ -516,6 +519,7 @@ sub read_config {
     my %mailto;
     undef %mailto;
     my $mailfrom = undef;
+    my $compress_build_log_mails = undef;
     my $purge_build_deps = undef;
     my $purge_build_directory = undef;
     my @toolchain_regex;
@@ -602,6 +606,7 @@ sub read_config {
     $self->set('MAILTO_HASH', \%mailto)
 	if (%mailto);
     $self->set('MAILFROM', $mailfrom);
+    $self->set('COMPRESS_BUILD_LOG_MAILS', $compress_build_log_mails);
     $self->set('PURGE_BUILD_DEPS', $purge_build_deps);
     $self->set('PURGE_BUILD_DIRECTORY', $purge_build_directory);
     $self->set('TOOLCHAIN_REGEX', \@toolchain_regex)

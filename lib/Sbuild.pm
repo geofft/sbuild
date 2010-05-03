@@ -29,6 +29,8 @@ use POSIX;
 use FileHandle;
 use Filesys::Df qw();
 use Time::Local;
+use IO::Zlib;
+use MIME::Base64;
 
 BEGIN {
     use Exporter ();
@@ -40,7 +42,7 @@ BEGIN {
 		 version_eq version_compare split_version
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
-		 send_mail debug df);
+		 send_mail send_build_log debug df);
 }
 
 our $devnull;
@@ -428,7 +430,73 @@ sub usage_error ($$) {
     exit 1;
 }
 
-sub send_mail {
+sub send_build_log ($$$$) {
+    my $conf = shift;
+    my $to = shift;
+    my $subject = shift;
+    my $file = shift;
+
+    # If no build log compression is desired, just pass this mail to the
+    # ordinary mailing function that also handles the other notifications.
+    if (!$conf->get('COMPRESS_BUILD_LOG_MAILS')) {
+        return send_mail($conf, $to, $subject, $file);
+    }
+
+    # This writes the compressed build log to yet another temporary file,
+    # generates base64 from it and pipes it into the mailer with
+    # Content-Type: application/x-gzip and Content-Transfer-Encoding:
+    # base64.
+    local( *F, *GZFILE );
+
+    if (!open( F, "<$file" )) {
+	warn "Cannot open $file for mailing: $!\n";
+	return 0;
+    }
+
+    my $tmp = File::Temp->new();
+    tie *GZFILE, 'IO::Zlib', $tmp->filename, 'wb';
+
+    while( <F> ) {
+        print GZFILE $_;
+    }
+    untie *GZFILE;
+
+    my $filename = $tmp->filename;
+    if (!open( F, "<$filename" )) {
+        warn "Cannot open $filename for mailing: $!\n";
+        return 0;
+    }
+
+    local $SIG{'PIPE'} = 'IGNORE';
+
+    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
+	close( F );
+	return 0;
+    }
+
+    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
+    print MAIL "To: $to\n";
+    print MAIL "Subject: $subject\n";
+    print MAIL "Content-Type: application/x-gzip\n";
+    print MAIL "Content-Transfer-Encoding: base64\n";
+    print MAIL "\n";
+
+    my $buf;
+    while (read(F, $buf, 60*57)) {
+	print MAIL encode_base64($buf);
+    }
+
+    close( F );
+    if (!close( MAIL )) {
+	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
+	return 0;
+    }
+    return 1;
+}
+
+
+sub send_mail ($$$$) {
     my $conf = shift;
     my $to = shift;
     my $subject = shift;
