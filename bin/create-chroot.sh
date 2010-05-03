@@ -3,6 +3,7 @@
 # GPLv2.
 # (C) 2009 Philipp Kern
 # (C) 2009 Marc Brockschmidt
+# (C) 2010 Andreas Barth
 
 set -e
 
@@ -18,7 +19,7 @@ usage() {
     then
         echo "E: $message" >&2
     fi
-    echo "Usage: $0 http://some.debian.mirror/debian suite [vgname lvsize]" >&2
+    echo "Usage: $0 [http://some.debian.mirror/debian] [--arch=arch] suite [vgname lvsize]" >&2
     echo "Valid suites: oldstable, stable, testing, unstable," >&2
     echo "              oldstable-security, stable-security," >&2
     echo "              testing-security, oldstable-backports," >&2
@@ -36,13 +37,32 @@ error() {
     exit 1
 }
 
-MIRROR="$1"
-SUITE="$2"
-VGNAME="$3"
-LVSIZE="$4"
+if [ -f /etc/schroot/conf.buildd ] ; then
+    set +e
+    . /etc/schroot/conf.buildd
+    set -e
+fi
+
+if echo "$1" | egrep -q '^(ht|f)tp://'; then
+    MIRROR="$1"
+    shift
+else
+    MIRROR="${debian_mirror}"
+    [ -z ${MIRROR} ] && error "no mirror specified (neither on command line nor in /etc/schroot/conf.buildd)"
+fi
+
+
+ARCH="$(dpkg --print-architecture)"
+if echo "$1" | egrep -q '^--arch='; then
+    ARCH=${1:7}
+    shift
+fi
+
+SUITE="$1"
+VGNAME="$2"
+LVSIZE="$3"
 # This might need an adjustment if you are creating chroots different
 # from the host architecture.  (Not tested.)
-ARCH="$(dpkg --print-architecture)"
 
 if [ -z "$MIRROR" ]
 then
@@ -100,8 +120,8 @@ check_prerequisites() {
     [ -d /etc/schroot/chroot.d ] || \
         error "/etc/schroot/chroot.d not found, schroot not installed?"
     [ ! -d $TARGET ] || error "Target $TARGET already exists."
-    ! schroot -l | grep ${IDENTIFIER}-${ARCH}-sbuild$ -q || error "schroot target ${IDENTIFIER}-${ARCH}-sbuild exists"
-    ! schroot -l | grep ${SUITE}-${ARCH}-sbuild$ -q || error "schroot target ${SUITE}-${ARCH}-sbuild exists"
+    ! schroot -l | grep ^${IDENTIFIER}-${ARCH}-sbuild$ -q || error "schroot target ${IDENTIFIER}-${ARCH}-sbuild exists"
+    ! schroot -l | grep ^${SUITE}-${ARCH}-sbuild$ -q || error "schroot target ${SUITE}-${ARCH}-sbuild exists"
     [ ! -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH}" ] || error "schroot file /etc/schroot/chroot.d/buildd-${IDENTIFIER}-${ARCH} already exists"
     if [ -z "$VGNAME" ]; then
         mkdir -p ~buildd/chroots
@@ -142,12 +162,13 @@ setup_symlink() {
 setup_schroot() {
     echo "I: Setting up schroot configuration..."
     TEMPFILE="$(mktemp)"
+    SUITEEXTRA=${SUITEEXTRA:-${SUITE}${EXTRA}}
     cat > "${TEMPFILE}" <<EOT
 [${IDENTIFIER}${EXTRA}-${ARCH}-sbuild]
 description=Debian ${IDENTIFIER} buildd chroot
 users=buildd
 root-users=buildd
-aliases=${SUITE}${EXTRA}-${ARCH}-sbuild
+aliases=${SUITEEXTRA}-${ARCH}-sbuild
 run-setup-scripts=true
 run-exec-scripts=true
 EOT
@@ -165,6 +186,13 @@ source-root-users=buildd
 script-config=script-defaults.buildd
 EOT
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild-source -u root -d /root --"
+    fi
+
+    if \
+        [ "$ARCH" == "mips" ] || \
+        [ "$ARCH" == "sparc" ] || \
+        [ "$ARCH" == "i386" ]; then
+            echo "personality=linux32" >>"${TEMPFILE}"
     fi
     sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
     sudo chown root: "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
@@ -204,7 +232,8 @@ deb-src http://volatile.debian.net/debian-volatile      ${BASE}-proposed-updates
 EOT
     fi
 
-	if [ -z "$VARIANT" ] && [ "$BASE" != "sid" ]; then
+	if [ -z "$VARIANT" ] && [ "$BASE" != "sid" ] && [ -z "$VGNAME" ]; then
+        # in case of lvm-chroots, we add the entries on the fly
         echo "I: Adding proposed-updates entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
@@ -212,7 +241,16 @@ deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
 EOT
 	fi
 
-    if [ "$BASE" = "sid" ]; then     
+	if [ -z "$VARIANT" ] && [ "$BASE" = "etch" ] && [ -n "$VGNAME" ]; then
+        echo "I: Adding proposed-updates entries to sources.list..."
+        cat >> "${TEMPFILE}" <<EOT
+deb http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
+deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
+EOT
+	fi
+
+    if [ "$BASE" = "sid" ] && [ -z "${VGNAME}" ] ; then     
+        # in case of lvm-chroots, we add the entries on the fly
         echo "I: Adding unstable incoming entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
 deb     http://incoming.debian.org/debian sid main contrib
@@ -281,6 +319,31 @@ adjust_debconf() {
     echo "debconf debconf/interface select noninteractive" | $SCHROOT debconf-set-selections
 # TODO: not needed(?), will ask questions again
 #    $SCHROOT dpkg-reconfigure debconf
+}
+
+adjust_dpkg() {
+    if [ "${BASE}" != "etch" ] && [ "${BASE}" != "lenny" ]; then
+        ensure_target_mounted
+        echo "I: Adding apt.conf..."
+        TEMPFILE="$(mktemp)"
+        cat > "${TEMPFILE}" <<EOT
+APT::Install-Recommends 0;
+Acquire::PDiffs "false";
+EOT
+        sudo mv "${TEMPFILE}" "${TARGET}/etc/apt/apt.conf.d/99buildd"
+        sudo chown root: "${TARGET}/etc/apt/apt.conf.d/99buildd"
+        sudo chmod 0644 "${TARGET}/etc/apt/apt.conf.d/99buildd"
+
+        TEMPFILE="$(mktemp)"
+        cat > "${TEMPFILE}" <<EOT
+force-confnew
+EOT
+        sudo mv "${TEMPFILE}" "${TARGET}/etc/dpkg/dpkg.cfg.d/force-confnew"
+        sudo chown root: "${TARGET}/etc/dpkg/dpkg.cfg.d/force-confnew"
+        sudo chmod 0644 "${TARGET}/etc/dpkg/dpkg.cfg.d/force-confnew"
+
+        ensure_target_unmounted
+    fi
 }
 
 setup_sbuild() {
@@ -407,6 +470,12 @@ if ! [ -z "$VGNAME" ]; then
     setup_logical_volume
     TARGET=$TMPMOUNTDIR
 fi
+
+if ! [ -f /etc/schroot/conf.buildd ]; then
+    echo I: Adding ${MIRROR} to /etc/schroot/conf.buildd
+    sudo bash -c "echo debian_mirror=${MIRROR} > /etc/schroot/conf.buildd"
+fi
+
 do_debootstrap
 # As chroots will be controlled by schroot anyway, the symlink should not be
 # needed anymore.
@@ -417,16 +486,19 @@ if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
     if [ "$BASE" == "sid" ]; then variants="experimental"; fi
     for EXTRA in $variants; do
         EXTRA=-${EXTRA}
+        SUITEEXTRA=${SUITE}${EXTRA}
+        if [ "$BASE" == "sid" ]; then SUITEEXTRA="experimental"; fi
         echo VARIANT: $EXTRA
         if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
-            ! schroot -l | grep ${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
-            ! schroot -l | grep ${SUITE}${EXTRA}-${ARCH}-sbuild$ -q ; then
+            ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
+            ! schroot -l | grep ^${SUITEEXTRA}-${ARCH}-sbuild$ -q ; then
             setup_schroot
         fi
     done
 fi
 setup_sources
 adjust_debconf
+adjust_dpkg
 setup_sbuild
 old_sbuild_compat
 setup_debfoster

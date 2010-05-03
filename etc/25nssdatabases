@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright © 2005-2009  Roger Leigh <rleigh@debian.org>
 #
 # schroot is free software: you can redistribute it and/or modify it
