@@ -22,7 +22,7 @@
 include $(top_srcdir)/scripts/global.mk
 
 sbuildsysconfdir = $(SBUILD_SYSCONF_DIR)
-sbuildsysconf_DATA = sbuild.conf nssdatabases-defaults
+sbuildsysconf_DATA = sbuild.conf nssdatabases-defaults copyfiles-defaults
 
 builddsysconfdir = $(BUILDD_SYSCONF_DIR)
 builddsysconf_DATA = buildd.conf wanna-build.conf

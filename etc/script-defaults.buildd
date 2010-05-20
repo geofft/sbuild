@@ -3,6 +3,8 @@
 
 # Filesystems to mount inside the chroot.
 FSTAB="/etc/schroot/mount-defaults.buildd"
+COPYFILES="/etc/sbuild/copyfiles-defaults"
+NSSDATABASES="/etc/sbuild/nssdatabases-defaults"
 
 if [ "${CHROOT_TYPE}" == lvm-snapshot ]; then
     case $CHROOT_NAME in
