@@ -169,8 +169,6 @@ description=Debian ${IDENTIFIER} buildd chroot
 users=buildd
 root-users=buildd
 aliases=${SUITEEXTRA}-${ARCH}-sbuild
-run-setup-scripts=true
-run-exec-scripts=true
 EOT
     if [ -z "$VGNAME" ]; then
         echo "type=directory" >> "${TEMPFILE}"
