@@ -720,7 +720,7 @@ sub build {
 	$self->set('Sub Task', "dpkg-source");
 	$self->get('Session')->run_command(
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
-				  '-sn', '-x', $dscfile, $dscdir],
+				  '-x', $dscfile, $dscdir],
 		      USER => $self->get_conf('USERNAME'),
 		      CHROOT => 1,
 		      PRIORITY => 0});
