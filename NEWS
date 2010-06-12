@@ -9,7 +9,11 @@ configuration.
 
 * Major changes in 0.60.1:
 
-  None.
+  1) Improvements in building of dpkg-source v3 source formats.
+
+  2) sbuild includes a new option --no-source to disable building
+     of source packages.  This is the reciprocal of the existing
+     --source option.
 
 * Major changes in 0.60.0:
 
