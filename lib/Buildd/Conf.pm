@@ -212,6 +212,7 @@ sub read_config {
     my $wanna_build_ssh_options = undef;
     my $warning_age = undef;
     my @distributions;
+    my $defaults;
     my @upload_queues;
 
     #legacy fields:
@@ -392,6 +393,13 @@ sub read_config {
 			$entry{uc($key)} = $raw_entry->{$key};
 		    }
 		}
+
+                for my $key (keys %$defaults) {
+                    if (uc($key) ne "DIST_NAME" && not defined $entry{uc($key)}) {
+                        $entry{uc($key)} = $defaults->{$key};
+                    }
+                }
+
 
 		#We need this to pass this to Sbuild::DB::Client:
                 $entry{SSH} = $ssh;
