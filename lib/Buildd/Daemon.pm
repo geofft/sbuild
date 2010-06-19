@@ -141,6 +141,7 @@ sub run {
 	    my %givenback = $self->read_givenback();
 		my $db = $self->get_db_handle($dist_config);
 	    my $pipe = $db->pipe_query(
+                ($dist_config->get('WANNA_BUILD_API') ? '--api '.$dist_config->get('WANNA_BUILD_API') : ''),
 		'--list=needs-build',
 		'--dist=' . $dist_name);
 	    if (!$pipe) {
@@ -327,6 +328,52 @@ sub do_wanna_build {
     $self->block_signals();
 
     my $db = $self->get_db_handle($dist_config);
+    if ($dist_config->get('WANNA_BUILD_API') >= 1) {
+        use YAML::Tiny;
+        my $pipe = $db->pipe_query(
+	'--api '.$dist_config->get('WANNA_BUILD_API'),
+	'--dist=' . $dist_config->get('DIST_NAME'),
+       	$pkgver);
+        unless ($pipe) {
+            $self->unblock_signals();
+            $self->log("Can't spawn wanna-build: $!\n");
+            return undef;
+        }
+        local $/ = undef;
+        my $yaml = <$pipe>;
+        $yaml =~ s,^update transactions:.*$,,m; # get rid of simulate output in case simulate is specified above
+        $self->log($yaml);
+        $yaml = YAML::Tiny->read_string($yaml);
+        $yaml = $yaml->[0];
+        foreach my $pkgv (@$yaml) {
+            my $pkg = (keys %$pkgv)[0];
+            my $pkgd;
+            foreach my $k (@{$pkgv->{$pkg}}) {
+                foreach my $l (keys %$k) { 
+                    $pkgd->{$l} = $k->{$l}; 
+                } 
+            };
+            if ($pkgd->{'status'} ne 'ok') {
+                $self->log("Can't take $pkg: $pkgd->{'status'}\n");
+                next;
+            }
+            $ret = { 'pv' => $pkgver };
+            # fix SHOULD_BUILD_MSGS
+#              if ($self->get_conf('SHOULD_BUILD_MSGS')) {
+#                  $self->handle_prevfailed( $dist_config, grep( /^\Q$pkg\E_/, @_ ) );
+#              } else {
+#                  push( @output, grep( /^\Q$pkg\E_/, @_ ) );
+            my $fields = { 'changelog' => 'extra-changelog', 'binNMU' => 'binNMU', 'extra-depends' => 'extra-depends', 'extra-conflicts' => 'extra-conflicts' };
+            for my $f (keys %$fields) {
+                $ret->{$f} = $pkgd->{$fields->{$f}} if $pkgd->{$fields->{$f}};
+            }
+            last;
+        }
+        close( $pipe );
+        $self->unblock_signals();
+        $self->write_stats("taken", $n) if $n;
+        return $ret;
+    }
     my $pipe = $db->pipe_query(
 	'-v', 
 	'--dist=' . $dist_config->get('DIST_NAME'),
@@ -430,8 +477,10 @@ sub do_build {
 	if $dist_config->get('SBUILD_CHROOT');
 
 
-    push ( @sbuild_args, "--binNMU=$todo->{'binNMU'}") if ($todo->{'binNMU'});
-    push ( @sbuild_args, "--make-binNMU=$todo->{'changelog'}") if ($todo->{'changelog'});
+    push ( @sbuild_args, "--binNMU=$todo->{'binNMU'}") if $todo->{'binNMU'};
+    push ( @sbuild_args, "--make-binNMU=$todo->{'changelog'}") if $todo->{'changelog'};
+    push ( @sbuild_args, "--add-conflicts=$todo->{'extra-conflicts'}") if $todo->{'extra-conflicts'};
+    push ( @sbuild_args, "--add-depends=$todo->{'extra-depends'}") if $todo->{'extra-depends'};
     push @sbuild_args, $todo->{'pv'};
     $self->log("command line: @sbuild_args\n");
 

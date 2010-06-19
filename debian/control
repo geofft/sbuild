@@ -57,7 +57,7 @@ Description: Database to track building of Debian binary packages from Debian so
 
 Package: buildd
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libsbuild-perl, adduser, sbuild (= ${source:Version}), dupload, cron, exim4 | mail-transport-agent
+Depends: ${misc:Depends}, ${perl:Depends}, libsbuild-perl, adduser, sbuild (= ${source:Version}), dupload, cron, exim4 | mail-transport-agent, libyaml-tiny-perl
 Suggests: wanna-build
 Replaces: sbuild
 Description: Daemon for automatically building Debian binary packages from Debian sources

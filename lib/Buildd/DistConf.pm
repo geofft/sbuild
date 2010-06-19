@@ -100,6 +100,9 @@ sub init_allowed_keys {
 	'WANNA_BUILD_DB_USER'			=> {
 	    DEFAULT => $Buildd::username
 	},
+	'WANNA_BUILD_API'			=> {
+	    DEFAULT => undef,
+	},
 	'DUPLOAD_LOCAL_QUEUE_DIR'		=> {
 	    CHECK => $validate_directory_in_home,
 	    DEFAULT => 'upload'
