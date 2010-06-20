@@ -521,7 +521,7 @@ sub prepare_for_upload ($$) {
 	    if !$self->check_state(
 			$pkg, 
 			$self->get_dist_config_by_name($d),
-		   	qw(Building Built Install-Wait Reupload-Wait));
+		   	qw(Building Built Install-Wait Reupload-Wait Build-Attempted));
     }
     if (@wrong_dists) {
 	$self->set('Mail Short Error',
