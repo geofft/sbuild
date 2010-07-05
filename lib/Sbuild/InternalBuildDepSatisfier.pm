@@ -281,6 +281,8 @@ sub filter_dependencies {
 		    return 0;
 		} else {
 		    $builder->log("Using default version " . $policy->{$name}->{defversion} . "\n");
+		    $upgradeable = $name if !$upgradeable;
+		    last;
 		}
 		$upgradeable = $name if !$upgradeable;
 	    }
