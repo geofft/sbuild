@@ -158,6 +158,8 @@ $conf->set('INCLUDE', add_items($conf->get('INCLUDE'),
 				"debfoster"));
 
 my $suite = $ARGV[0];
+# Create the target directory in advance so abs_path (which is buggy)
+# won't fail.  Remove if abs_path is replaced by something better.
 makedir($ARGV[1], 0700);
 my $target = abs_path($ARGV[1]);
 my $mirror = $ARGV[2];
