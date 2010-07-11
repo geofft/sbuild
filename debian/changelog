@@ -12,10 +12,14 @@ sbuild (0.60.1-1) unstable; urgency=low
     - Improve dpkg-source v3 source format handling.  Don't hard-code
       assumptions about how the source files are named
       (Closes: #559533).
+    - Remove conflict with schroot from oldstable.
   * buildd:
     - Retry the current suite if --take fails.  (Closes: #570463)
+  * libsbuild-perl:
+    - depend on schroot 1.4.0 or greater due to sbuild-createchroot
+      creating schroot.conf fragments with 1.4.x-specific features.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 12 Jun 2010 16:37:39 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 11 Jul 2010 22:27:06 +0100
 
 sbuild (0.60.0-1) unstable; urgency=low
 
