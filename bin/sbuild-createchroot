@@ -158,6 +158,7 @@ $conf->set('INCLUDE', add_items($conf->get('INCLUDE'),
 				"debfoster"));
 
 my $suite = $ARGV[0];
+makedir($ARGV[1], 0700);
 my $target = abs_path($ARGV[1]);
 my $mirror = $ARGV[2];
 my $script = undef;
@@ -259,12 +260,9 @@ if (-d "/etc/schroot/chroot.d") {
 [$chrootname]
 type=directory
 description=Debian $suite/$arch autobuilder
-location=$target
-priority=3
+directory=$target
 groups=root,sbuild
 root-groups=root,sbuild
-run-setup-scripts=true
-run-exec-scripts=true
 EOF
 
     my ($personality, $personality_message);
