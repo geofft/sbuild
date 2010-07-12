@@ -367,6 +367,7 @@ sub read_config {
 		$entry{WANNA_BUILD_SSH_USER} = $wanna_build_ssh_user;
 		$entry{WANNA_BUILD_SSH_SOCKET} = $wanna_build_ssh_socket;
 		$entry{WANNA_BUILD_SSH_OPTIONS} = $wanna_build_ssh_options;
+                $entry{WANNA_BUILD_API} = 0;
 
 		my $dist_config = Buildd::DistConf->new(\%entry);
 
@@ -399,6 +400,8 @@ sub read_config {
                         $entry{uc($key)} = $defaults->{$key};
                     }
                 }
+
+                $entry{WANNA_BUILD_API} //= 1;
 
 
 		#We need this to pass this to Sbuild::DB::Client:
