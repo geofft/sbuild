@@ -55,6 +55,7 @@ sbin_SCRIPTS = 			\
 	sbuild-createchroot
 
 sbuildlibexec_SCRIPTS =		\
+	create-chroot		\
 	dobuildlog
 
 doc_DATA = 		\
