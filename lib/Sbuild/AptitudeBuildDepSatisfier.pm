@@ -149,11 +149,11 @@ EOF
     my @non_default_deps = $self->get_non_default_deps($dep, {});
 
     my @aptitude_install_command = (
-	'aptitude', 
-	'-y', 
-	'--without-recommends', 
-	'-o', 'APT::Install-Recommends=false', 
-	'-o', 'Aptitude::ProblemResolver::StepScore=100', 
+	$self->get_conf('APTITUDE'),
+	'-y',
+	'--without-recommends',
+	'-o', 'APT::Install-Recommends=false',
+	'-o', 'Aptitude::ProblemResolver::StepScore=100',
 	'-o', "Aptitude::ProblemResolver::Hints::KeepDummy=reject $dummy_pkg_name :UNINST",
 	'-o', 'Aptitude::ProblemResolver::Keep-All-Tier=55000',
 	'-o', 'Aptitude::ProblemResolver::Remove-Essential-Tier=maximum',
@@ -164,8 +164,9 @@ EOF
 
     $builder->log(join(" ", @aptitude_install_command), "\n");
 
-    my $pipe = $session->pipe_command(
+    my $pipe = $session->pipe_aptitude_command(
 	    { COMMAND => \@aptitude_install_command,
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	      PIPE => 'in',
 	      USER => 'root',
 	      CHROOT => 1,

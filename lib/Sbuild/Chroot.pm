@@ -132,11 +132,17 @@ sub _setup_options {
 		    '-o', "DPkg::Options::=--root=$chroot_dir",
 		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
 
+	$self->set('Aptitude Options',
+		   ['-o', "Dir::State::status=$chroot_dir/var/lib/dpkg/status",
+		    '-o', "DPkg::Options::=--root=$chroot_dir",
+		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
+
 	# sudo uses an absolute path on the host system.
 	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('Chroot APT Conf');
     } else { # no split
 	$self->set('APT Options', []);
+	$self->set('Aptitude Options', []);
 	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('APT Conf');
     }
@@ -400,6 +406,55 @@ sub pipe_apt_command {
 
     # Set modfied command
     $self->get_apt_command_internal($options);
+
+    return $self->pipe_command_internal($options);
+}
+
+sub get_aptitude_command_internal {
+    my $self = shift;
+    my $options = shift;
+
+    my $command = $options->{'COMMAND'};
+    my $apt_options = $self->get('Aptitude Options');
+
+    debug("Aptitude Options: ", join(" ", @$apt_options), "\n")
+	if defined($apt_options);
+
+    my @aptcommand = ();
+    if (defined($apt_options)) {
+	push(@aptcommand, @{$command}[0]);
+	push(@aptcommand, @$apt_options);
+	if ($#$command > 0) {
+	    push(@aptcommand, @{$command}[1 .. $#$command]);
+	}
+    } else {
+	@aptcommand = @$command;
+    }
+
+    debug("APT Command: ", join(" ", @aptcommand), "\n");
+
+    $options->{'CHROOT'} = $self->apt_chroot();
+    $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
+
+    $options->{'INTCOMMAND'} = \@aptcommand;
+}
+
+sub run_aptitude_command {
+    my $self = shift;
+    my $options = shift;
+
+    # Set modfied command
+    $self->get_aptitude_command_internal($options);
+
+    return $self->run_command_internal($options);
+}
+
+sub pipe_aptitude_command {
+    my $self = shift;
+    my $options = shift;
+
+    # Set modfied command
+    $self->get_aptitude_command_internal($options);
 
     return $self->pipe_command_internal($options);
 }

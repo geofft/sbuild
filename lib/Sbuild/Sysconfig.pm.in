@@ -85,6 +85,7 @@ our %paths = (
 # Programs:
 our %programs = (
     'APT_CACHE' => '@APT_CACHE@',
+    'APTITUDE' => '@APTITUDE@',
     'APT_GET' => '@APT_GET@',
     'CHMOD' => '@CHMOD@',
     'DATE' => '@DATE@',
