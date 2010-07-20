@@ -79,10 +79,13 @@ sub main () {
     $SIG{'ALRM'} = \&main::shutdown;
     $SIG{'PIPE'} = \&main::shutdown;
 
+    # If no arguments are supplied, assume we want to process the current dir.
+    push @ARGV, '.' unless (@ARGV);
+
     # Create jobs
-    foreach (@ARGV) {
-	$jobs{$_} = Sbuild::Build->new($_, $conf);
-	$jobs{$_}->set('Pkg Status Trigger', \&status_trigger)
+    foreach my $job (@ARGV) {
+	$jobs{$job} = Sbuild::Build->new($job, $conf);
+	$jobs{$job}->set('Pkg Status Trigger', \&status_trigger)
     }
     write_jobs_file(); # Will now update on trigger.
 
@@ -300,7 +303,6 @@ sub shutdown ($) {
 			  $jobs{$current_job}->get('Sub PID') .
 			  " )\""],
 			  USER => 'root',
-			  CHROOT => 1,
 			  PRIORITY => 0,
 			  DIR => '/' });
     }
@@ -320,7 +322,6 @@ sub shutdown ($) {
 		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
 			      '-rf', $bdir],
 		  USER => 'root',
-		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	}

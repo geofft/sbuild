@@ -17,7 +17,8 @@ debian/build/config.status: configure
 	  SCHROOT=/usr/bin/schroot \
 	  SSH=/usr/bin/ssh \
 	  SUDO=/usr/bin/sudo \
-	  APTITUDE=/usr/bin/aptitude
+	  APTITUDE=/usr/bin/aptitude \
+	  LINTIAN=/usr/bin/lintian
 
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status

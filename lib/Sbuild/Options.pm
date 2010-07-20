@@ -124,6 +124,14 @@ sub set_options {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				$_[1]);
 		       },
+		       "dpkg-source-opts=s" => sub {
+			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "dpkg-source-opt=s" => sub {
+			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+				$_[1]);
+		       },
 		       "mail-log-to=s" => sub {
 			   $self->set_conf('MAILTO', $_[1]);
 			   $self->set_conf('MAILTO_FORCED_BY_CLI', "yes");
@@ -164,6 +172,31 @@ sub set_options {
 		       "build-dep-resolver=s" => sub {
 			   $self->set_conf('BUILD_DEP_RESOLVER', $_[1]);
 		       },
+			"run-lintian" => sub {
+			    $self->set_conf('RUN_LINTIAN', 1);
+		       },
+		       "lintian-opts=s" => sub {
+			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "lintian-opt=s" => sub {
+			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
+				$_[1]);
+		       },
+			"pre-build-commands=s" => sub {
+			    push(@{$self->get_conf('PRE_BUILD_COMMANDS')},
+				$_[1]);
+		       },
+			"post-build-commands=s" => sub {
+			    push(@{$self->get_conf('POST_BUILD_COMMANDS')},
+				$_[1]);
+		       },
+			"log-external-command-output" => sub {
+			    $self->set_conf('LOG_EXTERNAL_COMMAND_OUTPUT', 1);
+		       },
+			"log-external-command-error" => sub {
+			    $self->set_conf('LOG_EXTERNAL_COMMAND_ERROR', 1);
+		       }
 	);
 }
 

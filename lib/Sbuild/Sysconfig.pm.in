@@ -96,6 +96,7 @@ our %programs = (
     'DPKG_BUILDPACKAGE' => '@DPKG_BUILDPACKAGE@',
     'DPKG_PARSECHANGELOG' => '@DPKG_PARSECHANGELOG@',
     'DPKG_SOURCE' => '@DPKG_SOURCE@',
+    'LINTIAN' => '@LINTIAN@',
     'DU' => '@DU@',
     'FAKEROOT' => '@FAKEROOT@',
     'GPG' => '@GPG@',

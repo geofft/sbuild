@@ -177,6 +177,9 @@ sub init_allowed_keys {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'DPKG_SOURCE'}
 	},
+	'DPKG_SOURCE_OPTIONS'			=> {
+	    DEFAULT => []
+	},
 	'DCMD'					=> {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'DCMD'}
@@ -483,6 +486,28 @@ sub init_allowed_keys {
 			     qw(internal aptitude));
 	    },
 	},
+	'LINTIAN'				=> {
+	    CHECK => $validate_program,
+	    DEFAULT => $Sbuild::Sysconfig::programs{'LINTIAN'},
+	},
+	'RUN_LINTIAN'				=> {
+	    DEFAULT => 0
+	},
+	'LINTIAN_OPTIONS'			=> {
+	    DEFAULT => []
+	},
+	'PRE_BUILD_COMMANDS'			=> {
+	    DEFAULT => []
+	},
+	'POST_BUILD_COMMANDS'			=> {
+	    DEFAULT => []
+	},
+	'LOG_EXTERNAL_COMMAND_OUTPUT'		=> {
+	    DEFAULT => 0
+	},
+	'LOG_EXTERNAL_COMMAND_ERROR'		=> {
+	    DEFAULT => 0
+	}
     );
 
     $self->set_allowed_keys(\%sbuild_keys);
@@ -511,6 +536,7 @@ sub read_config {
     my $apt_cache = undef;
     my $aptitude = undef;
     my $dpkg_source = undef;
+    my $dpkg_source_opts = undef;
     my $dcmd = undef;
     my $md5sum = undef;
     my $avg_time_db = undef;
@@ -571,6 +597,15 @@ sub read_config {
     my $job_file = undef;
     my $build_dir = undef;
     my $build_dep_resolver = undef;
+    my $lintian = undef;
+    my $run_lintian = undef;
+    my $lintian_opts = undef;
+    my @pre_build_commands;
+    undef @pre_build_commands;
+    my @post_build_commands;
+    undef @post_build_commands;
+    my $log_external_command_output = undef;
+    my $log_external_command_error = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
 	if (-r $_) {
@@ -599,6 +634,7 @@ sub read_config {
     $self->set('APT_CACHE', $apt_cache);
     $self->set('APTITUDE', $aptitude);
     $self->set('DPKG_SOURCE', $dpkg_source);
+    $self->set('DPKG_SOURCE_OPTIONS', $dpkg_source_opts);
     $self->set('DCMD', $dcmd);
     $self->set('MD5SUM', $md5sum);
     $self->set('AVG_TIME_DB', $avg_time_db);
@@ -678,7 +714,17 @@ sub read_config {
 	$self->get('BIN_NMU')) {
 	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
-
+    $self->set('LINTIAN', $lintian);
+    $self->set('RUN_LINTIAN', $run_lintian);
+    $self->set('LINTIAN_OPTIONS', $lintian_opts);
+    $self->set('PRE_BUILD_COMMANDS', \@pre_build_commands)
+	if (@pre_build_commands);
+    $self->set('POST_BUILD_COMMANDS', \@post_build_commands)
+	if (@post_build_commands);
+    $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output)
+	if ($log_external_command_output);
+    $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error)
+	if ($log_external_command_error);
 }
 
 sub check_group_membership ($) {

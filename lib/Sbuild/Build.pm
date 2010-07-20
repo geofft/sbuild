@@ -34,12 +34,14 @@ use FileHandle;
 use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
+use Cwd qw(:DEFAULT abs_path);
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
 use Sbuild::Base;
 use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
+use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
@@ -65,47 +67,6 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
-    # DSC, package and version information:
-    $self->set_dsc($dsc);
-    my $ver = $self->get('DSC Base');
-    $ver =~ s/\.dsc$//;
-    # Note, will be overwritten by Version: in DSC.
-    $self->set_version($ver);
-
-    # Do we need to download?
-    $self->set('Download', 0);
-    $self->set('Download', 1)
-	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
-	    check_url($self->get('DSC'))); # Valid URL
-
-    # Can sources be obtained?
-    $self->set('Invalid Source', 0);
-    $self->set('Invalid Source', 1)
-	if ((!$self->get('Download')) ||
-	    (!($self->get('DSC Base') =~ m/\.dsc$/) && # Use apt to download
-	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
-	    (!defined $self->get('Version')));
-
-    debug("DSC = " . $self->get('DSC') . "\n");
-    debug("Source Dir = " . $self->get('Source Dir') . "\n");
-    debug("DSC Base = " . $self->get('DSC Base') . "\n");
-    debug("DSC File = " . $self->get('DSC File') . "\n");
-    debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
-    debug("Package_Version = " . $self->get('Package_Version') . "\n");
-    debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
-    debug("Package_OSVersion = " . $self->get('Package_OSVersion') . "\n");
-    debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
-    debug("Package = " . $self->get('Package') . "\n");
-    debug("Version = " . $self->get('Version') . "\n");
-    debug("OVersion = " . $self->get('OVersion') . "\n");
-    debug("OSVersion = " . $self->get('OSVersion') . "\n");
-    debug("SVersion = " . $self->get('SVersion') . "\n");
-    debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
-    debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
-    debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
-    debug("Download = " . $self->get('Download') . "\n");
-    debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
-
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
@@ -126,11 +87,47 @@ sub new {
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
     $self->set('Additional Deps', []);
-    $self->set('Dependency Resolver', undef);
+    $self->set('Changes', {});
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
+    $self->set('Debian Source Dir', undef);
+    $self->set('Download', 0);
+
+    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
+    $self->set('Host', $host);
+
+    # DSC, package and version information:
+    $self->set_dsc($dsc);
+    my $ver = $self->get('DSC Base');
+    $ver =~ s/\.dsc$//;
+    # Note, will be overwritten by Version: in DSC.
+    $self->set_version($ver);
+
+    # Do we need to download?
+    $self->set('Download', 1)
+	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
+	    check_url($self->get('DSC')) || # Valid URL
+	    ($self->get('Debian Source Dir'))); # Debianized source directory
+
+    # Can sources be obtained?
+    $self->set('Invalid Source', 0);
+    $self->set('Invalid Source', 1)
+	if ((!$self->get('Download')) ||
+	    (!($self->get('DSC Base') =~ m/\.dsc$/) && # Use apt to download
+	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
+	    (!defined $self->get('Version')));
+
+    foreach ('DSC', 'Source Dir', 'DSC Base', 'DSC File', 'DSC Dir',
+             'Package_Version', 'Package_OVersion',
+             'Package_OSVersion', 'Package_SVersion', 'Package',
+             'Version', 'OVersion', 'OSVersion', 'SVersion',
+             'VersionEpoch', 'VersionUpstream', 'VersionDebian',
+             'Download', 'Invalid Source') {
+	my $val = $self->get($_);
+	debug("$_ = " . $val . "\n") if defined($val);
+    }
 
     return $self;
 }
@@ -141,9 +138,60 @@ sub set_dsc {
 
     debug("Setting DSC: $dsc\n");
 
+    # Check if the DSC given is a directory on the local system. This
+    # means we'll build the source package with dpkg-source first.
+    if (-d $dsc) {
+	my $pipe = $self->get('Host')->pipe_command(
+	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
+			  "-l$dsc/debian/changelog"],
+	      USER => $self->get_conf('USERNAME'),
+	      PRIORITY => 0,
+	    });
+
+	if (! $pipe) {
+	    $self->log_error("Could not parse $dsc/debian/changelog: $!");
+	    $self->set('Invalid Source', 1);
+	    goto set_vars;
+	}
+
+	my $stanzas = parse_file($pipe);
+
+	if (! close $pipe) {
+	    $self->log_error("Could not close pipe: $!");
+	    $self->set('Invalid Source', 1);
+	    goto set_vars;
+	}
+
+	my $stanza = @{$stanzas}[0];
+	my $package = ${$stanza}{'Source'};
+	my $version = ${$stanza}{'Version'};
+
+	if (!defined($package) || !defined($version)) {
+	    $self->log_error("Missing Source or Version in $dsc/debian/changelog");
+	    $self->set('Invalid Source', 1);
+	    goto set_vars;
+	}
+
+	$version = $self->strip_epoch($version);
+	my $dir = getcwd();
+	# Note: need to support cases when invoked from a subdirectory
+	# of the build directory, i.e. $dsc/foo -> $dsc/.. in addition
+	# to $dsc -> $dsc/.. as below.
+	if ($dir eq abs_path($dsc)) {
+	    # We won't attempt to build the source package from the source
+	    # directory so the source package files will go to the parent dir.
+	    $dir = abs_path("$dir/..");
+	    $self->set_conf('BUILD_DIR', $dir);
+	}
+	$self->set('Debian Source Dir', abs_path($dsc));
+
+	$self->set_version("${package}_${version}");
+	$dsc = "$dir/" . $self->get('Package_OSVersion') . ".dsc";
+    }
+
+set_vars:
     $self->set('DSC', $dsc);
     $self->set('Source Dir', dirname($dsc));
-
     $self->set('DSC Base', basename($dsc));
 }
 
@@ -154,6 +202,8 @@ sub set_version {
     debug("Setting package version: $pkgv\n");
 
     my ($pkg, $version) = split /_/, $pkgv;
+    return if (!defined($pkg) || !defined($version));
+
     # Original version (no binNMU or other addition)
     my $oversion = $version;
     # Original version with stripped epoch
@@ -205,6 +255,8 @@ sub get_status {
 sub run {
     my $self = shift;
 
+    $self->get('Host')->set('Log Stream', $self->get('Log Stream'));
+
     $self->set_status('building');
 
     $self->set('Pkg Start Time', time);
@@ -220,6 +272,56 @@ sub run {
 	$self->log("Skipping " . $self->get('Package') . " \n");
 	$self->set_status('failed');
 	goto cleanup_skip;
+    }
+
+    # Acquire the architecture we're building for.
+    $self->set('Arch', $self->get_conf('ARCH'));
+
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_close;
+    }
+
+    # Run pre build external commands
+    $self->run_external_commands("pre-build-commands",
+	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
+    # Build the source package if given a Debianized source directory
+    if ($self->get('Debian Source Dir')) {
+	$self->set('Pkg Fail Stage', 'pack-source');
+	$self->log_subsection("Build Source Package");
+
+	$self->log_subsubsection('clean');
+	$self->get('Host')->run_command(
+	    { COMMAND => [$self->get_conf('FAKEROOT'),
+			  'debian/rules',
+			  'clean'],
+	      USER => $self->get_conf('USERNAME'),
+	      DIR => $self->get('Debian Source Dir'),
+	      PRIORITY => 0,
+	    });
+	if ($?) {
+	    $self->log_error("Failed to clean source directory");
+
+	    goto cleanup_skip;
+	}
+
+	$self->log_subsubsection('dpkg-source');
+	my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
+	push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')} if
+	    ($self->get_conf('DPKG_SOURCE_OPTIONS'));
+	push @dpkg_source_command, $self->get('Debian Source Dir');
+	$self->get('Host')->run_command(
+	    { COMMAND => \@dpkg_source_command,
+	      USER => $self->get_conf('USERNAME'),
+	      DIR => $self->get_conf('BUILD_DIR'),
+	      PRIORITY => 0,
+	    });
+	if ($?) {
+	    $self->log_error("Failed to build source package");
+	    goto cleanup_skip;
+	}
     }
 
     my $chroot_info;
@@ -241,22 +343,13 @@ sub run {
     }
 
     $self->set('Session', $session);
-    $self->set('Arch', $self->chroot_arch());
 
     $self->set('Chroot Dir', $session->get('Location'));
     $self->set('Chroot Build Dir',
 	       tempdir($self->get_conf('USERNAME') . '-' .
 		       $self->get('Package_SVersion') . '-' .
 		       $self->get('Arch') . '-XXXXXX',
-		       DIR => $session->get('Build Location')));
-    # TODO: Don't hack the build location in; add a means to customise
-    # the chroot directly.
-    $session->set('Build Location', $self->get('Chroot Build Dir'));
-
-    # TODO: Get package name from build object
-    if (!$self->open_build_log()) {
-	goto cleanup_close;
-    }
+		       DIR => $session->get('Location') . '/build'));
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
@@ -264,7 +357,7 @@ sub run {
     # Chroot execution defaults
     my $chroot_defaults = $session->get('Defaults');
     $chroot_defaults->{'DIR'} =
-	$session->strip_chroot_path($session->get('Build Location'));
+	$session->strip_chroot_path($self->get('Chroot Build Dir'));
     $chroot_defaults->{'STREAMIN'} = $devnull;
     $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
     $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
@@ -341,8 +434,8 @@ sub run {
 	    { COMMAND => [$self->get_conf('CHROOT_SETUP_SCRIPT')],
 	      ENV => $self->get_env('SBUILD_BUILD_'),
 	      USER => "root",
-	      PRIORITY => 0,
-	      CHROOT => 1 });
+	      PRIORITY => 0
+	    });
 	if ($?) {
 	    $self->log("setup-hook failed\n");
 	    $self->set_status('failed');
@@ -399,11 +492,50 @@ sub run {
 	}
     }
     $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
+
   cleanup_close:
     # End chroot session
     $session->end_session();
     $session = undef;
     $self->set('Session', $session);
+
+    if ($self->get('Pkg Status') eq "successful") {
+	$self->log_subsection("Post Build");
+
+	# Run lintian.
+	my $lintian = $self->get_conf('LINTIAN');
+	if (($self->get_conf('RUN_LINTIAN')) && (-x $lintian)) {
+	    $self->log_subsubsection("lintian");
+
+	    my @lintian_command = ($lintian);
+	    push @lintian_command, @{$self->get_conf('LINTIAN_OPT')} if
+		($self->get_conf('LINTIAN_OPT'));
+	    push @lintian_command, $self->get('Changes File');
+	    $self->get('Host')->run_command(
+		{ COMMAND => \@lintian_command,
+		  USER => $self->get_conf('USERNAME'),
+		  PRIORITY => 0,
+		});
+	    my $status = $? >> 8;
+
+	    $self->log("\n");
+	    if (! $?) {
+		$self->log_info("Lintian run was successful.\n");
+	    } else {
+		my $why = "unknown reason";
+		$why = "runtime error" if ($status == 2);
+		$why = "policy violation" if ($status == 1);
+		$why = "received signal " . $? & 127 if ($? & 127);
+		$self->log_error("Lintian run failed ($why)\n");
+	    }
+	}
+
+	# Run post build external commands
+	$self->run_external_commands("post-build-commands",
+	    $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+	    $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
+    }
 
     $self->close_build_log();
 
@@ -579,7 +711,7 @@ sub fetch_source_files {
 	    $self->log($self->get_conf('APT_GET') . " for sources failed\n");
 	    return 0;
 	}
-	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
+	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]) || return 0;
     }
 
     if (!open( F, "<$build_dir/$dsc" )) {
@@ -683,6 +815,120 @@ sub fetch_source_files {
     return 1;
 }
 
+# Subroutine that runs any command through the system (i.e. not through the
+# chroot. It takes a string of a command with arguments to run along with
+# arguments whether to save STDOUT and/or STDERR to the log stream
+sub run_command {
+    my $self = shift;
+    my $command = shift;
+    my $log_output = shift;
+    my $log_error = shift;
+
+    # Duplicate output from our commands to the log stream if we are asked to
+    my ($out, $err);
+    if ($log_output) {
+	if (! open $out, ">&STDOUT") {
+	    $self->log_error("Could not duplicate STDOUT for $command: $!");
+	    return 0;
+	}
+	if (! open STDOUT, '>&', $self->get('Log Stream')) {
+	    $self->log_error("Could not duplicate STDOUT to log stream: $!");
+	    return 0;
+	}
+    }
+    if ($log_error) {
+	if (! open $err, ">&STDERR") {
+	    $self->log_error("Could not duplicate STDERR for $command: $!");
+	    return 0;
+	}
+	if (! open STDERR, '>&', $self->get('Log Stream')) {
+	    $self->log_error("Could not duplicate STDERR to log stream: $!");
+	    return 0;
+	}
+    }
+
+    # Run the command and save the exit status
+    my @args = split(/\s+/, $command);
+    system(@args);
+    my $status = ($? >> 8);
+
+    # Restore STDOUT and STDERR
+    if ($log_output) {
+	if (! open STDOUT, '>&', $out) {
+	    $self->log_error("Can't restore STDOUT: $!");
+	    return 0;
+	}
+	$out->close();
+    }
+    if ($log_error) {
+	if (! open STDERR, '>&', $err) {
+	    $self->log_error("Can't restore STDOUT: $!");
+	    return 0;
+	}
+	$err->close();
+    }
+
+    # Check if the command failed
+    if ($status != 0) {
+	return 0;
+    }
+    return 1;
+}
+
+# Subroutine that processes external commands to be run during various stages of
+# an sbuild run. We also ask if we want to log any output from the commands
+sub run_external_commands {
+    my $self = shift;
+    my $stage = shift;
+    my $log_output = shift;
+    my $log_error = shift;
+
+    # Determine which set of commands to run based on the string $commands
+    my @commands;
+    if ($stage eq "pre-build-commands") {
+	$self->log_subsection("Pre Build Commands");
+	@commands = @{$self->get_conf('PRE_BUILD_COMMANDS')};
+    } elsif ($stage eq "post-build-commands") {
+	$self->log_subsection("Post Build Commands");
+	@commands = @{$self->get_conf('POST_BUILD_COMMANDS')};
+    }
+
+    # Run each command, substituting the various percent escapes (like
+    # %SBUILD_DSC) from the commands to run with the appropriate subsitutions.
+    my $dsc = $self->get('DSC');
+    my $changes;
+    $changes = $self->get('Changes File') if ($self->get('Changes File'));
+    my %percent = (
+	"%" => "%",
+	"d" => $dsc, "SBUILD_DSC" => $dsc,
+	"c" => $changes, "SBUILD_CHANGES" => $changes,
+    );
+    # Our escapes pattern, with longer escapes first, then sorted lexically.
+    my $keyword_pat = join("|",
+	sort {length $b <=> length $a || $a cmp $b} keys %percent);
+    my $returnval = 1;
+    foreach my $command (@commands) {
+	$command =~ s{
+	    # Match a percent followed by a valid keyword
+	    \%($keyword_pat)
+	}{
+	    # Substitute with the appropriate value only if it's defined
+	    $percent{$1} || $&
+	}msxge;
+	$self->log_subsubsection("$command");
+	$returnval = $self->run_command($command, $log_output, $log_error);
+	$self->log("\n");
+	if (!$returnval) {
+	    $self->log_error("Command '$command' failed to run.\n");
+	} else {
+	    $self->log_info("Finished running '$command'.\n");
+	}
+    }
+    $self->log("\nFinished processing commands.\n");
+    $self->log_sep();
+    return $returnval;
+}
+
 sub build {
     my $self = shift;
 
@@ -722,7 +968,6 @@ sub build {
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
 				  '-x', $dscfile, $dscdir],
 		      USER => $self->get_conf('USERNAME'),
-		      CHROOT => 1,
 		      PRIORITY => 0});
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
@@ -783,7 +1028,6 @@ sub build {
 		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
 			      '-rf', $build_dir],
 		  USER => 'root',
-		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	    return 0;
@@ -870,7 +1114,6 @@ sub build {
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'CHMOD'},
 			  'a+r', '/etc/ld.so.conf'],
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -919,7 +1162,6 @@ sub build {
 	ENV => $buildenv,
 	USER => $self->get_conf('USERNAME'),
 	SETSID => 1,
-	CHROOT => 1,
 	PRIORITY => 0,
 	DIR => $bdir
     };
@@ -946,7 +1188,6 @@ sub build {
 			  '-e',
 			  "kill( \"$signal\", -$pid )"],
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1006,7 +1247,8 @@ sub build {
 	    my(@do_dists, @saved_dists);
 	    $self->log("\n$changes:\n");
 	    open( F, "<$build_dir/$changes" );
-	    if (open( F2, ">$changes.new" )) {
+	    my $sys_build_dir = $self->get_conf('BUILD_DIR');
+	    if (open( F2, ">$sys_build_dir/$changes.new" )) {
 		while( <F> ) {
 		    if (/^Distribution:\s*(.*)\s*$/ and $self->get_conf('OVERRIDE_DISTRIBUTION')) {
 			$self->log("Distribution: " . $self->get_conf('DISTRIBUTION') . "\n");
@@ -1027,13 +1269,15 @@ sub build {
 		    }
 		}
 		close( F2 );
-		rename("$changes.new", "$changes")
-		    or $self->log("$changes.new could not be renamed to $changes: $!\n");
+		rename("$sys_build_dir/$changes.new", "$sys_build_dir/$changes")
+		    or $self->log("$sys_build_dir/$changes.new could not be " .
+		    "renamed to $sys_build_dir/$changes: $!\n");
+		$self->set('Changes File', "$sys_build_dir/$changes");
 		unlink("$build_dir/$changes")
 		    if $build_dir;
 	    }
 	    else {
-		$self->log("Cannot create $changes.new: $!\n");
+		$self->log("Cannot create $sys_build_dir/$changes.new: $!\n");
 		$self->log("Distribution field may be wrong!!!\n");
 		if ($build_dir) {
 		    system "mv", "-f", "$build_dir/$changes", "."
@@ -1668,10 +1912,9 @@ sub check_space {
     my $sum = 0;
 
     foreach (@files) {
-	my $pipe = $self->get('Session')->pipe_command(
+	my $pipe = $self->get('Host')->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DU'}, '-k', '-s', $_],
 	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	      DIR => '/'});
 
@@ -1880,6 +2123,14 @@ sub debian_files_list {
 }
 
 
+# This subroutine strips the epoch from a Debian package version.
+sub strip_epoch {
+    my $self = shift;
+    my $version = shift;
+    $version =~ s/^\d+?://;
+    return $version;
+}
+
 # Figure out chroot architecture
 sub chroot_arch {
     my $self = shift;
@@ -1888,7 +2139,6 @@ sub chroot_arch {
 	{ COMMAND => [$self->get_conf('DPKG'),
 		      '--print-architecture'],
 	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
 	  PRIORITY => 0,
 	  DIR => '/' }) || return undef;
 
