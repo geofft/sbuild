@@ -253,6 +253,7 @@ sub list_packages ($$@) {
     $session->run_command(
 	{COMMAND => [$conf->get('DPKG'), '--list', @_],
 	 USER => 'root',
+	 CHROOT => 1,
 	 PRIORITY => 0});
     return $?;
 }
@@ -266,6 +267,7 @@ sub set_package_status ($$$@) {
 	{COMMAND => [$conf->get('DPKG'), '--set-selections'],
 	 PIPE => 'out',
 	 USER => 'root',
+	 CHROOT => 1,
 	 PRIORITY => 0});
 
     if (!$pipe) {

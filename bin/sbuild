@@ -303,6 +303,7 @@ sub shutdown ($) {
 			  $jobs{$current_job}->get('Sub PID') .
 			  " )\""],
 			  USER => 'root',
+			  CHROOT => 1,
 			  PRIORITY => 0,
 			  DIR => '/' });
     }
@@ -322,6 +323,7 @@ sub shutdown ($) {
 		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
 			      '-rf', $bdir],
 		  USER => 'root',
+		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	}

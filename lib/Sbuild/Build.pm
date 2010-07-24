@@ -46,7 +46,7 @@ use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
-use Sbuild::Utility qw(check_url download dsc_files);
+use Sbuild::Utility qw(check_url download parse_file dsc_files);
 use Sbuild::AptitudeBuildDepSatisfier;
 use Sbuild::InternalBuildDepSatisfier;
 
@@ -87,13 +87,12 @@ sub new {
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
     $self->set('Additional Deps', []);
-    $self->set('Changes', {});
+    $self->set('Dependency Resolver', undef);
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
     $self->set('Debian Source Dir', undef);
-    $self->set('Download', 0);
 
     my $host = Sbuild::ChrootRoot->new($self->get('Config'));
     $self->set('Host', $host);
@@ -106,6 +105,7 @@ sub new {
     $self->set_version($ver);
 
     # Do we need to download?
+    $self->set('Download', 0);
     $self->set('Download', 1)
 	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
 	    check_url($self->get('DSC')) || # Valid URL
@@ -119,14 +119,15 @@ sub new {
 	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
 	    (!defined $self->get('Version')));
 
+    # Output certain values for debugging purposes
     foreach ('DSC', 'Source Dir', 'DSC Base', 'DSC File', 'DSC Dir',
              'Package_Version', 'Package_OVersion',
              'Package_OSVersion', 'Package_SVersion', 'Package',
              'Version', 'OVersion', 'OSVersion', 'SVersion',
              'VersionEpoch', 'VersionUpstream', 'VersionDebian',
              'Download', 'Invalid Source') {
-	my $val = $self->get($_);
-	debug("$_ = " . $val . "\n") if defined($val);
+      my $val = $self->get($_);
+      debug("$_ = " . $val . "\n") if defined($val);
     }
 
     return $self;
@@ -143,8 +144,9 @@ sub set_dsc {
     if (-d $dsc) {
 	my $pipe = $self->get('Host')->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
-			  "-l$dsc/debian/changelog"],
+			  "-l" . abs_path($dsc) . "/debian/changelog"],
 	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
 
@@ -155,12 +157,6 @@ sub set_dsc {
 	}
 
 	my $stanzas = parse_file($pipe);
-
-	if (! close $pipe) {
-	    $self->log_error("Could not close pipe: $!");
-	    $self->set('Invalid Source', 1);
-	    goto set_vars;
-	}
 
 	my $stanza = @{$stanzas}[0];
 	my $package = ${$stanza}{'Source'};
@@ -298,6 +294,7 @@ sub run {
 			  'debian/rules',
 			  'clean'],
 	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 0,
 	      DIR => $self->get('Debian Source Dir'),
 	      PRIORITY => 0,
 	    });
@@ -315,6 +312,7 @@ sub run {
 	$self->get('Host')->run_command(
 	    { COMMAND => \@dpkg_source_command,
 	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 0,
 	      DIR => $self->get_conf('BUILD_DIR'),
 	      PRIORITY => 0,
 	    });
@@ -343,13 +341,17 @@ sub run {
     }
 
     $self->set('Session', $session);
+    $self->set('Arch', $self->chroot_arch());
 
     $self->set('Chroot Dir', $session->get('Location'));
     $self->set('Chroot Build Dir',
 	       tempdir($self->get_conf('USERNAME') . '-' .
 		       $self->get('Package_SVersion') . '-' .
 		       $self->get('Arch') . '-XXXXXX',
-		       DIR => $session->get('Location') . '/build'));
+		       DIR => $session->get('Build Location')));
+    # TODO: Don't hack the build location in; add a means to customise
+    # the chroot directly.
+    $session->set('Build Location', $self->get('Chroot Build Dir'));
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
@@ -357,7 +359,7 @@ sub run {
     # Chroot execution defaults
     my $chroot_defaults = $session->get('Defaults');
     $chroot_defaults->{'DIR'} =
-	$session->strip_chroot_path($self->get('Chroot Build Dir'));
+	$session->strip_chroot_path($session->get('Build Location'));
     $chroot_defaults->{'STREAMIN'} = $devnull;
     $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
     $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
@@ -434,8 +436,8 @@ sub run {
 	    { COMMAND => [$self->get_conf('CHROOT_SETUP_SCRIPT')],
 	      ENV => $self->get_env('SBUILD_BUILD_'),
 	      USER => "root",
-	      PRIORITY => 0
-	    });
+	      PRIORITY => 0,
+	      CHROOT => 1 });
 	if ($?) {
 	    $self->log("setup-hook failed\n");
 	    $self->set_status('failed');
@@ -514,6 +516,7 @@ sub run {
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@lintian_command,
 		  USER => $self->get_conf('USERNAME'),
+		  CHROOT => 0,
 		  PRIORITY => 0,
 		});
 	    my $status = $? >> 8;
@@ -711,7 +714,7 @@ sub fetch_source_files {
 	    $self->log($self->get_conf('APT_GET') . " for sources failed\n");
 	    return 0;
 	}
-	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]) || return 0;
+	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
     }
 
     if (!open( F, "<$build_dir/$dsc" )) {
@@ -848,8 +851,7 @@ sub run_command {
     }
 
     # Run the command and save the exit status
-    my @args = split(/\s+/, $command);
-    system(@args);
+    system(@{$command});
     my $status = ($? >> 8);
 
     # Restore STDOUT and STDERR
@@ -908,20 +910,23 @@ sub run_external_commands {
 	sort {length $b <=> length $a || $a cmp $b} keys %percent);
     my $returnval = 1;
     foreach my $command (@commands) {
-	$command =~ s{
-	    # Match a percent followed by a valid keyword
-	    \%($keyword_pat)
-	}{
-	    # Substitute with the appropriate value only if it's defined
-	    $percent{$1} || $&
-	}msxge;
-	$self->log_subsubsection("$command");
+	foreach my $arg (@{$command}) {
+	  $arg =~ s{
+	      # Match a percent followed by a valid keyword
+	     \%($keyword_pat)
+	  }{
+	      # Substitute with the appropriate value only if it's defined
+	      $percent{$1} || $&
+	  }msxge;
+	}
+  my $command_str = join(" ", @{$command});
+	$self->log_subsubsection("$command_str");
 	$returnval = $self->run_command($command, $log_output, $log_error);
 	$self->log("\n");
 	if (!$returnval) {
-	    $self->log_error("Command '$command' failed to run.\n");
+	    $self->log_error("Command '$command_str' failed to run.\n");
 	} else {
-	    $self->log_info("Finished running '$command'.\n");
+	    $self->log_info("Finished running '$command_str'.\n");
 	}
     }
     $self->log("\nFinished processing commands.\n");
@@ -968,6 +973,7 @@ sub build {
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
 				  '-x', $dscfile, $dscdir],
 		      USER => $self->get_conf('USERNAME'),
+		      CHROOT => 1,
 		      PRIORITY => 0});
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
@@ -1028,6 +1034,7 @@ sub build {
 		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
 			      '-rf', $build_dir],
 		  USER => 'root',
+		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	    return 0;
@@ -1114,6 +1121,7 @@ sub build {
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'CHMOD'},
 			  'a+r', '/etc/ld.so.conf'],
 	      USER => 'root',
+	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1162,6 +1170,7 @@ sub build {
 	ENV => $buildenv,
 	USER => $self->get_conf('USERNAME'),
 	SETSID => 1,
+	CHROOT => 1,
 	PRIORITY => 0,
 	DIR => $bdir
     };
@@ -1188,6 +1197,7 @@ sub build {
 			  '-e',
 			  "kill( \"$signal\", -$pid )"],
 	      USER => 'root',
+	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1912,9 +1922,10 @@ sub check_space {
     my $sum = 0;
 
     foreach (@files) {
-	my $pipe = $self->get('Host')->pipe_command(
+	my $pipe = $self->get('Session')->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DU'}, '-k', '-s', $_],
 	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 0,
 	      PRIORITY => 0,
 	      DIR => '/'});
 
@@ -2139,6 +2150,7 @@ sub chroot_arch {
 	{ COMMAND => [$self->get_conf('DPKG'),
 		      '--print-architecture'],
 	  USER => $self->get_conf('USERNAME'),
+	  CHROOT => 1,
 	  PRIORITY => 0,
 	  DIR => '/' }) || return undef;
 

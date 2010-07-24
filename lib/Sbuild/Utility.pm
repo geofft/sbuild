@@ -358,8 +358,7 @@ sub _get_proxy {
 
 # Method to parse a rfc822 type file, like Debian changes or control files.
 # It can also be used on files like Packages or Sources files in a Debian
-# archive and can be used to parse output from tools such as dpkg-deb and
-# dpkg-parsechangelog.
+# archive.
 # This subroutine returns an array of hashes. Each hash is a stanza.
 sub parse_file ($) {
     # Takes one parameter, the file to parse.
@@ -389,14 +388,13 @@ sub parse_file ($) {
 
     # Enclose this in it's own block, since we change $/
     {
-        # Attempt to open and read the file or assign passed filehandle to $fh
+        # Attempt to open and read the file
         my $fh;
-	if (ref($file) eq "GLOB") {
-	    $fh = $file;
-	} elsif (! open $fh, '<', $file) {
-	    print "Could not read $file: $!";
-	    return 0;
-	}
+        if (ref($file) eq "GLOB") {
+          $fh = $file;
+        } else {
+          open $fh, '<', $file or die "Could not read $file: $!";
+        }
 
         # Read paragraph by paragraph
         local $/ = "";
@@ -407,26 +405,25 @@ sub parse_file ($) {
 
             # Chomp the paragraph and split by each field
             chomp;
-            my @matches = split /$split_pattern/, "$_";
+            my @matches = split /$split_pattern/, "$_\n";
 
             # Loop through the fields, placing them into a hash
             my %fields;
             foreach my $match (@matches) {
                 my ($field, $field_contents);
                 $field = $1 if ($match =~ /([^:]+?):/msx);
-                $field_contents = $1 if ($match =~ /[^:]+?:\s*?\b(.*)/msx);
-                chomp $field_contents;
-                $field_contents =~ s/^\s//msxg;
+                $field_contents = $1 if ($match =~ /[^:]+?:(.*)/msx);
+
+                # Trim leading and trailing space from entries
+                $field_contents =~ s/^[\s]+?\b//msx;
+                $field_contents =~ s/[\s]+?$//msx;
                 $fields{$field} = $field_contents;
             }
 
             # Push each hash of fields as a ref onto our array
             push @array_of_fields, \%fields;
         }
-        if ((ref($file) ne "GLOB") && (! close $fh)) {
-	    print "Problem encountered closing file $file: $!";
-	    return 0;
-	}
+        close $fh or die "Problem encountered closing file $file: $!";
     }
 
     # Return a reference to the array

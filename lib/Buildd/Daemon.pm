@@ -674,6 +674,7 @@ retry:
 		      "$apt_get", '-q', '-d',
 		      '--diff-only', 'source', "$n=$v"],
 	  USER => $self->get_conf('USERNAME'),
+	  CHROOT => 1,
 	  PRIORITY => 0,
 	});
     if (!$pipe) {
@@ -696,6 +697,7 @@ retry:
 			  "$apt_get", '-q', '-d',
 			  '--tar-only', 'source', "$n=$v"],
 	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 1,
 	      PRIORITY => 0,
 	    });
 	if (!$pipe2) {
@@ -719,6 +721,7 @@ retry:
 			  $apt_get, '-qq',
 			  'update'],
 	      USER => $self->get_conf('USERNAME'),
+	      CHROOT => 1,
 	      PRIORITY => 0,
 	      STREAMOUT => $devnull
 	    });
