@@ -315,9 +315,9 @@ strings corresponding to the commands to run.
 Here's an example of how to edit the configuration files to run "foo" and "bar"
 with arguments before a build starts.
 .PP
-\f[CB]@pre_build_commands = ('foo arg1 arg2',\fP
+\f[CB]@pre_build_commands = (['foo', 'arg1', 'arg2'],\fP
 .br
-\f[CB]    'bar arg1 arg2 arg3',\fP
+\f[CB]    ['bar', 'arg1', 'arg2', 'arg3'],\fP
 .br
 \f[CB]    );\fP
 .PP
@@ -328,7 +328,7 @@ the \fI\-\-pre\-build\-commands\fP option.
 .br
 \f[CB]      \-\-pre\-build\-commands='foo arg1 arg2' \\\fP
 .br
-\f[CB]      \-\-pre\-build\-commands=''bar arg1 arg2 arg3'\fP
+\f[CB]      \-\-pre\-build\-commands='bar arg1 arg2 arg3'\fP
 .PP
 Besides running external commands, sbuild can also detect the use of certain
 percent escapes given as arguments. These are used to allow for a command to be
