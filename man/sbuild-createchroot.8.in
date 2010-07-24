@@ -29,6 +29,8 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ "\-\-components=\fIcomponent1[,component2,[componentn]]\fP" ]
 .RB [ "\-\-keyring=\fIkeyring-file\fP" ]
 .RB [ "\-\-setup\-only" ]
+.RB [ "\-\-make\-sbuild\-tarball=\fIFILE\fP" ]
+.RB [ "\-\-keep\-sbuildchroot\-dir" ]
 .B SUITE TARGET-DIRECTORY DEBIAN-MIRROR-URI
 .RB [ SCRIPT ]
 .PP
@@ -141,11 +143,32 @@ debootstrap script to run.  Not typically required.
 Don't run debootstrap.  Only perform the setup tasks on an already existing
 chroot.  This is useful for converting an existing chroot for use with sbuild
 which has already been created using a tool such as debootstrap.
+.TP
+.BR \-\-make\-sbuild\-tarball=\fIFILE\fP
+Create a bootstrapped file type chroot ready for use with sbuild and save it as
+\fIFILE\fP.
+.TP
+.BR \-\-keep\-sbuildchroot\-dir
+Don't delete the directory used for creating a file type chroot. This option
+does nothing if not creating a file type chroot.
 .SH EXAMPLES
-To create a sid (unstable) chroot in \fI/srv/chroot/unstable\fP using the
-\fIftp.uk.debian.org\fP Debian mirror:
+To create a plain type sid (unstable) chroot in \fI/srv/chroot/unstable\fP using
+the \fIftp.uk.debian.org\fP Debian mirror:
 .PP
 \f[CR]% \f[CB]sudo sbuild\-createchroot sid /srv/chroot/unstable \fP\fP\\
+.br
+\f[CB]    http://ftp.uk.debian.org/debian\fP\[CR]
+.PP
+To create a bootstrapped file type sid (unstable) chroot ready for use with
+sbuild and saved in \fI/var/cache/sbuild/sbuild.tar.gz\fP using the
+\fIftp.uk.debian.org\fP Debian mirror and using a temporary directory as the
+target:
+.PP
+\f[CR]% \f[CB]sudo sbuild\-createchroot \fP\fP\\
+.br
+    \-\-make\-sbuild\-tarball=/var/cache/sbuild/sbuild.tar.gz \fP\fP\\
+.br
+    sid `mktemp \-d` \fP\fP\\
 .br
 \f[CB]    http://ftp.uk.debian.org/debian\fP\[CR]
 .SH HISTORY
