@@ -184,12 +184,14 @@ sub set_options {
 				$_[1]);
 		       },
 			"pre-build-commands=s" => sub {
-			    push(@{$self->get_conf('PRE_BUILD_COMMANDS')},
-				$_[1]);
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{$self->get_conf('PRE_BUILD_COMMANDS')},
+				\@command);
 		       },
 			"post-build-commands=s" => sub {
-			    push(@{$self->get_conf('POST_BUILD_COMMANDS')},
-				$_[1]);
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{$self->get_conf('POST_BUILD_COMMANDS')},
+				\@command);
 		       },
 			"log-external-command-output" => sub {
 			    $self->set_conf('LOG_EXTERNAL_COMMAND_OUTPUT', 1);
