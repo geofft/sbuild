@@ -310,7 +310,7 @@ external commands can be run before a build starts and after a successful build.
 Providing commands to run is done through the appropriate options given on the
 command line and through the use of the configuration files. In the
 configuration file, the list of commands to run are placed in an array of
-strings corresponding to the commands to run.
+array of strings corresponding to the commands to run.
 .PP
 Here's an example of how to edit the configuration files to run "foo" and "bar"
 with arguments before a build starts.
