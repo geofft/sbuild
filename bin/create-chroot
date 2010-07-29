@@ -189,7 +189,8 @@ EOT
     if \
         [ "$ARCH" == "mips" ] || \
         [ "$ARCH" == "sparc" ] || \
-        [ "$ARCH" == "i386" ]; then
+        [ "$ARCH" == "i386" ] || \
+        [ "$ARCH" == "powerpc" ]; then
             echo "personality=linux32" >>"${TEMPFILE}"
     fi
     sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
