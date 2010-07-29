@@ -446,14 +446,14 @@ setup_logical_volume() {
 
 ensure_target_mounted() {
     if ! [ -z "$TMPMOUNTDIR" ]; then
-        echo "I: Mounting file system ${LVPATH} on ${TMPDIR}..."
+        echo "I: Mounting file system ${LVPATH} on ${TMPMOUNTDIR}..."
         sudo mount "${LVPATH}" ${TMPMOUNTDIR}
     fi
 }
 
 ensure_target_unmounted() {
     if ! [ -z "$TMPMOUNTDIR" ]; then
-        echo "I: Umounting file system ${LVPATH} on ${TMPDIR}..."
+        echo "I: Umounting file system ${LVPATH} on ${TMPMOUNTDIR}..."
         sudo umount ${TMPMOUNTDIR}
     fi
 }
