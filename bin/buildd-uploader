@@ -46,5 +46,6 @@ END {
     unlock_file($conf->get('HOME') . "/buildd-uploader")
 	if (defined($conf) &&
 	    defined($uploader) &&
-	    defined($uploader->get('Uploader Lock')));
+	    defined($uploader->get('Uploader Lock')) &&
+	    $uploader->get('Uploader Lock'));
 }
