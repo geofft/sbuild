@@ -85,6 +85,7 @@ fi
 
 # Checks for programs.
 AC_PATH_PROG([APT_CACHE], [apt-cache])
+AC_PATH_PROG([APTITUDE], [aptitude])
 AC_PATH_PROG([APT_GET], [apt-get])
 AC_PATH_PROG([CHMOD], [chmod])
 AC_PATH_PROG([DATE], [date])

@@ -7,4 +7,4 @@ debian/install/usr/share/man/man1/sbuild*          usr/share/man/man1
 debian/install/usr/share/man/man7/sbuild*          usr/share/man/man7
 debian/install/usr/share/man/man8/sbuild*          usr/share/man/man8
 debian/install/var/lib/sbuild			   var/lib
-bin/create-chroot.sh                               usr/share/sbuild
+bin/create-chroot                                  usr/share/sbuild
