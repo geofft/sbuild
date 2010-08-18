@@ -118,24 +118,29 @@ sub run {
 	$self->check_restart();
 	$self->read_config();
 
-	my $done = 0;
-	my $thisdone;
-	do {
-	    $thisdone = 0;
-	    foreach my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
-		$self->check_restart();
-		$self->read_config();
-		my $pkg_ver = $self->get_from_REDO( $dist_config );
-		next if !defined($pkg_ver);
-		$self->do_build( $dist_config, $pkg_ver);
-		++$done;
-		++$thisdone;
-	    }
-	} while( $thisdone );
+        my ( $dist_config, $pkg_ver) = get_next_REDO($self);
+        $self->do_build( $dist_config, $pkg_ver) if $pkg_ver;
+        next MAINLOOP if $pkg_ver;
 
+        ( $dist_config, $pkg_ver) = get_next_WANNABUILD($self);
+        $self->do_build( $dist_config, $pkg_ver) if $pkg_ver;
+        next MAINLOOP if $pkg_ver;
+
+	# sleep a little bit if there was nothing to do this time
+	    $self->log("Nothing to do -- sleeping " .
+		       $self->get_conf('IDLE_SLEEP_TIME') . " seconds\n");
+	    my $idle_start_time = time;
+	    sleep( $self->get_conf('IDLE_SLEEP_TIME') );
+	    my $idle_end_time = time;
+	    $self->write_stats("idle-time", $idle_end_time - $idle_start_time);
+    }
+
+    return 0;
+}
+
+sub get_next_WANNABUILD {
+    my $self = shift;
 	foreach my $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
-	    $self->check_restart();
-	    $self->read_config();
 	    $self->check_ssh_master($dist_config);
 	    my $dist_name = $dist_config->get('DIST_NAME');
 	    my %givenback = $self->read_givenback();
@@ -204,24 +209,20 @@ sub run {
 	    next if !@todo;
 	    my $todo = $self->do_wanna_build( $dist_config, @todo );
 	    last if !$todo;
-	    $self->do_build( $dist_config, $todo );
-	    ++$done;
-	    last;
+	    return ( $dist_config, $todo );
 	}
-
-	# sleep a little bit if there was nothing to do this time
-	if (!$done) {
-	    $self->log("Nothing to do -- sleeping " .
-		       $self->get_conf('IDLE_SLEEP_TIME') . " seconds\n");
-	    my $idle_start_time = time;
-	    sleep( $self->get_conf('IDLE_SLEEP_TIME') );
-	    my $idle_end_time = time;
-	    $self->write_stats("idle-time", $idle_end_time - $idle_start_time);
-	}
-    }
-
-    return 0;
 }
+
+sub get_next_REDO {
+    my $self = shift;
+    my ( $dist_config, $pkg_ver);
+    foreach $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
+	$pkg_ver = $self->get_from_REDO( $dist_config );
+        last if defined($pkg_ver);
+    }
+    return ( $dist_config, $pkg_ver);
+}
+
 
 sub get_from_REDO {
     my $self = shift;

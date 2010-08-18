@@ -1,6 +1,8 @@
 #!/bin/bash
+# vim:set et ts=4 sw=4:
 # Copyright © 2010 Marc Brockschmidt <he@debian.org>
 # Copyright © 2010 Andreas Barth <aba@not.so.argh.org>
+# Copyright © 2010 Philipp Kern <pkern@debian.org>
 #
 # buildd is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -48,6 +50,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
         APT_LIST="${CHROOT_PATH}/etc/apt/sources.buildd.list"
         APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf.d/99buildd.conf"
         APT_KEYS=""
+        APT_KEY_PACKAGES=""
         rm -f "${APT_LIST}" "${APT_CONF}"
         if [ "${SUITE_BASE}" = 'lenny' ]; then
             APT_CONF="${CHROOT_PATH}/etc/apt/apt.conf"
@@ -89,6 +92,15 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             domirror "http://www.backports.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
             APT_KEYS="${APT_KEYS} backports.org"
 
+        elif [ "${SUITE_VARIANT}" = 'edu' ]; then
+            SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
+            [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
+            domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
+            SUITES="${SUITE_BASE} ${SUITE_BASE}-test"
+            [ -n "${edu_mirror}" ] && domirror "${edu_mirror} SUITE local" ${APT_LIST}
+            domirror "http://www.backports.org/buildd/ SUITE local" ${APT_LIST}
+            APT_KEY_PACKAGES="${APT_KEY_PACKAGES} debian-edu-archive-keyring"
+
         elif [ "${SUITE_BASE}" = 'sid' ]; then
             SUITES="unstable"
             if [ "${SUITE_VARIANT}" == "experimental" ]; then
@@ -120,6 +132,9 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                 else
                     echo W: should add apt key ${KEY} but not found >&2
                 fi
+            done
+            for PKG in ${APT_KEY_PACKAGES}; do
+                chroot ${CHROOT_PATH} apt-get install -y $PKG
             done
         fi
     else
