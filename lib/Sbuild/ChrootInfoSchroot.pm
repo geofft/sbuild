@@ -143,6 +143,36 @@ sub get_info_all {
     $self->set('Chroots', $chroots);
 }
 
+sub find {
+    my $self = shift;
+    my $distribution = shift;
+    my $chroot = shift;
+    my $arch = shift;
+
+    # Determine the chroot type given
+    my $chroot_type;
+    if ($distribution =~ /:/) {
+        ($chroot_type = $distribution) =~ s/^([^:]+?):.*/$1/;
+    }
+    if (!$chroot_type && ($distribution =~ /-source$/)) {
+        $chroot_type = "source";
+    }
+
+    # Strip namespaces and '-source' suffix from distribution name given.
+    $distribution =~ s/^[^:]+://;
+    $distribution =~ s/-source$//;
+
+    # Call parent find() subroutine
+    $chroot = $self->SUPER::find($distribution, $chroot, $arch);
+
+    # Add chroot type if defined
+    if ($chroot_type) {
+        $chroot = "$chroot_type:" . "$chroot";
+    }
+
+    return $chroot;
+}
+
 sub _create {
     my $self = shift;
     my $chroot_id = shift;
