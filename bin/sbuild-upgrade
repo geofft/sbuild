@@ -21,33 +21,6 @@
 use strict;
 use warnings;
 
-use Getopt::Long;
-use Sbuild qw(help_text version_text usage_error);
-use Sbuild::Utility qw(setup cleanup);
-use Sbuild::ChrootSetup qw(upgrade);
-use Sbuild::Conf;
-use Sbuild::OptionsBase;
-
-my $conf = Sbuild::Conf->new();
-exit 1 if !defined($conf);
-my $options = Sbuild::OptionsBase->new($conf, "sbuild-upgrade", "1");
-exit 1 if !defined($options);
-$conf->check_group_membership();
-
-usage_error("sbuild-upgrade", "Incorrect number of options") if (@ARGV < 1);
-
-foreach (@ARGV) {
-
-    my $chroot = Sbuild::Utility::get_dist($_);
-
-    my $session = setup($_, $conf) or die "Chroot setup failed for $chroot chroot";
-
-    my $status = upgrade($session, $conf);
-    $status >>= 8;
-
-    cleanup($conf);
-
-    exit $status if ($status);
-}
-
-exit 0;
+print "$0 is deprecated. Use sbuild-update --upgrade directly instead.\n";
+exec("/usr/bin/sbuild-update", "--upgrade", @ARGV) or
+    die "Can't run sbuild-update: $!";
