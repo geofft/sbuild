@@ -18,22 +18,27 @@
 sbuild\-update \- update and upgrade an sbuild chroot with apt-get
 .SH SYNOPSIS
 .BR sbuild\-update
-.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.BR [ \-u \[or] \-\-update ] " " [ \-g \[or] \-\-upgrade ] " "
+.BR [ \-d \[or] \-\-dist\-upgrade ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
-.BR sbuild\-upgrade
-.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.br
+.BR (DEPRECATED) " " sbuild\-upgrade
+.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
-.BR sbuild\-distupdate
-.RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
+.br
+.BR (DEPRECATED) " " sbuild\-distupgrade
+.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
-.BR buildd\-update\-chroots
 .SH DESCRIPTION
-\fBsbuild\-update\fR runs \f[CB]apt\-get update\fP inside the specified chroot.
-\fBsbuild\-upgrade\fR and \fBsbuild\-distupgrade\fR run \f[CB]apt\-get
-upgrade\fP and \f[CB]apt\-get dist-upgrade\fP, respectively.
-\fBbuildd\-update\-chroots\fP does the equivalent (update, dist-upgrade,
-autoremove and debfoster) but for buildd systems where it will stop the buildd
-prior to updating and will act on all schroot-managed chroots.
+\fBsbuild\-update\fR runs \f[CB]apt\-get\fP inside the specified chroot
+performing \f[CB]update\fP, \f[CB]upgrade\fP, and/or \f[CB]dist\-upgrade\fP
+depending on the options specified on the command line.
+.PP
+\fBsbuild\-upgrade\fR and \fBsbuild\-distupgrade\fR are deprecated. They now
+simply run \fBsbuild\-update\fR with the appropriate option (either
+\f[CB]\-\-upgrade\fP or \f[CB]\-\-dist\-upgrade\fP) along with whatever
+arguments were passed in the scripts.
 .SH OPTIONS
 .SS Actions
 .TP
@@ -42,6 +47,15 @@ Display this manual.
 .TP
 .BR \-V ", " \-\-version
 Print version information.
+.TP
+.BR \-u ", " \-\-update
+Perform an \f[CB]apt\-get update\fP.
+.TP
+.BR \-g ", " \-\-upgrade
+Perform an \f[CB]apt\-get upgrade\fP.
+.TP
+.BR \-d ", " \-\-dist\-upgrade
+Perform an \f[CB]apt\-get dist\-upgrade\fP.
 .SS Chroot selection
 .TP
 .B CHROOT
@@ -52,8 +66,16 @@ and \[oq]experimental\[cq], respectively.
 .SH EXAMPLES
 To update the \fIunstable\fP chroot:
 .PP
-\f[CR]% \f[CB]sbuild\-update unstable\fP\fP
-.br
+\f[CR]% \f[CB]sbuild\-update \-\-update unstable\fP\fP
+.PP
+To upgrade the \fIunstable\fP chroot:
+.PP
+\f[CR]% \f[CB]sbuild\-update \-\-upgrade unstable\fP\fP
+.PP
+To perform both an update and dist-upgrade for the
+\fIunstable\fP chroot:
+.PP
+\f[CR]% \f[CB]sbuild\-update \-ud unstable\fP\fP
 .SH AUTHORS
 .nf
 Roger Leigh.
@@ -65,7 +87,6 @@ Copyright \[co] 2006\[en]2009 Roger Leigh <rleigh@debian.org>.
 .SH "SEE ALSO"
 .BR sbuild (1),
 .BR sbuild\-apt (1),
-.BR sbuild\-upgrade (1).
 .\"#
 .\"# The following sets edit modes for GNU EMACS
 .\"# Local Variables:
