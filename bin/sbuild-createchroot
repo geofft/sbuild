@@ -266,12 +266,21 @@ my $chrootname = "${suite}-" . $conf->get('ARCH') . "-sbuild";
 my $config_entry;
 my $arch = $conf->get('ARCH');
 if ($conf->get('MAKE_SBUILD_TARBALL')) {
-    my $tgz_file = $conf->get('MAKE_SBUILD_TARBALL');
+    my $tarball = $conf->get('MAKE_SBUILD_TARBALL');
+
+    # Default to using tar gzip compression if unable to determine compression
+    # mode via file extension.
+    if ($tarball !~ /\.(tgz|tbz|tlz|txz|tar(\.(gz|bz2|lz|xz))?)$/) {
+        print "I: Renaming sbuild tarball '$tarball' to '$tarball.tgz'\n";
+        $tarball .= ".tgz";
+        $conf->set('MAKE_SBUILD_TARBALL', $tarball);
+    }
+
     $config_entry = <<"EOF";
 [$chrootname]
 type=file
 description=Debian $suite/$arch autobuilder
-file=$tgz_file
+file=$tarball
 priority=3
 groups=root,sbuild
 root-groups=root,sbuild
@@ -388,9 +397,24 @@ if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
 # the sbuild chroot directory created, unless it's been requested to keep the
 # directory.
 if ($conf->get('MAKE_SBUILD_TARBALL')) {
-    my ($tmpfh, $tmpfile) = File::Temp->tempfile( "tgz.XXXXXX" );
-    system("/bin/tar", "-czf", "$tmpfile", "-C", "$target",
-	"./") == 0 or die "Could not create chroot tarball: $?\n";
+    my ($tmpfh, $tmpfile) = File::Temp->tempfile("XXXXXX");
+    my @program_list;
+
+    # Change program arguments accordingly
+    if ($conf->get('MAKE_SBUILD_TARBALL') =~ /\.tar$/) {
+        @program_list = ("/bin/tar", "-cf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.gz|\.tgz)$/) {
+        @program_list = ("/bin/tar", "-czf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.bz2|\.tbz)$/) {
+        @program_list = ("/bin/tar", "-cjf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.lz|\.tlz)$/) {
+        @program_list = ("/bin/tar", "--lzma", "-cf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.xz|\.txz)$/) {
+        @program_list = ("/bin/tar", "-cJf", "$tmpfile", "-C", "$target", "./");
+    }
+
+    system(@program_list) == 0 or die "Could not create chroot tarball: $?\n";
+
     move("$tmpfile", $conf->get('MAKE_SBUILD_TARBALL'));
     if (! $conf->get('KEEP_SBUILDCHROOT_DIR')) {
 	rmtree("$target");
