@@ -299,7 +299,7 @@ EOF
 if (-d "/etc/schroot/chroot.d") {
     # TODO: Don't hardcode path
     my $SCHROOT_CONF =
-	new File::Temp( TEMPLATE => "$chrootname.XXXXXX",
+	new File::Temp( TEMPLATE => "$chrootname-XXXXXX",
 			DIR => "/etc/schroot/chroot.d",
 			UNLINK => 0)
 	or die "Can't open schroot configuration file: $!\n";
