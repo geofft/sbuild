@@ -22,11 +22,6 @@ buildd \- package autobuilder daemon
 This man page documents the packaged version of buildd.  This version
 is maintained by the \fBbuildd-tools\fP project developers on Alioth
 (\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
-.PP
-There is also a version maintained by Ryan Murray which is adapted to build
-daemon needs, with similar functionality.  This version should be equally
-capable of working in a buildd setup, but has a number of enhancements aimed at
-making it suitable for use by end-users.
 .SH DESCRIPTION
 \fBbuildd\fR is a daemon used to automatically build Debian packages from
 source.  wanna\-build is used to find and claim packages for building, while
