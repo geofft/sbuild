@@ -155,7 +155,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
 			fi
                 elif [ ${SUITE_VARIANT} == 'security' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
-			cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+	            		cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
                     else
                         : > ${APT_LIST_AUTO}
@@ -170,7 +170,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb-src http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
                 elif [ ${SUITE_VARIANT} == 'volatile' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
-			cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+			            cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
                     else
                         : > ${APT_LIST_AUTO}
@@ -187,7 +187,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
                 elif [ ${SUITE_VARIANT} == 'backports' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
-			cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
+			            cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
                     else
                         : > ${APT_LIST_AUTO}
