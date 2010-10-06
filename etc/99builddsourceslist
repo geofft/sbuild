@@ -107,7 +107,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
 
         elif [ "${SUITE_BASE}" = 'sid' ]; then
             SUITES="unstable"
-            if [ "${SUITE_VARIANT}" == "experimental" ]; then
+            if [ "${SUITE_VARIANT}" = "experimental" ]; then
                 SUITES="unstable experimental"
             fi
             [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
@@ -157,7 +157,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
 			else
 				cp $VERBOSE ${SOURCES_FILE_PATH} "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
 			fi
-                elif [ ${SUITE_VARIANT} == 'security' ]; then
+                elif [ ${SUITE_VARIANT} = 'security' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
 	            		cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
@@ -172,7 +172,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb-src http://security-master.debian.org/debian-security ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
                     echo deb http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
                     echo deb-src http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
-                elif [ ${SUITE_VARIANT} == 'volatile' ]; then
+                elif [ ${SUITE_VARIANT} = 'volatile' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
 			            cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
@@ -189,7 +189,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
-                elif [ ${SUITE_VARIANT%%-sloppy} == 'backports' ]; then
+                elif [ ${SUITE_VARIANT%%-sloppy} = 'backports' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
 			            cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
@@ -210,7 +210,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                         echo deb http://www.backports.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
                         echo deb-src http://www.backports.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
                     fi
-                elif [ ${SUITE_VARIANT} == 'experimental' ]; then
+                elif [ ${SUITE_VARIANT} = 'experimental' ]; then
                     : > ${APT_LIST_AUTO}
                     if [ -n "${debian_mirror}" ]; then
                         echo deb ${debian_mirror} experimental main contrib non-free >> ${APT_LIST_AUTO}
@@ -246,7 +246,7 @@ elif [ "$1" = "setup-stop" ]; then
 			else
 				rm -f $VERBOSE "${CHROOT_PATH}/etc/apt/sources.list.d/${SOURCES_FILE_NAME}.list"
 			fi
-                elif [ ${SUITE_VARIANT} == 'security' ] || [ ${SUITE_VARIANT} == 'volatile' ] || [ ${SUITE_VARIANT} == 'backports' ] || [ ${SUITE_VARIANT} == 'experimental' ] ; then
+                elif [ ${SUITE_VARIANT} = 'security' ] || [ ${SUITE_VARIANT} = 'volatile' ] || [ ${SUITE_VARIANT} = 'backports' ] || [ ${SUITE_VARIANT} = 'experimental' ] ; then
 			if [ "$SUITE_BASE" = "etch" ]; then
 				cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list.backup ${CHROOT_PATH}/etc/apt/sources.list
 			else
