@@ -83,13 +83,17 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             [ -n "${volatile_mirror}" ] && domirror "${volatile_mirror} SUITE/volatile COMPONENT" ${APT_LIST}
             domirror "http://volatile.debian.org/debian-volatile SUITE/volatile COMPONENT" ${APT_LIST}
 
-        elif [ "${SUITE_VARIANT}" = 'backports' ]; then
+        elif [ "${SUITE_VARIANT%%-sloppy}" = 'backports' ]; then
             SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
             [ -n "${debian_mirror}" ] && domirror "${debian_mirror} SUITE COMPONENT" ${APT_LIST}
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
             SUITES="${SUITE_BASE}"
             [ -n "${backports_mirror}" ] && domirror "${backports_mirror} SUITE-backports COMPONENT" ${APT_LIST}
             domirror "http://www.backports.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
+            if [ "$(echo ${SUITE_VARIANT} | cut -d - -f 3)" = "sloppy" ]; then
+                [ -n "${backports_mirror}" ] && domirror "${backports_mirror} SUITE-backports-sloppy COMPONENT" ${APT_LIST}
+                domirror "http://www.backports.org/buildd/ SUITE-backports-sloppy COMPONENT" ${APT_LIST}
+            fi
             APT_KEYS="${APT_KEYS} backports.org"
 
         elif [ "${SUITE_VARIANT}" = 'edu' ]; then
@@ -185,7 +189,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     echo deb http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}-proposed-updates/volatile main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://volatile.debian.net/debian-volatile ${SUITE_BASE}/volatile main contrib non-free >> ${APT_LIST_AUTO}
-                elif [ ${SUITE_VARIANT} == 'backports' ]; then
+                elif [ ${SUITE_VARIANT%%-sloppy} == 'backports' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
 			            cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
                         APT_LIST_AUTO=${CHROOT_PATH}/etc/apt/sources.list
@@ -198,6 +202,14 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     fi
                     echo deb http://www.backports.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
                     echo deb-src http://www.backports.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                    if [ "$(echo ${SUITE_VARIANT} | cut -d - -f 3)" = "sloppy" ]; then
+                        if [ -n "${backports_mirror}" ]; then
+                            echo deb ${backports_mirror} ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
+                            echo deb-src ${backports_mirror} ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
+                        fi
+                        echo deb http://www.backports.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb-src http://www.backports.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
+                    fi
                 elif [ ${SUITE_VARIANT} == 'experimental' ]; then
                     : > ${APT_LIST_AUTO}
                     if [ -n "${debian_mirror}" ]; then
