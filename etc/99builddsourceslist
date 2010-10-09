@@ -89,10 +89,10 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
             SUITES="${SUITE_BASE}"
             [ -n "${backports_mirror}" ] && domirror "${backports_mirror} SUITE-backports COMPONENT" ${APT_LIST}
-            domirror "http://www.backports.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
+            domirror "http://backports-master.debian.org/buildd/ SUITE-backports COMPONENT" ${APT_LIST}
             if [ "$(echo ${SUITE_VARIANT} | cut -d - -f 3)" = "sloppy" ]; then
                 [ -n "${backports_mirror}" ] && domirror "${backports_mirror} SUITE-backports-sloppy COMPONENT" ${APT_LIST}
-                domirror "http://www.backports.org/buildd/ SUITE-backports-sloppy COMPONENT" ${APT_LIST}
+                domirror "http://backports-master.debian.org/buildd/ SUITE-backports-sloppy COMPONENT" ${APT_LIST}
             fi
             APT_KEYS="${APT_KEYS} backports.org"
 
@@ -102,7 +102,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
             SUITES="${SUITE_BASE} ${SUITE_BASE}-test"
             [ -n "${edu_mirror}" ] && domirror "${edu_mirror} SUITE local" ${APT_LIST}
-            domirror "http://www.backports.org/buildd/ SUITE local" ${APT_LIST}
+            domirror "http://backports-master.debian.org/buildd/ SUITE local" ${APT_LIST}
             APT_KEY_PACKAGES="${APT_KEY_PACKAGES} debian-edu-archive-keyring"
 
         elif [ "${SUITE_BASE}" = 'sid' ]; then
@@ -200,15 +200,15 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                         echo deb ${backports_mirror} ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
                         echo deb-src ${backports_mirror} ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
                     fi
-                    echo deb http://www.backports.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
-                    echo deb-src http://www.backports.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb http://backports-master.debian.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
+                    echo deb-src http://backports-master.debian.org/buildd/ ${SUITE_BASE}-backports main contrib non-free >> ${APT_LIST_AUTO}
                     if [ "$(echo ${SUITE_VARIANT} | cut -d - -f 3)" = "sloppy" ]; then
                         if [ -n "${backports_mirror}" ]; then
                             echo deb ${backports_mirror} ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
                             echo deb-src ${backports_mirror} ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
                         fi
-                        echo deb http://www.backports.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
-                        echo deb-src http://www.backports.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb http://backports-master.debian.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
+                        echo deb-src http://backports-master.debian.org/buildd/ ${SUITE_BASE}-backports-sloppy main contrib non-free >> ${APT_LIST_AUTO}
                     fi
                 elif [ ${SUITE_VARIANT} = 'experimental' ]; then
                     : > ${APT_LIST_AUTO}

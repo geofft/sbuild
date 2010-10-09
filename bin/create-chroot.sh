@@ -218,8 +218,8 @@ EOT
     if [ "$VARIANT" = "backports" ]; then     
         echo "I: Adding backports entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
-deb http://www.backports.org/buildd/ ${BASE}-backports main contrib non-free
-deb-src http://www.backports.org/buildd/ ${BASE}-backports main contrib non-free
+deb http://backports-master.debian.org/buildd/ ${BASE}-backports main contrib non-free
+deb-src http://backports-master.debian.org/buildd/ ${BASE}-backports main contrib non-free
 EOT
     fi
 
