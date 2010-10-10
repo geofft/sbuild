@@ -102,7 +102,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             domirror "http://ftp.debian.org/debian SUITE COMPONENT" ${APT_LIST}
             SUITES="${SUITE_BASE} ${SUITE_BASE}-test"
             [ -n "${edu_mirror}" ] && domirror "${edu_mirror} SUITE local" ${APT_LIST}
-            domirror "http://backports-master.debian.org/buildd/ SUITE local" ${APT_LIST}
+            domirror "http://ftp.skolelinux.no/skolelinux/ SUITE local" ${APT_LIST}
             APT_KEY_PACKAGES="${APT_KEY_PACKAGES} debian-edu-archive-keyring"
 
         elif [ "${SUITE_BASE}" = 'sid' ]; then
