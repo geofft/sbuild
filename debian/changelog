@@ -8,7 +8,10 @@ sbuild (0.60.1-1) unstable; urgency=low
       Thanks to Modestas Vainius.  (Closes: #570463)
     - AptitudeBuildDepSatisfier: Handle the case when default negative dep is
       not available gracefully.  Thanks to Modestas Vainius.
-      (Closes: #571565)
+      (Closes: #571565).
+    - Improve support for aptitude.
+    - Set DEBIAN_FRONTEND=noninteractive when using aptitude
+      (Closes: #588818).
     - Improve dpkg-source v3 source format handling.  Don't hard-code
       assumptions about how the source files are named
       (Closes: #559533).
@@ -17,12 +20,12 @@ sbuild (0.60.1-1) unstable; urgency=low
     - Retry the current suite if --take fails.  (Closes: #570463)
   * buildd-uploader:
     - Don't remove the uploader lock if not already the owner
-      (Closes: #591620).  Thanks to Sebastian Andrzej Siewior.
+      Closes: #591620).  Thanks to Sebastian Andrzej Siewior.
   * libsbuild-perl:
     - depend on schroot 1.4.0 or greater due to sbuild-createchroot
       creating schroot.conf fragments with 1.4.x-specific features.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 04 Aug 2010 23:07:51 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 10 Oct 2010 20:03:09 +0100
 
 sbuild (0.60.0-1) unstable; urgency=low
 
