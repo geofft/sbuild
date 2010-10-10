@@ -8,6 +8,10 @@ NSSDATABASES="/etc/sbuild/nssdatabases-defaults"
 
 if [ "${CHROOT_TYPE}" == lvm-snapshot ]; then
     case $CHROOT_NAME in
+        *-*-*-*-sbuild*)
+        SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
+        SUITE_VARIANT=$(echo $CHROOT_NAME | cut -f2,3 -d-)
+        ;;
         *-*-*-sbuild*)
         SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
         SUITE_VARIANT=$(echo $CHROOT_NAME | cut -f2 -d-)
