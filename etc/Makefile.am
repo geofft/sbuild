@@ -41,4 +41,5 @@ EXTRA_DIST =			\
 	$(builddsysconf_DATA)	\
 	$(exampleconf_DATA)	\
 	$(schrootsysconf_DATA)	\
-	$(schrootsetup_SCRIPTS)
+	$(schrootsetup_SCRIPTS)	\
+	apt-keys
