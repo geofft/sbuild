@@ -1,6 +1,8 @@
 sbuild (0.60.1-1) unstable; urgency=low
 
   * New release.
+  * debian/control:
+    - Upgrade to Standards-Version 3.9.1.
   * sbuild:
     - Add --no-source option (Closes: #571726).  Thanks to David
       Bremner for this suggestion.
@@ -25,7 +27,7 @@ sbuild (0.60.1-1) unstable; urgency=low
     - depend on schroot 1.4.0 or greater due to sbuild-createchroot
       creating schroot.conf fragments with 1.4.x-specific features.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 10 Oct 2010 20:03:09 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 24 Oct 2010 19:56:34 +0100
 
 sbuild (0.60.0-1) unstable; urgency=low
 
