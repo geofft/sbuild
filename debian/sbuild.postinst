@@ -37,7 +37,7 @@ mv_conffile() {
 case "$1" in
     configure)
 
-	if dpkg --compare-versions "$2" le "0.60.0-2"; then
+	if dpkg --compare-versions "$2" lt "0.60.1-1"; then
 	    mv_conffile "/etc/sbuild/copyfiles-defaults" \
 		"/etc/schroot/buildd/copyfiles"
 	    mv_conffile "/etc/sbuild/nssdatabases-defaults" \
