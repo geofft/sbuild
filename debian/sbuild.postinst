@@ -37,6 +37,13 @@ mv_conffile() {
 case "$1" in
     configure)
 
+	if dpkg --compare-versions "$2" le "0.60.0-2"; then
+	    mv_conffile "/etc/sbuild/copyfiles-defaults" \
+		"/etc/schroot/buildd/copyfiles"
+	    mv_conffile "/etc/sbuild/nssdatabases-defaults" \
+		"/etc/schroot/buildd/nssdatabases"
+	fi
+
 	# If sbuild is a user group, migrate to a system group.  Save
 	# a list of group members, then add them back to the new group
 	# once created.

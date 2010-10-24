@@ -49,6 +49,10 @@ case "$1" in
 	if dpkg --compare-versions "$2" le "0.58.3-1"; then
             rm_conffile "sbuild" "/etc/schroot/setup.d/50sbuild"
 	fi
+	if dpkg --compare-versions "$2" le "0.60.0-2"; then
+	    prep_mv_conffile "sbuild" "/etc/sbuild/copyfiles-defaults"
+	    prep_mv_conffile "sbuild" "/etc/sbuild/nssdatabases-defaults"
+	fi
 	;;
 esac
 
