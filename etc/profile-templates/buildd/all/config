@@ -1,12 +1,5 @@
-# Default settings for buildd chroots: usual defaults, differing fstab:
-. /etc/schroot/script-defaults
 
-# Filesystems to mount inside the chroot.
-FSTAB="/etc/schroot/mount-defaults.buildd"
-COPYFILES="/etc/sbuild/copyfiles-defaults"
-NSSDATABASES="/etc/sbuild/nssdatabases-defaults"
-
-if [ "${CHROOT_TYPE}" == lvm-snapshot ]; then
+if [ "$CHROOT_SESSION_PURGE" == "true" ]; then
     case $CHROOT_NAME in
         *-*-*-*-sbuild*)
         SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)

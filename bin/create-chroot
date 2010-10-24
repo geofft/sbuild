@@ -181,7 +181,7 @@ device=/dev/${VGNAME}/buildd-${IDENTIFIER}-${ARCH}
 lvm-snapshot-options=--size ${LVSIZE}
 source-users=buildd
 source-root-users=buildd
-script-config=script-defaults.buildd
+script-config=buildd/config
 EOT
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild-source -u root -d /root --"
     fi

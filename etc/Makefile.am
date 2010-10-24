@@ -22,7 +22,7 @@
 include $(top_srcdir)/scripts/global.mk
 
 sbuildsysconfdir = $(SBUILD_SYSCONF_DIR)
-sbuildsysconf_DATA = sbuild.conf nssdatabases-defaults copyfiles-defaults
+sbuildsysconf_DATA = sbuild.conf
 
 builddsysconfdir = $(BUILDD_SYSCONF_DIR)
 builddsysconf_DATA = buildd.conf wanna-build.conf
@@ -30,16 +30,41 @@ builddsysconf_DATA = buildd.conf wanna-build.conf
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
-schrootsysconfdir = $(SCHROOT_SYSCONF_DIR)
-schrootsysconf_DATA = mount-defaults.buildd script-defaults.buildd
-
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
 schrootsetup_SCRIPTS = 25nssdatabases 99builddsourceslist
+
+PROFILES =		\
+	buildd
+
+profiles: profiles-stamp
+profiles-stamp: genprofile
+	$(MKDIR_P) profiles
+	for profile in $(PROFILES); do 					\
+	  $(srcdir)/genprofile "$$profile" "$(PLATFORM)" "$(srcdir)/profile-templates" "profiles/$$profile";	\
+	done
+	touch $@
+
+all-local: profiles
+
+install-data-hook:
+	for profile in $(PROFILES); do 						\
+	  $(MKDIR_P) "$(DESTDIR)$(SCHROOT_SYSCONF_DIR)/$$profile";			\
+	  for file in "profiles/$$profile"/*; do						\
+	    $(INSTALL_DATA) "$$file" "$(DESTDIR)$(SCHROOT_SYSCONF_DIR)/$$profile";	\
+	  done;									\
+	done
+
+clean-local:
+	$(RM) -rf profiles
+	$(RM) -f profiles-stamp
 
 EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
 	$(builddsysconf_DATA)	\
 	$(exampleconf_DATA)	\
-	$(schrootsysconf_DATA)	\
 	$(schrootsetup_SCRIPTS)	\
-	apt-keys
+	apt-keys		\
+	genprofile		\
+	profile-templates
+
+.PHONY: profiles
