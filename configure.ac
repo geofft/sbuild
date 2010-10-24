@@ -82,6 +82,22 @@ if test "$enable_debug" = "yes"; then
   AC_DEFINE_UNQUOTED([SBUILD_DEBUG], [1], [Enable debugging])
 fi
 
+AC_MSG_CHECKING([whether to enable compatibility features])
+AC_ARG_ENABLE([compat], [AS_HELP_STRING([--enable-compat], [Enable compatibililty features, for building on older Debian stable releases])],
+              [ case "${enableval}" in
+                yes) enable_compat="yes" ;;
+                no)  enable_compat="no" ;;
+                unset)  enable_compat="no" ;;
+                *) AC_MSG_RESULT([unknown])
+                   AC_MSG_ERROR([bad value ${enableval} for --enable-compat]) ;;
+                esac ],
+              [ enable_compat="no" ])
+AC_MSG_RESULT([$enable_compat])
+if test "$enable_compat" = "yes"; then
+  AC_DEFINE_UNQUOTED([SBUILD_COMPAT], [1], [Enable compatibility features])
+fi
+AM_CONDITIONAL([SBUILD_COMPAT], [test "$enable_compat" = "yes"])
+
 # Checks for programs.
 AC_PATH_PROG([APT_CACHE], [apt-cache])
 AC_PATH_PROG([APTITUDE], [aptitude])

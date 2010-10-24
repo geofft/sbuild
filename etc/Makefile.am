@@ -30,8 +30,15 @@ builddsysconf_DATA = buildd.conf wanna-build.conf
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
+COMPAT_SETUP = 25nssdatabases
+SETUP = 99builddsourceslist
+
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
-schrootsetup_SCRIPTS = 25nssdatabases 99builddsourceslist
+if SBUILD_COMPAT
+schrootsetup_SCRIPTS = $(COMPAT_SETUP) $(SETUP)
+else
+schrootsetup_SCRIPTS = $(SETUP)
+endif
 
 PROFILES =		\
 	buildd
@@ -62,7 +69,8 @@ EXTRA_DIST =			\
 	$(sbuildsysconf_DATA)	\
 	$(builddsysconf_DATA)	\
 	$(exampleconf_DATA)	\
-	$(schrootsetup_SCRIPTS)	\
+	$(COMPAT_SETUP)		\
+	$(SETUP)		\
 	apt-keys		\
 	genprofile		\
 	profile-templates
