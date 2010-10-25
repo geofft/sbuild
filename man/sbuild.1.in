@@ -358,7 +358,7 @@ a build is done.
 .PP
 \f[CB]$ sbuild \-\-post\-build\-commands \\\fP
 .br
-\f[CB]      'sudo piuparts %SBUILD_CHANGES'\fP
+\f[CB]      'piuparts %SBUILD_CHANGES'\fP
 .PP
 One final note, external commands are processed in the order they are given.
 Also, the commands given in a configuration file are processed first, then the
