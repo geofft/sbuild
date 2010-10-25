@@ -181,7 +181,7 @@ device=/dev/${VGNAME}/buildd-${IDENTIFIER}-${ARCH}
 lvm-snapshot-options=--size ${LVSIZE}
 source-users=buildd
 source-root-users=buildd
-script-config=script-defaults.buildd
+script-config=buildd/config
 EOT
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild-source -u root -d /root --"
     fi
@@ -218,8 +218,8 @@ EOT
     if [ "$VARIANT" = "backports" ]; then     
         echo "I: Adding backports entries to sources.list..."
         cat >> "${TEMPFILE}" <<EOT
-deb http://www.backports.org/buildd/ ${BASE}-backports main contrib non-free
-deb-src http://www.backports.org/buildd/ ${BASE}-backports main contrib non-free
+deb http://backports-master.debian.org/buildd/ ${BASE}-backports main contrib non-free
+deb-src http://backports-master.debian.org/buildd/ ${BASE}-backports main contrib non-free
 EOT
     fi
 

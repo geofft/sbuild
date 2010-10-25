@@ -167,7 +167,16 @@ sub init_allowed_keys {
 	    DEFAULT => $Sbuild::Sysconfig::programs{'APT_CACHE'}
 	},
 	'APTITUDE'				=> {
-	    CHECK => $validate_program,
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('BUILD_DEP_RESOLVER') eq 'aptitude') {
+		    $validate_program->($self, $entry);
+		}
+	    },
 	    DEFAULT => $Sbuild::Sysconfig::programs{'APTITUDE'}
 	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
@@ -617,6 +626,8 @@ sub read_config {
 	}
     }
 
+    # Set before APT_GET or APTITUDE to allow correct validation.
+    $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
     $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);
     $self->set('DEBUG', $debug);
@@ -708,7 +719,6 @@ sub read_config {
     $self->set('MAINTAINER_NAME', $self->get('UPLOADER_NAME')) if defined $self->get('UPLOADER_NAME');
     $self->set('MAINTAINER_NAME', $self->get('KEY_ID')) if defined $self->get('KEY_ID');
     $self->set('BUILD_DIR', $build_dir);
-    $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
 
     if (!defined($self->get('MAINTAINER_NAME')) &&
 	$self->get('BIN_NMU')) {

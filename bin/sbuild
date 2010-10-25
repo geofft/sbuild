@@ -335,7 +335,6 @@ sub shutdown ($) {
 	$jobs{$current_job}->set('binNMU Name', undef);
     }
     close_log($conf);
-    unlink( $jobs{$current_job}->get('Jobs File') ) if $conf->get('BATCH_MODE');
     $? = 0; $! = 0;
     if ($conf->get('SBUILD_MODE') eq "user") {
 	exit 1;
