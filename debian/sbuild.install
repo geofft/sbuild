@@ -1,4 +1,6 @@
 debian/install/etc/sbuild                          etc
+debian/install/etc/schroot/buildd		   etc/schroot
+debian/install/etc/schroot/setup.d		   etc/schroot
 debian/install/usr/bin/sbuild*                     usr/bin
 debian/install/usr/sbin/sbuild*                    usr/sbin
 debian/install/usr/share/sbuild                    usr/share
@@ -7,4 +9,3 @@ debian/install/usr/share/man/man1/sbuild*          usr/share/man/man1
 debian/install/usr/share/man/man7/sbuild*          usr/share/man/man7
 debian/install/usr/share/man/man8/sbuild*          usr/share/man/man8
 debian/install/var/lib/sbuild			   var/lib
-bin/create-chroot                                  usr/share/sbuild

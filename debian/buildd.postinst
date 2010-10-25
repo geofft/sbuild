@@ -84,8 +84,9 @@ Please fix this and reinstall this package." >&2
 	chmod 2770 /var/lib/buildd/upload
 	chmod 2770 /var/lib/buildd/upload-security
 
-        # drop the irrelevant options run-setup-scripts / run-exec-scripts, see #579926
-        find /etc/schroot/chroot.d/ -name 'buildd-*' | xargs -r sed -e 's/^run-setup-scripts=/#&/' -e 's/^run-exec-scripts=/#&/' -i
+        # Drop the irrelevant options run-setup-scripts / run-exec-scripts, see #579926
+	# Use buildd/config in place of old script-defaults.buildd
+        find /etc/schroot/chroot.d/ -name 'buildd-*' -print0 | xargs -0 -r sed -e 's/^run-setup-scripts=/#&/' -e 's/^run-exec-scripts=/#&/' -e 's;^script-config=script-defaults\.buildd;script-config=buildd/config;' -i
 
         ;;
 
