@@ -15,12 +15,13 @@
 .\" <http://www.gnu.org/licenses/>.
 .TH SBUILD\-UPDATE 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
 .SH NAME
-sbuild\-update \- update and upgrade an sbuild chroot with apt-get
+sbuild\-update \- update, upgrade, and clean an sbuild chroot with apt-get
 .SH SYNOPSIS
 .BR sbuild\-update
 .BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
 .BR [ \-u \[or] \-\-update ] " " [ \-g \[or] \-\-upgrade ] " "
-.BR [ \-d \[or] \-\-dist\-upgrade ]
+.BR [ \-d \[or] \-\-dist\-upgrade ] " " [ \-c \[or] \-\-clean ] " "
+.BR [ \-a \[or] \-\-autoclean ] " " [ \-r \[or] \-\-autoremove ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
 .br
 .BR (DEPRECATED) " " sbuild\-upgrade
@@ -30,15 +31,23 @@ sbuild\-update \- update and upgrade an sbuild chroot with apt-get
 .BR (DEPRECATED) " " sbuild\-distupgrade
 .BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
 .BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.br
+.BR (DEPRECATED) " " sbuild\-clean
+.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.BR [ \-c \[or] \-\-clean ] " " [ \-a \[or] \-\-autoclean ] " "
+.BR [ \-r \[or] \-\-autoremove ]
+.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
 .SH DESCRIPTION
 \fBsbuild\-update\fR runs \f[CB]apt\-get\fP inside the specified chroot
-performing \f[CB]update\fP, \f[CB]upgrade\fP, and/or \f[CB]dist\-upgrade\fP
-depending on the options specified on the command line.
+performing \f[CB]update\fP, \f[CB]upgrade\fP, \f[CB]dist\-upgrade\fP,
+\f[CB]clean\fP, \f[CB]autoclean\fP, and/or \f[CB]autoremove\fP depending on the
+options specified on the command line.
 .PP
-\fBsbuild\-upgrade\fR and \fBsbuild\-distupgrade\fR are deprecated. They now
-simply run \fBsbuild\-update\fR with the appropriate option (either
-\f[CB]\-\-upgrade\fP or \f[CB]\-\-dist\-upgrade\fP) along with whatever
-arguments were passed in the scripts.
+\fBsbuild\-upgrade\fR, \fBsbuild\-distupgrade\fR, and \fBsbuild\-clean\fR, are
+deprecated. They now simply run \fBsbuild\-update\fR with the appropriate
+options (\f[CB]\-\-upgrade\fP or \f[CB]\-\-dist\-upgrade\fP for
+\fBsbuild\-upgrade\fR or \fBsbuild\-distupgrade\fR respectively) along with
+whatever arguments were passed in the scripts.
 .SH OPTIONS
 .SS Actions
 .TP
@@ -56,6 +65,15 @@ Perform an \f[CB]apt\-get upgrade\fP.
 .TP
 .BR \-d ", " \-\-dist\-upgrade
 Perform an \f[CB]apt\-get dist\-upgrade\fP.
+.TP
+.BR \-c ", " \-\-clean
+Perform an \f[CB]apt\-get clean\fP.
+.TP
+.BR \-a ", " \-\-autoclean
+Perform an \f[CB]apt\-get autoclean\fP.
+.TP
+.BR \-r ", " \-\-autoremove
+Perform an \f[CB]apt\-get autoremove\fP.
 .SS Chroot selection
 .TP
 .B CHROOT
@@ -72,10 +90,14 @@ To upgrade the \fIunstable\fP chroot:
 .PP
 \f[CR]% \f[CB]sbuild\-update \-\-upgrade unstable\fP\fP
 .PP
-To perform both an update and dist-upgrade for the
-\fIunstable\fP chroot:
+To clean the \fIunstable\fP chroot:
 .PP
-\f[CR]% \f[CB]sbuild\-update \-ud unstable\fP\fP
+\f[CR]% \f[CB]sbuild\-update \-\-clean unstable\fP\fP
+.PP
+To perform an update, dist-upgrade, clean, autoclean, and autoremove for
+the \fIunstable\fP chroot:
+.PP
+\f[CR]% \f[CB]sbuild\-update \-udcar unstable\fP\fP
 .SH AUTHORS
 .nf
 Roger Leigh.
