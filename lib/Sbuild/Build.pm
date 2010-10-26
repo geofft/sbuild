@@ -912,23 +912,22 @@ sub run_external_commands {
     my $log_output = shift;
     my $log_error = shift;
 
-    # Determine which set of commands to run based on the string $commands
-    my @commands;
+    # Determine which set of commands to run based on the parameter $stage
+    my @commands = @{${$self->get_conf('EXTERNAL_COMMANDS')}{$stage}};
+
+    # Create appropriate log message and determine if the commands are to be
+    # run inside the chroot or not.
     my $chroot;
     if ($stage eq "pre-build-commands") {
 	$self->log_subsection("Pre Build Commands");
-	@commands = @{$self->get_conf('PRE_BUILD_COMMANDS')};
     } elsif ($stage eq "chroot-setup-commands") {
 	$self->log_subsection("Chroot Setup Commands");
-	@commands = @{$self->get_conf('CHROOT_SETUP_COMMANDS')};
 	$chroot = 1;
     } elsif ($stage eq "chroot-cleanup-commands") {
 	$self->log_subsection("Chroot Cleanup Commands");
-	@commands = @{$self->get_conf('CHROOT_CLEANUP_COMMANDS')};
 	$chroot = 1;
     } elsif ($stage eq "post-build-commands") {
 	$self->log_subsection("Post Build Commands");
-	@commands = @{$self->get_conf('POST_BUILD_COMMANDS')};
     }
 
     # Run each command, substituting the various percent escapes (like

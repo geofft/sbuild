@@ -505,17 +505,13 @@ sub init_allowed_keys {
 	'LINTIAN_OPTIONS'			=> {
 	    DEFAULT => []
 	},
-	'PRE_BUILD_COMMANDS'			=> {
-	    DEFAULT => []
-	},
-	'CHROOT_SETUP_COMMANDS'			=> {
-	    DEFAULT => []
-	},
-	'CHROOT_CLEANUP_COMMANDS'		=> {
-	    DEFAULT => []
-	},
-	'POST_BUILD_COMMANDS'			=> {
-	    DEFAULT => []
+	'EXTERNAL_COMMANDS'			=> {
+	    DEFAULT => {
+		"pre-build-commands" => [],
+		"chroot-setup-commands" => [],
+		"chroot-cleanup-commands" => [],
+		"post-build-commands" => [],
+	    },
 	},
 	'LOG_EXTERNAL_COMMAND_OUTPUT'		=> {
 	    DEFAULT => 0
@@ -615,14 +611,8 @@ sub read_config {
     my $lintian = undef;
     my $run_lintian = undef;
     my $lintian_opts = undef;
-    my @pre_build_commands;
-    undef @pre_build_commands;
-    my @chroot_setup_commands;
-    undef @chroot_setup_commands;
-    my @chroot_cleanup_commands;
-    undef @chroot_cleanup_commands;
-    my @post_build_commands;
-    undef @post_build_commands;
+    my %external_commands;
+    undef %external_commands;
     my $log_external_command_output = undef;
     my $log_external_command_error = undef;
 
@@ -737,10 +727,7 @@ sub read_config {
     $self->set('LINTIAN', $lintian);
     $self->set('RUN_LINTIAN', $run_lintian);
     $self->set('LINTIAN_OPTIONS', $lintian_opts);
-    $self->set('PRE_BUILD_COMMANDS', \@pre_build_commands);
-    $self->set('CHROOT_SETUP_COMMANDS', \@chroot_setup_commands);
-    $self->set('CHROOT_CLEANUP_COMMANDS', \@chroot_cleanup_commands);
-    $self->set('POST_BUILD_COMMANDS', \@post_build_commands);
+    $self->set('EXTERNAL_COMMANDS', \%external_commands);
     $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output);
     $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error);
 }

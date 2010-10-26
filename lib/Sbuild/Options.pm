@@ -185,22 +185,22 @@ sub set_options {
 		       },
 			"pre-build-commands=s" => sub {
 			   my @command = split(/\s+/, $_[1]);
-			   push(@{$self->get_conf('PRE_BUILD_COMMANDS')},
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"pre-build-commands"}},
 				\@command);
 		       },
 			"chroot-setup-commands=s" => sub {
 			   my @command = split(/\s+/, $_[1]);
-			   push(@{$self->get_conf('CHROOT_SETUP_COMMANDS')},
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
 				\@command);
 		       },
 			"chroot-cleanup-commands=s" => sub {
 			   my @command = split(/\s+/, $_[1]);
-			   push(@{$self->get_conf('CHROOT_CLEANUP_COMMANDS')},
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"chroot-cleanup-commands"}},
 				\@command);
 		       },
 			"post-build-commands=s" => sub {
 			   my @command = split(/\s+/, $_[1]);
-			   push(@{$self->get_conf('POST_BUILD_COMMANDS')},
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"post-build-commands"}},
 				\@command);
 		       },
 			"log-external-command-output" => sub {

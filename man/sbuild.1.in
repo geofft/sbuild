@@ -319,17 +319,26 @@ Support to run external commands during an sbuild run is provided. A set of
 external commands can be run at various stages of a build. Providing commands to
 run is done through the appropriate options given on the command line and
 through the use of the configuration files. In the configuration file, the list
-of commands to run are placed in an array of array of strings corresponding to
-the commands to run.
+of commands to run are placed in a hash of arrays of arrays of strings
+corresponding to the commands to run.
 .PP
 Here's an example of how to edit the configuration files to run "foo" and "bar"
 with arguments before a build starts.
 .PP
-\f[CB]@pre_build_commands = (['foo', 'arg1', 'arg2'],\fP
+\f[CB]%external_commands = (\fP
 .br
-\f[CB]    ['bar', 'arg1', 'arg2', 'arg3'],\fP
+\f[CB]    "pre-build-commands" => [\fP
 .br
-\f[CB]    );\fP
+\f[CB]        ['foo', 'arg1', 'arg2'],\fP
+.br
+\f[CB]        ['bar', 'arg1', 'arg2', 'arg3'],\fP
+.br
+\f[CB]    ],
+.br
+\f[CB]);\fP
+.PP
+Hash keys for commands to run at other stages have the same name as their
+corresponding command-line option name without the preceding '--'.
 .PP
 Here's an example of how to do the same with the previous example, except using
 the \fI\-\-pre\-build\-commands\fP option.
