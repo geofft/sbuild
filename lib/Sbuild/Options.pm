@@ -188,6 +188,16 @@ sub set_options {
 			   push(@{$self->get_conf('PRE_BUILD_COMMANDS')},
 				\@command);
 		       },
+			"chroot-setup-commands=s" => sub {
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{$self->get_conf('CHROOT_SETUP_COMMANDS')},
+				\@command);
+		       },
+			"chroot-cleanup-commands=s" => sub {
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{$self->get_conf('CHROOT_CLEANUP_COMMANDS')},
+				\@command);
+		       },
 			"post-build-commands=s" => sub {
 			   my @command = split(/\s+/, $_[1]);
 			   push(@{$self->get_conf('POST_BUILD_COMMANDS')},

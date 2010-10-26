@@ -445,6 +445,11 @@ sub run {
 	}
     }
 
+    # Run specified chroot setup commands
+    $self->run_external_commands("chroot-setup-commands",
+	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
     $self->set('Pkg Fail Stage', 'install-deps');
     if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$self->set('Dependency Resolver', Sbuild::AptitudeBuildDepSatisfier->new($self));
@@ -464,6 +469,11 @@ sub run {
     } else {
 	$self->set_status('failed');
     }
+
+    # Run specified chroot cleanup commands
+    $self->run_external_commands("chroot-cleanup-commands",
+	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
   cleanup_packages:
     # Purge package build directory
@@ -826,6 +836,7 @@ sub run_command {
     my $command = shift;
     my $log_output = shift;
     my $log_error = shift;
+    my $chroot = shift;
 
     # Duplicate output from our commands to the log stream if we are asked to
     my ($out, $err);
@@ -851,8 +862,24 @@ sub run_command {
     }
 
     # Run the command and save the exit status
-    system(@{$command});
-    my $status = ($? >> 8);
+	if (!$chroot)
+	{
+	    $self->get('Host')->run_command(
+		{ COMMAND => \@{$command},
+		    USER => $self->get_conf('USERNAME'),
+		    CHROOT => 0,
+		    DIR => $self->get('HOME'),
+		    PRIORITY => 0,
+		});
+	} else {
+	    $self->get('Session')->run_command(
+		{ COMMAND => \@{$command},
+		    USER => $self->get_conf('USERNAME'),
+		    CHROOT => 1,
+		    PRIORITY => 0,
+		});
+	}
+    my $status = $?;
 
     # Restore STDOUT and STDERR
     if ($log_output) {
@@ -887,9 +914,18 @@ sub run_external_commands {
 
     # Determine which set of commands to run based on the string $commands
     my @commands;
+    my $chroot;
     if ($stage eq "pre-build-commands") {
 	$self->log_subsection("Pre Build Commands");
 	@commands = @{$self->get_conf('PRE_BUILD_COMMANDS')};
+    } elsif ($stage eq "chroot-setup-commands") {
+	$self->log_subsection("Chroot Setup Commands");
+	@commands = @{$self->get_conf('CHROOT_SETUP_COMMANDS')};
+	$chroot = 1;
+    } elsif ($stage eq "chroot-cleanup-commands") {
+	$self->log_subsection("Chroot Cleanup Commands");
+	@commands = @{$self->get_conf('CHROOT_CLEANUP_COMMANDS')};
+	$chroot = 1;
     } elsif ($stage eq "post-build-commands") {
 	$self->log_subsection("Post Build Commands");
 	@commands = @{$self->get_conf('POST_BUILD_COMMANDS')};
@@ -921,7 +957,7 @@ sub run_external_commands {
 	}
   my $command_str = join(" ", @{$command});
 	$self->log_subsubsection("$command_str");
-	$returnval = $self->run_command($command, $log_output, $log_error);
+	$returnval = $self->run_command($command, $log_output, $log_error, $chroot);
 	$self->log("\n");
 	if (!$returnval) {
 	    $self->log_error("Command '$command_str' failed to run.\n");

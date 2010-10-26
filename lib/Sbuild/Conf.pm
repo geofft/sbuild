@@ -508,6 +508,12 @@ sub init_allowed_keys {
 	'PRE_BUILD_COMMANDS'			=> {
 	    DEFAULT => []
 	},
+	'CHROOT_SETUP_COMMANDS'			=> {
+	    DEFAULT => []
+	},
+	'CHROOT_CLEANUP_COMMANDS'		=> {
+	    DEFAULT => []
+	},
 	'POST_BUILD_COMMANDS'			=> {
 	    DEFAULT => []
 	},
@@ -611,6 +617,10 @@ sub read_config {
     my $lintian_opts = undef;
     my @pre_build_commands;
     undef @pre_build_commands;
+    my @chroot_setup_commands;
+    undef @chroot_setup_commands;
+    my @chroot_cleanup_commands;
+    undef @chroot_cleanup_commands;
     my @post_build_commands;
     undef @post_build_commands;
     my $log_external_command_output = undef;
@@ -727,14 +737,12 @@ sub read_config {
     $self->set('LINTIAN', $lintian);
     $self->set('RUN_LINTIAN', $run_lintian);
     $self->set('LINTIAN_OPTIONS', $lintian_opts);
-    $self->set('PRE_BUILD_COMMANDS', \@pre_build_commands)
-	if (@pre_build_commands);
-    $self->set('POST_BUILD_COMMANDS', \@post_build_commands)
-	if (@post_build_commands);
-    $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output)
-	if ($log_external_command_output);
-    $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error)
-	if ($log_external_command_error);
+    $self->set('PRE_BUILD_COMMANDS', \@pre_build_commands);
+    $self->set('CHROOT_SETUP_COMMANDS', \@chroot_setup_commands);
+    $self->set('CHROOT_CLEANUP_COMMANDS', \@chroot_cleanup_commands);
+    $self->set('POST_BUILD_COMMANDS', \@post_build_commands);
+    $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output);
+    $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error);
 }
 
 sub check_group_membership ($) {

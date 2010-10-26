@@ -51,6 +51,8 @@ sbuild \- build debian packages from source
 .RB [ \-\-lintian\-opt=\fIoptions\fP ]
 .RB [ \-\-lintian\-opts=\fIoptions\fP ]
 .RB [ \-\-pre\-build\-commands=\fIstring\fP ]
+.RB [ \-\-chroot\-setup\-commands=\fIstring\fP ]
+.RB [ \-\-chroot\-cleanup\-commands=\fIstring\fP ]
 .RB [ \-\-post\-build\-commands=\fIstring\fP ]
 .RB [ \-\-log\-external\-command\-output ]
 .RB [ \-\-log\-external\-command\-error ]
@@ -283,6 +285,14 @@ Append extra options to existing options passed to lintian.
 Run this command before a build starts. This option can be used multiple times
 to add multiple commands.
 .TP
+.BR \-\-chroot\-setup\-commands=\fIstring\fP
+Run these commands when a chroot is setup, before deps are installed. This
+option can be used multiple times to add multiple commands.
+.TP
+.BR \-\-chroot\-cleanup\-commands=\fIstring\fP
+Run these commands when a chroot is cleaned up, before build directory is
+purged. This option can be used multiple times to add multiple commands.
+.TP
 .BR \-\-post\-build\-commands=\fIstring\fP
 Run this command after a successful build. This option can be used multiple
 times to add multiple commands.
@@ -306,11 +316,11 @@ latter tries to be smarter but is also slower.  It may be of some help when
 trying to pull build dependencies from an extra suite, like \fIexperimental\fP.
 .SH EXTERNAL COMMANDS
 Support to run external commands during an sbuild run is provided. A set of
-external commands can be run before a build starts and after a successful build.
-Providing commands to run is done through the appropriate options given on the
-command line and through the use of the configuration files. In the
-configuration file, the list of commands to run are placed in an array of
-array of strings corresponding to the commands to run.
+external commands can be run at various stages of a build. Providing commands to
+run is done through the appropriate options given on the command line and
+through the use of the configuration files. In the configuration file, the list
+of commands to run are placed in an array of array of strings corresponding to
+the commands to run.
 .PP
 Here's an example of how to edit the configuration files to run "foo" and "bar"
 with arguments before a build starts.
