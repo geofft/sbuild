@@ -158,6 +158,9 @@ sub set_options {
 			   $self->set_conf('STATS_DIR', $_[1]);
 		       },
 		       "setup-hook=s" => sub {
+			my @command = split(/\s+/, $_[1]);
+			push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
+			\@command);
 			   $self->set_conf('CHROOT_SETUP_SCRIPT', $_[1]);
 		       },
 		       "use-snapshot" => sub {

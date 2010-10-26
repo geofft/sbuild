@@ -728,6 +728,8 @@ sub read_config {
     $self->set('RUN_LINTIAN', $run_lintian);
     $self->set('LINTIAN_OPTIONS', $lintian_opts);
     $self->set('EXTERNAL_COMMANDS', \%external_commands);
+    push(@{${$self->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
+        $chroot_setup_script) if ($chroot_setup_script);
     $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output);
     $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error);
 }

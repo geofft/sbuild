@@ -303,11 +303,9 @@ Write output from external commands to the build log.
 .BR \-\-log\-external\-command\-error
 Write error output from external commands to the build log.
 .TP
-.BR "\-\-setup\-hook=\fIhook-script\fP"
-Run the specified script inside the chroot before building.  This script may
-perform any required actions to customise or configure the chroot.  Note that
-the script will be run inside the chroot, and so the script must exist inside
-the chroot rather than the host system.
+.BR "\-\-setup\-hook=\fIhook-script\fP" " " \fBDEPRECATED\fP
+This option is deprecated. Use of this option will add \fIhook-script\fP to the
+external commands to run via \fIchroot-setup-commands\fP.
 .TP
 .BR "\-\-build\-dep\-resolver=\fIresolver\fP"
 Use the specified resolver to handle selecting the build dependencies.

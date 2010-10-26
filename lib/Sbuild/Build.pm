@@ -430,19 +430,12 @@ sub run {
 	goto cleanup_packages;
     }
 
-    # Run setup-hook before processing deps and build
+    # Display message about chroot setup script option use being deprecated
     if ($self->get_conf('CHROOT_SETUP_SCRIPT')) {
-	$session->run_command(
-	    { COMMAND => [$self->get_conf('CHROOT_SETUP_SCRIPT')],
-	      ENV => $self->get_env('SBUILD_BUILD_'),
-	      USER => "root",
-	      PRIORITY => 0,
-	      CHROOT => 1 });
-	if ($?) {
-	    $self->log("setup-hook failed\n");
-	    $self->set_status('failed');
-	    goto cleanup_packages;
-	}
+	my $msg = "setup-hook option is deprecated. It has been superceded by ";
+	$msg .= "the chroot-setup-commands feature. setup-hook script will be ";
+	$msg .= "run via chroot-setup-commands.\n";
+	$self->log_warning($msg);
     }
 
     # Run specified chroot setup commands
