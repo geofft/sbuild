@@ -148,11 +148,14 @@ EOF
 
     my @non_default_deps = $self->get_non_default_deps($dep, {});
 
+    my $ignore_trust_violations =
+	$self->get_conf('APT_ALLOW_UNAUTHENTICATED') ? 'true' : 'false';
+
     my @aptitude_install_command = (
 	$self->get_conf('APTITUDE'),
 	'-y',
 	'--without-recommends',
-	'-o', 'APT::Install-Recommends=false',
+	'-o', "Aptitude::CmdLine::Ignore-Trust-Violations=$ignore_trust_violations",
 	'-o', 'Aptitude::ProblemResolver::StepScore=100',
 	'-o', "Aptitude::ProblemResolver::Hints::KeepDummy=reject $dummy_pkg_name :UNINST",
 	'-o', 'Aptitude::ProblemResolver::Keep-All-Tier=55000',
