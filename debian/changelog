@@ -3,10 +3,14 @@ sbuild (0.60.2-1) unstable; urgency=low
   * New release.
   * The aptitude build dependency resolver now sets
     Aptitude::CmdLine::Ignore-Trust-Violations based upon the
-    $apt_allow_unauthenticated option (Closes: 588035).  Thanks to
+    $apt_allow_unauthenticated option (Closes: #588035).  Thanks to
     Ansgar Burchardt for this patch.
+  * Improve handling of alternative build dependencies and Provides
+    using the interal build dependency resolver.  (Closes: #586275,
+    #578810, #591187, #591188, #591189, #595863, #595866, #595872).
+    Thanks to Ansgar Burchardt for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 26 Oct 2010 23:01:12 +0100
+ -- Roger Leigh <rleigh@debian.org>  Thu, 28 Oct 2010 22:00:29 +0100
 
 sbuild (0.60.1-1) unstable; urgency=low
 
