@@ -281,7 +281,6 @@ if ($conf->get('MAKE_SBUILD_TARBALL')) {
 type=file
 description=Debian $suite/$arch autobuilder
 file=$tarball
-priority=3
 groups=root,sbuild
 root-groups=root,sbuild
 EOF
