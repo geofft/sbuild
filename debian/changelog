@@ -9,8 +9,11 @@ sbuild (0.60.2-1) unstable; urgency=low
     using the interal build dependency resolver.  (Closes: #586275,
     #578810, #591187, #591188, #591189, #595863, #595866, #595872).
     Thanks to Ansgar Burchardt for this patch.
+  * Log the package source version as well as binary version in the
+    package build log, since these may differ when making binNMUs
+    (Closes: #569823).
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 28 Oct 2010 22:00:29 +0100
+ -- Roger Leigh <rleigh@debian.org>  Thu, 28 Oct 2010 22:12:34 +0100
 
 sbuild (0.60.1-1) unstable; urgency=low
 
