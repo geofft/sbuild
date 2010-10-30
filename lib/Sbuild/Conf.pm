@@ -442,6 +442,9 @@ sub init_allowed_keys {
 	'BATCH_MODE'				=> {
 	    DEFAULT => 0
 	},
+	'CORE_DEPENDS'				=> {
+	    DEFAULT => ['build-essential', 'fakeroot']
+	},
 	'MANUAL_DEPENDS'			=> {
 	    DEFAULT => []
 	},
@@ -580,6 +583,7 @@ sub read_config {
     my $job_file = undef;
     my $build_dir = undef;
     my $build_dep_resolver = undef;
+    my $core_depends = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
 	if (-r $_) {
@@ -593,6 +597,7 @@ sub read_config {
 
     # Set before APT_GET or APTITUDE to allow correct validation.
     $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
+    $self->set('CORE_DEPENDS', $core_depends);
     $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);
     $self->set('DEBUG', $debug);
