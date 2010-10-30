@@ -12,8 +12,10 @@ sbuild (0.60.2-1) unstable; urgency=low
   * Log the package source version as well as binary version in the
     package build log, since these may differ when making binNMUs
     (Closes: #569823).
+  * Always attempt to install ESSENTIAL (build-essential) packages
+    if they aren't already installed (Closes: #380113).
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 28 Oct 2010 22:12:34 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 30 Oct 2010 15:54:47 +0100
 
 sbuild (0.60.1-1) unstable; urgency=low
 
