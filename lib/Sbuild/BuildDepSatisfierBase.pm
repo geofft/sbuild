@@ -200,6 +200,7 @@ sub remove_srcdep_lock_file {
     my $builder = $self->get('Builder');
 
     my $f = $builder->{'Session'}->{'Srcdep Lock Dir'} . '/' . $$ . '-' . $builder->{'Srcdep Lock Count'};
+    --$builder->{'Srcdep Lock Count'};
 
     debug("Removing srcdep lock file $f\n");
     if (!unlink( $f )) {
