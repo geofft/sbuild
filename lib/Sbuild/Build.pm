@@ -34,6 +34,7 @@ use FileHandle;
 use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
+use Dpkg::Arch;
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
 use Sbuild::Base;
@@ -655,8 +656,7 @@ sub fetch_source_files {
     } else {
 	my $valid_arch;
 	for my $a (split(/\s+/, $dscarchs)) {
-	    if (system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-		       '-a' . $arch, '-i' . $a) eq 0) {
+	    if (Dpkg::Arch::debarch_is($arch, $a)) {
 		$valid_arch = 1;
 		last;
 	    }
@@ -1605,15 +1605,11 @@ sub parse_one_srcdep {
 		my @archs = split( /\s+/, $archlist );
 		my ($use_it, $ignore_it, $include) = (0, 0, 0);
 		foreach (@archs) {
-			# Use 'dpkg-architecture' to support architecture
-			# wildcards.
 		    if (/^!/) {
-			$ignore_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-						 '-a' .	$self->get('Arch'), '-i' . substr($_, 1)) eq 0;
+			$ignore_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), substr($_, 1));
 		    }
 		    else {
-			$use_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-					      '-a' . $self->get('Arch'), '-i' . $_) eq 0;
+			$use_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), $_);
 			$include = 1;
 		    }
 		}
