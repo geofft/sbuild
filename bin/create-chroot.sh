@@ -198,6 +198,15 @@ EOT
     sudo chmod 0644 "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
 }
 
+setup_schroot_variant() {
+    echo VARIANT: $EXTRA
+    if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
+       ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
+       ! schroot -l | grep ^${SUITEEXTRA}-${ARCH}-sbuild$ -q ; then
+        setup_schroot
+    fi
+}
+
 setup_sources() {
     echo "I: Setting up sources..."
     TEMPFILE="$(mktemp)"
@@ -487,11 +496,14 @@ if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
         EXTRA=-${EXTRA}
         SUITEEXTRA=${SUITE}${EXTRA}
         if [ "$BASE" == "sid" ]; then SUITEEXTRA="experimental"; fi
-        echo VARIANT: $EXTRA
-        if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
-            ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
-            ! schroot -l | grep ^${SUITEEXTRA}-${ARCH}-sbuild$ -q ; then
-            setup_schroot
+
+        setup_schroot_variant
+
+        if [ "$BASE" = "lenny" ] && [ "$EXTRA" = "-backports" ]; then
+            # Also generate -sloppy chroots.
+            EXTRA=-backports-sloppy
+            SUITEEXTRA=${SUITE}${EXTRA}
+            setup_schroot_variant
         fi
     done
 fi
