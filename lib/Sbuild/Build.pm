@@ -356,7 +356,12 @@ sub run {
     } else {
 	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
     }
-    if (!$self->get('Dependency Resolver')->install_deps()) {
+    if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
+	$self->log("Essential dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	goto cleanup_packages;
+    }
+    if (!$self->get('Dependency Resolver')->install_deps($self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;

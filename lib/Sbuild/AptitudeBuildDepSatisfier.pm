@@ -50,17 +50,17 @@ sub new {
 
 sub install_deps {
     my $self = shift;
+    my $pkg = shift;
+
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install build dependencies (aptitude-based resolver)");
-
-    my $pkg = $builder->get('Package');
+    $builder->log_subsection("Install $pkg build dependencies (aptitude-based resolver)");
 
     my $dep = [];
     if (exists $builder->get('Dependencies')->{$pkg}) {
 	$dep = $builder->get('Dependencies')->{$pkg};
     }
-    debug("Source dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
+    debug("Dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
 
   repeat:
     my $session = $builder->get('Session');
@@ -81,7 +81,7 @@ sub install_deps {
 	       tempdir($builder->get_conf('USERNAME') . '-' . $pkg . '-' .
 		       $builder->get('Arch') . '-XXXXXX',
 		       DIR => $session->get('Build Location')));
-  
+
     my $dummy_pkg_name = 'sbuild-build-depends-' . $pkg . '-dummy';
     my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
     my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
@@ -281,7 +281,7 @@ sub get_non_default_deps {
 	    $builder->log("Need $name, but it isn't available\n");
 
 	#Check if the package default version is not high enough:
-	} elsif (defined($rel) && $rel && 
+	} elsif (defined($rel) && $rel &&
 		(  (!$neg && !version_compare($default_version, $rel, $requested_version))
 	         ||( $neg &&  version_compare($default_version, $rel, $requested_version)))) {
 	    if (!$neg) {
@@ -310,7 +310,7 @@ sub get_non_default_deps {
 			$_->{'Neg'} = 1 for (@$expanded_neg_dependencies);
 		    }
 		    my $expanded_dependencies = [@$expanded_pos_dependencies, @$expanded_neg_dependencies];
-		    $builder->log("Complete deps: " . $builder->format_deps(@$expanded_dependencies)  . "\n");			
+		    $builder->log("Complete deps: " . $builder->format_deps(@$expanded_dependencies)  . "\n");
 
 		    push @res, $self->get_non_default_deps($expanded_dependencies, $already_checked);
 		    last;

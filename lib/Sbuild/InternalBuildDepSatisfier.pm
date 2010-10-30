@@ -51,18 +51,19 @@ sub new {
 
 sub install_deps {
     my $self = shift;
+    my $pkg = shift;
+
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install build dependencies (internal resolver)");
+    $builder->log_subsection("Install $pkg build dependencies (internal resolver)");
 
-    my $pkg = $builder->get('Package');
     my( @positive, @negative, @instd, @rmvd );
 
     my $dep = [];
     if (exists $builder->get('Dependencies')->{$pkg}) {
 	$dep = $builder->get('Dependencies')->{$pkg};
     }
-    debug("Source dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
+    debug("Dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
 
   repeat:
     $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
@@ -74,7 +75,7 @@ sub install_deps {
 	return 0;
     }
 
-    $builder->log("Checking for source dependency conflicts...\n");
+    $builder->log("Checking for dependency conflicts...\n");
     if (!$builder->run_apt("-s", \@instd, \@rmvd, @positive)) {
 	$builder->log("Test what should be installed failed.\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
@@ -125,7 +126,7 @@ sub install_deps {
 
     my $fail = $self->check_dependencies($dep);
     if ($fail) {
-	$builder->log("After installing, the following source dependencies are ".
+	$builder->log("After installing, the following dependencies are ".
 		   "still unsatisfied:\n$fail\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
@@ -167,7 +168,7 @@ sub filter_dependencies {
 
     my($dep, $d, $name, %names);
 
-    $builder->log("Checking for already installed source dependencies...\n");
+    $builder->log("Checking for already installed dependencies...\n");
 
     @$pos_list = @$neg_list = ();
     foreach $d (@$dependencies) {
@@ -315,7 +316,7 @@ sub check_dependencies {
     my $fail = "";
     my($dep, $d, $name, %names);
 
-    $builder->log("Checking correctness of source dependencies...\n");
+    $builder->log("Checking correctness of dependencies...\n");
 
     foreach $d (@$dependencies) {
 	my $name = $d->{'Package'};
