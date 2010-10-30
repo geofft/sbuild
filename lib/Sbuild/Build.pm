@@ -207,6 +207,14 @@ sub run {
 
     $self->set_status('building');
 
+    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
+	$self->set('Dependency Resolver',
+		   Sbuild::AptitudeBuildDepSatisfier->new($self));
+    } else {
+	$self->set('Dependency Resolver',
+		   Sbuild::InternalBuildDepSatisfier->new($self));
+    }
+
     $self->set('Pkg Start Time', time);
 
     my $dist = $self->get_conf('DISTRIBUTION');
@@ -330,6 +338,11 @@ sub run {
 	}
     }
 
+    $self->set('Pkg Fail Stage', 'install-core');
+    if (!$self->install_core()) {
+	goto cleanup_close;
+    }
+
     $self->set('Pkg Fail Stage', 'fetch-src');
     if (!$self->fetch_source_files()) {
 	goto cleanup_packages;
@@ -351,11 +364,6 @@ sub run {
     }
 
     $self->set('Pkg Fail Stage', 'install-deps');
-    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
-	$self->set('Dependency Resolver', Sbuild::AptitudeBuildDepSatisfier->new($self));
-    } else {
-	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
-    }
     if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
 	$self->log("Essential dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
@@ -403,6 +411,9 @@ sub run {
 	    $self->log("Not removing build depends: as requested\n");
 	}
     }
+    # Remove srcdep lock files (once per install_deps invocation).
+    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
+    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
     $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
   cleanup_close:
     # End chroot session
@@ -426,6 +437,27 @@ sub run {
 
 #     return $self->set('Package Status', $status);
 # }
+
+sub install_core {
+    my $self = shift;
+
+    # read list of build-core packages (if not yet done) and
+    # expand their dependencies (those are implicitly core)
+    my $core_deps = join(", ", @{$self->get_conf('CORE_DEPENDS')});
+
+    if (!defined($self->get('Dependencies')->{'CORE'})) {
+	my $parsed_core_deps = $self->parse_one_srcdep('CORE', $core_deps);
+	push( @{$self->get('Dependencies')->{'CORE'}}, @$parsed_core_deps );
+    }
+
+    if (!$self->get('Dependency Resolver')->install_deps('CORE')) {
+	$self->log("Core dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	return 0;
+    }
+
+    return 1;
+}
 
 sub fetch_source_files {
     my $self = shift;
