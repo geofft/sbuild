@@ -20,8 +20,12 @@ sbuild (0.60.2-1) unstable; urgency=low
     Samuel Thibault.  This fix introduces sleeps, and is not a
     complete or entirely optimal fix, but corrects the existing
     breakage.
+  * buildd:
+    - Read entire contents of pipes (Closes: #567821).  Thanks to
+      Samuel Thibault.  This ensures receipt of complete log
+      messages.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 01:34:37 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 01:38:24 +0100
 
 sbuild (0.60.1-1) unstable; urgency=low
 
