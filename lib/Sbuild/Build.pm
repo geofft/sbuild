@@ -1232,7 +1232,6 @@ sub merge_pkg_build_deps {
     my $conflictsi = shift;
     my (@l, $dep);
 
-    $self->log("** Using build dependencies supplied by package:\n");
     $self->log("Build-Depends: $depends\n") if $depends;
     $self->log("Build-Depends-Indep: $dependsi\n") if $dependsi;
     $self->log("Build-Conflicts: $conflicts\n") if $conflicts;
