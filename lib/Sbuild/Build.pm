@@ -1,7 +1,7 @@
 #
 # Build.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2010 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
