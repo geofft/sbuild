@@ -215,6 +215,8 @@ sub run {
 	$self->set('Dependency Resolver',
 		   Sbuild::InternalBuildDepSatisfier->new($self));
     }
+    my $resolver = $self->get('Dependency Resolver');
+
 
     $self->set('Pkg Start Time', time);
 
@@ -365,19 +367,19 @@ sub run {
     }
 
     $self->set('Pkg Fail Stage', 'install-essential');
-    if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
+    if (!$resolver->install_deps('ESSENTIAL')) {
 	$self->log("Essential dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
     }
     $self->set('Pkg Fail Stage', 'install-deps');
-    if (!$self->get('Dependency Resolver')->install_deps($self->get('Package'))) {
+    if (!$resolver->install_deps($self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
     }
 
-    $self->get('Dependency Resolver')->dump_build_environment();
+    $resolver->dump_build_environment();
 
     if ($self->build()) {
 	$self->set_status('successful');
@@ -413,11 +415,13 @@ sub run {
 	    $self->log("Not removing build depends: as requested\n");
 	}
     }
+
     # Remove srcdep lock files (once per install_deps invocation).
-    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
-    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
+    $resolver->remove_srcdep_lock_file();
+    $resolver->remove_srcdep_lock_file();
+
   cleanup_close:
-    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
+    $resolver->remove_srcdep_lock_file();
     # End chroot session
     $session->end_session();
     $session = undef;
