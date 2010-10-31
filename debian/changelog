@@ -14,6 +14,10 @@ sbuild (0.60.2-1) unstable; urgency=low
     (Closes: #569823).
   * Always attempt to install ESSENTIAL (build-essential) packages
     if they aren't already installed (Closes: #380113).
+  * Don't end session on build failure (Closes: #567506).  This allows
+    examination of build trees and cloned chroots on build failure,
+    rather than unconditionally deleting them, which prevents this.
+    Thanks to Jan-Marek Glogowski.
   * Remove trailing 'q' from sbuild-createchroot(8) manual page
     (Closes: #579971).  Thanks to Salvatore Bonaccorso.
   * buildd-vlog: Fix breakage (Closes: #567822).  Thanks to
@@ -25,7 +29,7 @@ sbuild (0.60.2-1) unstable; urgency=low
       Samuel Thibault.  This ensures receipt of complete log
       messages.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 01:38:24 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 11:33:45 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
