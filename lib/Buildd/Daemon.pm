@@ -621,7 +621,10 @@ sub handle_prevfailed {
 	return;
     }
 
-    $fail_msg = <$pipe>;
+    $fail_msg = "";
+    while (<$pipe>) {
+      $fail_msg .= $_;
+    }
 
     close($pipe);
     if ($?) {
@@ -683,7 +686,10 @@ retry:
 	return;
     }
 
-    my $msg = <$pipe>;
+    my $msg = "";
+    while (<$pipe>) {
+      $msg .= $_;
+    }
 
     close($pipe);
 
