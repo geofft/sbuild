@@ -364,12 +364,13 @@ sub run {
 	}
     }
 
-    $self->set('Pkg Fail Stage', 'install-deps');
+    $self->set('Pkg Fail Stage', 'install-essential');
     if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
 	$self->log("Essential dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
     }
+    $self->set('Pkg Fail Stage', 'install-deps');
     if (!$self->get('Dependency Resolver')->install_deps($self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
