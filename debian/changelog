@@ -16,8 +16,12 @@ sbuild (0.60.2-1) unstable; urgency=low
     if they aren't already installed (Closes: #380113).
   * Remove trailing 'q' from sbuild-createchroot(8) manual page
     (Closes: #579971).  Thanks to Salvatore Bonaccorso.
+  * buildd-vlog: Fix breakage (Closes: #567822).  Thanks to
+    Samuel Thibault.  This fix introduces sleeps, and is not a
+    complete or entirely optimal fix, but corrects the existing
+    breakage.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 30 Oct 2010 18:08:05 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 01:34:37 +0100
 
 sbuild (0.60.1-1) unstable; urgency=low
 
