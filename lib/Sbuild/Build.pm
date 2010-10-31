@@ -1155,7 +1155,6 @@ sub run_apt {
     @$inst_ret = ();
     @$rem_ret = ();
     return 1 if !@to_install;
-  repeat:
 
     $msgs = "";
     # redirection of stdin from /dev/null so that conffile question
@@ -1183,69 +1182,6 @@ sub run_apt {
     }
     close($pipe);
     $status = $?;
-
-    if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-	my $status = update($self->get('Session'), $self->get('Config'));
-	$self->log("apt-get update failed\n") if $status;
-	goto repeat;
-    }
-
-    if ($status != 0 && $msgs =~ /^Package (\S+) is a virtual package provided by:\n((^\s.*\n)*)/mi) {
-	my $to_replace = $1;
-	my @providers;
-	foreach (split( "\n", $2 )) {
-	    s/^\s*//;
-	    push( @providers, (split( /\s+/, $_ ))[0] );
-	}
-	$self->log("$to_replace is a virtual package provided by: @providers\n");
-	my $selected;
-	if (@providers == 1) {
-	    $selected = $providers[0];
-	    $self->log("Using $selected (only possibility)\n");
-	}
-	elsif (exists $self->get_conf('ALTERNATIVES')->{$to_replace}) {
-	    $selected = $self->get_conf('ALTERNATIVES')->{$to_replace};
-	    $self->log("Using $selected (selected in sbuildrc)\n");
-	}
-	else {
-	    $selected = $providers[0];
-	    $self->log("Using $selected (no default, using first one)\n");
-	}
-
-	@to_install = grep { $_ ne $to_replace } @to_install;
-	push( @to_install, $selected );
-
-	goto repeat;
-    }
-
-    if ($status != 0 && ($msgs =~ /^E: Could( not get lock|n.t lock)/mi ||
-			 $msgs =~ /^dpkg: status database area is locked/mi)) {
-	$self->log("Another apt-get or dpkg is running -- retrying later\n");
-	sleep( 2*60 );
-	goto repeat;
-    }
-
-    # check for errors that are probably caused by something broken in
-    # the build environment, and give back the packages.
-    if ($status != 0 && $mode ne "-s" &&
-	(($msgs =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
-	 ($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
-	 ($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
-	$self->log_error("Build environment unusable, giving back\n");
-	$self->set('Pkg Fail Stage', "install-deps-env");
-    }
-
-    if ($status != 0 && $mode ne "-s" &&
-	(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
-	$self->log("Unable to fetch build-depends\n");
-	$self->set('Pkg Fail Stage', "install-deps-env");
-    }
-
-    if ($status != 0 && $mode ne "-s" &&
-	(($msgs =~ /^W: Couldn't stat source package list /mi))) {
-	$self->log("Missing a packages file (mismatch with Release.gpg?), giving back.\n");
-	$self->set('Pkg Fail Stage', "install-deps-env");
-    }
 
     $pkgs = $rpkgs = "";
     if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
