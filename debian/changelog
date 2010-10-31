@@ -18,6 +18,12 @@ sbuild (0.60.2-1) unstable; urgency=low
     examination of build trees and cloned chroots on build failure,
     rather than unconditionally deleting them, which prevents this.
     Thanks to Jan-Marek Glogowski.
+  * Remove support for parsing output of apt-get stderr
+    (Closes: #571806).
+  * Remove virtual build-dependency resolving using the "internal"
+    resolver using the static ALTERATIVES (%alternatives) list.  This
+    was already limited, non-functional, and is obsoleted by the
+    "aptitude" resolver.
   * Remove trailing 'q' from sbuild-createchroot(8) manual page
     (Closes: #579971).  Thanks to Salvatore Bonaccorso.
   * buildd-vlog: Fix breakage (Closes: #567822).  Thanks to
@@ -29,7 +35,7 @@ sbuild (0.60.2-1) unstable; urgency=low
       Samuel Thibault.  This ensures receipt of complete log
       messages.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 11:33:45 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 31 Oct 2010 20:42:35 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
