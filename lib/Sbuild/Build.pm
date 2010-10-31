@@ -240,6 +240,7 @@ sub run {
 	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
     }
 
+    my $end_session = 1;
     my $session = $chroot_info->create($self->get_conf('DISTRIBUTION'),
 				       $self->get_conf('CHROOT'),
 				       $self->get_conf('ARCH'));
@@ -388,29 +389,38 @@ sub run {
     }
 
   cleanup_packages:
-    # Purge package build directory
-    if ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
-	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
-	 $self->get_status() eq 'successful')) {
-	$self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
-	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
-	$self->get('Session')->run_command(
-	    { COMMAND => ['rm', '-rf', $bdir],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0,
-	      DIR => '/' });
-    }
+    my $purge_build_directory =
+	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
+	 ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
+	  $self->get_status() eq 'successful')) ? 1 : 0;
+    my $purge_build_deps =
+	($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
+	 ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
+	  $self->get_status() eq 'successful')) ? 1 : 0;
+    my $is_cloned_session = (defined ($session->get('Session Purged')) &&
+			     $session->get('Session Purged') == 1) ? 1 : 0;
 
-    # Purge installed packages
-    if (defined ($session->get('Session Purged')) &&
-	$session->get('Session Purged') == 1) {
-	$self->log("Not removing build depends: cloned chroot in use\n");
+    # Purge non-cloned session
+    if ($is_cloned_session) {
+	$self->log("Not cleaning session: cloned chroot in use\n");
+	$end_session = 0
+	    if ($purge_build_directory == 0 || $purge_build_deps == 0);
     } else {
-	if ($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
-	    ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
-	     $self->get_status() eq 'successful')) {
-	    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->uninstall_deps();
+	if ($purge_build_directory) {
+	    # Purge package build directory
+	    $self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
+	    my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
+	    $self->get('Session')->run_command(
+		{ COMMAND => ['rm', '-rf', $bdir],
+		  USER => 'root',
+		  CHROOT => 1,
+		  PRIORITY => 0,
+		  DIR => '/' });
+	}
+
+       if ($purge_build_deps) {
+           # Removing dependencies
+	   $resolver->uninstall_deps();
 	} else {
 	    $self->log("Not removing build depends: as requested\n");
 	}
@@ -423,7 +433,11 @@ sub run {
   cleanup_close:
     $resolver->remove_srcdep_lock_file();
     # End chroot session
-    $session->end_session();
+    if ($end_session == 1) {
+	$session->end_session();
+    } else {
+	$self->log("Keeping session: " . $session->get('Session ID') . "\n");
+    }
     $session = undef;
     $self->set('Session', $session);
 
