@@ -187,10 +187,10 @@ EOT
     fi
 
     if \
-        [ "$ARCH" == "mips" ] || \
-        [ "$ARCH" == "sparc" ] || \
-        [ "$ARCH" == "i386" ] || \
-        [ "$ARCH" == "powerpc" ]; then
+        [ "$ARCH" = "mips" ] || \
+        [ "$ARCH" = "sparc" ] || \
+        [ "$ARCH" = "i386" ] || \
+        [ "$ARCH" = "powerpc" ]; then
             echo "personality=linux32" >>"${TEMPFILE}"
     fi
     sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
@@ -491,11 +491,11 @@ do_debootstrap
 setup_schroot
 if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
     variants="security volatile backports"
-    if [ "$BASE" == "sid" ]; then variants="experimental"; fi
+    if [ "$BASE" = "sid" ]; then variants="experimental"; fi
     for EXTRA in $variants; do
         EXTRA=-${EXTRA}
         SUITEEXTRA=${SUITE}${EXTRA}
-        if [ "$BASE" == "sid" ]; then SUITEEXTRA="experimental"; fi
+        if [ "$BASE" = "sid" ]; then SUITEEXTRA="experimental"; fi
 
         setup_schroot_variant
 
