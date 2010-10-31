@@ -416,8 +416,8 @@ sub run {
     # Remove srcdep lock files (once per install_deps invocation).
     $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
     $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
-    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
   cleanup_close:
+    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
     # End chroot session
     $session->end_session();
     $session = undef;
