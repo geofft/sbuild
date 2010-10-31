@@ -390,38 +390,6 @@ sub init_allowed_keys {
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
 	    DEFAULT => 0
 	},
-	'ALTERNATIVES'				=> {
-	    DEFAULT => {
-		'info-browser'		=> 'info',
-		'httpd'			=> 'apache',
-		'postscript-viewer'	=> 'ghostview',
-		'postscript-preview'	=> 'psutils',
-		'www-browser'		=> 'lynx',
-		'awk'			=> 'gawk',
-		'c-shell'		=> 'tcsh',
-		'wordlist'		=> 'wenglish',
-		'tclsh'			=> 'tcl8.4',
-		'wish'			=> 'tk8.4',
-		'c-compiler'		=> 'gcc',
-		'fortran77-compiler'	=> 'g77',
-		'java-compiler'		=> 'jikes',
-		'libc-dev'		=> 'libc6-dev',
-		'libgl-dev'		=> 'xlibmesa-gl-dev',
-		'libglu-dev'		=> 'xlibmesa-glu-dev',
-		'libncurses-dev'	=> 'libncurses5-dev',
-		'libz-dev'		=> 'zlib1g-dev',
-		'libg++-dev'		=> 'libstdc++6-4.0-dev',
-		'emacsen'		=> 'emacs21',
-		'mail-transport-agent'	=> 'ssmtp',
-		'mail-reader'		=> 'mailx',
-		'news-transport-system'	=> 'inn',
-		'news-reader'		=> 'nn',
-		'xserver'		=> 'xvfb',
-		'mysql-dev'		=> 'libmysqlclient-dev',
-		'giflib-dev'		=> 'libungif4-dev',
-		'freetype2-dev'		=> 'libttf-dev'
-	    }
-	},
 	'CHECK_DEPENDS_ALGORITHM'		=> {
 	    CHECK => sub {
 		my $self = shift;
@@ -572,8 +540,6 @@ sub read_config {
     my $apt_upgrade = undef;
     my $apt_distupgrade = undef;
     my $apt_allow_unauthenticated = undef;
-    my %alternatives;
-    undef %alternatives;
     my $check_depends_algorithm = undef;
     my $distribution = undef;
     my $archive = undef;
@@ -665,8 +631,6 @@ sub read_config {
     $self->set('APT_UPGRADE', $apt_upgrade);
     $self->set('APT_DISTUPGRADE', $apt_distupgrade);
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
-    $self->set('ALTERNATIVES', \%alternatives)
-	if (%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
     $self->set('JOB_FILE', $job_file);
 
