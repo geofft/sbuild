@@ -34,6 +34,8 @@ sbuild (0.60.2-1) unstable; urgency=low
     - Read entire contents of pipes (Closes: #567821).  Thanks to
       Samuel Thibault.  This ensures receipt of complete log
       messages.
+    - Replace/Breaks with ubuntu-dev-tools <= 0.83 (Closes: #590153).
+      Thanks to Lorenzo De Liso.
   * sbuild(1):
     - Remove and rewrite obsolete parts of the manpage
       (Closes: #599348).
@@ -42,7 +44,7 @@ sbuild (0.60.2-1) unstable; urgency=low
   * Check for sbuild group membership using gid and supplementary
     groups (Closes: #599350).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 17:27:51 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 17:45:58 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
