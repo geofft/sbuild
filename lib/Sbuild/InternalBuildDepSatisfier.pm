@@ -75,12 +75,20 @@ sub install_deps {
 	return 0;
     }
 
+    debug("Finding virtual packages\n");
+    if (!$self->virtual_dependencies(\@positive)) {
+	$builder->log("Package installation not possible\n");
+	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
+	return 0;
+    }
+
     $builder->log("Checking for dependency conflicts...\n");
     if (!$builder->run_apt("-s", \@instd, \@rmvd, @positive)) {
 	$builder->log("Test what should be installed failed.\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
+
     # add negative deps as to be removed for checking srcdep conflicts
     push( @rmvd, @negative );
     my @confl;
@@ -309,6 +317,23 @@ sub filter_dependencies {
     return 1;
 }
 
+sub virtual_dependencies {
+    my $self = shift;
+    my $pos_list = shift;
+
+    my $builder = $self->get('Builder');
+
+    # The first returned package only is used.
+    foreach my $pkg (@$pos_list) {
+	my @virtuals = $self->get_virtual($pkg);
+	return 0
+	    if (scalar(@virtuals) == 0);
+	$pkg = $virtuals[0];
+    }
+
+    return 1;
+}
+
 sub check_dependencies {
     my $self = shift;
     my $dependencies = shift;
@@ -377,6 +402,41 @@ sub check_dependencies {
     $fail =~ s/\s+$//;
 
     return $fail;
+}
+
+# Return a list of packages which provide a package.
+# Note: will return both concrete and virtual packages.
+sub get_virtual {
+    my $self = shift;
+    my $pkg = shift;
+
+    my $builder = $self->get('Builder');
+
+    my $pipe = $builder->get('Session')->pipe_apt_command(
+	{ COMMAND => [$self->get_conf('APT_CACHE'),
+		      '-q', '--names-only', 'search', "^$pkg\$"],
+	  USER => $self->get_conf('USERNAME'),
+	  PRIORITY => 0,
+	  DIR => '/'});
+    if (!$pipe) {
+	$self->log("Can't open pipe to $conf::apt_cache: $!\n");
+	return ();
+    }
+
+    my @virtuals;
+
+    while( <$pipe> ) {
+	my $virtual = $1 if /^(\S+)\s+\S+.*$/mi;
+	push(@virtuals, $virtual);
+    }
+    close($pipe);
+
+    if ($?) {
+	$self->log($self->get_conf('APT_CACHE') . " exit status $?: $!\n");
+	return ();
+    }
+
+    return sort(@virtuals);
 }
 
 1;
