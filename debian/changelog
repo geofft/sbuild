@@ -43,8 +43,14 @@ sbuild (0.60.2-1) unstable; urgency=low
       (Closes: #598054).
   * Check for sbuild group membership using gid and supplementary
     groups (Closes: #599350).
+  * Added the ability to resolve virtual dependencies using the
+    "internal" build dependency resolver by calling "apt-cache
+    --names-only" to get candidate packages to satisfy the
+    dependency.  The first package (sorted alphabetically) is
+    chosen (Closes: #595934).  This may be disabled using the
+    $resolve_virtual option.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 17:45:58 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 21:44:09 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
