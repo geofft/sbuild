@@ -163,7 +163,6 @@ sub should_skip ($) {
     if ($conf->get('BATCH_MODE')) {
 	my $pkgv = $build->get('Package_OVersion');
 
-	$pkgv = $build->fixup_pkgv($pkgv);
 	$build->lock_file("SKIP", 0);
 	goto unlock if !open( F, "SKIP" );
 	my @pkgs = <F>;
