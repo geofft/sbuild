@@ -206,8 +206,8 @@ sub get_next_WANNABUILD {
 		$pkg_ver = $lowprio_pkg_ver;
 	    }
 
-	    next if !@todo;
-	    my $todo = $self->do_wanna_build( $dist_config, @todo );
+	    next if !defined($pkg_ver);
+	    my $todo = $self->do_wanna_build( $dist_config, $pkg_ver );
 	    last if !$todo;
 	    return ( $dist_config, $todo );
 	}
