@@ -39,8 +39,10 @@ sbuild (0.60.2-1) unstable; urgency=low
       (Closes: #599348).
     - .sbuildrc is no longer required for sbuild to function
       (Closes: #598054).
+  * Check for sbuild group membership using gid and supplementary
+    groups (Closes: #599350).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 17:09:16 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 17:27:51 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
