@@ -68,14 +68,16 @@ example sbuildrc is available in
 You can build either using a local package with its .dsc file or a
 remote one by specifying an explicit dpkg version.
 .PP
-Note: When using schroot (recommended), these requirements do not apply. If the
-\-c or \-\-chroot option is used, the specified chroot will be used. Otherwise,
-the chroot having the name (or alias) of the specified distribution will be
-used; schroot uses a chroot named \fI$distribution\-$arch-sbuild\fP,
-\fI$distribution\-sbuild\fP, \fI$distribution\-$arch\fP or \fI$distribution\fP,
-in that order of preference.  When configured to use sudo (deprecated),
-\fBsbuild\fR must be run in the directory (\fI~/build\fP by default) with a
-chroot\-{stable,testing,unstable,etc.} symlink to the chroot.
+Note: When using schroot (recommended), the chroot having the name (or alias)
+of the specified distribution will be used; schroot uses a chroot named
+\fI$distribution\-$arch-sbuild\fP, \fI$distribution\-sbuild\fP,
+\fI$distribution\-$arch\fP or \fI$distribution\fP, in that order of preference.
+The \-c or \-\-chroot option may be used to override the chroot to be
+used. When configured to use sudo (deprecated), sbuild will look for a symlink
+to a chroot with the same name as the distribution specified.  sbuild will use
+a symlink to the chroot located in \fI/etc/sbuild/chroot/$distribution\fP, or
+must be run in a directory containing a \fIchroot\-$distribution\fP symlink to
+the chroot (not recommended, but done for backward compatibility).
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
