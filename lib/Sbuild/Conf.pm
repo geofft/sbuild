@@ -674,17 +674,6 @@ sub check_group_membership ($) {
     }
 
     my $in_group = 0;
-    foreach (split(' ', $members)) {
-	$in_group = 1 if $_ eq $self->get('USERNAME');
-    }
-
-    if (!$in_group) {
-	print STDERR "User $user is not a member of group $name in the system group database\n";
-	print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
-	exit(1);
-    }
-
-    $in_group = 0;
     my @groups = getgroups();
     push @groups, getgid();
     foreach (@groups) {
