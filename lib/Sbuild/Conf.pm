@@ -463,6 +463,9 @@ sub init_allowed_keys {
 			     qw(internal aptitude));
 	    },
 	},
+	'RESOLVE_VIRTUAL'				=> {
+	    DEFAULT => 1
+	},
     );
 
     $self->set_allowed_keys(\%sbuild_keys);
@@ -549,6 +552,7 @@ sub read_config {
     my $job_file = undef;
     my $build_dir = undef;
     my $build_dep_resolver = undef;
+    my $resolve_virtual = undef;
     my $core_depends = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
@@ -563,6 +567,7 @@ sub read_config {
 
     # Set before APT_GET or APTITUDE to allow correct validation.
     $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
+    $self->set('RESOLVE_VIRTUAL', $resolve_virtual);
     $self->set('CORE_DEPENDS', $core_depends);
     $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);

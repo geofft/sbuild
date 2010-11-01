@@ -75,11 +75,13 @@ sub install_deps {
 	return 0;
     }
 
-    debug("Finding virtual packages\n");
-    if (!$self->virtual_dependencies(\@positive)) {
-	$builder->log("Package installation not possible\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
-	return 0;
+    if ($self->get_conf('RESOLVE_VIRTUAL')) {
+	debug("Finding virtual packages\n");
+	if (!$self->virtual_dependencies(\@positive)) {
+	    $builder->log("Package installation not possible\n");
+	    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
+	    return 0;
+	}
     }
 
     $builder->log("Checking for dependency conflicts...\n");
