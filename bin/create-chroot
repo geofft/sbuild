@@ -20,12 +20,11 @@ usage() {
         echo "E: $message" >&2
     fi
     echo "Usage: $0 [http://some.debian.mirror/debian] [--arch=arch] suite [vgname lvsize]" >&2
-    echo "Valid suites: oldstable, stable, testing, unstable," >&2
-    echo "              oldstable-security, stable-security," >&2
-    echo "              testing-security, oldstable-backports," >&2
-    echo "              stable-backports, oldstable-edu," >&2
-    echo "              stable-edu, stable-volatile," >&2
-    echo "              testing-volatile, experimental" >&2
+    echo "Valid suites: oldstable, stable, testing, unstable, experimental," >&2
+    echo "              oldstable-security, stable-security, testing-security," >&2
+    echo "              oldstable-backports, stable-backports," >&2
+    echo "              oldstable-volatile, stable-volatile," >&2
+    echo "              oldstable-edu, stable-edu, testing-edu" >&2
     echo "If vgname is given, the script will setup schroot" >&2
     echo "to use snapshots based on a source lv." >&2
     exit 1
@@ -96,6 +95,7 @@ case "$SUITE" in
     stable-edu) BASE=$STABLE; VARIANT="edu" ;;
     testing) BASE=$TESTING ;;
     testing-security) BASE=$TESTING; VARIANT="security" ;;
+    testing-edu) BASE=$TESTING; VARIANT="edu" ;;
     unstable) BASE="sid" ;;
     experimental) BASE="sid"; VARIANT="experimental";;
     *) usage "Invalid suite specified (must be symbolic, e.g. 'stable')!" ;;
