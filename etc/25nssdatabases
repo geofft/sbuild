@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright © 2005-2009  Roger Leigh <rleigh@debian.org>
 #
 # schroot is free software: you can redistribute it and/or modify it
@@ -18,8 +18,6 @@
 #####################################################################
 
 set -e
-
-NSSDATABASES="/etc/sbuild/nssdatabases-defaults"
 
 if [ -f "$CHROOT_SCRIPT_CONFIG" ]; then
     . "$CHROOT_SCRIPT_CONFIG"
@@ -48,6 +46,23 @@ if [ $1 = "setup-start" ] || [ $1 = "setup-recover" ]; then
     if [ -n "$NSSDATABASES" ]; then
 	if [ -f "$NSSDATABASES" ]; then
 	    while read db; do
+		if echo "$db" | egrep -q '^(#|$)' ; then
+                    continue
+		fi
+
+                # Device and inode
+		dr=$(/usr/bin/stat --format="%d %i" "/etc/$db")
+                # This one can fail since it might not exist yet
+		dc=$(/usr/bin/stat --format="%d %i" "${CHROOT_PATH}/etc/$db" 2>/dev/null || :)
+
+                # If the database inside and outside the chroot is the
+                # same, it's very likely that dup_nss would blank the
+                # database, so skip it.
+		if [ "$dr" = "$dc" ]; then
+		    echo "warning: $db files '/etc/$db' and '${CHROOT_PATH}/etc/$db' are the same file; skipping" 1>&2
+                    continue;
+		fi
+
 		dup_nss "$db" "${CHROOT_PATH}/etc/$db"
 	    done < "$NSSDATABASES"
 	else
