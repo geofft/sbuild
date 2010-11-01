@@ -63,8 +63,7 @@ locally available sources.
 \fBsbuild\fR mails the build logs to a user.  It is configured by the
 configuration files \fI/etc/sbuild/sbuild.conf\fP and \fI~/.sbuildrc\fP.  An
 example sbuildrc is available in
-\fI/usr/share/doc/sbuild/examples/example.sbuildrc\fP.  \fBsbuild\fR will
-\fBnot\fP run without a valid \fI~/.sbuildrc\fP.
+\fI/usr/share/doc/sbuild/examples/example.sbuildrc\fP.
 .PP
 You can build either using a local package with its .dsc file or a
 remote one by specifying an explicit dpkg version.
