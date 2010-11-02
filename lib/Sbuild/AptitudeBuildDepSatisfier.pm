@@ -60,7 +60,7 @@ sub install_deps {
     if (exists $builder->get('Dependencies')->{$pkg}) {
 	$dep = $builder->get('Dependencies')->{$pkg};
     }
-    debug("Dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
+    debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 
   repeat:
     my $session = $builder->get('Session');
@@ -119,10 +119,10 @@ Architecture: $arch
 EOF
 
     if (@positive_deps) {
-	print DUMMY_CONTROL 'Depends: ' . $builder->format_deps(@positive_deps) . "\n";
+	print DUMMY_CONTROL 'Depends: ' . $self->format_deps(@positive_deps) . "\n";
     }
     if (@negative_deps) {
-	print DUMMY_CONTROL 'Conflicts: ' . $builder->format_deps(@negative_deps) . "\n";
+	print DUMMY_CONTROL 'Conflicts: ' . $self->format_deps(@negative_deps) . "\n";
     }
 
     print DUMMY_CONTROL <<"EOF";
@@ -310,7 +310,7 @@ sub get_non_default_deps {
 			$_->{'Neg'} = 1 for (@$expanded_neg_dependencies);
 		    }
 		    my $expanded_dependencies = [@$expanded_pos_dependencies, @$expanded_neg_dependencies];
-		    $builder->log("Complete deps: " . $builder->format_deps(@$expanded_dependencies)  . "\n");
+		    $builder->log("Complete deps: " . $self->format_deps(@$expanded_dependencies)  . "\n");
 
 		    push @res, $self->get_non_default_deps($expanded_dependencies, $already_checked);
 		    last;
@@ -319,7 +319,7 @@ sub get_non_default_deps {
 		}
 	    }
 	    if (!$found_usable_version) {
-		$builder->log("... couldn't find pkg to satisfy " . $builder->format_deps($dep)  . "\n");
+		$builder->log("... couldn't find pkg to satisfy " . $self->format_deps($dep)  . "\n");
 	    }
 	}
     }

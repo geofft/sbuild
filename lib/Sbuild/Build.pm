@@ -1576,17 +1576,6 @@ sub check_watches {
     $self->log("\n");
 }
 
-sub format_deps {
-    my $self = shift;
-
-    return join( ", ",
-		 map { join( "|",
-			     map { ($_->{'Neg'} ? "!" : "") .
-				       $_->{'Package'} .
-				       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"")}
-			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
-}
-
 sub lock_file {
     my $self = shift;
     my $file = shift;

@@ -63,7 +63,7 @@ sub install_deps {
     if (exists $builder->get('Dependencies')->{$pkg}) {
 	$dep = $builder->get('Dependencies')->{$pkg};
     }
-    debug("Dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
+    debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 
   repeat:
     $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);

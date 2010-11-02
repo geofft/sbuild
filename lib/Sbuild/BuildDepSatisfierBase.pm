@@ -413,7 +413,7 @@ sub dump_build_environment {
     my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
     $exp_essential = $builder->expand_dependencies($builder->get('Dependencies')->{'ESSENTIAL'});
     debug("Dependency-expanded build essential packages:\n",
-		 $builder->format_deps(@$exp_essential), "\n");
+	  $self->format_deps(@$exp_essential), "\n");
 
     my @toolchain;
     foreach my $tpkg (@$exp_essential) {
@@ -504,6 +504,17 @@ sub run_apt {
 
     $builder->log("apt-get failed.\n") if $status && $mode ne "-s";
     return $mode eq "-s" || $status == 0;
+}
+
+sub format_deps {
+    my $self = shift;
+
+    return join( ", ",
+		 map { join( "|",
+			     map { ($_->{'Neg'} ? "!" : "") .
+				       $_->{'Package'} .
+				       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"")}
+			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
 1;
