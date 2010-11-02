@@ -643,8 +643,8 @@ sub fetch_source_files {
 	$self->log("Can't open $build_dir/$dsc: $!\n");
 	return 0;
     }
+
     my $dsctext;
-    my $orig;
     { local($/); $dsctext = <F>; }
     close( F );
 
@@ -656,6 +656,14 @@ sub fetch_source_files {
 	and $build_conflicts = $1;
     $dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
 	and $build_conflicts_indep = $1;
+    $dsctext =~ /^Architecture:\s*(.*)$/mi
+	and $dscarchs = $1;
+    $dsctext =~ /^Source:\s*(.*)$/mi
+	and $dscpkg = $1;
+    $dsctext =~ /^Version:\s*(.*)$/mi
+	and $dscver = $1;
+
+    $self->set_version("${dscpkg}_${dscver}");
 
     # Add additional build dependencies specified on the command-line.
     # TODO: Split dependencies into an array from the start to save
@@ -700,11 +708,6 @@ sub fetch_source_files {
     $build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;
     $build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
     $build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
-
-    $dsctext =~ /^Architecture:\s*(.*)$/mi and $dscarchs = $1;
-    $dsctext =~ /^Source:\s*(.*)$/mi and $dscpkg = $1;
-    $dsctext =~ /^Version:\s*(.*)$/mi and $dscver = $1;
-    $self->set_version("${dscpkg}_${dscver}");
 
     $self->log_subsubsection("Check arch");
     if (!$dscarchs) {
