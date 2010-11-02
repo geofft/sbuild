@@ -428,11 +428,15 @@ sub run {
     }
 
     # Remove srcdep lock files (once per install_deps invocation).
-    $resolver->remove_srcdep_lock_file();
-    $resolver->remove_srcdep_lock_file();
+    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "internal") {
+	$resolver->remove_srcdep_lock_file();
+	$resolver->remove_srcdep_lock_file();
+    }
 
   cleanup_close:
-    $resolver->remove_srcdep_lock_file();
+    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "internal") {
+	$resolver->remove_srcdep_lock_file();
+    }
     # End chroot session
     if ($end_session == 1) {
 	$session->end_session();
