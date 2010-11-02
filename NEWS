@@ -9,7 +9,27 @@ configuration.
 
 * Major changes in 0.60.2:
 
-  None.
+  1) Virtual packages may now be used in Build-Depends using the
+     internal resolver.  This is very simple, and picks the first
+     package providing the dependency in alphabetical order.  The
+     aptitude resolver is rather more sophisticated, and should be
+     used if this is insufficiently clever.
+
+  2) Build-Conflicts are correctly removed and reinstalled, and sbuild
+     can now remove packages which depend upon other packages, due to
+     using "apt-get remove" in place of "dpkg --remove".
+
+  3) Package build-dependency installation in now preceeded by
+     installation of "core" dependencies (currently build-essential)
+     and "essential" dependencies (essential packages listed in
+     build-essential), to ensure a working build environment.  These
+     should, of course, already be installed; this change is an
+     additional consistency check to ensure the build environment is
+     sane.
+
+  4) schroot sessions may be preserved on failure (failure to build or
+     failure to install build dependencies), to allow easier
+     troubleshooting.
 
 * Major changes in 0.60.1:
 
