@@ -85,7 +85,7 @@ sub install_deps {
     }
 
     $builder->log("Checking for dependency conflicts...\n");
-    if (!$builder->run_apt("-s", \@instd, \@rmvd, @positive)) {
+    if (!$self->run_apt("-s", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Test what should be installed failed.\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
@@ -106,7 +106,7 @@ sub install_deps {
 
     my $install_start_time = time;
     $builder->log("Installing positive dependencies: @positive\n");
-    if (!$builder->run_apt("-y", \@instd, \@rmvd, @positive)) {
+    if (!$self->run_apt("-y", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Package installation failed\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	if (defined ($builder->get('Session')->get('Session Purged')) &&
@@ -123,8 +123,7 @@ sub install_deps {
     $self->set_removed(@rmvd);
 
     $builder->log("Removing negative dependencies: @negative\n");
-    if (!$self->uninstall_debs($builder->get('Chroot Dir') ? "purge" : "remove",
-			       @negative)) {
+    if (!$self->run_apt("-y", \@instd, \@rmvd, 'remove', @negative)) {
 	$builder->log("Removal of packages failed\n");
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;

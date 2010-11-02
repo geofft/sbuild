@@ -68,7 +68,7 @@ sub install_deps {
 
     #install aptitude first:
     my (@aptitude_installed_packages, @aptitude_removed_packages);
-    if (!$builder->run_apt('-y', \@aptitude_installed_packages, \@aptitude_removed_packages, 'aptitude')) {
+    if (!$self->run_apt('-y', \@aptitude_installed_packages, \@aptitude_removed_packages, 'install', 'aptitude')) {
 	$builder->log_warning('Could not install aptitude!');
 	goto cleanup;
     }

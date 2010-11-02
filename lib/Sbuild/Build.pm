@@ -1147,61 +1147,6 @@ sub build {
     return $rv == 0 ? 1 : 0;
 }
 
-sub run_apt {
-    my $self = shift;
-    my $mode = shift;
-    my $inst_ret = shift;
-    my $rem_ret = shift;
-    my @to_install = @_;
-    my( $msgs, $status, $pkgs, $rpkgs );
-
-    @$inst_ret = ();
-    @$rem_ret = ();
-    return 1 if !@to_install;
-
-    $msgs = "";
-    # redirection of stdin from /dev/null so that conffile question
-    # are treated as if RETURN was pressed.
-    # dpkg since 1.4.1.18 issues an error on the conffile question if
-    # it reads EOF -- hardwire the new --force-confold option to avoid
-    # the questions.
-    my $pipe =
-	$self->get('Session')->pipe_apt_command(
-	{ COMMAND => [$self->get_conf('APT_GET'), '--purge',
-		      '-o', 'DPkg::Options::=--force-confold',
-		      '-q', "$mode", 'install', @to_install],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  PRIORITY => 0,
-	  DIR => '/' });
-    if (!$pipe) {
-	$self->log("Can't open pipe to apt-get: $!\n");
-	return 0;
-    }
-
-    while(<$pipe>) {
-	$msgs .= $_;
-	$self->log($_) if $mode ne "-s" || debug($_);
-    }
-    close($pipe);
-    $status = $?;
-
-    $pkgs = $rpkgs = "";
-    if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
-	($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
-	$pkgs =~ s/\*//g;
-    }
-    if ($msgs =~ /packages will be REMOVED:\n((^[ 	].*\n)*)/mi) {
-	($rpkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
-	$rpkgs =~ s/\*//g;
-    }
-    @$inst_ret = split( /\s+/, $pkgs );
-    @$rem_ret = split( /\s+/, $rpkgs );
-
-    $self->log("apt-get failed.\n") if $status && $mode ne "-s";
-    return $mode eq "-s" || $status == 0;
-}
-
 # Produce a hash suitable for ENV export
 sub get_env ($$) {
     my $self = shift;
