@@ -21,6 +21,8 @@ sbuild (0.60.2-1) unstable; urgency=low
         dependency.  The first package (sorted alphabetically) is
         chosen (Closes: #595934).  This may be disabled using the
         $resolve_virtual option.
+      . Use apt-get to remove build conflicts using the internal
+        resolver and correctly reinstall post build.
     - Log the package source version as well as binary version in the
       package build log, since these may differ when making binNMUs
       (Closes: #569823).
@@ -53,7 +55,7 @@ sbuild (0.60.2-1) unstable; urgency=low
       . .sbuildrc is no longer required for sbuild to function
         (Closes: #598054).
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 02 Nov 2010 12:52:42 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 02 Nov 2010 13:02:50 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
