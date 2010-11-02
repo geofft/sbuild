@@ -62,7 +62,6 @@ sub install_deps {
     }
     debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 
-  repeat:
     my $session = $builder->get('Session');
     $builder->lock_file($session->get('Install Lock'), 1);
 
@@ -135,16 +134,27 @@ EOF
 
     #Now build and install the package:
     $session->run_command(
-	    { COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_dir), $session->strip_chroot_path($dummy_deb)],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0});
+	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_dir), $session->strip_chroot_path($dummy_deb)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
+    if ($?) {
+	$builder->log("Dummy package creation failed\n");
+	goto cleanup;
+    }
     $session->run_command(
-	    { COMMAND => ['dpkg', '--install', $session->strip_chroot_path($dummy_deb)],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0});
+	{ COMMAND => ['dpkg', '--force-depends', '--force-conflicts', '--install', $session->strip_chroot_path($dummy_deb)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
     $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, $dummy_pkg_name);
+
+    if ($?) {
+	$builder->log("Dummy package installation failed\n");
+	goto package_cleanup;
+    }
 
     my @non_default_deps = $self->get_non_default_deps($dep, {});
 
@@ -178,7 +188,7 @@ EOF
 
     if (!$pipe) {
 	$builder->log_warning('Cannot open pipe from aptitude: ' . $! . "\n");
-	goto aptitude_cleanup;
+	goto package_cleanup;
     }
 
     my $aptitude_output = "";
@@ -191,7 +201,7 @@ EOF
 
     if ($aptitude_output =~ /^E:/m) {
 	$builder->log('Satisfying build-deps with aptitude failed.' . "\n");
-	goto aptitude_cleanup;
+	goto package_cleanup;
     }
 
     my ($installed_pkgs, $removed_pkgs) = ("", "");
@@ -223,27 +233,10 @@ EOF
   package_cleanup:
     if (defined ($session->get('Session Purged')) &&
 	$session->get('Session Purged') == 1) {
-	$builder->log("Not removing build depends: cloned chroot in use\n");
+	$builder->log("Not removing installed packages: cloned chroot in use\n");
     } else {
     	$builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
 	$self->uninstall_deps();
-    }
-
-  aptitude_cleanup:
-    if (defined ($session->get('Session Purged')) &&
-        $session->get('Session Purged') == 1) {
-	$builder->log("Not removing additional packages: cloned chroot in use\n");
-    } else {
-	$session->run_command(
-		{ COMMAND => ['dpkg', '--purge', keys %{$self->get('Changes')->{'installed'}}],
-		USER => $builder->get_conf('USERNAME'),
-		CHROOT => 1,
-		PRIORITY => 0});
-	$session->run_command(
-		{ COMMAND => ['dpkg', '--purge', $dummy_pkg_name],
-		USER => $builder->get_conf('USERNAME'),
-		CHROOT => 1,
-		PRIORITY => 0});
     }
 
   cleanup:
