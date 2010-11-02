@@ -109,8 +109,6 @@ sub new {
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
-    $self->set('Dependencies', {});
-    $self->set('AptDependencies', {});
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
 
@@ -370,7 +368,7 @@ sub run {
 	goto cleanup_packages;
     }
 
-    $self->merge_pkg_build_deps($self->get('Package'),
+    $resolver->add_dependencies($self->get('Package'),
 				$self->get('Build Depends'),
 				$self->get('Build Depends Indep'),
 				$self->get('Build Conflicts'),
@@ -468,17 +466,12 @@ sub install_core {
     # expand their dependencies (those are implicitly core)
     my $core_deps = join(", ", @{$self->get_conf('CORE_DEPENDS')});
 
-    if (!defined($self->get('Dependencies')->{'CORE'})) {
-	my $parsed_core_deps = $self->parse_one_srcdep('CORE', $core_deps);
-	push( @{$self->get('Dependencies')->{'CORE'}}, @$parsed_core_deps );
-    }
+    my $resolver = $self->get('Dependency Resolver');
 
-    if (!defined($self->get('AptDependencies')->{'CORE'})) {
-	my $parsed_core_deps = $self->parse_apt_srcdep($core_deps, "", "", "");
-	$self->get('AptDependencies')->{'CORE'} = $parsed_core_deps;
-    }
+    $resolver->add_dependencies('CORE', $core_deps, "", "", "");
 
-    if (!$self->get('Dependency Resolver')->install_deps('CORE')) {
+    $self->set('Pkg Fail Stage', 'install-core');
+    if (!$resolver->install_deps('CORE')) {
 	$self->log("Core dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	return 0;
@@ -490,22 +483,16 @@ sub install_core {
 sub install_essential {
     my $self = shift;
 
+    my $resolver = $self->get('Dependency Resolver');
+
     # read list of build-essential packages (if not yet done) and
     # expand their dependencies (those are implicitly essential)
     my $ess = $self->read_build_essential();
 
-    if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
-	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
-	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
-    }
-
-    if (!defined($self->get('AptDependencies')->{'ESSENTIAL'})) {
-	my $parsed_essential_deps = $self->parse_apt_srcdep($ess, "", "", "");
-	$self->get('AptDependencies')->{'ESSENTIAL'} = $parsed_essential_deps;
-    }
+    $resolver->add_dependencies('ESSENTIAL', $ess, "", "", "");
 
     $self->set('Pkg Fail Stage', 'install-essential');
-    if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
+    if (!$resolver->install_deps('ESSENTIAL')) {
 	$self->log("Essential dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	return 0;
@@ -735,6 +722,10 @@ sub fetch_source_files {
 	    $build_conflicts_indep = join(", ",
 				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
 	}
+    }
+
+    if ($self->get_conf('GCC_SNAPSHOT')) {
+	$build_depends = join(", ", $build_depends, "gcc-snapshot");
     }
 
     $build_depends =~ s/\n\s+/ /g if defined $build_depends;
@@ -1202,62 +1193,6 @@ sub get_env ($$) {
     return $envlist;
 }
 
-sub merge_pkg_build_deps {
-    my $self = shift;
-    my $pkg = shift;
-    my $depends = shift;
-    my $dependsi = shift;
-    my $conflicts = shift;
-    my $conflictsi = shift;
-    my (@l, $dep);
-
-    $self->log("Build-Depends: $depends\n") if $depends;
-    $self->log("Build-Depends-Indep: $dependsi\n") if $dependsi;
-    $self->log("Build-Conflicts: $conflicts\n") if $conflicts;
-    $self->log("Build-Conflicts-Indep: $conflictsi\n") if $conflictsi;
-
-    if (!defined($self->get('AptDependencies')->{$pkg})) {
-	my $aptdepends = $depends;
-	if ($self->get_conf('GCC_SNAPSHOT')) {
-	    $aptdepends .= ", " . "gcc-snapshot";
-	}
-	my $parsed_apt_deps = $self->parse_apt_srcdep($aptdepends, $dependsi, $conflicts, $conflictsi);
-	$self->get('AptDependencies')->{$pkg} = $parsed_apt_deps;
-    }
-
-    $self->get('Dependencies')->{$pkg} = []
-	if (!defined $self->get('Dependencies')->{$pkg});
-
-    # Add gcc-snapshot as an override.
-    if ($self->get_conf('GCC_SNAPSHOT')) {
-	$dep->set('Package', "gcc-snapshot");
-	$dep->set('Override', 1);
-	push( @{$self->get('Dependencies')->{$pkg}}, $dep );
-    }
-
-    foreach $dep (@{$self->get('Dependencies')->{$pkg}}) {
-	if ($dep->{'Override'}) {
-	    $self->log("Added override: ",
-	    (map { ($_->{'Neg'} ? "!" : "") .
-		       $_->{'Package'} .
-		       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"") }
-	     scalar($dep), @{$dep->{'Alternatives'}}), "\n");
-	    push( @l, $dep );
-	}
-    }
-
-    $conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflicts ));
-    $conflictsi = join( ", ", map { "!$_" } split( /\s*,\s*/, $conflictsi ));
-
-    my $deps = $depends . ", " . $conflicts;
-    $deps .= ", " . $dependsi . ", " . $conflictsi
-	if $self->get_conf('BUILD_ARCH_ALL');
-    @{$self->get('Dependencies')->{$pkg}} = @l;
-    debug("Merging pkg deps: $deps\n");
-    my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $deps);
-    push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
-}
-
 sub read_build_essential {
     my $self = shift;
     my @essential;
@@ -1294,104 +1229,6 @@ sub read_build_essential {
     }
 
     return join( ", ", @essential );
-}
-
-sub parse_apt_srcdep {
-    my $self = shift;
-    my $build_depends = shift;
-    my $build_depends_indep = shift;
-    my $build_conflicts = shift;
-    my $build_conflicts_indep = shift;
-
-    my $deps = {
-	'Build Depends' => $build_depends,
-	'Build Depends Indep' => $build_depends_indep,
-	'Build Conflicts' => $build_conflicts,
-	'Build Conflicts Indep' => $build_conflicts_indep
-    };
-
-    return $deps;
-}
-
-sub parse_one_srcdep {
-    my $self = shift;
-    my $pkg = shift;
-    my $deps = shift;
-
-    my @res;
-
-    $deps =~ s/^\s*(.*)\s*$/$1/;
-    foreach (split( /\s*,\s*/, $deps )) {
-	my @l;
-	my $override;
-	if (/^\&/) {
-	    $override = 1;
-	    s/^\&\s+//;
-	}
-	my @alts = split( /\s*\|\s*/, $_ );
-	my $neg_seen = 0;
-	foreach (@alts) {
-	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
-		$self->log_warning("syntax error in dependency '$_' of $pkg\n");
-		next;
-	    }
-	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
-	    if ($archlist) {
-		$archlist =~ s/^\s*(.*)\s*$/$1/;
-		my @archs = split( /\s+/, $archlist );
-		my ($use_it, $ignore_it, $include) = (0, 0, 0);
-		foreach (@archs) {
-		    if (/^!/) {
-			$ignore_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), substr($_, 1));
-		    }
-		    else {
-			$use_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), $_);
-			$include = 1;
-		    }
-		}
-		$self->log_warning("inconsistent arch restriction on $pkg: $dep depedency\n")
-		    if $ignore_it && $use_it;
-		next if $ignore_it || ($include && !$use_it);
-	    }
-	    my $neg = 0;
-	    if ($dep =~ /^!/) {
-		$dep =~ s/^!\s*//;
-		$neg = 1;
-		$neg_seen = 1;
-	    }
-	    if ($conf::srcdep_over{$dep}) {
-		if ($self->get_conf('VERBOSE')) {
-		    $self->log("Replacing source dep $dep");
-		    $self->log(" ($rel $relv)") if $relv;
-		    $self->log(" with $conf::srcdep_over{$dep}[0]");
-		    $self->log(" ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])")
-			if $conf::srcdep_over{$dep}[1];
-		    $self->log(".\n");
-		}
-		$dep = $conf::srcdep_over{$dep}[0];
-		$rel = $conf::srcdep_over{$dep}[1];
-		$relv = $conf::srcdep_over{$dep}[2];
-	    }
-	    my $h = { Package => $dep, Neg => $neg };
-	    if ($rel && $relv) {
-		$h->{'Rel'} = $rel;
-		$h->{'Version'} = $relv;
-	    }
-	    $h->{'Override'} = $override if $override;
-	    push( @l, $h );
-	}
-	if (@alts > 1 && $neg_seen) {
-	    $self->log_warning("$pkg: alternatives with negative dependencies forbidden -- skipped\n");
-	}
-	elsif (@l) {
-	    my $l = shift @l;
-	    foreach (@l) {
-		push( @{$l->{'Alternatives'}}, $_ );
-	    }
-	    push @res, $l;
-	}
-    }
-    return \@res;
 }
 
 sub check_space {

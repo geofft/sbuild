@@ -59,12 +59,6 @@ sub install_deps {
 
     $builder->log_subsection("Install $pkg build dependencies (aptitude-based resolver)");
 
-    my $dep = [];
-    if (exists $builder->get('Dependencies')->{$pkg}) {
-	$dep = $builder->get('Dependencies')->{$pkg};
-    }
-    debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
-
     my $session = $builder->get('Session');
     $builder->lock_file($session->get('Install Lock'), 1);
 
@@ -109,7 +103,7 @@ Version: 0.invalid.0
 Architecture: $arch
 EOF
 
-    my $deps = $builder->get('AptDependencies')->{$pkg};
+    my $deps = $self->get('AptDependencies')->{$pkg};
 
     my $positive = "";
     $positive = $deps->{'Build Depends'}
@@ -175,8 +169,6 @@ EOF
 	goto package_cleanup;
     }
 
-    my @non_default_deps = $self->get_non_default_deps($dep, {});
-
     my $ignore_trust_violations =
 	$self->get_conf('APT_ALLOW_UNAUTHENTICATED') ? 'true' : 'false';
 
@@ -190,8 +182,7 @@ EOF
 	'-o', 'Aptitude::ProblemResolver::Keep-All-Tier=55000',
 	'-o', 'Aptitude::ProblemResolver::Remove-Essential-Tier=maximum',
 	'install',
-	$dummy_pkg_name,
-	(map { $_->[0] . "=" . $_->[1] } @non_default_deps)
+	$dummy_pkg_name
     );
 
     $builder->log(join(" ", @aptitude_install_command), "\n");
@@ -280,114 +271,4 @@ EOF
     return $status;
 }
 
-sub get_non_default_deps {
-    my $self = shift;
-    my $deps = shift;
-    my $already_checked = shift;
-
-    my $builder = $self->get('Builder');
-
-    my @res;
-    foreach my $dep (@$deps) {
-	my ($neg, $name, $rel, $requested_version) =
-	    ($dep->{'Neg'}, $dep->{'Package'}, $dep->{'Rel'}, $dep->{'Version'});
-
-	#Check if we already did this, otherwise mark it as done:
-	if ($already_checked->{$name . "_" . ($requested_version || "")}) {
-	    next;
-	}
-
-	$already_checked->{$name . "_" . ($requested_version || "")} = "True";
-
-	my $dpkg_status = $self->get_dpkg_status($name);
-	my $apt_policy = $self->get_apt_policy($name);
-	my $default_version = $apt_policy->{$name}->{'defversion'};
-
-	#Check if the package is not available at all:
-	if (!$neg && !$default_version) {
-	    $builder->log("Need $name, but it isn't available\n");
-
-	#Check if the package default version is not high enough:
-	} elsif (defined($rel) && $rel &&
-		(  (!$neg && !version_compare($default_version, $rel, $requested_version))
-	         ||( $neg &&  version_compare($default_version, $rel, $requested_version)))) {
-	    if (!$neg) {
-		$builder->log("Need $name ($rel $requested_version), but default version is $default_version\n");
-	    } else {
-		$builder->log("Can't use $name ($rel $requested_version), but default version is $default_version\n");
-	    }
-
-	    #Check if some of the other versions would do the job:
-	    my $found_usable_version;
-	    foreach my $non_default_version (@{$apt_policy->{$name}->{versions}}) {
-		if (  (!$neg && version_compare($non_default_version, $rel, $requested_version))
-                    ||( $neg && !version_compare($non_default_version, $rel, $requested_version))) {
-		    #Yay, we can use this:
-		    $builder->log("... using version $non_default_version instead\n");
-		    push @res, [$name, $non_default_version];
-		    $found_usable_version = $non_default_version;
-
-		    #Try to get the deps of this version, then check if we
-		    #need additional stuff:
-		    my ($pos_deps, $neg_deps) = $self->get_deps($name, $non_default_version);
-		    my $expanded_pos_dependencies = $builder->parse_one_srcdep($name, $pos_deps);
-		    my $expanded_neg_dependencies = [];
-		    if ($neg_deps) {
-			$expanded_neg_dependencies = $builder->parse_one_srcdep($name, $neg_deps);
-			$_->{'Neg'} = 1 for (@$expanded_neg_dependencies);
-		    }
-		    my $expanded_dependencies = [@$expanded_pos_dependencies, @$expanded_neg_dependencies];
-		    $builder->log("Complete deps: " . $self->format_deps(@$expanded_dependencies)  . "\n");
-
-		    push @res, $self->get_non_default_deps($expanded_dependencies, $already_checked);
-		    last;
-		} elsif ($default_version ne $non_default_version) {
-		    $builder->log("... can't use version $non_default_version instead\n");
-		}
-	    }
-	    if (!$found_usable_version) {
-		$builder->log("... couldn't find pkg to satisfy " . $self->format_deps($dep)  . "\n");
-	    }
-	}
-    }
-    return @res;
-}
-
-sub get_deps {
-    my $self = shift;
-    my $requested_pkg = shift;
-    my $requested_pkg_version = shift;
-
-    my $builder = $self->get('Builder');
-    my $pipe = $builder->get('Session')->pipe_command(
-	    { COMMAND => [ $builder->get_conf('APT_CACHE'), '-q', 'show', $requested_pkg ],
-	      PIPE => 'in',
-	      USER => $builder->get_conf('USERNAME'),
-	      CHROOT => 1,
-	      PRIORITY => 0,
-	      DIR => '/' });
-
-    my ($version, @pos, @neg);
-    my ($pos_res, $neg_res) = ("", "");
-    while (<$pipe>){
-	$version = $1 if (/^Version: (.+)$/);
-	push @pos, $1 if (/^Depends: (.+)$/);
-	push @pos, $1 if (/^Pre-Depends: (.+)$/);
-	push @neg, $1 if (/^Conflicts: (.+)$/);
-	push @neg, $1 if (/^Breaks: (.+)$/);
-        if (/^\s*\n$/ || eof($pipe)) {
-	    if ($version && $version eq $requested_pkg_version) {
-		$pos_res = join(",", @pos);
-		$neg_res = join(",", @neg);
-		last;
-	    } else {
-		$version = "";
-		@pos = @neg = ();
-	    }
-	}
-    }
-    close ($pipe);
-
-    return ($pos_res, $neg_res);
-}
 1;

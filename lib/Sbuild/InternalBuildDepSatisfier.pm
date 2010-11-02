@@ -60,8 +60,8 @@ sub install_deps {
     my( @positive, @negative, @instd, @rmvd );
 
     my $dep = [];
-    if (exists $builder->get('Dependencies')->{$pkg}) {
-	$dep = $builder->get('Dependencies')->{$pkg};
+    if (exists $self->get('Dependencies')->{$pkg}) {
+	$dep = $self->get('Dependencies')->{$pkg};
     }
     debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 

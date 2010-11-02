@@ -47,8 +47,145 @@ sub new {
 
     $self->set('Builder', $builder);
     $self->set('Changes', {});
+    $self->set('Dependencies', {});
+    $self->set('AptDependencies', {});
 
     return $self;
+}
+
+sub add_dependencies {
+    my $self = shift;
+    my $pkg = shift;
+    my $build_depends = shift;
+    my $build_depends_indep = shift;
+    my $build_conflicts = shift;
+    my $build_conflicts_indep = shift;
+
+    my $builder = $self->get('Builder');
+
+    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
+    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
+    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
+
+    my $deps = {
+	'Build Depends' => $build_depends,
+	'Build Depends Indep' => $build_depends_indep,
+	'Build Conflicts' => $build_conflicts,
+	'Build Conflicts Indep' => $build_conflicts_indep
+    };
+
+    $self->get('AptDependencies')->{$pkg} = $deps;
+
+    my (@l, $dep);
+
+    $self->get('Dependencies')->{$pkg} = []
+	if (!defined $self->get('Dependencies')->{$pkg});
+
+    foreach $dep (@{$self->get('Dependencies')->{$pkg}}) {
+	if ($dep->{'Override'}) {
+	    $builder->log("Added override: ",
+			  (map { ($_->{'Neg'} ? "!" : "") .
+				     $_->{'Package'} .
+				     ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"") }
+			   scalar($dep), @{$dep->{'Alternatives'}}), "\n");
+	    push( @l, $dep );
+	}
+    }
+
+    $build_conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts ));
+    $build_conflicts_indep = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts_indep ));
+
+    my $mdeps = $build_depends . ", " . $build_conflicts;
+    $mdeps .= ", " . $build_depends_indep . ", " . $build_conflicts_indep
+	if $self->get_conf('BUILD_ARCH_ALL');
+    @{$self->get('Dependencies')->{$pkg}} = @l;
+    debug("Merging pkg deps: $mdeps\n");
+    my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $mdeps);
+    push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
+}
+
+sub parse_one_srcdep {
+    my $self = shift;
+    my $pkg = shift;
+    my $deps = shift;
+
+    my $builder = $self->get('Builder');
+
+    my @res;
+
+    $deps =~ s/^\s*(.*)\s*$/$1/;
+    foreach (split( /\s*,\s*/, $deps )) {
+	my @l;
+	my $override;
+	if (/^\&/) {
+	    $override = 1;
+	    s/^\&\s+//;
+	}
+	my @alts = split( /\s*\|\s*/, $_ );
+	my $neg_seen = 0;
+	foreach (@alts) {
+	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+		$builder->log_warning("syntax error in dependency '$_' of $pkg\n");
+		next;
+	    }
+	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
+	    if ($archlist) {
+		$archlist =~ s/^\s*(.*)\s*$/$1/;
+		my @archs = split( /\s+/, $archlist );
+		my ($use_it, $ignore_it, $include) = (0, 0, 0);
+		foreach (@archs) {
+		    if (/^!/) {
+			$ignore_it = 1 if Dpkg::Arch::debarch_is($builder->get('Arch'), substr($_, 1));
+		    }
+		    else {
+			$use_it = 1 if Dpkg::Arch::debarch_is($builder->get('Arch'), $_);
+			$include = 1;
+		    }
+		}
+		$builder->log_warning("inconsistent arch restriction on $pkg: $dep depedency\n")
+		    if $ignore_it && $use_it;
+		next if $ignore_it || ($include && !$use_it);
+	    }
+	    my $neg = 0;
+	    if ($dep =~ /^!/) {
+		$dep =~ s/^!\s*//;
+		$neg = 1;
+		$neg_seen = 1;
+	    }
+	    if ($conf::srcdep_over{$dep}) {
+		if ($self->get_conf('VERBOSE')) {
+		    $builder->log("Replacing source dep $dep");
+		    $builder->log(" ($rel $relv)") if $relv;
+		    $builder->log(" with $conf::srcdep_over{$dep}[0]");
+		    $builder->log(" ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])")
+			if $conf::srcdep_over{$dep}[1];
+		    $builder->log(".\n");
+		}
+		$dep = $conf::srcdep_over{$dep}[0];
+		$rel = $conf::srcdep_over{$dep}[1];
+		$relv = $conf::srcdep_over{$dep}[2];
+	    }
+	    my $h = { Package => $dep, Neg => $neg };
+	    if ($rel && $relv) {
+		$h->{'Rel'} = $rel;
+		$h->{'Version'} = $relv;
+	    }
+	    $h->{'Override'} = $override if $override;
+	    push( @l, $h );
+	}
+	if (@alts > 1 && $neg_seen) {
+	    $builder->log_warning("$pkg: alternatives with negative dependencies forbidden -- skipped\n");
+	}
+	elsif (@l) {
+	    my $l = shift @l;
+	    foreach (@l) {
+		push( @{$l->{'Alternatives'}}, $_ );
+	    }
+	    push @res, $l;
+	}
+    }
+    return \@res;
 }
 
 sub uninstall_deps {
