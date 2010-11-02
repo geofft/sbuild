@@ -163,7 +163,6 @@ sub should_skip ($) {
     if ($conf->get('BATCH_MODE')) {
 	my $pkgv = $build->get('Package_OVersion');
 
-	$pkgv = $build->fixup_pkgv($pkgv);
 	$build->lock_file("SKIP", 0);
 	goto unlock if !open( F, "SKIP" );
 	my @pkgs = <F>;
@@ -202,9 +201,10 @@ sub status_trigger ($$) {
     # function calls because set_status will recursively trigger.
     if ($status eq "failed" &&
 	isin($build->get('Pkg Fail Stage'),
-	     qw(fetch-src install-deps unpack check-unpacked-version
-		check-space hack-binNMU install-deps-env
-		apt-get-update))) {
+	     qw(fetch-src install-core install-essential install-deps
+		unpack check-unpacked-version check-space hack-binNMU
+		install-deps-env apt-get-clean apt-get-update
+		apt-get-upgrade apt-get-distupgrade))) {
 	$build->set_status('given-back');
     } elsif ($status eq "failed" &&
 	     isin ($build->get('Pkg Fail Stage'),

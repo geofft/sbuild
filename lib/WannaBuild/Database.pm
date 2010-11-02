@@ -24,6 +24,7 @@ use strict;
 use warnings;
 
 use POSIX;
+use Dpkg::Arch;
 use Sbuild qw(isin usage_error version_less version_lesseq version_eq version_compare);
 use WannaBuild::Conf;
 use Sbuild::Sysconfig;
@@ -2107,11 +2108,9 @@ sub parse_srcdeplist {
                 # Use 'dpkg-architecture' to support architecture
                 # wildcards.
                 if (/^!/) {
-                    $ignore_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-                        '-a' . $arch, '-i' . substr($_, 1)) eq 0;
+                    $ignore_it = 1 if Dpkg::Arch::debarch_is($arch, substr($_, 1));
                 } else {
-                    $use_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-                        '-a' . $arch, '-i' . $_) eq 0;
+                    $use_it = 1 if Dpkg::Arch::debarch_is($arch, $_);
                     $include = 1;
                 }
             }

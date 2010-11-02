@@ -20,12 +20,11 @@ usage() {
         echo "E: $message" >&2
     fi
     echo "Usage: $0 [http://some.debian.mirror/debian] [--arch=arch] suite [vgname lvsize]" >&2
-    echo "Valid suites: oldstable, stable, testing, unstable," >&2
-    echo "              oldstable-security, stable-security," >&2
-    echo "              testing-security, oldstable-backports," >&2
-    echo "              stable-backports, oldstable-edu," >&2
-    echo "              stable-edu, stable-volatile," >&2
-    echo "              testing-volatile, experimental" >&2
+    echo "Valid suites: oldstable, stable, testing, unstable, experimental," >&2
+    echo "              oldstable-security, stable-security, testing-security," >&2
+    echo "              oldstable-backports, stable-backports," >&2
+    echo "              oldstable-volatile, stable-volatile," >&2
+    echo "              oldstable-edu, stable-edu, testing-edu" >&2
     echo "If vgname is given, the script will setup schroot" >&2
     echo "to use snapshots based on a source lv." >&2
     exit 1
@@ -96,6 +95,7 @@ case "$SUITE" in
     stable-edu) BASE=$STABLE; VARIANT="edu" ;;
     testing) BASE=$TESTING ;;
     testing-security) BASE=$TESTING; VARIANT="security" ;;
+    testing-edu) BASE=$TESTING; VARIANT="edu" ;;
     unstable) BASE="sid" ;;
     experimental) BASE="sid"; VARIANT="experimental";;
     *) usage "Invalid suite specified (must be symbolic, e.g. 'stable')!" ;;
@@ -187,15 +187,24 @@ EOT
     fi
 
     if \
-        [ "$ARCH" == "mips" ] || \
-        [ "$ARCH" == "sparc" ] || \
-        [ "$ARCH" == "i386" ] || \
-        [ "$ARCH" == "powerpc" ]; then
+        [ "$ARCH" = "mips" ] || \
+        [ "$ARCH" = "sparc" ] || \
+        [ "$ARCH" = "i386" ] || \
+        [ "$ARCH" = "powerpc" ]; then
             echo "personality=linux32" >>"${TEMPFILE}"
     fi
     sudo mv "${TEMPFILE}" "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
     sudo chown root: "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
     sudo chmod 0644 "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}"
+}
+
+setup_schroot_variant() {
+    echo VARIANT: $EXTRA
+    if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
+       ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
+       ! schroot -l | grep ^${SUITEEXTRA}-${ARCH}-sbuild$ -q ; then
+        setup_schroot
+    fi
 }
 
 setup_sources() {
@@ -482,16 +491,19 @@ do_debootstrap
 setup_schroot
 if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
     variants="security volatile backports"
-    if [ "$BASE" == "sid" ]; then variants="experimental"; fi
+    if [ "$BASE" = "sid" ]; then variants="experimental"; fi
     for EXTRA in $variants; do
         EXTRA=-${EXTRA}
         SUITEEXTRA=${SUITE}${EXTRA}
-        if [ "$BASE" == "sid" ]; then SUITEEXTRA="experimental"; fi
-        echo VARIANT: $EXTRA
-        if ! [ -f "/etc/schroot/chroot.d/buildd-${IDENTIFIER}${EXTRA}-${ARCH}" ] && 
-            ! schroot -l | grep ^${IDENTIFIER}${EXTRA}-${ARCH}-sbuild$ -q &&
-            ! schroot -l | grep ^${SUITEEXTRA}-${ARCH}-sbuild$ -q ; then
-            setup_schroot
+        if [ "$BASE" = "sid" ]; then SUITEEXTRA="experimental"; fi
+
+        setup_schroot_variant
+
+        if [ "$BASE" = "lenny" ] && [ "$EXTRA" = "-backports" ]; then
+            # Also generate -sloppy chroots.
+            EXTRA=-backports-sloppy
+            SUITEEXTRA=${SUITE}${EXTRA}
+            setup_schroot_variant
         fi
     done
 fi
