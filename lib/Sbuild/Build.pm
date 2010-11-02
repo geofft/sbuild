@@ -87,23 +87,6 @@ sub new {
 	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
 	    (!defined $self->get('Version')));
 
-    debug("DSC = " . $self->get('DSC') . "\n");
-    debug("Source Dir = " . $self->get('Source Dir') . "\n");
-    debug("DSC Base = " . $self->get('DSC Base') . "\n");
-    debug("DSC File = " . $self->get('DSC File') . "\n");
-    debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
-    debug("Package_Version = " . $self->get('Package_Version') . "\n");
-    debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
-    debug("Package_OSVersion = " . $self->get('Package_OSVersion') . "\n");
-    debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
-    debug("Package = " . $self->get('Package') . "\n");
-    debug("Version = " . $self->get('Version') . "\n");
-    debug("OVersion = " . $self->get('OVersion') . "\n");
-    debug("OSVersion = " . $self->get('OSVersion') . "\n");
-    debug("SVersion = " . $self->get('SVersion') . "\n");
-    debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
-    debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
-    debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
@@ -144,6 +127,10 @@ sub set_dsc {
     $self->set('Source Dir', dirname($dsc));
 
     $self->set('DSC Base', basename($dsc));
+
+    debug("DSC = " . $self->get('DSC') . "\n");
+    debug("Source Dir = " . $self->get('Source Dir') . "\n");
+    debug("DSC Base = " . $self->get('DSC Base') . "\n");
 }
 
 sub set_version {
@@ -183,6 +170,21 @@ sub set_version {
     $self->set('VersionDebian', $dversion);
     $self->set('DSC File', "${pkg}_${osversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
+
+    debug("Package = " . $self->get('Package') . "\n");
+    debug("Version = " . $self->get('Version') . "\n");
+    debug("Package_Version = " . $self->get('Package_Version') . "\n");
+    debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
+    debug("Package_OSVersion = " . $self->get('Package_OSVersion') . "\n");
+    debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
+    debug("OVersion = " . $self->get('OVersion') . "\n");
+    debug("OSVersion = " . $self->get('OSVersion') . "\n");
+    debug("SVersion = " . $self->get('SVersion') . "\n");
+    debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
+    debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
+    debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
+    debug("DSC File = " . $self->get('DSC File') . "\n");
+    debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
 }
 
 sub set_status {
