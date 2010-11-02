@@ -1296,66 +1296,6 @@ sub read_build_essential {
     return join( ", ", @essential );
 }
 
-sub get_dependencies {
-    my $self = shift;
-
-    my %deps;
-
-    my $pipe = $self->get('Session')->pipe_apt_command(
-	{ COMMAND => [$self->get_conf('APT_CACHE'), 'show', @_],
-	  USER => $self->get_conf('USERNAME'),
-	  PRIORITY => 0,
-	  DIR => '/' }) || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
-
-    local($/) = "";
-    while( <$pipe> ) {
-	my ($name, $dep, $predep);
-	/^Package:\s*(.*)\s*$/mi and $name = $1;
-	next if !$name || $deps{$name};
-	/^Depends:\s*(.*)\s*$/mi and $dep = $1;
-	/^Pre-Depends:\s*(.*)\s*$/mi and $predep = $1;
-	$dep .= ", " if defined($dep) && $dep && defined($predep) && $predep;
-	$dep .= $predep if defined($predep);
-	$deps{$name} = $dep;
-    }
-    close($pipe);
-    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
-
-    return \%deps;
-}
-
-sub get_virtuals {
-    my $self = shift;
-
-    my $pipe = $self->get('Session')->pipe_apt_command(
-	{ COMMAND => [$self->get_conf('APT_CACHE'), 'showpkg', @_],
-	  USER => $self->get_conf('USERNAME'),
-	  PRIORITY => 0,
-	  DIR => '/' }) || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
-
-    my $name;
-    my $in_rprov = 0;
-    my %provided_by;
-    while(<$pipe>) {
-	if (/^Package:\s*(\S+)\s*$/) {
-	    $name = $1;
-	}
-	elsif (/^Reverse Provides: $/) {
-	    $in_rprov = 1;
-	}
-	elsif ($in_rprov && /^(\w+):\s/) {
-	    $in_rprov = 0;
-	}
-	elsif ($in_rprov && /^(\S+)\s*\S+\s*$/) {
-	    $provided_by{$name}->{$1} = 1;
-	}
-    }
-    close($pipe);
-    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
-
-    return \%provided_by;
-}
-
 sub parse_apt_srcdep {
     my $self = shift;
     my $build_depends = shift;
@@ -1481,14 +1421,6 @@ sub check_space {
     $self->set('This Time', $self->get('Pkg End Time') - $self->get('Pkg Start Time'));
     $self->get('This Time') = 0 if $self->get('This Time') < 0;
     $self->set('This Space', $sum);
-}
-
-# UNUSED
-sub file_for_name {
-    my $self = shift;
-    my $name = shift;
-    my @x = grep { /^\Q$name\E_/ } @_;
-    return $x[0];
 }
 
 sub prepare_watches {
