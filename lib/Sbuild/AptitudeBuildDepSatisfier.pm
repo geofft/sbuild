@@ -52,6 +52,8 @@ sub install_deps {
     my $self = shift;
     my $pkg = shift;
 
+    my $status = 0;
+
     my $builder = $self->get('Builder');
 
     $builder->log_subsection("Install $pkg build dependencies (aptitude-based resolver)");
@@ -138,11 +140,11 @@ EOF
 	  USER => 'root',
 	  CHROOT => 1,
 	  PRIORITY => 0});
-
     if ($?) {
 	$builder->log("Dummy package creation failed\n");
 	goto cleanup;
     }
+
     $session->run_command(
 	{ COMMAND => ['dpkg', '--force-depends', '--force-conflicts', '--install', $session->strip_chroot_path($dummy_deb)],
 	  USER => 'root',
@@ -226,24 +228,39 @@ EOF
     }
 
     #Seems it all went fine.
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
 
-    return 1;
+    $status = 1;
 
   package_cleanup:
-    if (defined ($session->get('Session Purged')) &&
-	$session->get('Session Purged') == 1) {
-	$builder->log("Not removing installed packages: cloned chroot in use\n");
-    } else {
-    	$builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
-	$self->uninstall_deps();
-    }
-
-  cleanup:
-    $self->set('Dummy package path', undef);
     $builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
 
-    return 0;
+    if ($status == 0) {
+	if (defined ($session->get('Session Purged')) &&
+	    $session->get('Session Purged') == 1) {
+	    $builder->log("Not removing installed packages: cloned chroot in use\n");
+	} else {
+	    $self->uninstall_deps();
+	}
+    }
+
+    $session->run_command(
+	{ COMMAND => ['rm', $session->strip_chroot_path($dummy_deb)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
+  cleanup:
+    $builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
+
+    $session->run_command(
+	{ COMMAND => ['rm', '-rf', $session->strip_chroot_path($dummy_dir)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
+    $self->set('Dummy package path', undef);
+
+    return $status;
 }
 
 sub get_non_default_deps {
