@@ -87,7 +87,6 @@ sub install_deps {
     $builder->log_subsection("Install $pkg build dependencies (aptitude-based resolver)");
 
     my $session = $builder->get('Session');
-    $builder->lock_file($session->get('Install Lock'), 1);
 
     #install aptitude first:
     my (@aptitude_installed_packages, @aptitude_removed_packages);
@@ -267,8 +266,6 @@ EOF
     $status = 1;
 
   package_cleanup:
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
-
     if ($status == 0) {
 	if (defined ($session->get('Session Purged')) &&
 	    $session->get('Session Purged') == 1) {
@@ -285,8 +282,6 @@ EOF
 	  PRIORITY => 0});
 
   cleanup:
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
-
     $session->run_command(
 	{ COMMAND => ['rm', '-rf', $session->strip_chroot_path($dummy_dir)],
 	  USER => 'root',

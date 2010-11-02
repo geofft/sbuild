@@ -111,12 +111,9 @@ sub install_deps {
     debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 
   repeat:
-    $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
-
     debug("Filtering dependencies\n");
     if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
 	$builder->log("Package installation not possible\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
@@ -124,7 +121,6 @@ sub install_deps {
 	debug("Finding virtual packages\n");
 	if (!$self->virtual_dependencies(\@positive)) {
 	    $builder->log("Package installation not possible\n");
-	    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	    return 0;
 	}
     }
@@ -132,28 +128,17 @@ sub install_deps {
     $builder->log("Checking for dependency conflicts...\n");
     if (!$self->run_apt("-s", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Test what should be installed failed.\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
     # add negative deps as to be removed for checking srcdep conflicts
     push( @rmvd, @negative );
-    my @confl;
-    if (@confl = $self->check_srcdep_conflicts(\@instd, \@rmvd)) {
-	$builder->log("Waiting for job(s) @confl to finish\n");
 
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
-	$self->wait_for_srcdep_conflicts(@confl);
-	goto repeat;
-    }
-
-    $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
     $builder->log("Installing positive dependencies: @positive\n");
     if (!$self->run_apt("-y", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Package installation failed\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	if (defined ($builder->get('Session')->get('Session Purged')) &&
         $builder->get('Session')->get('Session Purged') == 1) {
 	    $builder->log("Not removing build depends: cloned chroot in use\n");
@@ -170,7 +155,6 @@ sub install_deps {
     $builder->log("Removing negative dependencies: @negative\n");
     if (!$self->run_apt("-y", \@instd, \@rmvd, 'remove', @negative)) {
 	$builder->log("Removal of packages failed\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
     $self->set_installed(@instd);
@@ -183,7 +167,6 @@ sub install_deps {
     if ($fail) {
 	$builder->log("After installing, the following dependencies are ".
 		   "still unsatisfied:\n$fail\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
@@ -207,8 +190,6 @@ sub install_deps {
     if ($?) {
 	$builder->log($self->get_conf('DPKG') . ' --set-selections failed\n');
     }
-
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
 
     $builder->prepare_watches($dep, @instd );
     return 1;
@@ -532,139 +513,6 @@ sub check_dependencies {
     $fail =~ s/\s+$//;
 
     return $fail;
-}
-
-sub check_srcdep_conflicts {
-    my $self = shift;
-    my $to_inst = shift;
-    my $to_remove = shift;
-    my $builder = $self->get('Builder');
-    local( *F, *DIR );
-    my $mypid = $$;
-    my %conflict_builds;
-
-    if (!opendir( DIR, $builder->get('Session')->{'Srcdep Lock Dir'} )) {
-	$builder->log("Cannot opendir $builder->{'Session'}->{'Srcdep Lock Dir'}: $!\n");
-	return 1;
-    }
-    my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
-    readdir(DIR);
-    closedir(DIR);
-
-    my $file;
-    foreach $file (@files) {
-	if (!open( F, "<$builder->{'Session'}->{'Srcdep Lock Dir'}/$file" )) {
-	    $builder->log("Cannot open $builder->{'Session'}->{'Srcdep Lock Dir'}/$file: $!\n");
-	    next;
-	}
-	<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
-	my ($job, $pid, $user) = ($1, $2, $3);
-
-	# ignore (and remove) a lock file if associated process
-	# doesn't exist anymore
-	if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-	    close( F );
-	    $builder->log("Found stale srcdep lock file $file -- removing it\n");
-	    $builder->log("Cannot remove: $!\n")
-		if !unlink( "$builder->{'Session'}->{'Srcdep Lock Dir'}/$file" );
-	    next;
-	}
-
-	debug("Reading srclock file $file by job $job user $user\n");
-
-	while( <F> ) {
-	    my ($neg, $pkg) = /^(!?)(\S+)/;
-	    debug("Found ", ($neg ? "neg " : ""), "entry $pkg\n");
-
-	    if (isin( $pkg, @$to_inst, @$to_remove )) {
-		$builder->log("Source dependency conflict with build of " .
-		           "$job by $user (pid $pid):\n");
-		$builder->log("  $job " . ($neg ? "conflicts with" : "needs") .
-		           " $pkg\n");
-		$builder->log("  " . $builder->get('Package_SVersion') .
-			   " wants to " .
-		           (isin( $pkg, @$to_inst ) ? "update" : "remove") .
-		           " $pkg\n");
-		$conflict_builds{$file} = 1;
-	    }
-	}
-	close( F );
-    }
-
-    my @conflict_builds = keys %conflict_builds;
-    if (@conflict_builds) {
-	debug("Srcdep conflicts with: @conflict_builds\n");
-    }
-    else {
-	debug("No srcdep conflicts\n");
-    }
-    return @conflict_builds;
-}
-
-sub wait_for_srcdep_conflicts {
-    my $self = shift;
-    my $builder = $self->get('Builder');
-    my @confl = @_;
-
-    for(;;) {
-	sleep($self->get_conf('SRCDEP_LOCK_WAIT') * 60);
-	my $allgone = 1;
-	for (@confl) {
-	    /^(\d+)-(\d+)$/;
-	    my $pid = $1;
-	    if (-f "$builder->{'Session'}->{'Srcdep Lock Dir'}/$_") {
-		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-		    $builder->log("Ignoring stale src-dep lock $_\n");
-		    unlink( "$builder->{'Session'}->{'Srcdep Lock Dir'}/$_" ) or
-			$builder->log("Cannot remove $builder->{'Session'}->{'Srcdep Lock Dir'}/$_: $!\n");
-		}
-		else {
-		    $allgone = 0;
-		    last;
-		}
-	    }
-	}
-	last if $allgone;
-    }
-}
-
-sub write_srcdep_lock_file {
-    my $self = shift;
-    my $deps = shift;
-    my $builder = $self->get('Builder');
-    local( *F );
-
-    ++$builder->{'Srcdep Lock Count'};
-    my $f = "$builder->{'Session'}->{'Srcdep Lock Dir'}/$$-$builder->{'Srcdep Lock Count'}";
-    if (!open( F, ">$f" )) {
-	$builder->log_warning("cannot create srcdep lock file $f: $!\n");
-	return;
-    }
-    debug("Writing srcdep lock file $f:\n");
-
-    my $user = getpwuid($<);
-    print F $builder->get('Package_SVersion') . " $$ $user\n";
-    debug("Job " . $builder->get('Package_SVersion') . " pid $$ user $user\n");
-    foreach (@$deps) {
-	my $name = $_->{'Package'};
-	print F ($_->{'Neg'} ? "!" : ""), "$name\n";
-	debug("  ", ($_->{'Neg'} ? "!" : ""), "$name\n");
-    }
-    close( F );
-}
-
-sub remove_srcdep_lock_file {
-    my $self = shift;
-    my $builder = $self->get('Builder');
-
-    my $f = $builder->{'Session'}->{'Srcdep Lock Dir'} . '/' . $$ . '-' . $builder->{'Srcdep Lock Count'};
-    --$builder->{'Srcdep Lock Count'};
-
-    debug("Removing srcdep lock file $f\n");
-    if (!unlink( $f )) {
-	$builder->log_warning("cannot remove srcdep lock file $f: $!\n")
-	    if $! != ENOENT;
-    }
 }
 
 # Return a list of packages which provide a package.

@@ -59,8 +59,6 @@ sub uninstall_deps {
 
     my( @pkgs, @instd, @rmvd );
 
-    $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
-
     @pkgs = keys %{$self->get('Changes')->{'removed'}};
     debug("Reinstalling removed packages: @pkgs\n");
     $builder->log("Failed to reinstall removed packages!\n")
@@ -74,11 +72,9 @@ sub uninstall_deps {
     debug("Removing installed packages: @pkgs\n");
     $builder->log("Failed to remove installed packages!\n")
 	if !$self->run_apt("-y", \@instd, \@rmvd, 'remove', @pkgs);
-    $self->unset_installed(@pkgs);
-
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
+    $self->unset_removed(@instd);
+    $self->unset_installed(@rmvd);
 }
-
 
 sub set_installed {
     my $self = shift;

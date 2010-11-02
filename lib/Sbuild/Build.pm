@@ -283,6 +283,7 @@ sub run {
 
     $self->set('Session', $session);
 
+    # Lock chroot so it won't be tampered with during the build.
     if (!$resolver->lock_chroot()) {
 	goto cleanup_close;
     }
@@ -432,16 +433,11 @@ sub run {
     }
 
     # Remove srcdep lock files (once per install_deps invocation).
-    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "internal") {
-	$resolver->remove_srcdep_lock_file();
-	$resolver->remove_srcdep_lock_file();
-    }
 
   cleanup_close:
-    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "internal") {
-	$resolver->remove_srcdep_lock_file();
-    }
+    # Unlock chroot now it's cleaned up and ready for other users.
     $resolver->unlock_chroot();
+
     # End chroot session
     if ($end_session == 1) {
 	$session->end_session();
@@ -1564,6 +1560,7 @@ sub close_build_log {
     }
 
     $self->log_sep();
+    $self->log("End Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg End Time'))) . "\n");
     $self->log("Finished at ${date}\n");
 
     my $hours = int($self->get('This Time')/3600);
