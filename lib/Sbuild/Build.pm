@@ -1258,17 +1258,6 @@ sub merge_pkg_build_deps {
     push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
 }
 
-sub get_altlist {
-    my $self = shift;
-    my $dep = shift;
-    my %l;
-
-    foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-	$l{$_->{'Package'}} = 1 if !$_->{'Neg'};
-    }
-    return \%l;
-}
-
 sub read_build_essential {
     my $self = shift;
     my @essential;
