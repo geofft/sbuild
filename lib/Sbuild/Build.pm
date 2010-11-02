@@ -1269,17 +1269,6 @@ sub get_altlist {
     return \%l;
 }
 
-sub is_superset {
-    my $self = shift;
-    my $l1 = shift;
-    my $l2 = shift;
-
-    foreach (keys %$l2) {
-	return 0 if !exists $l1->{$_};
-    }
-    return 1;
-}
-
 sub read_build_essential {
     my $self = shift;
     my @essential;
