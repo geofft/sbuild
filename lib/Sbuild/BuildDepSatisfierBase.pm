@@ -61,7 +61,7 @@ sub uninstall_deps {
     @pkgs = keys %{$self->get('Changes')->{'removed'}};
     debug("Reinstalling removed packages: @pkgs\n");
     $builder->log("Failed to reinstall removed packages!\n")
-	if !$self->run_apt("-y", \@instd, \@rmvd, @pkgs);
+	if !$self->run_apt("-y", \@instd, \@rmvd, 'install', @pkgs);
     debug("Installed were: @instd\n");
     debug("Removed were: @rmvd\n");
     $self->unset_removed(@instd);
