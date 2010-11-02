@@ -110,7 +110,6 @@ sub new {
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
     $self->set('Dependencies', {});
-    $self->set('Have DSC Build Deps', []);
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
 
@@ -515,8 +514,6 @@ sub fetch_source_files {
     my $build_conflicts_indep = "";
     local( *F );
 
-    $self->set('Have DSC Build Deps', []);
-
     $self->log_subsection("Fetch source files");
 
     if (!defined($self->get('Package')) ||
@@ -750,9 +747,6 @@ sub fetch_source_files {
 
     debug("Arch check ok ($arch included in $dscarchs)\n");
 
-    @{$self->get('Have DSC Build Deps')} =
-	($build_depends, $build_depends_indep,
-	 $build_conflicts,$build_conflicts_indep);
     $self->merge_pkg_build_deps($self->get('Package'),
 				$build_depends, $build_depends_indep,
 				$build_conflicts, $build_conflicts_indep);
@@ -1560,9 +1554,7 @@ sub check_watches {
 	if ($st[8] > $self->get('Build Start Time')) {
 	    my $pkg = $self->get('This Watches')->{$prg};
 	    my $prg2 = $self->get('Session')->strip_chroot_path($prg);
-	    push( @{$used{$pkg}}, $prg2 )
-		if @{$self->get('Have DSC Build Deps')} ||
-		!isin($pkg, @{$self->get_conf('IGNORE_WATCHES_NO_BUILD_DEPS')});
+	    push( @{$used{$pkg}}, $prg2 );
 	}
 	else {
 	    debug("Watch: $prg: untouched\n");
