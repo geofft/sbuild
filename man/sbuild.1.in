@@ -60,18 +60,13 @@ sbuild \- build debian packages from source
 .RB [ \-\-build\-dep\-resolver=\fIresolver\fP ]
 .BR [PACKAGE1[.dsc] " [" PACKAGE2[.dsc] " [ " ... " " ]]]
 .SH VERSION
-This man page documents the packaged version of sbuild.  This version
-is maintained by the \fBbuildd-tools\fP project developers on Alioth
+This man page documents the packaged version of sbuild.  This version is
+maintained by the \fBbuildd-tools\fP project developers on Alioth
 (\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
-.PP
-There is also a version maintained by Ryan Murray which is adapted to build
-daemon needs, with similar functionality.  This version should be equally
-capable of working in a buildd setup, but has a number of enhancements aimed at
-making it suitable for use by end-users.
 .SH DESCRIPTION
-\fBsbuild\fR rebuilds Debian binary packages from the corresponding
-Debian source.  It is similar to dbuild and debbuild, but, unlike
-them, it knows about source dependencies.
+\fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
+source, installing any missing source dependencies.  The build takes place in a
+dedicated clean build environment (chroot), rather than on the host system.
 .PP
 \fBsbuild\fR can fetch the Debian source over a network, or it can use
 locally available sources.
@@ -95,24 +90,21 @@ It is also possible to run external commands with sbuild. See the section
 \fBsbuild\fR mails the build logs to a user.  It is configured by the
 configuration files \fI/etc/sbuild/sbuild.conf\fP and \fI~/.sbuildrc\fP.  An
 example sbuildrc is available in
-\fI/usr/share/doc/sbuild/examples/example.sbuildrc\fP.  \fBsbuild\fR will
-\fBnot\fP run without a valid \fI~/.sbuildrc\fP.
-.PP
-Optionally, source dependencies are read from
-\fI/var/lib/sbuild/source\-dependencies\-*\fP; see that file for more
-information on source-dependencies.  Also see README.Debian.
+\fI/usr/share/doc/sbuild/examples/example.sbuildrc\fP.
 .PP
 You can build either using a local package with its .dsc file or a
 remote one by specifying an explicit dpkg version.
 .PP
-Note: \fBsbuild\fR must be run in the directory (\fI~/build\fP by default) with
-the chroot\-{stable,testing,unstable} symlink to the chroot or it will do the
-build in the base install which is not what you want.  When using schroot,
-these requirements do not apply. If the \-c or \-\-chroot option is used, the
-specified chroot will be used. Otherwise, the chroot having the name (or alias) 
+Note: When using schroot (recommended), the chroot having the name (or alias)
 of the specified distribution will be used; schroot uses a chroot named
 \fI$distribution\-$arch-sbuild\fP, \fI$distribution\-sbuild\fP,
 \fI$distribution\-$arch\fP or \fI$distribution\fP, in that order of preference.
+The \-c or \-\-chroot option may be used to override the chroot to be
+used. When configured to use sudo (deprecated), sbuild will look for a symlink
+to a chroot with the same name as the distribution specified.  sbuild will use
+a symlink to the chroot located in \fI/etc/sbuild/chroot/$distribution\fP, or
+must be run in a directory containing a \fIchroot\-$distribution\fP symlink to
+the chroot (not recommended, but done for backward compatibility).
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help

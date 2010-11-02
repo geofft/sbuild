@@ -1,7 +1,7 @@
 #
 # Build.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2010 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -35,6 +35,7 @@ use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
 use Cwd qw(:DEFAULT abs_path);
+use Dpkg::Arch;
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
 use Sbuild::Base;
@@ -67,6 +68,30 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    # DSC, package and version information:
+    $self->set_dsc($dsc);
+    my $ver = $self->get('DSC Base');
+    $ver =~ s/\.dsc$//;
+    # Note, will be overwritten by Version: in DSC.
+    $self->set_version($ver);
+
+    # Do we need to download?
+    $self->set('Download', 0);
+    $self->set('Download', 1)
+	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
+	    check_url($self->get('DSC'))); # Valid URL
+
+    # Can sources be obtained?
+    $self->set('Invalid Source', 0);
+    $self->set('Invalid Source', 1)
+	if ((!$self->get('Download')) ||
+	    (!($self->get('DSC Base') =~ m/\.dsc$/) && # Use apt to download
+	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
+	    (!defined $self->get('Version')));
+
+    debug("Download = " . $self->get('Download') . "\n");
+    debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
+
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
@@ -83,52 +108,13 @@ sub new {
     $self->set('This Time', 0);
     $self->set('This Space', 0);
     $self->set('This Watches', {});
-    $self->set('Toolchain Packages', []);
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
-    $self->set('Additional Deps', []);
     $self->set('Dependency Resolver', undef);
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
-    $self->set('Debian Source Dir', undef);
-
-    my $host = Sbuild::ChrootRoot->new($self->get('Config'));
-    $self->set('Host', $host);
-
-    # DSC, package and version information:
-    $self->set_dsc($dsc);
-    my $ver = $self->get('DSC Base');
-    $ver =~ s/\.dsc$//;
-    # Note, will be overwritten by Version: in DSC.
-    $self->set_version($ver);
-
-    # Do we need to download?
-    $self->set('Download', 0);
-    $self->set('Download', 1)
-	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
-	    check_url($self->get('DSC')) || # Valid URL
-	    ($self->get('Debian Source Dir'))); # Debianized source directory
-
-    # Can sources be obtained?
-    $self->set('Invalid Source', 0);
-    $self->set('Invalid Source', 1)
-	if ((!$self->get('Download')) ||
-	    (!($self->get('DSC Base') =~ m/\.dsc$/) && # Use apt to download
-	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
-	    (!defined $self->get('Version')));
-
-    # Output certain values for debugging purposes
-    foreach ('DSC', 'Source Dir', 'DSC Base', 'DSC File', 'DSC Dir',
-             'Package_Version', 'Package_OVersion',
-             'Package_OSVersion', 'Package_SVersion', 'Package',
-             'Version', 'OVersion', 'OSVersion', 'SVersion',
-             'VersionEpoch', 'VersionUpstream', 'VersionDebian',
-             'Download', 'Invalid Source') {
-      my $val = $self->get($_);
-      debug("$_ = " . $val . "\n") if defined($val);
-    }
 
     return $self;
 }
@@ -189,6 +175,10 @@ set_vars:
     $self->set('DSC', $dsc);
     $self->set('Source Dir', dirname($dsc));
     $self->set('DSC Base', basename($dsc));
+
+    debug("DSC = " . $self->get('DSC') . "\n");
+    debug("Source Dir = " . $self->get('Source Dir') . "\n");
+    debug("DSC Base = " . $self->get('DSC Base') . "\n");
 }
 
 sub set_version {
@@ -230,6 +220,21 @@ sub set_version {
     $self->set('VersionDebian', $dversion);
     $self->set('DSC File', "${pkg}_${osversion}.dsc");
     $self->set('DSC Dir', "${pkg}-${uversion}");
+
+    debug("Package = " . $self->get('Package') . "\n");
+    debug("Version = " . $self->get('Version') . "\n");
+    debug("Package_Version = " . $self->get('Package_Version') . "\n");
+    debug("Package_OVersion = " . $self->get('Package_OVersion') . "\n");
+    debug("Package_OSVersion = " . $self->get('Package_OSVersion') . "\n");
+    debug("Package_SVersion = " . $self->get('Package_SVersion') . "\n");
+    debug("OVersion = " . $self->get('OVersion') . "\n");
+    debug("OSVersion = " . $self->get('OSVersion') . "\n");
+    debug("SVersion = " . $self->get('SVersion') . "\n");
+    debug("VersionEpoch = " . $self->get('VersionEpoch') . "\n");
+    debug("VersionUpstream = " . $self->get('VersionUpstream') . "\n");
+    debug("VersionDebian = " . $self->get('VersionDebian') . "\n");
+    debug("DSC File = " . $self->get('DSC File') . "\n");
+    debug("DSC Dir = " . $self->get('DSC Dir') . "\n");
 }
 
 sub set_status {
@@ -251,9 +256,17 @@ sub get_status {
 sub run {
     my $self = shift;
 
-    $self->get('Host')->set('Log Stream', $self->get('Log Stream'));
-
     $self->set_status('building');
+
+    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
+	$self->set('Dependency Resolver',
+		   Sbuild::AptitudeBuildDepSatisfier->new($self));
+    } else {
+	$self->set('Dependency Resolver',
+		   Sbuild::InternalBuildDepSatisfier->new($self));
+    }
+    my $resolver = $self->get('Dependency Resolver');
+
 
     $self->set('Pkg Start Time', time);
 
@@ -329,6 +342,7 @@ sub run {
 	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
     }
 
+    my $end_session = 1;
     my $session = $chroot_info->create($self->get_conf('DISTRIBUTION'),
 				       $self->get_conf('CHROOT'),
 				       $self->get_conf('ARCH'));
@@ -367,8 +381,6 @@ sub run {
     $chroot_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
 
     $self->set('Session', $session);
-
-    $self->set('Additional Deps', []);
 
     # Clean APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-clean');
@@ -443,19 +455,24 @@ sub run {
 	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
-    $self->set('Pkg Fail Stage', 'install-deps');
-    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
-	$self->set('Dependency Resolver', Sbuild::AptitudeBuildDepSatisfier->new($self));
-    } else {
-	$self->set('Dependency Resolver', Sbuild::InternalBuildDepSatisfier->new($self));
+    $self->set('Pkg Fail Stage', 'install-core');
+    if (!$self->install_core()) {
+	goto cleanup_packages;
     }
-    if (!$self->get('Dependency Resolver')->install_deps()) {
+
+    $self->set('Pkg Fail Stage', 'install-essential');
+    if (!$self->install_essential()) {
+	goto cleanup_packages;
+    }
+
+    $self->set('Pkg Fail Stage', 'install-deps');
+    if (!$resolver->install_deps($self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
     }
 
-    $self->get('Dependency Resolver')->dump_build_environment();
+    $resolver->dump_build_environment();
 
     if ($self->build()) {
 	$self->set_status('successful');
@@ -469,38 +486,55 @@ sub run {
 	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
   cleanup_packages:
-    # Purge package build directory
-    if ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
-	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
-	 $self->get_status() eq 'successful')) {
-	$self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
-	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
-	$self->get('Session')->run_command(
-	    { COMMAND => ['rm', '-rf', $bdir],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0,
-	      DIR => '/' });
-    }
+    my $purge_build_directory =
+	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
+	 ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
+	  $self->get_status() eq 'successful')) ? 1 : 0;
+    my $purge_build_deps =
+	($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
+	 ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
+	  $self->get_status() eq 'successful')) ? 1 : 0;
+    my $is_cloned_session = (defined ($session->get('Session Purged')) &&
+			     $session->get('Session Purged') == 1) ? 1 : 0;
 
-    # Purge installed packages
-    if (defined ($session->get('Session Purged')) &&
-	$session->get('Session Purged') == 1) {
-	$self->log("Not removing build depends: cloned chroot in use\n");
+    # Purge non-cloned session
+    if ($is_cloned_session) {
+	$self->log("Not cleaning session: cloned chroot in use\n");
+	$end_session = 0
+	    if ($purge_build_directory == 0 || $purge_build_deps == 0);
     } else {
-	if ($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
-	    ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
-	     $self->get_status() eq 'successful')) {
-	    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->uninstall_deps();
+	if ($purge_build_directory) {
+	    # Purge package build directory
+	    $self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
+	    my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
+	    $self->get('Session')->run_command(
+		{ COMMAND => ['rm', '-rf', $bdir],
+		  USER => 'root',
+		  CHROOT => 1,
+		  PRIORITY => 0,
+		  DIR => '/' });
+	}
+
+       if ($purge_build_deps) {
+           # Removing dependencies
+	   $resolver->uninstall_deps();
 	} else {
 	    $self->log("Not removing build depends: as requested\n");
 	}
     }
-    $self->get('Dependency Resolver') && $self->get('Dependency Resolver')->remove_srcdep_lock_file();
+
+    # Remove srcdep lock files (once per install_deps invocation).
+    $resolver->remove_srcdep_lock_file();
+    $resolver->remove_srcdep_lock_file();
 
   cleanup_close:
+    $resolver->remove_srcdep_lock_file();
     # End chroot session
-    $session->end_session();
+    if ($end_session == 1) {
+	$session->end_session();
+    } else {
+	$self->log("Keeping session: " . $session->get('Session ID') . "\n");
+    }
     $session = undef;
     $self->set('Session', $session);
 
@@ -559,6 +593,48 @@ sub run {
 
 #     return $self->set('Package Status', $status);
 # }
+
+sub install_core {
+    my $self = shift;
+
+    # read list of build-core packages (if not yet done) and
+    # expand their dependencies (those are implicitly core)
+    my $core_deps = join(", ", @{$self->get_conf('CORE_DEPENDS')});
+
+    if (!defined($self->get('Dependencies')->{'CORE'})) {
+	my $parsed_core_deps = $self->parse_one_srcdep('CORE', $core_deps);
+	push( @{$self->get('Dependencies')->{'CORE'}}, @$parsed_core_deps );
+    }
+
+    if (!$self->get('Dependency Resolver')->install_deps('CORE')) {
+	$self->log("Core dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	return 0;
+    }
+
+    return 1;
+}
+
+sub install_essential {
+    my $self = shift;
+
+    # read list of build-essential packages (if not yet done) and
+    # expand their dependencies (those are implicitly essential)
+    if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
+	my $ess = $self->read_build_essential();
+	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
+	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
+    }
+
+    $self->set('Pkg Fail Stage', 'install-essential');
+    if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
+	$self->log("Essential dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	return 0;
+    }
+
+    return 1;
+}
 
 sub fetch_source_files {
     my $self = shift;
@@ -724,8 +800,8 @@ sub fetch_source_files {
 	$self->log("Can't open $build_dir/$dsc: $!\n");
 	return 0;
     }
+
     my $dsctext;
-    my $orig;
     { local($/); $dsctext = <F>; }
     close( F );
 
@@ -737,6 +813,14 @@ sub fetch_source_files {
 	and $build_conflicts = $1;
     $dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
 	and $build_conflicts_indep = $1;
+    $dsctext =~ /^Architecture:\s*(.*)$/mi
+	and $dscarchs = $1;
+    $dsctext =~ /^Source:\s*(.*)$/mi
+	and $dscpkg = $1;
+    $dsctext =~ /^Version:\s*(.*)$/mi
+	and $dscver = $1;
+
+    $self->set_version("${dscpkg}_${dscver}");
 
     # Add additional build dependencies specified on the command-line.
     # TODO: Split dependencies into an array from the start to save
@@ -782,19 +866,13 @@ sub fetch_source_files {
     $build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
     $build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
 
-    $dsctext =~ /^Architecture:\s*(.*)$/mi and $dscarchs = $1;
-    $dsctext =~ /^Source:\s*(.*)$/mi and $dscpkg = $1;
-    $dsctext =~ /^Version:\s*(.*)$/mi and $dscver = $1;
-    $self->set_version("${dscpkg}_${dscver}");
-
     $self->log_subsubsection("Check arch");
     if (!$dscarchs) {
 	$self->log("$dsc has no Architecture: field -- skipping arch check!\n");
     } else {
 	my $valid_arch;
 	for my $a (split(/\s+/, $dscarchs)) {
-	    if (system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-		       '-a' . $arch, '-i' . $a) eq 0) {
+	    if (Dpkg::Arch::debarch_is($arch, $a)) {
 		$valid_arch = 1;
 		last;
 	    }
@@ -1370,125 +1448,6 @@ sub build {
     return $rv == 0 ? 1 : 0;
 }
 
-sub run_apt {
-    my $self = shift;
-    my $mode = shift;
-    my $inst_ret = shift;
-    my $rem_ret = shift;
-    my @to_install = @_;
-    my( $msgs, $status, $pkgs, $rpkgs );
-
-    @$inst_ret = ();
-    @$rem_ret = ();
-    return 1 if !@to_install;
-  repeat:
-
-    $msgs = "";
-    # redirection of stdin from /dev/null so that conffile question
-    # are treated as if RETURN was pressed.
-    # dpkg since 1.4.1.18 issues an error on the conffile question if
-    # it reads EOF -- hardwire the new --force-confold option to avoid
-    # the questions.
-    my $pipe =
-	$self->get('Session')->pipe_apt_command(
-	{ COMMAND => [$self->get_conf('APT_GET'), '--purge',
-		      '-o', 'DPkg::Options::=--force-confold',
-		      '-q', "$mode", 'install', @to_install],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  PRIORITY => 0,
-	  DIR => '/' });
-    if (!$pipe) {
-	$self->log("Can't open pipe to apt-get: $!\n");
-	return 0;
-    }
-
-    while(<$pipe>) {
-	$msgs .= $_;
-	$self->log($_) if $mode ne "-s" || debug($_);
-    }
-    close($pipe);
-    $status = $?;
-
-    if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
-	my $status = update($self->get('Session'), $self->get('Config'));
-	$self->log("apt-get update failed\n") if $status;
-	goto repeat;
-    }
-
-    if ($status != 0 && $msgs =~ /^Package (\S+) is a virtual package provided by:\n((^\s.*\n)*)/mi) {
-	my $to_replace = $1;
-	my @providers;
-	foreach (split( "\n", $2 )) {
-	    s/^\s*//;
-	    push( @providers, (split( /\s+/, $_ ))[0] );
-	}
-	$self->log("$to_replace is a virtual package provided by: @providers\n");
-	my $selected;
-	if (@providers == 1) {
-	    $selected = $providers[0];
-	    $self->log("Using $selected (only possibility)\n");
-	}
-	elsif (exists $self->get_conf('ALTERNATIVES')->{$to_replace}) {
-	    $selected = $self->get_conf('ALTERNATIVES')->{$to_replace};
-	    $self->log("Using $selected (selected in sbuildrc)\n");
-	}
-	else {
-	    $selected = $providers[0];
-	    $self->log("Using $selected (no default, using first one)\n");
-	}
-
-	@to_install = grep { $_ ne $to_replace } @to_install;
-	push( @to_install, $selected );
-
-	goto repeat;
-    }
-
-    if ($status != 0 && ($msgs =~ /^E: Could( not get lock|n.t lock)/mi ||
-			 $msgs =~ /^dpkg: status database area is locked/mi)) {
-	$self->log("Another apt-get or dpkg is running -- retrying later\n");
-	sleep( 2*60 );
-	goto repeat;
-    }
-
-    # check for errors that are probably caused by something broken in
-    # the build environment, and give back the packages.
-    if ($status != 0 && $mode ne "-s" &&
-	(($msgs =~ /^E: dpkg was interrupted, you must manually run 'dpkg --configure -a' to correct the problem./mi) ||
-	 ($msgs =~ /^dpkg: parse error, in file `\/.+\/var\/lib\/dpkg\/(?:available|status)' near line/mi) ||
-	 ($msgs =~ /^E: Unmet dependencies. Try 'apt-get -f install' with no packages \(or specify a solution\)\./mi))) {
-	$self->log_error("Build environment unusable, giving back\n");
-	$self->set('Pkg Fail Stage', "install-deps-env");
-    }
-
-    if ($status != 0 && $mode ne "-s" &&
-	(($msgs =~ /^E: Unable to fetch some archives, maybe run apt-get update or try with/mi))) {
-	$self->log("Unable to fetch build-depends\n");
-	$self->set('Pkg Fail Stage', "install-deps-env");
-    }
-
-    if ($status != 0 && $mode ne "-s" &&
-	(($msgs =~ /^W: Couldn't stat source package list /mi))) {
-	$self->log("Missing a packages file (mismatch with Release.gpg?), giving back.\n");
-	$self->set('Pkg Fail Stage', "install-deps-env");
-    }
-
-    $pkgs = $rpkgs = "";
-    if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
-	($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
-	$pkgs =~ s/\*//g;
-    }
-    if ($msgs =~ /packages will be REMOVED:\n((^[ 	].*\n)*)/mi) {
-	($rpkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
-	$rpkgs =~ s/\*//g;
-    }
-    @$inst_ret = split( /\s+/, $pkgs );
-    @$rem_ret = split( /\s+/, $rpkgs );
-
-    $self->log("apt-get failed.\n") if $status && $mode ne "-s";
-    return $mode eq "-s" || $status == 0;
-}
-
 # Produce a hash suitable for ENV export
 sub get_env ($$) {
     my $self = shift;
@@ -1522,7 +1481,6 @@ sub merge_pkg_build_deps {
     my $conflictsi = shift;
     my (@l, $dep);
 
-    $self->log("** Using build dependencies supplied by package:\n");
     $self->log("Build-Depends: $depends\n") if $depends;
     $self->log("Build-Depends-Indep: $dependsi\n") if $dependsi;
     $self->log("Build-Conflicts: $conflicts\n") if $conflicts;
@@ -1530,7 +1488,6 @@ sub merge_pkg_build_deps {
 
     $self->get('Dependencies')->{$pkg} = []
 	if (!defined $self->get('Dependencies')->{$pkg});
-    my $old_deps = copy($self->get('Dependencies')->{$pkg});
 
     # Add gcc-snapshot as an override.
     if ($self->get_conf('GCC_SNAPSHOT')) {
@@ -1560,111 +1517,6 @@ sub merge_pkg_build_deps {
     debug("Merging pkg deps: $deps\n");
     my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $deps);
     push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
-
-    my $missing = ($self->cmp_dep_lists($old_deps,
-					$self->get('Dependencies')->{$pkg}))[1];
-
-    # read list of build-essential packages (if not yet done) and
-    # expand their dependencies (those are implicitly essential)
-    if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
-	my $ess = $self->read_build_essential();
-	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
-	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
-    }
-    my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = $self->expand_dependencies($self->get('Dependencies')->{'ESSENTIAL'});
-    debug("Dependency-expanded build essential packages:\n",
-		 $self->format_deps(@$exp_essential), "\n");
-
-    # populate Toolchain Packages from toolchain_regexes and
-    # build-essential packages.
-    $self->set('Toolchain Packages', []);
-    foreach my $tpkg (@$exp_essential) {
-        foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
-	    push @{$self->get('Toolchain Packages')},$tpkg->{'Package'}
-	        if $tpkg->{'Package'} =~ m,^$regex,;
-	}
-    }
-
-    return if !@$missing;
-
-    # remove missing essential deps
-    ($filt_essential, $missing) = $self->cmp_dep_lists($missing,
-                                                       $exp_essential);
-    $self->log("** Filtered missing build-essential deps:\n" .
-	       $self->format_deps(@$filt_essential) . "\n")
-	           if @$filt_essential;
-
-    # if some build deps are virtual packages, replace them by an
-    # alternative over all providing packages
-    $exp_pkgdeps = $self->expand_virtuals($self->get('Dependencies')->{$pkg} );
-    debug("Provided-expanded build deps:\n",
-		 $self->format_deps(@$exp_pkgdeps), "\n");
-
-    # now expand dependencies of package build deps
-    $exp_pkgdeps = $self->expand_dependencies($exp_pkgdeps);
-    debug("Dependency-expanded build deps:\n",
-		 $self->format_deps(@$exp_pkgdeps), "\n");
-    # NOTE: Was $main::additional_deps, not @main::additional_deps.
-    # They may be separate?
-    @{$self->get('Additional Deps')} = @$exp_pkgdeps;
-
-    # remove missing essential deps that are dependencies of build
-    # deps
-    ($filt_pkgdeps, $missing) = $self->cmp_dep_lists($missing, $exp_pkgdeps);
-    $self->log("** Filtered missing build-essential deps that are dependencies of or provide build-deps:\n" .
-	       $self->format_deps(@$filt_pkgdeps), "\n")
-	           if @$filt_pkgdeps;
-
-    # remove comment package names
-    push( @{$self->get('Additional Deps')},
-	  grep { $_->{'Neg'} && $_->{'Package'} =~ /^needs-no-/ } @$missing );
-    $missing = [ grep { !($_->{'Neg'} &&
-	                ($_->{'Package'} =~ /^this-package-does-not-exist/ ||
-	                 $_->{'Package'} =~ /^needs-no-/)) } @$missing ];
-
-    $self->log("**** Warning:\n" .
-	       "**** The following src deps are " .
-	       "(probably) missing:\n  ", $self->format_deps(@$missing), "\n")
-	           if @$missing;
-}
-
-sub cmp_dep_lists {
-    my $self = shift;
-    my $list1 = shift;
-    my $list2 = shift;
-
-    my ($dep, @common, @missing);
-
-    foreach $dep (@$list1) {
-	my $found = 0;
-
-	if ($dep->{'Neg'}) {
-	    foreach (@$list2) {
-		if ($dep->{'Package'} eq $_->{'Package'} && $_->{'Neg'}) {
-		    $found = 1;
-		    last;
-		}
-	    }
-	}
-	else {
-	    my $al = $self->get_altlist($dep);
-	    foreach (@$list2) {
-		if ($self->is_superset($self->get_altlist($_), $al)) {
-		    $found = 1;
-		    last;
-		}
-	    }
-	}
-
-	if ($found) {
-	    push( @common, $dep );
-	}
-	else {
-	    push( @missing, $dep );
-	}
-    }
-    return (\@common, \@missing);
 }
 
 sub get_altlist {
@@ -1765,40 +1617,6 @@ sub expand_dependencies {
     return \@result;
 }
 
-sub expand_virtuals {
-    my $self = shift;
-    my $dlist = shift;
-    my ($dep, %names, @new_dlist);
-
-    foreach $dep (@$dlist) {
-	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-	    $names{$_->{'Package'}} = 1;
-	}
-    }
-    my $provided_by = $self->get_virtuals(keys %names);
-
-    foreach $dep (@$dlist) {
-	my %seen;
-	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-	    my $name = $_->{'Package'};
-	    $seen{$name} = 1;
-	    if (exists $provided_by->{$name}) {
-		foreach( keys %{$provided_by->{$name}} ) {
-		    $seen{$_} = 1;
-		}
-	    }
-	}
-	my @l = map { { Package => $_, Neg => 0 } } keys %seen;
-	my $l = shift @l;
-	foreach (@l) {
-	    push( @{$l->{'Alternatives'}}, $_ );
-	}
-	push( @new_dlist, $l );
-    }
-
-    return \@new_dlist;
-}
-
 sub get_dependencies {
     my $self = shift;
 
@@ -1887,15 +1705,11 @@ sub parse_one_srcdep {
 		my @archs = split( /\s+/, $archlist );
 		my ($use_it, $ignore_it, $include) = (0, 0, 0);
 		foreach (@archs) {
-			# Use 'dpkg-architecture' to support architecture
-			# wildcards.
 		    if (/^!/) {
-			$ignore_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-						 '-a' .	$self->get('Arch'), '-i' . substr($_, 1)) eq 0;
+			$ignore_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), substr($_, 1));
 		    }
 		    else {
-			$use_it = 1 if system($Sbuild::Sysconfig::programs{'DPKG_ARCHITECTURE'},
-					      '-a' . $self->get('Arch'), '-i' . $_) eq 0;
+			$use_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), $_);
 			$include = 1;
 		    }
 		}
@@ -1988,7 +1802,7 @@ sub prepare_watches {
     my(@dep_on, $dep, $pkg, $prg);
 
     @dep_on = @instd;
-    foreach $dep (@$dependencies, @{$self->get('Additional Deps')}) {
+    foreach $dep (@$dependencies) {
 	if ($dep->{'Neg'} && $dep->{'Package'} =~ /^needs-no-(\S+)/) {
 	    push( @dep_on, $1 );
 	}
@@ -2045,17 +1859,6 @@ sub check_watches {
 	$self->log("  $_: @{$used{$_}}\n");
     }
     $self->log("\n");
-}
-
-sub format_deps {
-    my $self = shift;
-
-    return join( ", ",
-		 map { join( "|",
-			     map { ($_->{'Neg'} ? "!" : "") .
-				       $_->{'Package'} .
-				       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"")}
-			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
 sub lock_file {
@@ -2276,6 +2079,7 @@ sub open_build_log {
 
     $self->log("Package: " . $self->get('Package') . "\n");
     $self->log("Version: " . $self->get('Version') . "\n");
+    $self->log("Source Version: " . $self->get('OVersion') . "\n");
     $self->log("Architecture: " . $self->get('Arch') . "\n");
     $self->log("Chroot Build Dir: " . $self->get('Chroot Build Dir') . "\n");
     $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");

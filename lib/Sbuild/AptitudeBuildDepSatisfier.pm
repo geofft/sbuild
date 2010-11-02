@@ -50,25 +50,26 @@ sub new {
 
 sub install_deps {
     my $self = shift;
+    my $pkg = shift;
+
+    my $status = 0;
+
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install build dependencies (aptitude-based resolver)");
-
-    my $pkg = $builder->get('Package');
+    $builder->log_subsection("Install $pkg build dependencies (aptitude-based resolver)");
 
     my $dep = [];
     if (exists $builder->get('Dependencies')->{$pkg}) {
 	$dep = $builder->get('Dependencies')->{$pkg};
     }
-    debug("Source dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
+    debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 
-  repeat:
     my $session = $builder->get('Session');
     $builder->lock_file($session->get('Install Lock'), 1);
 
     #install aptitude first:
     my (@aptitude_installed_packages, @aptitude_removed_packages);
-    if (!$builder->run_apt('-y', \@aptitude_installed_packages, \@aptitude_removed_packages, 'aptitude')) {
+    if (!$self->run_apt('-y', \@aptitude_installed_packages, \@aptitude_removed_packages, 'install', 'aptitude')) {
 	$builder->log_warning('Could not install aptitude!');
 	goto cleanup;
     }
@@ -81,7 +82,7 @@ sub install_deps {
 	       tempdir($builder->get_conf('USERNAME') . '-' . $pkg . '-' .
 		       $builder->get('Arch') . '-XXXXXX',
 		       DIR => $session->get('Build Location')));
-  
+
     my $dummy_pkg_name = 'sbuild-build-depends-' . $pkg . '-dummy';
     my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
     my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
@@ -119,10 +120,10 @@ Architecture: $arch
 EOF
 
     if (@positive_deps) {
-	print DUMMY_CONTROL 'Depends: ' . $builder->format_deps(@positive_deps) . "\n";
+	print DUMMY_CONTROL 'Depends: ' . $self->format_deps(@positive_deps) . "\n";
     }
     if (@negative_deps) {
-	print DUMMY_CONTROL 'Conflicts: ' . $builder->format_deps(@negative_deps) . "\n";
+	print DUMMY_CONTROL 'Conflicts: ' . $self->format_deps(@negative_deps) . "\n";
     }
 
     print DUMMY_CONTROL <<"EOF";
@@ -135,16 +136,27 @@ EOF
 
     #Now build and install the package:
     $session->run_command(
-	    { COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_dir), $session->strip_chroot_path($dummy_deb)],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0});
+	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_dir), $session->strip_chroot_path($dummy_deb)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Dummy package creation failed\n");
+	goto cleanup;
+    }
+
     $session->run_command(
-	    { COMMAND => ['dpkg', '--install', $session->strip_chroot_path($dummy_deb)],
-	      USER => 'root',
-	      CHROOT => 1,
-	      PRIORITY => 0});
+	{ COMMAND => ['dpkg', '--force-depends', '--force-conflicts', '--install', $session->strip_chroot_path($dummy_deb)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
     $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, $dummy_pkg_name);
+
+    if ($?) {
+	$builder->log("Dummy package installation failed\n");
+	goto package_cleanup;
+    }
 
     my @non_default_deps = $self->get_non_default_deps($dep, {});
 
@@ -178,7 +190,7 @@ EOF
 
     if (!$pipe) {
 	$builder->log_warning('Cannot open pipe from aptitude: ' . $! . "\n");
-	goto aptitude_cleanup;
+	goto package_cleanup;
     }
 
     my $aptitude_output = "";
@@ -191,7 +203,7 @@ EOF
 
     if ($aptitude_output =~ /^E:/m) {
 	$builder->log('Satisfying build-deps with aptitude failed.' . "\n");
-	goto aptitude_cleanup;
+	goto package_cleanup;
     }
 
     my ($installed_pkgs, $removed_pkgs) = ("", "");
@@ -216,41 +228,39 @@ EOF
     }
 
     #Seems it all went fine.
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
 
-    return 1;
+    $status = 1;
 
   package_cleanup:
-    if (defined ($session->get('Session Purged')) &&
-	$session->get('Session Purged') == 1) {
-	$builder->log("Not removing build depends: cloned chroot in use\n");
-    } else {
-    	$builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
-	$self->uninstall_deps();
-    }
-
-  aptitude_cleanup:
-    if (defined ($session->get('Session Purged')) &&
-        $session->get('Session Purged') == 1) {
-	$builder->log("Not removing additional packages: cloned chroot in use\n");
-    } else {
-	$session->run_command(
-		{ COMMAND => ['dpkg', '--purge', keys %{$self->get('Changes')->{'installed'}}],
-		USER => $builder->get_conf('USERNAME'),
-		CHROOT => 1,
-		PRIORITY => 0});
-	$session->run_command(
-		{ COMMAND => ['dpkg', '--purge', $dummy_pkg_name],
-		USER => $builder->get_conf('USERNAME'),
-		CHROOT => 1,
-		PRIORITY => 0});
-    }
-
-  cleanup:
-    $self->set('Dummy package path', undef);
     $builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
 
-    return 0;
+    if ($status == 0) {
+	if (defined ($session->get('Session Purged')) &&
+	    $session->get('Session Purged') == 1) {
+	    $builder->log("Not removing installed packages: cloned chroot in use\n");
+	} else {
+	    $self->uninstall_deps();
+	}
+    }
+
+    $session->run_command(
+	{ COMMAND => ['rm', $session->strip_chroot_path($dummy_deb)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
+  cleanup:
+    $builder->unlock_file($builder->get('Session')->get('Install Lock'), 1);
+
+    $session->run_command(
+	{ COMMAND => ['rm', '-rf', $session->strip_chroot_path($dummy_dir)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+
+    $self->set('Dummy package path', undef);
+
+    return $status;
 }
 
 sub get_non_default_deps {
@@ -281,7 +291,7 @@ sub get_non_default_deps {
 	    $builder->log("Need $name, but it isn't available\n");
 
 	#Check if the package default version is not high enough:
-	} elsif (defined($rel) && $rel && 
+	} elsif (defined($rel) && $rel &&
 		(  (!$neg && !version_compare($default_version, $rel, $requested_version))
 	         ||( $neg &&  version_compare($default_version, $rel, $requested_version)))) {
 	    if (!$neg) {
@@ -310,7 +320,7 @@ sub get_non_default_deps {
 			$_->{'Neg'} = 1 for (@$expanded_neg_dependencies);
 		    }
 		    my $expanded_dependencies = [@$expanded_pos_dependencies, @$expanded_neg_dependencies];
-		    $builder->log("Complete deps: " . $builder->format_deps(@$expanded_dependencies)  . "\n");			
+		    $builder->log("Complete deps: " . $self->format_deps(@$expanded_dependencies)  . "\n");
 
 		    push @res, $self->get_non_default_deps($expanded_dependencies, $already_checked);
 		    last;
@@ -319,7 +329,7 @@ sub get_non_default_deps {
 		}
 	    }
 	    if (!$found_usable_version) {
-		$builder->log("... couldn't find pkg to satisfy " . $builder->format_deps($dep)  . "\n");
+		$builder->log("... couldn't find pkg to satisfy " . $self->format_deps($dep)  . "\n");
 	    }
 	}
     }

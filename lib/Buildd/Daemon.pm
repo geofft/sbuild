@@ -206,8 +206,8 @@ sub get_next_WANNABUILD {
 		$pkg_ver = $lowprio_pkg_ver;
 	    }
 
-	    next if !@todo;
-	    my $todo = $self->do_wanna_build( $dist_config, @todo );
+	    next if !defined($pkg_ver);
+	    my $todo = $self->do_wanna_build( $dist_config, $pkg_ver );
 	    last if !$todo;
 	    return ( $dist_config, $todo );
 	}
@@ -621,7 +621,10 @@ sub handle_prevfailed {
 	return;
     }
 
-    $fail_msg = <$pipe>;
+    $fail_msg = "";
+    while (<$pipe>) {
+      $fail_msg .= $_;
+    }
 
     close($pipe);
     if ($?) {
@@ -683,7 +686,10 @@ retry:
 	return;
     }
 
-    my $msg = <$pipe>;
+    my $msg = "";
+    while (<$pipe>) {
+      $msg .= $_;
+    }
 
     close($pipe);
 

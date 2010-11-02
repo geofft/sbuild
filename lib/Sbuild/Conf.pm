@@ -393,38 +393,6 @@ sub init_allowed_keys {
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
 	    DEFAULT => 0
 	},
-	'ALTERNATIVES'				=> {
-	    DEFAULT => {
-		'info-browser'		=> 'info',
-		'httpd'			=> 'apache',
-		'postscript-viewer'	=> 'ghostview',
-		'postscript-preview'	=> 'psutils',
-		'www-browser'		=> 'lynx',
-		'awk'			=> 'gawk',
-		'c-shell'		=> 'tcsh',
-		'wordlist'		=> 'wenglish',
-		'tclsh'			=> 'tcl8.4',
-		'wish'			=> 'tk8.4',
-		'c-compiler'		=> 'gcc',
-		'fortran77-compiler'	=> 'g77',
-		'java-compiler'		=> 'jikes',
-		'libc-dev'		=> 'libc6-dev',
-		'libgl-dev'		=> 'xlibmesa-gl-dev',
-		'libglu-dev'		=> 'xlibmesa-glu-dev',
-		'libncurses-dev'	=> 'libncurses5-dev',
-		'libz-dev'		=> 'zlib1g-dev',
-		'libg++-dev'		=> 'libstdc++6-4.0-dev',
-		'emacsen'		=> 'emacs21',
-		'mail-transport-agent'	=> 'ssmtp',
-		'mail-reader'		=> 'mailx',
-		'news-transport-system'	=> 'inn',
-		'news-reader'		=> 'nn',
-		'xserver'		=> 'xvfb',
-		'mysql-dev'		=> 'libmysqlclient-dev',
-		'giflib-dev'		=> 'libungif4-dev',
-		'freetype2-dev'		=> 'libttf-dev'
-	    }
-	},
 	'CHECK_DEPENDS_ALGORITHM'		=> {
 	    CHECK => sub {
 		my $self = shift;
@@ -444,6 +412,9 @@ sub init_allowed_keys {
 	},
 	'BATCH_MODE'				=> {
 	    DEFAULT => 0
+	},
+	'CORE_DEPENDS'				=> {
+	    DEFAULT => ['build-essential', 'fakeroot']
 	},
 	'MANUAL_DEPENDS'			=> {
 	    DEFAULT => []
@@ -518,7 +489,10 @@ sub init_allowed_keys {
 	},
 	'LOG_EXTERNAL_COMMAND_ERROR'		=> {
 	    DEFAULT => 0
-	}
+	},
+	'RESOLVE_VIRTUAL'				=> {
+	    DEFAULT => 1
+	},
     );
 
     $self->set_allowed_keys(\%sbuild_keys);
@@ -597,8 +571,6 @@ sub read_config {
     my $apt_upgrade = undef;
     my $apt_distupgrade = undef;
     my $apt_allow_unauthenticated = undef;
-    my %alternatives;
-    undef %alternatives;
     my $check_depends_algorithm = undef;
     my $distribution = undef;
     my $archive = undef;
@@ -615,6 +587,8 @@ sub read_config {
     undef %external_commands;
     my $log_external_command_output = undef;
     my $log_external_command_error = undef;
+    my $resolve_virtual = undef;
+    my $core_depends = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
 	if (-r $_) {
@@ -628,6 +602,8 @@ sub read_config {
 
     # Set before APT_GET or APTITUDE to allow correct validation.
     $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
+    $self->set('RESOLVE_VIRTUAL', $resolve_virtual);
+    $self->set('CORE_DEPENDS', $core_depends);
     $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);
     $self->set('DEBUG', $debug);
@@ -696,8 +672,6 @@ sub read_config {
     $self->set('APT_UPGRADE', $apt_upgrade);
     $self->set('APT_DISTUPGRADE', $apt_distupgrade);
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
-    $self->set('ALTERNATIVES', \%alternatives)
-	if (%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
     $self->set('JOB_FILE', $job_file);
 
@@ -748,17 +722,6 @@ sub check_group_membership ($) {
     }
 
     my $in_group = 0;
-    foreach (split(' ', $members)) {
-	$in_group = 1 if $_ eq $self->get('USERNAME');
-    }
-
-    if (!$in_group) {
-	print STDERR "User $user is not a member of group $name in the system group database\n";
-	print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
-	exit(1);
-    }
-
-    $in_group = 0;
     my @groups = getgroups();
     push @groups, getgid();
     foreach (@groups) {
