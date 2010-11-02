@@ -22,7 +22,7 @@
 
 package Sbuild::Chroot;
 
-use Sbuild qw(copy debug);
+use Sbuild qw(copy debug debug2);
 use Sbuild::Base;
 use Sbuild::Conf;
 use Sbuild::ChrootInfo;
@@ -237,9 +237,9 @@ sub pipe_command_internal {
 	$self->exec_command($options);
     }
 
-    debug("Pipe (PID $pid, $pipe) created for: ",
-	  join(" ", @{$options->{'COMMAND'}}),
-	  "\n");
+    debug2("Pipe (PID $pid, $pipe) created for: ",
+	   join(" ", @{$options->{'COMMAND'}}),
+	   "\n");
 
     $options->{'PID'} = $pid;
 
@@ -286,9 +286,9 @@ sub run_command_internal {
 	$self->exec_command($options);
     }
 
-    debug("Pipe (PID $pid) created for: ",
-	  join(" ", @{$options->{'COMMAND'}}),
-	  "\n");
+    debug2("Pipe (PID $pid) created for: ",
+	   join(" ", @{$options->{'COMMAND'}}),
+	   "\n");
 
     waitpid($pid, 0);
 }
@@ -341,18 +341,18 @@ sub exec_command {
 	$ENV{$_} = $commandenv->{$_};
     }
 
-    debug("PROGRAM: $program\n");
-    debug("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
-    debug("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
-    debug("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
+    debug2("PROGRAM: $program\n");
+    debug2("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
+    debug2("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
+    debug2("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
 
-    debug("Environment set:\n");
+    debug2("Environment set:\n");
     foreach (sort keys %ENV) {
-	debug('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
+	debug2('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
     }
 
     if (defined($dir) && $dir) {
-	debug("Changing to directory: $dir\n");
+	debug2("Changing to directory: $dir\n");
 	chdir($dir) or die "Can't change directory to $dir: $!";
     }
 
@@ -368,7 +368,7 @@ sub get_apt_command_internal {
     my $command = $options->{'COMMAND'};
     my $apt_options = $self->get('APT Options');
 
-    debug("APT Options: ", join(" ", @$apt_options), "\n")
+    debug2("APT Options: ", join(" ", @$apt_options), "\n")
 	if defined($apt_options);
 
     my @aptcommand = ();
@@ -382,7 +382,7 @@ sub get_apt_command_internal {
 	@aptcommand = @$command;
     }
 
-    debug("APT Command: ", join(" ", @aptcommand), "\n");
+    debug2("APT Command: ", join(" ", @aptcommand), "\n");
 
     $options->{'CHROOT'} = $self->apt_chroot();
     $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
@@ -417,7 +417,7 @@ sub get_aptitude_command_internal {
     my $command = $options->{'COMMAND'};
     my $apt_options = $self->get('Aptitude Options');
 
-    debug("Aptitude Options: ", join(" ", @$apt_options), "\n")
+    debug2("Aptitude Options: ", join(" ", @$apt_options), "\n")
 	if defined($apt_options);
 
     my @aptcommand = ();
@@ -431,7 +431,7 @@ sub get_aptitude_command_internal {
 	@aptcommand = @$command;
     }
 
-    debug("APT Command: ", join(" ", @aptcommand), "\n");
+    debug2("APT Command: ", join(" ", @aptcommand), "\n");
 
     $options->{'CHROOT'} = $self->apt_chroot();
     $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};

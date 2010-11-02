@@ -1,5 +1,5 @@
 
-if [ "$CHROOT_SESSION_PURGE" == "true" ]; then
+if [ "$CHROOT_SESSION_PURGE" = "true" ]; then
     case $CHROOT_NAME in
         *-*-*-*-sbuild*)
         SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
