@@ -283,6 +283,10 @@ sub run {
 
     $self->set('Session', $session);
 
+    if (!$resolver->lock_chroot()) {
+	goto cleanup_close;
+    }
+
     # Clean APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-clean');
     if ($self->get_conf('APT_CLEAN')) {
@@ -437,6 +441,7 @@ sub run {
     if ($self->get_conf('BUILD_DEP_RESOLVER') eq "internal") {
 	$resolver->remove_srcdep_lock_file();
     }
+    $resolver->unlock_chroot();
     # End chroot session
     if ($end_session == 1) {
 	$session->end_session();
