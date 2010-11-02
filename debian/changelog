@@ -1,56 +1,59 @@
 sbuild (0.60.2-1) unstable; urgency=low
 
   * New release.
-  * The aptitude build dependency resolver now sets
-    Aptitude::CmdLine::Ignore-Trust-Violations based upon the
-    $apt_allow_unauthenticated option (Closes: #588035).  Thanks to
-    Ansgar Burchardt for this patch.
-  * Improve handling of alternative build dependencies and Provides
-    using the interal build dependency resolver.  (Closes: #586275,
-    #578810, #591187, #591188, #591189, #595863, #595866, #595872).
-    Thanks to Ansgar Burchardt for this patch.
-  * Log the package source version as well as binary version in the
-    package build log, since these may differ when making binNMUs
-    (Closes: #569823).
-  * Always attempt to install ESSENTIAL (build-essential) packages
-    if they aren't already installed (Closes: #380113).
-  * Don't end session on build failure (Closes: #567506).  This allows
-    examination of build trees and cloned chroots on build failure,
-    rather than unconditionally deleting them, which prevents this.
-    Thanks to Jan-Marek Glogowski.
-  * Remove support for parsing output of apt-get stderr
-    (Closes: #571806).
-  * Remove virtual build-dependency resolving using the "internal"
-    resolver using the static ALTERATIVES (%alternatives) list.  This
-    was already limited, non-functional, and is obsoleted by the
-    "aptitude" resolver.
-  * Remove trailing 'q' from sbuild-createchroot(8) manual page
-    (Closes: #579971).  Thanks to Salvatore Bonaccorso.
-  * buildd-vlog: Fix breakage (Closes: #567822).  Thanks to
-    Samuel Thibault.  This fix introduces sleeps, and is not a
-    complete or entirely optimal fix, but corrects the existing
-    breakage.
+  * sbuild:
+    - Dependency resolving:
+      . The aptitude build dependency resolver now sets
+        Aptitude::CmdLine::Ignore-Trust-Violations based upon the
+        $apt_allow_unauthenticated option (Closes: #588035).  Thanks to
+        Ansgar Burchardt for this patch.
+      . Improve handling of alternative build dependencies and Provides
+        using the interal build dependency resolver.  (Closes: #586275,
+        #578810, #591187, #591188, #591189, #595863, #595866, #595872).
+        Thanks to Ansgar Burchardt for this patch.
+      . Remove virtual build-dependency resolving using the "internal"
+        resolver using the static ALTERATIVES (%alternatives) list.  This
+        was already limited, non-functional, and is obsoleted by the
+        "aptitude" resolver.
+      . Added the ability to resolve virtual dependencies using the
+        "internal" build dependency resolver by calling "apt-cache
+        --names-only" to get candidate packages to satisfy the
+        dependency.  The first package (sorted alphabetically) is
+        chosen (Closes: #595934).  This may be disabled using the
+        $resolve_virtual option.
+    - Log the package source version as well as binary version in the
+      package build log, since these may differ when making binNMUs
+      (Closes: #569823).
+    - Always attempt to install ESSENTIAL (build-essential) packages
+      if they aren't already installed (Closes: #380113).
+    - Don't end session on build failure (Closes: #567506).  This allows
+      examination of build trees and cloned chroots on build failure,
+      rather than unconditionally deleting them, which prevents this.
+      Thanks to Jan-Marek Glogowski.
+    - Remove support for parsing output of apt-get stderr
+      (Closes: #571806).
+    - Check for sbuild group membership using gid and supplementary
+      groups (Closes: #599350).
   * buildd:
     - Read entire contents of pipes (Closes: #567821).  Thanks to
       Samuel Thibault.  This ensures receipt of complete log
       messages.
     - Replace/Breaks with ubuntu-dev-tools <= 0.83 (Closes: #590153).
       Thanks to Lorenzo De Liso.
-  * sbuild(1):
-    - Remove and rewrite obsolete parts of the manpage
-      (Closes: #599348).
-    - .sbuildrc is no longer required for sbuild to function
-      (Closes: #598054).
-  * Check for sbuild group membership using gid and supplementary
-    groups (Closes: #599350).
-  * Added the ability to resolve virtual dependencies using the
-    "internal" build dependency resolver by calling "apt-cache
-    --names-only" to get candidate packages to satisfy the
-    dependency.  The first package (sorted alphabetically) is
-    chosen (Closes: #595934).  This may be disabled using the
-    $resolve_virtual option.
+  * buildd-vlog: Fix breakage (Closes: #567822).  Thanks to
+    Samuel Thibault.  This fix introduces sleeps, and is not a
+    complete or entirely optimal fix, but corrects the existing
+    breakage.
+  * Documentation:
+    - Remove trailing 'q' from sbuild-createchroot(8) manual page
+      (Closes: #579971).  Thanks to Salvatore Bonaccorso.
+    - sbuild(1):
+      . Remove and rewrite obsolete parts of the manpage
+        (Closes: #599348).
+      . .sbuildrc is no longer required for sbuild to function
+        (Closes: #598054).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 01 Nov 2010 21:44:09 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 02 Nov 2010 12:52:42 +0000
 
 sbuild (0.60.1-1) unstable; urgency=low
 
