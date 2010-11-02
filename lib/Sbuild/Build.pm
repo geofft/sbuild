@@ -110,6 +110,7 @@ sub new {
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
     $self->set('Dependencies', {});
+    $self->set('AptDependencies', {});
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
 
@@ -369,6 +370,12 @@ sub run {
 	goto cleanup_packages;
     }
 
+    $self->merge_pkg_build_deps($self->get('Package'),
+				$self->get('Build Depends'),
+				$self->get('Build Depends Indep'),
+				$self->get('Build Conflicts'),
+				$self->get('Build Conflicts Indep'));
+
     $self->set('Pkg Fail Stage', 'install-deps');
     if (!$resolver->install_deps($self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
@@ -466,6 +473,11 @@ sub install_core {
 	push( @{$self->get('Dependencies')->{'CORE'}}, @$parsed_core_deps );
     }
 
+    if (!defined($self->get('AptDependencies')->{'CORE'})) {
+	my $parsed_core_deps = $self->parse_apt_srcdep($core_deps, "", "", "");
+	$self->get('AptDependencies')->{'CORE'} = $parsed_core_deps;
+    }
+
     if (!$self->get('Dependency Resolver')->install_deps('CORE')) {
 	$self->log("Core dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
@@ -480,10 +492,16 @@ sub install_essential {
 
     # read list of build-essential packages (if not yet done) and
     # expand their dependencies (those are implicitly essential)
+    my $ess = $self->read_build_essential();
+
     if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
-	my $ess = $self->read_build_essential();
 	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
 	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
+    }
+
+    if (!defined($self->get('AptDependencies')->{'ESSENTIAL'})) {
+	my $parsed_essential_deps = $self->parse_apt_srcdep($ess, "", "", "");
+	$self->get('AptDependencies')->{'ESSENTIAL'} = $parsed_essential_deps;
     }
 
     $self->set('Pkg Fail Stage', 'install-essential');
@@ -747,9 +765,10 @@ sub fetch_source_files {
 
     debug("Arch check ok ($arch included in $dscarchs)\n");
 
-    $self->merge_pkg_build_deps($self->get('Package'),
-				$build_depends, $build_depends_indep,
-				$build_conflicts, $build_conflicts_indep);
+    $self->set('Build Depends', $build_depends);
+    $self->set('Build Depends Indep', $build_depends_indep);
+    $self->set('Build Conflicts', $build_conflicts);
+    $self->set('Build Conflicts Indep', $build_conflicts_indep);
 
     return 1;
 }
@@ -1197,6 +1216,15 @@ sub merge_pkg_build_deps {
     $self->log("Build-Conflicts: $conflicts\n") if $conflicts;
     $self->log("Build-Conflicts-Indep: $conflictsi\n") if $conflictsi;
 
+    if (!defined($self->get('AptDependencies')->{$pkg})) {
+	my $aptdepends = $depends;
+	if ($self->get_conf('GCC_SNAPSHOT')) {
+	    $aptdepends .= ", " . "gcc-snapshot";
+	}
+	my $parsed_apt_deps = $self->parse_apt_srcdep($aptdepends, $dependsi, $conflicts, $conflictsi);
+	$self->get('AptDependencies')->{$pkg} = $parsed_apt_deps;
+    }
+
     $self->get('Dependencies')->{$pkg} = []
 	if (!defined $self->get('Dependencies')->{$pkg});
 
@@ -1386,6 +1414,23 @@ sub get_virtuals {
     die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
 
     return \%provided_by;
+}
+
+sub parse_apt_srcdep {
+    my $self = shift;
+    my $build_depends = shift;
+    my $build_depends_indep = shift;
+    my $build_conflicts = shift;
+    my $build_conflicts_indep = shift;
+
+    my $deps = {
+	'Build Depends' => $build_depends,
+	'Build Depends Indep' => $build_depends_indep,
+	'Build Conflicts' => $build_conflicts,
+	'Build Conflicts Indep' => $build_conflicts_indep
+    };
+
+    return $deps;
 }
 
 sub parse_one_srcdep {

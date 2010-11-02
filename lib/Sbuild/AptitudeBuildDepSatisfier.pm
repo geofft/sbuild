@@ -25,6 +25,7 @@ use strict;
 use warnings;
 use File::Temp qw(tempdir);
 
+use Dpkg::Deps;
 use Sbuild qw(debug copy version_compare);
 use Sbuild::Base;
 use Sbuild::BuildDepSatisfierBase;
@@ -101,17 +102,6 @@ sub install_deps {
 	goto cleanup;
     }
 
-    my (@positive_deps, @negative_deps);
-    for my $dep_entry (@$dep) {
-	if ($dep_entry->{'Neg'}) {
-	    my $new_dep_entry = copy($dep_entry);
-	    $new_dep_entry->{'Neg'} = 0;
-	    push @negative_deps, $new_dep_entry;
-	} else {
-	    push @positive_deps, $dep_entry;
-	}
-    }
-
     my $arch = $builder->get('Arch');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
@@ -119,12 +109,39 @@ Version: 0.invalid.0
 Architecture: $arch
 EOF
 
-    if (@positive_deps) {
-	print DUMMY_CONTROL 'Depends: ' . $self->format_deps(@positive_deps) . "\n";
+    my $deps = $builder->get('AptDependencies')->{$pkg};
+
+    my $positive = "";
+    $positive = $deps->{'Build Depends'}
+	if (defined($deps->{'Build Depends'}) &&
+	    $deps->{'Build Depends'} ne "");
+    my $negative = "";
+    $negative = $deps->{'Build Conflicts'}
+	if (defined($deps->{'Build Conflicts'}) &&
+	    $deps->{'Build Conflicts'} ne "");
+    if ($self->get_conf('BUILD_ARCH_ALL')) {
+	$positive .= ", " . $deps->{'Build Depends Indep'}
+	    if (defined($deps->{'Build Depends Indep'}) &&
+		$deps->{'Build Depends Indep'} ne "");
+	$negative .= ", " . $deps->{'Build Conflicts Indep'}
+	    if (defined($deps->{'Build Conflicts Indep'}) &&
+		$deps->{'Build Conflicts Indep'} ne "");
     }
-    if (@negative_deps) {
-	print DUMMY_CONTROL 'Conflicts: ' . $self->format_deps(@negative_deps) . "\n";
+
+    $positive = deps_parse($positive, reduce_arch => 1,
+			   host_arch => $builder->get('Arch'));
+    $negative = deps_parse($negative, reduce_arch => 1,
+			   host_arch => $builder->get('Arch'));
+
+    if ($positive ne "") {
+	print DUMMY_CONTROL 'Depends: ' . $positive . "\n";
     }
+    if ($negative ne "") {
+	print DUMMY_CONTROL 'Conflicts: ' . $negative . "\n";
+    }
+
+    debug("DUMMY $pkg Depends: $positive \n");
+    debug("DUMMY $pkg Conflicts: $negative \n");
 
     print DUMMY_CONTROL <<"EOF";
 Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
