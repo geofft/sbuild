@@ -70,7 +70,7 @@ sub uninstall_deps {
     @pkgs = keys %{$self->get('Changes')->{'installed'}};
     debug("Removing installed packages: @pkgs\n");
     $builder->log("Failed to remove installed packages!\n")
-	if !$self->uninstall_debs("purge", @pkgs);
+	if !$self->run_apt("-y", \@instd, \@rmvd, 'remove', @pkgs);
     $self->unset_installed(@pkgs);
 
     $builder->unlock_file($builder->get('Session')->get('Install Lock'));
@@ -250,52 +250,6 @@ sub unset_removed {
 	}
     }
     debug("Removed from removed list: @_\n");
-}
-
-sub uninstall_debs {
-    my $self = shift;
-    my $mode = shift;
-    my $builder = $self->get('Builder');
-    my $status;
-
-    return 1 if !@_;
-    debug("Uninstalling packages: @_\n");
-
-  repeat:
-    my $output;
-    my $remove_start_time = time;
-
-    my $pipe = $builder->get('Session')->pipe_command(
-	{ COMMAND => [$self->get_conf('DPKG'), '--force-depends', "--$mode", @_],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  CHROOT => 1,
-	  PRIORITY => 0,
-	  DIR => '/' });
-
-    if (!$pipe) {
-	$builder->log("Can't open pipe to dpkg: $!\n");
-	return 0;
-    }
-
-    while (<$pipe>) {
-	$output .= $_;
-	$builder->log($_);
-    }
-    close($pipe);
-    $status = $?;
-
-    if (defined($output) && $output =~ /status database area is locked/mi) {
-	$builder->log("Another dpkg is running -- retrying later\n");
-	$output = "";
-	sleep( 2*60 );
-	goto repeat;
-    }
-    my $remove_end_time = time;
-    $builder->write_stats('remove-time',
-		       $remove_end_time - $remove_start_time);
-    $builder->log("dpkg run to remove packages (@_) failed!\n") if $?;
-    return $status == 0;
 }
 
 sub get_dpkg_status {
