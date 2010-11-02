@@ -128,7 +128,8 @@ sub install_deps {
 	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
-    $self->set_removed(@negative);
+    $self->set_installed(@instd);
+    $self->set_removed(@rmvd);
     my $install_stop_time = time;
     $builder->write_stats('install-download-time',
 		       $install_stop_time - $install_start_time);
