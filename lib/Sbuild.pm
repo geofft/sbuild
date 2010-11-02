@@ -42,7 +42,7 @@ BEGIN {
 		 version_eq version_compare split_version
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
-		 send_mail send_build_log debug df);
+		 send_mail send_build_log debug debug2 df);
 }
 
 our $devnull;
@@ -74,6 +74,7 @@ sub help_text ($$);
 sub version_text ($);
 sub usage_error ($$);
 sub debug (@);
+sub debug2 (@);
 
 sub version_less ($$) {
 	my $v1 = shift;
@@ -540,6 +541,14 @@ sub debug (@) {
     # TODO: Add debug level checking.
     if ($debug_level) {
 	print STDERR "D: ", @_;
+    }
+}
+
+sub debug2 (@) {
+
+    # TODO: Add debug level checking.
+    if ($debug_level >= 2) {
+	print STDERR "D2: ", @_;
     }
 }
 
