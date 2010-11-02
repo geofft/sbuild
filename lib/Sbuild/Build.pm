@@ -983,6 +983,9 @@ sub run_external_commands {
     my $log_output = shift;
     my $log_error = shift;
 
+    # Return success now unless there are commands to run
+    return 1 unless (${$self->get_conf('EXTERNAL_COMMANDS')}{$stage});
+
     # Determine which set of commands to run based on the parameter $stage
     my @commands = @{${$self->get_conf('EXTERNAL_COMMANDS')}{$stage}};
 
