@@ -409,15 +409,27 @@ sub dump_build_environment {
     my $builder = $self->get('Builder');
 
     my $status = $self->get_dpkg_status();
-    my $toolchain = $builder->get('Toolchain Packages');
 
-    if (@{$toolchain}) {
+    my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
+    $exp_essential = $builder->expand_dependencies($builder->get('Dependencies')->{'ESSENTIAL'});
+    debug("Dependency-expanded build essential packages:\n",
+		 $builder->format_deps(@$exp_essential), "\n");
+
+    my @toolchain;
+    foreach my $tpkg (@$exp_essential) {
+        foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
+	    push @toolchain,$tpkg->{'Package'}
+	        if $tpkg->{'Package'} =~ m,^$regex,;
+	}
+    }
+
+    if (@toolchain) {
 	my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
 	my $arch = $builder->get('Arch');
 
 	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
 	$builder->log("Toolchain package versions:");
-	foreach my $name (@{$toolchain}) {
+	foreach my $name (@toolchain) {
 	    if (defined($status->{$name}->{'Version'})) {
 		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
 	    } else {

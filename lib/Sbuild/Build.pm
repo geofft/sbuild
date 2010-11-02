@@ -123,10 +123,8 @@ sub new {
     $self->set('This Time', 0);
     $self->set('This Space', 0);
     $self->set('This Watches', {});
-    $self->set('Toolchain Packages', []);
     $self->set('Sub Task', 'initialisation');
     $self->set('Session', undef);
-    $self->set('Additional Deps', []);
     $self->set('Dependency Resolver', undef);
     $self->set('Dependencies', {});
     $self->set('Have DSC Build Deps', []);
@@ -285,8 +283,6 @@ sub run {
 
     $self->set('Session', $session);
 
-    $self->set('Additional Deps', []);
-
     # Clean APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-clean');
     if ($self->get_conf('APT_CLEAN')) {
@@ -342,11 +338,6 @@ sub run {
 	}
     }
 
-    $self->set('Pkg Fail Stage', 'install-core');
-    if (!$self->install_core()) {
-	goto cleanup_close;
-    }
-
     $self->set('Pkg Fail Stage', 'fetch-src');
     if (!$self->fetch_source_files()) {
 	goto cleanup_packages;
@@ -367,12 +358,16 @@ sub run {
 	}
     }
 
-    $self->set('Pkg Fail Stage', 'install-essential');
-    if (!$resolver->install_deps('ESSENTIAL')) {
-	$self->log("Essential dependencies not satisfied; skipping " .
-		   $self->get('Package') . "\n");
+    $self->set('Pkg Fail Stage', 'install-core');
+    if (!$self->install_core()) {
 	goto cleanup_packages;
     }
+
+    $self->set('Pkg Fail Stage', 'install-essential');
+    if (!$self->install_essential()) {
+	goto cleanup_packages;
+    }
+
     $self->set('Pkg Fail Stage', 'install-deps');
     if (!$resolver->install_deps($self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
@@ -472,6 +467,27 @@ sub install_core {
 
     if (!$self->get('Dependency Resolver')->install_deps('CORE')) {
 	$self->log("Core dependencies not satisfied; skipping " .
+		   $self->get('Package') . "\n");
+	return 0;
+    }
+
+    return 1;
+}
+
+sub install_essential {
+    my $self = shift;
+
+    # read list of build-essential packages (if not yet done) and
+    # expand their dependencies (those are implicitly essential)
+    if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
+	my $ess = $self->read_build_essential();
+	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
+	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
+    }
+
+    $self->set('Pkg Fail Stage', 'install-essential');
+    if (!$self->get('Dependency Resolver')->install_deps('ESSENTIAL')) {
+	$self->log("Essential dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	return 0;
     }
@@ -1187,7 +1203,6 @@ sub merge_pkg_build_deps {
 
     $self->get('Dependencies')->{$pkg} = []
 	if (!defined $self->get('Dependencies')->{$pkg});
-    my $old_deps = copy($self->get('Dependencies')->{$pkg});
 
     # Add gcc-snapshot as an override.
     if ($self->get_conf('GCC_SNAPSHOT')) {
@@ -1217,111 +1232,6 @@ sub merge_pkg_build_deps {
     debug("Merging pkg deps: $deps\n");
     my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $deps);
     push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
-
-    my $missing = ($self->cmp_dep_lists($old_deps,
-					$self->get('Dependencies')->{$pkg}))[1];
-
-    # read list of build-essential packages (if not yet done) and
-    # expand their dependencies (those are implicitly essential)
-    if (!defined($self->get('Dependencies')->{'ESSENTIAL'})) {
-	my $ess = $self->read_build_essential();
-	my $parsed_essential_deps = $self->parse_one_srcdep('ESSENTIAL', $ess);
-	push( @{$self->get('Dependencies')->{'ESSENTIAL'}}, @$parsed_essential_deps );
-    }
-    my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = $self->expand_dependencies($self->get('Dependencies')->{'ESSENTIAL'});
-    debug("Dependency-expanded build essential packages:\n",
-		 $self->format_deps(@$exp_essential), "\n");
-
-    # populate Toolchain Packages from toolchain_regexes and
-    # build-essential packages.
-    $self->set('Toolchain Packages', []);
-    foreach my $tpkg (@$exp_essential) {
-        foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
-	    push @{$self->get('Toolchain Packages')},$tpkg->{'Package'}
-	        if $tpkg->{'Package'} =~ m,^$regex,;
-	}
-    }
-
-    return if !@$missing;
-
-    # remove missing essential deps
-    ($filt_essential, $missing) = $self->cmp_dep_lists($missing,
-                                                       $exp_essential);
-    $self->log("** Filtered missing build-essential deps:\n" .
-	       $self->format_deps(@$filt_essential) . "\n")
-	           if @$filt_essential;
-
-    # if some build deps are virtual packages, replace them by an
-    # alternative over all providing packages
-    $exp_pkgdeps = $self->expand_virtuals($self->get('Dependencies')->{$pkg} );
-    debug("Provided-expanded build deps:\n",
-		 $self->format_deps(@$exp_pkgdeps), "\n");
-
-    # now expand dependencies of package build deps
-    $exp_pkgdeps = $self->expand_dependencies($exp_pkgdeps);
-    debug("Dependency-expanded build deps:\n",
-		 $self->format_deps(@$exp_pkgdeps), "\n");
-    # NOTE: Was $main::additional_deps, not @main::additional_deps.
-    # They may be separate?
-    @{$self->get('Additional Deps')} = @$exp_pkgdeps;
-
-    # remove missing essential deps that are dependencies of build
-    # deps
-    ($filt_pkgdeps, $missing) = $self->cmp_dep_lists($missing, $exp_pkgdeps);
-    $self->log("** Filtered missing build-essential deps that are dependencies of or provide build-deps:\n" .
-	       $self->format_deps(@$filt_pkgdeps), "\n")
-	           if @$filt_pkgdeps;
-
-    # remove comment package names
-    push( @{$self->get('Additional Deps')},
-	  grep { $_->{'Neg'} && $_->{'Package'} =~ /^needs-no-/ } @$missing );
-    $missing = [ grep { !($_->{'Neg'} &&
-	                ($_->{'Package'} =~ /^this-package-does-not-exist/ ||
-	                 $_->{'Package'} =~ /^needs-no-/)) } @$missing ];
-
-    $self->log("**** Warning:\n" .
-	       "**** The following src deps are " .
-	       "(probably) missing:\n  ", $self->format_deps(@$missing), "\n")
-	           if @$missing;
-}
-
-sub cmp_dep_lists {
-    my $self = shift;
-    my $list1 = shift;
-    my $list2 = shift;
-
-    my ($dep, @common, @missing);
-
-    foreach $dep (@$list1) {
-	my $found = 0;
-
-	if ($dep->{'Neg'}) {
-	    foreach (@$list2) {
-		if ($dep->{'Package'} eq $_->{'Package'} && $_->{'Neg'}) {
-		    $found = 1;
-		    last;
-		}
-	    }
-	}
-	else {
-	    my $al = $self->get_altlist($dep);
-	    foreach (@$list2) {
-		if ($self->is_superset($self->get_altlist($_), $al)) {
-		    $found = 1;
-		    last;
-		}
-	    }
-	}
-
-	if ($found) {
-	    push( @common, $dep );
-	}
-	else {
-	    push( @missing, $dep );
-	}
-    }
-    return (\@common, \@missing);
 }
 
 sub get_altlist {
@@ -1420,40 +1330,6 @@ sub expand_dependencies {
     }
 
     return \@result;
-}
-
-sub expand_virtuals {
-    my $self = shift;
-    my $dlist = shift;
-    my ($dep, %names, @new_dlist);
-
-    foreach $dep (@$dlist) {
-	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-	    $names{$_->{'Package'}} = 1;
-	}
-    }
-    my $provided_by = $self->get_virtuals(keys %names);
-
-    foreach $dep (@$dlist) {
-	my %seen;
-	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-	    my $name = $_->{'Package'};
-	    $seen{$name} = 1;
-	    if (exists $provided_by->{$name}) {
-		foreach( keys %{$provided_by->{$name}} ) {
-		    $seen{$_} = 1;
-		}
-	    }
-	}
-	my @l = map { { Package => $_, Neg => 0 } } keys %seen;
-	my $l = shift @l;
-	foreach (@l) {
-	    push( @{$l->{'Alternatives'}}, $_ );
-	}
-	push( @new_dlist, $l );
-    }
-
-    return \@new_dlist;
 }
 
 sub get_dependencies {
@@ -1641,7 +1517,7 @@ sub prepare_watches {
     my(@dep_on, $dep, $pkg, $prg);
 
     @dep_on = @instd;
-    foreach $dep (@$dependencies, @{$self->get('Additional Deps')}) {
+    foreach $dep (@$dependencies) {
 	if ($dep->{'Neg'} && $dep->{'Package'} =~ /^needs-no-(\S+)/) {
 	    push( @dep_on, $1 );
 	}
