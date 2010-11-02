@@ -25,6 +25,7 @@ use strict;
 use warnings;
 use Errno qw(:POSIX);
 
+use Dpkg::Deps;
 use Sbuild::Base;
 use Sbuild qw(isin debug);
 
@@ -364,30 +365,15 @@ sub dump_build_environment {
 
     my $status = $self->get_dpkg_status();
 
-    my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = $builder->expand_dependencies($builder->get('Dependencies')->{'ESSENTIAL'});
-    debug("Dependency-expanded build essential packages:\n",
-	  $self->format_deps(@$exp_essential), "\n");
+    my $arch = $builder->get('Arch');
+    my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
+    $builder->log("Kernel: $sysname $release $arch ($machine)\n");
 
-    my @toolchain;
-    foreach my $tpkg (@$exp_essential) {
+    $builder->log("Toolchain package versions:");
+    foreach my $name (sort keys %{$status}) {
         foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
-	    push @toolchain,$tpkg->{'Package'}
-	        if $tpkg->{'Package'} =~ m,^$regex,;
-	}
-    }
-
-    if (@toolchain) {
-	my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
-	my $arch = $builder->get('Arch');
-
-	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
-	$builder->log("Toolchain package versions:");
-	foreach my $name (@toolchain) {
-	    if (defined($status->{$name}->{'Version'})) {
+	    if ($name =~ m,^$regex, && defined($status->{$name}->{'Version'})) {
 		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
-	    } else {
-		$builder->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
 	    }
 	}
     }

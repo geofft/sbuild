@@ -1307,44 +1307,6 @@ sub read_build_essential {
     return join( ", ", @essential );
 }
 
-sub expand_dependencies {
-    my $self = shift;
-    my $dlist = shift;
-    my (@to_check, @result, %seen, $check, $dep);
-
-    foreach $dep (@$dlist) {
-	next if $dep->{'Neg'} || $dep->{'Package'} =~ /^\*/;
-	foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-	    my $name = $_->{'Package'};
-	    push( @to_check, $name );
-	    $seen{$name} = 1;
-	}
-	push( @result, copy($dep) );
-    }
-
-    while( @to_check ) {
-	my $deps = $self->get_dependencies(@to_check);
-	my @check = @to_check;
-	@to_check = ();
-	foreach $check (@check) {
-	    if (defined($deps->{$check})) {
-		foreach (split( /\s*,\s*/, $deps->{$check} )) {
-		    foreach (split( /\s*\|\s*/, $_ )) {
-			my $pkg = (/^([^\s([]+)/)[0];
-			if (!$seen{$pkg}) {
-			    push( @to_check, $pkg );
-			    push( @result, { Package => $pkg, Neg => 0 } );
-			    $seen{$pkg} = 1;
-			}
-		    }
-		}
-	    }
-	}
-    }
-
-    return \@result;
-}
-
 sub get_dependencies {
     my $self = shift;
 
