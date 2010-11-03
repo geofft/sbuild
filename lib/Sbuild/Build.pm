@@ -35,6 +35,7 @@ use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
 use Dpkg::Arch;
+use Dpkg::Control;
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
 use Sbuild::Base;
@@ -664,29 +665,20 @@ sub fetch_source_files {
 	$self->set_dsc((grep { /\.dsc$/ } @fetched)[0]);
     }
 
-    if (!open( F, "<$build_dir/$dsc" )) {
-	$self->log("Can't open $build_dir/$dsc: $!\n");
+    my $pdsc = Dpkg::Control->new(type => CTRL_PKG_SRC);
+    $pdsc->set_options(allow_pgp => 1);
+    if (!$pdsc->load("$build_dir/$dsc")) {
+	$self->log("Error parsing $build_dir/$dsc");
 	return 0;
     }
 
-    my $dsctext;
-    { local($/); $dsctext = <F>; }
-    close( F );
-
-    $dsctext =~ /^Build-Depends:\s*((.|\n\s+)*)\s*$/mi
-	and $build_depends = $1;
-    $dsctext =~ /^Build-Depends-Indep:\s*((.|\n\s+)*)\s*$/mi
-	and $build_depends_indep = $1;
-    $dsctext =~ /^Build-Conflicts:\s*((.|\n\s+)*)\s*$/mi
-	and $build_conflicts = $1;
-    $dsctext =~ /^Build-Conflicts-Indep:\s*((.|\n\s+)*)\s*$/mi
-	and $build_conflicts_indep = $1;
-    $dsctext =~ /^Architecture:\s*(.*)$/mi
-	and $dscarchs = $1;
-    $dsctext =~ /^Source:\s*(.*)$/mi
-	and $dscpkg = $1;
-    $dsctext =~ /^Version:\s*(.*)$/mi
-	and $dscver = $1;
+    $build_depends = $pdsc->{'Build-Depends'};
+    $build_depends_indep = $pdsc->{'Build-Depends-Indep'};
+    $build_conflicts = $pdsc->{'Build-Conflicts'};
+    $build_conflicts_indep = $pdsc->{'Build-Conflicts-Indep'};
+    $dscarchs = $pdsc->{'Architecture'};
+    $dscpkg = $pdsc->{'Source'};
+    $dscver = $pdsc->{'Version'};
 
     $self->set_version("${dscpkg}_${dscver}");
 

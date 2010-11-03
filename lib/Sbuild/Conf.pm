@@ -450,7 +450,7 @@ sub init_allowed_keys {
 	    DEFAULT => 'build-progress'
 	},
 	'BUILD_DEP_RESOLVER'			=> {
-	    DEFAULT => 'internal',
+	    DEFAULT => 'aptitude',
 	    CHECK => sub {
 		my $self = shift;
 		my $entry = shift;
