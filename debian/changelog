@@ -3,8 +3,18 @@ sbuild (0.60.3) unstable; urgency=low
   * New release.
   * sbuild-update:
     - sbuild-clean functionality has been merged into sbuild-update.
+  * sbuild:
+    - Dependency resolving:
+      . 'aptitude' is now the default dependency resolver.  Users
+        wishing to use the old resolver should set
+        $build_dep_resolver='internal' in their configuration.
+      . The aptitude resolver can resolve complex dependencies.
+        A | B, where A is uninstallable now correctly falls bacl to B
+        (Closes: #403246).
+      . Removal of Build-Conflicts now works, due to using apt-get
+        or aptitude to perform the removal (Closes: #464376).
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 14:02:16 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 17:43:53 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
