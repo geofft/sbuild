@@ -27,6 +27,10 @@ configuration.
   3) The sbuild-clean program has been moved into sbuild-update, as
      for the other sbuild- helper programs.
 
+  4) The sbuild-createchroot program can now create tarballs from the
+     created chroot, with gzip, bzip2, lzma and xz compression.  Use
+     the new --make-sbuild-tarball option for this purpose.
+
 * Major changes in 0.60.2:
 
   1) Virtual packages may now be used in Build-Depends using the

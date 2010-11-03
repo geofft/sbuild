@@ -1,8 +1,12 @@
 sbuild (0.60.3) unstable; urgency=low
 
   * New release.
+  * sbuild-createchroot:
+    - Allow direct creation of tarballs from chroots, with various
+      options for compression.  Thanks to Andres Mejia.
   * sbuild-update:
     - sbuild-clean functionality has been merged into sbuild-update.
+      Thanks to Andres Mejia.
   * sbuild:
     - Dependency resolving:
       . 'aptitude' is now the default dependency resolver.  Users
@@ -13,8 +17,10 @@ sbuild (0.60.3) unstable; urgency=low
         (Closes: #403246).
       . Removal of Build-Conflicts now works, due to using apt-get
         or aptitude to perform the removal (Closes: #464376).
+    - Don't set Sbuild::debug_level to undef (Closes: #602318).
+      Thanks to Andres Mejia.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 17:43:53 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 19:54:52 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 

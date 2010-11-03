@@ -271,7 +271,7 @@ if ($conf->get('MAKE_SBUILD_TARBALL')) {
     # Default to using tar gzip compression if unable to determine compression
     # mode via file extension.
     if ($tarball !~ /\.(tgz|tbz|tlz|txz|tar(\.(gz|bz2|lz|xz))?)$/) {
-        print "I: Renaming sbuild tarball '$tarball' to '$tarball.tgz'\n";
+        print "I: Renaming sbuild tarball '$tarball' to '$tarball.tar.gz'\n";
         $tarball .= ".tar.gz";
         $conf->set('MAKE_SBUILD_TARBALL', $tarball);
     }
