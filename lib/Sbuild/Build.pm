@@ -46,8 +46,8 @@ use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download dsc_files);
-use Sbuild::AptitudeBuildDepSatisfier;
-use Sbuild::InternalBuildDepSatisfier;
+use Sbuild::AptitudeResolver;
+use Sbuild::InternalResolver;
 
 BEGIN {
     use Exporter ();
@@ -208,10 +208,10 @@ sub run {
 
     if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$self->set('Dependency Resolver',
-		   Sbuild::AptitudeBuildDepSatisfier->new($self));
+		   Sbuild::AptitudeResolver->new($self));
     } else {
 	$self->set('Dependency Resolver',
-		   Sbuild::InternalBuildDepSatisfier->new($self));
+		   Sbuild::InternalResolver->new($self));
     }
     my $resolver = $self->get('Dependency Resolver');
 

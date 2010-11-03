@@ -1,4 +1,4 @@
-# BuildDepSatisfierBase.pm: build library for sbuild
+# ResolverBase.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
 # Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
@@ -19,7 +19,7 @@
 #
 #######################################################################
 
-package Sbuild::AptitudeBuildDepSatisfier;
+package Sbuild::AptitudeResolver;
 
 use strict;
 use warnings;
@@ -28,13 +28,13 @@ use File::Temp qw(tempdir);
 use Dpkg::Deps;
 use Sbuild qw(debug copy version_compare);
 use Sbuild::Base;
-use Sbuild::BuildDepSatisfierBase;
+use Sbuild::ResolverBase;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::BuildDepSatisfierBase);
+    @ISA = qw(Exporter Sbuild::ResolverBase);
 
     @EXPORT = qw();
 }
