@@ -306,7 +306,7 @@ sub shutdown ($) {
     }
 
     if (defined($current_job) && $jobs{$current_job}->get('Dependency Resolver')) {
-	$jobs{$current_job}->get('Dependency Resolver')->remove_srcdep_lock_file();
+	$jobs{$current_job}->get('Dependency Resolver')->unlock_chroot();
     }
 
     # Close logs and send mails
