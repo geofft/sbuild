@@ -9,14 +9,22 @@ configuration.
 
 * Major changes in 0.60.3:
 
-  1) The aptitude resolver is now entirely separate from the internal
+  1) The aptitude resolver is now the default resolver.  Users wishing
+     to continue to use the old internal resolver should set
+     $build_dep_resolver='internal' in their configuration.  The
+     aptitude resolver is far superior to the internal resolver,
+     because it can correctly resolve complex alternative and virtual
+     packages in build dependencies where the internal resolver would
+     fail.
+
+  2) The aptitude resolver is now entirely separate from the internal
      resolver, and greatly simplified.  All Build-Depends and
      -Conflicts are now passed directly to aptitude (with
      architecture-specific dependencies filtered out).  As before, a
      dummy dependency package is used to install and remove build
      dependencies and build-conflicts.
 
-  2) The sbuild-clean program has been moved into sbuild-update, as
+  3) The sbuild-clean program has been moved into sbuild-update, as
      for the other sbuild- helper programs.
 
 * Major changes in 0.60.2:
