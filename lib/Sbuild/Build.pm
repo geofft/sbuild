@@ -109,6 +109,7 @@ sub new {
     $self->set('This Space', 0);
     $self->set('This Watches', {});
     $self->set('Sub Task', 'initialisation');
+    $self->set('Host', undef);
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
     $self->set('Log File', undef);
@@ -255,6 +256,9 @@ sub run {
     my $self = shift;
 
     $self->set_status('building');
+
+    # Set a chroot to run commands in root filesystem
+    $self->set('Host', Sbuild::ChrootRoot->new($self->get('Config')));
 
     if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$self->set('Dependency Resolver',
