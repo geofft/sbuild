@@ -101,10 +101,12 @@ the \fIunstable\fP chroot:
 .SH AUTHORS
 .nf
 Roger Leigh.
+Andres Mejia.
 .fi
 .SH COPYRIGHT
 .nf
 Copyright \[co] 2006\[en]2009 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2010 Andres Mejia <mcitadel@gmail.com>.
 .fi
 .SH "SEE ALSO"
 .BR sbuild (1),

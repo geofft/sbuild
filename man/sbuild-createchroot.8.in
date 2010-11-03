@@ -205,13 +205,13 @@ number of directories in the chroot for use by sbuild.  This is now done by
 .nf
 Roger Leigh.
 Francesco P. Lovergine.
-Andres Mejia
+Andres Mejia.
 .fi
 .SH COPYRIGHT
 .nf
 Copyright \[co] 2004 Francesco P. Lovergine <frankie@debian.org>.
 Copyright \[co] 2007\-2008 Roger Leigh <rleigh@debian.org>.
-Copyright \[co] 2010 Andres Mejia <mcitadel@gmail.com>
+Copyright \[co] 2010 Andres Mejia <mcitadel@gmail.com>.
 .fi
 .SH "SEE ALSO"
 .BR debootstrap (8),
