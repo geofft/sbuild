@@ -22,6 +22,14 @@ Roger Leigh			<rleigh@debian.org>
 	autotools
 	maintenance
 
+Andres Mejia			<mcitadel@gmail.com>
+       sbuild-createchroot improvements
+       sbuild-update and related script improvements
+       sbuild schroot namespace support
+       sbuild debuild-link functionality
+       sbuild source download improvements
+       architecture wildcard support
+
 Ryan Murray			<rmurray@debian.org>
 	modifications for security building
 	maintenance
