@@ -1,4 +1,4 @@
-# BuildDepSatisfierBase.pm: build library for sbuild
+# ResolverBase.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
 # Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
@@ -19,7 +19,7 @@
 #
 #######################################################################
 
-package Sbuild::InternalBuildDepSatisfier;
+package Sbuild::InternalResolver;
 
 use strict;
 use warnings;
@@ -28,13 +28,13 @@ use POSIX ();
 
 use Sbuild qw(isin debug version_compare);
 use Sbuild::Base;
-use Sbuild::BuildDepSatisfierBase;
+use Sbuild::ResolverBase;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::BuildDepSatisfierBase);
+    @ISA = qw(Exporter Sbuild::ResolverBase);
 
     @EXPORT = qw();
 }
@@ -46,7 +46,52 @@ sub new {
     my $self = $class->SUPER::new($builder);
     bless($self, $class);
 
+    $self->set('Dependencies', {});
+
     return $self;
+}
+
+sub add_dependencies {
+    my $self = shift;
+    my $pkg = shift;
+    my $build_depends = shift;
+    my $build_depends_indep = shift;
+    my $build_conflicts = shift;
+    my $build_conflicts_indep = shift;
+
+    my $builder = $self->get('Builder');
+
+    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
+    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
+    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
+
+    my (@l, $dep);
+
+    $self->get('Dependencies')->{$pkg} = []
+	if (!defined $self->get('Dependencies')->{$pkg});
+
+    foreach $dep (@{$self->get('Dependencies')->{$pkg}}) {
+	if ($dep->{'Override'}) {
+	    $builder->log("Added override: ",
+			  (map { ($_->{'Neg'} ? "!" : "") .
+				     $_->{'Package'} .
+				     ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"") }
+			   scalar($dep), @{$dep->{'Alternatives'}}), "\n");
+	    push( @l, $dep );
+	}
+    }
+
+    $build_conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts ));
+    $build_conflicts_indep = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts_indep ));
+
+    my $mdeps = $build_depends . ", " . $build_conflicts;
+    $mdeps .= ", " . $build_depends_indep . ", " . $build_conflicts_indep
+	if $self->get_conf('BUILD_ARCH_ALL');
+    @{$self->get('Dependencies')->{$pkg}} = @l;
+    debug("Merging pkg deps: $mdeps\n");
+    my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $mdeps);
+    push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
 }
 
 sub install_deps {
@@ -60,18 +105,15 @@ sub install_deps {
     my( @positive, @negative, @instd, @rmvd );
 
     my $dep = [];
-    if (exists $builder->get('Dependencies')->{$pkg}) {
-	$dep = $builder->get('Dependencies')->{$pkg};
+    if (exists $self->get('Dependencies')->{$pkg}) {
+	$dep = $self->get('Dependencies')->{$pkg};
     }
     debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
 
   repeat:
-    $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
-
     debug("Filtering dependencies\n");
     if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
 	$builder->log("Package installation not possible\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
@@ -79,7 +121,6 @@ sub install_deps {
 	debug("Finding virtual packages\n");
 	if (!$self->virtual_dependencies(\@positive)) {
 	    $builder->log("Package installation not possible\n");
-	    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	    return 0;
 	}
     }
@@ -87,28 +128,17 @@ sub install_deps {
     $builder->log("Checking for dependency conflicts...\n");
     if (!$self->run_apt("-s", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Test what should be installed failed.\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
     # add negative deps as to be removed for checking srcdep conflicts
     push( @rmvd, @negative );
-    my @confl;
-    if (@confl = $self->check_srcdep_conflicts(\@instd, \@rmvd)) {
-	$builder->log("Waiting for job(s) @confl to finish\n");
 
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
-	$self->wait_for_srcdep_conflicts(@confl);
-	goto repeat;
-    }
-
-    $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
     $builder->log("Installing positive dependencies: @positive\n");
     if (!$self->run_apt("-y", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Package installation failed\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	if (defined ($builder->get('Session')->get('Session Purged')) &&
         $builder->get('Session')->get('Session Purged') == 1) {
 	    $builder->log("Not removing build depends: cloned chroot in use\n");
@@ -125,7 +155,6 @@ sub install_deps {
     $builder->log("Removing negative dependencies: @negative\n");
     if (!$self->run_apt("-y", \@instd, \@rmvd, 'remove', @negative)) {
 	$builder->log("Removal of packages failed\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
     $self->set_installed(@instd);
@@ -138,7 +167,6 @@ sub install_deps {
     if ($fail) {
 	$builder->log("After installing, the following dependencies are ".
 		   "still unsatisfied:\n$fail\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
@@ -163,10 +191,91 @@ sub install_deps {
 	$builder->log($self->get_conf('DPKG') . ' --set-selections failed\n');
     }
 
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
-
     $builder->prepare_watches($dep, @instd );
     return 1;
+}
+
+sub parse_one_srcdep {
+    my $self = shift;
+    my $pkg = shift;
+    my $deps = shift;
+
+    my $builder = $self->get('Builder');
+
+    my @res;
+
+    $deps =~ s/^\s*(.*)\s*$/$1/;
+    foreach (split( /\s*,\s*/, $deps )) {
+	my @l;
+	my $override;
+	if (/^\&/) {
+	    $override = 1;
+	    s/^\&\s+//;
+	}
+	my @alts = split( /\s*\|\s*/, $_ );
+	my $neg_seen = 0;
+	foreach (@alts) {
+	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+		$builder->log_warning("syntax error in dependency '$_' of $pkg\n");
+		next;
+	    }
+	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
+	    if ($archlist) {
+		$archlist =~ s/^\s*(.*)\s*$/$1/;
+		my @archs = split( /\s+/, $archlist );
+		my ($use_it, $ignore_it, $include) = (0, 0, 0);
+		foreach (@archs) {
+		    if (/^!/) {
+			$ignore_it = 1 if Dpkg::Arch::debarch_is($builder->get('Arch'), substr($_, 1));
+		    }
+		    else {
+			$use_it = 1 if Dpkg::Arch::debarch_is($builder->get('Arch'), $_);
+			$include = 1;
+		    }
+		}
+		$builder->log_warning("inconsistent arch restriction on $pkg: $dep depedency\n")
+		    if $ignore_it && $use_it;
+		next if $ignore_it || ($include && !$use_it);
+	    }
+	    my $neg = 0;
+	    if ($dep =~ /^!/) {
+		$dep =~ s/^!\s*//;
+		$neg = 1;
+		$neg_seen = 1;
+	    }
+	    if ($conf::srcdep_over{$dep}) {
+		if ($self->get_conf('VERBOSE')) {
+		    $builder->log("Replacing source dep $dep");
+		    $builder->log(" ($rel $relv)") if $relv;
+		    $builder->log(" with $conf::srcdep_over{$dep}[0]");
+		    $builder->log(" ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])")
+			if $conf::srcdep_over{$dep}[1];
+		    $builder->log(".\n");
+		}
+		$dep = $conf::srcdep_over{$dep}[0];
+		$rel = $conf::srcdep_over{$dep}[1];
+		$relv = $conf::srcdep_over{$dep}[2];
+	    }
+	    my $h = { Package => $dep, Neg => $neg };
+	    if ($rel && $relv) {
+		$h->{'Rel'} = $rel;
+		$h->{'Version'} = $relv;
+	    }
+	    $h->{'Override'} = $override if $override;
+	    push( @l, $h );
+	}
+	if (@alts > 1 && $neg_seen) {
+	    $builder->log_warning("$pkg: alternatives with negative dependencies forbidden -- skipped\n");
+	}
+	elsif (@l) {
+	    my $l = shift @l;
+	    foreach (@l) {
+		push( @{$l->{'Alternatives'}}, $_ );
+	    }
+	    push @res, $l;
+	}
+    }
+    return \@res;
 }
 
 sub filter_dependencies {
