@@ -21,7 +21,8 @@
 use strict;
 use warnings;
 
-use Sbuild::ChrootSetup qw(update upgrade distupgrade);
+use Sbuild::ChrootSetup qw(update upgrade distupgrade clean autoclean
+                           autoremove);
 
 package Conf;
 
@@ -49,6 +50,15 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'DISTUPGRADE'				=> {
+	    DEFAULT => 0
+	},
+	'CLEAN'				=> {
+	    DEFAULT => 0
+	},
+	'AUTOCLEAN'			=> {
+	    DEFAULT => 0
+	},
+	'AUTOREMOVE'			=> {
 	    DEFAULT => 0
 	},
     );
@@ -82,6 +92,15 @@ sub set_options {
 	},
 	"dist-upgrade|d" => sub {
 	    $self->set_conf('DISTUPGRADE', 1);
+	},
+	"clean|c" => sub {
+	    $self->set_conf('CLEAN', 1);
+	},
+	"autoclean|a" => sub {
+	    $self->set_conf('AUTOCLEAN', 1);
+	},
+	"autoremove|r" => sub {
+	    $self->set_conf('AUTOREMOVE', 1);
 	});
 }
 
@@ -134,6 +153,33 @@ foreach (@ARGV) {
     if ($conf->get('DISTUPGRADE')) {
 	print "Performing dist-upgrade.\n";
 	my $status = distupgrade($session, $conf);
+	$status >>= 8;
+	if ($status) {
+	    die "Exiting from distupgrade with status $status.\n";
+	}
+    }
+
+    if ($conf->get('CLEAN')) {
+	print "Performing clean.\n";
+	my $status = clean($session, $conf);
+	$status >>= 8;
+	if ($status) {
+	    die "Exiting from update with status $status.\n";
+	}
+    }
+
+    if ($conf->get('AUTOCLEAN')) {
+	print "Performing autoclean.\n";
+	my $status = autoclean($session, $conf);
+	$status >>= 8;
+	if ($status) {
+	    die "Exiting from upgrade with status $status.\n";
+	}
+    }
+
+    if ($conf->get('AUTOREMOVE')) {
+	print "Performing autoremove.\n";
+	my $status = autoremove($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    die "Exiting from distupgrade with status $status.\n";
