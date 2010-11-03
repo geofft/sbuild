@@ -547,7 +547,7 @@ sub debug (@) {
 sub debug2 (@) {
 
     # TODO: Add debug level checking.
-    if ($debug_level >= 2) {
+    if ($debug_level && $debug_level >= 2) {
 	print STDERR "D2: ", @_;
     }
 }
