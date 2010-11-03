@@ -1,4 +1,4 @@
-# BuildDepSatisfier.pm: build library for sbuild
+# Resolver.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
 # Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
@@ -19,12 +19,15 @@
 #
 #######################################################################
 
-package Sbuild::BuildDepSatisfierBase;
+package Sbuild::ResolverBase;
 
 use strict;
 use warnings;
+use POSIX;
+use Fcntl;
 use Errno qw(:POSIX);
 
+use Dpkg::Deps;
 use Sbuild::Base;
 use Sbuild qw(isin debug);
 
@@ -56,8 +59,6 @@ sub uninstall_deps {
 
     my( @pkgs, @instd, @rmvd );
 
-    $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
-
     @pkgs = keys %{$self->get('Changes')->{'removed'}};
     debug("Reinstalling removed packages: @pkgs\n");
     $builder->log("Failed to reinstall removed packages!\n")
@@ -71,142 +72,8 @@ sub uninstall_deps {
     debug("Removing installed packages: @pkgs\n");
     $builder->log("Failed to remove installed packages!\n")
 	if !$self->run_apt("-y", \@instd, \@rmvd, 'remove', @pkgs);
-    $self->unset_installed(@pkgs);
-
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
-}
-
-sub check_srcdep_conflicts {
-    my $self = shift;
-    my $to_inst = shift;
-    my $to_remove = shift;
-    my $builder = $self->get('Builder');
-    local( *F, *DIR );
-    my $mypid = $$;
-    my %conflict_builds;
-
-    if (!opendir( DIR, $builder->get('Session')->{'Srcdep Lock Dir'} )) {
-	$builder->log("Cannot opendir $builder->{'Session'}->{'Srcdep Lock Dir'}: $!\n");
-	return 1;
-    }
-    my @files = grep { !/^\.\.?$/ && !/^install\.lock/ && !/^$mypid-\d+$/ }
-    readdir(DIR);
-    closedir(DIR);
-
-    my $file;
-    foreach $file (@files) {
-	if (!open( F, "<$builder->{'Session'}->{'Srcdep Lock Dir'}/$file" )) {
-	    $builder->log("Cannot open $builder->{'Session'}->{'Srcdep Lock Dir'}/$file: $!\n");
-	    next;
-	}
-	<F> =~ /^(\S+)\s+(\S+)\s+(\S+)/;
-	my ($job, $pid, $user) = ($1, $2, $3);
-
-	# ignore (and remove) a lock file if associated process
-	# doesn't exist anymore
-	if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-	    close( F );
-	    $builder->log("Found stale srcdep lock file $file -- removing it\n");
-	    $builder->log("Cannot remove: $!\n")
-		if !unlink( "$builder->{'Session'}->{'Srcdep Lock Dir'}/$file" );
-	    next;
-	}
-
-	debug("Reading srclock file $file by job $job user $user\n");
-
-	while( <F> ) {
-	    my ($neg, $pkg) = /^(!?)(\S+)/;
-	    debug("Found ", ($neg ? "neg " : ""), "entry $pkg\n");
-
-	    if (isin( $pkg, @$to_inst, @$to_remove )) {
-		$builder->log("Source dependency conflict with build of " .
-		           "$job by $user (pid $pid):\n");
-		$builder->log("  $job " . ($neg ? "conflicts with" : "needs") .
-		           " $pkg\n");
-		$builder->log("  " . $builder->get('Package_SVersion') .
-			   " wants to " .
-		           (isin( $pkg, @$to_inst ) ? "update" : "remove") .
-		           " $pkg\n");
-		$conflict_builds{$file} = 1;
-	    }
-	}
-	close( F );
-    }
-
-    my @conflict_builds = keys %conflict_builds;
-    if (@conflict_builds) {
-	debug("Srcdep conflicts with: @conflict_builds\n");
-    }
-    else {
-	debug("No srcdep conflicts\n");
-    }
-    return @conflict_builds;
-}
-
-sub wait_for_srcdep_conflicts {
-    my $self = shift;
-    my $builder = $self->get('Builder');
-    my @confl = @_;
-
-    for(;;) {
-	sleep($self->get_conf('SRCDEP_LOCK_WAIT') * 60);
-	my $allgone = 1;
-	for (@confl) {
-	    /^(\d+)-(\d+)$/;
-	    my $pid = $1;
-	    if (-f "$builder->{'Session'}->{'Srcdep Lock Dir'}/$_") {
-		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-		    $builder->log("Ignoring stale src-dep lock $_\n");
-		    unlink( "$builder->{'Session'}->{'Srcdep Lock Dir'}/$_" ) or
-			$builder->log("Cannot remove $builder->{'Session'}->{'Srcdep Lock Dir'}/$_: $!\n");
-		}
-		else {
-		    $allgone = 0;
-		    last;
-		}
-	    }
-	}
-	last if $allgone;
-    }
-}
-
-sub write_srcdep_lock_file {
-    my $self = shift;
-    my $deps = shift;
-    my $builder = $self->get('Builder');
-    local( *F );
-
-    ++$builder->{'Srcdep Lock Count'};
-    my $f = "$builder->{'Session'}->{'Srcdep Lock Dir'}/$$-$builder->{'Srcdep Lock Count'}";
-    if (!open( F, ">$f" )) {
-	$builder->log_warning("cannot create srcdep lock file $f: $!\n");
-	return;
-    }
-    debug("Writing srcdep lock file $f:\n");
-
-    my $user = getpwuid($<);
-    print F $builder->get('Package_SVersion') . " $$ $user\n";
-    debug("Job " . $builder->get('Package_SVersion') . " pid $$ user $user\n");
-    foreach (@$deps) {
-	my $name = $_->{'Package'};
-	print F ($_->{'Neg'} ? "!" : ""), "$name\n";
-	debug("  ", ($_->{'Neg'} ? "!" : ""), "$name\n");
-    }
-    close( F );
-}
-
-sub remove_srcdep_lock_file {
-    my $self = shift;
-    my $builder = $self->get('Builder');
-
-    my $f = $builder->{'Session'}->{'Srcdep Lock Dir'} . '/' . $$ . '-' . $builder->{'Srcdep Lock Count'};
-    --$builder->{'Srcdep Lock Count'};
-
-    debug("Removing srcdep lock file $f\n");
-    if (!unlink( $f )) {
-	$builder->log_warning("cannot remove srcdep lock file $f: $!\n")
-	    if $! != ENOENT;
-    }
+    $self->unset_removed(@instd);
+    $self->unset_installed(@rmvd);
 }
 
 sub set_installed {
@@ -364,30 +231,15 @@ sub dump_build_environment {
 
     my $status = $self->get_dpkg_status();
 
-    my ($exp_essential, $exp_pkgdeps, $filt_essential, $filt_pkgdeps);
-    $exp_essential = $builder->expand_dependencies($builder->get('Dependencies')->{'ESSENTIAL'});
-    debug("Dependency-expanded build essential packages:\n",
-	  $self->format_deps(@$exp_essential), "\n");
+    my $arch = $builder->get('Arch');
+    my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
+    $builder->log("Kernel: $sysname $release $arch ($machine)\n");
 
-    my @toolchain;
-    foreach my $tpkg (@$exp_essential) {
+    $builder->log("Toolchain package versions:");
+    foreach my $name (sort keys %{$status}) {
         foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
-	    push @toolchain,$tpkg->{'Package'}
-	        if $tpkg->{'Package'} =~ m,^$regex,;
-	}
-    }
-
-    if (@toolchain) {
-	my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
-	my $arch = $builder->get('Arch');
-
-	$builder->log("Kernel: $sysname $release $arch ($machine)\n");
-	$builder->log("Toolchain package versions:");
-	foreach my $name (@toolchain) {
-	    if (defined($status->{$name}->{'Version'})) {
+	    if ($name =~ m,^$regex, && defined($status->{$name}->{'Version'})) {
 		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
-	    } else {
-		$builder->log(' ' . $name . '_' . ' =*=NOT INSTALLED=*=');
 	    }
 	}
     }
@@ -402,7 +254,6 @@ sub dump_build_environment {
     $builder->log("\n");
 
 }
-
 
 sub run_apt {
     my $self = shift;
@@ -469,6 +320,78 @@ sub format_deps {
 				       $_->{'Package'} .
 				       ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"")}
 			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
+}
+
+sub lock_chroot {
+    my $self = shift;
+
+    my $builder = $self->get('Builder');
+    my $lockfile = $builder->get('Chroot Dir') . '/var/lock/sbuild';
+    my $try = 0;
+
+  repeat:
+    if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+	if ($! == EEXIST) {
+	    # lock file exists, wait
+	    goto repeat if !open( F, "<$lockfile" );
+	    my $line = <F>;
+	    my ($job, $pid, $user);
+	    close( F );
+	    if ($line !~ /^(\S+)\s+(\S+)\s+(\S+)/) {
+		$self->log_warning("Bad lock file contents ($lockfile) -- still trying\n");
+	    } else {
+		($job, $pid, $user) = ($1, $2, $3);
+		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+		    # process doesn't exist anymore, remove stale lock
+		    $self->log_warning("Removing stale lock file $lockfile ".
+				       "(job $job, pid $pid, user $user)\n");
+		    if (!unlink($lockfile)) {
+			if ($! != ENOENT) {
+			    $builder->log_error("cannot remove chroot lock file $lockfile: $!\n");
+			    return 0;
+			}
+		    }
+		}
+	    }
+	    ++$try;
+	    if ($try > $self->get_conf('MAX_LOCK_TRYS')) {
+		$self->log_warning("Lockfile $lockfile still present after " .
+				   $self->get_conf('MAX_LOCK_TRYS') *
+				   $self->get_conf('LOCK_INTERVAL') .
+				   " seconds -- giving up\n");
+		return 0;
+	    }
+	    $self->log("Another sbuild process (job $job, pid $pid by user $user) is currently using the build chroot; waiting...\n")
+		if $try == 1;
+	    sleep $self->get_conf('LOCK_INTERVAL');
+	    goto repeat;
+	} else {
+	    $self->log_error("Can't create lock file $lockfile: $!\n");
+	    return 0;
+	}
+    }
+
+    my $username = $self->get_conf('USERNAME');
+
+    F->print($builder->get('Package_SVersion') . " $$ $username\n");
+    F->close();
+
+    return 1;
+}
+
+sub unlock_chroot {
+    my $self = shift;
+    my $builder = $self->get('Builder');
+
+    my $f = $builder->get('Chroot Dir') . '/var/lock/sbuild';
+
+    debug("Removing chroot lock file $f\n");
+    if (!unlink($f)) {
+	$builder->log_error("cannot remove chroot lock file $f: $!\n")
+	    if $! != ENOENT;
+    }
+
+    return 1;
 }
 
 1;

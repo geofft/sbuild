@@ -153,10 +153,14 @@ sub set_options {
 			   $self->set_conf('CHROOT_SETUP_SCRIPT', $_[1]);
 		       },
 		       "use-snapshot" => sub {
+			   my $newldpath = '/usr/lib/gcc-snapshot/lib';
+			   my $ldpath = $self->get_conf('LD_LIBRARY_PATH');
+			   if (defined($ldpath) && $ldpath ne '') {
+			       $newldpath .= ':' . $ldpath;
+			   }
+
 			   $self->set_conf('GCC_SNAPSHOT', 1);
-			   $self->set_conf('LD_LIBRARY_PATH',
-					   '/usr/lib/gcc-snapshot/lib' .
-					   $self->get_conf('LD_LIBRARY_PATH') ne '' ? ':' . $self->get_conf('LD_LIBRARY_PATH') : '');
+			   $self->set_conf('LD_LIBRARY_PATH', $newldpath);
 			   $self->set_conf('PATH',
 					   '/usr/lib/gcc-snapshot/bin' .
 					   $self->get_conf('PATH') ne '' ? ':' . $self->get_conf('PATH') : '');
