@@ -29,7 +29,7 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ "\-\-components=\fIcomponent1[,component2,[componentn]]\fP" ]
 .RB [ "\-\-keyring=\fIkeyring-file\fP" ]
 .RB [ "\-\-setup\-only" ]
-.RB [ "\-\-make\-sbuild\-tarball=\fIFILE\fP" ]
+.RB [ "\-\-make\-sbuild\-tarball=\fIfile\fP" ]
 .RB [ "\-\-keep\-sbuild\-chroot\-dir" ]
 .B SUITE TARGET-DIRECTORY DEBIAN-MIRROR-URI
 .RB [ SCRIPT ]
@@ -144,18 +144,18 @@ Don't run debootstrap.  Only perform the setup tasks on an already existing
 chroot.  This is useful for converting an existing chroot for use with sbuild
 which has already been created using a tool such as debootstrap.
 .TP
-.BR \-\-make\-sbuild\-tarball=\fIFILE\fP
+.BR \-\-make\-sbuild\-tarball=\fIfile\fP
 Create a bootstrapped file type chroot ready for use with sbuild and save it as
-\fIFILE\fP. The compression format used for the tarball is dependent on the file
-extension used in \fIFILE\fP. See the \fBTARBALL FILE\fP section for more
+\fIfile\fP. The compression format used for the tarball is dependent on the file
+extension used in \fIfile\fP. See the \fBTARBALL FILE\fP section for more
 details.
 .TP
 .BR \-\-keep\-sbuild\-chroot\-dir
 Don't delete the directory used for creating a file type chroot. This option
 does nothing if not creating a file type chroot.
 .SH TARBALL FILE
-When creating an sbuild tarball \fIFILE\fP, the compression format used to
-generate the tarball depends on the entension used in \fIFILE\fP. Here is a
+When creating an sbuild tarball \fIfile\fP, the compression format used to
+generate the tarball depends on the entension used in \fIfile\fP. Here is a
 listing of the extensions that will be detected and what format the tarball will
 be generated as.
 .TP
@@ -174,8 +174,8 @@ Generates a compressed tarball using lzip.
 .BR *.tar.xz|*.txz
 Generates a compressed tarball using xz.
 .PP
-If no extension is specified, sbuild\-createchroot will rename \fIFILE\fP to
-\fIFILE.tgz\fP and generate \fIFILE.tgz\fP as a compressed tarball using gzip.
+If no extension is specified, sbuild\-createchroot will rename \fIfile\fP to
+\fIfile.tar.gz\fP and generate \fIfile.tar.gz\fP as a compressed tarball using gzip.
 .SH EXAMPLES
 To create a plain type sid (unstable) chroot in \fI/srv/chroot/unstable\fP using
 the \fIftp.uk.debian.org\fP Debian mirror:
