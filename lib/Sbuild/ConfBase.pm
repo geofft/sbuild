@@ -246,7 +246,7 @@ sub set {
 
     # Set global debug level.
     $Sbuild::debug_level = $value
-	if ($key eq 'DEBUG');
+	if ($key eq 'DEBUG' && defined($value));
 
     my $entry = $self->{'KEYS'}->{$key};
 
