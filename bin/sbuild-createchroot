@@ -76,7 +76,7 @@ sub init_allowed_keys {
 	'MAKE_SBUILD_TARBALL'				=> {
 	    DEFAULT => ''
 	},
-	'KEEP_SBUILDCHROOT_DIR'			=> {
+	'KEEP_SBUILD_CHROOT_DIR'			=> {
 	    DEFAULT => 0
 	},
     );
@@ -135,8 +135,8 @@ sub set_options {
 	"make-sbuild-tarball=s" => sub {
 	    $self->set_conf('MAKE_SBUILD_TARBALL', $_[1]);
 	},
-	"keep-sbuildchroot-dir" => sub {
-	    $self->set_conf('KEEP_SBUILDCHROOT_DIR', 1);
+	"keep-sbuild-chroot-dir" => sub {
+	    $self->set_conf('KEEP_SBUILD_CHROOT_DIR', 1);
 	});
 }
 
@@ -416,7 +416,7 @@ if ($conf->get('MAKE_SBUILD_TARBALL')) {
     system(@program_list) == 0 or die "Could not create chroot tarball: $?\n";
 
     move("$tmpfile", $conf->get('MAKE_SBUILD_TARBALL'));
-    if (! $conf->get('KEEP_SBUILDCHROOT_DIR')) {
+    if (! $conf->get('KEEP_SBUILD_CHROOT_DIR')) {
 	rmtree("$target");
 	print "I: chroot $target has been removed.\n";
     } else {

@@ -30,7 +30,7 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ "\-\-keyring=\fIkeyring-file\fP" ]
 .RB [ "\-\-setup\-only" ]
 .RB [ "\-\-make\-sbuild\-tarball=\fIFILE\fP" ]
-.RB [ "\-\-keep\-sbuildchroot\-dir" ]
+.RB [ "\-\-keep\-sbuild\-chroot\-dir" ]
 .B SUITE TARGET-DIRECTORY DEBIAN-MIRROR-URI
 .RB [ SCRIPT ]
 .PP
@@ -150,7 +150,7 @@ Create a bootstrapped file type chroot ready for use with sbuild and save it as
 extension used in \fIFILE\fP. See the \fBTARBALL FILE\fP section for more
 details.
 .TP
-.BR \-\-keep\-sbuildchroot\-dir
+.BR \-\-keep\-sbuild\-chroot\-dir
 Don't delete the directory used for creating a file type chroot. This option
 does nothing if not creating a file type chroot.
 .SH TARBALL FILE
