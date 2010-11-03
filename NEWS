@@ -1,11 +1,23 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.60.2.  Please read these release notes carefully.
+Welcome to sbuild 0.60.3.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.60.3:
+
+  1) The aptitude resolver is now entirely separate from the internal
+     resolver, and greatly simplified.  All Build-Depends and
+     -Conflicts are now passed directly to aptitude (with
+     architecture-specific dependencies filtered out).  As before, a
+     dummy dependency package is used to install and remove build
+     dependencies and build-conflicts.
+
+  2) The sbuild-clean program has been moved into sbuild-update, as
+     for the other sbuild- helper programs.
 
 * Major changes in 0.60.2:
 
