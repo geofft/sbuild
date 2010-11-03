@@ -416,6 +416,7 @@ if ($conf->get('MAKE_SBUILD_TARBALL')) {
     system(@program_list) == 0 or die "Could not create chroot tarball: $?\n";
 
     move("$tmpfile", $conf->get('MAKE_SBUILD_TARBALL'));
+    chmod 0644, $conf->get('MAKE_SBUILD_TARBALL');
     if (! $conf->get('KEEP_SBUILD_CHROOT_DIR')) {
 	rmtree("$target");
 	print "I: chroot $target has been removed.\n";
