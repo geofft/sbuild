@@ -3,7 +3,8 @@ sbuild (0.60.3) unstable; urgency=low
   * New release.
   * sbuild-createchroot:
     - Allow direct creation of tarballs from chroots, with various
-      options for compression.  Thanks to Andres Mejia.
+      options for compression (Closes: #545215).  Thanks to Andres
+      Mejia.
   * sbuild-update:
     - sbuild-clean functionality has been merged into sbuild-update.
       Thanks to Andres Mejia.
@@ -19,8 +20,9 @@ sbuild (0.60.3) unstable; urgency=low
         or aptitude to perform the removal (Closes: #464376).
     - Don't set Sbuild::debug_level to undef (Closes: #602318).
       Thanks to Andres Mejia.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 19:54:52 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 20:00:00 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
