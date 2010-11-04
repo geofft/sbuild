@@ -85,10 +85,11 @@ sub new {
     # Can sources be obtained?
     $self->set('Invalid Source', 0);
     $self->set('Invalid Source', 1)
-	if ((!$self->get('Download')) ||
-	    (!($self->get('DSC Base') =~ m/\.dsc$/) && # Use apt to download
-	     $self->get('DSC') ne $self->get('Package_OVersion')) ||
-	    (!defined $self->get('Version')));
+	if ((!$self->get('Download') ||
+      (!($self->get('DSC Base') =~ m/\.dsc$/) &&
+        $self->get('DSC') ne $self->get('Package_OVersion')) ||
+      !defined $self->get('Version')) &&
+      !defined $self->get('Debian Source Dir'));
 
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
@@ -138,7 +139,7 @@ sub set_dsc {
 	      PRIORITY => 0,
 	    });
 
-	if (! $pipe) {
+	if (!defined($pipe)) {
 	    $self->log_error("Could not parse $dsc/debian/changelog: $!");
 	    $self->set('Invalid Source', 1);
 	    goto set_vars;
