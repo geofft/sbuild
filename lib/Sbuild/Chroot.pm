@@ -161,7 +161,7 @@ sub get_option {
 	 defined($self->get('Defaults')->{$option}));
     $value = $options->{$option} if
 	(defined($options) &&
-	 defined($options->{$option}));
+	 exists($options->{$option}));
 
     return $value;
 }
