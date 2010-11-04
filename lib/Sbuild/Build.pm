@@ -128,9 +128,12 @@ sub set_dsc {
     # Check if the DSC given is a directory on the local system. This
     # means we'll build the source package with dpkg-source first.
     if (-d $dsc) {
-	my $pipe = $self->get('Host')->pipe_command(
+	my $host = Sbuild::ChrootRoot->new($self->get('Config'));
+	my $pipe = $host->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
 			  "-l" . abs_path($dsc) . "/debian/changelog"],
+        USER => $self->get_conf('USERNAME'),
+        DIR => $self->get_conf('HOME'),
 	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
