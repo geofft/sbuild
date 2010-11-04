@@ -272,6 +272,14 @@ sub run {
 
     $self->set('Pkg Start Time', time);
 
+    # Acquire the architecture we're building for.
+    $self->set('Arch', $self->get_conf('ARCH'));
+
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_close;
+    }
+
     my $dist = $self->get_conf('DISTRIBUTION');
     if (!defined($dist) || !$dist) {
 	$self->log("No distribution defined\n");
@@ -283,14 +291,6 @@ sub run {
 	$self->log("Skipping " . $self->get('Package') . " \n");
 	$self->set_status('failed');
 	goto cleanup_skip;
-    }
-
-    # Acquire the architecture we're building for.
-    $self->set('Arch', $self->get_conf('ARCH'));
-
-    # TODO: Get package name from build object
-    if (!$self->open_build_log()) {
-	goto cleanup_close;
     }
 
     my $chroot_info;
@@ -605,9 +605,8 @@ sub run {
 
     }
 
-    $self->close_build_log();
-
   cleanup_skip:
+    $self->close_build_log();
 }
 
 # sub get_package_status {
