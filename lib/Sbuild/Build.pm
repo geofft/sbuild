@@ -925,62 +925,36 @@ sub run_command {
     my $log_error = shift;
     my $chroot = shift;
 
-    # Duplicate output from our commands to the log stream if we are asked to
-    my ($out, $err);
-    if ($log_output) {
-	if (! open $out, ">&STDOUT") {
-	    $self->log_error("Could not duplicate STDOUT for $command: $!");
-	    return 0;
-	}
-	if (! open STDOUT, '>&', $self->get('Log Stream')) {
-	    $self->log_error("Could not duplicate STDOUT to log stream: $!");
-	    return 0;
-	}
-    }
-    if ($log_error) {
-	if (! open $err, ">&STDERR") {
-	    $self->log_error("Could not duplicate STDERR for $command: $!");
-	    return 0;
-	}
-	if (! open STDERR, '>&', $self->get('Log Stream')) {
-	    $self->log_error("Could not duplicate STDERR to log stream: $!");
-	    return 0;
-	}
-    }
+    # Used to determine if we are to log from commands
+    my ($out, $err, $defaults);
 
     # Run the command and save the exit status
 	if (!$chroot)
 	{
+	    $defaults = $self->get('Host')->{'Defaults'};
+	    $out = $defaults->{'STREAMOUT'} if ($log_output);
+	    $err = $defaults->{'STREAMERR'} if ($log_error);
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@{$command},
 		    CHROOT => 0,
 		    PRIORITY => 0,
+		    STREAMOUT => $out,
+		    STREAMERR => $err,
 		});
 	} else {
+	    $defaults = $self->get('Session')->{'Defaults'};
+	    $out = $defaults->{'STREAMOUT'} if ($log_output);
+	    $err = $defaults->{'STREAMERR'} if ($log_error);
 	    $self->get('Session')->run_command(
 		{ COMMAND => \@{$command},
 		    USER => $self->get_conf('USERNAME'),
 		    CHROOT => 1,
 		    PRIORITY => 0,
+		    STREAMOUT => $out,
+		    STREAMERR => $err,
 		});
 	}
     my $status = $?;
-
-    # Restore STDOUT and STDERR
-    if ($log_output) {
-	if (! open STDOUT, '>&', $out) {
-	    $self->log_error("Can't restore STDOUT: $!");
-	    return 0;
-	}
-	$out->close();
-    }
-    if ($log_error) {
-	if (! open STDERR, '>&', $err) {
-	    $self->log_error("Can't restore STDOUT: $!");
-	    return 0;
-	}
-	$err->close();
-    }
 
     # Check if the command failed
     if ($status != 0) {
