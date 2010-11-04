@@ -131,7 +131,6 @@ sub set_dsc {
 	my $pipe = $self->get('Host')->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
 			  "-l" . abs_path($dsc) . "/debian/changelog"],
-	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
@@ -258,9 +257,6 @@ sub run {
 
     $self->set_status('building');
 
-    # Set a chroot to run commands in root filesystem
-    $self->set('Host', Sbuild::ChrootRoot->new($self->get('Config')));
-
     if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$self->set('Dependency Resolver',
 		   Sbuild::AptitudeResolver->new($self));
@@ -294,6 +290,31 @@ sub run {
 	goto cleanup_close;
     }
 
+    my $chroot_info;
+    if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
+	$chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
+    } else {
+	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
+    }
+
+    # Set a chroot to run commands in host
+    my $host = $chroot_info->create($self->get_conf('DISTRIBUTION'),
+				       $self->get_conf('CHROOT'),
+				       $self->get_conf('ARCH'));
+
+    # Host execution defaults
+    my $host_defaults = $host->get('Defaults');
+    $host_defaults->{'CHROOT'} = 0;
+    $host_defaults->{'USER'} = $self->get_conf('USERNAME');
+    $host_defaults->{'DIR'} = $self->get_conf('HOME');
+    $host_defaults->{'STREAMIN'} = $devnull;
+    $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+    $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
+    $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
+    $host_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+
+    $self->set('Host', $host);
+
     # Run pre build external commands
     $self->run_external_commands("pre-build-commands",
 	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
@@ -309,7 +330,6 @@ sub run {
 	    { COMMAND => [$self->get_conf('FAKEROOT'),
 			  'debian/rules',
 			  'clean'],
-	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 0,
 	      DIR => $self->get('Debian Source Dir'),
 	      PRIORITY => 0,
@@ -327,7 +347,6 @@ sub run {
 	push @dpkg_source_command, $self->get('Debian Source Dir');
 	$self->get('Host')->run_command(
 	    { COMMAND => \@dpkg_source_command,
-	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 0,
 	      DIR => $self->get_conf('BUILD_DIR'),
 	      PRIORITY => 0,
@@ -336,13 +355,6 @@ sub run {
 	    $self->log_error("Failed to build source package");
 	    goto cleanup_skip;
 	}
-    }
-
-    my $chroot_info;
-    if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
-	$chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
-    } else {
-	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
     }
 
     my $end_session = 1;
@@ -566,7 +578,6 @@ sub run {
 	    push @lintian_command, $self->get('Changes File');
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@lintian_command,
-		  USER => $self->get_conf('USERNAME'),
 		  CHROOT => 0,
 		  PRIORITY => 0,
 		});
@@ -942,9 +953,7 @@ sub run_command {
 	{
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@{$command},
-		    USER => $self->get_conf('USERNAME'),
 		    CHROOT => 0,
-		    DIR => $self->get('HOME'),
 		    PRIORITY => 0,
 		});
 	} else {
