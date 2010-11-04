@@ -573,8 +573,8 @@ sub run {
 	    $self->log_subsubsection("lintian");
 
 	    my @lintian_command = ($lintian);
-	    push @lintian_command, @{$self->get_conf('LINTIAN_OPT')} if
-		($self->get_conf('LINTIAN_OPT'));
+	    push @lintian_command, @{$self->get_conf('LINTIAN_OPTIONS')} if
+		($self->get_conf('LINTIAN_OPTIONS'));
 	    push @lintian_command, $self->get('Changes File');
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@lintian_command,
