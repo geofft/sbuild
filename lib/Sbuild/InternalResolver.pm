@@ -199,11 +199,6 @@ sub parse_one_srcdep {
     $deps =~ s/^\s*(.*)\s*$/$1/;
     foreach (split( /\s*,\s*/, $deps )) {
 	my @l;
-	my $override;
-	if (/^\&/) {
-	    $override = 1;
-	    s/^\&\s+//;
-	}
 	my @alts = split( /\s*\|\s*/, $_ );
 	my $neg_seen = 0;
 	foreach (@alts) {
@@ -240,7 +235,6 @@ sub parse_one_srcdep {
 		$h->{'Rel'} = $rel;
 		$h->{'Version'} = $relv;
 	    }
-	    $h->{'Override'} = $override if $override;
 	    push( @l, $h );
 	}
 	if (@alts > 1 && $neg_seen) {
