@@ -235,19 +235,6 @@ sub parse_one_srcdep {
 		$neg = 1;
 		$neg_seen = 1;
 	    }
-	    if ($conf::srcdep_over{$dep}) {
-		if ($self->get_conf('VERBOSE')) {
-		    $builder->log("Replacing source dep $dep");
-		    $builder->log(" ($rel $relv)") if $relv;
-		    $builder->log(" with $conf::srcdep_over{$dep}[0]");
-		    $builder->log(" ($conf::srcdep_over{$dep}[1] $conf::srcdep_over{$dep}[2])")
-			if $conf::srcdep_over{$dep}[1];
-		    $builder->log(".\n");
-		}
-		$dep = $conf::srcdep_over{$dep}[0];
-		$rel = $conf::srcdep_over{$dep}[1];
-		$relv = $conf::srcdep_over{$dep}[2];
-	    }
 	    my $h = { Package => $dep, Neg => $neg };
 	    if ($rel && $relv) {
 		$h->{'Rel'} = $rel;
