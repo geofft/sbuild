@@ -126,18 +126,24 @@ if ( ! $conf->get('UPDATE') && ! $conf->get('UPGRADE') &&
 
 usage_error("sbuild-update", "Incorrect number of options") if (@ARGV < 1);
 
-foreach (@ARGV) {
+my $status = 1;
 
+foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
 
     my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
 
+    if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
+	goto cleanup;
+    }
+
     if ($conf->get('UPDATE')) {
 	print "Performing update.\n";
-	my $status = update($session, $conf);
+	$status = update($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    die "Exiting from update with status $status.\n";
+	    print STDERR "Exiting from update with status $status.\n";
+	    goto cleanup;
 	}
     }
 
@@ -146,7 +152,8 @@ foreach (@ARGV) {
 	my $status = upgrade($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    die "Exiting from upgrade with status $status.\n";
+	    print STDERR "Exiting from upgrade with status $status.\n";
+	    goto cleanup;
 	}
     }
 
@@ -155,7 +162,8 @@ foreach (@ARGV) {
 	my $status = distupgrade($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    die "Exiting from distupgrade with status $status.\n";
+	    print STDERR "Exiting from distupgrade with status $status.\n";
+	    goto cleanup;
 	}
     }
 
@@ -164,7 +172,8 @@ foreach (@ARGV) {
 	my $status = clean($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    die "Exiting from update with status $status.\n";
+	    print STDERR "Exiting from update with status $status.\n";
+	    goto cleanup;
 	}
     }
 
@@ -173,7 +182,8 @@ foreach (@ARGV) {
 	my $status = autoclean($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    die "Exiting from upgrade with status $status.\n";
+	    print STDERR "Exiting from upgrade with status $status.\n";
+	    goto cleanup;
 	}
     }
 
@@ -182,11 +192,18 @@ foreach (@ARGV) {
 	my $status = autoremove($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    die "Exiting from distupgrade with status $status.\n";
+	    print STDERR "Exiting from distupgrade with status $status.\n";
+	    goto cleanup;
 	}
     }
 
+cleanup:
+    # Unlock chroot now it's cleaned up and ready for other users.
+    $session->unlock_chroot();
+
     cleanup($conf);
+
+    exit($status ? 1 : 0);
 }
 
 exit 0;
