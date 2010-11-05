@@ -402,7 +402,7 @@ sub run {
     $self->set('Session', $session);
 
     # Lock chroot so it won't be tampered with during the build.
-    if (!$resolver->lock_chroot()) {
+    if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
 	goto cleanup_close;
     }
 
@@ -484,10 +484,9 @@ sub run {
 	goto cleanup_packages;
     }
 
-    $self->set('Pkg Fail Stage', 'install-essential');
-    if (!$self->install_essential()) {
-	goto cleanup_packages;
-    }
+    $resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
+
+    $resolver->add_dependencies('ESSENTIAL', $self->read_build_essential(), "", "", "");
 
     $resolver->add_dependencies($self->get('Package'),
 				$self->get('Build Depends'),
@@ -496,7 +495,7 @@ sub run {
 				$self->get('Build Conflicts Indep'));
 
     $self->set('Pkg Fail Stage', 'install-deps');
-    if (!$resolver->install_deps($self->get('Package'))) {
+    if (!$resolver->install_deps('CORE', 'ESSENTIAL', $self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
@@ -557,7 +556,7 @@ sub run {
 
   cleanup_close:
     # Unlock chroot now it's cleaned up and ready for other users.
-    $resolver->unlock_chroot();
+    $session->unlock_chroot();
 
     # End chroot session
     if ($end_session == 1) {
@@ -608,60 +607,6 @@ sub run {
 
   cleanup_skip:
     $self->close_build_log();
-}
-
-# sub get_package_status {
-#     my $self = shift;
-
-#     return $self->get('Package Status');
-# }
-# sub set_package_status {
-#     my $self = shift;
-#     my $status = shift;
-
-#     return $self->set('Package Status', $status);
-# }
-
-sub install_core {
-    my $self = shift;
-
-    # read list of build-core packages (if not yet done) and
-    # expand their dependencies (those are implicitly core)
-    my $core_deps = join(", ", @{$self->get_conf('CORE_DEPENDS')});
-
-    my $resolver = $self->get('Dependency Resolver');
-
-    $resolver->add_dependencies('CORE', $core_deps, "", "", "");
-
-    $self->set('Pkg Fail Stage', 'install-core');
-    if (!$resolver->install_deps('CORE')) {
-	$self->log("Core dependencies not satisfied; skipping " .
-		   $self->get('Package') . "\n");
-	return 0;
-    }
-
-    return 1;
-}
-
-sub install_essential {
-    my $self = shift;
-
-    my $resolver = $self->get('Dependency Resolver');
-
-    # read list of build-essential packages (if not yet done) and
-    # expand their dependencies (those are implicitly essential)
-    my $ess = $self->read_build_essential();
-
-    $resolver->add_dependencies('ESSENTIAL', $ess, "", "", "");
-
-    $self->set('Pkg Fail Stage', 'install-essential');
-    if (!$resolver->install_deps('ESSENTIAL')) {
-	$self->log("Essential dependencies not satisfied; skipping " .
-		   $self->get('Package') . "\n");
-	return 0;
-    }
-
-    return 1;
 }
 
 sub fetch_source_files {

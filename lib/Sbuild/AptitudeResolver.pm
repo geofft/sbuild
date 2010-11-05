@@ -46,45 +46,18 @@ sub new {
     my $self = $class->SUPER::new($builder);
     bless($self, $class);
 
-    $self->set('AptDependencies', {});
-
     return $self;
-}
-
-sub add_dependencies {
-    my $self = shift;
-    my $pkg = shift;
-    my $build_depends = shift;
-    my $build_depends_indep = shift;
-    my $build_conflicts = shift;
-    my $build_conflicts_indep = shift;
-
-    my $builder = $self->get('Builder');
-
-    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
-    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
-    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
-    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
-
-    my $deps = {
-	'Build Depends' => $build_depends,
-	'Build Depends Indep' => $build_depends_indep,
-	'Build Conflicts' => $build_conflicts,
-	'Build Conflicts Indep' => $build_conflicts_indep
-    };
-
-    $self->get('AptDependencies')->{$pkg} = $deps;
 }
 
 sub install_deps {
     my $self = shift;
-    my $pkg = shift;
+    my @pkgs = @_;
 
     my $status = 0;
 
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install $pkg build dependencies (aptitude-based resolver)");
+    $builder->log_subsection("Install build dependencies (aptitude-based resolver)");
 
     my $session = $builder->get('Session');
 
@@ -100,11 +73,11 @@ sub install_deps {
 
     #Prepare a path to build a dummy package containing our deps:
     $self->set('Dummy package path',
-	       tempdir($builder->get_conf('USERNAME') . '-' . $pkg . '-' .
+	       tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
 		       $builder->get('Arch') . '-XXXXXX',
 		       DIR => $session->get('Build Location')));
 
-    my $dummy_pkg_name = 'sbuild-build-depends-' . $pkg . '-dummy';
+    my $dummy_pkg_name = 'sbuild-build-depends-' . $builder->get('Package') . '-dummy';
     my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
     my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
 
@@ -129,29 +102,34 @@ Version: 0.invalid.0
 Architecture: $arch
 EOF
 
-    my $deps = $self->get('AptDependencies')->{$pkg};
+    my @positive;
+    my @negative;
 
-    my $positive = "";
-    $positive = $deps->{'Build Depends'}
-	if (defined($deps->{'Build Depends'}) &&
-	    $deps->{'Build Depends'} ne "");
-    my $negative = "";
-    $negative = $deps->{'Build Conflicts'}
-	if (defined($deps->{'Build Conflicts'}) &&
-	    $deps->{'Build Conflicts'} ne "");
-    if ($self->get_conf('BUILD_ARCH_ALL')) {
-	$positive .= ", " . $deps->{'Build Depends Indep'}
-	    if (defined($deps->{'Build Depends Indep'}) &&
-		$deps->{'Build Depends Indep'} ne "");
-	$negative .= ", " . $deps->{'Build Conflicts Indep'}
-	    if (defined($deps->{'Build Conflicts Indep'}) &&
-		$deps->{'Build Conflicts Indep'} ne "");
+    for my $pkg (@pkgs) {
+	my $deps = $self->get('AptDependencies')->{$pkg};
+
+	push(@positive, $deps->{'Build Depends'})
+	    if (defined($deps->{'Build Depends'}) &&
+		$deps->{'Build Depends'} ne "");
+	push(@negative, $deps->{'Build Conflicts'})
+	    if (defined($deps->{'Build Conflicts'}) &&
+		$deps->{'Build Conflicts'} ne "");
+	if ($self->get_conf('BUILD_ARCH_ALL')) {
+	    push(@positive, $deps->{'Build Depends Indep'})
+		if (defined($deps->{'Build Depends Indep'}) &&
+		    $deps->{'Build Depends Indep'} ne "");
+	    push(@negative, $deps->{'Build Conflicts Indep'})
+		if (defined($deps->{'Build Conflicts Indep'}) &&
+		    $deps->{'Build Conflicts Indep'} ne "");
+	}
     }
 
-    $positive = deps_parse($positive, reduce_arch => 1,
-			   host_arch => $builder->get('Arch'));
-    $negative = deps_parse($negative, reduce_arch => 1,
-			   host_arch => $builder->get('Arch'));
+    my $positive = deps_parse(join(", ", @positive),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+    my $negative = deps_parse(join(", ", @negative),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
 
     if ($positive ne "") {
 	print DUMMY_CONTROL 'Depends: ' . $positive . "\n";
@@ -160,8 +138,8 @@ EOF
 	print DUMMY_CONTROL 'Conflicts: ' . $negative . "\n";
     }
 
-    debug("DUMMY $pkg Depends: $positive \n");
-    debug("DUMMY $pkg Conflicts: $negative \n");
+    debug("DUMMY Depends: $positive \n");
+    debug("DUMMY Conflicts: $negative \n");
 
     print DUMMY_CONTROL <<"EOF";
 Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>

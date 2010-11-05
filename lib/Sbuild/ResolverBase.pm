@@ -49,8 +49,34 @@ sub new {
 
     $self->set('Builder', $builder);
     $self->set('Changes', {});
+    $self->set('AptDependencies', {});
 
     return $self;
+}
+
+sub add_dependencies {
+    my $self = shift;
+    my $pkg = shift;
+    my $build_depends = shift;
+    my $build_depends_indep = shift;
+    my $build_conflicts = shift;
+    my $build_conflicts_indep = shift;
+
+    my $builder = $self->get('Builder');
+
+    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
+    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
+    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
+
+    my $deps = {
+	'Build Depends' => $build_depends,
+	'Build Depends Indep' => $build_depends_indep,
+	'Build Conflicts' => $build_conflicts,
+	'Build Conflicts Indep' => $build_conflicts_indep
+    };
+
+    $self->get('AptDependencies')->{$pkg} = $deps;
 }
 
 sub uninstall_deps {
@@ -322,76 +348,5 @@ sub format_deps {
 			     scalar($_), @{$_->{'Alternatives'}}) } @_ );
 }
 
-sub lock_chroot {
-    my $self = shift;
-
-    my $builder = $self->get('Builder');
-    my $lockfile = $builder->get('Chroot Dir') . '/var/lock/sbuild';
-    my $try = 0;
-
-  repeat:
-    if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
-	if ($! == EEXIST) {
-	    # lock file exists, wait
-	    goto repeat if !open( F, "<$lockfile" );
-	    my $line = <F>;
-	    my ($job, $pid, $user);
-	    close( F );
-	    if ($line !~ /^(\S+)\s+(\S+)\s+(\S+)/) {
-		$self->log_warning("Bad lock file contents ($lockfile) -- still trying\n");
-	    } else {
-		($job, $pid, $user) = ($1, $2, $3);
-		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
-		    # process doesn't exist anymore, remove stale lock
-		    $self->log_warning("Removing stale lock file $lockfile ".
-				       "(job $job, pid $pid, user $user)\n");
-		    if (!unlink($lockfile)) {
-			if ($! != ENOENT) {
-			    $builder->log_error("cannot remove chroot lock file $lockfile: $!\n");
-			    return 0;
-			}
-		    }
-		}
-	    }
-	    ++$try;
-	    if ($try > $self->get_conf('MAX_LOCK_TRYS')) {
-		$self->log_warning("Lockfile $lockfile still present after " .
-				   $self->get_conf('MAX_LOCK_TRYS') *
-				   $self->get_conf('LOCK_INTERVAL') .
-				   " seconds -- giving up\n");
-		return 0;
-	    }
-	    $self->log("Another sbuild process (job $job, pid $pid by user $user) is currently using the build chroot; waiting...\n")
-		if $try == 1;
-	    sleep $self->get_conf('LOCK_INTERVAL');
-	    goto repeat;
-	} else {
-	    $self->log_error("Can't create lock file $lockfile: $!\n");
-	    return 0;
-	}
-    }
-
-    my $username = $self->get_conf('USERNAME');
-
-    F->print($builder->get('Package_SVersion') . " $$ $username\n");
-    F->close();
-
-    return 1;
-}
-
-sub unlock_chroot {
-    my $self = shift;
-    my $builder = $self->get('Builder');
-
-    my $f = $builder->get('Chroot Dir') . '/var/lock/sbuild';
-
-    debug("Removing chroot lock file $f\n");
-    if (!unlink($f)) {
-	$builder->log_error("cannot remove chroot lock file $f: $!\n")
-	    if $! != ENOENT;
-    }
-
-    return 1;
-}
 
 1;
