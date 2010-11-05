@@ -285,7 +285,7 @@ sub run {
     $self->set('Session', $session);
 
     # Lock chroot so it won't be tampered with during the build.
-    if (!$resolver->lock_chroot()) {
+    if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
 	goto cleanup_close;
     }
 
@@ -431,7 +431,7 @@ sub run {
 
   cleanup_close:
     # Unlock chroot now it's cleaned up and ready for other users.
-    $resolver->unlock_chroot();
+    $session->unlock_chroot();
 
     # End chroot session
     if ($end_session == 1) {
