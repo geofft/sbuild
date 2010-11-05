@@ -26,6 +26,7 @@ use warnings;
 use Errno qw(:POSIX);
 use POSIX ();
 
+use Dpkg::Deps;
 use Sbuild qw(isin debug version_compare);
 use Sbuild::Base;
 use Sbuild::ResolverBase;
@@ -46,73 +47,65 @@ sub new {
     my $self = $class->SUPER::new($builder);
     bless($self, $class);
 
-    $self->set('Dependencies', {});
-
     return $self;
-}
-
-sub add_dependencies {
-    my $self = shift;
-    my $pkg = shift;
-    my $build_depends = shift;
-    my $build_depends_indep = shift;
-    my $build_conflicts = shift;
-    my $build_conflicts_indep = shift;
-
-    my $builder = $self->get('Builder');
-
-    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
-    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
-    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
-    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
-
-    my (@l, $dep);
-
-    $self->get('Dependencies')->{$pkg} = []
-	if (!defined $self->get('Dependencies')->{$pkg});
-
-    foreach $dep (@{$self->get('Dependencies')->{$pkg}}) {
-	if ($dep->{'Override'}) {
-	    $builder->log("Added override: ",
-			  (map { ($_->{'Neg'} ? "!" : "") .
-				     $_->{'Package'} .
-				     ($_->{'Rel'} ? " ($_->{'Rel'} $_->{'Version'})":"") }
-			   scalar($dep), @{$dep->{'Alternatives'}}), "\n");
-	    push( @l, $dep );
-	}
-    }
-
-    $build_conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts ));
-    $build_conflicts_indep = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts_indep ));
-
-    my $mdeps = $build_depends . ", " . $build_conflicts;
-    $mdeps .= ", " . $build_depends_indep . ", " . $build_conflicts_indep
-	if $self->get_conf('BUILD_ARCH_ALL');
-    @{$self->get('Dependencies')->{$pkg}} = @l;
-    debug("Merging pkg deps: $mdeps\n");
-    my $parsed_pkg_deps = $self->parse_one_srcdep($pkg, $mdeps);
-    push( @{$self->get('Dependencies')->{$pkg}}, @$parsed_pkg_deps );
 }
 
 sub install_deps {
     my $self = shift;
-    my $pkg = shift;
+    my @pkgs = @_;
 
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install $pkg build dependencies (internal resolver)");
+    $builder->log_subsection("Install build dependencies (internal resolver)");
+
+    my @apt_positive;
+    my @apt_negative;
+
+    for my $pkg (@pkgs) {
+	my $deps = $self->get('AptDependencies')->{$pkg};
+
+	push(@apt_positive, $deps->{'Build Depends'})
+	    if (defined($deps->{'Build Depends'}) &&
+		$deps->{'Build Depends'} ne "");
+	push(@apt_negative, $deps->{'Build Conflicts'})
+	    if (defined($deps->{'Build Conflicts'}) &&
+		$deps->{'Build Conflicts'} ne "");
+	if ($self->get_conf('BUILD_ARCH_ALL')) {
+	    push(@apt_positive, $deps->{'Build Depends Indep'})
+		if (defined($deps->{'Build Depends Indep'}) &&
+		    $deps->{'Build Depends Indep'} ne "");
+	    push(@apt_negative, $deps->{'Build Conflicts Indep'})
+		if (defined($deps->{'Build Conflicts Indep'}) &&
+		    $deps->{'Build Conflicts Indep'} ne "");
+	}
+    }
+
+    my $positive = deps_parse(join(", ", @apt_positive),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+    my $negative = deps_parse(join(", ", @apt_negative),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+
+    my $build_depends = $positive;
+    my $build_conflicts = $negative;
+
+    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
+    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+
+    $build_conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts ));
+
+    my $mdeps = $build_depends . ", " . $build_conflicts;
+    debug("Merging pkg deps: $mdeps\n");
+    my @dependencies = @{$self->parse_one_srcdep($mdeps)};
 
     my( @positive, @negative, @instd, @rmvd );
 
-    my $dep = [];
-    if (exists $self->get('Dependencies')->{$pkg}) {
-	$dep = $self->get('Dependencies')->{$pkg};
-    }
-    debug("Dependencies of $pkg: ", $self->format_deps(@$dep), "\n");
+    debug("Dependencies: ", $self->format_deps(@dependencies), "\n");
 
   repeat:
     debug("Filtering dependencies\n");
-    if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
+    if (!$self->filter_dependencies(\@dependencies, \@positive, \@negative )) {
 	$builder->log("Package installation not possible\n");
 	return 0;
     }
@@ -163,7 +156,7 @@ sub install_deps {
     $builder->write_stats('install-download-time',
 		       $install_stop_time - $install_start_time);
 
-    my $fail = $self->check_dependencies($dep);
+    my $fail = $self->check_dependencies(\@dependencies);
     if ($fail) {
 	$builder->log("After installing, the following dependencies are ".
 		   "still unsatisfied:\n$fail\n");
@@ -191,13 +184,12 @@ sub install_deps {
 	$builder->log($self->get_conf('DPKG') . ' --set-selections failed\n');
     }
 
-    $builder->prepare_watches($dep, @instd );
+    $builder->prepare_watches(\@dependencies, @instd );
     return 1;
 }
 
 sub parse_one_srcdep {
     my $self = shift;
-    my $pkg = shift;
     my $deps = shift;
 
     my $builder = $self->get('Builder');
@@ -216,7 +208,7 @@ sub parse_one_srcdep {
 	my $neg_seen = 0;
 	foreach (@alts) {
 	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
-		$builder->log_warning("syntax error in dependency '$_' of $pkg\n");
+		$builder->log_warning("syntax error in dependency '$_'\n");
 		next;
 	    }
 	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
@@ -233,7 +225,7 @@ sub parse_one_srcdep {
 			$include = 1;
 		    }
 		}
-		$builder->log_warning("inconsistent arch restriction on $pkg: $dep depedency\n")
+		$builder->log_warning("inconsistent arch restriction: $dep depedency\n")
 		    if $ignore_it && $use_it;
 		next if $ignore_it || ($include && !$use_it);
 	    }
@@ -265,7 +257,7 @@ sub parse_one_srcdep {
 	    push( @l, $h );
 	}
 	if (@alts > 1 && $neg_seen) {
-	    $builder->log_warning("$pkg: alternatives with negative dependencies forbidden -- skipped\n");
+	    $builder->log_warning("alternatives with negative dependencies forbidden -- skipped\n");
 	}
 	elsif (@l) {
 	    my $l = shift @l;

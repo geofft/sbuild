@@ -49,8 +49,34 @@ sub new {
 
     $self->set('Builder', $builder);
     $self->set('Changes', {});
+    $self->set('AptDependencies', {});
 
     return $self;
+}
+
+sub add_dependencies {
+    my $self = shift;
+    my $pkg = shift;
+    my $build_depends = shift;
+    my $build_depends_indep = shift;
+    my $build_conflicts = shift;
+    my $build_conflicts_indep = shift;
+
+    my $builder = $self->get('Builder');
+
+    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
+    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
+    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
+
+    my $deps = {
+	'Build Depends' => $build_depends,
+	'Build Depends Indep' => $build_depends_indep,
+	'Build Conflicts' => $build_conflicts,
+	'Build Conflicts Indep' => $build_conflicts_indep
+    };
+
+    $self->get('AptDependencies')->{$pkg} = $deps;
 }
 
 sub uninstall_deps {
