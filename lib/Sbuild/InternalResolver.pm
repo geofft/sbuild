@@ -523,4 +523,110 @@ sub get_virtual {
     return sort(@virtuals);
 }
 
+sub get_dpkg_status {
+    my $self = shift;
+    my $builder = $self->get('Builder');
+    my @interest = @_;
+    my %result;
+    local( *STATUS );
+
+    debug("Requesting dpkg status for packages: @interest\n");
+    my $dpkg_status_file = $builder->{'Chroot Dir'} . '/var/lib/dpkg/status';
+    if (!open( STATUS, '<', $dpkg_status_file)) {
+	$builder->log("Can't open $dpkg_status_file: $!\n");
+	return ();
+    }
+    local( $/ ) = "";
+    while( <STATUS> ) {
+	my( $pkg, $status, $version, $provides );
+	/^Package:\s*(.*)\s*$/mi and $pkg = $1;
+	/^Status:\s*(.*)\s*$/mi and $status = $1;
+	/^Version:\s*(.*)\s*$/mi and $version = $1;
+	/^Provides:\s*(.*)\s*$/mi and $provides = $1;
+	if (!$pkg) {
+	    $builder->log_error("parse error in $dpkg_status_file: no Package: field\n");
+	    next;
+	}
+	if (defined($version)) {
+	    debug("$pkg ($version) status: $status\n") if $self->get_conf('DEBUG') >= 2;
+	} else {
+	    debug("$pkg status: $status\n") if $self->get_conf('DEBUG') >= 2;
+	}
+	if (!$status) {
+	    $builder->log_error("parse error in $dpkg_status_file: no Status: field for package $pkg\n");
+	    next;
+	}
+	if ($status !~ /\sinstalled$/) {
+	    $result{$pkg}->{'Installed'} = 0
+		if !(exists($result{$pkg}) &&
+		     $result{$pkg}->{'Version'} eq '~*=PROVIDED=*=');
+	    next;
+	}
+	if (!defined $version || $version eq "") {
+	    $builder->log_error("parse error in $dpkg_status_file: no Version: field for package $pkg\n");
+	    next;
+	}
+	$result{$pkg} = { Installed => 1, Version => $version }
+	    if (isin( $pkg, @interest ) || !@interest);
+	if ($provides) {
+	    foreach (split( /\s*,\s*/, $provides )) {
+		$result{$_} = { Installed => 1, Version => '~*=PROVIDED=*=' }
+		if isin( $_, @interest ) and (not exists($result{$_}) or
+					      ($result{$_}->{'Installed'} == 0));
+	    }
+	}
+    }
+    close( STATUS );
+    return \%result;
+}
+
+sub get_apt_policy {
+    my $self = shift;
+    my $builder = $self->get('Builder');
+    my @interest = @_;
+    my $package;
+    my $ver;
+    my %packages;
+
+    my $pipe =
+	$builder->get('Session')->pipe_apt_command(
+	    { COMMAND => [$self->get_conf('APT_CACHE'), 'policy', @interest],
+	      ENV => {'LC_ALL' => 'C'},
+	      USER => $self->get_conf('USERNAME'),
+	      PRIORITY => 0,
+	      DIR => '/' }) || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
+
+    while(<$pipe>) {
+	$package=$1 if /^([0-9a-z+.-]+):$/;
+	$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
+	$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
+	if (/^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/) {
+	    $ver = "$2";
+	    push @{$packages{$package}->{versions}}, $ver;
+	}
+	if (/^ {5} *(-?\d+) /) {
+	    my $prio = $1;
+	    if (!defined $packages{$package}->{priority}{$ver} ||
+	        $packages{$package}->{priority}{$ver} < $prio) {
+		$packages{$package}->{priority}{$ver} = $prio;
+	    }
+	}
+    }
+    close($pipe);
+    # Resort by priority keeping current version order if priority is the same
+    use sort "stable";
+    foreach my $package (keys %packages) {
+	my $p = $packages{$package};
+	if (exists $p->{priority}) {
+	    $p->{versions} = [ sort(
+		{ -($p->{priority}{$a} <=> $p->{priority}{$b}) } @{$p->{versions}}
+	    ) ];
+	}
+    }
+    no sort "stable";
+    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
+
+    return \%packages;
+}
+
 1;
