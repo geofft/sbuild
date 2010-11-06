@@ -474,13 +474,8 @@ sub run {
 
     # Run specified chroot setup commands
     $self->run_external_commands("chroot-setup-commands",
-	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
-
-    $self->set('Pkg Fail Stage', 'install-core');
-    if (!$self->install_core()) {
-	goto cleanup_packages;
-    }
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
     $resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
 
@@ -509,8 +504,8 @@ sub run {
 
     # Run specified chroot cleanup commands
     $self->run_external_commands("chroot-cleanup-commands",
-	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
   cleanup_packages:
     my $purge_build_directory =
@@ -598,8 +593,8 @@ sub run {
 
 	# Run post build external commands
 	$self->run_external_commands("post-build-commands",
-	    $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-	    $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
     }
 
