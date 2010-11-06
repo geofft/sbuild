@@ -18,11 +18,13 @@ sbuild (0.60.3) unstable; urgency=low
         (Closes: #403246).
       . Removal of Build-Conflicts now works, due to using apt-get
         or aptitude to perform the removal (Closes: #464376).
+      . Default to not enabling virtual dependency resolving with the
+        internal resolver ($resolve_virtual=0).  This is to avoid
+        changing the historical behaviour by default.
     - Don't set Sbuild::debug_level to undef (Closes: #602318).
       Thanks to Andres Mejia.
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 03 Nov 2010 20:00:00 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 06 Nov 2010 23:34:53 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
