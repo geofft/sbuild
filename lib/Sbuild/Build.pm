@@ -164,7 +164,6 @@ sub set_dsc {
 	    goto set_vars;
 	}
 
-	$version = $self->strip_epoch($version);
 	my $dir = getcwd();
 	# Note: need to support cases when invoked from a subdirectory
 	# of the build directory, i.e. $dsc/foo -> $dsc/.. in addition
@@ -1636,15 +1635,6 @@ sub debian_files_list {
     }
 
     return @list;
-}
-
-
-# This subroutine strips the epoch from a Debian package version.
-sub strip_epoch {
-    my $self = shift;
-    my $version = shift;
-    $version =~ s/^\d+?://;
-    return $version;
 }
 
 # Figure out chroot architecture
