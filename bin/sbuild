@@ -306,14 +306,15 @@ sub shutdown ($) {
     }
 
     if (defined($current_job) && $jobs{$current_job}->get('Dependency Resolver')) {
-	$jobs{$current_job}->get('Dependency Resolver')->unlock_chroot();
+	$jobs{$current_job}->get('Session')->unlock_chroot();
     }
 
     # Close logs and send mails
     if (defined($current_job) &&
 	defined($jobs{$current_job}) &&
 	defined($jobs{$current_job}->get('Session'))) {
-	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
+	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always" &&
+	    defined($jobs{$current_job}->get('Chroot Build Dir'))) {
 	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
 	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
 	    $jobs{$current_job}->get('Session')->run_command(
