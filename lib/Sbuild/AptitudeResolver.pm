@@ -56,10 +56,18 @@ sub install_deps {
     my $status = 0;
 
     my $builder = $self->get('Builder');
+    my $session = $builder->get('Session');
+
+    my $dummy_pkg_name = 'sbuild-build-depends-' . $builder->get('Package') . '-dummy';
+    #Prepare a path to build a dummy package containing our deps:
+    $self->set('Dummy package path',
+	       tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
+		       $builder->get('Arch') . '-XXXXXX',
+		       DIR => $session->get('Build Location')));
+    my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
+    my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
 
     $builder->log_subsection("Install build dependencies (aptitude-based resolver)");
-
-    my $session = $builder->get('Session');
 
     #install aptitude first:
     my (@aptitude_installed_packages, @aptitude_removed_packages);
@@ -69,17 +77,6 @@ sub install_deps {
     }
     $self->set_installed(@aptitude_installed_packages);
     $self->set_removed(@aptitude_removed_packages);
-
-
-    #Prepare a path to build a dummy package containing our deps:
-    $self->set('Dummy package path',
-	       tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
-		       $builder->get('Arch') . '-XXXXXX',
-		       DIR => $session->get('Build Location')));
-
-    my $dummy_pkg_name = 'sbuild-build-depends-' . $builder->get('Package') . '-dummy';
-    my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
-    my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
 
     if (!mkdir $dummy_dir) {
 	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);

@@ -491,7 +491,7 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'RESOLVE_VIRTUAL'				=> {
-	    DEFAULT => 1
+	    DEFAULT => 0
 	},
     );
 
