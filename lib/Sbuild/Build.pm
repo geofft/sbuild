@@ -69,6 +69,38 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    $self->set('Arch', undef);
+    $self->set('Chroot Dir', '');
+    $self->set('Chroot Build Dir', '');
+    $self->set('Max Lock Trys', 120);
+    $self->set('Lock Interval', 5);
+    $self->set('Srcdep Lock Count', 0);
+    $self->set('Pkg Status', 'pending');
+    $self->set('Pkg Status Trigger', undef);
+    $self->set('Pkg Start Time', 0);
+    $self->set('Pkg End Time', 0);
+    $self->set('Pkg Fail Stage', 0);
+    $self->set('Build Start Time', 0);
+    $self->set('Build End Time', 0);
+    $self->set('This Time', 0);
+    $self->set('This Space', 0);
+    $self->set('This Watches', {});
+    $self->set('Sub Task', 'initialisation');
+    $self->set('Host', Sbuild::ChrootRoot->new($self->get('Config')));
+    # Host execution defaults
+    my $host_defaults = $self->get('Host')->get('Defaults');
+    $host_defaults->{'CHROOT'} = 0;
+    $host_defaults->{'USER'} = $self->get_conf('USERNAME');
+    $host_defaults->{'DIR'} = $self->get_conf('HOME');
+    $host_defaults->{'STREAMIN'} = $devnull;
+    $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
+    $host_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+
+    $self->set('Session', undef);
+    $self->set('Dependency Resolver', undef);
+    $self->set('Log File', undef);
+    $self->set('Log Stream', undef);
+
     # DSC, package and version information:
     $self->set_dsc($dsc);
     my $ver = $self->get('DSC Base');
@@ -94,29 +126,6 @@ sub new {
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
-    $self->set('Arch', undef);
-    $self->set('Chroot Dir', '');
-    $self->set('Chroot Build Dir', '');
-    $self->set('Max Lock Trys', 120);
-    $self->set('Lock Interval', 5);
-    $self->set('Srcdep Lock Count', 0);
-    $self->set('Pkg Status', 'pending');
-    $self->set('Pkg Status Trigger', undef);
-    $self->set('Pkg Start Time', 0);
-    $self->set('Pkg End Time', 0);
-    $self->set('Pkg Fail Stage', 0);
-    $self->set('Build Start Time', 0);
-    $self->set('Build End Time', 0);
-    $self->set('This Time', 0);
-    $self->set('This Space', 0);
-    $self->set('This Watches', {});
-    $self->set('Sub Task', 'initialisation');
-    $self->set('Host', undef);
-    $self->set('Session', undef);
-    $self->set('Dependency Resolver', undef);
-    $self->set('Log File', undef);
-    $self->set('Log Stream', undef);
-
     return $self;
 }
 
@@ -129,12 +138,10 @@ sub set_dsc {
     # Check if the DSC given is a directory on the local system. This
     # means we'll build the source package with dpkg-source first.
     if (-d $dsc) {
-	my $host = Sbuild::ChrootRoot->new($self->get('Config'));
+	my $host = $self->get('Host');
 	my $pipe = $host->pipe_command(
 	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
 			  "-l" . abs_path($dsc) . "/debian/changelog"],
-        USER => $self->get_conf('USERNAME'),
-        DIR => $self->get_conf('HOME'),
 	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
@@ -302,27 +309,18 @@ sub run {
     }
 
     # Set a chroot to run commands in host
-    my $host = $chroot_info->create($self->get_conf('DISTRIBUTION'),
-				       $self->get_conf('CHROOT'),
-				       $self->get_conf('ARCH'));
+    my $host = $self->get('Host');
 
-    # Host execution defaults
+    # Host execution defaults (set streams)
     my $host_defaults = $host->get('Defaults');
-    $host_defaults->{'CHROOT'} = 0;
-    $host_defaults->{'USER'} = $self->get_conf('USERNAME');
-    $host_defaults->{'DIR'} = $self->get_conf('HOME');
     $host_defaults->{'STREAMIN'} = $devnull;
     $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
     $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
-    $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
-    $host_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
-
-    $self->set('Host', $host);
 
     # Run pre build external commands
     $self->run_external_commands("pre-build-commands",
-	$self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-	$self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
     # Build the source package if given a Debianized source directory
     if ($self->get('Debian Source Dir')) {
