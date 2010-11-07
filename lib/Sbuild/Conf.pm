@@ -583,8 +583,7 @@ sub read_config {
     my $lintian = undef;
     my $run_lintian = undef;
     my $lintian_opts = undef;
-    my %external_commands;
-    undef %external_commands;
+    my $external_commands = undef;
     my $log_external_command_output = undef;
     my $log_external_command_error = undef;
     my $resolve_virtual = undef;
@@ -701,7 +700,7 @@ sub read_config {
     $self->set('LINTIAN', $lintian);
     $self->set('RUN_LINTIAN', $run_lintian);
     $self->set('LINTIAN_OPTIONS', $lintian_opts);
-    $self->set('EXTERNAL_COMMANDS', \%external_commands);
+    $self->set('EXTERNAL_COMMANDS', $external_commands);
     push(@{${$self->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
         $chroot_setup_script) if ($chroot_setup_script);
     $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output);
