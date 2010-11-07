@@ -117,11 +117,8 @@ sub get_info_from_stream {
 	}
     }
 
-#    $tmp{'Name'} = $tmp{'Namespace'} . ':' . $tmp{'Name'}
-#    if (defined($tmp{'Namespace'}) && $tmp{'Namespace'});
-
     if ($self->get_conf('DEBUG') && $tmp{'Name'})  {
-	print STDERR "Found schroot chroot: $tmp{'Name'}\n";
+	print STDERR "Found schroot chroot: $tmp{'Namespace'}:$tmp{'Name'}\n";
 	foreach (sort keys %tmp) {
 	    print STDERR "  $_ $tmp{$_}\n";
 	}
@@ -164,44 +161,19 @@ sub get_info_all {
 	or die 'Can\'t run ' . $self->get_conf('SCHROOT');
     my $tmp = undef;
     while (defined($tmp = $self->get_info_from_stream(\*CHROOTS))) {
-	$chroots->{$tmp->{'Name'}} = $tmp;
+	my $namespace = $tmp->{'Namespace'};
+	$namespace = "chroot"
+	    if !$tmp->{'Namespace'};
+	$chroots->{$namespace} = {}
+	    if (!exists($chroots->{$namespace}));
+	$chroots->{$namespace}->{$tmp->{'Name'}} = $tmp;
 	foreach my $alias (split(/\s+/, $tmp->{'Aliases'})) {
-	    $chroots->{$alias} = $tmp;
+	    $chroots->{$namespace}->{$alias} = $tmp;
 	}
     }
     close CHROOTS or die "Can't close schroot pipe";
 
     $self->set('Chroots', $chroots);
-}
-
-sub find {
-    my $self = shift;
-    my $distribution = shift;
-    my $chroot = shift;
-    my $arch = shift;
-
-    # Determine the chroot type given
-    my $chroot_type;
-    if ($distribution =~ /:/) {
-        ($chroot_type = $distribution) =~ s/^([^:]+?):.*/$1/;
-    }
-    if (!$chroot_type && ($distribution =~ /-source$/)) {
-        $chroot_type = "source";
-    }
-
-    # Strip namespaces and '-source' suffix from distribution name given.
-    $distribution =~ s/^[^:]+://;
-    $distribution =~ s/-source$//;
-
-    # Call parent find() subroutine
-    $chroot = $self->SUPER::find($distribution, $chroot, $arch);
-
-    # Add chroot type if defined
-    if ($chroot_type) {
-        $chroot = "$chroot_type:" . "$chroot";
-    }
-
-    return $chroot;
 }
 
 sub _create {

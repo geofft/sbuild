@@ -39,7 +39,7 @@ $conf->check_group_membership();
 usage_error("sbuild-shell", "Incorrect number of options") if (@ARGV != 1);
 
 
-my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
+my $session = setup('source', $ARGV[0], $conf) or die "Chroot setup failed";
 
 my $status = shell($session, $conf);
 $status >>= 8;

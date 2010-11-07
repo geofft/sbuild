@@ -44,7 +44,7 @@ use Module::Load::Conditional qw(can_load); # Used to check for LWP::UserAgent
 use Time::HiRes qw ( time ); # Needed for high resolution timers
 
 sub get_dist ($);
-sub setup ($$);
+sub setup ($$$);
 sub cleanup ($);
 sub shutdown ($);
 sub parse_file ($);
@@ -78,10 +78,10 @@ sub get_dist ($) {
     return $dist;
 }
 
-sub setup ($$) {
+sub setup ($$$) {
+    my $namespace = shift;
     my $chroot = shift;
     my $conf = shift;
-
 
     $conf->set('VERBOSE', 1);
     $conf->set('NOLOG', 1);
@@ -98,7 +98,8 @@ sub setup ($$) {
 
     my $session;
 
-    $session = $chroot_info->create($chroot,
+    $session = $chroot_info->create($namespace,
+				    $chroot,
 				    undef, # TODO: Add --chroot option
 				    $conf->get('ARCH'));
 

@@ -48,7 +48,7 @@ if ($command eq "apt-get") {
 		"Bad command $command.  Allowed commands: apt-get or apt-cache\n");
 }
 
-my $session = setup($chroot, $conf) or die "Chroot setup failed";
+my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
 
 $session->run_apt_command(
     { COMMAND => [$command, @ARGV],

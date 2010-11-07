@@ -355,7 +355,8 @@ sub run {
     }
 
     my $end_session = 1;
-    my $session = $chroot_info->create($self->get_conf('DISTRIBUTION'),
+    my $session = $chroot_info->create('chroot',
+				       $self->get_conf('DISTRIBUTION'),
 				       $self->get_conf('CHROOT'),
 				       $self->get_conf('ARCH'));
 

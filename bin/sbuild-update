@@ -43,6 +43,9 @@ sub init_allowed_keys {
     $self->SUPER::init_allowed_keys();
 
     my %update_keys = (
+	'COMPAT'				=> {
+	    DEFAULT => 1
+	},
 	'UPDATE'				=> {
 	    DEFAULT => 0
 	},
@@ -86,21 +89,27 @@ sub set_options {
     $self->add_options(
 	"update|u" => sub {
 	    $self->set_conf('UPDATE', 1);
+	    $self->set_conf('COMPAT', 0);
 	},
 	"upgrade|g" => sub {
 	    $self->set_conf('UPGRADE', 1);
+	    $self->set_conf('COMPAT', 0);
 	},
 	"dist-upgrade|d" => sub {
 	    $self->set_conf('DISTUPGRADE', 1);
+	    $self->set_conf('COMPAT', 0);
 	},
 	"clean|c" => sub {
 	    $self->set_conf('CLEAN', 1);
+	    $self->set_conf('COMPAT', 0);
 	},
 	"autoclean|a" => sub {
 	    $self->set_conf('AUTOCLEAN', 1);
+	    $self->set_conf('COMPAT', 0);
 	},
 	"autoremove|r" => sub {
 	    $self->set_conf('AUTOREMOVE', 1);
+	    $self->set_conf('COMPAT', 0);
 	});
 }
 
@@ -116,8 +125,7 @@ my $options = Options->new($conf, "sbuild-update", "1");
 exit 1 if !defined($options);
 $conf->check_group_membership();
 
-if ( ! $conf->get('UPDATE') && ! $conf->get('UPGRADE') &&
-    ! $conf->get('DISTUPGRADE') ) {
+if ($conf->get('COMPAT')) {
     my $msg = "$0 will perform apt-get command 'update' now, however this ";
     $msg .= "may change at a later revision.\n";
     print "$msg";
@@ -131,7 +139,7 @@ my $status = 1;
 foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
 
-    my $session = setup($ARGV[0], $conf) or die "Chroot setup failed";
+    my $session = setup('source', $ARGV[0], $conf) or die "Chroot setup failed";
 
     if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
 	goto cleanup;

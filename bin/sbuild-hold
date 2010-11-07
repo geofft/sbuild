@@ -39,7 +39,7 @@ usage_error("sbuild-hold", "Incorrect number of options") if (@ARGV < 2);
 
 my $chroot = Sbuild::Utility::get_dist($ARGV[0]);
 
-my $session = setup($ARGV[0], $conf) or die "Chroot setup failed for $chroot chroot";
+my $session = setup('source', $ARGV[0], $conf) or die "Chroot setup failed for $chroot chroot";
 
 print STDOUT "Holding packages in $chroot chroot:";
 shift @ARGV;
