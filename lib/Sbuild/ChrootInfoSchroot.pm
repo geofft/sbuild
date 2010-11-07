@@ -50,7 +50,8 @@ sub get_info_from_stream {
     my $stream = shift;
 
     my $chroot_type = '';
-    my %tmp = ('Name' => '',
+    my %tmp = ('Namespace' => '',
+	       'Name' => '',
 	       'Priority' => 0,
 	       'Location' => '',
 	       'Session Purged' => 0);
@@ -60,6 +61,30 @@ sub get_info_from_stream {
 
 	last if ! $_;
 
+	if (/\s*─── Chroot ───/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'chroot';
+	}
+	if (/\s*─── Session ───/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'session';
+	}
+	if (/\s*─── Source ───/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'source';
+	}
+	if (/\s*--- Chroot ---/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'chroot';
+	}
+	if (/\s*--- Session ---/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'session';
+	}
+	if (/\s*--- Source ---/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'source';
+	}
 	if (/^\s*Name:?\s+(.*)$/ &&
 	    $tmp{'Name'} eq "") {
 	    $tmp{'Name'} = $1;
@@ -92,13 +117,19 @@ sub get_info_from_stream {
 	}
     }
 
-    if ($self->get_conf('DEBUG')) {
+#    $tmp{'Name'} = $tmp{'Namespace'} . ':' . $tmp{'Name'}
+#    if (defined($tmp{'Namespace'}) && $tmp{'Namespace'});
+
+    if ($self->get_conf('DEBUG') && $tmp{'Name'})  {
 	print STDERR "Found schroot chroot: $tmp{'Name'}\n";
 	foreach (sort keys %tmp) {
 	    print STDERR "  $_ $tmp{$_}\n";
 	}
     }
 
+    if (!$tmp{'Name'}) {
+	return undef;
+    }
     return \%tmp;
 }
 
@@ -129,10 +160,10 @@ sub get_info_all {
     $ENV{'LC_ALL'} = 'C';
     $ENV{'LANGUAGE'} = 'C';
 
-    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--info', '--all-chroots'
+    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--info'
 	or die 'Can\'t run ' . $self->get_conf('SCHROOT');
-    while (<CHROOTS>) {
-	my $tmp = $self->get_info_from_stream(\*CHROOTS);
+    my $tmp = undef;
+    while (defined($tmp = $self->get_info_from_stream(\*CHROOTS))) {
 	$chroots->{$tmp->{'Name'}} = $tmp;
 	foreach my $alias (split(/\s+/, $tmp->{'Aliases'})) {
 	    $chroots->{$alias} = $tmp;
