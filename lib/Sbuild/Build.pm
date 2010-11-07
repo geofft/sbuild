@@ -282,11 +282,6 @@ sub run {
     # Acquire the architecture we're building for.
     $self->set('Arch', $self->get_conf('ARCH'));
 
-    # TODO: Get package name from build object
-    if (!$self->open_build_log()) {
-	goto cleanup_close;
-    }
-
     my $dist = $self->get_conf('DISTRIBUTION');
     if (!defined($dist) || !$dist) {
 	$self->log("No distribution defined\n");
@@ -382,6 +377,11 @@ sub run {
     # TODO: Don't hack the build location in; add a means to customise
     # the chroot directly.
     $session->set('Build Location', $self->get('Chroot Build Dir'));
+
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_close;
+    }
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
@@ -597,8 +597,9 @@ sub run {
 
     }
 
-  cleanup_skip:
     $self->close_build_log();
+
+  cleanup_skip:
 }
 
 sub fetch_source_files {
