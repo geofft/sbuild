@@ -100,6 +100,7 @@ sub new {
     $self->set('Dependency Resolver', undef);
     $self->set('Log File', undef);
     $self->set('Log Stream', undef);
+    $self->set('Summary Stats', {});
 
     # DSC, package and version information:
     $self->set_dsc($dsc);
@@ -1568,6 +1569,32 @@ sub unlock_file {
     unlink( $lockfile );
 }
 
+sub add_stat {
+    my $self = shift;
+    my $key = shift;
+    my $value = shift;
+
+    $self->get('Summary Stats')->{$key} = $value;
+}
+
+sub generate_stats {
+    my $self = shift;
+
+    $self->add_stat('Package', $self->get('Package'));
+    $self->add_stat('Version', $self->get('Version'));
+    $self->add_stat('Source Version', $self->get('OVersion'));
+    $self->add_stat('Architecture', $self->get('Arch'));
+    $self->add_stat('Space', $self->get('This Space'));
+    $self->add_stat('Build-Time',
+		    $self->get('Build End Time')-$self->get('Build Start Time'));
+    $self->add_stat('Package-Time',
+		    $self->get('Pkg End Time')-$self->get('Pkg Start Time'));
+    $self->add_stat('Space', $self->get('This Space'));
+    $self->add_stat('Status', $self->get_status());
+    $self->add_stat('Fail-Stage', $self->get('Pkg Fail Stage'))
+	if ($self->get_status() ne "successful");
+}
+
 sub write_stats {
     my $self = shift;
 
@@ -1722,8 +1749,6 @@ sub open_build_log {
     $self->log("Version: " . $self->get('Version') . "\n");
     $self->log("Source Version: " . $self->get('OVersion') . "\n");
     $self->log("Architecture: " . $self->get('Arch') . "\n");
-    $self->log("Chroot Build Dir: " . $self->get('Chroot Build Dir') . "\n");
-    $self->log("Start Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time'))) . "\n");
 }
 
 sub close_build_log {
@@ -1740,17 +1765,10 @@ sub close_build_log {
 	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
     }
 
-    $self->log_sep();
-    $self->log("End Time: " . strftime("%Y%m%d-%H%M", localtime($self->get('Pkg End Time'))) . "\n");
-    $self->log("Finished at ${date}\n");
-
     my $hours = int($self->get('This Time')/3600);
     my $minutes = int(($self->get('This Time')%3600)/60),
     my $seconds = int($self->get('This Time')%60),
     my $space = $self->get('This Space');
-
-    $self->log(sprintf("Build needed %02d:%02d:%02d, %dk disc space\n",
-	       $hours, $minutes, $seconds, $space));
 
     my $filename = $self->get('Log File');
 
@@ -1758,6 +1776,17 @@ sub close_build_log {
     if ($self->get_status() ne "successful") {
 	$self->set_status('failed');
     }
+
+    $self->log_subsection('Summary');
+    $self->generate_stats();
+    foreach my $stat (sort keys %{$self->get('Summary Stats')}) {
+	$self->log("${stat}: " . $self->get('Summary Stats')->{$stat} . "\n");
+    }
+
+    $self->log_sep();
+    $self->log("Finished at ${date}\n");
+    $self->log(sprintf("Build needed %02d:%02d:%02d, %dk disc space\n",
+	       $hours, $minutes, $seconds, $space));
 
     my $subject = "Log for " . $self->get_status() .
 	" build of " . $self->get('Package_Version');
