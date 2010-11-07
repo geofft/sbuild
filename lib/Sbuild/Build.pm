@@ -892,6 +892,7 @@ sub run_external_commands {
 
     # Determine which set of commands to run based on the parameter $stage
     my @commands = @{${$self->get_conf('EXTERNAL_COMMANDS')}{$stage}};
+    return 1 if !(@commands);
 
     # Create appropriate log message and determine if the commands are to be
     # run inside the chroot or not.
