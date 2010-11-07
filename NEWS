@@ -25,11 +25,31 @@ configuration.
      dependencies and build-conflicts.
 
   3) The sbuild-clean program has been moved into sbuild-update, as
-     for the other sbuild- helper programs.
+     for the other sbuild- helper programs.  The sbuild-* helper
+     programs now take the sbuild chroot lock used by sbuild to
+     prevent concurrent builds in the same chroot, making it safe to
+     run the maintenance commands while builds are running (they will
+     wait until the build has finished before making any changes).
+     The sbuild-* helper programs now operate on source chroots, where
+     available (for lvm-snapshot and btrfs-snapshot type chroots).
 
   4) The sbuild-createchroot program can now create tarballs from the
      created chroot, with gzip, bzip2, lzma and xz compression.  Use
      the new --make-sbuild-tarball option for this purpose.
+
+  5) sbuild may now be used on an unpacked source directory, in a
+     similar manner to debuild.  The directory will be packaged using
+     'dpkg-source -b' prior to building.  If a source package or
+     directory is not specified, sbuild will use the current working
+     directory like debuild.
+
+  6) Lintian may now be run after a package build with the
+     --run-lintian option.
+
+  7) External commands may now be run before and after a build and
+     during chroot setup and cleanup.  These may be used to do
+     additional setup and checking during a build, for example to run
+     piuparts.
 
 * Major changes in 0.60.2:
 
