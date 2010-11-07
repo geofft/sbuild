@@ -29,6 +29,7 @@ Andres Mejia			<mcitadel@gmail.com>
        sbuild debuild-link functionality
        sbuild source download improvements
        architecture wildcard support
+       external command and lintian support
 
 Ryan Murray			<rmurray@debian.org>
 	modifications for security building
