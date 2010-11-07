@@ -302,20 +302,6 @@ sub run {
 	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
     }
 
-    # Set a chroot to run commands in host
-    my $host = $self->get('Host');
-
-    # Host execution defaults (set streams)
-    my $host_defaults = $host->get('Defaults');
-    $host_defaults->{'STREAMIN'} = $devnull;
-    $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
-    $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
-
-    # Run pre build external commands
-    $self->run_external_commands("pre-build-commands",
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
-
     # Build the source package if given a Debianized source directory
     if ($self->get('Debian Source Dir')) {
 	$self->set('Pkg Fail Stage', 'pack-source');
@@ -358,6 +344,25 @@ sub run {
 				       $self->get_conf('CHROOT'),
 				       $self->get_conf('ARCH'));
 
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_close;
+    }
+
+    # Set a chroot to run commands in host
+    my $host = $self->get('Host');
+
+    # Host execution defaults (set streams)
+    my $host_defaults = $host->get('Defaults');
+    $host_defaults->{'STREAMIN'} = $devnull;
+    $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+    $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
+
+    # Run pre build external commands
+    $self->run_external_commands("pre-build-commands",
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
     if (!$session->begin_session()) {
 	$self->log("Error creating chroot session: skipping " .
 		   $self->get('Package') . "\n");
@@ -377,11 +382,6 @@ sub run {
     # TODO: Don't hack the build location in; add a means to customise
     # the chroot directly.
     $session->set('Build Location', $self->get('Chroot Build Dir'));
-
-    # TODO: Get package name from build object
-    if (!$self->open_build_log()) {
-	goto cleanup_close;
-    }
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
@@ -525,59 +525,6 @@ sub run {
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
-  cleanup_packages:
-    my $purge_build_directory =
-	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
-	 ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
-	  $self->get_status() eq 'successful')) ? 1 : 0;
-    my $purge_build_deps =
-	($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
-	 ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
-	  $self->get_status() eq 'successful')) ? 1 : 0;
-    my $is_cloned_session = (defined ($session->get('Session Purged')) &&
-			     $session->get('Session Purged') == 1) ? 1 : 0;
-
-    # Purge non-cloned session
-    if ($is_cloned_session) {
-	$self->log("Not cleaning session: cloned chroot in use\n");
-	$end_session = 0
-	    if ($purge_build_directory == 0 || $purge_build_deps == 0);
-    } else {
-	if ($purge_build_directory) {
-	    # Purge package build directory
-	    $self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
-	    my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
-	    $self->get('Session')->run_command(
-		{ COMMAND => ['rm', '-rf', $bdir],
-		  USER => 'root',
-		  CHROOT => 1,
-		  PRIORITY => 0,
-		  DIR => '/' });
-	}
-
-       if ($purge_build_deps) {
-           # Removing dependencies
-	   $resolver->uninstall_deps();
-	} else {
-	    $self->log("Not removing build depends: as requested\n");
-	}
-    }
-
-    # Remove srcdep lock files (once per install_deps invocation).
-
-  cleanup_close:
-    # Unlock chroot now it's cleaned up and ready for other users.
-    $session->unlock_chroot();
-
-    # End chroot session
-    if ($end_session == 1) {
-	$session->end_session();
-    } else {
-	$self->log("Keeping session: " . $session->get('Session ID') . "\n");
-    }
-    $session = undef;
-    $self->set('Session', $session);
-
     if ($self->get('Pkg Status') eq "successful") {
 	$self->log_subsection("Post Build");
 
@@ -615,6 +562,57 @@ sub run {
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
     }
+
+  cleanup_packages:
+    my $purge_build_directory =
+	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
+	 ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
+	  $self->get_status() eq 'successful')) ? 1 : 0;
+    my $purge_build_deps =
+	($self->get_conf('PURGE_BUILD_DEPS') eq 'always' ||
+	 ($self->get_conf('PURGE_BUILD_DEPS') eq 'successful' &&
+	  $self->get_status() eq 'successful')) ? 1 : 0;
+    my $is_cloned_session = (defined ($session->get('Session Purged')) &&
+			     $session->get('Session Purged') == 1) ? 1 : 0;
+
+    # Purge non-cloned session
+    if ($is_cloned_session) {
+	$self->log("Not cleaning session: cloned chroot in use\n");
+	$end_session = 0
+	    if ($purge_build_directory == 0 || $purge_build_deps == 0);
+    } else {
+	if ($purge_build_directory) {
+	    # Purge package build directory
+	    $self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
+	    my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
+	    $self->get('Session')->run_command(
+		{ COMMAND => ['rm', '-rf', $bdir],
+		  USER => 'root',
+		  CHROOT => 1,
+		  PRIORITY => 0,
+		  DIR => '/' });
+	}
+
+	if ($purge_build_deps) {
+	    # Removing dependencies
+	    $resolver->uninstall_deps();
+	} else {
+	    $self->log("Not removing build depends: as requested\n");
+	}
+    }
+
+  cleanup_close:
+    # Unlock chroot now it's cleaned up and ready for other users.
+    $session->unlock_chroot();
+
+    # End chroot session
+    if ($end_session == 1) {
+	$session->end_session();
+    } else {
+	$self->log("Keeping session: " . $session->get('Session ID') . "\n");
+    }
+    $session = undef;
+    $self->set('Session', $session);
 
     $self->close_build_log();
 
