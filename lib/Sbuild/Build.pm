@@ -477,8 +477,25 @@ sub run {
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
     $resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
+    if (!$resolver->install_deps('core', 'CORE')) {
+	$self->log("Core source dependencies not satisfied; skipping");
+	goto cleanup_packages;
+    }
 
     $resolver->add_dependencies('ESSENTIAL', $self->read_build_essential(), "", "", "");
+
+    my $snapshot = "";
+    $snapshot = "gcc-snapshot" if ($self->get_conf('GCC_SNAPSHOT'));
+    $resolver->add_dependencies('GCC_SNAPSHOT', $snapshot , "", "", "");
+
+    # Add additional build dependencies specified on the command-line.
+    # TODO: Split dependencies into an array from the start to save
+    # lots of joining.
+    $resolver->add_dependencies('MANUAL',
+				join(", ", @{$self->get_conf('MANUAL_DEPENDS')}),
+				join(", ", @{$self->get_conf('MANUAL_DEPENDS_INDEP')}),
+				join(", ", @{$self->get_conf('MANUAL_CONFLICTS')}),
+				join(", ", @{$self->get_conf('MANUAL_CONFLICTS_INDEP')}));
 
     $resolver->add_dependencies($self->get('Package'),
 				$self->get('Build Depends'),
@@ -487,7 +504,9 @@ sub run {
 				$self->get('Build Conflicts Indep'));
 
     $self->set('Pkg Fail Stage', 'install-deps');
-    if (!$resolver->install_deps('CORE', 'ESSENTIAL', $self->get('Package'))) {
+    if (!$resolver->install_deps($self->get('Package'),
+				 'ESSENTIAL', 'GCC_SNAPSHOT', 'MANUAL',
+				 $self->get('Package'))) {
 	$self->log("Source-dependencies not satisfied; skipping " .
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
@@ -776,49 +795,6 @@ sub fetch_source_files {
     $dscver = $pdsc->{'Version'};
 
     $self->set_version("${dscpkg}_${dscver}");
-
-    # Add additional build dependencies specified on the command-line.
-    # TODO: Split dependencies into an array from the start to save
-    # lots of joining.
-    if ($self->get_conf('MANUAL_DEPENDS')) {
-	if ($build_depends) {
-	    $build_depends = join(", ", $build_depends,
-				  @{$self->get_conf('MANUAL_DEPENDS')});
-	} else {
-	    $build_depends = join(", ", @{$self->get_conf('MANUAL_DEPENDS')});
-	}
-    }
-    if ($self->get_conf('MANUAL_DEPENDS_INDEP')) {
-	if ($build_depends_indep) {
-	    $build_depends_indep = join(", ", $build_depends_indep,
-				  @{$self->get_conf('MANUAL_DEPENDS_INDEP')});
-	} else {
-	    $build_depends_indep = join(", ",
-				  @{$self->get_conf('MANUAL_DEPENDS_INDEP')});
-	}
-    }
-    if ($self->get_conf('MANUAL_CONFLICTS')) {
-	if ($build_conflicts) {
-	    $build_conflicts = join(", ", $build_conflicts,
-				  @{$self->get_conf('MANUAL_CONFLICTS')});
-	} else {
-	    $build_conflicts = join(", ",
-				  @{$self->get_conf('MANUAL_CONFLICTS')});
-	}
-    }
-    if ($self->get_conf('MANUAL_CONFLICTS_INDEP')) {
-	if ($build_conflicts_indep) {
-	    $build_conflicts_indep = join(", ", $build_conflicts_indep,
-				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
-	} else {
-	    $build_conflicts_indep = join(", ",
-				  @{$self->get_conf('MANUAL_CONFLICTS_INDEP')});
-	}
-    }
-
-    if ($self->get_conf('GCC_SNAPSHOT')) {
-	$build_depends = join(", ", $build_depends, "gcc-snapshot");
-    }
 
     $build_depends =~ s/\n\s+/ /g if defined $build_depends;
     $build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;

@@ -51,6 +51,7 @@ sub new {
 
 sub install_deps {
     my $self = shift;
+    my $name = shift;
     my @pkgs = @_;
 
     my $status = 0;
@@ -58,7 +59,7 @@ sub install_deps {
     my $builder = $self->get('Builder');
     my $session = $builder->get('Session');
 
-    my $dummy_pkg_name = 'sbuild-build-depends-' . $builder->get('Package') . '-dummy';
+    my $dummy_pkg_name = 'sbuild-build-depends-' . $name. '-dummy';
     #Prepare a path to build a dummy package containing our deps:
     $self->set('Dummy package path',
 	       tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
@@ -67,7 +68,7 @@ sub install_deps {
     my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
     my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
 
-    $builder->log_subsection("Install build dependencies (aptitude-based resolver)");
+    $builder->log_subsection("Install $name build dependencies (aptitude-based resolver)");
 
     #install aptitude first:
     my (@aptitude_installed_packages, @aptitude_removed_packages);

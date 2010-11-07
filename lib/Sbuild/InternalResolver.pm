@@ -52,11 +52,12 @@ sub new {
 
 sub install_deps {
     my $self = shift;
+    my $name = shift;
     my @pkgs = @_;
 
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install build dependencies (internal resolver)");
+    $builder->log_subsection("Install $name build dependencies (internal resolver)");
 
     my @apt_positive;
     my @apt_negative;
