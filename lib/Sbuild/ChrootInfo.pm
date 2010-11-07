@@ -94,9 +94,13 @@ sub find {
     if (!defined $chroot) {
 	my $ns = $chroots->{$namespace};
 	if (!defined($ns)) {
-	    # TODO: Return error, rather than die.
-	    die "Chroot namespace $namespace not found\n";
-	    return undef;
+	    if ($namespace ne 'chroot') {
+		$chroot = $self->find('chroot', $distribution, $chroot, $arch);
+	    } else {
+		# TODO: Return error, rather than die.
+		die "Chroot namespace $namespace not found\n";
+		return undef;
+	    }
 	}
 
         if ($arch ne "" &&

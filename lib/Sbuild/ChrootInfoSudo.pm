@@ -49,14 +49,15 @@ sub get_info {
     my $self = shift;
     my $chroot = shift;
 
-    my $namespace = 'chroot';
+    $chroot =~ /(\S+):(\S+)/;
+    my ($namespace, $chrootname) = ($1, $2);
 
     my $info = undef;
 
     if (exists($self->get('Chroots')->{$namespace}) &&
 	defined($self->get('Chroots')->{$namespace}) &&
-	exists($self->get('Chroots')->{$namespace}->{$chroot})) {
-	$info = $self->get('Chroots')->{$namespace}->{$chroot}
+	exists($self->get('Chroots')->{$namespace}->{$chrootname})) {
+	$info = $self->get('Chroots')->{$namespace}->{$chrootname}
     }
 
     return $info;
