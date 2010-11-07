@@ -1,4 +1,4 @@
-sbuild (0.60.3) unstable; urgency=low
+sbuild (0.60.3-1) unstable; urgency=low
 
   * New release.
   * sbuild-createchroot:
@@ -40,8 +40,9 @@ sbuild (0.60.3) unstable; urgency=low
     Note that the sbuild chroot lock (/var/lock/sbuild) may be copied
     into cloned chroots if a build is started during a maintenance
     operation and the build will block until the operation is completed.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 22:32:11 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 22:33:15 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
