@@ -64,10 +64,10 @@ sub add_dependencies {
 
     my $builder = $self->get('Builder');
 
-    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
-    $builder->log("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
-    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
-    $builder->log("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
+    debug("Build-Depends: $build_depends\n") if $build_depends;
+    debug("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
+    debug("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+    debug("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
 
     my $deps = {
 	'Build Depends' => $build_depends,
