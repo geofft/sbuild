@@ -302,6 +302,20 @@ sub run {
 	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
     }
 
+    # TODO: Get package name from build object
+    if (!$self->open_build_log()) {
+	goto cleanup_skip;
+    }
+
+    # Set a chroot to run commands in host
+    my $host = $self->get('Host');
+
+    # Host execution defaults (set streams)
+    my $host_defaults = $host->get('Defaults');
+    $host_defaults->{'STREAMIN'} = $devnull;
+    $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+    $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
+
     # Build the source package if given a Debianized source directory
     if ($self->get('Debian Source Dir')) {
 	$self->set('Pkg Fail Stage', 'pack-source');
@@ -319,7 +333,7 @@ sub run {
 	if ($?) {
 	    $self->log_error("Failed to clean source directory");
 
-	    goto cleanup_skip;
+	    goto cleanup_log;
 	}
 
 	$self->log_subsubsection('dpkg-source');
@@ -335,7 +349,7 @@ sub run {
 	    });
 	if ($?) {
 	    $self->log_error("Failed to build source package");
-	    goto cleanup_skip;
+	    goto cleanup_log;
 	}
     }
 
@@ -343,20 +357,6 @@ sub run {
     my $session = $chroot_info->create($self->get_conf('DISTRIBUTION'),
 				       $self->get_conf('CHROOT'),
 				       $self->get_conf('ARCH'));
-
-    # TODO: Get package name from build object
-    if (!$self->open_build_log()) {
-	goto cleanup_close;
-    }
-
-    # Set a chroot to run commands in host
-    my $host = $self->get('Host');
-
-    # Host execution defaults (set streams)
-    my $host_defaults = $host->get('Defaults');
-    $host_defaults->{'STREAMIN'} = $devnull;
-    $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
-    $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
 
     # Run pre build external commands
     $self->run_external_commands("pre-build-commands",
@@ -367,7 +367,7 @@ sub run {
 	$self->log("Error creating chroot session: skipping " .
 		   $self->get('Package') . "\n");
 	$self->set_status('failed');
-	goto cleanup_close;
+	goto cleanup_session;
     }
 
     $self->set('Session', $session);
@@ -400,7 +400,7 @@ sub run {
 
     # Lock chroot so it won't be tampered with during the build.
     if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
-	goto cleanup_close;
+	goto cleanup_session;
     }
 
     # Clean APT cache.
@@ -412,7 +412,7 @@ sub run {
 	    $self->log("apt-get clean failed\n");
 	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
 		$self->set_status('failed');
-		goto cleanup_close;
+		goto cleanup_session;
 	    }
 	}
     }
@@ -425,7 +425,7 @@ sub run {
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
 	    $self->set_status('failed');
-	    goto cleanup_close;
+	    goto cleanup_session;
 	}
     }
 
@@ -439,7 +439,7 @@ sub run {
 		$self->log("apt-get dist-upgrade failed\n");
 		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
 		    $self->set_status('failed');
-		    goto cleanup_close;
+		    goto cleanup_session;
 		}
 	    }
 	}
@@ -452,7 +452,7 @@ sub run {
 		$self->log("apt-get upgrade failed\n");
 		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
 		    $self->set_status('failed');
-		    goto cleanup_close;
+		    goto cleanup_session;
 		}
 	    }
 	}
@@ -601,7 +601,7 @@ sub run {
 	}
     }
 
-  cleanup_close:
+  cleanup_session:
     # Unlock chroot now it's cleaned up and ready for other users.
     $session->unlock_chroot();
 
@@ -614,6 +614,7 @@ sub run {
     $session = undef;
     $self->set('Session', $session);
 
+  cleanup_log:
     $self->close_build_log();
 
   cleanup_skip:
