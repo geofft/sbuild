@@ -920,7 +920,7 @@ sub run_external_commands {
 
     # Create appropriate log message and determine if the commands are to be
     # run inside the chroot or not.
-    my $chroot;
+    my $chroot = 0;
     if ($stage eq "pre-build-commands") {
 	$self->log_subsection("Pre Build Commands");
     } elsif ($stage eq "chroot-setup-commands") {
