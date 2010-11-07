@@ -33,8 +33,15 @@ sbuild (0.60.3) unstable; urgency=low
     - Add support for running external commands before and after a
       build, and during chroot setup and cleanup.  These may be used
       to run piuparts, for example.  Thanks to Andres Mejia.
+  * Run sbuild-* chroot maintenance commands in the 'source' chroot
+    namespace for chroots providing such a facility (Closes: #567505).
+    This means that update/distupgrade etc. operations will occur in
+    the source volume for lvm-snapshot and btrfs-snapshot chroot types.
+    Note that the sbuild chroot lock (/var/lock/sbuild) may be copied
+    into cloned chroots if a build is started during a maintenance
+    operation and the build will block until the operation is completed.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 01:42:16 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 21:29:28 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
