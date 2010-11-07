@@ -23,8 +23,18 @@ sbuild (0.60.3) unstable; urgency=low
         changing the historical behaviour by default.
     - Don't set Sbuild::debug_level to undef (Closes: #602318).
       Thanks to Andres Mejia.
+    - Add debuild-like feature to run sbuild on an unpacked source
+      tree (Closes: #551311).  In addition to specifying a package
+      version to build, or a source package .dsc, a directory may be
+      used.  This will be packaged with 'dpkg-source -b' prior to
+      building.  Thanks to Andres Mejia.
+    - Add support for running lintian after a build.  Thanks to Andres
+      Mejia.
+    - Add support for running external commands before and after a
+      build, and during chroot setup and cleanup.  These may be used
+      to run piuparts, for example.  Thanks to Andres Mejia.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 06 Nov 2010 23:34:53 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 01:42:16 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
