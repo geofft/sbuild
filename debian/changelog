@@ -14,7 +14,7 @@ sbuild (0.60.3) unstable; urgency=low
         wishing to use the old resolver should set
         $build_dep_resolver='internal' in their configuration.
       . The aptitude resolver can resolve complex dependencies.
-        A | B, where A is uninstallable now correctly falls bacl to B
+        A | B, where A is uninstallable now correctly falls back to B
         (Closes: #403246).
       . Removal of Build-Conflicts now works, due to using apt-get
         or aptitude to perform the removal (Closes: #464376).
@@ -41,7 +41,7 @@ sbuild (0.60.3) unstable; urgency=low
     into cloned chroots if a build is started during a maintenance
     operation and the build will block until the operation is completed.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 21:29:28 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 07 Nov 2010 22:32:11 +0000
 
 sbuild (0.60.2-1) unstable; urgency=low
 
