@@ -485,10 +485,10 @@ sub init_allowed_keys {
 	    },
 	},
 	'LOG_EXTERNAL_COMMAND_OUTPUT'		=> {
-	    DEFAULT => 0
+	    DEFAULT => 1
 	},
 	'LOG_EXTERNAL_COMMAND_ERROR'		=> {
-	    DEFAULT => 0
+	    DEFAULT => 1
 	},
 	'RESOLVE_VIRTUAL'				=> {
 	    DEFAULT => 0
