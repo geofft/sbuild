@@ -29,11 +29,12 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT_OK = qw($version $release_date %paths %programs);
+    @EXPORT_OK = qw($version $release_date $compat_mode %paths %programs);
 }
 
 our $version = "@PACKAGE_VERSION@";
 our $release_date = "@RELEASE_DATE@";
+our $compat_mode = @SBUILD_COMPAT@;
 
 # Paths
 my $prefix = "@prefix@";

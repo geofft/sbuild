@@ -453,7 +453,8 @@ sub init_allowed_keys {
 	    DEFAULT => 'build-progress'
 	},
 	'BUILD_DEP_RESOLVER'			=> {
-	    DEFAULT => 'aptitude',
+	    DEFAULT => ($Sbuild::Sysconfig::compat_mode)
+		? 'internal' : 'aptitude',
 	    CHECK => sub {
 		my $self = shift;
 		my $entry = shift;

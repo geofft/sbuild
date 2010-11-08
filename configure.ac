@@ -93,9 +93,12 @@ AC_ARG_ENABLE([compat], [AS_HELP_STRING([--enable-compat], [Enable compatibililt
                 esac ],
               [ enable_compat="no" ])
 AC_MSG_RESULT([$enable_compat])
+compat=0
 if test "$enable_compat" = "yes"; then
-  AC_DEFINE_UNQUOTED([SBUILD_COMPAT], [1], [Enable compatibility features])
+   compat=1
 fi
+AC_DEFINE_UNQUOTED([SBUILD_COMPAT], [$compat], [Enable compatibility features])
+AC_SUBST([SBUILD_COMPAT], [$compat])
 AM_CONDITIONAL([SBUILD_COMPAT], [test "$enable_compat" = "yes"])
 
 # Checks for programs.

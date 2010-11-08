@@ -50,6 +50,11 @@ sub begin_session {
     my $self = shift;
     my $chroot = $self->get('Chroot ID');
 
+    # Don't use namespaces in compat mode.
+    if ($Sbuild::Sysconfig::compat_mode) {
+	$chroot =~ s/^[^:]+://msx;
+    }
+
     my $schroot_session=readpipe($self->get_conf('SCHROOT') . " -c $chroot --begin-session");
     chomp($schroot_session);
     if ($?) {
