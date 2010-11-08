@@ -402,7 +402,7 @@ sub run {
 
     # Lock chroot so it won't be tampered with during the build.
     if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
-	goto cleanup_session;
+	goto cleanup_unlocked_session;
     }
 
     # Clean APT cache.
@@ -607,6 +607,7 @@ sub run {
     # Unlock chroot now it's cleaned up and ready for other users.
     $session->unlock_chroot();
 
+  cleanup_unlocked_session:
     # End chroot session
     if ($end_session == 1) {
 	$session->end_session();

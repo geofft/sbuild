@@ -142,7 +142,7 @@ foreach (@ARGV) {
     my $session = setup('source', $ARGV[0], $conf) or die "Chroot setup failed";
 
     if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
-	goto cleanup;
+	goto cleanup_unlocked;
     }
 
     if ($conf->get('UPDATE')) {
@@ -209,6 +209,7 @@ cleanup:
     # Unlock chroot now it's cleaned up and ready for other users.
     $session->unlock_chroot();
 
+cleanup_unlocked:
     cleanup($conf);
 
     exit($status ? 1 : 0);
