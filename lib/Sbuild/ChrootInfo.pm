@@ -81,6 +81,12 @@ sub find {
     my $chroot = shift;
     my $arch = shift;
 
+    # Use namespace given from $distribution if one is found
+    if ($distribution =~ /^([^:]+):/msx) {
+	$namespace = $1;
+	$distribution =~ s/^[^:]+://msx;
+    }
+
     my $chroots = $self->get('Chroots');
 
     # Don't do strict arch checking if ARCH == HOST_ARCH.
