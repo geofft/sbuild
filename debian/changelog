@@ -3,8 +3,10 @@ sbuild (0.60.4-1) unstable; urgency=low
   * New release.
   * Allow the user to specify chroot namespaces in the distribution
     name (Closes: #602789).
+  * Revert default build dependency resolver to 'internal' for the
+    time being.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 08 Nov 2010 17:16:01 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 09 Nov 2010 19:46:38 +0000
 
 sbuild (0.60.3-1) unstable; urgency=low
 
