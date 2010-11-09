@@ -9,7 +9,10 @@ configuration.
 
 * Major changes in 0.60.4:
 
-  None.
+  1) The default dependency resolver has been reverted back to
+     'internal' for the present.  'aptitude' will become the default
+     again once it has had further testing.  Feedback regarding the
+     'aptitude' resolver would be much appreciated.
 
 * Major changes in 0.60.3:
 
