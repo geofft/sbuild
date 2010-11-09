@@ -1,0 +1,23 @@
+sbuild (0.60.4-1) unstable; urgency=low
+
+  * sbuild provides two build dependency resolvers, 'internal', which
+    is the default, and currently used by the build dæmons, and
+    'aptitude' which uses aptitude.
+
+  * The 'aptitude' resolver has been available for nearly a year, and
+    is believed to be ready for everyday use, having a number of
+    advantages over the old 'internal' resolver.  We are soliciting
+    feedback from users prior to making 'aptitude' the default.  To
+    enable it, set "$build_dep_resolver='aptitude';" in your
+    configuration.  Please report any discrepancies in its behaviour
+    compared with the 'internal' resolver.  It is hoped that once it
+    has been shown to work reliably and correctly, it will become the
+    default resolver used on the buildd network; it is already in use
+    on buildds autobuilding experimental.
+
+  * The older 'internal' resolver is still used by the buildds, so
+    packages intended for upload should use
+    "$build_dep_resolver='internal';" to build using exactly the same
+    dependencies that should be used by the buildds.
+
+ -- Roger Leigh <rleigh@debian.org>  Tue, 09 Nov 2010 16:32:18 +0000
