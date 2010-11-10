@@ -162,9 +162,6 @@ EOF
 	goto package_cleanup;
     }
 
-    my $ignore_trust_violations =
-	$self->get_conf('APT_ALLOW_UNAUTHENTICATED') ? 'true' : 'false';
-
     my (@instd, @rmvd);
     $builder->log("Installing build dependencies\n");
     if (!$self->run_apt("-yf", \@instd, \@rmvd, 'install')) {

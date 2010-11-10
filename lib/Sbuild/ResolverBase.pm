@@ -192,11 +192,14 @@ sub run_apt {
     # dpkg since 1.4.1.18 issues an error on the conffile question if
     # it reads EOF -- hardwire the new --force-confold option to avoid
     # the questions.
+    my @apt_command = ($builder->get_conf('APT_GET'), '--purge', '-o',
+	'DPkg::Options::=--force-confold', '-q', '--no-install-recommends');
+    push @apt_command, '--allow-unauthenticated' if
+	($self->get_conf('APT_ALLOW_UNAUTHENTICATED'));
+    push @apt_command, "$mode", $action, @packages;
     my $pipe =
 	$builder->get('Session')->pipe_apt_command(
-	{ COMMAND => [$builder->get_conf('APT_GET'), '--purge',
-		      '-o', 'DPkg::Options::=--force-confold',
-		      '-q', "$mode", $action, @packages],
+	{ COMMAND => \@apt_command,
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
 	  PRIORITY => 0,
