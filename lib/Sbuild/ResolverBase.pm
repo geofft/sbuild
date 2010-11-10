@@ -186,8 +186,6 @@ sub run_apt {
 
     my $builder = $self->get('Builder');
 
-    return 1 if !@packages;
-
     $msgs = "";
     # redirection of stdin from /dev/null so that conffile question
     # are treated as if RETURN was pressed.

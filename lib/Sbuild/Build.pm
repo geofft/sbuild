@@ -49,6 +49,7 @@ use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download parse_file dsc_files);
+use Sbuild::AptResolver;
 use Sbuild::AptitudeResolver;
 use Sbuild::InternalResolver;
 
@@ -268,7 +269,10 @@ sub run {
 
     $self->set_status('building');
 
-    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
+    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "apt") {
+	$self->set('Dependency Resolver',
+		   Sbuild::AptResolver->new($self));
+    } elsif ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$self->set('Dependency Resolver',
 		   Sbuild::AptitudeResolver->new($self));
     } else {

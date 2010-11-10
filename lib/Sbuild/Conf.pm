@@ -461,9 +461,9 @@ sub init_allowed_keys {
 
 		die '$key: Invalid build-dependency resolver \'' .
 		    $self->get($key) .
-		    "'\nValid algorthms are 'internal' and 'aptitude'\n"
+		    "'\nValid algorthms are 'internal', 'apt' and 'aptitude'\n"
 		    if !isin($self->get($key),
-			     qw(internal aptitude));
+			     qw(internal apt aptitude));
 	    },
 	},
 	'LINTIAN'				=> {
