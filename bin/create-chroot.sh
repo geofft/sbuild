@@ -491,6 +491,9 @@ do_debootstrap
 setup_schroot
 if ! [ -z "$VGNAME" ] && [ -z "$VARIANT" ]; then
     variants="security volatile backports"
+    if [ "$ARCH" == "i386" -o "$ARCH" == "amd64" -o "$ARCH" == "powerpc" ]; then
+        variants="${variants} edu"
+    fi
     if [ "$BASE" == "sid" ]; then variants="experimental"; fi
     for EXTRA in $variants; do
         EXTRA=-${EXTRA}
