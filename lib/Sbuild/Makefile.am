@@ -39,6 +39,7 @@ MODULES =			\
 	ChrootInfoSudo.pm	\
 	ResolverBase.pm		\
 	AptitudeResolver.pm	\
+	AptResolver.pm		\
 	InternalResolver.pm	\
 	Conf.pm			\
 	ConfBase.pm		\
