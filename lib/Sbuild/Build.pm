@@ -535,32 +535,7 @@ sub run {
 	$self->log_subsection("Post Build");
 
 	# Run lintian.
-	my $lintian = $self->get_conf('LINTIAN');
-	if (($self->get_conf('RUN_LINTIAN')) && (-x $lintian)) {
-	    $self->log_subsubsection("lintian");
-
-	    my @lintian_command = ($lintian);
-	    push @lintian_command, @{$self->get_conf('LINTIAN_OPTIONS')} if
-		($self->get_conf('LINTIAN_OPTIONS'));
-	    push @lintian_command, $self->get('Changes File');
-	    $self->get('Host')->run_command(
-		{ COMMAND => \@lintian_command,
-		  CHROOT => 0,
-		  PRIORITY => 0,
-		});
-	    my $status = $? >> 8;
-
-	    $self->log("\n");
-	    if (! $?) {
-		$self->log_info("Lintian run was successful.\n");
-	    } else {
-		my $why = "unknown reason";
-		$why = "runtime error" if ($status == 2);
-		$why = "policy violation" if ($status == 1);
-		$why = "received signal " . $? & 127 if ($? & 127);
-		$self->log_error("Lintian run failed ($why)\n");
-	    }
-	}
+        $self->run_lintian();
 
 	# Run post build external commands
 	$self->run_external_commands("post-build-commands",
@@ -953,6 +928,45 @@ sub run_external_commands {
     $self->log("\nFinished processing commands.\n");
     $self->log_sep();
     return $returnval;
+}
+
+sub run_lintian {
+    my $self = shift;
+
+    return 1 unless ($self->get_conf('RUN_LINTIAN'));
+
+    $self->log_subsubsection("lintian");
+
+    my $lintian = $self->get_conf('LINTIAN');
+    if (! -x $lintian) {
+        my $why = "$lintian does not exist or is not executable";
+        $self->log_error("Lintian run failed ($why)\n");
+        return 0;
+    }
+
+    my @lintian_command = ($lintian);
+    push @lintian_command, @{$self->get_conf('LINTIAN_OPTIONS')} if
+        ($self->get_conf('LINTIAN_OPTIONS'));
+    push @lintian_command, $self->get('Changes File');
+    $self->get('Host')->run_command(
+        { COMMAND => \@lintian_command,
+          CHROOT => 0,
+          PRIORITY => 0,
+        });
+    my $status = $? >> 8;
+
+    $self->log("\n");
+    if ($?) {
+        my $why = "unknown reason";
+        $why = "runtime error" if ($status == 2);
+        $why = "policy violation" if ($status == 1);
+        $why = "received signal " . $? & 127 if ($? & 127);
+        $self->log_error("Lintian run failed ($why)\n");
+        return 0;
+    }
+
+    $self->log_info("Lintian run was successful.\n");
+    return 1;
 }
 
 sub build {
