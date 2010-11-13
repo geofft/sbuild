@@ -1654,10 +1654,26 @@ sub generate_stats {
 		    $self->get('Build End Time')-$self->get('Build Start Time'));
     $self->add_stat('Package-Time',
 		    $self->get('Pkg End Time')-$self->get('Pkg Start Time'));
-    $self->add_stat('Space', $self->get('This Space'));
+    $self->add_stat('Build-Space', $self->get('This Space'));
     $self->add_stat('Status', $self->get_status());
     $self->add_stat('Fail-Stage', $self->get('Pkg Fail Stage'))
 	if ($self->get_status() ne "successful");
+}
+
+sub log_stats {
+    my $self = shift;
+    foreach my $stat (sort keys %{$self->get('Summary Stats')}) {
+	$self->log("${stat}: " . $self->get('Summary Stats')->{$stat} . "\n");
+    }
+}
+
+sub print_stats {
+    my $self = shift;
+    print STDOUT "BEGIN SBUILD BUILD STATS\n";
+    foreach my $stat (sort keys %{$self->get('Summary Stats')}) {
+	print STDOUT "${stat}: " . $self->get('Summary Stats')->{$stat} . "\n";
+    }
+    print STDOUT "END SBUILD BUILD STATS\n";
 }
 
 sub write_stats {
@@ -1844,9 +1860,7 @@ sub close_build_log {
 
     $self->log_subsection('Summary');
     $self->generate_stats();
-    foreach my $stat (sort keys %{$self->get('Summary Stats')}) {
-	$self->log("${stat}: " . $self->get('Summary Stats')->{$stat} . "\n");
-    }
+    $self->log_stats();
 
     $self->log_sep();
     $self->log("Finished at ${date}\n");
