@@ -114,7 +114,7 @@ sub install_deps {
     if ($self->get_conf('RESOLVE_VIRTUAL')) {
 	debug("Finding virtual packages\n");
 	if (!$self->virtual_dependencies(\@positive)) {
-	    $builder->log("Package installation not possible\n");
+	    $builder->log("Package installation not possible: failed to find virtual dependencies\n");
 	    return 0;
 	}
     }
@@ -316,6 +316,25 @@ sub filter_dependencies {
 		($d->{'Package'}, $d->{'Rel'}, $d->{'Version'});
 	    my $stat = $status->{$name};
 	    if (!$stat->{'Installed'}) {
+		# If a package is Provided by an installed package,
+		# mark it satisfied.
+		if ($self->get_conf('RESOLVE_VIRTUAL')) {
+		    my @virtuals = $self->get_virtual($name);
+		    my $vstatus = $self->get_dpkg_status(@virtuals);
+		    foreach my $vpkg (@virtuals) {
+			my $vstat = $vstatus->{$vpkg};
+			if ($vpkg ne $name &&
+			    $vstat->{'Installed'}) {
+			    debug("$name: pos dep, provided by $vpkg\n");
+			    $builder->log("$name: provided by $vpkg\n");
+			    $is_satisfied = 1;
+			    last;
+			}
+		    }
+		}
+
+		last if ($is_satisfied);
+
 		debug("$name: pos dep, not installed\n");
 		$builder->log("$name: missing\n");
 
