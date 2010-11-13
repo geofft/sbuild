@@ -18,7 +18,9 @@ debian/build/config.status: configure
 	  SSH=/usr/bin/ssh \
 	  SUDO=/usr/bin/sudo \
 	  APTITUDE=/usr/bin/aptitude \
-	  LINTIAN=/usr/bin/lintian
+	  LINTIAN=/usr/bin/lintian \
+	  PIUPARTS=/usr/sbin/piuparts
+
 
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status

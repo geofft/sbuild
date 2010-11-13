@@ -50,6 +50,11 @@ sbuild \- build debian packages from source
 .RB [ \-\-run\-lintian ]
 .RB [ \-\-lintian\-opt=\fIoptions\fP ]
 .RB [ \-\-lintian\-opts=\fIoptions\fP ]
+.RB [ \-\-run\-piuparts ]
+.RB [ \-\-piuparts\-opt=\fIoptions\fP ]
+.RB [ \-\-piuparts\-opts=\fIoptions\fP ]
+.RB [ \-\-piuparts\-root\-arg=\fIoptions\fP ]
+.RB [ \-\-piuparts\-root\-args=\fIoptions\fP ]
 .RB [ \-\-pre\-build\-commands=\fIstring\fP ]
 .RB [ \-\-chroot\-setup\-commands=\fIstring\fP ]
 .RB [ \-\-chroot\-cleanup\-commands=\fIstring\fP ]
@@ -273,6 +278,23 @@ Run lintian with the specified options.
 .BR \-\-lintian\-opts=\fIoptions\fP
 Append extra options to existing options passed to lintian.
 .TP
+.BR \-\-run\-piuparts
+Run piuparts after a successful build.
+.TP
+.BR \-\-piuparts\-opt=\fIoptions\fP
+Run piuparts with the specified options.
+.TP
+.BR \-\-piuparts\-opts=\fIoptions\fP
+Append extra options to existing options passed to piuparts.
+.TP
+.BR \-\-piuparts\-root\-arg=\fIoptions\fP
+Add an argument that is used to launch piuparts as root. If no arguments are
+specified, piuparts will be launched via sudo.
+.TP
+.BR \-\-piuparts\-root\-args=\fIoptions\fP
+Add arguments that are used to launch piuparts as root. If no arguments are
+specified, piuparts will be launched via sudo.
+.TP
 .BR \-\-pre\-build\-commands=\fIstring\fP
 Run this command before a build starts. This option can be used multiple times
 to add multiple commands.
@@ -362,12 +384,12 @@ them. At other times, it is left unchanged. For example, a .changes file is only
 defined at the end of a build, so using \fI%c\fR will only be substituted for
 post-build-commands.
 .PP
-Here's an example of using an escape to run piuparts on a .changes file after
-a build is done.
+Here's an example of using an escape to run a program foo on a .changes file
+after a build is done.
 .PP
 \f[CB]$ sbuild \-\-post\-build\-commands \\\fP
 .br
-\f[CB]      'piuparts %SBUILD_CHANGES'\fP
+\f[CB]      'foo %SBUILD_CHANGES'\fP
 .PP
 One final note, external commands are processed in the order they are given.
 Also, the commands given in a configuration file are processed first, then the

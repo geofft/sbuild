@@ -190,6 +190,25 @@ sub set_options {
 			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
 				$_[1]);
 		       },
+		       "run-piuparts" => sub {
+			    $self->set_conf('RUN_PIUPARTS', 1);
+		       },
+		       "piuparts-opts=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "piuparts-opt=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_OPTIONS')},
+				$_[1]);
+		       },
+		       "piuparts-root-args=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_ROOT_ARGS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "piuparts-root-arg=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_ROOT_ARGS')},
+				$_[1]);
+		       },
 			"pre-build-commands=s" => sub {
 			   my @command = split(/\s+/, $_[1]);
 			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"pre-build-commands"}},

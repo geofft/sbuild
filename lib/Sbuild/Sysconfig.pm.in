@@ -98,6 +98,7 @@ our %programs = (
     'DPKG_PARSECHANGELOG' => '@DPKG_PARSECHANGELOG@',
     'DPKG_SOURCE' => '@DPKG_SOURCE@',
     'LINTIAN' => '@LINTIAN@',
+    'PIUPARTS' => '@PIUPARTS@',
     'DU' => '@DU@',
     'FAKEROOT' => '@FAKEROOT@',
     'GPG' => '@GPG@',

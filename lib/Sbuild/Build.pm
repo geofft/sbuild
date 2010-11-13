@@ -537,6 +537,9 @@ sub run {
 	# Run lintian.
         $self->run_lintian();
 
+        # Run piuparts.
+        $self->run_piuparts();
+
 	# Run post build external commands
 	$self->run_external_commands("post-build-commands",
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
@@ -966,6 +969,47 @@ sub run_lintian {
     }
 
     $self->log_info("Lintian run was successful.\n");
+    return 1;
+}
+
+sub run_piuparts {
+    my $self = shift;
+
+    return 1 unless ($self->get_conf('RUN_PIUPARTS'));
+
+    $self->log_subsubsection("piuparts");
+
+    my $piuparts = $self->get_conf('PIUPARTS');
+    if (! -x $piuparts) {
+        my $why = "$piuparts does not exist or is not executable";
+        $self->log_error("Piuparts run failed ($why)\n");
+        return 0;
+    }
+
+    my @piuparts_command;
+    if (scalar(@{$self->get_conf('PIUPARTS_ROOT_ARGS')})) {
+	push @piuparts_command, @{$self->get_conf('PIUPARTS_ROOT_ARGS')};
+    } else {
+	push @piuparts_command, $Sbuild::Sysconfig::programs{'SUDO'}, '--';
+    }
+    push @piuparts_command, $piuparts;
+    push @piuparts_command, @{$self->get_conf('PIUPARTS_OPTIONS')} if
+        ($self->get_conf('PIUPARTS_OPTIONS'));
+    push @piuparts_command, $self->get('Changes File');
+    $self->get('Host')->run_command(
+        { COMMAND => \@piuparts_command,
+          CHROOT => 0,
+          PRIORITY => 0,
+        });
+    my $status = $? >> 8;
+
+    $self->log("\n");
+    if ($?) {
+        $self->log_error("Piuparts run failed.\n");
+        return 0;
+    }
+
+    $self->log_info("Piuparts run was successful.\n");
     return 1;
 }
 
