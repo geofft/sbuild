@@ -467,20 +467,46 @@ sub init_allowed_keys {
 	    },
 	},
 	'LINTIAN'				=> {
-	    CHECK => $validate_program,
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('RUN_LINTIAN')) {
+		    $validate_program->($self, $entry);
+		}
+	    },
 	    DEFAULT => $Sbuild::Sysconfig::programs{'LINTIAN'},
 	},
 	'RUN_LINTIAN'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		$self->check('LINTIAN');
+	    },
 	    DEFAULT => 0
 	},
 	'LINTIAN_OPTIONS'			=> {
 	    DEFAULT => []
 	},
 	'PIUPARTS'				=> {
-	    CHECK => $validate_program,
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('RUN_PIUPARTS')) {
+		    $validate_program->($self, $entry);
+		}
+	    },
 	    DEFAULT => $Sbuild::Sysconfig::programs{'PIUPARTS'},
 	},
 	'RUN_PIUPARTS'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		$self->check('PIUPARTS');
+	    },
 	    DEFAULT => 0
 	},
 	'PIUPARTS_OPTIONS'			=> {
@@ -714,11 +740,11 @@ sub read_config {
 	$self->get('BIN_NMU')) {
 	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
-    $self->set('LINTIAN', $lintian);
     $self->set('RUN_LINTIAN', $run_lintian);
+    $self->set('LINTIAN', $lintian);
     $self->set('LINTIAN_OPTIONS', $lintian_opts);
-    $self->set('PIUPARTS', $piuparts);
     $self->set('RUN_PIUPARTS', $run_piuparts);
+    $self->set('PIUPARTS', $piuparts);
     $self->set('PIUPARTS_OPTIONS', $piuparts_opts);
     $self->set('PIUPARTS_ROOT_ARGS', $piuparts_root_args);
     $self->set('EXTERNAL_COMMANDS', $external_commands);

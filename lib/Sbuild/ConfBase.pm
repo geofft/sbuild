@@ -278,6 +278,19 @@ sub set_allowed_keys {
 
 }
 
+sub check {
+    my $self = shift;
+    my $key = shift;
+
+    my $entry = $self->{'KEYS'}->{$key};
+
+    if (defined($entry)) {
+	if (defined($entry->{'CHECK'})) {
+	    $entry->{'CHECK'}->($self, $entry);
+	}
+    }
+}
+
 sub warn_deprecated {
     my $oldtype = shift;
     my $oldopt = shift;
