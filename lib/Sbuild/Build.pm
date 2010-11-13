@@ -1646,8 +1646,9 @@ sub generate_stats {
 
     $self->add_stat('Package', $self->get('Package'));
     $self->add_stat('Version', $self->get('Version'));
-    $self->add_stat('Source Version', $self->get('OVersion'));
+    $self->add_stat('Source-Version', $self->get('OVersion'));
     $self->add_stat('Architecture', $self->get('Arch'));
+    $self->add_stat('Distribution', $self->get_conf('DISTRIBUTION'));
     $self->add_stat('Space', $self->get('This Space'));
     $self->add_stat('Build-Time',
 		    $self->get('Build End Time')-$self->get('Build Start Time'));
