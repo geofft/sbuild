@@ -70,6 +70,7 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    $self->set('Job', $dsc);
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
@@ -1644,6 +1645,7 @@ sub add_stat {
 sub generate_stats {
     my $self = shift;
 
+    $self->add_stat('Job', $self->get('Job'));
     $self->add_stat('Package', $self->get('Package'));
     $self->add_stat('Version', $self->get('Version'));
     $self->add_stat('Source-Version', $self->get('OVersion'));
