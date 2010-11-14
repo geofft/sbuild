@@ -1,11 +1,23 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.60.4.  Please read these release notes carefully.
+Welcome to sbuild 0.60.5.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.60.5:
+
+  1) A new resolver, 'apt', has been added.  Like the aptitude
+     resolver, this installs a dependency package to install build
+     dependencies and remove build conflicts, but uses apt-get rather
+     than aptitude.  This resolver is currently experimental and may
+     not yet perform correctly under all circumstances.  Use at your
+     own risk.
+
+  2) It is now possible to run piuparts on the build packages with the
+     new --run-piuparts option.
 
 * Major changes in 0.60.4:
 
