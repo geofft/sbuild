@@ -111,23 +111,18 @@ sub main () {
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
     if (defined($current_job) && defined($jobs{$current_job})) {
-	if ($conf->get('SBUILD_MODE') eq "user") {
-	    exit ($jobs{$current_job}->get_status() ne "successful") ? 1 : 0;
-	} elsif ($conf->get('SBUILD_MODE') eq "buildd") {
-	    if ($jobs{$current_job}->get_status() eq "successful") {
-		exit 0;
-	    } elsif ($jobs{$current_job}->get_status() eq "attempted") {
-		exit 2;
-	    } elsif ($jobs{$current_job}->get_status() eq "given-back") {
-		#Probably needs a give back:
-		exit 3;
-	    }
-	    #Unknown status - probably needs a give back, but needs to be
-	    #reported to the admin as failure:
-	    exit 1;
+	if ($jobs{$current_job}->get_status() eq "successful") {
+	    exit 0;
+	} elsif ($jobs{$current_job}->get_status() eq "attempted") {
+	    exit 2;
+	} elsif ($jobs{$current_job}->get_status() eq "given-back") {
+	    #Probably needs a give back:
+	    exit 3;
 	}
+	# Unknown status - probably needs a give back, but needs to be
+	# reported to the admin as failure:
+	exit 1;
     }
-    exit 0;
 }
 
 # only called from main loop, but depends on job state.
