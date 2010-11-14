@@ -30,8 +30,8 @@ builddsysconf_DATA = buildd.conf wanna-build.conf
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
-COMPAT_SETUP = 25nssdatabases
-SETUP = 99builddsourceslist
+COMPAT_SETUP = 25nssdatabases 99builddsourceslist
+SETUP =
 
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
 if SBUILD_COMPAT
