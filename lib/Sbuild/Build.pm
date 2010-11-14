@@ -284,6 +284,7 @@ sub run {
 
 
     $self->set('Pkg Start Time', time);
+    $self->set('Pkg End Time', $self->get('Pkg Start Time'));
 
     # Acquire the architecture we're building for.
     $self->set('Arch', $self->get_conf('ARCH'));
@@ -1188,6 +1189,7 @@ sub build {
 
     $self->log_subsubsection("dpkg-buildpackage");
     $self->set('Build Start Time', time);
+    $self->set('Build End Time', $self->get('Build Start Time'));
     $self->set('Pkg Fail Stage', "build");
 
     my $binopt = $self->get_conf('BUILD_SOURCE') ?
