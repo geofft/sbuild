@@ -1671,11 +1671,9 @@ sub log_stats {
 
 sub print_stats {
     my $self = shift;
-    print STDOUT "BEGIN SBUILD BUILD STATS\n";
     foreach my $stat (sort keys %{$self->get('Summary Stats')}) {
 	print STDOUT "${stat}: " . $self->get('Summary Stats')->{$stat} . "\n";
     }
-    print STDOUT "END SBUILD BUILD STATS\n";
 }
 
 sub write_stats {
