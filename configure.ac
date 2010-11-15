@@ -93,15 +93,19 @@ AC_ARG_ENABLE([compat], [AS_HELP_STRING([--enable-compat], [Enable compatibililt
                 esac ],
               [ enable_compat="no" ])
 AC_MSG_RESULT([$enable_compat])
+compat=0
 if test "$enable_compat" = "yes"; then
-  AC_DEFINE_UNQUOTED([SBUILD_COMPAT], [1], [Enable compatibility features])
+   compat=1
 fi
+AC_DEFINE_UNQUOTED([SBUILD_COMPAT], [$compat], [Enable compatibility features])
+AC_SUBST([SBUILD_COMPAT], [$compat])
 AM_CONDITIONAL([SBUILD_COMPAT], [test "$enable_compat" = "yes"])
 
 # Checks for programs.
 AC_PATH_PROG([APT_CACHE], [apt-cache])
 AC_PATH_PROG([APTITUDE], [aptitude])
 AC_PATH_PROG([APT_GET], [apt-get])
+AC_PATH_PROG([APTITUDE], [aptitude])
 AC_PATH_PROG([CHMOD], [chmod])
 AC_PATH_PROG([DATE], [date])
 AC_PATH_PROG([DCMD], [dcmd])
@@ -110,6 +114,8 @@ AC_PATH_PROG([DPKG], [dpkg])
 AC_PATH_PROG([DPKG_BUILDPACKAGE], [dpkg-buildpackage])
 AC_PATH_PROG([DPKG_PARSECHANGELOG], [dpkg-parsechangelog])
 AC_PATH_PROG([DPKG_SOURCE], [dpkg-source])
+AC_PATH_PROG([LINTIAN], [lintian])
+AC_PATH_PROG([PIUPARTS], [piuparts])
 AC_PATH_PROG([DU], [du])
 AC_PATH_PROG([FAKEROOT], [fakeroot])
 AC_PATH_PROG([FIND], [find])
@@ -358,7 +364,6 @@ AC_CONFIG_FILES([man/sbuild-setup.7])
 AC_CONFIG_FILES([man/sbuild-shell.1])
 AC_CONFIG_FILES([man/sbuild-stats.1])
 AC_CONFIG_FILES([man/sbuild-update.1])
-AC_CONFIG_FILES([man/sbuild-clean.1])
 AC_CONFIG_FILES([man/wanna-build.1])
 AC_CONFIG_FILES([man/wanna-build-catdb.1])
 AC_CONFIG_FILES([man/wanna-build-mail.1])

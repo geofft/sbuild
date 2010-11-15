@@ -72,7 +72,13 @@ sub init_allowed_keys {
 	},
 	'SETUP_ONLY'				=> {
 	    DEFAULT => 0
-	}
+	},
+	'MAKE_SBUILD_TARBALL'				=> {
+	    DEFAULT => ''
+	},
+	'KEEP_SBUILD_CHROOT_DIR'			=> {
+	    DEFAULT => 0
+	},
     );
 
     $self->set_allowed_keys(\%createchroot_keys);
@@ -125,6 +131,12 @@ sub set_options {
 	},
 	"setup-only" => sub {
 	    $self->set_conf('SETUP_ONLY', 1);
+	},
+	"make-sbuild-tarball=s" => sub {
+	    $self->set_conf('MAKE_SBUILD_TARBALL', $_[1]);
+	},
+	"keep-sbuild-chroot-dir" => sub {
+	    $self->set_conf('KEEP_SBUILD_CHROOT_DIR', 1);
 	});
 }
 
@@ -135,8 +147,9 @@ use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
 use Sbuild qw(dump_file help_text version_text usage_error check_packages);
 use Sbuild::ChrootPlain;
 use Sbuild::Sysconfig;
-use File::Path qw(mkpath);
+use File::Path qw(mkpath rmtree);
 use File::Temp ();
+use File::Copy;
 use Cwd qw(abs_path);
 
 sub add_items ($@);
@@ -249,16 +262,30 @@ print "I: Please add any additional APT sources to ${target}/etc/apt/sources.lis
 # Write out schroot chroot configuration.
 my $chrootname = "${suite}-" . $conf->get('ARCH') . "-sbuild";
 
-if (-d "/etc/schroot/chroot.d") {
-    # TODO: Don't hardcode path
-    my $SCHROOT_CONF =
-	new File::Temp( TEMPLATE => "$chrootname-XXXXXX",
-			DIR => "/etc/schroot/chroot.d",
-			UNLINK => 0)
-	or die "Can't open schroot configuration file: $!\n";
+# Determine the schroot chroot configuration to use.
+my $config_entry;
+my $arch = $conf->get('ARCH');
+if ($conf->get('MAKE_SBUILD_TARBALL')) {
+    my $tarball = $conf->get('MAKE_SBUILD_TARBALL');
 
-    my $arch = $conf->get('ARCH');
-    print $SCHROOT_CONF <<"EOF";
+    # Default to using tar gzip compression if unable to determine compression
+    # mode via file extension.
+    if ($tarball !~ /\.(tgz|tbz|tlz|txz|tar(\.(gz|bz2|lz|xz))?)$/) {
+        print "I: Renaming sbuild tarball '$tarball' to '$tarball.tar.gz'\n";
+        $tarball .= ".tar.gz";
+        $conf->set('MAKE_SBUILD_TARBALL', $tarball);
+    }
+
+    $config_entry = <<"EOF";
+[$chrootname]
+type=file
+description=Debian $suite/$arch autobuilder
+file=$tarball
+groups=root,sbuild
+root-groups=root,sbuild
+EOF
+} else {
+    $config_entry = <<"EOF";
 [$chrootname]
 type=directory
 description=Debian $suite/$arch autobuilder
@@ -267,6 +294,17 @@ groups=root,sbuild
 root-groups=root,sbuild
 script-config=sbuild/config
 EOF
+}
+
+if (-d "/etc/schroot/chroot.d") {
+    # TODO: Don't hardcode path
+    my $SCHROOT_CONF =
+	new File::Temp( TEMPLATE => "$chrootname-XXXXXX",
+			DIR => "/etc/schroot/chroot.d",
+			UNLINK => 0)
+	or die "Can't open schroot configuration file: $!\n";
+
+    print $SCHROOT_CONF "$config_entry";
 
     my ($personality, $personality_message);
     # Detect whether personality might be needed.
@@ -313,14 +351,15 @@ if (-l $chrootlink) {
     $chrootlink = undef;
 }
 
-if (defined $chrootlink) {
+if ((defined $chrootlink) && (! $conf->get('MAKE_SBUILD_TARBALL'))) {
     if (symlink($target, $chrootlink)) {
 	print "I: sudo chroot configuration linked as $Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname.\n";
     } else {
 	print STDERR "E: Failed to symlink $target to $chrootlink: $!\n";
     }
 } else {
-    print "W: Failed to symlink $target to $chrootlink: file already exists\n";
+    print "W: Failed to symlink $target to $chrootlink: file already exists\n"
+	unless defined $conf->get('MAKE_SBUILD_TARBALL');
 }
 
 if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
@@ -352,6 +391,38 @@ if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
     print "W: Not automatically updating APT package lists.\n";
     print "I: Run \"apt-get update\" and \"apt-get dist-upgrade\" prior to use.\n";
     print "I: Run \"sbuild-checkpackages --set\" to set reference package list.\n";
+}
+
+# This block makes the tarball chroot if one has been requested and delete
+# the sbuild chroot directory created, unless it's been requested to keep the
+# directory.
+if ($conf->get('MAKE_SBUILD_TARBALL')) {
+    my ($tmpfh, $tmpfile) = File::Temp->tempfile("XXXXXX");
+    my @program_list;
+
+    # Change program arguments accordingly
+    if ($conf->get('MAKE_SBUILD_TARBALL') =~ /\.tar$/) {
+        @program_list = ("/bin/tar", "-cf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.gz|\.tgz)$/) {
+        @program_list = ("/bin/tar", "-czf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.bz2|\.tbz)$/) {
+        @program_list = ("/bin/tar", "-cjf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.lz|\.tlz)$/) {
+        @program_list = ("/bin/tar", "--lzma", "-cf", "$tmpfile", "-C", "$target", "./");
+    } elsif ($conf->get('MAKE_SBUILD_TARBALL') =~ /(\.tar\.xz|\.txz)$/) {
+        @program_list = ("/bin/tar", "-cJf", "$tmpfile", "-C", "$target", "./");
+    }
+
+    system(@program_list) == 0 or die "Could not create chroot tarball: $?\n";
+
+    move("$tmpfile", $conf->get('MAKE_SBUILD_TARBALL'));
+    chmod 0644, $conf->get('MAKE_SBUILD_TARBALL');
+    if (! $conf->get('KEEP_SBUILD_CHROOT_DIR')) {
+	rmtree("$target");
+	print "I: chroot $target has been removed.\n";
+    } else {
+	print "I: chroot $target has been kept.\n";
+    }
 }
 
 print "I: Successfully set up $suite chroot.\n";

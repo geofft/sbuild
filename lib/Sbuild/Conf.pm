@@ -186,6 +186,9 @@ sub init_allowed_keys {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'DPKG_SOURCE'}
 	},
+	'DPKG_SOURCE_OPTIONS'			=> {
+	    DEFAULT => []
+	},
 	'DCMD'					=> {
 	    CHECK => $validate_program,
 	    DEFAULT => $Sbuild::Sysconfig::programs{'DCMD'}
@@ -390,38 +393,6 @@ sub init_allowed_keys {
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
 	    DEFAULT => 0
 	},
-	'ALTERNATIVES'				=> {
-	    DEFAULT => {
-		'info-browser'		=> 'info',
-		'httpd'			=> 'apache',
-		'postscript-viewer'	=> 'ghostview',
-		'postscript-preview'	=> 'psutils',
-		'www-browser'		=> 'lynx',
-		'awk'			=> 'gawk',
-		'c-shell'		=> 'tcsh',
-		'wordlist'		=> 'wenglish',
-		'tclsh'			=> 'tcl8.4',
-		'wish'			=> 'tk8.4',
-		'c-compiler'		=> 'gcc',
-		'fortran77-compiler'	=> 'g77',
-		'java-compiler'		=> 'jikes',
-		'libc-dev'		=> 'libc6-dev',
-		'libgl-dev'		=> 'xlibmesa-gl-dev',
-		'libglu-dev'		=> 'xlibmesa-glu-dev',
-		'libncurses-dev'	=> 'libncurses5-dev',
-		'libz-dev'		=> 'zlib1g-dev',
-		'libg++-dev'		=> 'libstdc++6-4.0-dev',
-		'emacsen'		=> 'emacs21',
-		'mail-transport-agent'	=> 'ssmtp',
-		'mail-reader'		=> 'mailx',
-		'news-transport-system'	=> 'inn',
-		'news-reader'		=> 'nn',
-		'xserver'		=> 'xvfb',
-		'mysql-dev'		=> 'libmysqlclient-dev',
-		'giflib-dev'		=> 'libungif4-dev',
-		'freetype2-dev'		=> 'libttf-dev'
-	    }
-	},
 	'CHECK_DEPENDS_ALGORITHM'		=> {
 	    CHECK => sub {
 		my $self = shift;
@@ -490,10 +461,76 @@ sub init_allowed_keys {
 
 		die '$key: Invalid build-dependency resolver \'' .
 		    $self->get($key) .
-		    "'\nValid algorthms are 'internal' and 'aptitude'\n"
+		    "'\nValid algorthms are 'internal', 'apt' and 'aptitude'\n"
 		    if !isin($self->get($key),
-			     qw(internal aptitude));
+			     qw(internal apt aptitude));
 	    },
+	},
+	'LINTIAN'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('RUN_LINTIAN')) {
+		    $validate_program->($self, $entry);
+		}
+	    },
+	    DEFAULT => $Sbuild::Sysconfig::programs{'LINTIAN'},
+	},
+	'RUN_LINTIAN'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		$self->check('LINTIAN');
+	    },
+	    DEFAULT => 0
+	},
+	'LINTIAN_OPTIONS'			=> {
+	    DEFAULT => []
+	},
+	'PIUPARTS'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($self->get('RUN_PIUPARTS')) {
+		    $validate_program->($self, $entry);
+		}
+	    },
+	    DEFAULT => $Sbuild::Sysconfig::programs{'PIUPARTS'},
+	},
+	'RUN_PIUPARTS'				=> {
+	    CHECK => sub {
+		my $self = shift;
+		$self->check('PIUPARTS');
+	    },
+	    DEFAULT => 0
+	},
+	'PIUPARTS_OPTIONS'			=> {
+	    DEFAULT => []
+	},
+	'PIUPARTS_ROOT_ARGS'			=> {
+	    DEFAULT => []
+	},
+	'EXTERNAL_COMMANDS'			=> {
+	    DEFAULT => {
+		"pre-build-commands" => [],
+		"chroot-setup-commands" => [],
+		"chroot-cleanup-commands" => [],
+		"post-build-commands" => [],
+	    },
+	},
+	'LOG_EXTERNAL_COMMAND_OUTPUT'		=> {
+	    DEFAULT => 1
+	},
+	'LOG_EXTERNAL_COMMAND_ERROR'		=> {
+	    DEFAULT => 1
+	},
+	'RESOLVE_VIRTUAL'				=> {
+	    DEFAULT => 0
 	},
     );
 
@@ -523,6 +560,7 @@ sub read_config {
     my $apt_cache = undef;
     my $aptitude = undef;
     my $dpkg_source = undef;
+    my $dpkg_source_opts = undef;
     my $dcmd = undef;
     my $md5sum = undef;
     my $avg_time_db = undef;
@@ -572,8 +610,6 @@ sub read_config {
     my $apt_upgrade = undef;
     my $apt_distupgrade = undef;
     my $apt_allow_unauthenticated = undef;
-    my %alternatives;
-    undef %alternatives;
     my $check_depends_algorithm = undef;
     my $distribution = undef;
     my $archive = undef;
@@ -583,6 +619,17 @@ sub read_config {
     my $job_file = undef;
     my $build_dir = undef;
     my $build_dep_resolver = undef;
+    my $lintian = undef;
+    my $run_lintian = undef;
+    my $lintian_opts = undef;
+    my $piuparts = undef;
+    my $run_piuparts = undef;
+    my $piuparts_opts = undef;
+    my $piuparts_root_args = undef;
+    my $external_commands = undef;
+    my $log_external_command_output = undef;
+    my $log_external_command_error = undef;
+    my $resolve_virtual = undef;
     my $core_depends = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
@@ -597,6 +644,7 @@ sub read_config {
 
     # Set before APT_GET or APTITUDE to allow correct validation.
     $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
+    $self->set('RESOLVE_VIRTUAL', $resolve_virtual);
     $self->set('CORE_DEPENDS', $core_depends);
     $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);
@@ -615,6 +663,7 @@ sub read_config {
     $self->set('APT_CACHE', $apt_cache);
     $self->set('APTITUDE', $aptitude);
     $self->set('DPKG_SOURCE', $dpkg_source);
+    $self->set('DPKG_SOURCE_OPTIONS', $dpkg_source_opts);
     $self->set('DCMD', $dcmd);
     $self->set('MD5SUM', $md5sum);
     $self->set('AVG_TIME_DB', $avg_time_db);
@@ -665,8 +714,6 @@ sub read_config {
     $self->set('APT_UPGRADE', $apt_upgrade);
     $self->set('APT_DISTUPGRADE', $apt_distupgrade);
     $self->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
-    $self->set('ALTERNATIVES', \%alternatives)
-	if (%alternatives);
     $self->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
     $self->set('JOB_FILE', $job_file);
 
@@ -693,7 +740,18 @@ sub read_config {
 	$self->get('BIN_NMU')) {
 	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
     }
-
+    $self->set('RUN_LINTIAN', $run_lintian);
+    $self->set('LINTIAN', $lintian);
+    $self->set('LINTIAN_OPTIONS', $lintian_opts);
+    $self->set('RUN_PIUPARTS', $run_piuparts);
+    $self->set('PIUPARTS', $piuparts);
+    $self->set('PIUPARTS_OPTIONS', $piuparts_opts);
+    $self->set('PIUPARTS_ROOT_ARGS', $piuparts_root_args);
+    $self->set('EXTERNAL_COMMANDS', $external_commands);
+    push(@{${$self->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
+        $chroot_setup_script) if ($chroot_setup_script);
+    $self->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output);
+    $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error);
 }
 
 sub check_group_membership ($) {
@@ -710,17 +768,6 @@ sub check_group_membership ($) {
     }
 
     my $in_group = 0;
-    foreach (split(' ', $members)) {
-	$in_group = 1 if $_ eq $self->get('USERNAME');
-    }
-
-    if (!$in_group) {
-	print STDERR "User $user is not a member of group $name in the system group database\n";
-	print STDERR "See \"User Setup\" in sbuild-setup(7)\n";
-	exit(1);
-    }
-
-    $in_group = 0;
     my @groups = getgroups();
     push @groups, getgid();
     foreach (@groups) {

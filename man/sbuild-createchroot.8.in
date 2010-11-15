@@ -29,6 +29,8 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ "\-\-components=\fIcomponent1[,component2,[componentn]]\fP" ]
 .RB [ "\-\-keyring=\fIkeyring-file\fP" ]
 .RB [ "\-\-setup\-only" ]
+.RB [ "\-\-make\-sbuild\-tarball=\fIfile\fP" ]
+.RB [ "\-\-keep\-sbuild\-chroot\-dir" ]
 .B SUITE TARGET-DIRECTORY DEBIAN-MIRROR-URI
 .RB [ SCRIPT ]
 .PP
@@ -141,11 +143,57 @@ debootstrap script to run.  Not typically required.
 Don't run debootstrap.  Only perform the setup tasks on an already existing
 chroot.  This is useful for converting an existing chroot for use with sbuild
 which has already been created using a tool such as debootstrap.
+.TP
+.BR \-\-make\-sbuild\-tarball=\fIfile\fP
+Create a bootstrapped file type chroot ready for use with sbuild and save it as
+\fIfile\fP. The compression format used for the tarball is dependent on the file
+extension used in \fIfile\fP. See the \fBTARBALL FILE\fP section for more
+details.
+.TP
+.BR \-\-keep\-sbuild\-chroot\-dir
+Don't delete the directory used for creating a file type chroot. This option
+does nothing if not creating a file type chroot.
+.SH TARBALL FILE
+When creating an sbuild tarball \fIfile\fP, the compression format used to
+generate the tarball depends on the entension used in \fIfile\fP. Here is a
+listing of the extensions that will be detected and what format the tarball will
+be generated as.
+.TP
+.BR *.tar
+Generates an uncompressed tarball.
+.TP
+.BR *.tar.gz|*.tgz
+Generates a compressed tarball using gzip.
+.TP
+.BR *.tar.bz2|*.tbz
+Generates a compressed tarball using bzip2.
+.TP
+.BR *.tar.lz|*.tlz
+Generates a compressed tarball using lzip.
+.TP
+.BR *.tar.xz|*.txz
+Generates a compressed tarball using xz.
+.PP
+If no extension is specified, sbuild\-createchroot will rename \fIfile\fP to
+\fIfile.tar.gz\fP and generate \fIfile.tar.gz\fP as a compressed tarball using gzip.
 .SH EXAMPLES
-To create a sid (unstable) chroot in \fI/srv/chroot/unstable\fP using the
-\fIftp.uk.debian.org\fP Debian mirror:
+To create a plain type sid (unstable) chroot in \fI/srv/chroot/unstable\fP using
+the \fIftp.uk.debian.org\fP Debian mirror:
 .PP
 \f[CR]% \f[CB]sudo sbuild\-createchroot sid /srv/chroot/unstable \fP\fP\\
+.br
+\f[CB]    http://ftp.uk.debian.org/debian\fP\[CR]
+.PP
+To create a bootstrapped file type sid (unstable) chroot ready for use with
+sbuild and saved in \fI/var/cache/sbuild/sbuild.tar.gz\fP using the
+\fIftp.uk.debian.org\fP Debian mirror and using a temporary directory as the
+target:
+.PP
+\f[CR]% \f[CB]sudo sbuild\-createchroot \fP\fP\\
+.br
+    \-\-make\-sbuild\-tarball=/var/cache/sbuild/sbuild.tar.gz \fP\fP\\
+.br
+    sid `mktemp \-d` \fP\fP\\
 .br
 \f[CB]    http://ftp.uk.debian.org/debian\fP\[CR]
 .SH HISTORY
@@ -157,11 +205,13 @@ number of directories in the chroot for use by sbuild.  This is now done by
 .nf
 Roger Leigh.
 Francesco P. Lovergine.
+Andres Mejia.
 .fi
 .SH COPYRIGHT
 .nf
 Copyright \[co] 2004 Francesco P. Lovergine <frankie@debian.org>.
 Copyright \[co] 2007\-2008 Roger Leigh <rleigh@debian.org>.
+Copyright \[co] 2010 Andres Mejia <mcitadel@gmail.com>.
 .fi
 .SH "SEE ALSO"
 .BR debootstrap (8),

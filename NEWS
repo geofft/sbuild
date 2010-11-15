@@ -1,15 +1,98 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.60.2.  Please read these release notes carefully.
+Welcome to sbuild 0.60.5.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
 
+* Major changes in 0.60.5:
+
+  1) A new resolver, 'apt', has been added.  Like the aptitude
+     resolver, this installs a dependency package to install build
+     dependencies and remove build conflicts, but uses apt-get rather
+     than aptitude.  This resolver is currently experimental and may
+     not yet perform correctly under all circumstances.  Use at your
+     own risk.
+
+  2) It is now possible to run piuparts on the build packages with the
+     new --run-piuparts option.
+
+* Major changes in 0.60.4:
+
+  1) The default dependency resolver has been reverted back to
+     'internal' for the present.  'aptitude' will become the default
+     again once it has had further testing.  Feedback regarding the
+     'aptitude' resolver would be much appreciated.
+
+* Major changes in 0.60.3:
+
+  1) The aptitude resolver is now the default resolver.  Users wishing
+     to continue to use the old internal resolver should set
+     $build_dep_resolver='internal' in their configuration.  The
+     aptitude resolver is far superior to the internal resolver,
+     because it can correctly resolve complex alternative and virtual
+     packages in build dependencies where the internal resolver would
+     fail.
+
+  2) The aptitude resolver is now entirely separate from the internal
+     resolver, and greatly simplified.  All Build-Depends and
+     -Conflicts are now passed directly to aptitude (with
+     architecture-specific dependencies filtered out).  As before, a
+     dummy dependency package is used to install and remove build
+     dependencies and build-conflicts.
+
+  3) The sbuild-clean program has been moved into sbuild-update, as
+     for the other sbuild- helper programs.  The sbuild-* helper
+     programs now take the sbuild chroot lock used by sbuild to
+     prevent concurrent builds in the same chroot, making it safe to
+     run the maintenance commands while builds are running (they will
+     wait until the build has finished before making any changes).
+     The sbuild-* helper programs now operate on source chroots, where
+     available (for lvm-snapshot and btrfs-snapshot type chroots).
+
+  4) The sbuild-createchroot program can now create tarballs from the
+     created chroot, with gzip, bzip2, lzma and xz compression.  Use
+     the new --make-sbuild-tarball option for this purpose.
+
+  5) sbuild may now be used on an unpacked source directory, in a
+     similar manner to debuild.  The directory will be packaged using
+     'dpkg-source -b' prior to building.  If a source package or
+     directory is not specified, sbuild will use the current working
+     directory like debuild.
+
+  6) Lintian may now be run after a package build with the
+     --run-lintian option.
+
+  7) External commands may now be run before and after a build and
+     during chroot setup and cleanup.  These may be used to do
+     additional setup and checking during a build, for example to run
+     piuparts.
+
 * Major changes in 0.60.2:
 
-  None.
+  1) Virtual packages may now be used in Build-Depends using the
+     internal resolver.  This is very simple, and picks the first
+     package providing the dependency in alphabetical order.  The
+     aptitude resolver is rather more sophisticated, and should be
+     used if this is insufficiently clever.
+
+  2) Build-Conflicts are correctly removed and reinstalled, and sbuild
+     can now remove packages which depend upon other packages, due to
+     using "apt-get remove" in place of "dpkg --remove".
+
+  3) Package build-dependency installation in now preceeded by
+     installation of "core" dependencies (currently build-essential)
+     and "essential" dependencies (essential packages listed in
+     build-essential), to ensure a working build environment.  These
+     should, of course, already be installed; this change is an
+     additional consistency check to ensure the build environment is
+     sane.
+
+  4) schroot sessions may be preserved on failure (failure to build or
+     failure to install build dependencies), to allow easier
+     troubleshooting.
 
 * Major changes in 0.60.1:
 

@@ -50,7 +50,8 @@ sub get_info_from_stream {
     my $stream = shift;
 
     my $chroot_type = '';
-    my %tmp = ('Name' => '',
+    my %tmp = ('Namespace' => '',
+	       'Name' => '',
 	       'Priority' => 0,
 	       'Location' => '',
 	       'Session Purged' => 0);
@@ -60,6 +61,30 @@ sub get_info_from_stream {
 
 	last if ! $_;
 
+	if (/\s*─── Chroot ───/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'chroot';
+	}
+	if (/\s*─── Session ───/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'session';
+	}
+	if (/\s*─── Source ───/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'source';
+	}
+	if (/\s*--- Chroot ---/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'chroot';
+	}
+	if (/\s*--- Session ---/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'session';
+	}
+	if (/\s*--- Source ---/ &&
+	    $tmp{'Namespace'} eq "") {
+	    $tmp{'Namespace'} = 'source';
+	}
 	if (/^\s*Name:?\s+(.*)$/ &&
 	    $tmp{'Name'} eq "") {
 	    $tmp{'Name'} = $1;
@@ -92,13 +117,16 @@ sub get_info_from_stream {
 	}
     }
 
-    if ($self->get_conf('DEBUG')) {
-	print STDERR "Found schroot chroot: $tmp{'Name'}\n";
+    if ($self->get_conf('DEBUG') && $tmp{'Name'})  {
+	print STDERR "Found schroot chroot: $tmp{'Namespace'}:$tmp{'Name'}\n";
 	foreach (sort keys %tmp) {
 	    print STDERR "  $_ $tmp{$_}\n";
 	}
     }
 
+    if (!$tmp{'Name'}) {
+	return undef;
+    }
     return \%tmp;
 }
 
@@ -129,48 +157,23 @@ sub get_info_all {
     $ENV{'LC_ALL'} = 'C';
     $ENV{'LANGUAGE'} = 'C';
 
-    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--info', '--all-chroots'
+    open CHROOTS, '-|', $self->get_conf('SCHROOT'), '--info'
 	or die 'Can\'t run ' . $self->get_conf('SCHROOT');
-    while (<CHROOTS>) {
-	my $tmp = $self->get_info_from_stream(\*CHROOTS);
-	$chroots->{$tmp->{'Name'}} = $tmp;
+    my $tmp = undef;
+    while (defined($tmp = $self->get_info_from_stream(\*CHROOTS))) {
+	my $namespace = $tmp->{'Namespace'};
+	$namespace = "chroot"
+	    if !$tmp->{'Namespace'};
+	$chroots->{$namespace} = {}
+	    if (!exists($chroots->{$namespace}));
+	$chroots->{$namespace}->{$tmp->{'Name'}} = $tmp;
 	foreach my $alias (split(/\s+/, $tmp->{'Aliases'})) {
-	    $chroots->{$alias} = $tmp;
+	    $chroots->{$namespace}->{$alias} = $tmp;
 	}
     }
     close CHROOTS or die "Can't close schroot pipe";
 
     $self->set('Chroots', $chroots);
-}
-
-sub find {
-    my $self = shift;
-    my $distribution = shift;
-    my $chroot = shift;
-    my $arch = shift;
-
-    # Determine the chroot type given
-    my $chroot_type;
-    if ($distribution =~ /:/) {
-        ($chroot_type = $distribution) =~ s/^([^:]+?):.*/$1/;
-    }
-    if (!$chroot_type && ($distribution =~ /-source$/)) {
-        $chroot_type = "source";
-    }
-
-    # Strip namespaces and '-source' suffix from distribution name given.
-    $distribution =~ s/^[^:]+://;
-    $distribution =~ s/-source$//;
-
-    # Call parent find() subroutine
-    $chroot = $self->SUPER::find($distribution, $chroot, $arch);
-
-    # Add chroot type if defined
-    if ($chroot_type) {
-        $chroot = "$chroot_type:" . "$chroot";
-    }
-
-    return $chroot;
 }
 
 sub _create {

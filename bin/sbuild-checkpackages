@@ -74,7 +74,7 @@ my $chroot = $ARGV[0];
 setlocale(LC_COLLATE, "POSIX");
 $ENV{'LC_COLLATE'} = "POSIX";
 
-my $session = setup($chroot, $conf) or die "Chroot setup failed";
+my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
 
 check_packages($session, $mode);
 

@@ -49,13 +49,28 @@ sub get_info {
     my $self = shift;
     my $chroot = shift;
 
-    return $self->get('Chroots')->{$chroot};
+    $chroot =~ /(\S+):(\S+)/;
+    my ($namespace, $chrootname) = ($1, $2);
+
+    my $info = undef;
+
+    if (exists($self->get('Chroots')->{$namespace}) &&
+	defined($self->get('Chroots')->{$namespace}) &&
+	exists($self->get('Chroots')->{$namespace}->{$chrootname})) {
+	$info = $self->get('Chroots')->{$namespace}->{$chrootname}
+    }
+
+    return $info;
 }
 
 sub get_info_all {
     my $self = shift;
 
     my $chroots = {};
+    # All sudo chroots are in the chroot namespace.
+    my $namespace = "chroot";
+    $chroots->{$namespace} = {};
+
     my $build_dir = $self->get_conf('BUILD_DIR');
 
     # TODO: Configure $build_dir as $sudo_chroot_dir
@@ -79,7 +94,10 @@ sub get_info_all {
 		}
 	    }
 
-	    $chroots->{$name} = \%tmp;
+	    $tmp{'Name'} = $name;
+	    $tmp{'Namespace'} = $namespace;
+
+	    $chroots->{$namespace}->{$name} = \%tmp;
 	}
     }
 

@@ -42,7 +42,7 @@ BEGIN {
 		 version_eq version_compare split_version
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
-		 send_mail send_build_log debug df);
+		 send_mail send_build_log debug debug2 df);
 }
 
 our $devnull;
@@ -74,6 +74,7 @@ sub help_text ($$);
 sub version_text ($);
 sub usage_error ($$);
 sub debug (@);
+sub debug2 (@);
 
 sub version_less ($$) {
 	my $v1 = shift;
@@ -404,7 +405,8 @@ sub version_text ($) {
 $program (Debian sbuild) $Sbuild::Sysconfig::version ($Sbuild::Sysconfig::release_date)
 
 Written by Roman Hodek, James Troup, Ben Collins, Ryan Murray, Rick
-Younie, Francesco Paolo Lovergine, Michael Banck, and Roger Leigh
+Younie, Francesco Paolo Lovergine, Michael Banck, Roger Leigh and
+Andres Mejia.
 
 Copyright © 1998-2000 Roman Hodek <roman\@hodek.net>
           © 1998-1999 James Troup <troup\@debian.org>
@@ -412,7 +414,8 @@ Copyright © 1998-2000 Roman Hodek <roman\@hodek.net>
 	  © 2001-2003 Rick Younie <younie\@debian.org>
 	  © 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
 	  © 2005      Michael Banck <mbanck\@debian.org>
-	  © 2005-2008 Roger Leigh <rleigh\@debian.org>
+	  © 2005-2010 Roger Leigh <rleigh\@debian.org>
+	  © 2009-2010 Andres Mejia <mcitadel\@gmail.com>
 
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -540,6 +543,14 @@ sub debug (@) {
     # TODO: Add debug level checking.
     if ($debug_level) {
 	print STDERR "D: ", @_;
+    }
+}
+
+sub debug2 (@) {
+
+    # TODO: Add debug level checking.
+    if ($debug_level && $debug_level >= 2) {
+	print STDERR "D2: ", @_;
     }
 }
 

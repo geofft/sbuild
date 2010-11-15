@@ -124,6 +124,14 @@ sub set_options {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				$_[1]);
 		       },
+		       "dpkg-source-opts=s" => sub {
+			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "dpkg-source-opt=s" => sub {
+			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
+				$_[1]);
+		       },
 		       "mail-log-to=s" => sub {
 			   $self->set_conf('MAILTO', $_[1]);
 			   $self->set_conf('MAILTO_FORCED_BY_CLI', "yes");
@@ -150,13 +158,20 @@ sub set_options {
 			   $self->set_conf('STATS_DIR', $_[1]);
 		       },
 		       "setup-hook=s" => sub {
+			my @command = split(/\s+/, $_[1]);
+			push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
+			\@command);
 			   $self->set_conf('CHROOT_SETUP_SCRIPT', $_[1]);
 		       },
 		       "use-snapshot" => sub {
+			   my $newldpath = '/usr/lib/gcc-snapshot/lib';
+			   my $ldpath = $self->get_conf('LD_LIBRARY_PATH');
+			   if (defined($ldpath) && $ldpath ne '') {
+			       $newldpath .= ':' . $ldpath;
+			   }
+
 			   $self->set_conf('GCC_SNAPSHOT', 1);
-			   $self->set_conf('LD_LIBRARY_PATH',
-					   '/usr/lib/gcc-snapshot/lib' .
-					   $self->get_conf('LD_LIBRARY_PATH') ne '' ? ':' . $self->get_conf('LD_LIBRARY_PATH') : '');
+			   $self->set_conf('LD_LIBRARY_PATH', $newldpath);
 			   $self->set_conf('PATH',
 					   '/usr/lib/gcc-snapshot/bin' .
 					   $self->get_conf('PATH') ne '' ? ':' . $self->get_conf('PATH') : '');
@@ -164,6 +179,62 @@ sub set_options {
 		       "build-dep-resolver=s" => sub {
 			   $self->set_conf('BUILD_DEP_RESOLVER', $_[1]);
 		       },
+			"run-lintian" => sub {
+			    $self->set_conf('RUN_LINTIAN', 1);
+		       },
+		       "lintian-opts=s" => sub {
+			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "lintian-opt=s" => sub {
+			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
+				$_[1]);
+		       },
+		       "run-piuparts" => sub {
+			    $self->set_conf('RUN_PIUPARTS', 1);
+		       },
+		       "piuparts-opts=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_OPTIONS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "piuparts-opt=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_OPTIONS')},
+				$_[1]);
+		       },
+		       "piuparts-root-args=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_ROOT_ARGS')},
+				split(/\s+/, $_[1]));
+		       },
+		       "piuparts-root-arg=s" => sub {
+			   push(@{$self->get_conf('PIUPARTS_ROOT_ARGS')},
+				$_[1]);
+		       },
+			"pre-build-commands=s" => sub {
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"pre-build-commands"}},
+				\@command);
+		       },
+			"chroot-setup-commands=s" => sub {
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
+				\@command);
+		       },
+			"chroot-cleanup-commands=s" => sub {
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"chroot-cleanup-commands"}},
+				\@command);
+		       },
+			"post-build-commands=s" => sub {
+			   my @command = split(/\s+/, $_[1]);
+			   push(@{${$self->get_conf('EXTERNAL_COMMANDS')}{"post-build-commands"}},
+				\@command);
+		       },
+			"log-external-command-output" => sub {
+			    $self->set_conf('LOG_EXTERNAL_COMMAND_OUTPUT', 1);
+		       },
+			"log-external-command-error" => sub {
+			    $self->set_conf('LOG_EXTERNAL_COMMAND_ERROR', 1);
+		       }
 	);
 }
 

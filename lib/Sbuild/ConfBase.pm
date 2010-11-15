@@ -246,7 +246,7 @@ sub set {
 
     # Set global debug level.
     $Sbuild::debug_level = $value
-	if ($key eq 'DEBUG');
+	if ($key eq 'DEBUG' && defined($value));
 
     my $entry = $self->{'KEYS'}->{$key};
 
@@ -276,6 +276,19 @@ sub set_allowed_keys {
 	$self->{'KEYS'}->{$_} = $allowed_keys->{$_}
     }
 
+}
+
+sub check {
+    my $self = shift;
+    my $key = shift;
+
+    my $entry = $self->{'KEYS'}->{$key};
+
+    if (defined($entry)) {
+	if (defined($entry->{'CHECK'})) {
+	    $entry->{'CHECK'}->($self, $entry);
+	}
+    }
 }
 
 sub warn_deprecated {

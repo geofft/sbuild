@@ -44,7 +44,7 @@ use Module::Load::Conditional qw(can_load); # Used to check for LWP::UserAgent
 use Time::HiRes qw ( time ); # Needed for high resolution timers
 
 sub get_dist ($);
-sub setup ($$);
+sub setup ($$$);
 sub cleanup ($);
 sub shutdown ($);
 sub parse_file ($);
@@ -78,10 +78,10 @@ sub get_dist ($) {
     return $dist;
 }
 
-sub setup ($$) {
+sub setup ($$$) {
+    my $namespace = shift;
     my $chroot = shift;
     my $conf = shift;
-
 
     $conf->set('VERBOSE', 1);
     $conf->set('NOLOG', 1);
@@ -98,7 +98,8 @@ sub setup ($$) {
 
     my $session;
 
-    $session = $chroot_info->create($chroot,
+    $session = $chroot_info->create($namespace,
+				    $chroot,
 				    undef, # TODO: Add --chroot option
 				    $conf->get('ARCH'));
 
@@ -390,7 +391,11 @@ sub parse_file ($) {
     {
         # Attempt to open and read the file
         my $fh;
-        open $fh, '<', $file or die "Could not read $file: $!";
+        if (ref($file) eq "GLOB") {
+          $fh = $file;
+        } else {
+          open $fh, '<', $file or die "Could not read $file: $!";
+        }
 
         # Read paragraph by paragraph
         local $/ = "";
@@ -409,6 +414,10 @@ sub parse_file ($) {
                 my ($field, $field_contents);
                 $field = $1 if ($match =~ /([^:]+?):/msx);
                 $field_contents = $1 if ($match =~ /[^:]+?:(.*)/msx);
+
+                # Trim leading and trailing space from entries
+                $field_contents =~ s/^[\s]+?\b//msx;
+                $field_contents =~ s/[\s]+?$//msx;
                 $fields{$field} = $field_contents;
             }
 

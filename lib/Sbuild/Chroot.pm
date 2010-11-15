@@ -22,7 +22,7 @@
 
 package Sbuild::Chroot;
 
-use Sbuild qw(copy debug);
+use Sbuild qw(copy debug debug2);
 use Sbuild::Base;
 use Sbuild::Conf;
 use Sbuild::ChrootInfo;
@@ -96,6 +96,7 @@ sub _setup_options {
     $self->set('Build Location', $self->get('Location') . "/build");
     $self->set('Srcdep Lock Dir', $self->get('Location') . '/' . $self->get_conf('SRCDEP_LOCK_DIR'));
     $self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
+    $self->set('Chroot Lock', $self->get('Location') . '/var/lock/sbuild');
 
     if (basesetup($self, $self->get('Config'))) {
 	print STDERR "Failed to set up chroot\n";
@@ -161,7 +162,7 @@ sub get_option {
 	 defined($self->get('Defaults')->{$option}));
     $value = $options->{$option} if
 	(defined($options) &&
-	 defined($options->{$option}));
+	 exists($options->{$option}));
 
     return $value;
 }
@@ -237,9 +238,9 @@ sub pipe_command_internal {
 	$self->exec_command($options);
     }
 
-    debug("Pipe (PID $pid, $pipe) created for: ",
-	  join(" ", @{$options->{'COMMAND'}}),
-	  "\n");
+    debug2("Pipe (PID $pid, $pipe) created for: ",
+	   join(" ", @{$options->{'COMMAND'}}),
+	   "\n");
 
     $options->{'PID'} = $pid;
 
@@ -286,9 +287,9 @@ sub run_command_internal {
 	$self->exec_command($options);
     }
 
-    debug("Pipe (PID $pid) created for: ",
-	  join(" ", @{$options->{'COMMAND'}}),
-	  "\n");
+    debug2("Pipe (PID $pid) created for: ",
+	   join(" ", @{$options->{'COMMAND'}}),
+	   "\n");
 
     waitpid($pid, 0);
 }
@@ -341,18 +342,18 @@ sub exec_command {
 	$ENV{$_} = $commandenv->{$_};
     }
 
-    debug("PROGRAM: $program\n");
-    debug("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
-    debug("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
-    debug("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
+    debug2("PROGRAM: $program\n");
+    debug2("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
+    debug2("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
+    debug2("EXPCOMMAND: ", join(" ", @{$options->{'EXPCOMMAND'}}), "\n");
 
-    debug("Environment set:\n");
+    debug2("Environment set:\n");
     foreach (sort keys %ENV) {
-	debug('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
+	debug2('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
     }
 
     if (defined($dir) && $dir) {
-	debug("Changing to directory: $dir\n");
+	debug2("Changing to directory: $dir\n");
 	chdir($dir) or die "Can't change directory to $dir: $!";
     }
 
@@ -368,7 +369,7 @@ sub get_apt_command_internal {
     my $command = $options->{'COMMAND'};
     my $apt_options = $self->get('APT Options');
 
-    debug("APT Options: ", join(" ", @$apt_options), "\n")
+    debug2("APT Options: ", join(" ", @$apt_options), "\n")
 	if defined($apt_options);
 
     my @aptcommand = ();
@@ -382,7 +383,7 @@ sub get_apt_command_internal {
 	@aptcommand = @$command;
     }
 
-    debug("APT Command: ", join(" ", @aptcommand), "\n");
+    debug2("APT Command: ", join(" ", @aptcommand), "\n");
 
     $options->{'CHROOT'} = $self->apt_chroot();
     $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
@@ -417,7 +418,7 @@ sub get_aptitude_command_internal {
     my $command = $options->{'COMMAND'};
     my $apt_options = $self->get('Aptitude Options');
 
-    debug("Aptitude Options: ", join(" ", @$apt_options), "\n")
+    debug2("Aptitude Options: ", join(" ", @$apt_options), "\n")
 	if defined($apt_options);
 
     my @aptcommand = ();
@@ -431,7 +432,7 @@ sub get_aptitude_command_internal {
 	@aptcommand = @$command;
     }
 
-    debug("APT Command: ", join(" ", @aptcommand), "\n");
+    debug2("APT Command: ", join(" ", @aptcommand), "\n");
 
     $options->{'CHROOT'} = $self->apt_chroot();
     $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
@@ -465,6 +466,79 @@ sub apt_chroot {
     my $chroot =  $self->get('Split') ? 0 : 1;
 
     return $chroot
+}
+
+sub lock_chroot {
+    my $self = shift;
+    my $new_job = shift;
+    my $new_pid = shift;
+    my $new_user = shift;
+
+    my $lockfile = $self->get('Chroot Lock');
+    my $try = 0;
+
+  repeat:
+    if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+	if ($! == EEXIST) {
+	    # lock file exists, wait
+	    goto repeat if !open( F, "<$lockfile" );
+	    my $line = <F>;
+	    my ($job, $pid, $user);
+	    close( F );
+	    if ($line !~ /^(\S+)\s+(\S+)\s+(\S+)/) {
+		$self->log_warning("Bad lock file contents ($lockfile) -- still trying\n");
+	    } else {
+		($job, $pid, $user) = ($1, $2, $3);
+		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+		    # process doesn't exist anymore, remove stale lock
+		    $self->log_warning("Removing stale lock file $lockfile ".
+				       "(job $job, pid $pid, user $user)\n");
+		    if (!unlink($lockfile)) {
+			if ($! != ENOENT) {
+			    $self->log_error("cannot remove chroot lock file $lockfile: $!\n");
+			    return 0;
+			}
+		    }
+		}
+	    }
+	    ++$try;
+	    if ($try > $self->get_conf('MAX_LOCK_TRYS')) {
+		$self->log_warning("Lockfile $lockfile still present after " .
+				   $self->get_conf('MAX_LOCK_TRYS') *
+				   $self->get_conf('LOCK_INTERVAL') .
+				   " seconds -- giving up\n");
+		return 0;
+	    }
+	    $self->log("Another sbuild process (job $job, pid $pid by user $user) is currently using the build chroot; waiting...\n")
+		if $try == 1;
+	    sleep $self->get_conf('LOCK_INTERVAL');
+	    goto repeat;
+	} else {
+	    $self->log_error("Can't create lock file $lockfile: $!\n");
+	    return 0;
+	}
+    }
+
+    my $username = $self->get_conf('USERNAME');
+
+    F->print("$new_job $new_pid $new_user\n");
+    F->close();
+
+    return 1;
+}
+
+sub unlock_chroot {
+    my $self = shift;
+
+    my $f = $self->get('Chroot Lock');
+
+    debug("Removing chroot lock file $f\n");
+    if (!unlink($f)) {
+	$self->log_error("cannot remove chroot lock file $f: $!\n")
+	    if $! != ENOENT;
+    }
+
+    return 1;
 }
 
 1;

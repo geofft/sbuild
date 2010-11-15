@@ -1,4 +1,4 @@
-# BuildDepSatisfierBase.pm: build library for sbuild
+# ResolverBase.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
 # Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
@@ -19,22 +19,23 @@
 #
 #######################################################################
 
-package Sbuild::InternalBuildDepSatisfier;
+package Sbuild::InternalResolver;
 
 use strict;
 use warnings;
 use Errno qw(:POSIX);
 use POSIX ();
 
+use Dpkg::Deps;
 use Sbuild qw(isin debug version_compare);
 use Sbuild::Base;
-use Sbuild::BuildDepSatisfierBase;
+use Sbuild::ResolverBase;
 
 BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::BuildDepSatisfierBase);
+    @ISA = qw(Exporter Sbuild::ResolverBase);
 
     @EXPORT = qw();
 }
@@ -51,54 +52,87 @@ sub new {
 
 sub install_deps {
     my $self = shift;
-    my $pkg = shift;
+    my $name = shift;
+    my @pkgs = @_;
 
     my $builder = $self->get('Builder');
 
-    $builder->log_subsection("Install $pkg build dependencies (internal resolver)");
+    $builder->log_subsection("Install $name build dependencies (internal resolver)");
+
+    my @apt_positive;
+    my @apt_negative;
+
+    for my $pkg (@pkgs) {
+	my $deps = $self->get('AptDependencies')->{$pkg};
+
+	push(@apt_positive, $deps->{'Build Depends'})
+	    if (defined($deps->{'Build Depends'}) &&
+		$deps->{'Build Depends'} ne "");
+	push(@apt_negative, $deps->{'Build Conflicts'})
+	    if (defined($deps->{'Build Conflicts'}) &&
+		$deps->{'Build Conflicts'} ne "");
+	if ($self->get_conf('BUILD_ARCH_ALL')) {
+	    push(@apt_positive, $deps->{'Build Depends Indep'})
+		if (defined($deps->{'Build Depends Indep'}) &&
+		    $deps->{'Build Depends Indep'} ne "");
+	    push(@apt_negative, $deps->{'Build Conflicts Indep'})
+		if (defined($deps->{'Build Conflicts Indep'}) &&
+		    $deps->{'Build Conflicts Indep'} ne "");
+	}
+    }
+
+    my $positive = deps_parse(join(", ", @apt_positive),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+    my $negative = deps_parse(join(", ", @apt_negative),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+
+    my $build_depends = $positive;
+    my $build_conflicts = $negative;
+
+    $builder->log("Build-Depends: $build_depends\n") if $build_depends;
+    $builder->log("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+
+    $build_conflicts = join( ", ", map { "!$_" } split( /\s*,\s*/, $build_conflicts ));
+
+    my $mdeps = $build_depends . ", " . $build_conflicts;
+    debug("Merging pkg deps: $mdeps\n");
+    my @dependencies = @{$self->parse_one_srcdep($mdeps)};
 
     my( @positive, @negative, @instd, @rmvd );
 
-    my $dep = [];
-    if (exists $builder->get('Dependencies')->{$pkg}) {
-	$dep = $builder->get('Dependencies')->{$pkg};
-    }
-    debug("Dependencies of $pkg: ", $builder->format_deps(@$dep), "\n");
+    debug("Dependencies: ", $self->format_deps(@dependencies), "\n");
 
   repeat:
-    $builder->lock_file($builder->get('Session')->get('Install Lock'), 1);
-
     debug("Filtering dependencies\n");
-    if (!$self->filter_dependencies($dep, \@positive, \@negative )) {
+    if (!$self->filter_dependencies(\@dependencies, \@positive, \@negative )) {
 	$builder->log("Package installation not possible\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
+    }
+
+    if ($self->get_conf('RESOLVE_VIRTUAL')) {
+	debug("Finding virtual packages\n");
+	if (!$self->virtual_dependencies(\@positive)) {
+	    $builder->log("Package installation not possible: failed to find virtual dependencies\n");
+	    return 0;
+	}
     }
 
     $builder->log("Checking for dependency conflicts...\n");
-    if (!$builder->run_apt("-s", \@instd, \@rmvd, @positive)) {
+    if (!$self->run_apt("-s", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Test what should be installed failed.\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
+
     # add negative deps as to be removed for checking srcdep conflicts
     push( @rmvd, @negative );
-    my @confl;
-    if (@confl = $self->check_srcdep_conflicts(\@instd, \@rmvd)) {
-	$builder->log("Waiting for job(s) @confl to finish\n");
 
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
-	$self->wait_for_srcdep_conflicts(@confl);
-	goto repeat;
-    }
-
-    $self->write_srcdep_lock_file($dep);
 
     my $install_start_time = time;
     $builder->log("Installing positive dependencies: @positive\n");
-    if (!$builder->run_apt("-y", \@instd, \@rmvd, @positive)) {
+    if (!$self->run_apt("-y", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Package installation failed\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	if (defined ($builder->get('Session')->get('Session Purged')) &&
         $builder->get('Session')->get('Session Purged') == 1) {
 	    $builder->log("Not removing build depends: cloned chroot in use\n");
@@ -113,22 +147,20 @@ sub install_deps {
     $self->set_removed(@rmvd);
 
     $builder->log("Removing negative dependencies: @negative\n");
-    if (!$self->uninstall_debs($builder->get('Chroot Dir') ? "purge" : "remove",
-			       @negative)) {
+    if (!$self->run_apt("-y", \@instd, \@rmvd, 'remove', @negative)) {
 	$builder->log("Removal of packages failed\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
-    $self->set_removed(@negative);
+    $self->set_installed(@instd);
+    $self->set_removed(@rmvd);
     my $install_stop_time = time;
     $builder->write_stats('install-download-time',
 		       $install_stop_time - $install_start_time);
 
-    my $fail = $self->check_dependencies($dep);
+    my $fail = $self->check_dependencies(\@dependencies);
     if ($fail) {
 	$builder->log("After installing, the following dependencies are ".
 		   "still unsatisfied:\n$fail\n");
-	$builder->unlock_file($builder->get('Session')->get('Install Lock'));
 	return 0;
     }
 
@@ -153,10 +185,71 @@ sub install_deps {
 	$builder->log($self->get_conf('DPKG') . ' --set-selections failed\n');
     }
 
-    $builder->unlock_file($builder->get('Session')->get('Install Lock'));
-
-    $builder->prepare_watches($dep, @instd );
+    $builder->prepare_watches(\@dependencies, @instd );
     return 1;
+}
+
+sub parse_one_srcdep {
+    my $self = shift;
+    my $deps = shift;
+
+    my $builder = $self->get('Builder');
+
+    my @res;
+
+    $deps =~ s/^\s*(.*)\s*$/$1/;
+    foreach (split( /\s*,\s*/, $deps )) {
+	my @l;
+	my @alts = split( /\s*\|\s*/, $_ );
+	my $neg_seen = 0;
+	foreach (@alts) {
+	    if (!/^([^\s([]+)\s*(\(\s*([<=>]+)\s*(\S+)\s*\))?(\s*\[([^]]+)\])?/) {
+		$builder->log_warning("syntax error in dependency '$_'\n");
+		next;
+	    }
+	    my( $dep, $rel, $relv, $archlist ) = ($1, $3, $4, $6);
+	    if ($archlist) {
+		$archlist =~ s/^\s*(.*)\s*$/$1/;
+		my @archs = split( /\s+/, $archlist );
+		my ($use_it, $ignore_it, $include) = (0, 0, 0);
+		foreach (@archs) {
+		    if (/^!/) {
+			$ignore_it = 1 if Dpkg::Arch::debarch_is($builder->get('Arch'), substr($_, 1));
+		    }
+		    else {
+			$use_it = 1 if Dpkg::Arch::debarch_is($builder->get('Arch'), $_);
+			$include = 1;
+		    }
+		}
+		$builder->log_warning("inconsistent arch restriction: $dep depedency\n")
+		    if $ignore_it && $use_it;
+		next if $ignore_it || ($include && !$use_it);
+	    }
+	    my $neg = 0;
+	    if ($dep =~ /^!/) {
+		$dep =~ s/^!\s*//;
+		$neg = 1;
+		$neg_seen = 1;
+	    }
+	    my $h = { Package => $dep, Neg => $neg };
+	    if ($rel && $relv) {
+		$h->{'Rel'} = $rel;
+		$h->{'Version'} = $relv;
+	    }
+	    push( @l, $h );
+	}
+	if (@alts > 1 && $neg_seen) {
+	    $builder->log_warning("alternatives with negative dependencies forbidden -- skipped\n");
+	}
+	elsif (@l) {
+	    my $l = shift @l;
+	    foreach (@l) {
+		push( @{$l->{'Alternatives'}}, $_ );
+	    }
+	    push @res, $l;
+	}
+    }
+    return \@res;
 }
 
 sub filter_dependencies {
@@ -223,6 +316,25 @@ sub filter_dependencies {
 		($d->{'Package'}, $d->{'Rel'}, $d->{'Version'});
 	    my $stat = $status->{$name};
 	    if (!$stat->{'Installed'}) {
+		# If a package is Provided by an installed package,
+		# mark it satisfied.
+		if ($self->get_conf('RESOLVE_VIRTUAL')) {
+		    my @virtuals = $self->get_virtual($name);
+		    my $vstatus = $self->get_dpkg_status(@virtuals);
+		    foreach my $vpkg (@virtuals) {
+			my $vstat = $vstatus->{$vpkg};
+			if ($vpkg ne $name &&
+			    $vstat->{'Installed'}) {
+			    debug("$name: pos dep, provided by $vpkg\n");
+			    $builder->log("$name: provided by $vpkg\n");
+			    $is_satisfied = 1;
+			    last;
+			}
+		    }
+		}
+
+		last if ($is_satisfied);
+
 		debug("$name: pos dep, not installed\n");
 		$builder->log("$name: missing\n");
 
@@ -309,6 +421,23 @@ sub filter_dependencies {
     return 1;
 }
 
+sub virtual_dependencies {
+    my $self = shift;
+    my $pos_list = shift;
+
+    my $builder = $self->get('Builder');
+
+    # The first returned package only is used.
+    foreach my $pkg (@$pos_list) {
+	my @virtuals = $self->get_virtual($pkg);
+	return 0
+	    if (scalar(@virtuals) == 0);
+	$pkg = $virtuals[0];
+    }
+
+    return 1;
+}
+
 sub check_dependencies {
     my $self = shift;
     my $dependencies = shift;
@@ -377,6 +506,90 @@ sub check_dependencies {
     $fail =~ s/\s+$//;
 
     return $fail;
+}
+
+# Return a list of packages which provide a package.
+# Note: will return both concrete and virtual packages.
+sub get_virtual {
+    my $self = shift;
+    my $pkg = shift;
+
+    my $builder = $self->get('Builder');
+
+    my $pipe = $builder->get('Session')->pipe_apt_command(
+	{ COMMAND => [$self->get_conf('APT_CACHE'),
+		      '-q', '--names-only', 'search', "^$pkg\$"],
+	  USER => $self->get_conf('USERNAME'),
+	  PRIORITY => 0,
+	  DIR => '/'});
+    if (!$pipe) {
+	$self->log("Can't open pipe to $conf::apt_cache: $!\n");
+	return ();
+    }
+
+    my @virtuals;
+
+    while( <$pipe> ) {
+	my $virtual = $1 if /^(\S+)\s+\S+.*$/mi;
+	push(@virtuals, $virtual);
+    }
+    close($pipe);
+
+    if ($?) {
+	$self->log($self->get_conf('APT_CACHE') . " exit status $?: $!\n");
+	return ();
+    }
+
+    return sort(@virtuals);
+}
+
+sub get_apt_policy {
+    my $self = shift;
+    my $builder = $self->get('Builder');
+    my @interest = @_;
+    my $package;
+    my $ver;
+    my %packages;
+
+    my $pipe =
+	$builder->get('Session')->pipe_apt_command(
+	    { COMMAND => [$self->get_conf('APT_CACHE'), 'policy', @interest],
+	      ENV => {'LC_ALL' => 'C'},
+	      USER => $self->get_conf('USERNAME'),
+	      PRIORITY => 0,
+	      DIR => '/' }) || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
+
+    while(<$pipe>) {
+	$package=$1 if /^([0-9a-z+.-]+):$/;
+	$packages{$package}->{curversion}=$1 if /^ {2}Installed: ([0-9a-zA-Z-.:~+]*)$/;
+	$packages{$package}->{defversion}=$1 if /^ {2}Candidate: ([0-9a-zA-Z-.:~+]*)$/;
+	if (/^ (\*{3}| {3}) ([0-9a-zA-Z-.:~+]*) 0$/) {
+	    $ver = "$2";
+	    push @{$packages{$package}->{versions}}, $ver;
+	}
+	if (/^ {5} *(-?\d+) /) {
+	    my $prio = $1;
+	    if (!defined $packages{$package}->{priority}{$ver} ||
+	        $packages{$package}->{priority}{$ver} < $prio) {
+		$packages{$package}->{priority}{$ver} = $prio;
+	    }
+	}
+    }
+    close($pipe);
+    # Resort by priority keeping current version order if priority is the same
+    use sort "stable";
+    foreach my $package (keys %packages) {
+	my $p = $packages{$package};
+	if (exists $p->{priority}) {
+	    $p->{versions} = [ sort(
+		{ -($p->{priority}{$a} <=> $p->{priority}{$b}) } @{$p->{versions}}
+	    ) ];
+	}
+    }
+    no sort "stable";
+    die $self->get_conf('APT_CACHE') . " exit status $?\n" if $?;
+
+    return \%packages;
 }
 
 1;

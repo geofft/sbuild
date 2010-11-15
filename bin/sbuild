@@ -79,10 +79,13 @@ sub main () {
     $SIG{'ALRM'} = \&main::shutdown;
     $SIG{'PIPE'} = \&main::shutdown;
 
+    # If no arguments are supplied, assume we want to process the current dir.
+    push @ARGV, '.' unless (@ARGV);
+
     # Create jobs
-    foreach (@ARGV) {
-	$jobs{$_} = Sbuild::Build->new($_, $conf);
-	$jobs{$_}->set('Pkg Status Trigger', \&status_trigger)
+    foreach my $job (@ARGV) {
+	$jobs{$job} = Sbuild::Build->new($job, $conf);
+	$jobs{$job}->set('Pkg Status Trigger', \&status_trigger)
     }
     write_jobs_file(); # Will now update on trigger.
 
@@ -108,23 +111,18 @@ sub main () {
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
     if (defined($current_job) && defined($jobs{$current_job})) {
-	if ($conf->get('SBUILD_MODE') eq "user") {
-	    exit ($jobs{$current_job}->get_status() ne "successful") ? 1 : 0;
-	} elsif ($conf->get('SBUILD_MODE') eq "buildd") {
-	    if ($jobs{$current_job}->get_status() eq "successful") {
-		exit 0;
-	    } elsif ($jobs{$current_job}->get_status() eq "attempted") {
-		exit 2;
-	    } elsif ($jobs{$current_job}->get_status() eq "given-back") {
-		#Probably needs a give back:
-		exit 3;
-	    }
-	    #Unknown status - probably needs a give back, but needs to be
-	    #reported to the admin as failure:
-	    exit 1;
+	if ($jobs{$current_job}->get_status() eq "successful") {
+	    exit 0;
+	} elsif ($jobs{$current_job}->get_status() eq "attempted") {
+	    exit 2;
+	} elsif ($jobs{$current_job}->get_status() eq "given-back") {
+	    #Probably needs a give back:
+	    exit 3;
 	}
+	# Unknown status - probably needs a give back, but needs to be
+	# reported to the admin as failure:
+	exit 1;
     }
-    exit 0;
 }
 
 # only called from main loop, but depends on job state.
@@ -163,7 +161,6 @@ sub should_skip ($) {
     if ($conf->get('BATCH_MODE')) {
 	my $pkgv = $build->get('Package_OVersion');
 
-	$pkgv = $build->fixup_pkgv($pkgv);
 	$build->lock_file("SKIP", 0);
 	goto unlock if !open( F, "SKIP" );
 	my @pkgs = <F>;
@@ -307,14 +304,15 @@ sub shutdown ($) {
     }
 
     if (defined($current_job) && $jobs{$current_job}->get('Dependency Resolver')) {
-	$jobs{$current_job}->get('Dependency Resolver')->remove_srcdep_lock_file();
+	$jobs{$current_job}->get('Session')->unlock_chroot();
     }
 
     # Close logs and send mails
     if (defined($current_job) &&
 	defined($jobs{$current_job}) &&
 	defined($jobs{$current_job}->get('Session'))) {
-	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always") {
+	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always" &&
+	    defined($jobs{$current_job}->get('Chroot Build Dir'))) {
 	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
 	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
 	    $jobs{$current_job}->get('Session')->run_command(

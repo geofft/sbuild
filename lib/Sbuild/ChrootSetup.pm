@@ -63,7 +63,7 @@ sub upgrade ($$) {
     my $conf = shift;
 
     $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-uy', 'upgrade'],
+	{ COMMAND => [$conf->get('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'upgrade'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
 	  DIR => '/' });
@@ -75,7 +75,7 @@ sub distupgrade ($$) {
     my $conf = shift;
 
     $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-uy', 'dist-upgrade'],
+	{ COMMAND => [$conf->get('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'dist-upgrade'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
 	  DIR => '/' });

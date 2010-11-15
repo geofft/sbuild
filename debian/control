@@ -11,7 +11,7 @@ Vcs-Git: git://git.debian.org/git/buildd-tools/sbuild
 Package: libsbuild-perl
 Architecture: all
 Section: perl
-Depends: ${misc:Depends}, ${perl:Depends}, perl-modules, libfilesys-df-perl, libio-zlib-perl, adduser, apt, exim4 | mail-transport-agent, dpkg-dev, devscripts (>= 2.10.26), dctrl-tools, schroot (>= 1.4.0)
+Depends: ${misc:Depends}, ${perl:Depends}, perl-modules, libfilesys-df-perl, libio-zlib-perl, adduser, apt, exim4 | mail-transport-agent, dpkg-dev, devscripts (>= 2.10.26), dctrl-tools, schroot (>= 1.4.12)
 Replaces: sbuild (<= 0.58.4-1)
 Description: Tool for building Debian binary packages from Debian sources
  The sbuild suite of programs (wanna-build, buildd and sbuild) are
@@ -58,7 +58,8 @@ Package: buildd
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, libsbuild-perl, adduser, sbuild (= ${source:Version}), dupload, cron, exim4 | mail-transport-agent, libyaml-tiny-perl
 Suggests: wanna-build
-Replaces: sbuild
+Replaces: sbuild, ubuntu-dev-tools (<= 0.83)
+Breaks: ubuntu-dev-tools (<= 0.83)
 Description: Daemon for automatically building Debian binary packages from Debian sources
  The sbuild suite of programs (wanna-build, buildd and sbuild) are
  used to build binary packages from source packages.  The wanna-build
