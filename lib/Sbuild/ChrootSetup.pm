@@ -31,8 +31,9 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(update upgrade distupgrade clean autoclean autoremove basesetup
-                 shell list_packages set_package_status);
+    @EXPORT = qw(update upgrade distupgrade clean autoclean autoremove
+                 basesetup shell hold_packages unhold_packages
+                 list_packages set_package_status);
 }
 
 sub update ($$);
@@ -244,6 +245,24 @@ sub shell ($$) {
 	  STREAMOUT => \*STDOUT,
 	  STREAMERR => \*STDERR });
     return $?
+}
+
+sub hold_packages ($$@) {
+    my $session = shift;
+    my $conf = shift;
+
+    my $status = set_package_status($session, $conf, "hold", @_);
+
+    return $status;
+}
+
+sub unhold_packages ($$@) {
+    my $session = shift;
+    my $conf = shift;
+
+    my $status = set_package_status($session, $conf, "install", @_);
+
+    return $status;
 }
 
 sub list_packages ($$@) {
