@@ -26,6 +26,11 @@ use warnings;
 use POSIX;
 use Fcntl;
 use Errno qw(:POSIX);
+use File::Temp qw(tempdir tempfile);
+use File::Path qw(remove_tree);
+use File::Basename;
+use Digest::MD5 qw(md5_hex);
+use IO::Compress::Gzip qw(gzip $GzipError :level);
 
 use Dpkg::Deps;
 use Sbuild::Base;
@@ -300,6 +305,446 @@ sub get_dpkg_status {
     }
     close( STATUS );
     return \%result;
+}
+
+# Setup an empty archive.
+sub setup_apt_archive {
+    my $self = shift;
+
+    return 1 if (defined($self->get('Dummy archive created')));
+
+    $self->set('Dummy archive created', undef);
+    my $builder = $self->get('Builder');
+    my $session = $builder->get('Session');
+
+    #Prepare a path to build a dummy package containing our deps:
+    $self->set('Dummy package path',
+	       tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
+		       $builder->get('Arch') . '-XXXXXX',
+		       DIR => $session->get('Build Location')));
+    my $dummy_dir = $self->get('Dummy package path');
+    my $dummy_archive_dir = $dummy_dir . '/apt_archive';
+    my $dummy_packages_file = $dummy_archive_dir . '/Packages';
+    my $dummy_sources_file = $dummy_archive_dir . '/Sources';
+    my $dummy_release_file = $dummy_archive_dir . '/Release';
+    my $dummy_archive_list_file = $session->get('Location') .
+        '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
+    my $dummy_archive_seckey = '/tmp/sbuild-key.sec';
+    my $dummy_archive_pubkey = '/tmp/sbuild-key.pub';
+
+    $self->set('Dummy archive directory', $dummy_archive_dir);
+    $self->set('Dummy Packages file', $dummy_packages_file);
+    $self->set('Dummy Sources file', $dummy_sources_file);
+    $self->set('Dummy Release file', $dummy_release_file);
+    $self->set('Dummy archive list file', $dummy_archive_list_file);
+
+    if (! -d $dummy_dir) {
+	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
+	$self->cleanup_apt_archive();
+	return 0;
+    }
+    if (!mkdir $dummy_archive_dir) {
+        $builder->log_warning('Could not create build-depends dummy archive dir ' . $dummy_archive_dir . ': ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Filehandles
+    my ($dummy_packages_fh, $dummy_sources_fh, $dummy_release_fh);
+
+    # Create a blank Packages file.
+    if (!open($dummy_packages_fh, '>', $dummy_packages_file)) {
+        $builder->log_warning('Could not open ' . $dummy_packages_file . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    close($dummy_packages_fh);
+    if (!(gzip $dummy_packages_file => "$dummy_packages_file.gz", AutoClose => 1, BinModeIn => 1, Append => 0, -Level => Z_NO_COMPRESSION)) {
+        $builder->log_warning('Could not compress ' . $dummy_packages_file . ': ' . "$GzipError");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Create a blank Sources file.
+    if (!open($dummy_sources_fh, '>', $dummy_sources_file)) {
+        $builder->log_warning('Could not open ' . $dummy_sources_file . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    close($dummy_sources_fh);
+    if (!(gzip $dummy_sources_file => "$dummy_sources_file.gz", AutoClose => 1, BinModeIn => 1, Append => 0, -Level => Z_NO_COMPRESSION)) {
+        $builder->log_warning('Could not compress ' . $dummy_sources_file . ': ' . "$GzipError");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Write the Release file.
+    if (!open($dummy_release_fh, '>', $dummy_release_file)) {
+        $builder->log_warning('Could not open ' . $dummy_release_file . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    print $dummy_release_fh <<"EOF";
+Origin: sbuild-build-depends-archive
+Label: sbuild-build-depends-archive
+Suite: invalid
+Codename: invalid
+Description: Sbuild Build Dependency Temporary Archive
+MD5Sum:
+EOF
+    print $dummy_release_fh ' ' . $self->md5_hex_file($dummy_packages_file) . ' ' .
+          (-s $dummy_packages_file) . " Packages\n";
+    print $dummy_release_fh ' ' . $self->md5_hex_file("$dummy_packages_file.gz") . ' ' .
+          (-s "$dummy_packages_file.gz") . " Packages.gz\n";
+    print $dummy_release_fh ' ' . $self->md5_hex_file($dummy_sources_file) . ' ' .
+          (-s $dummy_sources_file) . " Sources\n";
+    print $dummy_release_fh ' ' . $self->md5_hex_file("$dummy_sources_file.gz") . ' ' .
+          (-s "$dummy_sources_file.gz") . " Sources.gz\n";
+    close($dummy_release_fh);
+
+    # Sign the release file
+    my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
+                       '--secret-keyring', $dummy_archive_seckey,
+                       '--keyring', $dummy_archive_pubkey,
+                       '--default-key', 'Sbuild Signer', '-abs',
+                       '-o', $session->strip_chroot_path($dummy_release_file) . '.gpg',
+                       $session->strip_chroot_path($dummy_release_file));
+    $session->run_command(
+	{ COMMAND => \@gpg_command,
+	  USER => $self->get_conf('USER'),
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Failed to sign dummy archive Release file.\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Write a list file for the dummy archive
+    my ($tmpfh, $tmpfilename) = tempfile();
+    print $tmpfh 'deb file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
+    print $tmpfh 'deb-src file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
+    close($tmpfh);
+    # List file needs to be moved with root.
+    $session->run_command(
+	{ COMMAND => ['mv', $tmpfilename,
+                      $session->strip_chroot_path($dummy_archive_list_file)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Failed to create apt list file for dummy archive.\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Add the generated key and rerun apt-get update
+    $session->run_command(
+	{ COMMAND => ['apt-key', 'add', $session->strip_chroot_path($dummy_archive_pubkey)],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Failed to add dummy archive key.\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    $self->set('Dummy archive created', 1);
+    return 1;
+}
+
+# Adds entries to an archive
+sub add_archive_entry {
+    my $self = shift;
+    my $name = shift;
+    my @pkgs = @_;
+
+    my $builder = $self->get('Builder');
+    my $session = $builder->get('Session');
+
+    if (!defined($self->get('Dummy archive created'))) {
+	$builder->log_warning('Dummy apt archive has not been created!' . "\n");
+	return 0;
+    }
+
+    my $dummy_pkg_name = 'sbuild-build-depends-' . $name. '-dummy';
+    #Prepare a path to build a dummy package containing our deps:
+    my $dummy_pkg_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
+    my $dummy_archive_dir = $self->get('Dummy archive directory');
+    my $dummy_packages_file = $self->get('Dummy Packages file');
+    my $dummy_sources_file = $self->get('Dummy Sources file');
+    my $dummy_release_file = $self->get('Dummy Release file');
+    my $dummy_archive_list_file = $self->get('Dummy archive list file');
+    my $dummy_deb = $dummy_archive_dir . '/' . $dummy_pkg_name . '.deb';
+    my $dummy_archive_seckey = '/tmp/sbuild-key.sec';
+    my $dummy_archive_pubkey = '/tmp/sbuild-key.pub';
+
+    if (!(mkdir($dummy_pkg_dir) && mkdir($dummy_pkg_dir . '/DEBIAN'))) {
+	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_pkg_dir . '/DEBIAN: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    if (!open(DUMMY_CONTROL, '>', $dummy_pkg_dir . '/DEBIAN/control')) {
+	$builder->log_warning('Could not open ' . $dummy_pkg_dir . '/DEBIAN/control for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    my $arch = $builder->get('Arch');
+    print DUMMY_CONTROL <<"EOF";
+Package: $dummy_pkg_name
+Version: 0.invalid.0
+Architecture: $arch
+EOF
+
+    my @positive;
+    my @negative;
+    my @positive_indep;
+    my @negative_indep;
+
+    for my $pkg (@pkgs) {
+	my $deps = $self->get('AptDependencies')->{$pkg};
+
+	push(@positive, $deps->{'Build Depends'})
+	    if (defined($deps->{'Build Depends'}) &&
+		$deps->{'Build Depends'} ne "");
+	push(@negative, $deps->{'Build Conflicts'})
+	    if (defined($deps->{'Build Conflicts'}) &&
+		$deps->{'Build Conflicts'} ne "");
+	push(@positive_indep, $deps->{'Build Depends Indep'})
+	    if (defined($deps->{'Build Depends Indep'}) &&
+		$deps->{'Build Depends Indep'} ne "");
+	push(@negative_indep, $deps->{'Build Conflicts Indep'})
+	    if (defined($deps->{'Build Conflicts Indep'}) &&
+		$deps->{'Build Conflicts Indep'} ne "");
+    }
+
+    my ($positive, $negative);
+    if ($self->get_conf('BUILD_ARCH_ALL')) {
+	$positive = deps_parse(join(", ", @positive, @positive_indep),
+			       reduce_arch => 1,
+			       host_arch => $builder->get('Arch'));
+	$negative = deps_parse(join(", ", @negative, @negative_indep),
+			       reduce_arch => 1,
+			       host_arch => $builder->get('Arch'));
+    } else {
+	$positive = deps_parse(join(", ", @positive),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+	$negative = deps_parse(join(", ", @negative),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+    }
+
+    if ($positive ne "") {
+	print DUMMY_CONTROL 'Depends: ' . $positive . "\n";
+    }
+    if ($negative ne "") {
+	print DUMMY_CONTROL 'Conflicts: ' . $negative . "\n";
+    }
+
+    debug("DUMMY Depends: $positive \n");
+    debug("DUMMY Conflicts: $negative \n");
+
+    print DUMMY_CONTROL <<"EOF";
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
+Description: Dummy package to satisfy dependencies with apt - created by sbuild
+ This package was created automatically by sbuild and should never appear on
+ a real system. You can safely remove it.
+EOF
+    close (DUMMY_CONTROL);
+
+    #Now build the package:
+    $session->run_command(
+	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_pkg_dir), $session->strip_chroot_path($dummy_deb)],
+	  USER => $self->get_conf('USER'),
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Dummy package creation failed\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Acquire the dummy package size and MD5 sum
+    my $dummy_size = -s $dummy_deb;
+    my $dummy_md5sum = $self->md5_hex_file($dummy_deb);
+
+    # Now create a Packages, Sources, and Release file for use in installing
+    # the dummy package.
+    my ($dummy_packages_fh, $dummy_sources_fh, $dummy_release_fh);
+
+    # Write the Packages file.
+    if (!open($dummy_packages_fh, '>>', $dummy_packages_file)) {
+        $builder->log_warning('Could not open ' . $dummy_packages_file . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    print $dummy_packages_fh <<"EOF";
+Package: $dummy_pkg_name
+Priority: extra
+Section: misc
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
+Architecture: $arch
+Version: 0.invalid.0
+Source: $dummy_pkg_name
+EOF
+    if ($positive ne "") {
+	print $dummy_packages_fh 'Depends: ' . $positive . "\n";
+    }
+    if ($negative ne "") {
+	print $dummy_packages_fh 'Conflicts: ' . $negative . "\n";
+    }
+    print $dummy_packages_fh "Filename: " . basename($dummy_deb) . "\n";
+    print $dummy_packages_fh <<"EOF";
+Size: $dummy_size
+MD5sum: $dummy_md5sum
+Description: Dummy package to satisfy dependencies with apt - created by sbuild
+ This package was created automatically by sbuild and should never appear on
+ a real system. You can safely remove it.
+EOF
+    print $dummy_packages_fh "\n";
+    close($dummy_packages_fh);
+    if (!(gzip $dummy_packages_file => "$dummy_packages_file.gz", AutoClose => 1, BinModeIn => 1, Append => 0, -Level => Z_NO_COMPRESSION)) {
+        $builder->log_warning('Could not compress ' . $dummy_packages_file . ': ' . "$GzipError");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Write the Sources file.
+    if (!open($dummy_sources_fh, '>>', $dummy_sources_file)) {
+        $builder->log_warning('Could not open ' . $dummy_sources_file . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    print $dummy_sources_fh <<"EOF";
+Package: $dummy_pkg_name
+Binary: $dummy_pkg_name
+Version: 0.invalid.0
+Priority: extra
+Section: misc
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
+Architecture: any
+EOF
+    if (scalar(@positive)) {
+	print $dummy_sources_fh 'Build-Depends: ' . join(", ", @positive) . "\n";
+    }
+    if (scalar(@negative)) {
+	print $dummy_sources_fh 'Build-Conflicts: ' . join(", ", @negative) . "\n";
+    }
+    if (scalar(@positive_indep)) {
+	print $dummy_sources_fh 'Build-Depends-Indep: ' . join(", ", @positive_indep) . "\n";
+    }
+    if (scalar(@negative_indep)) {
+	print $dummy_sources_fh 'Build-Conflicts-Indep: ' . join(", ", @negative_indep) . "\n";
+    }
+    print $dummy_sources_fh "\n";
+    close($dummy_sources_fh);
+    if (!(gzip $dummy_sources_file => "$dummy_sources_file.gz", AutoClose => 1, BinModeIn => 1, Append => 0, -Level => Z_NO_COMPRESSION)) {
+        $builder->log_warning('Could not compress ' . $dummy_sources_file . ': ' . "$GzipError");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Write the Release file.
+    if (!open($dummy_release_fh, '>', $dummy_release_file)) {
+        $builder->log_warning('Could not open ' . $dummy_release_file . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    print $dummy_release_fh <<"EOF";
+Origin: sbuild-build-depends-archive
+Label: sbuild-build-depends-archive
+Suite: invalid
+Codename: invalid
+Description: Sbuild Build Dependency Temporary Archive
+MD5Sum:
+EOF
+    print $dummy_release_fh ' ' . $self->md5_hex_file($dummy_packages_file) . ' ' .
+          (-s $dummy_packages_file) . " Packages\n";
+    print $dummy_release_fh ' ' . $self->md5_hex_file("$dummy_packages_file.gz") . ' ' .
+          (-s "$dummy_packages_file.gz") . " Packages.gz\n";
+    print $dummy_release_fh ' ' . $self->md5_hex_file($dummy_sources_file) . ' ' .
+          (-s $dummy_sources_file) . " Sources\n";
+    print $dummy_release_fh ' ' . $self->md5_hex_file("$dummy_sources_file.gz") . ' ' .
+          (-s "$dummy_sources_file.gz") . " Sources.gz\n";
+    close($dummy_release_fh);
+
+    # Sign the release file
+    my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
+                       '--secret-keyring', $dummy_archive_seckey,
+                       '--keyring', $dummy_archive_pubkey,
+                       '--default-key', 'Sbuild Signer', '-abs',
+                       '-o', $session->strip_chroot_path($dummy_release_file) . '.gpg',
+                       $session->strip_chroot_path($dummy_release_file));
+    $session->run_command(
+	{ COMMAND => \@gpg_command,
+	  USER => $self->get_conf('USER'),
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Failed to sign dummy archive Release file.\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    return 1;
+}
+
+# Convenience function to run 'apt-get update'.
+sub run_apt_update {
+    my $self = shift;
+    my $builder = $self->get('Builder');
+    my $session = $builder->get('Session');
+    $session->run_command(
+	{ COMMAND => ['apt-get', 'update'],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Failed to run 'apt-get update'.\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+    return 1;
+}
+
+# Remove the apt archive.
+sub cleanup_apt_archive {
+    my $self = shift;
+    my $session = $self->get('Builder')->get('Session');
+    remove_tree($self->get('Dummy package path'));
+    $session->run_command(
+	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    $self->set('Dummy package path', undef);
+    $self->set('Dummy archive directory', undef);
+    $self->set('Dummy Packages file', undef);
+    $self->set('Dummy Sources file', undef);
+    $self->set('Dummy Release file', undef);
+    $self->set('Dummy archive list file', undef);
+    $self->set('Dummy archive created', undef);
+}
+
+# Convenience function that calculates MD5 sum of an entire file.
+sub md5_hex_file {
+    my $self = shift;
+    my $file = shift;
+
+    my $md5_fh;
+    if (!open($md5_fh, $file)) {
+        $self->get('Builder')->log_warning("Could not open $file to retrieve MD5 sum.\n");
+        return 0;
+    }
+    binmode $md5_fh;
+    my $md5sum = Digest::MD5->new->addfile($md5_fh)->hexdigest;
+    close $md5_fh;
+
+    return $md5sum;
 }
 
 1;

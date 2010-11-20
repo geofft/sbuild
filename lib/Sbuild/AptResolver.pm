@@ -23,9 +23,7 @@ package Sbuild::AptResolver;
 
 use strict;
 use warnings;
-use File::Temp qw(tempdir);
 
-use Dpkg::Deps;
 use Sbuild qw(debug copy version_compare);
 use Sbuild::Base;
 use Sbuild::ResolverBase;
@@ -54,117 +52,22 @@ sub install_deps {
     my $name = shift;
     my @pkgs = @_;
 
-    my $status = 0;
+    # Call functions to setup an archive to install dummy package.
+    return 0 unless ($self->setup_apt_archive());
+    return 0 unless ($self->add_archive_entry($name, @pkgs));
+    return 0 unless ($self->run_apt_update());
 
+    my $status = 0;
     my $builder = $self->get('Builder');
     my $session = $builder->get('Session');
-
     my $dummy_pkg_name = 'sbuild-build-depends-' . $name. '-dummy';
-    #Prepare a path to build a dummy package containing our deps:
-    $self->set('Dummy package path',
-	       tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
-		       $builder->get('Arch') . '-XXXXXX',
-		       DIR => $session->get('Build Location')));
-    my $dummy_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
-    my $dummy_deb = $self->get('Dummy package path') . '/' . $dummy_pkg_name . '.deb';
 
     $builder->log_subsection("Install $name build dependencies (apt-based resolver)");
 
-    if (!mkdir $dummy_dir) {
-	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
- 	goto cleanup;
-    }
-    if (!mkdir $dummy_dir . '/DEBIAN') {
-	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . '/DEBIAN: ' . $!);
-	goto cleanup;
-    }
-
-    if (!open(DUMMY_CONTROL, '>', $dummy_dir . '/DEBIAN/control')) {
-	$builder->log_warning('Could not open ' . $dummy_dir . '/DEBIAN/control for writing: ' . $!);
-	goto cleanup;
-    }
-
-    my $arch = $builder->get('Arch');
-    print DUMMY_CONTROL <<"EOF";
-Package: $dummy_pkg_name
-Version: 0.invalid.0
-Architecture: $arch
-EOF
-
-    my @positive;
-    my @negative;
-
-    for my $pkg (@pkgs) {
-	my $deps = $self->get('AptDependencies')->{$pkg};
-
-	push(@positive, $deps->{'Build Depends'})
-	    if (defined($deps->{'Build Depends'}) &&
-		$deps->{'Build Depends'} ne "");
-	push(@negative, $deps->{'Build Conflicts'})
-	    if (defined($deps->{'Build Conflicts'}) &&
-		$deps->{'Build Conflicts'} ne "");
-	if ($self->get_conf('BUILD_ARCH_ALL')) {
-	    push(@positive, $deps->{'Build Depends Indep'})
-		if (defined($deps->{'Build Depends Indep'}) &&
-		    $deps->{'Build Depends Indep'} ne "");
-	    push(@negative, $deps->{'Build Conflicts Indep'})
-		if (defined($deps->{'Build Conflicts Indep'}) &&
-		    $deps->{'Build Conflicts Indep'} ne "");
-	}
-    }
-
-    my $positive = deps_parse(join(", ", @positive),
-			      reduce_arch => 1,
-			      host_arch => $builder->get('Arch'));
-    my $negative = deps_parse(join(", ", @negative),
-			      reduce_arch => 1,
-			      host_arch => $builder->get('Arch'));
-
-    if ($positive ne "") {
-	print DUMMY_CONTROL 'Depends: ' . $positive . "\n";
-    }
-    if ($negative ne "") {
-	print DUMMY_CONTROL 'Conflicts: ' . $negative . "\n";
-    }
-
-    debug("DUMMY Depends: $positive \n");
-    debug("DUMMY Conflicts: $negative \n");
-
-    print DUMMY_CONTROL <<"EOF";
-Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
-Description: Dummy package to satisfy dependencies with apt - created by sbuild
- This package was created automatically by sbuild and should never appear on
- a real system. You can safely remove it.
-EOF
-    close (DUMMY_CONTROL);
-
-    #Now build and install the package:
-    $session->run_command(
-	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_dir), $session->strip_chroot_path($dummy_deb)],
-	  USER => 'root',
-	  CHROOT => 1,
-	  PRIORITY => 0});
-    if ($?) {
-	$builder->log("Dummy package creation failed\n");
-	goto cleanup;
-    }
-
-    $session->run_command(
-	{ COMMAND => ['dpkg', '--force-depends', '--force-conflicts', '--install', $session->strip_chroot_path($dummy_deb)],
-	  USER => 'root',
-	  CHROOT => 1,
-	  PRIORITY => 0});
-
-    $self->set_installed(keys %{$self->get('Changes')->{'installed'}}, $dummy_pkg_name);
-
-    if ($?) {
-	$builder->log("Dummy package installation failed\n");
-	goto package_cleanup;
-    }
-
+    # Install the dummy package
     my (@instd, @rmvd);
     $builder->log("Installing build dependencies\n");
-    if (!$self->run_apt("-yf", \@instd, \@rmvd, 'install')) {
+    if (!$self->run_apt("-yf", \@instd, \@rmvd, 'install', $dummy_pkg_name)) {
 	$builder->log("Package installation failed\n");
 	if (defined ($builder->get('Session')->get('Session Purged')) &&
 	    $builder->get('Session')->get('Session Purged') == 1) {
@@ -190,20 +93,7 @@ EOF
 	}
     }
 
-    $session->run_command(
-	{ COMMAND => ['rm', $session->strip_chroot_path($dummy_deb)],
-	  USER => 'root',
-	  CHROOT => 1,
-	  PRIORITY => 0});
-
-  cleanup:
-    $session->run_command(
-	{ COMMAND => ['rm', '-rf', $session->strip_chroot_path($dummy_dir)],
-	  USER => 'root',
-	  CHROOT => 1,
-	  PRIORITY => 0});
-
-    $self->set('Dummy package path', undef);
+    $self->cleanup_apt_archive();
 
     return $status;
 }
