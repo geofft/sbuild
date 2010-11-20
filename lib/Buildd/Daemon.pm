@@ -438,11 +438,47 @@ sub do_wanna_build {
     }
 }
 
+sub should_skip {
+    my $self = shift;
+    my $pkgv = shift;
+
+    my $found = 0;
+
+    $self->lock_file("SKIP", 0);
+    goto unlock if !open( F, "SKIP" );
+    my @pkgs = <F>;
+    close(F);
+
+    if (!open( F, ">SKIP" )) {
+	$self->log("Can't open SKIP for writing: $!\n",
+		   "Would write: @pkgs\nminus $pkgv\n");
+	goto unlock;
+    }
+    foreach (@pkgs) {
+	if (/^\Q$pkgv\E$/) {
+	    ++$found;
+	    $self->log("$pkgv found in SKIP file -- skipping building it\n");
+	}
+	else {
+	    print F $_;
+	}
+    }
+    close( F );
+  unlock:
+    $self->unlock_file("SKIP");
+    return $found;
+}
+
 sub do_build {
     my $self = shift;
     my $dist_config = shift;
     my $todo = shift;
     # $todo = { 'pv' => $pkg_ver, 'changelog' => $binNMUlog->{$pkg_ver}, 'binNMU' => $binNMUver; };
+
+    # If the package to build is in SKIP, then skip.
+    if ($self->should_skip($todo->{'pv'})) {
+	return;
+    }
 
     my $free_space;
 

@@ -39,7 +39,6 @@ use Sbuild::Build;
 sub main ();
 sub write_jobs_file ();
 sub append_to_FINISHED ($);
-sub should_skip ($);
 sub status_trigger ($$);
 sub shutdown ($);
 sub dump_main_state ();
@@ -97,11 +96,7 @@ sub main () {
 	$current_job = $jobname;
 
 	# Do the build
-	if (should_skip($job)) {
-	    $job->set_status('skipped');
-	} else {
-	    $job->run();
-	}
+	$job->run();
 
 	dump_main_state() if $conf->get('DEBUG');
     }
@@ -158,39 +153,6 @@ sub append_to_FINISHED ($) {
 	print F $job->get('Package_OVersion');
 	close(F);
     }
-}
-
-sub should_skip ($) {
-    my $build = shift;
-
-    if ($conf->get('BATCH_MODE')) {
-	my $pkgv = $build->get('Package_OVersion');
-
-	$build->lock_file("SKIP", 0);
-	goto unlock if !open( F, "SKIP" );
-	my @pkgs = <F>;
-	close( F );
-
-	if (!open( F, ">SKIP" )) {
-	    print "Can't open SKIP for writing: $!\n",
-	    "Would write: @pkgs\nminus $pkgv\n";
-	    goto unlock;
-	}
-	my $found = 0;
-	foreach (@pkgs) {
-	    if (/^\Q$pkgv\E$/) {
-		++$found;
-		print "$pkgv found in SKIP file -- skipping building it\n";
-	    }
-	    else {
-		print F $_;
-	    }
-	}
-	close( F );
-      unlock:
-	$build->unlock_file("SKIP");
-	return $found;
-	}
 }
 
 sub status_trigger ($$) {
