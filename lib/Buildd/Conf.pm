@@ -56,8 +56,17 @@ sub init_allowed_keys {
 	die "$key binary is not defined"
 	    if !defined($program) || !$program;
 
+	# Emulate execvp behaviour by searching the binary in the PATH.
+	my @paths = split(/:/, $self->get('PATH'));
+	# Also consider the empty path for absolute locations.
+	push (@paths, '');
+	my $found = 0;
+	foreach my $path (@paths) {
+	    $found = 1 if (-x File::Spec->catfile($path, $program));
+	}
+
 	die "$key binary '$program' does not exist or is not executable"
-	    if !-x $program;
+	    if !$found;
     };
 
     my $validate_directory = sub {
@@ -83,7 +92,7 @@ sub init_allowed_keys {
 	},
 	'APT_GET'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'APT_GET'}
+	    DEFAULT => 'apt-get'
 	},
 	'AUTOCLEAN_INTERVAL'			=> {
 	    DEFAULT => 86400
@@ -152,7 +161,7 @@ sub init_allowed_keys {
 	},
 	'SUDO'					=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'SUDO'}
+	    DEFAULT => 'sudo'
 	},
 	'WARNING_AGE'				=> {
 	    DEFAULT => 7

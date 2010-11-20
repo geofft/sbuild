@@ -57,7 +57,7 @@ sub add_keys ($) {
 	foreach my $path (@paths) {
 	    $found = 1 if (-x File::Spec->catfile($path, $program));
 	}
-	        
+
 	die "$key binary '$program' does not exist or is not executable"
 	    if !$found;
     };
@@ -95,7 +95,7 @@ sub add_keys ($) {
 
     my %db_keys = (
 	'SSH'					=> {
-	    DEFAULT => $Sbuild::Sysconfig::programs{'SSH'},
+	    DEFAULT => 'ssh',
 	    CHECK => $validate_ssh,
 	},
 	'WANNA_BUILD_SSH_CMD'			=> {

@@ -316,8 +316,7 @@ sub shutdown ($) {
 	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
 	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
 	    $jobs{$current_job}->get('Session')->run_command(
-		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
-			      '-rf', $bdir],
+		{ COMMAND => ['rm', '-rf', $bdir],
 		  USER => 'root',
 		  CHROOT => 1,
 		  PRIORITY => 0,
