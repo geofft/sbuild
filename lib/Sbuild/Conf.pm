@@ -360,6 +360,10 @@ sub init_allowed_keys {
 	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> {
 	    DEFAULT => {}
 	},
+	'ENVIRONMENT_FILTER'			=> {
+	    DEFAULT => ['^DEB(SIGN)?_[A-Z_]+$',
+	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$']
+	},
 	'PATH'					=> {
 	    DEFAULT => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games"
 	},
@@ -601,6 +605,7 @@ sub read_config {
     my %individual_stalled_pkg_timeout;
     undef %individual_stalled_pkg_timeout;
     my $path = undef;
+    my $environment_filter = undef;
     my $ld_library_path = undef;
     my $maintainer_name = undef;
     my $uploader_name = undef;
@@ -705,6 +710,7 @@ sub read_config {
 	       \%individual_stalled_pkg_timeout)
 	if (%individual_stalled_pkg_timeout);
     $self->set('PATH', $path);
+    $self->set('ENVIRONMENT_FILTER', $environment_filter);
     $self->set('LD_LIBRARY_PATH', $ld_library_path);
     $self->set('MAINTAINER_NAME', $maintainer_name);
     $self->set('UPLOADER_NAME', $uploader_name);
