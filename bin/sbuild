@@ -110,8 +110,13 @@ sub main () {
     unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
+
+    # Until buildd parses status info from sbuild output, skipped must
+    # be treated as a failure.
     if (defined($current_job) && defined($jobs{$current_job})) {
-	if ($jobs{$current_job}->get_status() eq "successful") {
+	if ($jobs{$current_job}->get_status() eq "successful" ||
+	    ($conf->get('SBUILD_MODE') ne "buildd" &&
+	     $jobs{$current_job}->get_status() eq "skipped")) {
 	    exit 0;
 	} elsif ($jobs{$current_job}->get_status() eq "attempted") {
 	    exit 2;

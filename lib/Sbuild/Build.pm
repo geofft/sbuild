@@ -802,6 +802,7 @@ sub fetch_source_files {
 	    my $msg = "$dsc: $arch not in arch list or does not match any arch ";
 	    $msg .= "wildcards: $dscarchs -- skipping\n";
 	    $self->log($msg);
+	    $self->set_status('skipped');
 	    $self->set('Pkg Fail Stage', "arch-check");
 	    return 0;
 	}
@@ -1850,8 +1851,8 @@ sub close_build_log {
 
     my $filename = $self->get('Log File');
 
-    # Only report success or failure
-    if ($self->get_status() ne "successful") {
+    # building status at this point means failure.
+    if ($self->get_status() eq "building") {
 	$self->set_status('failed');
     }
 
