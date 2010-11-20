@@ -1,11 +1,19 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.60.5.  Please read these release notes carefully.
+Welcome to sbuild 0.60.6.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.60.6:
+
+  1) sbuild now sanitises the environment when running external
+     commands such as dpkg-buildpackage.  The allowed environment
+     variables may be specified with $environment_filter in the
+     configuration.  Currently, various DEB* and *FLAGS* environment
+     variables are allowed, similar to debuild's behaviour.
 
 * Major changes in 0.60.5:
 
