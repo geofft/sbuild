@@ -93,7 +93,6 @@ our %programs = (
     'DCMD' => '@DCMD@',
     'DF' => '@DF@',
     'DPKG' => '@DPKG@',
-    'DPKG_ARCHITECTURE' => '@DPKG_ARCHITECTURE@',
     'DPKG_BUILDPACKAGE' => '@DPKG_BUILDPACKAGE@',
     'DPKG_PARSECHANGELOG' => '@DPKG_PARSECHANGELOG@',
     'DPKG_SOURCE' => '@DPKG_SOURCE@',
