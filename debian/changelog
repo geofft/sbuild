@@ -1,3 +1,9 @@
+sbuild (0.60.6-1) unstable; urgency=low
+
+  * New release.
+
+ -- Roger Leigh <rleigh@debian.org>  Sat, 20 Nov 2010 11:40:13 +0000
+
 sbuild (0.60.5-1) unstable; urgency=low
 
   * Chroot upgrade and dist-upgrade commands run with
