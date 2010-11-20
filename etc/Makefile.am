@@ -40,6 +40,11 @@ else
 schrootsetup_SCRIPTS = $(SETUP)
 endif
 
+sbuildaptkeysdir = $(SBUILD_LIBEXEC_DIR)/apt-keys
+sbuildaptkeys_DATA =			\
+	apt-keys/sbuild-key.sec		\
+	apt-keys/sbuild-key.pub
+
 PROFILES =		\
 	buildd
 

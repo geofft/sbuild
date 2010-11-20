@@ -532,6 +532,12 @@ sub init_allowed_keys {
 	'RESOLVE_VIRTUAL'				=> {
 	    DEFAULT => 0
 	},
+	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
+	    DEFAULT => '/usr/share/sbuild/apt-keys/sbuild-key.sec'
+	},
+	'SBUILD_BUILD_DEPENDS_PUBLIC_KEY'		=> {
+	    DEFAULT => '/usr/share/sbuild/apt-keys/sbuild-key.pub'
+	},
     );
 
     $self->set_allowed_keys(\%sbuild_keys);

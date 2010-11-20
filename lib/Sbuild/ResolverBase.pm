@@ -29,6 +29,7 @@ use Errno qw(:POSIX);
 use File::Temp qw(tempdir tempfile);
 use File::Path qw(remove_tree);
 use File::Basename;
+use File::Copy;
 use Digest::MD5 qw(md5_hex);
 use IO::Compress::Gzip qw(gzip $GzipError :level);
 
@@ -329,8 +330,8 @@ sub setup_apt_archive {
     my $dummy_release_file = $dummy_archive_dir . '/Release';
     my $dummy_archive_list_file = $session->get('Location') .
         '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
-    my $dummy_archive_seckey = '/tmp/sbuild-key.sec';
-    my $dummy_archive_pubkey = '/tmp/sbuild-key.pub';
+    my $dummy_archive_seckey = $dummy_archive_dir . '/sbuild-key.sec';
+    my $dummy_archive_pubkey = $dummy_archive_dir . '/sbuild-key.pub';
 
     $self->set('Dummy archive directory', $dummy_archive_dir);
     $self->set('Dummy Packages file', $dummy_packages_file);
@@ -403,9 +404,15 @@ EOF
     close($dummy_release_fh);
 
     # Sign the release file
+    copy($self->get_conf('SBUILD_BUILD_DEPENDS_SECRET_KEY'), $dummy_archive_seckey) unless
+        (-f $dummy_archive_seckey);
+    copy($self->get_conf('SBUILD_BUILD_DEPENDS_PUBLIC_KEY'), $dummy_archive_pubkey) unless
+        (-f $dummy_archive_pubkey);
     my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
-                       '--secret-keyring', $dummy_archive_seckey,
-                       '--keyring', $dummy_archive_pubkey,
+                       '--secret-keyring',
+                       $session->strip_chroot_path($dummy_archive_seckey),
+                       '--keyring',
+                       $session->strip_chroot_path($dummy_archive_pubkey),
                        '--default-key', 'Sbuild Signer', '-abs',
                        '-o', $session->strip_chroot_path($dummy_release_file) . '.gpg',
                        $session->strip_chroot_path($dummy_release_file));
@@ -477,8 +484,8 @@ sub add_archive_entry {
     my $dummy_release_file = $self->get('Dummy Release file');
     my $dummy_archive_list_file = $self->get('Dummy archive list file');
     my $dummy_deb = $dummy_archive_dir . '/' . $dummy_pkg_name . '.deb';
-    my $dummy_archive_seckey = '/tmp/sbuild-key.sec';
-    my $dummy_archive_pubkey = '/tmp/sbuild-key.pub';
+    my $dummy_archive_seckey = $dummy_archive_dir . '/sbuild-key.sec';
+    my $dummy_archive_pubkey = $dummy_archive_dir . '/sbuild-key.pub';
 
     if (!(mkdir($dummy_pkg_dir) && mkdir($dummy_pkg_dir . '/DEBIAN'))) {
 	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_pkg_dir . '/DEBIAN: ' . $!);
@@ -673,9 +680,15 @@ EOF
     close($dummy_release_fh);
 
     # Sign the release file
+    copy($self->get_conf('SBUILD_BUILD_DEPENDS_SECRET_KEY'), $dummy_archive_seckey) unless
+        (-f $dummy_archive_seckey);
+    copy($self->get_conf('SBUILD_BUILD_DEPENDS_PUBLIC_KEY'), $dummy_archive_pubkey) unless
+        (-f $dummy_archive_pubkey);
     my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
-                       '--secret-keyring', $dummy_archive_seckey,
-                       '--keyring', $dummy_archive_pubkey,
+                       '--secret-keyring',
+                       $session->strip_chroot_path($dummy_archive_seckey),
+                       '--keyring',
+                       $session->strip_chroot_path($dummy_archive_pubkey),
                        '--default-key', 'Sbuild Signer', '-abs',
                        '-o', $session->strip_chroot_path($dummy_release_file) . '.gpg',
                        $session->strip_chroot_path($dummy_release_file));
