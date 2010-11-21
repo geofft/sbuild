@@ -711,11 +711,11 @@ sub run_apt_update {
     my $self = shift;
     my $builder = $self->get('Builder');
     my $session = $builder->get('Session');
-    $session->run_command(
-	{ COMMAND => ['apt-get', 'update'],
-	  USER => 'root',
-	  CHROOT => 1,
-	  PRIORITY => 0});
+    $session->run_apt_command(
+        { COMMAND => [$self->get_conf('APT_GET'), 'update'],
+          ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+          USER => 'root',
+          DIR => '/' });
     if ($?) {
 	$builder->log("Failed to run 'apt-get update'.\n");
         $self->cleanup_apt_archive();
