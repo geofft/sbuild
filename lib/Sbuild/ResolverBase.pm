@@ -32,6 +32,7 @@ use File::Copy;
 
 use Dpkg::Deps;
 use Sbuild::Base;
+use Sbuild::ChrootSetup qw(update);
 use Sbuild qw(isin debug);
 
 BEGIN {
@@ -542,17 +543,12 @@ EOF
 # Convenience function to run 'apt-get update'.
 sub run_apt_update {
     my $self = shift;
-    my $builder = $self->get('Builder');
-    my $session = $builder->get('Session');
-    $session->run_apt_command(
-        { COMMAND => [$self->get_conf('APT_GET'), 'update'],
-          ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-          USER => 'root',
-          DIR => '/' });
-    if ($?) {
-	$builder->log("Failed to run 'apt-get update'.\n");
-        $self->cleanup_apt_archive();
-	return 0;
+    my $session = $self->get('Builder')->get('Session');
+    my $conf = $self->get('Config');
+    my $status = update($session, $conf);
+    $status >>= 8;
+    if ($status) {
+        return 0;
     }
     return 1;
 }
