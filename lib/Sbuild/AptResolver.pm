@@ -53,8 +53,7 @@ sub install_deps {
     my @pkgs = @_;
 
     # Call functions to setup an archive to install dummy package.
-    return 0 unless ($self->setup_apt_archive());
-    return 0 unless ($self->add_archive_entry($name, @pkgs));
+    return 0 unless ($self->setup_apt_archive($name, @pkgs));
     return 0 unless ($self->run_apt_update());
 
     my $status = 0;
