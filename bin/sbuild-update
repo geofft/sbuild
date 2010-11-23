@@ -134,19 +134,19 @@ if ($conf->get('COMPAT')) {
 
 usage_error("sbuild-update", "Incorrect number of options") if (@ARGV < 1);
 
-my $status = 1;
+my $status = 0;
 
 foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
 
-    my $session = setup('source', $ARGV[0], $conf) or die "Chroot setup failed";
+    my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
 
     if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
 	goto cleanup_unlocked;
     }
 
     if ($conf->get('UPDATE')) {
-	print "Performing update.\n";
+	print "$chroot: Performing update.\n";
 	$status = update($session, $conf);
 	$status >>= 8;
 	if ($status) {
@@ -156,7 +156,7 @@ foreach (@ARGV) {
     }
 
     if ($conf->get('UPGRADE')) {
-	print "Performing upgrade.\n";
+	print "$chroot: Performing upgrade.\n";
 	my $status = upgrade($session, $conf);
 	$status >>= 8;
 	if ($status) {
@@ -166,7 +166,7 @@ foreach (@ARGV) {
     }
 
     if ($conf->get('DISTUPGRADE')) {
-	print "Performing dist-upgrade.\n";
+	print "$chroot: Performing dist-upgrade.\n";
 	my $status = distupgrade($session, $conf);
 	$status >>= 8;
 	if ($status) {
@@ -176,7 +176,7 @@ foreach (@ARGV) {
     }
 
     if ($conf->get('CLEAN')) {
-	print "Performing clean.\n";
+	print "$chroot: Performing clean.\n";
 	my $status = clean($session, $conf);
 	$status >>= 8;
 	if ($status) {
@@ -186,7 +186,7 @@ foreach (@ARGV) {
     }
 
     if ($conf->get('AUTOCLEAN')) {
-	print "Performing autoclean.\n";
+	print "$chroot: Performing autoclean.\n";
 	my $status = autoclean($session, $conf);
 	$status >>= 8;
 	if ($status) {
@@ -196,7 +196,7 @@ foreach (@ARGV) {
     }
 
     if ($conf->get('AUTOREMOVE')) {
-	print "Performing autoremove.\n";
+	print "$chroot: Performing autoremove.\n";
 	my $status = autoremove($session, $conf);
 	$status >>= 8;
 	if ($status) {
@@ -212,7 +212,7 @@ cleanup:
 cleanup_unlocked:
     cleanup($conf);
 
-    exit($status ? 1 : 0);
+    last if $status;
 }
 
-exit 0;
+exit($status ? 1 : 0);
