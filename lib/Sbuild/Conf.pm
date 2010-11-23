@@ -533,10 +533,10 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
-	    DEFAULT => '/usr/share/sbuild/apt-keys/sbuild-key.sec'
+	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.sec'
 	},
 	'SBUILD_BUILD_DEPENDS_PUBLIC_KEY'		=> {
-	    DEFAULT => '/usr/share/sbuild/apt-keys/sbuild-key.pub'
+	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.pub'
 	},
     );
 
