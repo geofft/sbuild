@@ -122,7 +122,7 @@ sub get_command_internal {
 
 	@cmdline = ('/usr/sbin/chroot', $self->get('Location'),
 		    $self->get_conf('SU'), '-p', "$user", '-s',
-		    $Sbuild::Sysconfig::programs{'SHELL'}, '-c',
+		    '/bin/sh', '-c',
 		    "cd '$dir' && $shellcommand");
     } else { # Run command outside chroot
 	if ($options->{'CHDIR_CHROOT'}) {

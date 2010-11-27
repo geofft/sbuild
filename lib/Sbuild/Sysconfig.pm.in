@@ -83,38 +83,4 @@ our %paths = (
     'WANNA_BUILD_LIBEXEC_DIR' => "@WANNA_BUILD_LIBEXEC_DIR@"
 );
 
-# Programs:
-our %programs = (
-    'APT_CACHE' => '@APT_CACHE@',
-    'APTITUDE' => '@APTITUDE@',
-    'APT_GET' => '@APT_GET@',
-    'CHMOD' => '@CHMOD@',
-    'DATE' => '@DATE@',
-    'DCMD' => '@DCMD@',
-    'DF' => '@DF@',
-    'DPKG' => '@DPKG@',
-    'DPKG_ARCHITECTURE' => '@DPKG_ARCHITECTURE@',
-    'DPKG_BUILDPACKAGE' => '@DPKG_BUILDPACKAGE@',
-    'DPKG_PARSECHANGELOG' => '@DPKG_PARSECHANGELOG@',
-    'DPKG_SOURCE' => '@DPKG_SOURCE@',
-    'LINTIAN' => '@LINTIAN@',
-    'PIUPARTS' => '@PIUPARTS@',
-    'DU' => '@DU@',
-    'FAKEROOT' => '@FAKEROOT@',
-    'GPG' => '@GPG@',
-    'HOSTNAME' => '@HOSTNAME@',
-    'MAN' => '@MAN@',
-    'MD5SUM' => '@MD5SUM@',
-    'PGP' => '@PGP@',
-    'PS' => '@PS@',
-    'RM' => '@RM@',
-    'SCHROOT' => '@SCHROOT@',
-    'SENDMAIL' => '@SENDMAIL@',
-    'SHELL' => '@SHELL@',
-    'SSH' => '@SSH@',
-    'SU' => '@SU@',
-    'SUDO' => '@SUDO@',
-    'TEMPFILE' => '@TEMPFILE@'
-);
-
 1;

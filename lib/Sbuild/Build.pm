@@ -96,7 +96,7 @@ sub new {
     $host_defaults->{'DIR'} = $self->get_conf('HOME');
     $host_defaults->{'STREAMIN'} = $devnull;
     $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
-    $host_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+    $host_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
 
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
@@ -143,8 +143,7 @@ sub set_dsc {
     if (-d $dsc) {
 	my $host = $self->get('Host');
 	my $pipe = $host->pipe_command(
-	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'},
-			  "-l" . abs_path($dsc) . "/debian/changelog"],
+	    { COMMAND => ['dpkg-parsechangelog', '-l' . abs_path($dsc) . '/debian/changelog'],
 	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
@@ -402,7 +401,7 @@ sub run {
     $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
     $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
     $chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
-    $chroot_defaults->{'ENV'}->{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+    $chroot_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
 
     $self->set('Session', $session);
 
@@ -803,6 +802,7 @@ sub fetch_source_files {
 	    my $msg = "$dsc: $arch not in arch list or does not match any arch ";
 	    $msg .= "wildcards: $dscarchs -- skipping\n";
 	    $self->log($msg);
+	    $self->set_status('skipped');
 	    $self->set('Pkg Fail Stage', "arch-check");
 	    return 0;
 	}
@@ -992,7 +992,7 @@ sub run_piuparts {
     if (scalar(@{$self->get_conf('PIUPARTS_ROOT_ARGS')})) {
 	push @piuparts_command, @{$self->get_conf('PIUPARTS_ROOT_ARGS')};
     } else {
-	push @piuparts_command, $Sbuild::Sysconfig::programs{'SUDO'}, '--';
+	push @piuparts_command, 'sudo', '--';
     }
     push @piuparts_command, $piuparts;
     push @piuparts_command, @{$self->get_conf('PIUPARTS_OPTIONS')} if
@@ -1077,7 +1077,7 @@ sub build {
 	# check if the unpacked tree is really the version we need
 	$dscdir = $self->get('Session')->strip_chroot_path($dscdir);
 	my $pipe = $self->get('Session')->pipe_command(
-	    { COMMAND => [$Sbuild::Sysconfig::programs{'DPKG_PARSECHANGELOG'}],
+	    { COMMAND => ['dpkg-parsechangelog'],
 	      USER => $self->get_conf('USERNAME'),
 	      PRIORITY => 0,
 	      DIR => $dscdir});
@@ -1100,8 +1100,7 @@ sub build {
 
     $self->log_subsubsection("Check disc space");
     $self->set('Pkg Fail Stage', "check-space");
-    my $du = $Sbuild::Sysconfig::programs{'DU'};
-    my $current_usage = `"$du" -k -s "$dscdir"`;
+    my $current_usage = `du -k -s "$dscdir"`;
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
     if ($current_usage) {
@@ -1112,8 +1111,7 @@ sub build {
 	    # TODO: Only purge in a single place.
 	    $self->log("Purging $build_dir\n");
 	    $self->get('Session')->run_command(
-		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
-			      '-rf', $build_dir],
+		{ COMMAND => ['rm', '-rf', $build_dir],
 		  USER => 'root',
 		  CHROOT => 1,
 		  PRIORITY => 0,
@@ -1200,8 +1198,7 @@ sub build {
     if (-f "$self->{'Chroot Dir'}/etc/ld.so.conf" &&
 	! -r "$self->{'Chroot Dir'}/etc/ld.so.conf") {
 	$self->get('Session')->run_command(
-	    { COMMAND => [$Sbuild::Sysconfig::programs{'CHMOD'},
-			  'a+r', '/etc/ld.so.conf'],
+	    { COMMAND => ['chmod', 'a+r', '/etc/ld.so.conf'],
 	      USER => 'root',
 	      CHROOT => 1,
 	      PRIORITY => 0,
@@ -1493,7 +1490,7 @@ sub check_space {
 
     foreach (@files) {
 	my $pipe = $self->get('Session')->pipe_command(
-	    { COMMAND => [$Sbuild::Sysconfig::programs{'DU'}, '-k', '-s', $_],
+	    { COMMAND => ['du', '-k', '-s', $_],
 	      USER => $self->get_conf('USERNAME'),
 	      CHROOT => 0,
 	      PRIORITY => 0,
@@ -1729,8 +1726,7 @@ sub chroot_arch {
     my $self = shift;
 
     my $pipe = $self->get('Session')->pipe_command(
-	{ COMMAND => [$self->get_conf('DPKG'),
-		      '--print-architecture'],
+	{ COMMAND => ['dpkg', '--print-architecture'],
 	  USER => $self->get_conf('USERNAME'),
 	  CHROOT => 1,
 	  PRIORITY => 0,
@@ -1855,8 +1851,8 @@ sub close_build_log {
 
     my $filename = $self->get('Log File');
 
-    # Only report success or failure
-    if ($self->get_status() ne "successful") {
+    # building status at this point means failure.
+    if ($self->get_status() eq "building") {
 	$self->set_status('failed');
     }
 

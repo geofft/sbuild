@@ -27,7 +27,7 @@ use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig;
 
 $ENV{'LC_ALL'} = "POSIX";
-$ENV{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+$ENV{'SHELL'} = '/bin/sh';
 
 # avoid intermixing of stdout and stderr
 $| = 1;

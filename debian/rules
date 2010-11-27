@@ -12,14 +12,7 @@ debian/build/config.status: configure
 	CFLAGS="$(CFLAGS)" ../../configure \
 	  --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
 	  --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/share \
-	  --localstatedir=/var --mandir=\$${prefix}/share/man \
-	  DCMD=/usr/bin/dcmd \
-	  SCHROOT=/usr/bin/schroot \
-	  SSH=/usr/bin/ssh \
-	  SUDO=/usr/bin/sudo \
-	  APTITUDE=/usr/bin/aptitude \
-	  LINTIAN=/usr/bin/lintian \
-	  PIUPARTS=/usr/sbin/piuparts
+	  --localstatedir=/var --mandir=\$${prefix}/share/man
 
 
 build: debian/build/config.status debian/build-stamp

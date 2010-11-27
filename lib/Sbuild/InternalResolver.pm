@@ -165,7 +165,7 @@ sub install_deps {
     }
 
     my $pipe = $builder->get('Session')->pipe_command(
-	    { COMMAND => [$self->get_conf('DPKG'), '--set-selections'],
+	    { COMMAND => ['dpkg', '--set-selections'],
 	      PIPE => 'out',
 	      USER => 'root',
 	      CHROOT => 1,
@@ -182,7 +182,7 @@ sub install_deps {
     }
     close($pipe);
     if ($?) {
-	$builder->log($self->get_conf('DPKG') . ' --set-selections failed\n');
+	$builder->log('dpkg --set-selections failed\n');
     }
 
     $builder->prepare_watches(\@dependencies, @instd );

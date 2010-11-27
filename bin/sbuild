@@ -39,7 +39,6 @@ use Sbuild::Build;
 sub main ();
 sub write_jobs_file ();
 sub append_to_FINISHED ($);
-sub should_skip ($);
 sub status_trigger ($$);
 sub shutdown ($);
 sub dump_main_state ();
@@ -97,11 +96,7 @@ sub main () {
 	$current_job = $jobname;
 
 	# Do the build
-	if (should_skip($job)) {
-	    $job->set_status('skipped');
-	} else {
-	    $job->run();
-	}
+	$job->run();
 
 	dump_main_state() if $conf->get('DEBUG');
     }
@@ -110,8 +105,13 @@ sub main () {
     unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
+
+    # Until buildd parses status info from sbuild output, skipped must
+    # be treated as a failure.
     if (defined($current_job) && defined($jobs{$current_job})) {
-	if ($jobs{$current_job}->get_status() eq "successful") {
+	if ($jobs{$current_job}->get_status() eq "successful" ||
+	    ($conf->get('SBUILD_MODE') ne "buildd" &&
+	     $jobs{$current_job}->get_status() eq "skipped")) {
 	    exit 0;
 	} elsif ($jobs{$current_job}->get_status() eq "attempted") {
 	    exit 2;
@@ -153,39 +153,6 @@ sub append_to_FINISHED ($) {
 	print F $job->get('Package_OVersion');
 	close(F);
     }
-}
-
-sub should_skip ($) {
-    my $build = shift;
-
-    if ($conf->get('BATCH_MODE')) {
-	my $pkgv = $build->get('Package_OVersion');
-
-	$build->lock_file("SKIP", 0);
-	goto unlock if !open( F, "SKIP" );
-	my @pkgs = <F>;
-	close( F );
-
-	if (!open( F, ">SKIP" )) {
-	    print "Can't open SKIP for writing: $!\n",
-	    "Would write: @pkgs\nminus $pkgv\n";
-	    goto unlock;
-	}
-	my $found = 0;
-	foreach (@pkgs) {
-	    if (/^\Q$pkgv\E$/) {
-		++$found;
-		print "$pkgv found in SKIP file -- skipping building it\n";
-	    }
-	    else {
-		print F $_;
-	    }
-	}
-	close( F );
-      unlock:
-	$build->unlock_file("SKIP");
-	return $found;
-	}
 }
 
 sub status_trigger ($$) {
@@ -316,8 +283,7 @@ sub shutdown ($) {
 	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
 	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
 	    $jobs{$current_job}->get('Session')->run_command(
-		{ COMMAND => [$Sbuild::Sysconfig::programs{'RM'},
-			      '-rf', $bdir],
+		{ COMMAND => ['rm', '-rf', $bdir],
 		  USER => 'root',
 		  CHROOT => 1,
 		  PRIORITY => 0,

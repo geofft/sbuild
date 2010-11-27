@@ -55,8 +55,17 @@ sub init_allowed_keys {
 	die "$key binary is not defined"
 	    if !defined($program) || !$program;
 
+	# Emulate execvp behaviour by searching the binary in the PATH.
+	my @paths = split(/:/, $self->get('PATH'));
+	# Also consider the empty path for absolute locations.
+	push (@paths, '');
+	my $found = 0;
+	foreach my $path (@paths) {
+	    $found = 1 if (-x File::Spec->catfile($path, $program));
+	}
+
 	die "$key binary '$program' does not exist or is not executable"
-	    if !-x $program;
+	    if !$found;
     };
 
     my $validate_directory = sub {
@@ -117,7 +126,7 @@ sub init_allowed_keys {
 		    local (%ENV) = %ENV; # make local environment
 		    $ENV{'DEBIAN_FRONTEND'} = "noninteractive";
 		    $ENV{'APT_CONFIG'} = "test_apt_config";
-		    $ENV{'SHELL'} = $Sbuild::Sysconfig::programs{'SHELL'};
+		    $ENV{'SHELL'} = '/bin/sh';
 
 		    my $sudo = $self->get('SUDO');
 		    chomp( my $test_df = `$sudo sh -c 'echo \$DEBIAN_FRONTEND'` );
@@ -126,18 +135,18 @@ sub init_allowed_keys {
 
 		    if ($test_df ne "noninteractive" ||
 			$test_ac ne "test_apt_config" ||
-			$test_sh ne $Sbuild::Sysconfig::programs{'SHELL'}) {
+			$test_sh ne '/bin/sh') {
 			print STDERR "$sudo is stripping APT_CONFIG, DEBIAN_FRONTEND and/or SHELL from the environment\n";
 			print STDERR "'Defaults:" . $self->get('USERNAME') . " env_keep+=\"APT_CONFIG DEBIAN_FRONTEND SHELL\"' is not set in /etc/sudoers\n";
 			die "$sudo is incorrectly configured"
 		    }
 		}
 	    },
-	    DEFAULT => $Sbuild::Sysconfig::programs{'SUDO'}
+	    DEFAULT => 'sudo'
 	},
 	'SU'					=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'SU'}
+	    DEFAULT => 'su'
 	},
 	'SCHROOT'				=> {
 	    CHECK => sub {
@@ -150,21 +159,21 @@ sub init_allowed_keys {
 		    $validate_program->($self, $entry);
 		}
 	    },
-	    DEFAULT => $Sbuild::Sysconfig::programs{'SCHROOT'}
+	    DEFAULT => 'schroot'
 	},
 	'SCHROOT_OPTIONS'			=> {
 	    DEFAULT => ['-q']
 	},
 	'FAKEROOT'				=> {
-	    DEFAULT => $Sbuild::Sysconfig::programs{'FAKEROOT'}
+	    DEFAULT => 'fakeroot'
 	},
 	'APT_GET'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'APT_GET'}
+	    DEFAULT => 'apt-get'
 	},
 	'APT_CACHE'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'APT_CACHE'}
+	    DEFAULT => 'apt-cache'
 	},
 	'APTITUDE'				=> {
 	    CHECK => sub {
@@ -177,25 +186,25 @@ sub init_allowed_keys {
 		    $validate_program->($self, $entry);
 		}
 	    },
-	    DEFAULT => $Sbuild::Sysconfig::programs{'APTITUDE'}
+	    DEFAULT => 'aptitude'
 	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
 	    DEFAULT => []
 	},
 	'DPKG_SOURCE'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'DPKG_SOURCE'}
+	    DEFAULT => 'dpkg-source'
 	},
 	'DPKG_SOURCE_OPTIONS'			=> {
 	    DEFAULT => []
 	},
 	'DCMD'					=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'DCMD'}
+	    DEFAULT => 'dcmd'
 	},
 	'MD5SUM'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => $Sbuild::Sysconfig::programs{'MD5SUM'}
+	    DEFAULT => 'md5sum'
 	},
 	'AVG_TIME_DB'				=> {
 	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-times"
@@ -360,8 +369,9 @@ sub init_allowed_keys {
 	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> {
 	    DEFAULT => {}
 	},
-	'PATH'					=> {
-	    DEFAULT => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/games"
+	'ENVIRONMENT_FILTER'			=> {
+	    DEFAULT => ['^DEB(SIGN)?_[A-Z_]+$',
+	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$']
 	},
 	'LD_LIBRARY_PATH'			=> {
 	    DEFAULT => undef
@@ -477,7 +487,7 @@ sub init_allowed_keys {
 		    $validate_program->($self, $entry);
 		}
 	    },
-	    DEFAULT => $Sbuild::Sysconfig::programs{'LINTIAN'},
+	    DEFAULT => 'lintian'
 	},
 	'RUN_LINTIAN'				=> {
 	    CHECK => sub {
@@ -500,7 +510,7 @@ sub init_allowed_keys {
 		    $validate_program->($self, $entry);
 		}
 	    },
-	    DEFAULT => $Sbuild::Sysconfig::programs{'PIUPARTS'},
+	    DEFAULT => 'piuparts'
 	},
 	'RUN_PIUPARTS'				=> {
 	    CHECK => sub {
@@ -607,6 +617,7 @@ sub read_config {
     my %individual_stalled_pkg_timeout;
     undef %individual_stalled_pkg_timeout;
     my $path = undef;
+    my $environment_filter = undef;
     my $ld_library_path = undef;
     my $maintainer_name = undef;
     my $uploader_name = undef;
@@ -648,6 +659,8 @@ sub read_config {
 	}
     }
 
+    # Needed before any program validation.
+    $self->set('PATH', $path);
     # Set before APT_GET or APTITUDE to allow correct validation.
     $self->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
     $self->set('RESOLVE_VIRTUAL', $resolve_virtual);
@@ -655,7 +668,6 @@ sub read_config {
     $self->set('ARCH', $arch);
     $self->set('DISTRIBUTION', $distribution);
     $self->set('DEBUG', $debug);
-    $self->set('DPKG', $dpkg);
     $self->set('MAILPROG', $mailprog);
     $self->set('ARCHIVE', $archive);
     $self->set('CHROOT', $chroot);
@@ -710,7 +722,7 @@ sub read_config {
     $self->set('INDIVIDUAL_STALLED_PKG_TIMEOUT',
 	       \%individual_stalled_pkg_timeout)
 	if (%individual_stalled_pkg_timeout);
-    $self->set('PATH', $path);
+    $self->set('ENVIRONMENT_FILTER', $environment_filter);
     $self->set('LD_LIBRARY_PATH', $ld_library_path);
     $self->set('MAINTAINER_NAME', $maintainer_name);
     $self->set('UPLOADER_NAME', $uploader_name);

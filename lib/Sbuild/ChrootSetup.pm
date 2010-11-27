@@ -240,7 +240,7 @@ sub shell ($$) {
     my $conf = shift;
 
     $session->run_command(
-	{ COMMAND => [$Sbuild::Sysconfig::programs{'SHELL'}],
+	{ COMMAND => ['/bin/sh'],
 	  PRIORITY => 1,
 	  STREAMIN => \*STDIN,
 	  STREAMOUT => \*STDOUT,
@@ -271,7 +271,7 @@ sub list_packages ($$@) {
     my $conf = shift;
 
     $session->run_command(
-	{COMMAND => [$conf->get('DPKG'), '--list', @_],
+	{COMMAND => ['dpkg', '--list', @_],
 	 USER => 'root',
 	 CHROOT => 1,
 	 PRIORITY => 0});
@@ -284,7 +284,7 @@ sub set_package_status ($$$@) {
     my $status = shift;
 
     my $pipe = $session->pipe_command(
-	{COMMAND => [$conf->get('DPKG'), '--set-selections'],
+	{COMMAND => ['dpkg', '--set-selections'],
 	 PIPE => 'out',
 	 USER => 'root',
 	 CHROOT => 1,

@@ -342,6 +342,22 @@ sub exec_command {
 	$ENV{$_} = $commandenv->{$_};
     }
 
+    # Sanitise environment
+    foreach my $var (keys %ENV) {
+	my $match = 0;
+	foreach my $regex (@{$self->get_conf('ENVIRONMENT_FILTER')}) {
+	    $match = 1 if
+		$var =~ m/($regex)/;
+	}
+	delete $ENV{$var} if
+	    $match == 0;
+	if (!$match) {
+	    debug2("Environment filter: Deleted $var\n");
+	} else {
+	    debug2("Environment filter: Kept $var\n");
+	}
+    }
+
     debug2("PROGRAM: $program\n");
     debug2("COMMAND: ", join(" ", @{$options->{'COMMAND'}}), "\n");
     debug2("INTCOMMAND: ", join(" ", @{$options->{'INTCOMMAND'}}), "\n");
