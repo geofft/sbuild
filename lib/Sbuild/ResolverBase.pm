@@ -580,42 +580,11 @@ sub generate_keys {
 
     my $session = $self->get('Builder')->get('Session');
 
-    my ($tmpfh, $tmpfilename) = tempfile();
-    print $tmpfh <<"EOF";
-Key-Type: RSA
-Name-Real: Sbuild Signer
-Name-Comment: Sbuild Build Dependency Archive Key
-Name-Email: buildd-tools-devel\@lists.alioth.debian.org
-Expire-Date: 0
-EOF
-    print $tmpfh '%secring ' . $self->get_conf('SBUILD_BUILD_DEPENDS_SECRET_KEY') . "\n";
-    print $tmpfh '%pubring ' . $self->get_conf('SBUILD_BUILD_DEPENDS_PUBLIC_KEY') . "\n";
-    print $tmpfh '%commit' . "\n";
-    close($tmpfh);
-
-    my @command = ('gpg', '--no-default-keyring', '--batch', '--gen-key',
-                   $tmpfilename);
-    $session->run_command(
-        { COMMAND => \@command,
-          USER => 'root',
-          CHROOT => 0,
-          PRIORITY => 0,
-          DIR => '/'});
-    if ($?) {
-        return 0;
-    }
-
-    # Secret keyring needs to be readable by 'sbuild' group.
-    @command = ('chmod', '640',
-                $self->get_conf('SBUILD_BUILD_DEPENDS_SECRET_KEY'));
-    $session->run_command(
-        { COMMAND => \@command,
-          USER => 'root',
-          CHROOT => 0,
-          PRIORITY => 0,
-          DIR => '/'});
-    if ($?) {
-        return 0;
+    if (generate_keys($session, $self->get('Config'))) {
+	# Since apt-distupgrade was requested specifically, fail on
+	# error when not in buildd mode.
+	$self->log("generating gpg keys failed\n");
+	return 0;
     }
 
     return 1;

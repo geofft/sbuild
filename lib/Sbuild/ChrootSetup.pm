@@ -23,6 +23,7 @@ package Sbuild::ChrootSetup;
 use strict;
 use warnings;
 
+use File::Temp qw(tempfile);
 use Sbuild qw($devnull);
 
 BEGIN {
@@ -33,7 +34,7 @@ BEGIN {
 
     @EXPORT = qw(update upgrade distupgrade clean autoclean autoremove
                  basesetup shell hold_packages unhold_packages
-                 list_packages set_package_status);
+                 list_packages set_package_status generate_keys);
 }
 
 sub update ($$);
@@ -301,6 +302,47 @@ sub set_package_status ($$$@) {
     if (!close $pipe) {
 	print STDERR "Can't run dpkg --set-selections in chroot\n";
     }
+
+    return $?;
+}
+
+sub generate_keys ($$) {
+    my $session = shift;
+    my $conf = shift;
+
+    my ($tmpfh, $tmpfilename) = tempfile();
+    print $tmpfh <<"EOF";
+Key-Type: RSA
+Key-Length: 1024
+Name-Real: Sbuild Signer
+Name-Comment: Sbuild Build Dependency Archive Key
+Name-Email: buildd-tools-devel\@lists.alioth.debian.org
+Expire-Date: 0
+EOF
+    print $tmpfh '%secring ' . $conf->get('SBUILD_BUILD_DEPENDS_SECRET_KEY') . "\n";
+    print $tmpfh '%pubring ' . $conf->get('SBUILD_BUILD_DEPENDS_PUBLIC_KEY') . "\n";
+    print $tmpfh '%commit' . "\n";
+    close($tmpfh);
+
+    my @command = ('gpg', '--no-default-keyring', '--batch', '--gen-key',
+                   $tmpfilename);
+    $session->run_command(
+        { COMMAND => \@command,
+          CHROOT => 0,
+          PRIORITY => 0,
+          DIR => '/'});
+    if ($?) {
+        return $?;
+    }
+
+    # Secret keyring needs to be readable by 'sbuild' group.
+    @command = ('chmod', '640',
+                $conf->get('SBUILD_BUILD_DEPENDS_SECRET_KEY'));
+    $session->run_command(
+        { COMMAND => \@command,
+          CHROOT => 0,
+          PRIORITY => 0,
+          DIR => '/'});
 
     return $?;
 }

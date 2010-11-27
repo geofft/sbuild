@@ -17,26 +17,29 @@
 .SH NAME
 sbuild\-update \- update, upgrade, and clean an sbuild chroot with apt-get
 .SH SYNOPSIS
-.BR sbuild\-update
-.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
-.BR [ \-u \[or] \-\-update ] " " [ \-g \[or] \-\-upgrade ] " "
-.BR [ \-d \[or] \-\-dist\-upgrade ] " " [ \-c \[or] \-\-clean ] " "
-.BR [ \-a \[or] \-\-autoclean ] " " [ \-r \[or] \-\-autoremove ]
-.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.B sbuild\-update
+.RB [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.RB [ \-u \[or] \-\-update ] " " [ \-g \[or] \-\-upgrade ] " "
+.RB [ \-d \[or] \-\-dist\-upgrade ] " " [ \-c \[or] \-\-clean ] " "
+.RB [ \-a \[or] \-\-autoclean ] " " [ \-r \[or] \-\-autoremove ]
+.RB CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
 .br
-.BR (DEPRECATED) " " sbuild\-upgrade
-.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
-.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.B sbuild\-update
+.BR \-k \[or] \-\-keygen
 .br
-.BR (DEPRECATED) " " sbuild\-distupgrade
-.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
-.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.RB "(DEPRECATED) " sbuild\-upgrade
+.RB [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.RB CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
 .br
-.BR (DEPRECATED) " " sbuild\-clean
-.BR [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
-.BR [ \-c \[or] \-\-clean ] " " [ \-a \[or] \-\-autoclean ] " "
-.BR [ \-r \[or] \-\-autoremove ]
-.BR CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.RB "(DEPRECATED) " sbuild\-distupgrade
+.RB [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.RB CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
+.br
+.RB "(DEPRECATED) " sbuild\-clean
+.RB [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.RB [ \-c \[or] \-\-clean ] " " [ \-a \[or] \-\-autoclean ] " "
+.RB [ \-r \[or] \-\-autoremove ]
+.RB CHROOT1 " [" CHROOT2 " [" CHROOT\f[BI]n\fP... ]]
 .SH DESCRIPTION
 \fBsbuild\-update\fR runs \f[CB]apt\-get\fP inside the specified chroot
 performing \f[CB]update\fP, \f[CB]upgrade\fP, \f[CB]dist\-upgrade\fP,
@@ -74,6 +77,10 @@ Perform an \f[CB]apt\-get autoclean\fP.
 .TP
 .BR \-r ", " \-\-autoremove
 Perform an \f[CB]apt\-get autoremove\fP.
+.TP
+.BR \-k ", " \-\-keygen
+Generate a GPG public/private key pair for self-signing local apt archives,
+used for installation of dependency packages.
 .SS Chroot selection
 .TP
 .B CHROOT

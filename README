@@ -63,6 +63,7 @@ these keys if either of these keys are missing at these locations. The keys are
 generated using a parameter file with the following entries.
 
   Key-Type: RSA
+  Key-Length: 1024
   Name-Real: Sbuild Signer
   Name-Comment: Sbuild Build Dependency Archive Key
   Name-Email: buildd-tools-devel@lists.alioth.debian.org

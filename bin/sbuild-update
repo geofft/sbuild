@@ -22,7 +22,8 @@ use strict;
 use warnings;
 
 use Sbuild::ChrootSetup qw(update upgrade distupgrade clean autoclean
-                           autoremove);
+                           autoremove generate_keys);
+use Sbuild::ChrootRoot;
 
 package Conf;
 
@@ -62,6 +63,9 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'AUTOREMOVE'			=> {
+	    DEFAULT => 0
+	},
+	'KEYGEN'			=> {
 	    DEFAULT => 0
 	},
     );
@@ -110,6 +114,10 @@ sub set_options {
 	"autoremove|r" => sub {
 	    $self->set_conf('AUTOREMOVE', 1);
 	    $self->set_conf('COMPAT', 0);
+	},
+	"keygen|k" => sub {
+	    $self->set_conf('KEYGEN', 1);
+	    $self->set_conf('COMPAT', 0);
 	});
 }
 
@@ -132,9 +140,26 @@ if ($conf->get('COMPAT')) {
     $conf->set('UPDATE', 1);
 }
 
-usage_error("sbuild-update", "Incorrect number of options") if (@ARGV < 1);
+if ((@ARGV < 1 && !$conf->get('KEYGEN')) ||
+    (@ARGV >= 1 && $conf->get('KEYGEN'))) {
+    usage_error("sbuild-update", "Incorrect number of options")
+}
 
 my $status = 1;
+
+if ($conf->get('KEYGEN')) {
+    print "Generating archive key.\n";
+
+    my $session = Sbuild::ChrootRoot->new($conf);
+
+    $status = generate_keys($session, $conf);
+    $status >>= 8;
+    if ($status) {
+	print STDERR "Exiting from key generation with status $status.\n";
+	exit($status ? 1 : 0);
+    }
+    exit 0;
+}
 
 foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
