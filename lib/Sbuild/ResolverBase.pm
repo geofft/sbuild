@@ -26,9 +26,13 @@ use warnings;
 use POSIX;
 use Fcntl;
 use Errno qw(:POSIX);
+use File::Temp qw(tempdir tempfile);
+use File::Path qw(remove_tree);
+use File::Copy;
 
 use Dpkg::Deps;
 use Sbuild::Base;
+use Sbuild::ChrootSetup qw(update);
 use Sbuild qw(isin debug);
 
 BEGIN {
@@ -300,6 +304,368 @@ sub get_dpkg_status {
     }
     close( STATUS );
     return \%result;
+}
+
+# Create an apt archive. Add to it if one exists.
+sub setup_apt_archive {
+    my $self = shift;
+    my $name = shift;
+    my @pkgs = @_;
+
+    my $builder = $self->get('Builder');
+    my $session = $builder->get('Session');
+
+    #Prepare a path to build a dummy package containing our deps:
+    if (! defined $self->get('Dummy package path')) {
+        $self->set('Dummy package path',
+                  tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
+                          $builder->get('Arch') . '-XXXXXX',
+                          DIR => $session->get('Build Location')));
+    }
+    my $dummy_dir = $self->get('Dummy package path');
+    my $dummy_archive_dir = $dummy_dir . '/apt_archive';
+    my $dummy_release_file = $dummy_archive_dir . '/Release';
+    my $dummy_archive_list_file = $session->get('Location') .
+        '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
+    my $dummy_archive_seckey = $dummy_archive_dir . '/sbuild-key.sec';
+    my $dummy_archive_pubkey = $dummy_archive_dir . '/sbuild-key.pub';
+
+    $self->set('Dummy archive directory', $dummy_archive_dir);
+    $self->set('Dummy Release file', $dummy_release_file);
+    $self->set('Dummy archive list file', $dummy_archive_list_file);
+
+    if (! -d $dummy_dir) {
+        $builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+    if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir)) {
+        $builder->log_warning('Could not create build-depends dummy archive dir ' . $dummy_archive_dir . ': ' . $!);
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+
+    my $dummy_pkg_name = 'sbuild-build-depends-' . $name. '-dummy';
+    my $dummy_pkg_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
+    my $dummy_deb = $dummy_archive_dir . '/' . $dummy_pkg_name . '.deb';
+    my $dummy_dsc = $dummy_archive_dir . '/' . $dummy_pkg_name . '.dsc';
+
+    if (!(mkdir($dummy_pkg_dir) && mkdir($dummy_pkg_dir . '/DEBIAN'))) {
+	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_pkg_dir . '/DEBIAN: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    if (!open(DUMMY_CONTROL, '>', $dummy_pkg_dir . '/DEBIAN/control')) {
+	$builder->log_warning('Could not open ' . $dummy_pkg_dir . '/DEBIAN/control for writing: ' . $!);
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    my $arch = $builder->get('Arch');
+    print DUMMY_CONTROL <<"EOF";
+Package: $dummy_pkg_name
+Version: 0.invalid.0
+Architecture: $arch
+EOF
+
+    my @positive;
+    my @negative;
+    my @positive_indep;
+    my @negative_indep;
+
+    for my $pkg (@pkgs) {
+	my $deps = $self->get('AptDependencies')->{$pkg};
+
+	push(@positive, $deps->{'Build Depends'})
+	    if (defined($deps->{'Build Depends'}) &&
+		$deps->{'Build Depends'} ne "");
+	push(@negative, $deps->{'Build Conflicts'})
+	    if (defined($deps->{'Build Conflicts'}) &&
+		$deps->{'Build Conflicts'} ne "");
+	push(@positive_indep, $deps->{'Build Depends Indep'})
+	    if (defined($deps->{'Build Depends Indep'}) &&
+		$deps->{'Build Depends Indep'} ne "");
+	push(@negative_indep, $deps->{'Build Conflicts Indep'})
+	    if (defined($deps->{'Build Conflicts Indep'}) &&
+		$deps->{'Build Conflicts Indep'} ne "");
+    }
+
+    my ($positive, $negative);
+    if ($self->get_conf('BUILD_ARCH_ALL')) {
+	$positive = deps_parse(join(", ", @positive, @positive_indep),
+			       reduce_arch => 1,
+			       host_arch => $builder->get('Arch'));
+	$negative = deps_parse(join(", ", @negative, @negative_indep),
+			       reduce_arch => 1,
+			       host_arch => $builder->get('Arch'));
+    } else {
+	$positive = deps_parse(join(", ", @positive),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+	$negative = deps_parse(join(", ", @negative),
+			      reduce_arch => 1,
+			      host_arch => $builder->get('Arch'));
+    }
+
+    if ($positive ne "") {
+	print DUMMY_CONTROL 'Depends: ' . $positive . "\n";
+    }
+    if ($negative ne "") {
+	print DUMMY_CONTROL 'Conflicts: ' . $negative . "\n";
+    }
+
+    debug("DUMMY Depends: $positive \n");
+    debug("DUMMY Conflicts: $negative \n");
+
+    print DUMMY_CONTROL <<"EOF";
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
+Description: Dummy package to satisfy dependencies with apt - created by sbuild
+ This package was created automatically by sbuild and should never appear on
+ a real system. You can safely remove it.
+EOF
+    close (DUMMY_CONTROL);
+
+    #Now build the package:
+    $session->run_command(
+	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_pkg_dir), $session->strip_chroot_path($dummy_deb)],
+	  USER => $self->get_conf('USER'),
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Dummy package creation failed\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Write the dummy dsc file.
+    my $dummy_dsc_fh;
+    if (!open($dummy_dsc_fh, '>', $dummy_dsc)) {
+        $builder->log_warning('Could not open ' . $dummy_dsc . ' for writing: ' . $!);
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+
+    print $dummy_dsc_fh <<"EOF";
+Format: 1.0
+Source: $dummy_pkg_name
+Binary: $dummy_pkg_name
+Architecture: any
+Version: 0.invalid.0
+Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
+EOF
+    if (scalar(@positive)) {
+       print $dummy_dsc_fh 'Build-Depends: ' . join(", ", @positive) . "\n";
+    }
+    if (scalar(@negative)) {
+       print $dummy_dsc_fh 'Build-Conflicts: ' . join(", ", @negative) . "\n";
+    }
+    if (scalar(@positive_indep)) {
+       print $dummy_dsc_fh 'Build-Depends-Indep: ' . join(", ", @positive_indep) . "\n";
+    }
+    if (scalar(@negative_indep)) {
+       print $dummy_dsc_fh 'Build-Conflicts-Indep: ' . join(", ", @negative_indep) . "\n";
+    }
+    print $dummy_dsc_fh "\n";
+    close $dummy_dsc_fh;
+
+    # Do code to run apt-ftparchive
+    if (!$self->run_apt_ftparchive()) {
+        $builder->log("Failed to run apt-ftparchive.\n");
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+
+    # Sign the release file
+    if (!$self->generate_keys()) {
+        $builder->log("Failed to generate archive keys.\n");
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+    copy($self->get_conf('SBUILD_BUILD_DEPENDS_SECRET_KEY'), $dummy_archive_seckey) unless
+        (-f $dummy_archive_seckey);
+    copy($self->get_conf('SBUILD_BUILD_DEPENDS_PUBLIC_KEY'), $dummy_archive_pubkey) unless
+        (-f $dummy_archive_pubkey);
+    my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
+                       '--secret-keyring',
+                       $session->strip_chroot_path($dummy_archive_seckey),
+                       '--keyring',
+                       $session->strip_chroot_path($dummy_archive_pubkey),
+                       '--default-key', 'Sbuild Signer', '-abs',
+                       '-o', $session->strip_chroot_path($dummy_release_file) . '.gpg',
+                       $session->strip_chroot_path($dummy_release_file));
+    $session->run_command(
+	{ COMMAND => \@gpg_command,
+	  USER => $self->get_conf('USER'),
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    if ($?) {
+	$builder->log("Failed to sign dummy archive Release file.\n");
+        $self->cleanup_apt_archive();
+	return 0;
+    }
+
+    # Write a list file for the dummy archive if one not create yet.
+    if (! -f $dummy_archive_list_file) {
+        my ($tmpfh, $tmpfilename) = tempfile();
+        print $tmpfh 'deb file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
+        print $tmpfh 'deb-src file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
+        close($tmpfh);
+        # List file needs to be moved with root.
+        $session->run_command(
+            { COMMAND => ['mv', $tmpfilename,
+                          $session->strip_chroot_path($dummy_archive_list_file)],
+              USER => 'root',
+              CHROOT => 1,
+              PRIORITY => 0});
+        if ($?) {
+            $builder->log("Failed to create apt list file for dummy archive.\n");
+            $self->cleanup_apt_archive();
+            return 0;
+        }
+    }
+
+    # Add the generated key
+    $session->run_command(
+        { COMMAND => ['apt-key', 'add', $session->strip_chroot_path($dummy_archive_pubkey)],
+          USER => 'root',
+          CHROOT => 1,
+          PRIORITY => 0});
+    if ($?) {
+        $builder->log("Failed to add dummy archive key.\n");
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+
+    return 1;
+}
+
+# Convenience function to run 'apt-get update'.
+sub run_apt_update {
+    my $self = shift;
+    my $session = $self->get('Builder')->get('Session');
+    my $conf = $self->get('Config');
+    my $status = update($session, $conf);
+    $status >>= 8;
+    if ($status) {
+        return 0;
+    }
+    return 1;
+}
+
+# Remove the apt archive.
+sub cleanup_apt_archive {
+    my $self = shift;
+    my $session = $self->get('Builder')->get('Session');
+    remove_tree($self->get('Dummy package path'));
+    $session->run_command(
+	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
+	  USER => 'root',
+	  CHROOT => 1,
+	  PRIORITY => 0});
+    $self->set('Dummy package path', undef);
+    $self->set('Dummy archive directory', undef);
+    $self->set('Dummy Release file', undef);
+    $self->set('Dummy archive list file', undef);
+}
+
+# Generate a key pair if not already done.
+sub generate_keys {
+    my $self = shift;
+
+    if ((-f $self->get_conf('SBUILD_BUILD_DEPENDS_SECRET_KEY')) &&
+        (-f $self->get_conf('SBUILD_BUILD_DEPENDS_PUBLIC_KEY'))) {
+        return 1;
+    }
+
+    my $session = $self->get('Builder')->get('Session');
+
+    if (generate_keys($session, $self->get('Config'))) {
+	# Since apt-distupgrade was requested specifically, fail on
+	# error when not in buildd mode.
+	$self->log("generating gpg keys failed\n");
+	return 0;
+    }
+
+    return 1;
+}
+
+# Function that runs apt-ftparchive
+sub run_apt_ftparchive {
+    my $self = shift;
+
+    my $session = $self->get('Builder')->get('Session');
+    my ($tmpfh, $tmpfilename) = tempfile();
+    my $dummy_archive_dir = $self->get('Dummy archive directory');
+
+    # Write the conf file.
+    print $tmpfh <<"EOF";
+Dir {
+ ArchiveDir "$dummy_archive_dir";
+};
+
+Default {
+ Packages::Compress ". gzip";
+ Sources::Compress ". gzip";
+};
+
+BinDirectory "$dummy_archive_dir" {
+ Packages "Packages";
+ Sources "Sources";
+};
+
+APT::FTPArchive::Release::Origin "sbuild-build-depends-archive";
+APT::FTPArchive::Release::Label "sbuild-build-depends-archive";
+APT::FTPArchive::Release::Suite "invalid";
+APT::FTPArchive::Release::Codename "invalid";
+APT::FTPArchive::Release::Description "Sbuild Build Dependency Temporary Archive";
+EOF
+    close $tmpfh;
+
+    # Remove APT_CONFIG environment variable here, restore it later.
+    my $env = $self->get('Builder')->get('Session')->get('Defaults')->{'ENV'};
+    my $apt_config_value = $env->{'APT_CONFIG'};
+    delete $env->{'APT_CONFIG'};
+
+    # Run apt-ftparchive to generate Packages and Sources files.
+    $session->run_command(
+        { COMMAND => ['apt-ftparchive', '-q=2', 'generate', $tmpfilename],
+          USER => $self->get_conf('USER'),
+          CHROOT => 0,
+          PRIORITY => 0,
+          DIR => '/'});
+    if ($?) {
+        $env->{'APT_CONFIG'} = $apt_config_value;
+        return 0;
+    }
+
+    # Get output for Release file
+    my $pipe = $session->pipe_command(
+        { COMMAND => ['apt-ftparchive', '-q=2', '-c', $tmpfilename, 'release', $dummy_archive_dir],
+          USER => $self->get_conf('USER'),
+          CHROOT => 0,
+          PRIORITY => 0,
+          DIR => '/'});
+    if (!defined($pipe)) {
+        $env->{'APT_CONFIG'} = $apt_config_value;
+        return 0;
+    }
+    $env->{'APT_CONFIG'} = $apt_config_value;
+
+    # Write output to Release file path.
+    my ($releasefh);
+    if (!open($releasefh, '>', $self->get('Dummy Release file'))) {
+        close $pipe;
+        return 0;
+    }
+
+    while (<$pipe>) {
+        print $releasefh $_;
+    }
+    close $releasefh;
+    close $pipe;
+
+    return 1;
 }
 
 1;

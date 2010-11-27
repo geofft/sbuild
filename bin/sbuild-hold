@@ -25,7 +25,7 @@ use warnings;
 use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error);
 use Sbuild::Utility qw(setup cleanup shutdown);
-use Sbuild::ChrootSetup qw(list_packages set_package_status);
+use Sbuild::ChrootSetup qw(hold_packages list_packages);
 use Sbuild::Conf;
 use Sbuild::OptionsBase;
 
@@ -48,7 +48,7 @@ foreach (@ARGV) {
 }
 print STDOUT ".\n\n";
 
-my $status = set_package_status($session, $conf, "hold", @ARGV);
+my $status = hold_packages($session, $conf, @ARGV);
 $status >>= 8;
 
 list_packages($session, $conf, @ARGV);
