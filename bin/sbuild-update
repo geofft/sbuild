@@ -24,6 +24,7 @@ use warnings;
 use Sbuild::ChrootSetup qw(update upgrade distupgrade clean autoclean
                            autoremove generate_keys);
 use Sbuild::ChrootRoot;
+use Sbuild::Resolver qw(get_resolver);
 
 package Conf;
 
@@ -165,14 +166,17 @@ foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
 
     my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
+    my $resolver = get_resolver($conf, $session);
 
     if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
 	goto cleanup_unlocked;
     }
 
+    $resolver->setup();
+
     if ($conf->get('UPDATE')) {
 	print "$chroot: Performing update.\n";
-	$status = update($session, $conf);
+	$status = $resolver->update($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    print STDERR "Exiting from update with status $status.\n";
@@ -182,7 +186,7 @@ foreach (@ARGV) {
 
     if ($conf->get('UPGRADE')) {
 	print "$chroot: Performing upgrade.\n";
-	my $status = upgrade($session, $conf);
+	my $status = $resolver->upgrade($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    print STDERR "Exiting from upgrade with status $status.\n";
@@ -192,7 +196,7 @@ foreach (@ARGV) {
 
     if ($conf->get('DISTUPGRADE')) {
 	print "$chroot: Performing dist-upgrade.\n";
-	my $status = distupgrade($session, $conf);
+	my $status = $resolver->distupgrade($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    print STDERR "Exiting from distupgrade with status $status.\n";
@@ -202,7 +206,7 @@ foreach (@ARGV) {
 
     if ($conf->get('CLEAN')) {
 	print "$chroot: Performing clean.\n";
-	my $status = clean($session, $conf);
+	my $status = $resolver->clean($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    print STDERR "Exiting from update with status $status.\n";
@@ -212,7 +216,7 @@ foreach (@ARGV) {
 
     if ($conf->get('AUTOCLEAN')) {
 	print "$chroot: Performing autoclean.\n";
-	my $status = autoclean($session, $conf);
+	my $status = $resolver->autoclean($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    print STDERR "Exiting from upgrade with status $status.\n";
@@ -222,7 +226,7 @@ foreach (@ARGV) {
 
     if ($conf->get('AUTOREMOVE')) {
 	print "$chroot: Performing autoremove.\n";
-	my $status = autoremove($session, $conf);
+	my $status = $resolver->autoremove($session, $conf);
 	$status >>= 8;
 	if ($status) {
 	    print STDERR "Exiting from distupgrade with status $status.\n";
@@ -231,6 +235,7 @@ foreach (@ARGV) {
     }
 
 cleanup:
+    $resolver->cleanup();
     # Unlock chroot now it's cleaned up and ready for other users.
     $session->unlock_chroot();
 
