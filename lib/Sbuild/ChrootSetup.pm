@@ -329,6 +329,7 @@ EOF
     $session->run_command(
         { COMMAND => \@command,
           CHROOT => 0,
+	  USER => $conf->get('USERNAME'),
           PRIORITY => 0,
           DIR => '/'});
     if ($?) {
@@ -341,6 +342,7 @@ EOF
     $session->run_command(
         { COMMAND => \@command,
           CHROOT => 0,
+	  USER => $conf->get('USERNAME'),
           PRIORITY => 0,
           DIR => '/'});
 
