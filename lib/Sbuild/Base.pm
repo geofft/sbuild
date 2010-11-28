@@ -115,4 +115,39 @@ sub log_error {
     $self->log("E: ", @_);
 }
 
+sub log_section {
+    my $self = shift;
+    my $section = shift;
+
+    $self->log("\n");
+    $self->log('╔', '═' x 78, '╗', "\n");
+    $self->log('║', " $section ", ' ' x (80 - length($section) - 4), '║', "\n");
+    $self->log('╚', '═' x 78, '╝', "\n\n");
+}
+
+sub log_subsection {
+    my $self = shift;
+    my $section = shift;
+
+    $self->log("\n");
+    $self->log('┌', '─' x 78, '┐', "\n");
+    $self->log('│', " $section ", ' ' x (80 - length($section) - 4), '│', "\n");
+    $self->log('└', '─' x 78, '┘', "\n\n");
+}
+
+sub log_subsubsection {
+    my $self = shift;
+    my $section = shift;
+
+    $self->log("\n");
+    $self->log("$section\n");
+    $self->log('─' x (length($section)), "\n\n");
+}
+
+sub log_sep {
+    my $self = shift;
+
+    $self->log('─' x 80, "\n");
+}
+
 1;
