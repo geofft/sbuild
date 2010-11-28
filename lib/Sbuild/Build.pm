@@ -1658,6 +1658,8 @@ sub generate_stats {
     $self->add_stat('Space', $self->get('This Space'));
     $self->add_stat('Build-Time',
 		    $self->get('Build End Time')-$self->get('Build Start Time'));
+    $self->add_stat('Install-Time',
+		    $self->get('Install End Time')-$self->get('Install Start Time'));
     $self->add_stat('Package-Time',
 		    $self->get('Pkg End Time')-$self->get('Pkg Start Time'));
     $self->add_stat('Build-Space', $self->get('This Space'));
