@@ -524,6 +524,8 @@ sub run {
 
     $resolver->dump_build_environment();
 
+    $self->prepare_watches(keys %{$resolver->get('Changes')->{'installed'}});
+
     if ($self->build()) {
 	$self->set_status('successful');
     } else {

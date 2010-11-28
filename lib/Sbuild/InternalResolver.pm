@@ -181,7 +181,6 @@ sub install_deps {
 	$builder->log('dpkg --set-selections failed\n');
     }
 
-    $builder->prepare_watches(\@dependencies, @instd );
     return 1;
 }
 
