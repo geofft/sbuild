@@ -49,9 +49,7 @@ use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download parse_file dsc_files);
-use Sbuild::AptResolver;
-use Sbuild::AptitudeResolver;
-use Sbuild::InternalResolver;
+use Sbuild::Resolver qw(get_resolver);
 
 BEGIN {
     use Exporter ();
@@ -269,19 +267,6 @@ sub run {
 
     $self->set_status('building');
 
-    if ($self->get_conf('BUILD_DEP_RESOLVER') eq "apt") {
-	$self->set('Dependency Resolver',
-		   Sbuild::AptResolver->new($self));
-    } elsif ($self->get_conf('BUILD_DEP_RESOLVER') eq "aptitude") {
-	$self->set('Dependency Resolver',
-		   Sbuild::AptitudeResolver->new($self));
-    } else {
-	$self->set('Dependency Resolver',
-		   Sbuild::InternalResolver->new($self));
-    }
-    my $resolver = $self->get('Dependency Resolver');
-
-
     $self->set('Pkg Start Time', time);
     $self->set('Pkg End Time', $self->get('Pkg Start Time'));
 
@@ -374,7 +359,7 @@ sub run {
 	$self->log("Error creating chroot session: skipping " .
 		   $self->get('Package') . "\n");
 	$self->set_status('failed');
-	goto cleanup_session;
+	goto cleanup_unlocked_session;
     }
 
     $self->set('Session', $session);
@@ -403,12 +388,17 @@ sub run {
     $chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
     $chroot_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
 
-    $self->set('Session', $session);
+    my $resolver = get_resolver($self->get('Config'), $session);
+    $resolver->set('Log Stream', $self->get('Log Stream'));
+    $resolver->set('Arch', $self->get('Arch'));
+    $self->set('Dependency Resolver', $resolver);
 
     # Lock chroot so it won't be tampered with during the build.
     if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
 	goto cleanup_unlocked_session;
     }
+
+    $resolver->setup();
 
     # Clean APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-clean');
@@ -592,6 +582,7 @@ sub run {
     }
 
   cleanup_session:
+    $resolver->cleanup();
     # Unlock chroot now it's cleaned up and ready for other users.
     $session->unlock_chroot();
 

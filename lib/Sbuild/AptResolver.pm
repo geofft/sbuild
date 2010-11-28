@@ -39,9 +39,10 @@ BEGIN {
 
 sub new {
     my $class = shift;
-    my $builder = shift;
+    my $conf = shift;
+    my $session = shift;
 
-    my $self = $class->SUPER::new($builder);
+    my $self = $class->SUPER::new($conf, $session);
     bless($self, $class);
 
     return $self;
@@ -52,25 +53,25 @@ sub install_deps {
     my $name = shift;
     my @pkgs = @_;
 
-    # Call functions to setup an archive to install dummy package.
-    return 0 unless ($self->setup_apt_archive($name, @pkgs));
-    return 0 unless ($self->run_apt_update());
-
     my $status = 0;
-    my $builder = $self->get('Builder');
-    my $session = $builder->get('Session');
+    my $session = $self->get('Session');
     my $dummy_pkg_name = 'sbuild-build-depends-' . $name. '-dummy';
 
-    $builder->log_subsection("Install $name build dependencies (apt-based resolver)");
+    # Call functions to setup an archive to install dummy package.
+    return 0 unless ($self->setup_apt_archive($dummy_pkg_name, @pkgs));
+    return 0 unless (!$self->update());
+
+
+    $self->log_subsection("Install $name build dependencies (apt-based resolver)");
 
     # Install the dummy package
     my (@instd, @rmvd);
-    $builder->log("Installing build dependencies\n");
+    $self->log("Installing build dependencies\n");
     if (!$self->run_apt("-yf", \@instd, \@rmvd, 'install', $dummy_pkg_name)) {
-	$builder->log("Package installation failed\n");
-	if (defined ($builder->get('Session')->get('Session Purged')) &&
-	    $builder->get('Session')->get('Session Purged') == 1) {
-	    $builder->log("Not removing build depends: cloned chroot in use\n");
+	$self->log("Package installation failed\n");
+	if (defined ($self->get('Session')->get('Session Purged')) &&
+	    $self->get('Session')->get('Session Purged') == 1) {
+	    $self->log("Not removing build depends: cloned chroot in use\n");
 	} else {
 	    $self->set_installed(@instd);
 	    $self->set_removed(@rmvd);
@@ -86,7 +87,7 @@ sub install_deps {
     if ($status == 0) {
 	if (defined ($session->get('Session Purged')) &&
 	    $session->get('Session Purged') == 1) {
-	    $builder->log("Not removing installed packages: cloned chroot in use\n");
+	    $self->log("Not removing installed packages: cloned chroot in use\n");
 	} else {
 	    $self->uninstall_deps();
 	}

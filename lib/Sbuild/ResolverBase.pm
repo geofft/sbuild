@@ -32,7 +32,6 @@ use File::Copy;
 
 use Dpkg::Deps;
 use Sbuild::Base;
-use Sbuild::ChrootSetup qw(update);
 use Sbuild qw(isin debug);
 
 BEGIN {
@@ -46,16 +45,111 @@ BEGIN {
 
 sub new {
     my $class = shift;
-    my $builder = shift;
+    my $conf = shift;
+    my $session = shift;
 
-    my $self = $class->SUPER::new($builder->get('Config'));
+    my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
-    $self->set('Builder', $builder);
+    $self->set('Session', $session);
     $self->set('Changes', {});
     $self->set('AptDependencies', {});
 
+    my $dummy_archive_list_file = $session->get('Location') .
+        '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
+    $self->set('Dummy archive list file', $dummy_archive_list_file);
+
     return $self;
+}
+
+sub setup {
+    my $self = shift;
+
+    $self->cleanup_apt_archive();
+}
+
+sub cleanup {
+    my $self = shift;
+
+    $self->cleanup_apt_archive();
+}
+
+sub update {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    $session->run_apt_command(
+	{ COMMAND => [$self->get_conf('APT_GET'), 'update'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  DIR => '/' });
+    return $?;
+}
+
+sub upgrade {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    $session->run_apt_command(
+	{ COMMAND => [$self->get_conf('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'upgrade'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  DIR => '/' });
+    return $?;
+}
+
+sub distupgrade {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    $session->run_apt_command(
+	{ COMMAND => [$self->get_conf('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'dist-upgrade'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  DIR => '/' });
+    return $?;
+}
+
+sub clean {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    $session->run_apt_command(
+	{ COMMAND => [$self->get_conf('APT_GET'), '-y', 'clean'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  DIR => '/' });
+    return $?;
+}
+
+sub autoclean {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    $session->run_apt_command(
+	{ COMMAND => [$self->get_conf('APT_GET'), '-y', 'autoclean'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  DIR => '/' });
+    return $?;
+}
+
+sub autoremove {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    $session->run_apt_command(
+	{ COMMAND => [$self->get_conf('APT_GET'), '-y', 'autoremove'],
+	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	  USER => 'root',
+	  DIR => '/' });
+    return $?;
 }
 
 sub add_dependencies {
@@ -65,8 +159,6 @@ sub add_dependencies {
     my $build_depends_indep = shift;
     my $build_conflicts = shift;
     my $build_conflicts_indep = shift;
-
-    my $builder = $self->get('Builder');
 
     debug("Build-Depends: $build_depends\n") if $build_depends;
     debug("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
@@ -85,13 +177,12 @@ sub add_dependencies {
 
 sub uninstall_deps {
     my $self = shift;
-    my $builder = $self->get('Builder');
 
     my( @pkgs, @instd, @rmvd );
 
     @pkgs = keys %{$self->get('Changes')->{'removed'}};
     debug("Reinstalling removed packages: @pkgs\n");
-    $builder->log("Failed to reinstall removed packages!\n")
+    $self->log("Failed to reinstall removed packages!\n")
 	if !$self->run_apt("-y", \@instd, \@rmvd, 'install', @pkgs);
     debug("Installed were: @instd\n");
     debug("Removed were: @rmvd\n");
@@ -100,7 +191,7 @@ sub uninstall_deps {
 
     @pkgs = keys %{$self->get('Changes')->{'installed'}};
     debug("Removing installed packages: @pkgs\n");
-    $builder->log("Failed to remove installed packages!\n")
+    $self->log("Failed to remove installed packages!\n")
 	if !$self->run_apt("-y", \@instd, \@rmvd, 'remove', @pkgs);
     $self->unset_removed(@instd);
     $self->unset_installed(@rmvd);
@@ -151,31 +242,30 @@ sub unset_removed {
 
 sub dump_build_environment {
     my $self = shift;
-    my $builder = $self->get('Builder');
 
     my $status = $self->get_dpkg_status();
 
-    my $arch = $builder->get('Arch');
+    my $arch = $self->get('Arch');
     my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
-    $builder->log("Kernel: $sysname $release $arch ($machine)\n");
+    $self->log("Kernel: $sysname $release $arch ($machine)\n");
 
-    $builder->log("Toolchain package versions:");
+    $self->log("Toolchain package versions:");
     foreach my $name (sort keys %{$status}) {
         foreach my $regex (@{$self->get_conf('TOOLCHAIN_REGEX')}) {
 	    if ($name =~ m,^$regex, && defined($status->{$name}->{'Version'})) {
-		$builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
+		$self->log(' ' . $name . '_' . $status->{$name}->{'Version'});
 	    }
 	}
     }
-    $builder->log("\n");
+    $self->log("\n");
 
-    $builder->log("Package versions:");
+    $self->log("Package versions:");
     foreach my $name (sort keys %{$status}) {
 	if (defined($status->{$name}->{'Version'})) {
-	    $builder->log(' ' . $name . '_' . $status->{$name}->{'Version'});
+	    $self->log(' ' . $name . '_' . $status->{$name}->{'Version'});
 	}
     }
-    $builder->log("\n");
+    $self->log("\n");
 
 }
 
@@ -188,15 +278,13 @@ sub run_apt {
     my @packages = @_;
     my( $msgs, $status, $pkgs, $rpkgs );
 
-    my $builder = $self->get('Builder');
-
     $msgs = "";
     # redirection of stdin from /dev/null so that conffile question
     # are treated as if RETURN was pressed.
     # dpkg since 1.4.1.18 issues an error on the conffile question if
     # it reads EOF -- hardwire the new --force-confold option to avoid
     # the questions.
-    my @apt_command = ($builder->get_conf('APT_GET'), '--purge',
+    my @apt_command = ($self->get_conf('APT_GET'), '--purge',
 	'-o', 'DPkg::Options::=--force-confold',
 	'-o', 'DPkg::Options::=--refuse-remove-essential',
 	'-q', '--no-install-recommends');
@@ -204,20 +292,20 @@ sub run_apt {
 	($self->get_conf('APT_ALLOW_UNAUTHENTICATED'));
     push @apt_command, "$mode", $action, @packages;
     my $pipe =
-	$builder->get('Session')->pipe_apt_command(
+	$self->get('Session')->pipe_apt_command(
 	{ COMMAND => \@apt_command,
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
 	  PRIORITY => 0,
 	  DIR => '/' });
     if (!$pipe) {
-	$builder->log("Can't open pipe to apt-get: $!\n");
+	$self->log("Can't open pipe to apt-get: $!\n");
 	return 0;
     }
 
     while(<$pipe>) {
 	$msgs .= $_;
-	$builder->log($_) if $mode ne "-s" || debug($_);
+	$self->log($_) if $mode ne "-s" || debug($_);
     }
     close($pipe);
     $status = $?;
@@ -234,7 +322,7 @@ sub run_apt {
     @$inst_ret = split( /\s+/, $pkgs );
     @$rem_ret = split( /\s+/, $rpkgs );
 
-    $builder->log("apt-get failed.\n") if $status && $mode ne "-s";
+    $self->log("apt-get failed.\n") if $status && $mode ne "-s";
     return $mode eq "-s" || $status == 0;
 }
 
@@ -251,15 +339,14 @@ sub format_deps {
 
 sub get_dpkg_status {
     my $self = shift;
-    my $builder = $self->get('Builder');
     my @interest = @_;
     my %result;
     local( *STATUS );
 
     debug("Requesting dpkg status for packages: @interest\n");
-    my $dpkg_status_file = $builder->{'Chroot Dir'} . '/var/lib/dpkg/status';
+    my $dpkg_status_file = $self->get('Session')->get('Location') . '/var/lib/dpkg/status';
     if (!open( STATUS, '<', $dpkg_status_file)) {
-	$builder->log("Can't open $dpkg_status_file: $!\n");
+	$self->log("Can't open $dpkg_status_file: $!\n");
 	return ();
     }
     local( $/ ) = "";
@@ -270,7 +357,7 @@ sub get_dpkg_status {
 	/^Version:\s*(.*)\s*$/mi and $version = $1;
 	/^Provides:\s*(.*)\s*$/mi and $provides = $1;
 	if (!$pkg) {
-	    $builder->log_error("parse error in $dpkg_status_file: no Package: field\n");
+	    $self->log_error("parse error in $dpkg_status_file: no Package: field\n");
 	    next;
 	}
 	if (defined($version)) {
@@ -279,7 +366,7 @@ sub get_dpkg_status {
 	    debug("$pkg status: $status\n") if $self->get_conf('DEBUG') >= 2;
 	}
 	if (!$status) {
-	    $builder->log_error("parse error in $dpkg_status_file: no Status: field for package $pkg\n");
+	    $self->log_error("parse error in $dpkg_status_file: no Status: field for package $pkg\n");
 	    next;
 	}
 	if ($status !~ /\sinstalled$/) {
@@ -289,7 +376,7 @@ sub get_dpkg_status {
 	    next;
 	}
 	if (!defined $version || $version eq "") {
-	    $builder->log_error("parse error in $dpkg_status_file: no Version: field for package $pkg\n");
+	    $self->log_error("parse error in $dpkg_status_file: no Version: field for package $pkg\n");
 	    next;
 	}
 	$result{$pkg} = { Installed => 1, Version => $version }
@@ -309,60 +396,55 @@ sub get_dpkg_status {
 # Create an apt archive. Add to it if one exists.
 sub setup_apt_archive {
     my $self = shift;
-    my $name = shift;
+    my $dummy_pkg_name = shift;
     my @pkgs = @_;
 
-    my $builder = $self->get('Builder');
-    my $session = $builder->get('Session');
+    my $session = $self->get('Session');
 
     #Prepare a path to build a dummy package containing our deps:
     if (! defined $self->get('Dummy package path')) {
         $self->set('Dummy package path',
-                  tempdir($builder->get_conf('USERNAME') . '-' . $builder->get('Package') . '-' .
-                          $builder->get('Arch') . '-XXXXXX',
-                          DIR => $session->get('Build Location')));
+		   tempdir('resolver' . '-XXXXXX',
+			   DIR => $session->get('Build Location')));
     }
     my $dummy_dir = $self->get('Dummy package path');
     my $dummy_archive_dir = $dummy_dir . '/apt_archive';
     my $dummy_release_file = $dummy_archive_dir . '/Release';
-    my $dummy_archive_list_file = $session->get('Location') .
-        '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
     my $dummy_archive_seckey = $dummy_archive_dir . '/sbuild-key.sec';
     my $dummy_archive_pubkey = $dummy_archive_dir . '/sbuild-key.pub';
 
     $self->set('Dummy archive directory', $dummy_archive_dir);
     $self->set('Dummy Release file', $dummy_release_file);
-    $self->set('Dummy archive list file', $dummy_archive_list_file);
+    my $dummy_archive_list_file = $self->get('Dummy archive list file');
 
     if (! -d $dummy_dir) {
-        $builder->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
+        $self->log_warning('Could not create build-depends dummy dir ' . $dummy_dir . ': ' . $!);
         $self->cleanup_apt_archive();
         return 0;
     }
     if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir)) {
-        $builder->log_warning('Could not create build-depends dummy archive dir ' . $dummy_archive_dir . ': ' . $!);
+        $self->log_warning('Could not create build-depends dummy archive dir ' . $dummy_archive_dir . ': ' . $!);
         $self->cleanup_apt_archive();
         return 0;
     }
 
-    my $dummy_pkg_name = 'sbuild-build-depends-' . $name. '-dummy';
     my $dummy_pkg_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
     my $dummy_deb = $dummy_archive_dir . '/' . $dummy_pkg_name . '.deb';
     my $dummy_dsc = $dummy_archive_dir . '/' . $dummy_pkg_name . '.dsc';
 
     if (!(mkdir($dummy_pkg_dir) && mkdir($dummy_pkg_dir . '/DEBIAN'))) {
-	$builder->log_warning('Could not create build-depends dummy dir ' . $dummy_pkg_dir . '/DEBIAN: ' . $!);
+	$self->log_warning('Could not create build-depends dummy dir ' . $dummy_pkg_dir . '/DEBIAN: ' . $!);
         $self->cleanup_apt_archive();
 	return 0;
     }
 
     if (!open(DUMMY_CONTROL, '>', $dummy_pkg_dir . '/DEBIAN/control')) {
-	$builder->log_warning('Could not open ' . $dummy_pkg_dir . '/DEBIAN/control for writing: ' . $!);
+	$self->log_warning('Could not open ' . $dummy_pkg_dir . '/DEBIAN/control for writing: ' . $!);
         $self->cleanup_apt_archive();
 	return 0;
     }
 
-    my $arch = $builder->get('Arch');
+    my $arch = $self->get('Arch');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
 Version: 0.invalid.0
@@ -395,17 +477,17 @@ EOF
     if ($self->get_conf('BUILD_ARCH_ALL')) {
 	$positive = deps_parse(join(", ", @positive, @positive_indep),
 			       reduce_arch => 1,
-			       host_arch => $builder->get('Arch'));
+			       host_arch => $self->get('Arch'));
 	$negative = deps_parse(join(", ", @negative, @negative_indep),
 			       reduce_arch => 1,
-			       host_arch => $builder->get('Arch'));
+			       host_arch => $self->get('Arch'));
     } else {
 	$positive = deps_parse(join(", ", @positive),
 			      reduce_arch => 1,
-			      host_arch => $builder->get('Arch'));
+			      host_arch => $self->get('Arch'));
 	$negative = deps_parse(join(", ", @negative),
 			      reduce_arch => 1,
-			      host_arch => $builder->get('Arch'));
+			      host_arch => $self->get('Arch'));
     }
 
     if ($positive ne "") {
@@ -433,7 +515,7 @@ EOF
 	  CHROOT => 1,
 	  PRIORITY => 0});
     if ($?) {
-	$builder->log("Dummy package creation failed\n");
+	$self->log("Dummy package creation failed\n");
         $self->cleanup_apt_archive();
 	return 0;
     }
@@ -441,7 +523,7 @@ EOF
     # Write the dummy dsc file.
     my $dummy_dsc_fh;
     if (!open($dummy_dsc_fh, '>', $dummy_dsc)) {
-        $builder->log_warning('Could not open ' . $dummy_dsc . ' for writing: ' . $!);
+        $self->log_warning('Could not open ' . $dummy_dsc . ' for writing: ' . $!);
         $self->cleanup_apt_archive();
         return 0;
     }
@@ -471,14 +553,14 @@ EOF
 
     # Do code to run apt-ftparchive
     if (!$self->run_apt_ftparchive()) {
-        $builder->log("Failed to run apt-ftparchive.\n");
+        $self->log("Failed to run apt-ftparchive.\n");
         $self->cleanup_apt_archive();
         return 0;
     }
 
     # Sign the release file
     if (!$self->generate_keys()) {
-        $builder->log("Failed to generate archive keys.\n");
+        $self->log("Failed to generate archive keys.\n");
         $self->cleanup_apt_archive();
         return 0;
     }
@@ -500,7 +582,7 @@ EOF
 	  CHROOT => 1,
 	  PRIORITY => 0});
     if ($?) {
-	$builder->log("Failed to sign dummy archive Release file.\n");
+	$self->log("Failed to sign dummy archive Release file.\n");
         $self->cleanup_apt_archive();
 	return 0;
     }
@@ -519,7 +601,7 @@ EOF
               CHROOT => 1,
               PRIORITY => 0});
         if ($?) {
-            $builder->log("Failed to create apt list file for dummy archive.\n");
+            $self->log("Failed to create apt list file for dummy archive.\n");
             $self->cleanup_apt_archive();
             return 0;
         }
@@ -532,7 +614,7 @@ EOF
           CHROOT => 1,
           PRIORITY => 0});
     if ($?) {
-        $builder->log("Failed to add dummy archive key.\n");
+        $self->log("Failed to add dummy archive key.\n");
         $self->cleanup_apt_archive();
         return 0;
     }
@@ -540,23 +622,10 @@ EOF
     return 1;
 }
 
-# Convenience function to run 'apt-get update'.
-sub run_apt_update {
-    my $self = shift;
-    my $session = $self->get('Builder')->get('Session');
-    my $conf = $self->get('Config');
-    my $status = update($session, $conf);
-    $status >>= 8;
-    if ($status) {
-        return 0;
-    }
-    return 1;
-}
-
 # Remove the apt archive.
 sub cleanup_apt_archive {
     my $self = shift;
-    my $session = $self->get('Builder')->get('Session');
+    my $session = $self->get('Session');
     remove_tree($self->get('Dummy package path'));
     $session->run_command(
 	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
@@ -566,7 +635,6 @@ sub cleanup_apt_archive {
     $self->set('Dummy package path', undef);
     $self->set('Dummy archive directory', undef);
     $self->set('Dummy Release file', undef);
-    $self->set('Dummy archive list file', undef);
 }
 
 # Generate a key pair if not already done.
@@ -578,7 +646,7 @@ sub generate_keys {
         return 1;
     }
 
-    my $session = $self->get('Builder')->get('Session');
+    my $session = $self->get('Session');
 
     if (generate_keys($session, $self->get('Config'))) {
 	# Since apt-distupgrade was requested specifically, fail on
@@ -594,7 +662,7 @@ sub generate_keys {
 sub run_apt_ftparchive {
     my $self = shift;
 
-    my $session = $self->get('Builder')->get('Session');
+    my $session = $self->get('Session');
     my ($tmpfh, $tmpfilename) = tempfile();
     my $dummy_archive_dir = $self->get('Dummy archive directory');
 
@@ -623,7 +691,7 @@ EOF
     close $tmpfh;
 
     # Remove APT_CONFIG environment variable here, restore it later.
-    my $env = $self->get('Builder')->get('Session')->get('Defaults')->{'ENV'};
+    my $env = $self->get('Session')->get('Defaults')->{'ENV'};
     my $apt_config_value = $env->{'APT_CONFIG'};
     delete $env->{'APT_CONFIG'};
 
