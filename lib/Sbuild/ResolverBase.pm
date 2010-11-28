@@ -25,7 +25,6 @@ use strict;
 use warnings;
 use POSIX;
 use Fcntl;
-use Errno qw(:POSIX);
 use File::Temp qw(tempdir tempfile);
 use File::Path qw(remove_tree);
 use File::Copy;
@@ -626,7 +625,9 @@ EOF
 sub cleanup_apt_archive {
     my $self = shift;
     my $session = $self->get('Session');
-    remove_tree($self->get('Dummy package path'));
+    if (defined $self->get('Dummy package path')) {
+	remove_tree($self->get('Dummy package path'));
+    }
     $session->run_command(
 	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
 	  USER => 'root',
