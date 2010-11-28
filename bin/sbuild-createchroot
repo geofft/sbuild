@@ -3,7 +3,7 @@
 # Run debootstrap and add a few other files needed to create a working
 # sbuild chroot.
 # Copyright © 2004 Francesco P. Lovergine <frankie@debian.org>.
-# Copyright © 2007-2008 Roger Leigh <rleigh@debian.org>.
+# Copyright © 2007-2010 Roger Leigh <rleigh@debian.org>.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 use strict;
 use warnings;
 
-use Sbuild::ChrootSetup qw(update distupgrade);
+use Sbuild::InternalResolver;
 
 package Conf;
 
@@ -370,17 +370,22 @@ if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
 	if (!$session->begin_session()) {
 	    print STDERR "E: Error creating chroot session: skipping apt update\n";
 	} else {
+	    my $resolver = Sbuild::InternalResolver->new($conf, $session);
+	    $resolver->setup();
+
 	    print "I: Setting reference package list.\n";
 	    check_packages($session, "set");
 
 	    print "I: Updating chroot.\n";
-	    my $status = update($session, $conf);
+	    my $status = $resolver->update();
 	    print "W: Failed to update APT package lists\n"
 		if ($status);
 
-	    $status = distupgrade($session, $conf);
+	    $status = $resolver->distupgrade();
 	    print "W: Failed to upgrade chroot\n"
 		if ($status);
+
+	    $resolver->cleanup();
 	    $session->end_session();
 	    $session = undef;
 	}
