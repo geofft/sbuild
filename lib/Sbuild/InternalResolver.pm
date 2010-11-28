@@ -129,7 +129,6 @@ sub install_deps {
     push( @rmvd, @negative );
 
 
-    my $install_start_time = time;
     $builder->log("Installing positive dependencies: @positive\n");
     if (!$self->run_apt("-y", \@instd, \@rmvd, 'install', @positive)) {
 	$builder->log("Package installation failed\n");
@@ -153,9 +152,6 @@ sub install_deps {
     }
     $self->set_installed(@instd);
     $self->set_removed(@rmvd);
-    my $install_stop_time = time;
-    $builder->write_stats('install-download-time',
-		       $install_stop_time - $install_start_time);
 
     my $fail = $self->check_dependencies(\@dependencies);
     if ($fail) {

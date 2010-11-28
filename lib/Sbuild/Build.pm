@@ -483,6 +483,8 @@ sub run {
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
+    $self->set('Install Start Time', time);
+    $self->set('Install End Time', $self->get('Install Start Time'));
     $resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
     if (!$resolver->install_deps('core', 'CORE')) {
 	$self->log("Core source dependencies not satisfied; skipping");
@@ -518,6 +520,7 @@ sub run {
 		   $self->get('Package') . "\n");
 	goto cleanup_packages;
     }
+    $self->set('Install End Time', time);
 
     $resolver->dump_build_environment();
 
@@ -1306,6 +1309,8 @@ sub build {
     $self->set('Pkg End Time', time);
     $self->write_stats('build-time',
 		       $self->get('Build End Time')-$self->get('Build Start Time'));
+    $self->write_stats('install-download-time',
+		       $self->get('Install End Time')-$self->get('Install Start Time'));
     my $date = strftime("%Y%m%d-%H%M",localtime($self->get('Build End Time')));
     $self->log_sep();
     $self->log("Build finished at $date\n");
