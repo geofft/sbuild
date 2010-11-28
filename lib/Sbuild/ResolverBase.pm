@@ -632,6 +632,7 @@ sub cleanup_apt_archive {
 	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
 	  USER => 'root',
 	  CHROOT => 1,
+	  DIR => '/',
 	  PRIORITY => 0});
     $self->set('Dummy package path', undef);
     $self->set('Dummy archive directory', undef);
