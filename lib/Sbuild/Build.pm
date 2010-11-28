@@ -1521,26 +1521,14 @@ sub check_space {
 
 sub prepare_watches {
     my $self = shift;
-    my $dependencies = shift;
     my @instd = @_;
-    my(@dep_on, $dep, $pkg, $prg);
+    my($pkg, $prg);
 
-    @dep_on = @instd;
-    foreach $dep (@$dependencies) {
-	if ($dep->{'Neg'} && $dep->{'Package'} =~ /^needs-no-(\S+)/) {
-	    push( @dep_on, $1 );
-	}
-	elsif ($dep->{'Package'} !~ /^\*/ && !$dep->{'Neg'}) {
-	    foreach (scalar($dep), @{$dep->{'Alternatives'}}) {
-		push( @dep_on, $_->{'Package'} );
-	    }
-	}
-    }
     # init %this_watches to names of packages which have not been
     # installed as source dependencies
     $self->set('This Watches', {});
     foreach $pkg (keys %{$self->get_conf('WATCHES')}) {
-	if (isin( $pkg, @dep_on )) {
+	if (isin( $pkg, @instd )) {
 	    debug("Excluding from watch: $pkg\n");
 	    next;
 	}
