@@ -40,7 +40,6 @@ use Dpkg::Control;
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
 use Sbuild::Base;
-use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::ChrootRoot;
@@ -403,7 +402,7 @@ sub run {
     # Clean APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-clean');
     if ($self->get_conf('APT_CLEAN')) {
-	if (clean($session, $self->get('Config'))) {
+	if ($resolver->clean()) {
 	    # Since apt-clean was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get clean failed\n");
@@ -417,7 +416,7 @@ sub run {
     # Update APT cache.
     $self->set('Pkg Fail Stage', 'apt-get-update');
     if ($self->get_conf('APT_UPDATE')) {
-	if (update($session, $self->get('Config'))) {
+	if ($resolver->update()) {
 	    # Since apt-update was requested specifically, fail on
 	    # error when not in buildd mode.
 	    $self->log("apt-get update failed\n");
@@ -430,7 +429,7 @@ sub run {
     if ($self->get_conf('APT_DISTUPGRADE')) {
 	$self->set('Pkg Fail Stage', 'apt-get-distupgrade');
 	if ($self->get_conf('APT_DISTUPGRADE')) {
-	    if (distupgrade($session, $self->get('Config'))) {
+	    if ($resolver->distupgrade()) {
 		# Since apt-distupgrade was requested specifically, fail on
 		# error when not in buildd mode.
 		$self->log("apt-get dist-upgrade failed\n");
@@ -443,7 +442,7 @@ sub run {
     } elsif ($self->get_conf('APT_UPGRADE')) {
 	$self->set('Pkg Fail Stage', 'apt-get-upgrade');
 	if ($self->get_conf('APT_UPGRADE')) {
-	    if (upgrade($session, $self->get('Config'))) {
+	    if ($resolver->upgrade()) {
 		# Since apt-upgrade was requested specifically, fail on
 		# error when not in buildd mode.
 		$self->log("apt-get upgrade failed\n");
