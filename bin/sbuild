@@ -179,6 +179,7 @@ sub status_trigger ($$) {
 }
 
 sub shutdown ($) {
+    my $job = undef;
     my $signame = shift;
     my(@npkgs,@pkgs);
     local( *F );
@@ -189,60 +190,58 @@ sub shutdown ($) {
     $SIG{'ALRM'} = 'IGNORE';
     $SIG{'PIPE'} = 'IGNORE';
 
-# TODO: Use main log
-    if (defined($current_job) &&
-	defined($jobs{$current_job})) {
-	$jobs{$current_job}->log("sbuild received SIG$signame -- shutting down\n");
+    $job = $jobs{$current_job} if (defined($current_job) &&
+				   defined($jobs{$current_job}));
+
+    # TODO: Use main log
+    if (defined($job)) {
+	$job->log("sbuild received SIG$signame -- shutting down\n");
     }
 
-    if ($conf->get('BATCH_MODE') && !$conf->get('SBUILD_MODE') eq "buildd") {
-	# next: say which packages should be uninstalled
-	my $session = $jobs{$current_job}->get('Session');
-	if (defined ($session->get('Session Purged')) && $session->get('Session Purged') == 1) {
-	    print "Not removing build depends: cloned chroot in use\n";
-	} else {
-	    @pkgs = keys %{$jobs{$current_job}->get('Dependency Resolver')->get('Changes')->{'installed'}};
-	    if (@pkgs) {
-		if (open( F, ">>NEED-TO-UNINSTALL" )) {
-		    print F "@pkgs\n";
-		    close( F );
+    if (defined($job)) {
+	my $session = $job->get('Session');
+	my $resolver = $job->get('Dependency Resolver');
+
+	# Kill currently running command (if any)
+	if ($job->get('Sub PID')) {
+	    print "Killing " . $job->get('Sub Task') .
+		" subprocess " . $job->get('Sub PID') . "\n";
+	    $job->get('Session')->run_command(
+		{ COMMAND => ['perl', '-e',
+			      "\"kill( \\\"TERM\\\", " .
+			      $job->get('Sub PID') .
+			      " )\""],
+			      USER => 'root',
+			      CHROOT => 1,
+			      PRIORITY => 0,
+			      DIR => '/' });
+	}
+
+	if (defined($session) && $conf->get('BATCH_MODE') &&
+	    !$conf->get('SBUILD_MODE') eq "buildd") {
+	    # next: say which packages should be uninstalled
+	    if (defined ($session->get('Session Purged')) && $session->get('Session Purged') == 1) {
+		print "Not removing build depends: cloned chroot in use\n";
+	    } else {
+		@pkgs = keys %{$resolver->get('Changes')->{'installed'}};
+		if (@pkgs) {
+		    if (open( F, ">>NEED-TO-UNINSTALL" )) {
+			print F "@pkgs\n";
+			close( F );
+		    }
+		    print "The following packages still need to be uninstalled ",
+		    "(--purge):\n@pkgs\n";
 		}
-		print "The following packages still need to be uninstalled ",
-		"(--purge):\n@pkgs\n";
 	    }
 	}
-    }
 
-    # Kill currently running command (if any)
-    if (defined($current_job) &&
-	defined($jobs{$current_job}) &&
-	$jobs{$current_job}->get('Sub PID')) {
-	print "Killing " . $jobs{$current_job}->get('Sub Task') .
-	    " subprocess " . $jobs{$current_job}->get('Sub PID') . "\n";
-	$jobs{$current_job}->get('Session')->run_command(
-	    { COMMAND => ['perl', '-e',
-			  "\"kill( \\\"TERM\\\", " .
-			  $jobs{$current_job}->get('Sub PID') .
-			  " )\""],
-			  USER => 'root',
-			  CHROOT => 1,
-			  PRIORITY => 0,
-			  DIR => '/' });
-    }
-
-    if (defined($current_job) && $jobs{$current_job}->get('Dependency Resolver')) {
-	$jobs{$current_job}->get('Session')->unlock_chroot();
-    }
-
-    # Close logs and send mails
-    if (defined($current_job) &&
-	defined($jobs{$current_job}) &&
-	defined($jobs{$current_job}->get('Session'))) {
-	if ($conf->get('PURGE_BUILD_DIRECTORY') eq "always" &&
-	    defined($jobs{$current_job}->get('Chroot Build Dir'))) {
-	    $jobs{$current_job}->log("Purging " . $jobs{$current_job}->get('Chroot Build Dir') . "\n");
-	    my $bdir = $jobs{$current_job}->get('Session')->strip_chroot_path($jobs{$current_job}->get('Chroot Build Dir'));
-	    $jobs{$current_job}->get('Session')->run_command(
+	# Close logs and send mails
+	if (defined($session) &&
+	    $conf->get('PURGE_BUILD_DIRECTORY') eq "always" &&
+	    defined($job->get('Chroot Build Dir'))) {
+	    $job->log("Purging " . $job->get('Chroot Build Dir') . "\n");
+	    my $bdir = $job->get('Session')->strip_chroot_path($job->get('Chroot Build Dir'));
+	    $job->get('Session')->run_command(
 		{ COMMAND => ['rm', '-rf', $bdir],
 		  USER => 'root',
 		  CHROOT => 1,
@@ -250,17 +249,21 @@ sub shutdown ($) {
 		  DIR => '/' });
 	}
 
-	$jobs{$current_job}->get('Session')->end_session();
-	$jobs{$current_job}->set('Session', undef);
+	if (defined($resolver)) {
+	    $resolver->cleanup();
+	}
 
-	$jobs{$current_job}->close_build_log();
-	$jobs{$current_job}->set('binNMU Name', undef);
+	if (defined($session)) {
+	    $session->unlock_chroot();
+	    $session->end_session();
+	    $job->set('Session', undef);
+	}
+
+	$job->close_build_log();
+	$job->set('binNMU Name', undef);
     }
+
     close_log($conf);
-    $? = 0; $! = 0;
-    if ($conf->get('SBUILD_MODE') eq "user") {
-	exit 1;
-    }
 
     # Restore the signal handler to let a self-kill result in the appropriate
     # exit code.
