@@ -196,46 +196,6 @@ sub shutdown ($) {
     }
 
     if ($conf->get('BATCH_MODE') && !$conf->get('SBUILD_MODE') eq "buildd") {
-	# Dump names of unfinished jobs to REDO
-	foreach (keys %jobs) {
-	    my $job = $jobs{$_};
-
-	    push(@npkgs, $job->get('Package_OVersion'))
-		if $job->get_status() ne "successful";
-	}
-	print "The following jobs were not finished: @npkgs\n";
-
-	my $f = "REDO";
-	if (-f "REDO.lock") {
-	    # if lock file exists, write to a different file -- timing may
-	    # be critical
-	    $f = "REDO2";
-	}
-	if (open(F, "<$f")) {
-	    @pkgs = <F>;
-	    close(F);
-	}
-	if (open(F, ">>$f")) {
-	    foreach (@npkgs) {
-		next if grep( /^\Q$_\E\s/, @pkgs );
-		print F "$_ " .
-		    $jobs{$current_job}->get_conf('DISTRIBUTION');
-		print F " " . $jobs{$current_job}->get_conf('BIN_NMU_VERSION')
-		    . " " . $jobs{$current_job}->get_conf('BIN_NMU')
-		    if (defined $jobs{$current_job}->get_conf('BIN_NMU_VERSION'));
-		print F "\n";
-	    }
-	    close(F);
-	}
-	else {
-	    print "Cannot open $f: $!\n";
-	}
-	open(F, ">SBUILD-REDO-DUMPED");
-	close(F);
-	print "SBUILD-REDO-DUMPED created\n";
-
-	unlink("SBUILD-FINISHED");
-
 	# next: say which packages should be uninstalled
 	my $session = $jobs{$current_job}->get('Session');
 	if (defined ($session->get('Session Purged')) && $session->get('Session Purged') == 1) {
