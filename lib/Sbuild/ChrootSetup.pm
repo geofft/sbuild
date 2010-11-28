@@ -242,6 +242,7 @@ sub shell ($$) {
     $session->run_command(
 	{ COMMAND => ['/bin/sh'],
 	  PRIORITY => 1,
+	  USER => $conf->get('USERNAME'),
 	  STREAMIN => \*STDIN,
 	  STREAMOUT => \*STDOUT,
 	  STREAMERR => \*STDERR });
