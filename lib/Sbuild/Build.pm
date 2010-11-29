@@ -87,12 +87,12 @@ sub new {
     $self->set('Host', Sbuild::ChrootRoot->new($self->get('Config')));
     # Host execution defaults
     my $host_defaults = $self->get('Host')->get('Defaults');
-    $host_defaults->{'CHROOT'} = 0;
     $host_defaults->{'USER'} = $self->get_conf('USERNAME');
     $host_defaults->{'DIR'} = $self->get_conf('HOME');
     $host_defaults->{'STREAMIN'} = $devnull;
     $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
     $host_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
+    my $host_defaults = $self->get('Host')->begin_session();
 
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
@@ -140,7 +140,6 @@ sub set_dsc {
 	my $host = $self->get('Host');
 	my $pipe = $host->pipe_command(
 	    { COMMAND => ['dpkg-parsechangelog', '-l' . abs_path($dsc) . '/debian/changelog'],
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	    });
 
@@ -315,7 +314,6 @@ sub run {
 	    { COMMAND => [$self->get_conf('FAKEROOT'),
 			  'debian/rules',
 			  'clean'],
-	      CHROOT => 0,
 	      DIR => $self->get('Debian Source Dir'),
 	      PRIORITY => 0,
 	    });
@@ -332,7 +330,6 @@ sub run {
 	push @dpkg_source_command, $self->get('Debian Source Dir');
 	$self->get('Host')->run_command(
 	    { COMMAND => \@dpkg_source_command,
-	      CHROOT => 0,
 	      DIR => $self->get_conf('BUILD_DIR'),
 	      PRIORITY => 0,
 	    });
@@ -364,29 +361,29 @@ sub run {
     $self->set('Arch', $self->chroot_arch());
 
     $self->set('Chroot Dir', $session->get('Location'));
+    # TODO: Don't hack the build location in; add a means to customise
+    # the chroot directly.  i.e. allow changing of /build location.
     $self->set('Chroot Build Dir',
 	       tempdir($self->get_conf('USERNAME') . '-' .
 		       $self->get('Package_SVersion') . '-' .
 		       $self->get('Arch') . '-XXXXXX',
-		       DIR => $session->get('Build Location')));
-    # TODO: Don't hack the build location in; add a means to customise
-    # the chroot directly.
-    $session->set('Build Location', $self->get('Chroot Build Dir'));
+		       DIR =>  $session->get('Location') . "/build"));
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
+    $host->set('Log Stream', $self->get('Log Stream'));
 
     # Chroot execution defaults
     my $chroot_defaults = $session->get('Defaults');
     $chroot_defaults->{'DIR'} =
-	$session->strip_chroot_path($session->get('Build Location'));
+	$session->strip_chroot_path($self->get('Chroot Build Dir'));
     $chroot_defaults->{'STREAMIN'} = $devnull;
     $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
     $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
     $chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
     $chroot_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
 
-    my $resolver = get_resolver($self->get('Config'), $session);
+    my $resolver = get_resolver($self->get('Config'), $session, $host);
     $resolver->set('Log Stream', $self->get('Log Stream'));
     $resolver->set('Arch', $self->get('Arch'));
     $self->set('Dependency Resolver', $resolver);
@@ -566,7 +563,6 @@ sub run {
 	    $self->get('Session')->run_command(
 		{ COMMAND => ['rm', '-rf', $bdir],
 		  USER => 'root',
-		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	}
@@ -676,7 +672,7 @@ sub fetch_source_files {
       retry:
 	$self->log("Checking available source versions...\n");
 
-	my $pipe = $self->get('Session')->pipe_apt_command(
+	my $pipe = $self->get('Dependency Resolver')->pipe_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'),
 			  '-q', 'showsrc', "$pkg"],
 	      USER => $self->get_conf('USERNAME'),
@@ -742,7 +738,7 @@ sub fetch_source_files {
 	    push(@fetched, "$build_dir/$_");
 	}
 
-	my $pipe2 = $self->get('Session')->pipe_apt_command(
+	my $pipe2 = $self->get('Dependency Resolver')->pipe_apt_command(
 	    { COMMAND => [$self->get_conf('APT_GET'), '--only-source', '-q', '-d', 'source', "$pkg=$ver"],
 	      USER => $self->get_conf('USERNAME'),
 	      PRIORITY => 0}) || return 0;
@@ -833,7 +829,6 @@ sub run_command {
 	    $err = $defaults->{'STREAMERR'} if ($log_error);
 	    $self->get('Host')->run_command(
 		{ COMMAND => \@{$command},
-		    CHROOT => 0,
 		    PRIORITY => 0,
 		    STREAMOUT => $out,
 		    STREAMERR => $err,
@@ -845,7 +840,6 @@ sub run_command {
 	    $self->get('Session')->run_command(
 		{ COMMAND => \@{$command},
 		    USER => $self->get_conf('USERNAME'),
-		    CHROOT => 1,
 		    PRIORITY => 0,
 		    STREAMOUT => $out,
 		    STREAMERR => $err,
@@ -949,7 +943,6 @@ sub run_lintian {
     push @lintian_command, $self->get('Changes File');
     $self->get('Host')->run_command(
         { COMMAND => \@lintian_command,
-          CHROOT => 0,
           PRIORITY => 0,
         });
     my $status = $? >> 8;
@@ -994,7 +987,6 @@ sub run_piuparts {
     push @piuparts_command, $self->get('Changes File');
     $self->get('Host')->run_command(
         { COMMAND => \@piuparts_command,
-          CHROOT => 0,
           PRIORITY => 0,
         });
     my $status = $? >> 8;
@@ -1048,7 +1040,6 @@ sub build {
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
 				  '-x', $dscfile, $dscdir],
 		      USER => $self->get_conf('USERNAME'),
-		      CHROOT => 1,
 		      PRIORITY => 0});
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
@@ -1107,7 +1098,6 @@ sub build {
 	    $self->get('Session')->run_command(
 		{ COMMAND => ['rm', '-rf', $build_dir],
 		  USER => 'root',
-		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	    return 0;
@@ -1194,7 +1184,6 @@ sub build {
 	$self->get('Session')->run_command(
 	    { COMMAND => ['chmod', 'a+r', '/etc/ld.so.conf'],
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1243,7 +1232,6 @@ sub build {
 	ENV => $buildenv,
 	USER => $self->get_conf('USERNAME'),
 	SETSID => 1,
-	CHROOT => 1,
 	PRIORITY => 0,
 	DIR => $bdir
     };
@@ -1270,7 +1258,6 @@ sub build {
 			  '-e',
 			  "kill( \"$signal\", -$pid )"],
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -1485,10 +1472,9 @@ sub check_space {
     my $sum = 0;
 
     foreach (@files) {
-	my $pipe = $self->get('Session')->pipe_command(
+	my $pipe = $self->get('Host')->pipe_command(
 	    { COMMAND => ['du', '-k', '-s', $_],
 	      USER => $self->get_conf('USERNAME'),
-	      CHROOT => 0,
 	      PRIORITY => 0,
 	      DIR => '/'});
 
@@ -1714,7 +1700,6 @@ sub chroot_arch {
     my $pipe = $self->get('Session')->pipe_command(
 	{ COMMAND => ['dpkg', '--print-architecture'],
 	  USER => $self->get_conf('USERNAME'),
-	  CHROOT => 1,
 	  PRIORITY => 0,
 	  DIR => '/' }) || return undef;
 

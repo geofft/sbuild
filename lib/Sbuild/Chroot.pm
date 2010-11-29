@@ -53,7 +53,6 @@ sub new {
 
     $self->set('Session ID', "");
     $self->set('Chroot ID', $chroot_id);
-    $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
     $self->set('Defaults', {
 	'COMMAND' => [],
 	'INTCOMMAND' => [], # Private
@@ -75,75 +74,14 @@ sub new {
     return $self;
 }
 
-sub _setup_aptconf {
-    my $self = shift;
-    my $aptconf = shift;
-
-    if ($self->get_conf('APT_ALLOW_UNAUTHENTICATED')) {
-	print $aptconf "APT::Get::AllowUnauthenticated true;\n";
-    }
-    print $aptconf "APT::Install-Recommends false;\n";
-
-    if ($self->get('Split')) {
-	my $chroot_dir = $self->get('Location');
-	print $aptconf "Dir \"$chroot_dir\";\n";
-    }
-}
-
 sub _setup_options {
     my $self = shift;
 
-    $self->set('Build Location', $self->get('Location') . "/build");
-    $self->set('Chroot Lock', $self->get('Location') . '/var/lock/sbuild');
-
-    if (basesetup($self, $self->get('Config'))) {
-	print STDERR "Failed to set up chroot\n";
-	return 0;
-    }
-    my $aptconf = "/var/lib/sbuild/apt.conf";
-    $self->set('APT Conf', $aptconf);
-
-    my $chroot_aptconf = $self->get('Location') . "/$aptconf";
-    $self->set('Chroot APT Conf', $chroot_aptconf);
-
-    # Always write out apt.conf, because it may become outdated.
-    if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
-				DIR => $self->get('Location'),
-				UNLINK => 0) ) {
-	$self->_setup_aptconf($F);
-
-	if (! rename $F->filename, $chroot_aptconf) {
-	    print STDERR "Can't rename $F->filename to $chroot_aptconf: $!\n";
+    if ($self->get('Location') ne '/') {
+	if (basesetup($self, $self->get('Config'))) {
+	    print STDERR "Failed to set up chroot\n";
 	    return 0;
 	}
-    } else {
-	print STDERR "Can't create $chroot_aptconf: $!";
-	return 0;
-    }
-
-    # unsplit mode uses an absolute path inside the chroot, rather
-    # than on the host system.
-    if ($self->get('Split')) {
-	my $chroot_dir = $self->get('Location');
-
-	$self->set('APT Options',
-		   ['-o', "Dir::State::status=$chroot_dir/var/lib/dpkg/status",
-		    '-o', "DPkg::Options::=--root=$chroot_dir",
-		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
-
-	$self->set('Aptitude Options',
-		   ['-o', "Dir::State::status=$chroot_dir/var/lib/dpkg/status",
-		    '-o', "DPkg::Options::=--root=$chroot_dir",
-		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
-
-	# sudo uses an absolute path on the host system.
-	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
-	    $self->get('Chroot APT Conf');
-    } else { # no split
-	$self->set('APT Options', []);
-	$self->set('Aptitude Options', []);
-	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
-	    $self->get('APT Conf');
     }
 
     return 1;
@@ -324,7 +262,6 @@ sub exec_command {
 
     $self->log_command($options);
 
-    my $dir = $options->{'CHDIR'};
     my $command = $options->{'EXPCOMMAND'};
 
     my $program = $command->[0];
@@ -366,120 +303,9 @@ sub exec_command {
 	debug2('  ' . $_ . '=' . ($ENV{$_} || '') . "\n");
     }
 
-    if (defined($dir) && $dir) {
-	debug2("Changing to directory: $dir\n");
-	chdir($dir) or die "Can't change directory to $dir: $!";
-    }
-
     debug("Running command: ", join(" ", @$command), "\n");
     exec { $program } @$command;
     die "Failed to exec: $command->[0]: $!";
-}
-
-sub get_apt_command_internal {
-    my $self = shift;
-    my $options = shift;
-
-    my $command = $options->{'COMMAND'};
-    my $apt_options = $self->get('APT Options');
-
-    debug2("APT Options: ", join(" ", @$apt_options), "\n")
-	if defined($apt_options);
-
-    my @aptcommand = ();
-    if (defined($apt_options)) {
-	push(@aptcommand, @{$command}[0]);
-	push(@aptcommand, @$apt_options);
-	if ($#$command > 0) {
-	    push(@aptcommand, @{$command}[1 .. $#$command]);
-	}
-    } else {
-	@aptcommand = @$command;
-    }
-
-    debug2("APT Command: ", join(" ", @aptcommand), "\n");
-
-    $options->{'CHROOT'} = $self->apt_chroot();
-    $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
-
-    $options->{'INTCOMMAND'} = \@aptcommand;
-}
-
-sub run_apt_command {
-    my $self = shift;
-    my $options = shift;
-
-    # Set modfied command
-    $self->get_apt_command_internal($options);
-
-    return $self->run_command_internal($options);
-}
-
-sub pipe_apt_command {
-    my $self = shift;
-    my $options = shift;
-
-    # Set modfied command
-    $self->get_apt_command_internal($options);
-
-    return $self->pipe_command_internal($options);
-}
-
-sub get_aptitude_command_internal {
-    my $self = shift;
-    my $options = shift;
-
-    my $command = $options->{'COMMAND'};
-    my $apt_options = $self->get('Aptitude Options');
-
-    debug2("Aptitude Options: ", join(" ", @$apt_options), "\n")
-	if defined($apt_options);
-
-    my @aptcommand = ();
-    if (defined($apt_options)) {
-	push(@aptcommand, @{$command}[0]);
-	push(@aptcommand, @$apt_options);
-	if ($#$command > 0) {
-	    push(@aptcommand, @{$command}[1 .. $#$command]);
-	}
-    } else {
-	@aptcommand = @$command;
-    }
-
-    debug2("APT Command: ", join(" ", @aptcommand), "\n");
-
-    $options->{'CHROOT'} = $self->apt_chroot();
-    $options->{'CHDIR_CHROOT'} = !$options->{'CHROOT'};
-
-    $options->{'INTCOMMAND'} = \@aptcommand;
-}
-
-sub run_aptitude_command {
-    my $self = shift;
-    my $options = shift;
-
-    # Set modfied command
-    $self->get_aptitude_command_internal($options);
-
-    return $self->run_command_internal($options);
-}
-
-sub pipe_aptitude_command {
-    my $self = shift;
-    my $options = shift;
-
-    # Set modfied command
-    $self->get_aptitude_command_internal($options);
-
-    return $self->pipe_command_internal($options);
-}
-
-sub apt_chroot {
-    my $self = shift;
-
-    my $chroot =  $self->get('Split') ? 0 : 1;
-
-    return $chroot
 }
 
 sub lock_chroot {
@@ -488,7 +314,7 @@ sub lock_chroot {
     my $new_pid = shift;
     my $new_user = shift;
 
-    my $lockfile = $self->get('Chroot Lock');
+    my $lockfile = $self->get('Location') . '/var/lock/sbuild';
     my $try = 0;
 
   repeat:
@@ -544,11 +370,11 @@ sub lock_chroot {
 sub unlock_chroot {
     my $self = shift;
 
-    my $f = $self->get('Chroot Lock');
+    my $lockfile = $self->get('Location') . '/var/lock/sbuild';
 
-    debug("Removing chroot lock file $f\n");
-    if (!unlink($f)) {
-	$self->log_error("cannot remove chroot lock file $f: $!\n")
+    debug("Removing chroot lock file $lockfile\n");
+    if (!unlink($lockfile)) {
+	$self->log_error("cannot remove chroot lock file $lockfile: $!\n")
 	    if $! != ENOENT;
     }
 

@@ -104,7 +104,6 @@ sub get_command_internal {
 
     my $command = $options->{'INTCOMMAND'}; # Command to run
     my $user = $options->{'USER'};          # User to run command under
-    my $chroot = $options->{'CHROOT'};      # Run in chroot?
     my $dir;                                # Directory to use (optional)
     $dir = $self->get('Defaults')->{'DIR'} if
 	(defined($self->get('Defaults')) &&
@@ -115,43 +114,24 @@ sub get_command_internal {
     if (!defined $user || $user eq "") {
 	$user = $self->get_conf('USERNAME');
     }
-    if (!defined $chroot) {
-	$chroot = 1;
-    }
 
     my @cmdline = ();
-    my $chdir = undef;
-    if ($chroot != 0) { # Run command inside chroot
-	if (!defined($dir)) {
-	    $dir = '/';
-	}
-	@cmdline = ($self->get_conf('SCHROOT'),
-		    '-d', $dir,
-		    '-c', $self->get('Session ID'),
-		    '--run-session',
-		    @{$self->get_conf('SCHROOT_OPTIONS')},
-		    '-u', "$user", '-p', '--',
-		    @$command);
-    } else { # Run command outside chroot
-	if ($options->{'CHDIR_CHROOT'}) {
-	    my $tmpdir = $self->get('Location');
-	    $tmpdir = $tmpdir . $dir if defined($dir);
-	    $dir = $tmpdir;
-	}
-	if ($user ne 'root' && $user ne $self->get_conf('USERNAME')) {
-	    $self->log_warning("Command \"$command\" cannot be run as user $user on the host system\n");
-	} elsif ($user eq 'root') {
-	    @cmdline = ($self->get_conf('SUDO'));
-	}
-	$chdir = $dir if defined($dir);
-	push(@cmdline, @$command);
-    }
 
-    $options->{'CHROOT'} = $chroot;
+    if (!defined($dir)) {
+	$dir = '/';
+    }
+    @cmdline = ($self->get_conf('SCHROOT'),
+		'-d', $dir,
+		'-c', $self->get('Session ID'),
+		'--run-session',
+		@{$self->get_conf('SCHROOT_OPTIONS')},
+		'-u', "$user", '-p', '--',
+		@$command);
+
     $options->{'USER'} = $user;
     $options->{'COMMAND'} = $command;
     $options->{'EXPCOMMAND'} = \@cmdline;
-    $options->{'CHDIR'} = $chdir;
+    $options->{'CHDIR'} = undef;
     $options->{'DIR'} = $dir;
 }
 

@@ -589,8 +589,6 @@ sub read_config {
     my @toolchain_regex;
     undef @toolchain_regex;
     my $stalled_pkg_timeout = undef;
-    my $srcdep_lock_dir = undef;
-    my $srcdep_lock_wait = undef;
     my $max_lock_trys = undef;
     my $lock_interval = undef;
     my $apt_policy = undef;

@@ -36,19 +36,20 @@ BEGIN {
     @EXPORT = qw(get_resolver);
 }
 
-sub get_resolver ($$);
+sub get_resolver ($$$);
 
-sub get_resolver ($$) {
+sub get_resolver ($$$) {
     my $conf = shift;
     my $session = shift;
+    my $host = shift;
 
     my $resolver;
     if ($conf->get('BUILD_DEP_RESOLVER') eq "apt") {
-	$resolver = Sbuild::AptResolver->new($conf, $session);
+	$resolver = Sbuild::AptResolver->new($conf, $session, $host);
     } elsif ($conf->get('BUILD_DEP_RESOLVER') eq "aptitude") {
-	$resolver = Sbuild::AptitudeResolver->new($conf, $session);
+	$resolver = Sbuild::AptitudeResolver->new($conf, $session, $host);
     } else {
-	$resolver = Sbuild::InternalResolver->new($conf, $session);
+	$resolver = Sbuild::InternalResolver->new($conf, $session, $host);
     }
 
     return $resolver;

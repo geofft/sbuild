@@ -151,8 +151,14 @@ if ($conf->get('KEYGEN')) {
     print "Generating archive key.\n";
 
     my $session = Sbuild::ChrootRoot->new($conf);
+    if (!$session->begin_session() || !$host->begin_session()) {
+	die "Chroot setup failed";
+    }
 
     $status = generate_keys($session, $conf);
+
+    $session->end_session();
+
     $status >>= 8;
     if ($status) {
 	print STDERR "Exiting from key generation with status $status.\n";

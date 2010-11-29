@@ -44,8 +44,9 @@ sub new {
     my $class = shift;
     my $conf = shift;
     my $session = shift;
+    my $host = shift;
 
-    my $self = $class->SUPER::new($conf, $session);
+    my $self = $class->SUPER::new($conf, $session, $host);
     bless($self, $class);
 
     return $self;
@@ -163,7 +164,6 @@ sub install_deps {
 	    { COMMAND => ['dpkg', '--set-selections'],
 	      PIPE => 'out',
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 
@@ -502,7 +502,7 @@ sub get_virtual {
     my $self = shift;
     my $pkg = shift;
 
-    my $pipe = $self->get('Session')->pipe_apt_command(
+    my $pipe = $self->pipe_apt_command(
 	{ COMMAND => [$self->get_conf('APT_CACHE'),
 		      '-q', '--names-only', 'search', "^$pkg\$"],
 	  USER => $self->get_conf('USERNAME'),
@@ -538,7 +538,7 @@ sub get_apt_policy {
     my %packages;
 
     my $pipe =
-	$self->get('Session')->pipe_apt_command(
+	$self->pipe_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'), 'policy', @interest],
 	      ENV => {'LC_ALL' => 'C'},
 	      USER => $self->get_conf('USERNAME'),

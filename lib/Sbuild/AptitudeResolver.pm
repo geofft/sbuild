@@ -43,8 +43,9 @@ sub new {
     my $class = shift;
     my $conf = shift;
     my $session = shift;
+    my $host = shift;
 
-    my $self = $class->SUPER::new($conf, $session);
+    my $self = $class->SUPER::new($conf, $session, $host);
     bless($self, $class);
 
     return $self;
@@ -98,7 +99,6 @@ sub install_deps {
 	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	      PIPE => 'in',
 	      USER => 'root',
-	      CHROOT => 1,
 	      PRIORITY => 0,
 	      DIR => '/' });
 

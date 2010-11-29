@@ -212,7 +212,6 @@ sub shutdown ($) {
 			      $job->get('Sub PID') .
 			      " )\""],
 			      USER => 'root',
-			      CHROOT => 1,
 			      PRIORITY => 0,
 			      DIR => '/' });
 	}
@@ -244,7 +243,6 @@ sub shutdown ($) {
 	    $job->get('Session')->run_command(
 		{ COMMAND => ['rm', '-rf', $bdir],
 		  USER => 'root',
-		  CHROOT => 1,
 		  PRIORITY => 0,
 		  DIR => '/' });
 	}

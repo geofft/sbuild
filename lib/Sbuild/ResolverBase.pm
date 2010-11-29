@@ -1,6 +1,6 @@
 # Resolver.pm: build library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2005-2008 Roger Leigh <rleigh@debian.org>
+# Copyright © 2005-2010 Roger Leigh <rleigh@debian.org>
 # Copyright © 2008      Simon McVittie <smcv@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ use File::Copy;
 
 use Dpkg::Deps;
 use Sbuild::Base;
-use Sbuild qw(isin debug);
+use Sbuild qw(isin debug debug2);
 
 BEGIN {
     use Exporter ();
@@ -46,23 +46,81 @@ sub new {
     my $class = shift;
     my $conf = shift;
     my $session = shift;
+    my $host = shift;
 
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
     $self->set('Session', $session);
+    $self->set('Host', $host);
     $self->set('Changes', {});
     $self->set('AptDependencies', {});
+    $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
 
     my $dummy_archive_list_file = $session->get('Location') .
         '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
     $self->set('Dummy archive list file', $dummy_archive_list_file);
+
 
     return $self;
 }
 
 sub setup {
     my $self = shift;
+
+    my $session = $self->get('Session');
+    my $chroot_dir = $session->get('Location');
+
+    my $aptconf = "/var/lib/sbuild/apt.conf";
+    $self->set('APT Conf', $aptconf);
+
+    my $chroot_aptconf = $session->get('Location') . "/$aptconf";
+    $self->set('Chroot APT Conf', $chroot_aptconf);
+
+    # Always write out apt.conf, because it may become outdated.
+    if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
+				DIR => $self->get('Location'),
+				UNLINK => 0) ) {
+	if ($self->get_conf('APT_ALLOW_UNAUTHENTICATED')) {
+	    print $F "APT::Get::AllowUnauthenticated true;\n";
+	}
+	print $F "APT::Install-Recommends false;\n";
+
+	if ($self->get('Split')) {
+	    print $F "Dir \"$chroot_dir\";\n";
+	}
+
+	if (! rename $F->filename, $chroot_aptconf) {
+	    print STDERR "Can't rename $F->filename to $chroot_aptconf: $!\n";
+	    return 0;
+	}
+    } else {
+	print STDERR "Can't create $chroot_aptconf: $!";
+	return 0;
+    }
+
+    # unsplit mode uses an absolute path inside the chroot, rather
+    # than on the host system.
+    if ($self->get('Split')) {
+	$self->set('APT Options',
+		   ['-o', "Dir::State::status=$chroot_dir/var/lib/dpkg/status",
+		    '-o', "DPkg::Options::=--root=$chroot_dir",
+		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
+
+	$self->set('Aptitude Options',
+		   ['-o', "Dir::State::status=$chroot_dir/var/lib/dpkg/status",
+		    '-o', "DPkg::Options::=--root=$chroot_dir",
+		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
+
+	# sudo uses an absolute path on the host system.
+	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
+	    $self->get('Chroot APT Conf');
+    } else { # no split
+	$self->set('APT Options', []);
+	$self->set('Aptitude Options', []);
+	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
+	    $self->get('APT Conf');
+    }
 
     $self->cleanup_apt_archive();
 }
@@ -76,9 +134,7 @@ sub cleanup {
 sub update {
     my $self = shift;
 
-    my $session = $self->get('Session');
-
-    $session->run_apt_command(
+    $self->run_apt_command(
 	{ COMMAND => [$self->get_conf('APT_GET'), 'update'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
@@ -89,9 +145,7 @@ sub update {
 sub upgrade {
     my $self = shift;
 
-    my $session = $self->get('Session');
-
-    $session->run_apt_command(
+    $self->run_apt_command(
 	{ COMMAND => [$self->get_conf('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'upgrade'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
@@ -102,9 +156,7 @@ sub upgrade {
 sub distupgrade {
     my $self = shift;
 
-    my $session = $self->get('Session');
-
-    $session->run_apt_command(
+    $self->run_apt_command(
 	{ COMMAND => [$self->get_conf('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'dist-upgrade'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
@@ -115,9 +167,7 @@ sub distupgrade {
 sub clean {
     my $self = shift;
 
-    my $session = $self->get('Session');
-
-    $session->run_apt_command(
+    $self->run_apt_command(
 	{ COMMAND => [$self->get_conf('APT_GET'), '-y', 'clean'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
@@ -128,9 +178,7 @@ sub clean {
 sub autoclean {
     my $self = shift;
 
-    my $session = $self->get('Session');
-
-    $session->run_apt_command(
+    $self->run_apt_command(
 	{ COMMAND => [$self->get_conf('APT_GET'), '-y', 'autoclean'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
@@ -141,9 +189,7 @@ sub autoclean {
 sub autoremove {
     my $self = shift;
 
-    my $session = $self->get('Session');
-
-    $session->run_apt_command(
+    $self->run_apt_command(
 	{ COMMAND => [$self->get_conf('APT_GET'), '-y', 'autoremove'],
 	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	  USER => 'root',
@@ -291,12 +337,12 @@ sub run_apt {
 	($self->get_conf('APT_ALLOW_UNAUTHENTICATED'));
     push @apt_command, "$mode", $action, @packages;
     my $pipe =
-	$self->get('Session')->pipe_apt_command(
-	{ COMMAND => \@apt_command,
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  PRIORITY => 0,
-	  DIR => '/' });
+	$self->pipe_apt_command(
+	    { COMMAND => \@apt_command,
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      PRIORITY => 0,
+	      DIR => '/' });
     if (!$pipe) {
 	$self->log("Can't open pipe to apt-get: $!\n");
 	return 0;
@@ -511,7 +557,6 @@ EOF
     $session->run_command(
 	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_pkg_dir), $session->strip_chroot_path($dummy_deb)],
 	  USER => $self->get_conf('USER'),
-	  CHROOT => 1,
 	  PRIORITY => 0});
     if ($?) {
 	$self->log("Dummy package creation failed\n");
@@ -578,7 +623,6 @@ EOF
     $session->run_command(
 	{ COMMAND => \@gpg_command,
 	  USER => $self->get_conf('USER'),
-	  CHROOT => 1,
 	  PRIORITY => 0});
     if ($?) {
 	$self->log("Failed to sign dummy archive Release file.\n");
@@ -597,7 +641,6 @@ EOF
             { COMMAND => ['mv', $tmpfilename,
                           $session->strip_chroot_path($dummy_archive_list_file)],
               USER => 'root',
-              CHROOT => 1,
               PRIORITY => 0});
         if ($?) {
             $self->log("Failed to create apt list file for dummy archive.\n");
@@ -610,7 +653,6 @@ EOF
     $session->run_command(
         { COMMAND => ['apt-key', 'add', $session->strip_chroot_path($dummy_archive_pubkey)],
           USER => 'root',
-          CHROOT => 1,
           PRIORITY => 0});
     if ($?) {
         $self->log("Failed to add dummy archive key.\n");
@@ -631,7 +673,6 @@ sub cleanup_apt_archive {
     $session->run_command(
 	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
 	  USER => 'root',
-	  CHROOT => 1,
 	  DIR => '/',
 	  PRIORITY => 0});
     $self->set('Dummy package path', undef);
@@ -648,9 +689,9 @@ sub generate_keys {
         return 1;
     }
 
-    my $session = $self->get('Session');
+    my $host = $self->get('Host');
 
-    if (generate_keys($session, $self->get('Config'))) {
+    if (generate_keys($host, $self->get('Config'))) {
 	# Since apt-distupgrade was requested specifically, fail on
 	# error when not in buildd mode.
 	$self->log("generating gpg keys failed\n");
@@ -665,6 +706,8 @@ sub run_apt_ftparchive {
     my $self = shift;
 
     my $session = $self->get('Session');
+    my $host = $self->get('Host');
+
     my ($tmpfh, $tmpfilename) = tempfile();
     my $dummy_archive_dir = $self->get('Dummy archive directory');
 
@@ -698,10 +741,9 @@ EOF
     delete $env->{'APT_CONFIG'};
 
     # Run apt-ftparchive to generate Packages and Sources files.
-    $session->run_command(
+    $host->run_command(
         { COMMAND => ['apt-ftparchive', '-q=2', 'generate', $tmpfilename],
           USER => $self->get_conf('USER'),
-          CHROOT => 0,
           PRIORITY => 0,
           DIR => '/'});
     if ($?) {
@@ -710,10 +752,9 @@ EOF
     }
 
     # Get output for Release file
-    my $pipe = $session->pipe_command(
+    my $pipe = $host->pipe_command(
         { COMMAND => ['apt-ftparchive', '-q=2', '-c', $tmpfilename, 'release', $dummy_archive_dir],
           USER => $self->get_conf('USER'),
-          CHROOT => 0,
           PRIORITY => 0,
           DIR => '/'});
     if (!defined($pipe)) {
@@ -736,6 +777,126 @@ EOF
     close $pipe;
 
     return 1;
+}
+
+sub get_apt_command_internal {
+    my $self = shift;
+    my $options = shift;
+
+    my $command = $options->{'COMMAND'};
+    my $apt_options = $self->get('APT Options');
+
+    debug2("APT Options: ", join(" ", @$apt_options), "\n")
+	if defined($apt_options);
+
+    my @aptcommand = ();
+    if (defined($apt_options)) {
+	push(@aptcommand, @{$command}[0]);
+	push(@aptcommand, @$apt_options);
+	if ($#$command > 0) {
+	    push(@aptcommand, @{$command}[1 .. $#$command]);
+	}
+    } else {
+	@aptcommand = @$command;
+    }
+
+    debug2("APT Command: ", join(" ", @aptcommand), "\n");
+
+    $options->{'INTCOMMAND'} = \@aptcommand;
+}
+
+sub run_apt_command {
+    my $self = shift;
+    my $options = shift;
+
+    my $session = $self->get('Session');
+    my $host = $self->get('Host');
+
+    # Set modfied command
+    $self->get_apt_command_internal($options);
+
+    if ($self->get('Split')) {
+	return $host->run_command_internal($options);
+    } else {
+	return $session->run_command_internal($options);
+    }
+}
+
+sub pipe_apt_command {
+    my $self = shift;
+    my $options = shift;
+
+    my $session = $self->get('Session');
+    my $host = $self->get('Host');
+
+    # Set modfied command
+    $self->get_apt_command_internal($options);
+
+    if ($self->get('Split')) {
+	return $host->pipe_command_internal($options);
+    } else {
+	return $session->pipe_command_internal($options);
+    }
+}
+
+sub get_aptitude_command_internal {
+    my $self = shift;
+    my $options = shift;
+
+    my $command = $options->{'COMMAND'};
+    my $apt_options = $self->get('Aptitude Options');
+
+    debug2("Aptitude Options: ", join(" ", @$apt_options), "\n")
+	if defined($apt_options);
+
+    my @aptcommand = ();
+    if (defined($apt_options)) {
+	push(@aptcommand, @{$command}[0]);
+	push(@aptcommand, @$apt_options);
+	if ($#$command > 0) {
+	    push(@aptcommand, @{$command}[1 .. $#$command]);
+	}
+    } else {
+	@aptcommand = @$command;
+    }
+
+    debug2("APT Command: ", join(" ", @aptcommand), "\n");
+
+    $options->{'INTCOMMAND'} = \@aptcommand;
+}
+
+sub run_aptitude_command {
+    my $self = shift;
+    my $options = shift;
+
+    my $session = $self->get('Session');
+    my $host = $self->get('Host');
+
+    # Set modfied command
+    $self->get_aptitude_command_internal($options);
+
+    if ($self->get('Split')) {
+	return $host->run_command_internal($options);
+    } else {
+	return $session->run_command_internal($options);
+    }
+}
+
+sub pipe_aptitude_command {
+    my $self = shift;
+    my $options = shift;
+
+    my $session = $self->get('Session');
+    my $host = $self->get('Host');
+
+    # Set modfied command
+    $self->get_aptitude_command_internal($options);
+
+    if ($self->get('Split')) {
+	return $host->pipe_command_internal($options);
+    } else {
+	return $session->pipe_command_internal($options);
+    }
 }
 
 1;

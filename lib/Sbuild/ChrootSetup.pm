@@ -139,7 +139,6 @@ sub basesetup ($$) {
 	{ COMMAND => ['/usr/bin/debconf-set-selections'],
 	  PIPE => 'out',
 	  USER => 'root',
-	  CHROOT => 1,
 	  PRIORITY => 0,
 	  DIR => '/' });
 
@@ -198,7 +197,6 @@ sub list_packages ($$@) {
     $session->run_command(
 	{COMMAND => ['dpkg', '--list', @_],
 	 USER => 'root',
-	 CHROOT => 1,
 	 PRIORITY => 0});
     return $?;
 }
@@ -212,7 +210,6 @@ sub set_package_status ($$$@) {
 	{COMMAND => ['dpkg', '--set-selections'],
 	 PIPE => 'out',
 	 USER => 'root',
-	 CHROOT => 1,
 	 PRIORITY => 0});
 
     if (!$pipe) {
@@ -232,7 +229,7 @@ sub set_package_status ($$$@) {
 }
 
 sub generate_keys ($$) {
-    my $session = shift;
+    my $host = shift;
     my $conf = shift;
 
     my ($tmpfh, $tmpfilename) = tempfile();
@@ -251,9 +248,8 @@ EOF
 
     my @command = ('gpg', '--no-default-keyring', '--batch', '--gen-key',
                    $tmpfilename);
-    $session->run_command(
+    $host->run_command(
         { COMMAND => \@command,
-          CHROOT => 0,
 	  USER => $conf->get('USERNAME'),
           PRIORITY => 0,
           DIR => '/'});
@@ -264,9 +260,8 @@ EOF
     # Secret keyring needs to be readable by 'sbuild' group.
     @command = ('chmod', '640',
                 $conf->get('SBUILD_BUILD_DEPENDS_SECRET_KEY'));
-    $session->run_command(
+    $host->run_command(
         { COMMAND => \@command,
-          CHROOT => 0,
 	  USER => $conf->get('USERNAME'),
           PRIORITY => 0,
           DIR => '/'});
