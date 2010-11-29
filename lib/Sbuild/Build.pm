@@ -73,7 +73,6 @@ sub new {
     $self->set('Chroot Build Dir', '');
     $self->set('Max Lock Trys', 120);
     $self->set('Lock Interval', 5);
-    $self->set('Srcdep Lock Count', 0);
     $self->set('Pkg Status', 'pending');
     $self->set('Pkg Status Trigger', undef);
     $self->set('Pkg Start Time', 0);

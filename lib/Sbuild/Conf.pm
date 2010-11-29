@@ -310,13 +310,6 @@ sub init_allowed_keys {
 	'STALLED_PKG_TIMEOUT'			=> {
 	    DEFAULT => 150 # minutes
 	},
-	'SRCDEP_LOCK_DIR'			=> {
-	    # Note: inside chroot only
-	    DEFAULT => "/var/lib/sbuild/srcdep-lock"
-	},
-	'SRCDEP_LOCK_WAIT'			=> {
-	    DEFAULT => 1 # minutes
-	},
 	'MAX_LOCK_TRYS'				=> {
 	    DEFAULT => 120
 	},
@@ -701,8 +694,6 @@ sub read_config {
     $self->set('TOOLCHAIN_REGEX', \@toolchain_regex)
 	if (@toolchain_regex);
     $self->set('STALLED_PKG_TIMEOUT', $stalled_pkg_timeout);
-    $self->set('SRCDEP_LOCK_DIR', $srcdep_lock_dir);
-    $self->set('SRCDEP_LOCK_WAIT', $srcdep_lock_wait);
     $self->set('MAX_LOCK_TRYS', $max_lock_trys);
     $self->set('LOCK_INTERVAL', $lock_interval);
     $self->set('APT_POLICY', $apt_policy);

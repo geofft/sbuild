@@ -94,8 +94,6 @@ sub _setup_options {
     my $self = shift;
 
     $self->set('Build Location', $self->get('Location') . "/build");
-    $self->set('Srcdep Lock Dir', $self->get('Location') . '/' . $self->get_conf('SRCDEP_LOCK_DIR'));
-    $self->set('Install Lock', $self->get('Srcdep Lock Dir') . "/install");
     $self->set('Chroot Lock', $self->get('Location') . '/var/lock/sbuild');
 
     if (basesetup($self, $self->get('Config'))) {
