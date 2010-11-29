@@ -21,8 +21,7 @@
 use strict;
 use warnings;
 
-use Sbuild::ChrootSetup qw(update upgrade distupgrade clean autoclean
-                           autoremove generate_keys);
+use Sbuild::ChrootSetup qw(generate_keys);
 use Sbuild::ChrootRoot;
 use Sbuild::Resolver qw(get_resolver);
 
@@ -219,7 +218,7 @@ foreach (@ARGV) {
 	my $status = $resolver->autoclean($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    print STDERR "Exiting from upgrade with status $status.\n";
+	    print STDERR "Exiting from autoclean with status $status.\n";
 	    goto cleanup;
 	}
     }
@@ -229,7 +228,7 @@ foreach (@ARGV) {
 	my $status = $resolver->autoremove($session, $conf);
 	$status >>= 8;
 	if ($status) {
-	    print STDERR "Exiting from distupgrade with status $status.\n";
+	    print STDERR "Exiting from autoremove with status $status.\n";
 	    goto cleanup;
 	}
     }
