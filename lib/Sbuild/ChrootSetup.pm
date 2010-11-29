@@ -32,93 +32,17 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(update upgrade distupgrade clean autoclean autoremove
-                 basesetup shell hold_packages unhold_packages
+    @EXPORT = qw(basesetup shell hold_packages unhold_packages
                  list_packages set_package_status generate_keys);
 }
 
-sub update ($$);
-sub upgrade ($$);
-sub distupgrade($$);
-sub clean ($$);
-sub autoclean ($$);
-sub autoremove ($$);
 sub basesetup ($$);
 sub shell ($$);
+sub hold_packages ($$@);
+sub unhold_packages ($$@);
 sub list_packages ($$@);
 sub set_package_status ($$$@);
-
-sub update ($$) {
-    my $session = shift;
-    my $conf = shift;
-
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), 'update'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  DIR => '/' });
-    return $?;
-}
-
-sub upgrade ($$) {
-    my $session = shift;
-    my $conf = shift;
-
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'upgrade'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  DIR => '/' });
-    return $?;
-}
-
-sub distupgrade ($$) {
-    my $session = shift;
-    my $conf = shift;
-
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-uy', '-o', 'Dpkg::Options::=--force-confold', 'dist-upgrade'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  DIR => '/' });
-    return $?;
-}
-
-sub clean ($$) {
-    my $session = shift;
-    my $conf = shift;
-
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-y', 'clean'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  DIR => '/' });
-    return $?;
-}
-
-sub autoclean ($$) {
-    my $session = shift;
-    my $conf = shift;
-
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-y', 'autoclean'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  DIR => '/' });
-    return $?;
-}
-
-sub autoremove ($$) {
-    my $session = shift;
-    my $conf = shift;
-
-    $session->run_apt_command(
-	{ COMMAND => [$conf->get('APT_GET'), '-y', 'autoremove'],
-	  ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-	  USER => 'root',
-	  DIR => '/' });
-    return $?;
-}
+sub generate_keys ($$);
 
 sub basesetup ($$) {
     my $session = shift;
