@@ -19,6 +19,8 @@
 #
 #######################################################################
 
+set -e
+
 for program in "@abs_top_srcdir@/bin/"*
 do
     if grep '#!/usr/bin/perl' "$program" 2>&1 >/dev/null; then
