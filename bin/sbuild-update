@@ -151,7 +151,7 @@ if ($conf->get('KEYGEN')) {
     print "Generating archive key.\n";
 
     my $session = Sbuild::ChrootRoot->new($conf);
-    if (!$session->begin_session() || !$host->begin_session()) {
+    if (!$session->begin_session()) {
 	die "Chroot setup failed";
     }
 
@@ -171,7 +171,8 @@ foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
 
     my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
-    my $resolver = get_resolver($conf, $session);
+    my $host = Sbuild::ChrootRoot->new($conf);
+    my $resolver = get_resolver($conf, $session, $host);
 
     if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
 	goto cleanup_unlocked;
