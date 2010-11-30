@@ -94,7 +94,7 @@ sub install_deps {
 
     $self->log(join(" ", @aptitude_install_command), "\n");
 
-    my $pipe = $session->pipe_aptitude_command(
+    my $pipe = $self->pipe_aptitude_command(
 	    { COMMAND => \@aptitude_install_command,
 	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 	      PIPE => 'in',
