@@ -172,6 +172,9 @@ foreach (@ARGV) {
 
     my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
     my $host = Sbuild::ChrootRoot->new($conf);
+    if (!$host->begin_session()) {
+	die "Chroot setup failed";
+    }
     my $resolver = get_resolver($conf, $session, $host);
 
     if (!$session->lock_chroot('SBUILD_UPDATE', $$, $conf->get('USERNAME'))) {
