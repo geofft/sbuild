@@ -92,7 +92,8 @@ sub new {
     $host_defaults->{'STREAMIN'} = $devnull;
     $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
     $host_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
-    my $host_defaults = $self->get('Host')->begin_session();
+    # Note, this should never fail.  But, we should handle failure anyway.
+    $self->get('Host')->begin_session();
 
     $self->set('Session', undef);
     $self->set('Dependency Resolver', undef);
