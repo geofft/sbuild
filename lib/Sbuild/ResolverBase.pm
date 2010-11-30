@@ -449,8 +449,7 @@ sub setup_apt_archive {
     #Prepare a path to build a dummy package containing our deps:
     if (! defined $self->get('Dummy package path')) {
         $self->set('Dummy package path',
-		   tempdir('resolver' . '-XXXXXX',
-			   DIR => $session->get('Build Location')));
+		   tempdir('resolver' . '-XXXXXX', TMPDIR => 1));
     }
     my $dummy_dir = $self->get('Dummy package path');
     my $dummy_archive_dir = $dummy_dir . '/apt_archive';
