@@ -931,12 +931,6 @@ sub run_lintian {
     $self->log_subsubsection("lintian");
 
     my $lintian = $self->get_conf('LINTIAN');
-    if (! -x $lintian) {
-        my $why = "$lintian does not exist or is not executable";
-        $self->log_error("Lintian run failed ($why)\n");
-        return 0;
-    }
-
     my @lintian_command = ($lintian);
     push @lintian_command, @{$self->get_conf('LINTIAN_OPTIONS')} if
         ($self->get_conf('LINTIAN_OPTIONS'));
@@ -969,12 +963,6 @@ sub run_piuparts {
     $self->log_subsubsection("piuparts");
 
     my $piuparts = $self->get_conf('PIUPARTS');
-    if (! -x $piuparts) {
-        my $why = "$piuparts does not exist or is not executable";
-        $self->log_error("Piuparts run failed ($why)\n");
-        return 0;
-    }
-
     my @piuparts_command;
     if (scalar(@{$self->get_conf('PIUPARTS_ROOT_ARGS')})) {
 	push @piuparts_command, @{$self->get_conf('PIUPARTS_ROOT_ARGS')};
