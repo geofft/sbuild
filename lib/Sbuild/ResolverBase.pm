@@ -79,7 +79,7 @@ sub setup {
 
     # Always write out apt.conf, because it may become outdated.
     if (my $F = new File::Temp( TEMPLATE => "$aptconf.XXXXXX",
-				DIR => $self->get('Location'),
+				DIR => $session->get('Location'),
 				UNLINK => 0) ) {
 	if ($self->get_conf('APT_ALLOW_UNAUTHENTICATED')) {
 	    print $F "APT::Get::AllowUnauthenticated true;\n";
