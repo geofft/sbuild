@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#!/usr/bin/perl
 #
 # sbuild: build packages, obeying source dependencies
 # Copyright © 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
