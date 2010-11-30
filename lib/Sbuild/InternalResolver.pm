@@ -509,7 +509,7 @@ sub get_virtual {
 	  PRIORITY => 0,
 	  DIR => '/'});
     if (!$pipe) {
-	$self->log("Can't open pipe to $conf::apt_cache: $!\n");
+	$self->log("Can't open pipe to ".$self->get_conf('APT_CACHE').": $!\n");
 	return ();
     }
 
