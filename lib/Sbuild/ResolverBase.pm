@@ -113,12 +113,12 @@ sub setup {
 		    '-o', "DPkg::Run-Directory=$chroot_dir"]);
 
 	# sudo uses an absolute path on the host system.
-	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
+	$session->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('Chroot APT Conf');
     } else { # no split
 	$self->set('APT Options', []);
 	$self->set('Aptitude Options', []);
-	$self->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
+	$session->get('Defaults')->{'ENV'}->{'APT_CONFIG'} =
 	    $self->get('APT Conf');
     }
 
