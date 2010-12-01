@@ -690,7 +690,7 @@ sub generate_keys {
 
     my $host = $self->get('Host');
 
-    if (generate_keys($host, $self->get('Config'))) {
+    if (Sbuild::ChrootSetup::generate_keys($host, $self->get('Config'))) {
 	# Since apt-distupgrade was requested specifically, fail on
 	# error when not in buildd mode.
 	$self->log("generating gpg keys failed\n");
