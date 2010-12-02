@@ -341,6 +341,8 @@ AC_CONFIG_FILES([man/wanna-build-statistics.1])
 AC_CONFIG_FILES([test/Makefile])
 AC_CONFIG_FILES([test/perl-syntax],
 		[chmod +x test/perl-syntax])
+AC_CONFIG_FILES([test/sbuild-update],
+		[chmod +x test/sbuild-update])
 
 dnl Output the generated config.status script.
 AC_OUTPUT

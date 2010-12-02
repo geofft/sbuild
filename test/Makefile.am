@@ -25,4 +25,5 @@ TESTS =			\
 	perl-syntax
 
 EXTRA_DIST =		\
-	perl-syntax.in
+	perl-syntax.in	\
+	sbuild-update.in
