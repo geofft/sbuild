@@ -51,7 +51,7 @@ package main;
 use locale;
 use POSIX qw(locale_h);
 use Getopt::Long;
-use Sbuild qw(help_text version_text usage_error check_packages);
+use Sbuild qw(help_text version_text usage_error check_packages check_group_membership);
 use Sbuild::Conf;
 use Sbuild::Utility qw(setup cleanup shutdown);
 
@@ -61,7 +61,7 @@ my $conf = Sbuild::Conf->new();
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-checkpackages", "1");
 exit 1 if !defined($options);
-$conf->check_group_membership();
+check_group_membership();
 
 usage_error("sbuild-checkpackages", "--list or --set must be specified")
     if (!defined($mode));

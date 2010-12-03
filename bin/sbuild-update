@@ -124,14 +124,14 @@ sub set_options {
 package main;
 
 use Getopt::Long;
-use Sbuild qw(help_text version_text usage_error);
+use Sbuild qw(help_text version_text usage_error check_group_membership);
 use Sbuild::Utility qw(setup cleanup);
 
 my $conf = Conf->new();
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-update", "1");
 exit 1 if !defined($options);
-$conf->check_group_membership();
+check_group_membership();
 
 if ($conf->get('COMPAT')) {
     my $msg = "$0 will perform apt-get command 'update' now, however this ";

@@ -1,7 +1,7 @@
 #
 # Conf.pm: configuration library for sbuild
 # Copyright © 2005      Ryan Murray <rmurray@debian.org>
-# Copyright © 2006-2009 Roger Leigh <rleigh@debian.org>
+# Copyright © 2006-2010 Roger Leigh <rleigh@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -761,34 +761,6 @@ sub read_config {
     $self->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error);
 }
 
-sub check_group_membership ($) {
-    my $self = shift;
-
-    # Skip for root
-    return if ($< == 0);
-
-    my $user = getpwuid($<);
-    my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
-
-    if (!$gid) {
-	die "Group sbuild does not exist";
-    }
-
-    my $in_group = 0;
-    my @groups = getgroups();
-    push @groups, getgid();
-    foreach (@groups) {
-	($name, $passwd, $gid, $members) = getgrgid($_);
-	$in_group = 1 if defined($name) && $name eq 'sbuild';
-    }
-
-    if (!$in_group) {
-	print STDERR "User $user is not currently a member of group sbuild, but is in the system group database\n";
-	print STDERR "You need to log in again to gain sbuild group priveleges\n";
-	exit(1);
-    }
-
-    return;
 }
 
 1;

@@ -205,14 +205,14 @@ package main;
 use Getopt::Long;
 use Cwd;
 use File::Basename;
-use Sbuild qw(help_text version_text usage_error);
+use Sbuild qw(help_text version_text usage_error check_group_membership);
 
 my $conf = Conf->new();
 exit 1 if !defined($conf);
 $conf->read_sbuild_debuild_config();
 my $options = Options->new($conf, "sbuild-debuild", "1");
 exit 1 if !defined($options);
-$conf->check_group_membership();
+check_group_membership();
 
 # This subroutine determines the architecture we're building for.
 sub detect_arch {

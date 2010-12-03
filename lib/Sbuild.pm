@@ -42,7 +42,9 @@ BEGIN {
 		 version_eq version_compare split_version
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
-		 send_mail send_build_log debug debug2 df);
+		 send_mail send_build_log debug debug2 df
+		 check_group_membership);
+
 }
 
 our $devnull;
@@ -75,6 +77,7 @@ sub version_text ($);
 sub usage_error ($$);
 sub debug (@);
 sub debug2 (@);
+sub check_group_membership();
 
 sub version_less ($$) {
 	my $v1 = shift;
@@ -563,6 +566,34 @@ sub df {
 
 # This only happens if $dir was not a valid file or directory.
     return 0;
+}
+
+sub check_group_membership () {
+    # Skip for root
+    return if ($< == 0);
+
+    my $user = getpwuid($<);
+    my ($name,$passwd,$gid,$members) = getgrnam("sbuild");
+
+    if (!$gid) {
+	die "Group sbuild does not exist";
+    }
+
+    my $in_group = 0;
+    my @groups = getgroups();
+    push @groups, getgid();
+    foreach (@groups) {
+	($name, $passwd, $gid, $members) = getgrgid($_);
+	$in_group = 1 if defined($name) && $name eq 'sbuild';
+    }
+
+    if (!$in_group) {
+	print STDERR "User $user is not currently a member of group sbuild, but is in the system group database\n";
+	print STDERR "You need to log in again to gain sbuild group priveleges\n";
+	exit(1);
+    }
+
+    return;
 }
 
 1;
