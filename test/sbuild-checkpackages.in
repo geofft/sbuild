@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# sbuild-update: Test sbuild-update
+# sbuild-checkpackages: Test sbuild-checkpackages
 # Copyright © 2010 Roger Leigh <rleigh@debian.org
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 set -e
 
 for dist in unstable; do
-    for opt in --update --upgrade --dist-upgrade --clean --autoclean --autoremove -ugdcar; do
-	PERL5LIB="@abs_top_srcdir@/lib" "@abs_top_srcdir@/bin/sbuild-update" "$opt" "$dist"
+    for opt in --list --set --list; do
+	PERL5LIB="@abs_top_srcdir@/lib" "@abs_top_srcdir@/bin/sbuild-checkpackages" "$opt" "$dist"
     done
 done

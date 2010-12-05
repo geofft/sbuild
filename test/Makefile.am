@@ -21,9 +21,29 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-TESTS =			\
-	perl-syntax
+TESTS =				\
+	perl-syntax		\
+	$(chroot_checks)
 
-EXTRA_DIST =		\
-	perl-syntax.in	\
-	sbuild-update.in
+if SBUILD_CHROOT_CHECKS
+chroot_checks = 		\
+	sbuild-hold		\
+	sbuild-stats		\
+	sbuild-update		\
+	sbuild-upgrade		\
+	sbuild-distupgrade	\
+	sbuild-clean		\
+	sbuild-checkpackages	\
+	sbuild
+endif
+
+EXTRA_DIST =			\
+	perl-syntax.in		\
+	sbuild-update.in	\
+	sbuild-upgrade.in	\
+	sbuild-distupgrade.in	\
+	sbuild-clean.in	\
+	sbuild-hold.in		\
+	sbuild-stats.in		\
+	sbuild-checkpackages.in	\
+	sbuild.in

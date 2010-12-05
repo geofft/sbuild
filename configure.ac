@@ -101,6 +101,25 @@ AC_DEFINE_UNQUOTED([SBUILD_COMPAT], [$compat], [Enable compatibility features])
 AC_SUBST([SBUILD_COMPAT], [$compat])
 AM_CONDITIONAL([SBUILD_COMPAT], [test "$enable_compat" = "yes"])
 
+AC_MSG_CHECKING([whether to enable compatibility features])
+AC_ARG_ENABLE([chroot_checks], [AS_HELP_STRING([--enable-chroot-checks], [Enable additional chroot checks in testsuite (requires "unstable" chroot)])],
+              [ case "${enableval}" in
+                yes) enable_chroot_checks="yes" ;;
+                no)  enable_chroot_checks="no" ;;
+                unset)  enable_chroot_checks="no" ;;
+                *) AC_MSG_RESULT([unknown])
+                   AC_MSG_ERROR([bad value ${enableval} for --enable-chroot-checks]) ;;
+                esac ],
+              [ enable_chroot_checks="no" ])
+AC_MSG_RESULT([$enable_chroot_checks])
+chroot_checks=0
+if test "$enable_chroot_checks" = "yes"; then
+   chroot_checks=1
+fi
+AC_DEFINE_UNQUOTED([SBUILD_CHROOT_CHECKS], [$chroot_checks], [Enable additional chroot checks])
+AC_SUBST([SBUILD_CHROOT_CHECKS], [$chroot_checks])
+AM_CONDITIONAL([SBUILD_CHROOT_CHECKS], [test "$enable_chroot_checks" = "yes"])
+
 # Checks for programs.
 
 # Check for host platform
@@ -341,8 +360,22 @@ AC_CONFIG_FILES([man/wanna-build-statistics.1])
 AC_CONFIG_FILES([test/Makefile])
 AC_CONFIG_FILES([test/perl-syntax],
 		[chmod +x test/perl-syntax])
+AC_CONFIG_FILES([test/sbuild-checkpackages],
+		[chmod +x test/sbuild-checkpackages])
+AC_CONFIG_FILES([test/sbuild-hold],
+		[chmod +x test/sbuild-hold])
+AC_CONFIG_FILES([test/sbuild-stats],
+		[chmod +x test/sbuild-stats])
 AC_CONFIG_FILES([test/sbuild-update],
 		[chmod +x test/sbuild-update])
+AC_CONFIG_FILES([test/sbuild-upgrade],
+		[chmod +x test/sbuild-upgrade])
+AC_CONFIG_FILES([test/sbuild-distupgrade],
+		[chmod +x test/sbuild-distupgrade])
+AC_CONFIG_FILES([test/sbuild-clean],
+		[chmod +x test/sbuild-clean])
+AC_CONFIG_FILES([test/sbuild],
+		[chmod +x test/sbuild])
 
 dnl Output the generated config.status script.
 AC_OUTPUT
