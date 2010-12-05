@@ -21,7 +21,6 @@
 # Import default modules into main
 package main;
 use Sbuild qw($devnull);
-use Sbuild::Conf;
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::Sysconfig;
@@ -37,7 +36,6 @@ package Sbuild::Utility;
 use strict;
 use warnings;
 
-use Sbuild::Conf;
 use Sbuild::Chroot;
 use File::Temp qw(tempfile);
 use Module::Load::Conditional qw(can_load); # Used to check for LWP::UserAgent

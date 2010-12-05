@@ -107,9 +107,10 @@ sub init_allowed_keys {
 		#Now, we might need to adjust the MAILTO based on the
 		#config data. We shouldn't do this if it was already
 		#explicitly set by the command line option:
-		if (!$self->get('MAILTO_FORCED_BY_CLI') 
-		    && defined($self->get('DISTRIBUTION')) 
-		    && $self->get('DISTRIBUTION') 
+		if (defined($self->get('MAILTO_FORCED_BY_CLI')) &&
+		    !$self->get('MAILTO_FORCED_BY_CLI')
+		    && defined($self->get('DISTRIBUTION'))
+		    && $self->get('DISTRIBUTION')
 		    && $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')}) {
 		    $self->set('MAILTO',
 		        $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')});
@@ -164,7 +165,6 @@ sub new {
     bless($self, $class);
 
     $self->init_allowed_keys();
-    $self->read_config();
 
     return $self;
 }

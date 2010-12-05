@@ -26,7 +26,6 @@ use strict;
 use warnings;
 
 use Sbuild::OptionsBase;
-use Sbuild::Conf;
 
 BEGIN {
     use Exporter ();

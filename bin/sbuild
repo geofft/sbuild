@@ -30,7 +30,8 @@ use warnings;
 
 use POSIX;
 use Data::Dumper;
-use Sbuild qw(isin);
+use Sbuild qw(isin check_group_membership);
+use Sbuild::Conf qw();
 use Sbuild::Log qw(open_log close_log);
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
@@ -43,11 +44,11 @@ sub status_trigger ($$);
 sub shutdown ($);
 sub dump_main_state ();
 
-my $conf = Sbuild::Conf->new();
+my $conf = Sbuild::Conf::new();
 exit 1 if !defined($conf);
 my $options = Sbuild::Options->new($conf, "sbuild", "1");
 exit 1 if !defined($options);
-$conf->check_group_membership();
+check_group_membership();
 
 umask(022);
 

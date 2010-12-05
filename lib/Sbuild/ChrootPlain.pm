@@ -29,7 +29,6 @@ use POSIX;
 use FileHandle;
 use File::Temp ();
 
-use Sbuild::Conf;
 use Sbuild::Log;
 use Sbuild::Sysconfig;
 

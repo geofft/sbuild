@@ -44,7 +44,6 @@ use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig qw($version $release_date);
-use Sbuild::Conf;
 use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download parse_file dsc_files);

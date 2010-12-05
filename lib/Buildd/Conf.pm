@@ -25,8 +25,8 @@ package Buildd::Conf;
 use strict;
 use warnings;
 
-use Buildd::DistConf;
-use Buildd::UploadQueueConf;
+use Buildd::DistConf qw();
+use Buildd::UploadQueueConf qw();
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
 use Sbuild::DB::ClientConf qw();
@@ -35,29 +35,39 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::ConfBase);
+    @ISA = qw(Exporter);
 
-    @EXPORT = qw($reread_config);
+    @EXPORT = qw($reread_config new setup read);
 }
 
-my $reread_config = 0;
+our $reread_config = 0;
 
-sub init_allowed_keys {
-    my $self = shift;
+sub new ();
+sub setup ($);
+sub read ($);
 
-    $self->SUPER::init_allowed_keys();
+sub new () {
+    my $conf = Sbuild::ConfBase->new();
+    Buildd::Conf::setup($conf);
+    Buildd::Conf::read($conf);
+
+    return $conf;
+}
+
+sub setup ($) {
+    my $conf = shift;
 
     my $validate_program = sub {
-	my $self = shift;
+	my $conf = shift;
 	my $entry = shift;
 	my $key = $entry->{'NAME'};
-	my $program = $self->get($key);
+	my $program = $conf->get($key);
 
 	die "$key binary is not defined"
 	    if !defined($program) || !$program;
 
 	# Emulate execvp behaviour by searching the binary in the PATH.
-	my @paths = split(/:/, $self->get('PATH'));
+	my @paths = split(/:/, $conf->get('PATH'));
 	# Also consider the empty path for absolute locations.
 	push (@paths, '');
 	my $found = 0;
@@ -70,10 +80,10 @@ sub init_allowed_keys {
     };
 
     my $validate_directory = sub {
-	my $self = shift;
+	my $conf = shift;
 	my $entry = shift;
 	my $key = $entry->{'NAME'};
-	my $directory = $self->get($key);
+	my $directory = $conf->get($key);
 
 	die "$key directory is not defined"
 	    if !defined($directory) || !$directory;
@@ -82,9 +92,9 @@ sub init_allowed_keys {
 	    if !-d $directory;
     };
 
-    our $HOME = $self->get('HOME');
+    our $HOME = $conf->get('HOME');
     $main::HOME = $HOME; # TODO: Remove once Buildd.pm uses $conf
-    my $arch = $self->get('ARCH');
+    my $arch = $conf->get('ARCH');
 
     my %buildd_keys = (
 	'ADMIN_MAIL'				=> {
@@ -177,14 +187,14 @@ sub init_allowed_keys {
 	},
     	);
 
-    $self->set_allowed_keys(\%buildd_keys);
-    Sbuild::DB::ClientConf::add_keys($self);
+    $conf->set_allowed_keys(\%buildd_keys);
+    Sbuild::DB::ClientConf::setup($conf);
 }
 
-sub read_config {
-    my $self = shift;
+sub read ($) {
+    my $conf = shift;
 
-    my $HOME = $self->get('HOME');
+    my $HOME = $conf->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
     my $admin_mail = undef;
@@ -258,8 +268,8 @@ sub read_config {
 	if (-r $_) {
 	    $config_time{$_} = 0;
 	    my @stat = stat($_);
-	    if (!defined($self->get('CONFIG_TIME')->{$_}) ||
-		$self->get('CONFIG_TIME')->{$_} < $stat[ST_MTIME]) {
+	    if (!defined($conf->get('CONFIG_TIME')->{$_}) ||
+		$conf->get('CONFIG_TIME')->{$_} < $stat[ST_MTIME]) {
 		$config_time{$_} = $stat[ST_MTIME];
 		$reread = 1;
 	    }
@@ -275,41 +285,41 @@ sub read_config {
 		    print STDERR "E: $_: Errors found in configuration file:\n$@";
 		    exit(1);
 		}
-		$self->get('CONFIG_TIME')->{$_} = $config_time{$_};
+		$conf->get('CONFIG_TIME')->{$_} = $config_time{$_};
 	    }
 	}
 
 	# Set configuration if updated.
-	$self->set('ADMIN_MAIL', $admin_mail);
-	$self->set('APT_GET', $apt_get);
-	$self->set('ARCH', $arch);
-	$self->set('AUTOCLEAN_INTERVAL', $autoclean_interval);
-	$self->set('BUILD_LOG_KEEP', $build_log_keep);
-	$self->set('DAEMON_LOG_FILE', $daemon_log_file);
-	$self->set('DAEMON_LOG_KEEP', $daemon_log_keep);
-	$self->set('DAEMON_LOG_ROTATE', $daemon_log_rotate);
-	$self->set('DAEMON_LOG_SEND', $daemon_log_send);
-	$self->set('DELAY_AFTER_GIVE_BACK', $delay_after_give_back);
-	$self->set('ERROR_MAIL_WINDOW', $error_mail_window);
-	$self->set('IDLE_SLEEP_TIME', $idle_sleep_time);
-	$self->set('LOG_QUEUED_MESSAGES', $log_queued_messages);
-	$self->set('MIN_FREE_SPACE', $min_free_space);
-	$self->set('NICE_LEVEL', $nice_level);
-	$self->set('NO_DETACH', $no_detach);
-	$self->set('NO_WARN_PATTERN', $no_warn_pattern);
-	$self->set('PIDFILE', $pidfile);
-	$self->set('PKG_LOG_KEEP', $pkg_log_keep);
-	$self->set('SECONDARY_DAEMON_THRESHOLD', $secondary_daemon_threshold);
-	$self->set('SHOULD_BUILD_MSGS', $should_build_msgs);
-	$self->set('SSH', $ssh);
-	$self->set('STATISTICS_MAIL', $statistics_mail);
-	$self->set('STATISTICS_PERIOD', $statistics_period);
-	$self->set('SUDO', $sudo);
-	$self->set('WARNING_AGE', $warning_age);
+	$conf->set('ADMIN_MAIL', $admin_mail);
+	$conf->set('APT_GET', $apt_get);
+	$conf->set('ARCH', $arch);
+	$conf->set('AUTOCLEAN_INTERVAL', $autoclean_interval);
+	$conf->set('BUILD_LOG_KEEP', $build_log_keep);
+	$conf->set('DAEMON_LOG_FILE', $daemon_log_file);
+	$conf->set('DAEMON_LOG_KEEP', $daemon_log_keep);
+	$conf->set('DAEMON_LOG_ROTATE', $daemon_log_rotate);
+	$conf->set('DAEMON_LOG_SEND', $daemon_log_send);
+	$conf->set('DELAY_AFTER_GIVE_BACK', $delay_after_give_back);
+	$conf->set('ERROR_MAIL_WINDOW', $error_mail_window);
+	$conf->set('IDLE_SLEEP_TIME', $idle_sleep_time);
+	$conf->set('LOG_QUEUED_MESSAGES', $log_queued_messages);
+	$conf->set('MIN_FREE_SPACE', $min_free_space);
+	$conf->set('NICE_LEVEL', $nice_level);
+	$conf->set('NO_DETACH', $no_detach);
+	$conf->set('NO_WARN_PATTERN', $no_warn_pattern);
+	$conf->set('PIDFILE', $pidfile);
+	$conf->set('PKG_LOG_KEEP', $pkg_log_keep);
+	$conf->set('SECONDARY_DAEMON_THRESHOLD', $secondary_daemon_threshold);
+	$conf->set('SHOULD_BUILD_MSGS', $should_build_msgs);
+	$conf->set('SSH', $ssh);
+	$conf->set('STATISTICS_MAIL', $statistics_mail);
+	$conf->set('STATISTICS_PERIOD', $statistics_period);
+	$conf->set('SUDO', $sudo);
+	$conf->set('WARNING_AGE', $warning_age);
 
 	if ($sshcmd && $sshcmd =~ /^\s*(\S+)\s+(.+)/) {
 	    my $rest = $2;
-	    $self->set('SSH', $1);
+	    $conf->set('SSH', $1);
 
 	    #Try to pry the user out:
 	    if ($rest =~ /(-l\s*(\S+))\s+/) {
@@ -378,7 +388,7 @@ sub read_config {
 		$entry{WANNA_BUILD_SSH_OPTIONS} = $wanna_build_ssh_options;
                 $entry{WANNA_BUILD_API} = 0;
 
-		my $dist_config = Buildd::DistConf->new(\%entry);
+		my $dist_config = Buildd::DistConf::new_hash(\%entry);
 
 		push @distributions_info, $dist_config;
 	    }
@@ -419,13 +429,13 @@ sub read_config {
 		#Make one entry per distribution, it's easier later on:
 		for my $dist (@dist_names) {
 		    $entry{'DIST_NAME'} = $dist;
-                    my $dist_config = Buildd::DistConf->new(\%entry);
+                    my $dist_config = Buildd::DistConf::new_hash(\%entry);
                     push @distributions_info, $dist_config;
 		} 
 	    }
 	}
 
-	$self->set('DISTRIBUTIONS', \@distributions_info);
+	$conf->set('DISTRIBUTIONS', \@distributions_info);
 
 	if (@upload_queues) {
 	    my @upload_queue_configs;
@@ -434,20 +444,22 @@ sub read_config {
 		for my $key (keys %$raw_entry) {
 		    $entry{uc($key)} = $raw_entry->{$key};
 		}
-		my $queue_config = Buildd::UploadQueueConf->new(\%entry);
+
+		my $queue_config = Buildd::UploadQueueConf::new_hash(\%entry);
+
 		push @upload_queue_configs, $queue_config;
 	    }
-	    $self->set('UPLOAD_QUEUES', \@upload_queue_configs);
+	    $conf->set('UPLOAD_QUEUES', \@upload_queue_configs);
 	} else {
-	    push @{$self->get('UPLOAD_QUEUES')},
-		Buildd::UploadQueueConf->new(
-		    { 
+	    push @{$conf->get('UPLOAD_QUEUES')},
+		Buildd::UploadQueueConf::new_hash(
+		    {
 			DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
 			DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
 		    }
 		),
-		Buildd::UploadQueueConf->new(
-		    { 
+		Buildd::UploadQueueConf::new_hash(
+		    {
 			DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
 			DUPLOAD_ARCHIVE_NAME    => 'security'
 		    }
@@ -455,8 +467,8 @@ sub read_config {
 	}
 
 	# Set here to allow user to override.
-	if (-t STDIN && -t STDOUT && $self->get('NO_DETACH')) {
-	    $self->set('VERBOSE', 1);
+	if (-t STDIN && -t STDOUT && $conf->get('NO_DETACH')) {
+	    $conf->set('VERBOSE', 1);
 	}
     }
 

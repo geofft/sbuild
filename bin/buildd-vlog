@@ -25,10 +25,10 @@ use warnings;
 use POSIX;
 
 use Buildd;
-use Buildd::Conf;
+use Buildd::Conf qw();
 use Sbuild::OptionsBase;
 
-my $conf = Buildd::Conf->new();
+my $conf = Buildd::Conf::new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd-vlog", "1");
 exit 1 if !defined($options);

@@ -27,21 +27,8 @@ use Sbuild::Resolver qw(get_resolver);
 
 package Conf;
 
-use Sbuild::Conf;
-
-BEGIN {
-    use Exporter ();
-    our (@ISA, @EXPORT);
-
-    @ISA = qw(Exporter Sbuild::Conf);
-
-    @EXPORT = qw();
-}
-
-sub init_allowed_keys {
-    my $self = shift;
-
-    $self->SUPER::init_allowed_keys();
+sub setup {
+    my $conf = shift;
 
     my %update_keys = (
 	'COMPAT'				=> {
@@ -70,13 +57,13 @@ sub init_allowed_keys {
 	},
     );
 
-    $self->set_allowed_keys(\%update_keys);
+    $conf->set_allowed_keys(\%update_keys);
 }
 
 package Options;
 
 use Sbuild::OptionsBase;
-use Sbuild::Conf;
+use Sbuild::Conf qw();
 
 BEGIN {
     use Exporter ();
@@ -127,7 +114,8 @@ use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error check_group_membership);
 use Sbuild::Utility qw(setup cleanup);
 
-my $conf = Conf->new();
+my $conf = Sbuild::Conf::new();
+Conf::setup($conf);
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-update", "1");
 exit 1 if !defined($options);

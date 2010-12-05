@@ -36,7 +36,7 @@ use WannaBuild::Options;
 # global vars
 $| = 1;
 
-my $conf = WannaBuild::Conf->new();
+my $conf = WannaBuild::Conf::new();
 exit 1 if !defined($conf);
 my $options = WannaBuild::Options->new($conf, "wanna-build", 1);
 exit 1 if !defined($options);

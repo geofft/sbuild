@@ -28,21 +28,8 @@ use Sbuild::InternalResolver;
 
 package Conf;
 
-use Sbuild::Conf;
-
-BEGIN {
-    use Exporter ();
-    our (@ISA, @EXPORT);
-
-    @ISA = qw(Exporter Sbuild::Conf);
-
-    @EXPORT = qw();
-}
-
-sub init_allowed_keys {
-    my $self = shift;
-
-    $self->SUPER::init_allowed_keys();
+sub setup {
+    my $conf = shift;
 
     my $keyring = '';
     $keyring = '/etc/apt/trusted.gpg'
@@ -81,7 +68,7 @@ sub init_allowed_keys {
 	},
     );
 
-    $self->set_allowed_keys(\%createchroot_keys);
+    $conf->set_allowed_keys(\%createchroot_keys);
 }
 
 package Options;
@@ -148,6 +135,7 @@ use Sbuild qw(dump_file help_text version_text usage_error check_packages);
 use Sbuild::ChrootPlain;
 use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig;
+use Sbuild::Conf qw();
 use File::Path qw(mkpath rmtree);
 use File::Temp ();
 use File::Copy;
@@ -156,7 +144,8 @@ use Cwd qw(abs_path);
 sub add_items ($@);
 sub makedir ($$);
 
-my $conf = Conf->new();
+my $conf = Sbuild::Conf::new();
+Conf::setup($conf);
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-createchroot", "8");
 exit 1 if !defined($options);

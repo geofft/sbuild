@@ -26,10 +26,10 @@ use Getopt::Long;
 use Sbuild qw(help_text version_text usage_error check_group_membership);
 use Sbuild::Utility qw(setup cleanup shutdown);
 use Sbuild::ChrootSetup qw(unhold_packages list_packages);
-use Sbuild::Conf;
+use Sbuild::Conf qw();
 use Sbuild::OptionsBase;
 
-my $conf = Sbuild::Conf->new();
+my $conf = Sbuild::Conf::new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "sbuild-unhold", "1");
 exit 1 if !defined($options);

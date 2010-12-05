@@ -25,7 +25,7 @@ use strict;
 use warnings;
 
 use Buildd qw(ll_send_mail lock_file unlock_file send_mail);
-use Buildd::Conf;
+use Buildd::Conf qw();
 use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
 use Sbuild::ChrootRoot;

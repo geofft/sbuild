@@ -24,21 +24,8 @@ use warnings;
 
 package Conf;
 
-use Sbuild::Conf;
-
-BEGIN {
-    use Exporter ();
-    our (@ISA, @EXPORT);
-
-    @ISA = qw(Exporter Sbuild::Conf);
-
-    @EXPORT = qw();
-}
-
-sub init_allowed_keys {
-    my $self = shift;
-
-    $self->SUPER::init_allowed_keys();
+sub setup {
+    my $conf = shift;
 
     my %update_keys = (
 	'DPKG_BUILDPACKAGE_OPTS'	=> {
@@ -79,7 +66,7 @@ sub init_allowed_keys {
 	},
     );
 
-    $self->set_allowed_keys(\%update_keys);
+    $conf->set_allowed_keys(\%update_keys);
 }
 
 # This subroutine is used to read a different set of config files for
@@ -207,7 +194,8 @@ use Cwd;
 use File::Basename;
 use Sbuild qw(help_text version_text usage_error check_group_membership);
 
-my $conf = Conf->new();
+my $conf = Sbuild::Conf::new();
+Conf::setup($conf);
 exit 1 if !defined($conf);
 $conf->read_sbuild_debuild_config();
 my $options = Options->new($conf, "sbuild-debuild", "1");

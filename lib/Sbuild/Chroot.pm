@@ -24,7 +24,6 @@ package Sbuild::Chroot;
 
 use Sbuild qw(copy debug debug2);
 use Sbuild::Base;
-use Sbuild::Conf;
 use Sbuild::ChrootInfo;
 use Sbuild::ChrootSetup qw(basesetup);
 

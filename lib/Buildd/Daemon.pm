@@ -26,7 +26,7 @@ use warnings;
 
 use POSIX;
 use Buildd qw(isin lock_file unlock_file send_mail exitstatus);
-use Buildd::Conf;
+use Buildd::Conf qw();
 use Buildd::Base;
 use Sbuild qw($devnull df);
 use Sbuild::Sysconfig;

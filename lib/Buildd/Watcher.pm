@@ -23,7 +23,7 @@ package Buildd::Watcher;
 use strict;
 use warnings;
 use Buildd qw(send_mail lock_file unlock_file unset_env);
-use Buildd::Conf;
+use Buildd::Conf qw();
 use Buildd::Base;
 
 use POSIX qw(ESRCH LONG_MAX);

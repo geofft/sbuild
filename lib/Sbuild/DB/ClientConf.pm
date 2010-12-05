@@ -34,17 +34,17 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw(add_keys);
+    @EXPORT = qw(setup);
 }
 
-sub add_keys ($) {
-    my $self = shift;
+sub setup ($) {
+    my $conf = shift;
 
     my $validate_program = sub {
-	my $self = shift;
+	my $conf = shift;
 	my $entry = shift;
 	my $key = $entry->{'NAME'};
-	my $program = $self->get($key);
+	my $program = $conf->get($key);
 
 	die "$key binary is not defined"
 	    if !defined($program) || !$program;
@@ -63,19 +63,19 @@ sub add_keys ($) {
     };
 
     my $validate_ssh = sub {
-	my $self = shift;
+	my $conf = shift;
 	my $entry = shift;
 
 # TODO: Provide self, config and entry contexts, which functions to
 # get at needed data.  Provide generic configuration functions.
 #
-	$validate_program->($self, $self->{'KEYS'}->{'SSH'});
+	$validate_program->($conf, $conf->{'KEYS'}->{'SSH'});
 
-	my $ssh = $self->get('SSH');
-	my $sshuser = $self->get('WANNA_BUILD_SSH_USER');
-	my $sshhost = $self->get('WANNA_BUILD_SSH_HOST');
-	my @sshoptions = @{$self->get('WANNA_BUILD_SSH_OPTIONS')};
-	my $sshsocket = $self->get('WANNA_BUILD_SSH_SOCKET');
+	my $ssh = $conf->get('SSH');
+	my $sshuser = $conf->get('WANNA_BUILD_SSH_USER');
+	my $sshhost = $conf->get('WANNA_BUILD_SSH_HOST');
+	my @sshoptions = @{$conf->get('WANNA_BUILD_SSH_OPTIONS')};
+	my $sshsocket = $conf->get('WANNA_BUILD_SSH_SOCKET');
 
 	my @command = ();
 
@@ -87,11 +87,11 @@ sub add_keys ($) {
 	    push (@command, $sshhost);
 	}
 
-	$self->set('WANNA_BUILD_SSH_CMD', \@command);
+	$conf->set('WANNA_BUILD_SSH_CMD', \@command);
     };
 
-    our $HOME = $self->get('HOME');
-    my $arch = $self->get('ARCH');
+    our $HOME = $conf->get('HOME');
+    my $arch = $conf->get('ARCH');
 
     my %db_keys = (
 	'SSH'					=> {
@@ -121,13 +121,13 @@ sub add_keys ($) {
 	    DEFAULT => undef,
 	},
 	'WANNA_BUILD_DB_USER'			=> {
-	    DEFAULT => $self->get('USERNAME')
+	    DEFAULT => $conf->get('USERNAME')
 	},
 	'BUILT_ARCHITECTURE'			=> {
 	    DEFAULT => $arch,
 	},);
 
-    $self->set_allowed_keys(\%db_keys);
+    $conf->set_allowed_keys(\%db_keys);
 }
 
 1;

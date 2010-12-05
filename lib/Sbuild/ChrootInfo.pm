@@ -24,7 +24,6 @@ use strict;
 use warnings;
 
 use Sbuild::Base;
-use Sbuild::Conf;
 
 use POSIX;
 use FileHandle;

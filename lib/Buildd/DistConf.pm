@@ -33,35 +33,37 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::ConfBase);
+    @ISA = qw(Exporter);
+
+    @EXPORT = qw(new_hash setup read_hash);
 }
 
-sub new {
-    my $class = shift;
-	my $data_hash = shift;
+sub new_hash ($);
+sub setup ($);
+sub read_hash ($$);
 
-    my $self  = {};
-    $self->{'config'} = {};
-    bless($self, $class);
+sub new_hash ($) {
+    my $data = shift;
 
-    $self->init_allowed_keys();
-	$self->_fill_from_hash($data_hash);
+    my $queue_config = Sbuild::ConfBase->new();
 
-    return $self;
+    Buildd::DistConf::setup($queue_config);
+    Buildd::DistConf::read_hash($queue_config, $data);
+
+    return $queue_config;
 }
 
+sub setup ($) {
+    my $conf = shift;
 
-sub init_allowed_keys {
-    my $self = shift;
-
-    $self->SUPER::init_allowed_keys();
+    $conf->SUPER::init_allowed_keys();
 
     my $validate_directory_in_home = sub {
-	my $self = shift;
+	my $conf = shift;
 	my $entry = shift;
 	my $key = $entry->{'NAME'};
-	my $directory = $self->get($key);
-	my $home_directory = $self->get('HOME');
+	my $directory = $conf->get($key);
+	my $home_directory = $conf->get('HOME');
 
 	die "$key directory is not defined"
 	    if !defined($directory) || !$directory;
@@ -70,7 +72,7 @@ sub init_allowed_keys {
 	    if !-d $home_directory . "/" . $directory;
     };
 
-    my $arch = $self->get('ARCH');
+    my $arch = $conf->get('ARCH');
 
     my %buildd_dist_keys = (
 	'DIST_NAME'				=> {
@@ -126,17 +128,18 @@ sub init_allowed_keys {
 	    DEFAULT => undef
 	},);
 
-    $self->set_allowed_keys(\%buildd_dist_keys);
+    $conf->set_allowed_keys(\%buildd_dist_keys);
 
-    Sbuild::DB::ClientConf::add_keys($self);
+    Sbuild::DB::ClientConf::setup($conf);
 }
 
-sub _fill_from_hash($) {
-    my $self = shift;
+sub read_hash($$) {
+    my $conf = shift;
     my $data = shift;
 
     for my $key (keys %$data) {
-	$self->set($key, $data->{$key});
+	$conf->set($key, $data->{$key});
     }
 }
+
 1;

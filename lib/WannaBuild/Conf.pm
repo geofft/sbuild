@@ -33,21 +33,31 @@ BEGIN {
     use Exporter ();
     our (@ISA, @EXPORT);
 
-    @ISA = qw(Exporter Sbuild::ConfBase);
+    @ISA = qw(Exporter);
 
-    @EXPORT = qw();
+    @EXPORT = qw(new setup read);
 }
 
-sub init_allowed_keys {
-    my $self = shift;
+sub new ();
+sub setup ($);
+sub read ($);
 
-    $self->SUPER::init_allowed_keys();
+sub new () {
+    my $conf = Sbuild::ConfBase->new();
+    WannaBuild::Conf::setup($conf);
+    WannaBuild::Conf::read($conf);
+
+    return $conf;
+}
+
+sub setup ($) {
+    my $conf = shift;
 
     my $validate_directory = sub {
-	my $self = shift;
+	my $conf = shift;
 	my $entry = shift;
 	my $key = $entry->{'NAME'};
-	my $directory = $self->get($key);
+	my $directory = $conf->get($key);
 
 	die "$key directory is not defined"
 	    if !defined($directory);
@@ -66,34 +76,34 @@ sub init_allowed_keys {
 	},
 	'DB_BASE_NAME'				=> {
 	    CHECK => sub {
-		my $self = shift;
+		my $conf = shift;
 		my $entry = shift;
 		my $key = $entry->{'NAME'};
 
 		die "Database base name is not defined"
-		    if !defined($self->get($key));
+		    if !defined($conf->get($key));
 	    },
 	    DEFAULT => 'build-db'
 	},
 	'DB_TRANSACTION_LOG'			=> {
 	    CHECK => sub {
-		my $self = shift;
+		my $conf = shift;
 		my $entry = shift;
 		my $key = $entry->{'NAME'};
 
 		die "Database transaction log is not defined"
-		    if !defined($self->get($key));
+		    if !defined($conf->get($key));
 	    },
 	    DEFAULT => 'transactions.log'
 	},
 	'DB_DISTRIBUTIONS'			=> {
 	    CHECK => sub {
-		my $self = shift;
+		my $conf = shift;
 		my $entry = shift;
 		my $key = $entry->{'NAME'};
 
 		die "No distributions are defined"
-		    if !defined($self->get($key));
+		    if !defined($conf->get($key));
 	    },
 	    DEFAULT => {
 		'experimental' => { priority => 4 },
@@ -186,13 +196,13 @@ sub init_allowed_keys {
 	'DB_OPERATION'				=> {
 	    DEFAULT => undef,
 	    SET => sub {
-		my $self = shift;
+		my $conf = shift;
 		my $entry = shift;
 		my $value = shift;
 		my $key = $entry->{'NAME'};
 
-		if (!$self->_get_value($key)) {
-		    $self->_set_value($key, $value);
+		if (!$conf->_get_value($key)) {
+		    $conf->_set_value($key, $value);
 		} else {
 		    die "Only one operation may be specified";
 		}
@@ -202,22 +212,22 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	},
 	'DB_USER'				=> {
-	    DEFAULT => $self->get('USERNAME')
+	    DEFAULT => $conf->get('USERNAME')
 	}
     );
 
-    $self->set_allowed_keys(\%db_keys);
+    $conf->set_allowed_keys(\%db_keys);
 }
 
-sub read_config {
-    my $self = shift;
+sub read ($) {
+    my $conf = shift;
 
     # Set here to allow user to override.
-    if (-t STDIN && -t STDOUT && $self->get('VERBOSE') == 0) {
-	$self->set('VERBOSE', 1);
+    if (-t STDIN && -t STDOUT && $conf->get('VERBOSE') == 0) {
+	$conf->set('VERBOSE', 1);
     }
 
-    our $HOME = $self->get('HOME');
+    our $HOME = $conf->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
 
@@ -257,28 +267,28 @@ sub read_config {
 	}
     }
 
-    $self->set('DB_TYPE', $db_type);
-    $self->set('DB_BASE_DIR', $db_base_dir);
-    $self->set('DB_BASE_NAME', $db_base_name);
-    $self->set('DB_TRANSACTION_LOG', $db_transaction_log);
-#	$self->set('DB_DISTRIBUTIONS', \@db_distributions);
+    $conf->set('DB_TYPE', $db_type);
+    $conf->set('DB_BASE_DIR', $db_base_dir);
+    $conf->set('DB_BASE_NAME', $db_base_name);
+    $conf->set('DB_TRANSACTION_LOG', $db_transaction_log);
+#	$conf->set('DB_DISTRIBUTIONS', \@db_distributions);
 # TODO: Warn if using old value.  Obsolete old options.
-    $self->set('DB_DISTRIBUTIONS', \%db_distribution_order)
+    $conf->set('DB_DISTRIBUTIONS', \%db_distribution_order)
     	if (%db_distribution_order);
-    $self->set('DB_DISTRIBUTIONS', \%db_distributions)
+    $conf->set('DB_DISTRIBUTIONS', \%db_distributions)
     	if (%db_distributions);
-    $self->set('DB_SECTIONS', \@db_sections)
+    $conf->set('DB_SECTIONS', \@db_sections)
 	if (@db_sections);
-    $self->set('DB_PACKAGES_SOURCE', $db_packages_source);
-    $self->set('DB_QUINN_SOURCE', $db_quinn_source);
-    $self->set('DB_ADMIN_USERS', \@db_admin_users)
+    $conf->set('DB_PACKAGES_SOURCE', $db_packages_source);
+    $conf->set('DB_QUINN_SOURCE', $db_quinn_source);
+    $conf->set('DB_ADMIN_USERS', \@db_admin_users)
 	if (@db_admin_users);
-    $self->set('DB_MAINTAINER_EMAIL', $db_maintainer_email);
-    $self->set('DB_NOTFORUS_MAINTAINER_EMAIL', $db_notforus_maintainer_email);
-    $self->set('DB_LOG_MAIL', $db_log_mail);
-    $self->set('DB_STAT_MAIL', $db_stat_mail);
-    $self->set('DB_MAIL_DOMAIN', $db_mail_domain);
-    $self->set('DB_WEB_STATS', $db_web_stats);
+    $conf->set('DB_MAINTAINER_EMAIL', $db_maintainer_email);
+    $conf->set('DB_NOTFORUS_MAINTAINER_EMAIL', $db_notforus_maintainer_email);
+    $conf->set('DB_LOG_MAIL', $db_log_mail);
+    $conf->set('DB_STAT_MAIL', $db_stat_mail);
+    $conf->set('DB_MAIL_DOMAIN', $db_mail_domain);
+    $conf->set('DB_WEB_STATS', $db_web_stats);
 }
 
 1;

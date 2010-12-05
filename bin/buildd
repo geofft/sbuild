@@ -24,7 +24,7 @@
 use strict;
 use warnings;
 
-use Buildd::Conf;
+use Buildd::Conf qw();
 use Buildd::Daemon;
 use Sbuild::OptionsBase;
 
@@ -32,7 +32,7 @@ sub shutdown_fast ($);
 sub reread_config ($);
 sub reopen_log ($);
 
-my $conf = Buildd::Conf->new();
+my $conf = Buildd::Conf::new();
 exit 1 if !defined($conf);
 my $options = Sbuild::OptionsBase->new($conf, "buildd", "1");
 exit 1 if !defined($options);

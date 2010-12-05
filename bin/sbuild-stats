@@ -25,23 +25,12 @@ use warnings;
 
 package Conf;
 
-use Sbuild::Conf;
+use Sbuild::Conf qw();
 
 use GDBM_File;
 
-BEGIN {
-    use Exporter ();
-    our (@ISA, @EXPORT);
-
-    @ISA = qw(Exporter Sbuild::Conf);
-
-    @EXPORT = qw();
-}
-
-sub init_allowed_keys {
-    my $self = shift;
-
-    $self->SUPER::init_allowed_keys();
+sub setup {
+    my $conf = shift;
 
     my $keyring = '';
     $keyring = '/etc/apt/trusted.gpg'
@@ -64,13 +53,13 @@ sub init_allowed_keys {
 	    DEFAULT => 0
 	});
 
-    $self->set_allowed_keys(\%stats_keys);
+    $conf->set_allowed_keys(\%stats_keys);
 }
 
 package Options;
 
 use Sbuild::OptionsBase;
-use Sbuild::Conf;
+use Sbuild::Conf qw();
 
 use GDBM_File;
 
@@ -125,7 +114,8 @@ use Sbuild qw(help_text version_text usage_error check_group_membership);
 sub align ($);
 sub sortfunc ();
 
-my $conf = Conf->new();
+my $conf = Sbuild::Conf::new();
+Conf::setup($conf);
 exit 1 if !defined($conf);
 my $options = Options->new($conf, "sbuild-stats", "1");
 exit 1 if !defined($options);

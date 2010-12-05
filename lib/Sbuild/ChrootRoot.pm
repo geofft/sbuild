@@ -25,7 +25,6 @@ package Sbuild::ChrootRoot;
 use strict;
 use warnings;
 
-use Sbuild::Conf;
 use Sbuild::ChrootPlain;
 
 BEGIN {
