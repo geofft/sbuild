@@ -1,0 +1,10 @@
+perl-syntax
+sbuild
+sbuild-checkpackages
+sbuild-clean
+sbuild-distupgrade
+sbuild-hold
+sbuild-stats
+sbuild-update
+sbuild-upgrade
+update
