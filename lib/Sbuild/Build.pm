@@ -723,7 +723,7 @@ sub fetch_source_files {
 	    if (!$retried) {
 		$self->log_subsubsection("Update APT");
 		# try to update apt's cache if nothing found
-		update($self->get('Session'), $self->get('Config'));
+		$self->get('Dependency Resolver')->update();
 		$retried = 1;
 		goto retry;
 	    }
