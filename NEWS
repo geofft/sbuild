@@ -15,6 +15,30 @@ configuration.
      configuration.  Currently, various DEB* and *FLAGS* environment
      variables are allowed, similar to debuild's behaviour.
 
+  2) sbuild now has a testsuite to do basic regression testing.  By
+     default, only Perl syntax is checked.  If configured with
+     --enable-chroot-checks, it will run the various sbuild-* helpers
+     and sbuild itself to build a small variety of different
+     packages.  These are tested in an "unstable" chroot, which must
+     be present as a prerequisite for running the tests.
+
+  3) The apt and aptitude build dependency resolvers now use a
+     temporary local apt archive for installation of the dependency
+     packages.  apt-get would previously try to remove the dependency
+     package under certain conditions (apt-get -f install would force
+     removal), whereas using a real archive to install from prevents
+     this.
+
+  4) sbuild-update has a new option, --keygen.  This generated a GPG
+     key for signing local apt archives.  The key will be generated
+     automatically on first use, but if entropy on the build system is
+     scarce, sbuild-update can generate it by hand at a more
+     convenient time, or on another system.
+
+  5) sbuild no longer generates the files REDO and SBUILD-REDO-DUMPED
+     upon receiving a termination signal.  These were no longer used
+     in buildd mode, and were only useful in a buildd context.
+
 * Major changes in 0.60.5:
 
   1) A new resolver, 'apt', has been added.  Like the aptitude
