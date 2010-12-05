@@ -19,6 +19,7 @@ sbuild\-update \- update, upgrade, and clean an sbuild chroot with apt-get
 .SH SYNOPSIS
 .B sbuild\-update
 .RB [ \-h \[or] \-\-help ] " " [ \-V \[or] \-\-version ]
+.RB [ \-\-arch=\fIarchitecture\fP ]
 .RB [ \-u \[or] \-\-update ] " " [ \-g \[or] \-\-upgrade ] " "
 .RB [ \-d \[or] \-\-dist\-upgrade ] " " [ \-c \[or] \-\-clean ] " "
 .RB [ \-a \[or] \-\-autoclean ] " " [ \-r \[or] \-\-autoremove ]
@@ -59,6 +60,9 @@ Display this manual.
 .TP
 .BR \-V ", " \-\-version
 Print version information.
+.TP
+.BR "\-\-arch=\fIarchitecture\fP"
+Update chroot for the architecture specified.
 .TP
 .BR \-u ", " \-\-update
 Perform an \f[CB]apt\-get update\fP.
