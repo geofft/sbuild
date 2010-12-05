@@ -80,6 +80,8 @@ sub new {
     $self->set('Pkg Fail Stage', 0);
     $self->set('Build Start Time', 0);
     $self->set('Build End Time', 0);
+    $self->set('Install Start Time', 0);
+    $self->set('Install End Time', 0);
     $self->set('This Time', 0);
     $self->set('This Space', 0);
     $self->set('This Watches', {});
