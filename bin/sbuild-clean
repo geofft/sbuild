@@ -23,4 +23,4 @@ use warnings;
 
 print "$0 is deprecated. sbuild-clean functionality has been merged with ";
 print "sbuild-update. Use sbuild-update instead.\n";
-exec("/usr/bin/sbuild-update", @ARGV) or die "Can't run sbuild-update: $!";
+exec("sbuild-update", "--clean", @ARGV) or die "Can't run sbuild-update: $!";

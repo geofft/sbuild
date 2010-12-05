@@ -22,5 +22,5 @@ use strict;
 use warnings;
 
 print "$0 is deprecated. Use sbuild-update --upgrade directly instead.\n";
-exec("/usr/bin/sbuild-update", "--upgrade", @ARGV) or
+exec("sbuild-update", "--upgrade", @ARGV) or
     die "Can't run sbuild-update: $!";
