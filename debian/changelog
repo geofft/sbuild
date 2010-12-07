@@ -2,23 +2,36 @@ sbuild (0.60.6-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release.
-  * sbuild-update works on multiple chroots (Closes: #604715).
-  * sbuild-update works with multiple architectures (Closes: #606001).
-    Thanks to Ansgar Burchardt for this patch.
+  * sbuild:
+    - sbuild now sanitises its environment when running external
+      commands.
+    - sbuild no longer generates the files REDO and SBUILD-REDO-DUMPED.
+    - sbuild now has a testsuite.
+    - apt and aptitude build-dependency resolvers now use a local apt
+      archive, which improves the behaviour of the apt resolver (the
+      dependency package will no longer be removed in some situations).
+    - Workaround uninstallable sysvinit on Ubuntu, where sysvinit is
+      still present in the build-essential package list.  Thanks to
+      Jamie Strandboge.
+  * sbuild-update:
+    - sbuild-update works on multiple chroots (Closes: #604715).
+    - sbuild-update works with multiple architectures (Closes: #606001).
+      Thanks to Ansgar Burchardt for this patch.
+    - sbuild-update now has a --keygen option to generate signing keys
+      for temporary apt archives.
   * sbuild.1: Update description of --maintainer (Closes: #605745).
     Thanks to Jakub Wilk.
-  * Workaround uninstallable sysvinit on Ubuntu, where sysvinit is
-    still present in the build-essential package list.  Thanks to
-    Jamie Strandboge.
   * Sbuild::ConfBase: Only use MAILTO_HASH if defined (Closes: #589615).
     Thanks to Marc Dequènes for this patch.
 
   [ Modestas Vainius ]
-  * Do not skip purging of build directory if chroot is cloned
-    (Closes: #605997).  This is necessary if /build in chroots is
-    (bind-)mounted to the outside of the session.  However, if /build
-    is part of the cloned session, $purge_build_directory='never' could
-    be used in order to avoid wasting time when the session ends.
+  * sbuild:
+    - Do not skip purging of build directory if chroot is cloned
+      (Closes: #605997).  This is necessary if /build in chroots is
+      (bind-)mounted to the outside of the session.  However, if /build
+      is part of the cloned session, $purge_build_directory='never'
+      could be used in order to avoid wasting time when the session
+      ends.
 
  -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 21:08:28 +0000
 
