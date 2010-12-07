@@ -39,6 +39,11 @@ configuration.
      upon receiving a termination signal.  These were no longer used
      in buildd mode, and were only useful in a buildd context.
 
+  6) A basic testsuite has been added.  By default, this checks Perl
+     syntax only.  If configured with --enable-chroot-checks, then
+     sbuild and its helper programs will be tested in an unstable
+     chroot in addition to the basic checks.
+
 * Major changes in 0.60.5:
 
   1) A new resolver, 'apt', has been added.  Like the aptitude
