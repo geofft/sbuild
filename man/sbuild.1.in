@@ -181,9 +181,9 @@ Run apt-get upgrade in the chroot before executing the build.
 Run apt-get distupgrade in the chroot before executing the build.
 .TP
 .BR \-m ", " "\-\-maintainer=\fImaintainer\fP"
-Passed to dpkg\-genchanges and is used to set the Maintainer: field in
-the .changes file(s).  This defaults to the DEBEMAIL environment variable if
-set.
+Specify the identity to use for GPG signing packages, and also used as the
+maintainer for binary NMUs.  This does not normally require setting (it
+defaults to the uploader).
 .TP
 .BR \-e ", " "\-\-uploader=\fIuploader\fP"
 Passed to dpkg\-genchanges and is used to set the Changed\-by: field in
@@ -396,8 +396,6 @@ Also, the commands given in a configuration file are processed first, then the
 commands given through the command line options.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
-.IP "DEBEMAIL"
-The maintainer name of the user.
 .IP "HOME"
 The home directory of the user.
 .IP "LOGNAME"
