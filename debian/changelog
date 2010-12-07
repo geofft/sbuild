@@ -6,8 +6,11 @@ sbuild (0.60.6-1) unstable; urgency=low
     Thanks to Ansgar Burchardt for this patch.
   * sbuild.1: Update description of --maintainer (Closes: #605745).
     Thanks to Jakub Wilk.
+  * Workaround uninstallable sysvinit on Ubuntu, where sysvinit is
+    still present in the build-essential package list.  Thanks to
+    Jamie Strandboge.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 20:38:28 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 20:51:50 +0000
 
 sbuild (0.60.5-1) unstable; urgency=low
 
