@@ -9,8 +9,10 @@ sbuild (0.60.6-1) unstable; urgency=low
   * Workaround uninstallable sysvinit on Ubuntu, where sysvinit is
     still present in the build-essential package list.  Thanks to
     Jamie Strandboge.
+  * Sbuild::ConfBase: Only use MAILTO_HASH if defined (Closes: #589615).
+    Thanks to Marc Dequènes for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 20:51:50 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 20:59:53 +0000
 
 sbuild (0.60.5-1) unstable; urgency=low
 
