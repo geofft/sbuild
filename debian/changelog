@@ -1,5 +1,6 @@
 sbuild (0.60.6-1) unstable; urgency=low
 
+  [ Roger Leigh ]
   * New release.
   * sbuild-update works on multiple chroots (Closes: #604715).
   * sbuild-update works with multiple architectures (Closes: #606001).
@@ -12,7 +13,14 @@ sbuild (0.60.6-1) unstable; urgency=low
   * Sbuild::ConfBase: Only use MAILTO_HASH if defined (Closes: #589615).
     Thanks to Marc Dequènes for this patch.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 20:59:53 +0000
+  [ Modestas Vainius ]
+  * Do not skip purging of build directory if chroot is cloned
+    (Closes: #605997).  This is necessary if /build in chroots is
+    (bind-)mounted to the outside of the session.  However, if /build
+    is part of the cloned session, $purge_build_directory='never' could
+    be used in order to avoid wasting time when the session ends.
+
+ -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 21:08:28 +0000
 
 sbuild (0.60.5-1) unstable; urgency=low
 
