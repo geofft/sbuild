@@ -1453,6 +1453,20 @@ sub read_build_essential {
 	warn "Cannot open $self->{'Chroot Dir'}/usr/share/doc/build-essential/list: $!\n";
     }
 
+    # Workaround http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=602571
+    if (open( F, "$self->{'Chroot Dir'}/etc/lsb-release" )) {
+        while( <F> ) {
+            if ($_ eq "DISTRIB_ID=Ubuntu\n") {
+                @essential = grep(!/^sysvinit$/, @essential);
+                last;
+            }
+        }
+        close( F );
+    }
+    else {
+        warn "Cannot open $self->{'Chroot Dir'}/etc/lsb-release: $!\n";
+    }
+
     return join( ", ", @essential );
 }
 
