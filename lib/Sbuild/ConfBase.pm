@@ -111,9 +111,10 @@ sub init_allowed_keys {
 		    !$self->get('MAILTO_FORCED_BY_CLI')
 		    && defined($self->get('DISTRIBUTION'))
 		    && $self->get('DISTRIBUTION')
+		    && defined($self->get('MAILTO_HASH'))
 		    && $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')}) {
 		    $self->set('MAILTO',
-		        $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')});
+			       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')});
 		}
 	    }
 	},
