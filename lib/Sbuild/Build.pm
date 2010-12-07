@@ -552,23 +552,23 @@ sub run {
     my $is_cloned_session = (defined ($session->get('Session Purged')) &&
 			     $session->get('Session Purged') == 1) ? 1 : 0;
 
+    if ($purge_build_directory) {
+	# Purge package build directory
+	$self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
+	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
+	$self->get('Session')->run_command(
+	    { COMMAND => ['rm', '-rf', $bdir],
+	      USER => 'root',
+	      PRIORITY => 0,
+	      DIR => '/' });
+    }
+
     # Purge non-cloned session
     if ($is_cloned_session) {
 	$self->log("Not cleaning session: cloned chroot in use\n");
 	$end_session = 0
 	    if ($purge_build_directory == 0 || $purge_build_deps == 0);
     } else {
-	if ($purge_build_directory) {
-	    # Purge package build directory
-	    $self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
-	    my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
-	    $self->get('Session')->run_command(
-		{ COMMAND => ['rm', '-rf', $bdir],
-		  USER => 'root',
-		  PRIORITY => 0,
-		  DIR => '/' });
-	}
-
 	if ($purge_build_deps) {
 	    # Removing dependencies
 	    $resolver->uninstall_deps();
