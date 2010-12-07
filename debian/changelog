@@ -4,8 +4,10 @@ sbuild (0.60.6-1) unstable; urgency=low
   * sbuild-update works on multiple chroots (Closes: #604715).
   * sbuild-update works with multiple architectures (Closes: #606001).
     Thanks to Ansgar Burchardt for this patch.
+  * sbuild.1: Update description of --maintainer (Closes: #605745).
+    Thanks to Jakub Wilk.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 17:07:33 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 07 Dec 2010 20:38:28 +0000
 
 sbuild (0.60.5-1) unstable; urgency=low
 
