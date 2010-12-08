@@ -1,3 +1,11 @@
+sbuild (0.60.7-1) unstable; urgency=low
+
+  * New release.
+  * Correct building of dependency package using the apt and aptitude
+    resolver, where /tmp is not shared with the host (Closes: #606278).
+
+ -- Roger Leigh <rleigh@debian.org>  Wed, 08 Dec 2010 21:47:11 +0000
+
 sbuild (0.60.6-1) unstable; urgency=low
 
   [ Roger Leigh ]
