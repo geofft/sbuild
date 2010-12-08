@@ -449,7 +449,9 @@ sub setup_apt_archive {
     #Prepare a path to build a dummy package containing our deps:
     if (! defined $self->get('Dummy package path')) {
         $self->set('Dummy package path',
-		   tempdir('resolver' . '-XXXXXX', TMPDIR => 1));
+
+		   tempdir('resolver' . '-XXXXXX',
+			   DIR => $session->get('Location') . "/tmp"));
     }
     my $dummy_dir = $self->get('Dummy package path');
     my $dummy_archive_dir = $dummy_dir . '/apt_archive';
@@ -472,7 +474,7 @@ sub setup_apt_archive {
         return 0;
     }
 
-    my $dummy_pkg_dir = $self->get('Dummy package path') . '/' . $dummy_pkg_name;
+    my $dummy_pkg_dir = $dummy_dir . '/' . $dummy_pkg_name;
     my $dummy_deb = $dummy_archive_dir . '/' . $dummy_pkg_name . '.deb';
     my $dummy_dsc = $dummy_archive_dir . '/' . $dummy_pkg_name . '.dsc';
 
@@ -631,13 +633,13 @@ EOF
 
     # Write a list file for the dummy archive if one not create yet.
     if (! -f $dummy_archive_list_file) {
-        my ($tmpfh, $tmpfilename) = tempfile();
+        my ($tmpfh, $tmpfilename) = tempfile(DIR => $session->get('Location') . "/tmp");
         print $tmpfh 'deb file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
         print $tmpfh 'deb-src file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
         close($tmpfh);
         # List file needs to be moved with root.
         $session->run_command(
-            { COMMAND => ['mv', $tmpfilename,
+            { COMMAND => ['mv', $session->strip_chroot_path($tmpfilename),
                           $session->strip_chroot_path($dummy_archive_list_file)],
               USER => 'root',
               PRIORITY => 0});
