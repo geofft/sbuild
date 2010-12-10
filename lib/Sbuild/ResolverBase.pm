@@ -614,6 +614,8 @@ EOF
     copy($self->get_conf('SBUILD_BUILD_DEPENDS_PUBLIC_KEY'), $dummy_archive_pubkey) unless
         (-f $dummy_archive_pubkey);
     my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
+                       '--homedir',
+                       $session->strip_chroot_path($dummy_archive_dir),
                        '--secret-keyring',
                        $session->strip_chroot_path($dummy_archive_seckey),
                        '--keyring',
