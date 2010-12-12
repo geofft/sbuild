@@ -818,6 +818,7 @@ EOF
           DIR => '/'});
     if ($?) {
         $env->{'APT_CONFIG'} = $apt_config_value;
+	unlink $tmpfilename;
         return 0;
     }
 
@@ -829,14 +830,17 @@ EOF
           DIR => '/'});
     if (!defined($pipe)) {
         $env->{'APT_CONFIG'} = $apt_config_value;
+	unlink $tmpfilename;
         return 0;
     }
     $env->{'APT_CONFIG'} = $apt_config_value;
+
 
     # Write output to Release file path.
     my ($releasefh);
     if (!open($releasefh, '>', $self->get('Dummy Release file'))) {
         close $pipe;
+	unlink $tmpfilename;
         return 0;
     }
 
@@ -845,6 +849,9 @@ EOF
     }
     close $releasefh;
     close $pipe;
+
+    # Remove config file.  Note also removed on failure paths above.
+    unlink $tmpfilename;
 
     return 1;
 }
