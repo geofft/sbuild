@@ -170,7 +170,7 @@ sub update_archive {
 	my @chars = split('', $dummy_archive_dir);
 
 	foreach(@chars) {
-	    if (index("\\|{}[]<>\"^~_=!@#$%^&*", $_) != -1 || # "Bad" characters
+	    if (index('\\|{}[]<>"^~_=!@#$%^&*', $_) != -1 || # "Bad" characters
 		!m/[[:print:]]/ || # Not printable
 		ord($_) == 0x25 || # Percent '%' char
 		ord($_) <= 0x20 || # Control chars
@@ -193,7 +193,13 @@ sub update_archive {
 		return 1;
 	    }
         }
-	return 0;
+
+	$self->run_apt_command(
+	    { COMMAND => [$self->get_conf('APT_CACHE'), 'gencaches'],
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      DIR => '/' });
+	return $?;
     }
 }
 
