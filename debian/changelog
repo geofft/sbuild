@@ -5,8 +5,13 @@ sbuild (0.60.8-1) unstable; urgency=low
     - Don't use user's default GPG configuration and keyrings for
       signing archives; use sbuild archive signing keys only
       (Closes: #606668).  Thanks to Simon McVittie for this patch.
+    - Use an empty directory as GPG homedir.
+    - Don't run "apt-get update" to update local archive; copy files
+      directly into /var/lib/apt/lists.  This means the remote mirror
+      lists can't be updated during a build, and it also saves the
+      time needed to update the lists an additional two times.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 12 Dec 2010 11:51:47 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 12 Dec 2010 19:24:11 +0000
 
 sbuild (0.60.7-1) unstable; urgency=low
 
