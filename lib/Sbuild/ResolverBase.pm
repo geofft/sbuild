@@ -453,6 +453,7 @@ sub setup_apt_archive {
 			   DIR => $self->get('Chroot Build Dir')));
     }
     my $dummy_dir = $self->get('Dummy package path');
+    my $dummy_gpghome = $dummy_dir . '/gpg';
     my $dummy_archive_dir = $dummy_dir . '/apt_archive';
     my $dummy_release_file = $dummy_archive_dir . '/Release';
     my $dummy_archive_seckey = $dummy_archive_dir . '/sbuild-key.sec';
@@ -467,7 +468,12 @@ sub setup_apt_archive {
         $self->cleanup_apt_archive();
         return 0;
     }
-    if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir)) {
+    if (!(-d $dummy_gpghome || mkdir $dummy_gpghome, 0700)) {
+        $self->log_warning('Could not create build-depends dummy gpg home dir ' . $dummy_gpghome . ': ' . $!);
+        $self->cleanup_apt_archive();
+        return 0;
+    }
+    if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir, 0755)) {
         $self->log_warning('Could not create build-depends dummy archive dir ' . $dummy_archive_dir . ': ' . $!);
         $self->cleanup_apt_archive();
         return 0;
@@ -614,7 +620,7 @@ EOF
         (-f $dummy_archive_pubkey);
     my @gpg_command = ('gpg', '--yes', '--no-default-keyring',
                        '--homedir',
-                       $session->strip_chroot_path($dummy_archive_dir),
+                       $session->strip_chroot_path($dummy_gpghome),
                        '--secret-keyring',
                        $session->strip_chroot_path($dummy_archive_seckey),
                        '--keyring',
