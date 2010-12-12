@@ -388,6 +388,7 @@ sub run {
     my $resolver = get_resolver($self->get('Config'), $session, $host);
     $resolver->set('Log Stream', $self->get('Log Stream'));
     $resolver->set('Arch', $self->get('Arch'));
+    $resolver->set('Chroot Build Dir', $self->get('Chroot Build Dir'));
     $self->set('Dependency Resolver', $resolver);
 
     # Lock chroot so it won't be tampered with during the build.

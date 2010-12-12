@@ -449,9 +449,8 @@ sub setup_apt_archive {
     #Prepare a path to build a dummy package containing our deps:
     if (! defined $self->get('Dummy package path')) {
         $self->set('Dummy package path',
-
 		   tempdir('resolver' . '-XXXXXX',
-			   DIR => $session->get('Location') . "/tmp"));
+			   DIR => $self->get('Chroot Build Dir')));
     }
     my $dummy_dir = $self->get('Dummy package path');
     my $dummy_archive_dir = $dummy_dir . '/apt_archive';
