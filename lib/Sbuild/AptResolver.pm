@@ -60,7 +60,7 @@ sub install_deps {
 
     # Call functions to setup an archive to install dummy package.
     return 0 unless ($self->setup_apt_archive($dummy_pkg_name, @pkgs));
-    return 0 unless (!$self->update());
+    return 0 unless (!$self->update_archive());
 
 
     $self->log_subsection("Install $name build dependencies (apt-based resolver)");

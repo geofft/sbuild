@@ -397,6 +397,9 @@ sub setup ($) {
 	'APT_UPDATE'				=> {
 	    DEFAULT => 0
 	},
+	'APT_UPDATE_ARCHIVE_ONLY'			=> {
+	    DEFAULT => 1
+	},
 	'APT_UPGRADE'				=> {
 	    DEFAULT => 0
 	},
@@ -625,6 +628,7 @@ sub read ($) {
     my $key_id = undef;
     my $apt_clean = undef;
     my $apt_update = undef;
+    my $apt_update_archive_only = undef;
     my $apt_upgrade = undef;
     my $apt_distupgrade = undef;
     my $apt_allow_unauthenticated = undef;
@@ -728,6 +732,7 @@ sub read ($) {
     $conf->set('KEY_ID', $key_id);
     $conf->set('APT_CLEAN', $apt_clean);
     $conf->set('APT_UPDATE', $apt_update);
+    $conf->set('APT_UPDATE_ARCHIVE_ONLY', $apt_update_archive_only);
     $conf->set('APT_UPGRADE', $apt_upgrade);
     $conf->set('APT_DISTUPGRADE', $apt_distupgrade);
     $conf->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);

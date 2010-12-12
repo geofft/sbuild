@@ -142,6 +142,61 @@ sub update {
     return $?;
 }
 
+sub update_archive {
+    my $self = shift;
+
+    if (!$self->get_conf('APT_UPDATE_ARCHIVE_ONLY')) {
+	# Update with apt-get; causes complete archive update
+	$self->run_apt_command(
+	    { COMMAND => [$self->get_conf('APT_GET'), 'update'],
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      DIR => '/' });
+	return $?;
+    } else {
+	# Example archive list names:
+	#_tmp_resolver-XXXXXX_apt%5farchive_._Packages
+	#_tmp_resolver-XXXXXX_apt%5farchive_._Release
+	#_tmp_resolver-XXXXXX_apt%5farchive_._Release.gpg
+	#_tmp_resolver-XXXXXX_apt%5farchive_._Sources
+
+	# Update lists directly; only updates local archive
+
+	# Filename quoting for safety taken from apt URItoFileName and
+	# QuoteString.
+	my $session = $self->get('Session');
+	my $dummy_dir = $self->get('Dummy package path');
+	my $dummy_archive_dir = $session->strip_chroot_path($dummy_dir.'/apt_archive/./');
+	my @chars = split('', $dummy_archive_dir);
+
+	foreach(@chars) {
+	    if (index("\\|{}[]<>\"^~_=!@#$%^&*", $_) != -1 || # "Bad" characters
+		!m/[[:print:]]/ || # Not printable
+		ord($_) == 0x25 || # Percent '%' char
+		ord($_) <= 0x20 || # Control chars
+		ord($_) >= 0x7f) { # Control chars
+		$_ = sprintf("%%%02x", ord($_));
+	    }
+	}
+
+	my $uri = join('', @chars);
+	$uri =~ s;/;_;g; # Escape slashes
+
+	foreach my $file ("Packages", "Release", "Release.gpg", "Sources") {
+	    $session->run_command(
+		{ COMMAND => ['cp', $dummy_archive_dir . '/' . $file,
+			      '/var/lib/apt/lists/' . $uri . $file],
+		  USER => 'root',
+		  PRIORITY => 0 });
+	    if ($?) {
+		$self->log("Failed to copy file from dummy archive to apt lists.\n");
+		return 1;
+	    }
+        }
+	return 0;
+    }
+}
+
 sub upgrade {
     my $self = shift;
 
