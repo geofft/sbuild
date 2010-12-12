@@ -395,13 +395,13 @@ sub setup ($) {
 	    DEFAULT => 0
 	},
 	'APT_UPDATE'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 1
 	},
-	'APT_UPDATE_ARCHIVE_ONLY'			=> {
+	'APT_UPDATE_ARCHIVE_ONLY'		=> {
 	    DEFAULT => 1
 	},
 	'APT_UPGRADE'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 1
 	},
 	'APT_DISTUPGRADE'			=> {
 	    DEFAULT => 0
