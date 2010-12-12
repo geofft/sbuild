@@ -1,3 +1,13 @@
+sbuild (0.60.8-1) unstable; urgency=low
+
+  * New release.
+  * sbuild:
+    - Don't use user's default GPG configuration and keyrings for
+      signing archives; use sbuild archive signing keys only
+      (Closes: #606668).  Thanks to Simon McVittie for this patch.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 12 Dec 2010 11:51:47 +0000
+
 sbuild (0.60.7-1) unstable; urgency=low
 
   * New release.
