@@ -283,8 +283,8 @@ EOT
         cat >> "${TEMPFILE}" <<EOT
 deb http://security-master.debian.org/debian-security ${BASE}/updates main contrib
 deb-src http://security-master.debian.org/debian-security ${BASE}/updates main contrib
-deb http://security-master.debian.org/buildd ${BASE}/
-deb-src http://security-master.debian.org/buildd ${BASE}/
+deb http://security-master.debian.org/buildd-${BASE} /
+deb-src http://security-master.debian.org/buildd-${BASE} /
 EOT
     fi
 
@@ -428,23 +428,6 @@ EOT
     ensure_target_unmounted
 }
 
-setup_security() {
-    echo "I: Setting up security parts..."
-
-    echo "I: Allowing unauthenticated repositories..."
-    TEMPFILE="$(mktemp)"
-    cat > "${TEMPFILE}" <<EOT
-APT::Get::AllowUnauthenticated 1;
-EOT
-    ensure_target_mounted
-    sudo mv "${TEMPFILE}" "${TARGET}/etc/apt/apt.conf.d/allow-unauthenticated"
-    sudo chown root: "${TARGET}/etc/apt/apt.conf.d/allow-unauthenticated"
-    sudo chmod 0644 "${TARGET}/etc/apt/apt.conf.d/allow-unauthenticated"
-
-    ensure_target_unmounted
-    update_apt_cache
-}
-
 setup_logical_volume() {
     LVPATH="/dev/${VGNAME}/buildd-${IDENTIFIER}-${ARCH}"
     echo "I: Setting up logical volume ${LVPATH}..."
@@ -516,8 +499,6 @@ adjust_dpkg
 setup_sbuild
 old_sbuild_compat
 setup_debfoster
-
-[ "$VARIANT" = "security" ] && setup_security
 
 do_dist_upgrade
 
