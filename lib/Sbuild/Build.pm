@@ -475,7 +475,7 @@ sub run {
     $self->set('Install End Time', $self->get('Install Start Time'));
     $resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
     if (!$resolver->install_deps('core', 'CORE')) {
-	$self->log("Core source dependencies not satisfied; skipping");
+	$self->log("Core source dependencies not satisfied; skipping\n");
 	goto cleanup_packages;
     }
 
