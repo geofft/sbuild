@@ -1,3 +1,13 @@
+sbuild (0.60.9-1) unstable; urgency=low
+
+  * New release.
+  * sbuild:
+    - Don't automatically generate local archive signing key if
+      missing (Closes: #607945).  If missing, abort build with an error
+      message and instructions for how to generate the key.
+
+ -- Roger Leigh <rleigh@debian.org>  Thu, 30 Dec 2010 17:54:52 +0000
+
 sbuild (0.60.8-1) unstable; urgency=low
 
   * New release.
