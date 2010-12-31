@@ -74,7 +74,7 @@ sub setup {
 package Options;
 
 use Sbuild::OptionsBase;
-use Sbuild::Conf;
+use Sbuild::Conf qw();
 
 BEGIN {
     use Exporter ();
