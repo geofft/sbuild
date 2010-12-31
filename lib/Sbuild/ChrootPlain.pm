@@ -124,7 +124,7 @@ sub get_command_internal {
 	    (!$need_chroot && $user ne $self->get_conf('USERNAME')));
 
     push(@cmdline, $self->get_conf('SUDO'))
-	 if ($need_chroot || $need_su);
+	if (($need_chroot || $need_su) && $user ne 'root');
     push(@cmdline, '/usr/sbin/chroot', $self->get('Location'))
 	if ($need_chroot);
     push(@cmdline, $self->get_conf('SU'), '-p', "$user", '-s')
