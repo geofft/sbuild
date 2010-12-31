@@ -5,8 +5,12 @@ sbuild (0.60.9-1) unstable; urgency=low
     - Don't automatically generate local archive signing key if
       missing (Closes: #607945).  If missing, abort build with an error
       message and instructions for how to generate the key.
+  * sbuild-createchroot
+    - Use less restrictive permissions on chroot directory and schroot
+      configuration file (Closes: #608414).  The chroot now has 0755
+      permissions, and the schroot configuration 0644.
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 30 Dec 2010 17:54:52 +0000
+ -- Roger Leigh <rleigh@debian.org>  Fri, 31 Dec 2010 11:54:45 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
