@@ -9,8 +9,12 @@ sbuild (0.60.9-1) unstable; urgency=low
     - Use less restrictive permissions on chroot directory and schroot
       configuration file (Closes: #608414).  The chroot now has 0755
       permissions, and the schroot configuration 0644.
+    - Don't require sudo access (Closes: #608429).  The
+      Sbuild::ChrootPlain module used to run commands inside the newly-
+      created chroot was using sudo to run commands when already
+      running as root.  sudo is no longer used when root.
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 31 Dec 2010 11:54:45 +0000
+ -- Roger Leigh <rleigh@debian.org>  Fri, 31 Dec 2010 14:12:40 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
