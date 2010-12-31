@@ -163,7 +163,7 @@ $conf->set('INCLUDE', add_items($conf->get('INCLUDE'),
 my $suite = $ARGV[0];
 # Create the target directory in advance so abs_path (which is buggy)
 # won't fail.  Remove if abs_path is replaced by something better.
-makedir($ARGV[1], 0700);
+makedir($ARGV[1], 0755);
 my $target = abs_path($ARGV[1]);
 my $mirror = $ARGV[2];
 my $script = undef;
@@ -324,6 +324,7 @@ if (-d "/etc/schroot/chroot.d") {
 
 # Display schroot configuration.
 print "I: schroot chroot configuration written to $SCHROOT_CONF.\n";
+chmod 0644, "$SCHROOT_CONF";
 dump_file("$SCHROOT_CONF");
 print "I: Please rename and modify this file as required.\n";
 print $personality_message if $personality_message;
