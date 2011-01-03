@@ -7,6 +7,9 @@ sbuild (0.60.9-1) unstable; urgency=low
       message and instructions for how to generate the key.
     - Do not filter out environment variables starting with DEBIAN_ by
       default (Closes: #608659).  Thanks to Modestas Vainius.
+    - Aptitude resolver defines a custom SolutionCost in order to
+      improve resolver behaviour (Closes: #608789).  Thanks to
+      Modestas Vainius.
   * sbuild-createchroot
     - Use less restrictive permissions on chroot directory and schroot
       configuration file (Closes: #608414).  The chroot now has 0755
@@ -16,7 +19,7 @@ sbuild (0.60.9-1) unstable; urgency=low
       created chroot was using sudo to run commands when already
       running as root.  sudo is no longer used when root.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 03 Jan 2011 21:04:50 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 03 Jan 2011 21:19:02 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
