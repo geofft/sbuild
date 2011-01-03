@@ -86,6 +86,7 @@ sub install_deps {
 	'--without-recommends',
 	'-o', "Aptitude::CmdLine::Ignore-Trust-Violations=$ignore_trust_violations",
 	'-o', 'Aptitude::ProblemResolver::StepScore=100',
+	'-o', "Aptitude::ProblemResolver::SolutionCost=safety, priority, non-default-versions",
 	'-o', "Aptitude::ProblemResolver::Hints::KeepDummy=reject $dummy_pkg_name :UNINST",
 	'-o', 'Aptitude::ProblemResolver::Keep-All-Level=55000',
 	'-o', 'Aptitude::ProblemResolver::Remove-Essential-Level=maximum',
