@@ -393,7 +393,8 @@ sub run_apt {
     my @apt_command = ($self->get_conf('APT_GET'), '--purge',
 	'-o', 'DPkg::Options::=--force-confold',
 	'-o', 'DPkg::Options::=--refuse-remove-essential',
-	'-q', '--no-install-recommends');
+	'-o', 'APT::Install-Recommends=false',
+	'-q');
     push @apt_command, '--allow-unauthenticated' if
 	($self->get_conf('APT_ALLOW_UNAUTHENTICATED'));
     push @apt_command, "$mode", $action, @packages;
