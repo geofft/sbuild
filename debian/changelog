@@ -21,8 +21,11 @@ sbuild (0.60.9-1) unstable; urgency=low
       Sbuild::ChrootPlain module used to run commands inside the newly-
       created chroot was using sudo to run commands when already
       running as root.  sudo is no longer used when root.
+    - Remove use statement which prevented command-line options being
+      registered (Closes: #610007).  Command-line options now work
+      correctly.
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 13 Jan 2011 20:11:33 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 16 Jan 2011 17:06:01 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
