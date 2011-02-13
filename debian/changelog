@@ -23,8 +23,8 @@ sbuild (0.60.9-1) unstable; urgency=low
       created chroot was using sudo to run commands when already
       running as root.  sudo is no longer used when root.
     - Remove use statement which prevented command-line options being
-      registered (Closes: #610007).  Command-line options now work
-      correctly.
+      registered (Closes: #610007, #607606).  Command-line options now
+      work correctly.
   * sbuild.conf:
     - $environment filter is syntactically correct (Closes: #610997).
       Thanks to Jakub Wilk.
