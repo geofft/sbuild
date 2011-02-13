@@ -13,6 +13,7 @@ sbuild (0.60.9-1) unstable; urgency=low
     - When running apt-get, use "-o APT::Install-Recommends=false" rather
       than "--no-install-recommends" in order to support older releases
       (Closes: #609811).  Thanks to Marc Deslauriers.
+    - ENVIRONMENT_FILTER allows PATH (Closes: #610997).
   * sbuild-createchroot
     - Use less restrictive permissions on chroot directory and schroot
       configuration file (Closes: #608414).  The chroot now has 0755
@@ -25,7 +26,7 @@ sbuild (0.60.9-1) unstable; urgency=low
       registered (Closes: #610007).  Command-line options now work
       correctly.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 16 Jan 2011 17:06:01 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 13 Feb 2011 22:41:52 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
