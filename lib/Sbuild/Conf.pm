@@ -373,7 +373,8 @@ sub setup ($) {
 	    DEFAULT => {}
 	},
 	'ENVIRONMENT_FILTER'			=> {
-	    DEFAULT => ['^DEB(IAN|SIGN)?_[A-Z_]+$',
+	    DEFAULT => ['^PATH$',
+			'^DEB(IAN|SIGN)?_[A-Z_]+$',
 	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$']
 	},
 	'LD_LIBRARY_PATH'			=> {
