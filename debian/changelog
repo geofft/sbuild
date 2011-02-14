@@ -37,9 +37,10 @@ sbuild (0.60.9-1) unstable; urgency=low
   * sbuild.conf:
     - $environment filter is syntactically correct (Closes: #610997).
       Thanks to Jakub Wilk.
-  * 
+    - $apt_allow_unauthenticated is documented to use apt-secure(8)
+      (Closes: #608971).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 19:59:36 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 20:06:37 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
