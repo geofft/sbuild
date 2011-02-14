@@ -39,8 +39,12 @@ sbuild (0.60.9-1) unstable; urgency=low
       Thanks to Jakub Wilk.
     - $apt_allow_unauthenticated is documented to use apt-secure(8)
       (Closes: #608971).
+  * sbuild.1:
+    - Document the temporary local archive used by the apt and aptitude
+      build dependency resolvers to store and install dummy dependency
+      packages (Closes: #608972).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 20:06:37 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 20:37:05 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
