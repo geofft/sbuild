@@ -143,6 +143,10 @@ appropriately to build as that architecture, e.g. using
 Also build Architecture: all packages, i.e. use dpkg\-buildpackage \-b
 instead of \-B.
 .TP
+.BR "\-\-no\-arch\-all"
+Do not build Architecture: all packages, i.e. use dpkg\-buildpackage -B
+instead of \-b. This option is the opposite of \-\-arch\-all.
+.TP
 .BR \-b ", " "\-\-batch"
 Operate in batchmode, i.e. write a build-progress file during execution
 and files on shutdown to facilitate a clean restart.
