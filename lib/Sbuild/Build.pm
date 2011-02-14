@@ -360,7 +360,16 @@ sub run {
     }
 
     $self->set('Session', $session);
-    $self->set('Arch', $self->chroot_arch());
+
+    my $chroot_arch =  $self->chroot_arch();
+    if ($self->get('Arch') ne $chroot_arch) {
+	$self->log_error("Build architecture (" . $self->get('Arch') .
+			 ") is not the same as the chroot architecture (" .
+			 $chroot_arch . ")\n");
+	$self->log_info("Please specify the correct architecture with --arch, or use a chroot of the correct architecture\n");
+	$self->set_status('failed');
+	goto cleanup_unlocked_session;
+    }
 
     $self->set('Chroot Dir', $session->get('Location'));
     # TODO: Don't hack the build location in; add a means to customise
