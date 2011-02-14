@@ -10,12 +10,17 @@ sbuild (0.60.9-1) unstable; urgency=low
     - Aptitude resolver defines a custom SolutionCost in order to
       improve resolver behaviour (Closes: #608789).  Thanks to
       Modestas Vainius.
-    - When running apt-get, use "-o APT::Install-Recommends=false" rather
-      than "--no-install-recommends" in order to support older releases
-      (Closes: #609811).  Thanks to Marc Deslauriers.
+    - When running apt-get, use "-o APT::Install-Recommends=false"
+      rather than "--no-install-recommends" in order to support older
+      releases (Closes: #609811).  Thanks to Marc Deslauriers.
     - ENVIRONMENT_FILTER allows PATH (Closes: #610997).
     - Purging the package removes generated files in /etc/sbuild/chroot
       and /var/lib/sbuild (Closes: #608412).
+    - The architecture specified with --arch (defaulting to the host
+      system architecture) must match the chroot architecture
+      (Closes: #609151).  This was previously allowed to be superceded
+      by the chroot architecture.  This change is to avoid any abiguity
+      regarding the host/build architecture for the package being built.
   * sbuild-createchroot:
     - Use less restrictive permissions on chroot directory and schroot
       configuration file (Closes: #608414).  The chroot now has 0755
@@ -31,7 +36,7 @@ sbuild (0.60.9-1) unstable; urgency=low
     - $environment filter is syntactically correct (Closes: #610997).
       Thanks to Jakub Wilk.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 19:37:27 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 19:52:22 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
