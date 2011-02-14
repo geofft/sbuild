@@ -73,7 +73,7 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             domirror "http://ftp.debian.org/debian ${SUITE_BASE} COMPONENT" ${APT_LIST}
             [ -n "${security_mirror}" ] && domirror "${security_mirror} ${SUITE_BASE} COMPONENT" ${APT_LIST}
             domirror "http://security-master.debian.org/debian-security ${SUITE_BASE}/updates COMPONENT" ${APT_LIST}
-            domirror "http://security-master.debian.org/buildd ${SUITE_BASE}/" ${APT_LIST}
+            domirror "http://security-master.debian.org/buildd-${SUITE_BASE} /" ${APT_LIST}
 
         elif [ "${SUITE_VARIANT}" = 'volatile' ]; then
             SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
@@ -126,10 +126,6 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
         echo 'APT::Install-Recommends 0;' >> ${APT_CONF}
         echo 'Dir::Etc::SourceList "sources.buildd.list";' >> ${APT_CONF}
 
-        if [ "${SUITE_VARIANT}" = 'security' ]; then
-            echo 'APT::Get::AllowUnauthenticated 1;' >> ${APT_CONF}
-        fi
-
         if [ -n "${APT_KEYS}" ]; then
             for KEY in ${APT_KEYS}; do
                 if [ -f /usr/share/buildd/${KEY}.asc ]; then
@@ -168,8 +164,8 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
                     fi
                     echo deb http://security-master.debian.org/debian-security ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
                     echo deb-src http://security-master.debian.org/debian-security ${SUITE_BASE}/updates main contrib >> ${APT_LIST_AUTO}
-                    echo deb http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
-                    echo deb-src http://security-master.debian.org/buildd ${SUITE_BASE}/ >> ${APT_LIST_AUTO}
+                    echo deb http://security-master.debian.org/buildd-${SUITE_BASE} / >> ${APT_LIST_AUTO}
+                    echo deb-src http://security-master.debian.org/buildd-${SUITE_BASE} / >> ${APT_LIST_AUTO}
                 elif [ ${SUITE_VARIANT} = 'volatile' ]; then
                     if [ "$SUITE_BASE" = "etch" ]; then
 			            cp $VERBOSE ${CHROOT_PATH}/etc/apt/sources.list ${CHROOT_PATH}/etc/apt/sources.list.backup
