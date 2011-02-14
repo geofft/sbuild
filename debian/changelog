@@ -7,13 +7,14 @@ sbuild (0.60.9-1) unstable; urgency=low
       message and instructions for how to generate the key.
     - Do not filter out environment variables starting with DEBIAN_ by
       default (Closes: #608659).  Thanks to Modestas Vainius.
+    - Do not filter out PATH environment variable (Closes: #610997).
+      Note this is not the user's PATH, but the $path in sbuild.conf.
     - Aptitude resolver defines a custom SolutionCost in order to
       improve resolver behaviour (Closes: #608789).  Thanks to
       Modestas Vainius.
     - When running apt-get, use "-o APT::Install-Recommends=false"
       rather than "--no-install-recommends" in order to support older
       releases (Closes: #609811).  Thanks to Marc Deslauriers.
-    - ENVIRONMENT_FILTER allows PATH (Closes: #610997).
     - Purging the package removes generated files in /etc/sbuild/chroot
       and /var/lib/sbuild (Closes: #608412).
     - The architecture specified with --arch (defaulting to the host
