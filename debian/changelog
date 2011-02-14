@@ -14,6 +14,8 @@ sbuild (0.60.9-1) unstable; urgency=low
       than "--no-install-recommends" in order to support older releases
       (Closes: #609811).  Thanks to Marc Deslauriers.
     - ENVIRONMENT_FILTER allows PATH (Closes: #610997).
+    - Purging the package removes generated files in /etc/sbuild/chroot
+      and /var/lib/sbuild (Closes: #608412).
   * sbuild-createchroot:
     - Use less restrictive permissions on chroot directory and schroot
       configuration file (Closes: #608414).  The chroot now has 0755
@@ -29,7 +31,7 @@ sbuild (0.60.9-1) unstable; urgency=low
     - $environment filter is syntactically correct (Closes: #610997).
       Thanks to Jakub Wilk.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 13 Feb 2011 22:46:03 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 19:37:27 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
