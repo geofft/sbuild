@@ -394,6 +394,39 @@ after a build is done.
 One final note, external commands are processed in the order they are given.
 Also, the commands given in a configuration file are processed first, then the
 commands given through the command line options.
+.SH LOCAL ARCHIVE
+The apt and aptitude resolvers create a local archive for installing build
+dependencies.  This is an internal implementation detail of the build
+dependency resolver, which is not user configurable, and is indended to be
+entirely transparent to the user.  The local archive exists only transiently
+during the package build.  It does not persist across builds, and it is only
+used to store the dummy dependency packages created for a single build.
+.PP
+The dependency resolvers do the following:
+.IP \[bu]
+Create a dummy dependency package.  This contains the Build-Depends (and
+optionally Build-Depends-Indep) as Depends, and Build-Conflicts (and optionally
+Build-Conflicts-Indep) as Conflicts.
+.IP \[bu]
+Install the dummy dependency package into the local archive,
+.IP \[bu]
+Generate the \fIPackages\fP, \fISources\fP and \fIRelease\fP files.
+.IP \[bu]
+Write a \fIsources.list\fP file for the local archive into
+\fI/etc/apt/sources.list.d\fP.
+.IP \[bu]
+Inject the lists directly into \fI/var/lib/apt/lists\fP.  This step is to save
+running updating all apt sources which is undesirable during a build; apt and
+aptitude do not support updating a single source at present.
+.IP \[bu]
+Regenerate the apt caches to ensure everything is in sync.
+.IP \[bu]
+Install the dummy dependency package with apt or aptitude; the dummy package is
+pulled from the local apt archive, while all its dependencies are pulled from
+the regular configured apt sources.
+.PP
+At the end of the build, the local archive is removed, along with the rest of
+the build tree.
 .SH ENVIRONMENT VARIABLES
 The following environment variables are used by \fBsbuild\fR:
 .IP "HOME"
