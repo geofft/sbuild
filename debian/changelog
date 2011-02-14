@@ -21,6 +21,8 @@ sbuild (0.60.9-1) unstable; urgency=low
       (Closes: #609151).  This was previously allowed to be superceded
       by the chroot architecture.  This change is to avoid any abiguity
       regarding the host/build architecture for the package being built.
+    - Add --no-arch-all option to force not building arch-all packages
+      (Closes: #613401).  Thanks to Sebastian Harl for this patch.
   * sbuild-createchroot:
     - Use less restrictive permissions on chroot directory and schroot
       configuration file (Closes: #608414).  The chroot now has 0755
@@ -35,8 +37,9 @@ sbuild (0.60.9-1) unstable; urgency=low
   * sbuild.conf:
     - $environment filter is syntactically correct (Closes: #610997).
       Thanks to Jakub Wilk.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 19:52:22 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 14 Feb 2011 19:59:36 +0000
 
 sbuild (0.60.8-1) unstable; urgency=low
 
