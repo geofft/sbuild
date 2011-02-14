@@ -64,10 +64,6 @@ sbuild \- build debian packages from source
 .RB [ \-\-setup\-hook=\fIhook-script\fP ]
 .RB [ \-\-build\-dep\-resolver=\fIresolver\fP ]
 .BR [PACKAGE1[.dsc] " [" PACKAGE2[.dsc] " [ " ... " " ]]]
-.SH VERSION
-This man page documents the packaged version of sbuild.  This version is
-maintained by the \fBbuildd-tools\fP project developers on Alioth
-(\f[CR]https://alioth.debian.org/projects/buildd\-tools/\fP).
 .SH DESCRIPTION
 \fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
 source, installing any missing source dependencies.  The build takes place in a
