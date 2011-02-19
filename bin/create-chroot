@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # GPLv2.
-# (C) 2009 Philipp Kern
-# (C) 2009 Marc Brockschmidt
-# (C) 2010 Andreas Barth
+# (C) 2009   Philipp Kern
+# (C) 2009   Marc Brockschmidt
+# (C) 2010-1 Andreas Barth
 
 set -e
 
@@ -79,9 +79,9 @@ then
 fi
 
 BASE="$SUITE"
-OLDSTABLE="etch"
-STABLE="lenny"
-TESTING="squeeze"
+OLDSTABLE="lenny"
+STABLE="squeeze"
+TESTING="wheezy"
 case "$SUITE" in
     oldstable) BASE=$OLDSTABLE ;;
     oldstable-security) BASE=$OLDSTABLE; VARIANT="security" ;;
@@ -249,14 +249,6 @@ deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
 EOT
 	fi
 
-	if [ -z "$VARIANT" ] && [ "$BASE" = "etch" ] && [ -n "$VGNAME" ]; then
-        echo "I: Adding proposed-updates entries to sources.list..."
-        cat >> "${TEMPFILE}" <<EOT
-deb http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
-deb-src http://incoming.debian.org/debian ${BASE}-proposed-updates main contrib
-EOT
-	fi
-
     if [ "$BASE" = "sid" ] && [ -z "${VGNAME}" ] ; then     
         # in case of lvm-chroots, we add the entries on the fly
         echo "I: Adding unstable incoming entries to sources.list..."
@@ -330,7 +322,7 @@ adjust_debconf() {
 }
 
 adjust_dpkg() {
-    if [ "${BASE}" != "etch" ] && [ "${BASE}" != "lenny" ]; then
+    if [ "${BASE}" != "lenny" ]; then
         ensure_target_mounted
         echo "I: Adding apt.conf..."
         TEMPFILE="$(mktemp)"
