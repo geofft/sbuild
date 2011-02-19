@@ -84,6 +84,7 @@ sub install_deps {
 	$self->get_conf('APTITUDE'),
 	'-y',
 	'--without-recommends',
+	'-o', 'Dpkg::Options::=--force-confold',
 	'-o', "Aptitude::CmdLine::Ignore-Trust-Violations=$ignore_trust_violations",
 	'-o', 'Aptitude::ProblemResolver::StepScore=100',
 	'-o', "Aptitude::ProblemResolver::SolutionCost=safety, priority, non-default-versions",
