@@ -549,6 +549,9 @@ sub setup ($) {
 	'RESOLVE_VIRTUAL'				=> {
 	    DEFAULT => 0
 	},
+	'RESOLVE_ALTERNATIVES'				=> {
+	    DEFAULT => 0
+	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
 	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.sec'
 	},
@@ -653,6 +656,7 @@ sub read ($) {
     my $log_external_command_output = undef;
     my $log_external_command_error = undef;
     my $resolve_virtual = undef;
+    my $resolve_alternatives = undef;
     my $core_depends = undef;
 
     foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
@@ -670,6 +674,7 @@ sub read ($) {
     # Set before APT_GET or APTITUDE to allow correct validation.
     $conf->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
     $conf->set('RESOLVE_VIRTUAL', $resolve_virtual);
+    $conf->set('RESOLVE_ALTERNATIVES', $resolve_alternatives);
     $conf->set('CORE_DEPENDS', $core_depends);
     $conf->set('ARCH', $arch);
     $conf->set('DISTRIBUTION', $distribution);

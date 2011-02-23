@@ -603,6 +603,19 @@ EOF
 			      host_arch => $self->get('Arch'));
     }
 
+    $self->log("Merged Build-Depends: $positive\n") if $positive;
+    $self->log("Merged Build-Conflicts: $negative\n") if $negative;
+
+    # Filter out all but the first alternative.
+    if (!$self->get_conf('RESOLVE_ALTERNATIVES')) {
+	my $positive_filtered = Dpkg::Deps::AND->new();
+	foreach my $item ($positive->get_deps()) {
+	    my ($first) = $item->get_deps();
+	    $positive_filtered->add($first) if defined $first;
+	}
+	$positive = $positive_filtered;
+    }
+
     if ($positive ne "") {
 	print DUMMY_CONTROL 'Depends: ' . $positive . "\n";
     }
@@ -610,8 +623,8 @@ EOF
 	print DUMMY_CONTROL 'Conflicts: ' . $negative . "\n";
     }
 
-    debug("DUMMY Depends: $positive \n");
-    debug("DUMMY Conflicts: $negative \n");
+    $self->log("Filtered Build-Depends: $positive\n") if $positive;
+    $self->log("Filtered Build-Conflicts: $negative\n") if $negative;
 
     print DUMMY_CONTROL <<"EOF";
 Maintainer: Debian buildd-tools Developers <buildd-tools-devel\@lists.alioth.debian.org>
