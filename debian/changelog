@@ -1,19 +1,20 @@
 sbuild (0.61.0-1) unstable; urgency=low
 
-  * The apt and aptitude build dependency resolvers now use only the
-    first alternative in alternative dependencies.  The other
-    alternatives are stripped out entirely.  This makes the apt and
-    aptitude resolvers behave exactly like the internal resolver.
-    Note that this is configurable with the $resolve_alternatives
-    option, so alternative resolving may be re-enabled with this
-    option if desired.  This is useful for e.g. backports, but not
-    for unstable where the strict consistency and reproducibility
-    offered by only using the first alternative is required.
-  * The aptitude resolver now runs dpkg with --force-confold, to
-    match the behaviour of internal and apt.  This prevents failure
-    when installing netbase into the build chroot, for example.
+  * sbuild:
+    - The apt and aptitude build dependency resolvers now use only the
+      first alternative in alternative dependencies.  The other
+      alternatives are stripped out entirely.  This makes the apt and
+      aptitude resolvers behave exactly like the internal resolver.
+      Note that this is configurable with the $resolve_alternatives
+      option, so alternative resolving may be re-enabled with this
+      option if desired.  This is useful for e.g. backports, but not
+      for unstable where the strict consistency and reproducibility
+      offered by only using the first alternative is required.
+    - The aptitude resolver now runs dpkg with --force-confold, to
+      match the behaviour of internal and apt.  This prevents failure
+      when installing netbase into the build chroot, for example.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 12:15:28 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 13:08:58 +0000
 
 sbuild (0.60.9-1) unstable; urgency=low
 
