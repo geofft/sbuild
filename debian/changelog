@@ -9,8 +9,11 @@ sbuild (0.61.0-1) unstable; urgency=low
     option if desired.  This is useful for e.g. backports, but not
     for unstable where the strict consistency and reproducibility
     offered by only using the first alternative is required.
+  * The aptitude resolver now runs dpkg with --force-confold, to
+    match the behaviour of internal and apt.  This prevents failure
+    when installing netbase into the build chroot, for example.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 12:09:00 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 12:15:28 +0000
 
 sbuild (0.60.9-1) unstable; urgency=low
 
