@@ -1,3 +1,10 @@
+sbuild (0.61.0-1buildd0) unstable; urgency=low
+
+  * Buildd-specific modifications:
+    - debian/rules: Enable compatibility with stable releases.
+
+ -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 13:43:01 +0000
+
 sbuild (0.61.0-1) unstable; urgency=low
 
   * sbuild:
