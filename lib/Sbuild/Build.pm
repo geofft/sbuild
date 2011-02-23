@@ -264,6 +264,8 @@ sub get_status {
 sub run {
     my $self = shift;
 
+    $self->set('Pkg Fail Stage', 'init');
+
     $self->set_status('building');
 
     $self->set('Pkg Start Time', time);
@@ -352,6 +354,7 @@ sub run {
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
+    $self->set('Pkg Fail Stage', 'create-session');
     if (!$session->begin_session()) {
 	$self->log("Error creating chroot session: skipping " .
 		   $self->get('Package') . "\n");
