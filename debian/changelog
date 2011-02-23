@@ -1,8 +1,19 @@
 sbuild (0.61.1-1) unstable; urgency=low
 
   * New release.
+  * sbuild:
+    - 'apt' is now the default build dependency resolver.  Users should
+      not see any significant changes compared with the old 'internal'
+      resolver.  Please note that you may need to generate a GPG key
+      for the local archive created for dependency package
+      installation, if one does not already exist; see sbuild-update
+      (--keygen) for further details.
+    - The 'internal' build dependency resolver is deprecated.  It is
+      not recommended for future use, and will be removed once it is no
+      longer used by the buildd infrastructure.  Please use the 'apt'
+      resolver as a drop-in replacement. 
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 22:36:18 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 23:07:49 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
