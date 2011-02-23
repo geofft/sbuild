@@ -84,7 +84,12 @@ Perform an \f[CB]apt\-get autoremove\fP.
 .TP
 .BR \-k ", " \-\-keygen
 Generate a GPG public/private key pair for self-signing local apt archives,
-used for installation of dependency packages.
+used for installation of dependency packages.  Note that this requires a
+significant amount of entropy (randomness) and may hang on systems with poor
+entropy sources, such as headless systems without direct user input.  In this
+situation, it is advisable to create the key on a trusted local system, and
+copy the files to the build system by hand from
+\fI/var/lib/sbuild/apt-keys/\fP.
 .SS Chroot selection
 .TP
 .B CHROOT
