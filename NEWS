@@ -9,7 +9,17 @@ configuration.
 
 * Major changes in 0.61.1:
 
-  None.
+  1) 'apt' is now the default build dependency resolver.  Users should
+     not see any significant changes compared with the old 'internal'
+     resolver.  Please note that you may need to generate a GPG key
+     for the local archive created for dependency package
+     installation, if one does not already exist; see sbuild-update
+     (--keygen) for further details.
+
+  2) The 'internal' build dependency resolver is deprecated.  It is
+     not recommended for future use, and will be removed once it is no
+     longer used by the buildd infrastructure.  Please use the 'apt'
+     resolver as a drop-in replacement.
 
 * Major changes in 0.61.0:
 
