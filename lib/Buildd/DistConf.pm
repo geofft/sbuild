@@ -56,8 +56,6 @@ sub new_hash ($) {
 sub setup ($) {
     my $conf = shift;
 
-    $conf->SUPER::init_allowed_keys();
-
     my $validate_directory_in_home = sub {
 	my $conf = shift;
 	my $entry = shift;
