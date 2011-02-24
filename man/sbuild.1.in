@@ -325,16 +325,19 @@ external commands to run via \fIchroot-setup-commands\fP.
 Use the specified resolver to handle selecting the build dependencies.
 Supported resolvers are \fIapt\fP (the default), \fIaptitude\fP and
 \fIinternal\fP (deprecated).  The apt resolver is the most appropriate resolver
-for most users, for building for unstable, stable and other distributions.  The
-aptitude resolver is very similar, but smarter and slower; it is suited to more
-complex situations, such as building packages for the experimental
-distribution, where packages need installing from multiple suites
-(\fIunstable\fP and \fIexperimental\fP).  Due to performance and other issues
-(bug #139615), aptitude is not recommended for use by default.  The internal
-resolver is much older, contains several significant deficiencies such as not
-being able to handle complex alternative and virtual dependencies, and is
-deprecated.  It is not recommended for future use, and will be removed in the
-future.
+for most users, for building for unstable, stable and other distributions.  If
+alternative build dependencies are used (excluding architecture restrictions),
+only the first alternative will be used; the others will be ignored.  The
+aptitude resolver is very similar, but smarter and slower, and it will consider
+all alternatives by default; it is suited to more complex situations, such as
+building packages for the experimental distribution, where packages need
+installing from multiple suites (\fIunstable\fP and \fIexperimental\fP).  Due
+to performance and other issues (bug #139615), aptitude is not recommended for
+use by default.  The internal resolver is much older, contains several
+significant deficiencies such as not being able to handle complex alternative
+and virtual dependencies, and is deprecated.  Like apt, it only uses the first
+alternative build dependency when multiple alternatives exist.  It is not
+recommended for future use, and will be removed in the future.
 .SH EXTERNAL COMMANDS
 Support to run external commands during an sbuild run is provided. A set of
 external commands can be run at various stages of a build. Providing commands to
