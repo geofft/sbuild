@@ -11,9 +11,15 @@ sbuild (0.61.1-1) unstable; urgency=low
     - The 'internal' build dependency resolver is deprecated.  It is
       not recommended for future use, and will be removed once it is no
       longer used by the buildd infrastructure.  Please use the 'apt'
-      resolver as a drop-in replacement. 
+      resolver as a drop-in replacement.
+    - The 'aptitude' build dependency resolver will, unlike 'apt' and
+      'internal', consider alternative dependencies by default, rather
+      than only using the first alternative.  This is intended to both
+      preserve backward compatibility, and make the 'aptitude'
+      resolver the preferred choice for more complex situations, such
+      as building for experimental.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 23 Feb 2011 23:07:49 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu, 24 Feb 2011 22:31:48 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
