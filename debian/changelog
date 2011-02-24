@@ -18,8 +18,16 @@ sbuild (0.61.1-1) unstable; urgency=low
       preserve backward compatibility, and make the 'aptitude'
       resolver the preferred choice for more complex situations, such
       as building for experimental.
+    - The aptitude resolver can resolve complex dependencies, e.g.
+      A | B, where A is uninstallable now correctly falls back to B.
+      This is not the case for the internal or apt resolvers, which by
+      intent do not make use of alternatives (they use the first
+      alternative only.  sbuild now has full support for resolving
+      alternatives, but this is not the default behaviour
+      (Closes: #403246).  Please see #614807 for a proposed description
+      of autobuilder-imposed build dependency restrictions in Policy.
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 24 Feb 2011 22:31:48 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu, 24 Feb 2011 22:41:18 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
