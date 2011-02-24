@@ -476,9 +476,8 @@ sub setup ($) {
 		my $entry = shift;
 		my $key = $entry->{'NAME'};
 
-		warn "W: Build dependency resolver 'internal' is deprecatedr; please switch to 'apt'\n"
+		warn "W: Build dependency resolver 'internal' is deprecated; please switch to 'apt'\n"
 		    if $conf->get($key) eq 'internal';
-
 
 		die '$key: Invalid build-dependency resolver \'' .
 		    $conf->get($key) .
