@@ -21,6 +21,13 @@ configuration.
      longer used by the buildd infrastructure.  Please use the 'apt'
      resolver as a drop-in replacement.
 
+  3) The 'aptitude' build dependency resolver will, unlike 'apt' and
+     'internal', consider alternative dependencies by default, rather
+     than only using the first alternative.  This is intended to both
+     preserve backward compatibility, and make the 'aptitude' resolver
+     the preferred choice for more complex situations, such as
+     building for experimental.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
