@@ -553,7 +553,21 @@ sub setup ($) {
 	    DEFAULT => 0
 	},
 	'RESOLVE_ALTERNATIVES'				=> {
-	    DEFAULT => 0
+	    DEFAULT => undef,
+	    GET => sub {
+		my $conf = shift;
+		my $entry = shift;
+
+		my $retval = $conf->_get_value($entry->{'NAME'});
+
+		if (!defined($retval)) {
+		    $retval = 0;
+		    $retval = 1
+			if ($conf->get('BUILD_DEP_RESOLVER') eq 'aptitude');
+		}
+
+		return $retval;
+	    }
 	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
 	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.sec'
