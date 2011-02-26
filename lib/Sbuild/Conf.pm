@@ -113,18 +113,29 @@ sub setup ($) {
 
     my %sbuild_keys = (
 	'CHROOT'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'chroot',
+	    GROUP => 'Chroot options',
 	    DEFAULT => undef,
 	    HELP => 'Default chroot (defaults to distribution[-arch][-sbuild])'
 	},
 	'BUILD_ARCH_ALL'			=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'build_arch_all',
+	    GROUP => 'Build options',
 	    DEFAULT => 0,
 	    HELP => 'Build architecture: all packages by default'
 	},
 	'NOLOG'					=> {
+	    TYPE => 'BOOL',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => 0,
 	    HELP => 'Disable use of log file'
 	},
 	'SUDO'					=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'sudo',
+	    GROUP => 'Programs',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -159,11 +170,17 @@ sub setup ($) {
 	    HELP => 'Path to sudo binary'
 	},
 	'SU'					=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'su',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
 	    DEFAULT => 'su',
 	    HELP => 'Path to su binary'
 	},
 	'SCHROOT'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'schroot',
+	    GROUP => 'Programs',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -178,24 +195,39 @@ sub setup ($) {
 	    HELP => 'Path to schroot binary'
 	},
 	'SCHROOT_OPTIONS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'schroot_options',
+	    GROUP => 'Programs',
 	    DEFAULT => ['-q'],
 	    HELP => 'Additional command-line options for schroot'
 	},
 	'FAKEROOT'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'fakeroot',
+	    GROUP => 'Programs',
 	    DEFAULT => 'fakeroot',
 	    HELP => 'Path to fakeroot binary'
 	},
 	'APT_GET'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'apt_get',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
 	    DEFAULT => 'apt-get',
 	    HELP => 'Path to apt-get binary'
 	},
 	'APT_CACHE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'apt_cache',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
 	    DEFAULT => 'apt-cache',
 	    HELP => 'Path to apt-cache binary'
 	},
 	'APTITUDE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'aptitude',
+	    GROUP => 'Programs',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -210,53 +242,88 @@ sub setup ($) {
 	    HELP => 'Path to aptitude binary'
 	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
+	    TYPE => 'ARRAY:STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => [],
-	    HELP => 'Additional command-line options for dpkg-buildpackage'
+	    HELP => 'Additional command-line options for dpkg-buildpackage.  Not settable in config.'
 	},
 	'DPKG_SOURCE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'dpkg_source',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
 	    DEFAULT => 'dpkg-source',
 	    HELP => 'Path to dpkg-source binary'
 	},
 	'DPKG_SOURCE_OPTIONS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'dpkg_source_opts',
+	    GROUP => 'Programs',
 	    DEFAULT => [],
 	    HELP => 'Additional command-line options for dpkg-source'
 	},
 	'DCMD'					=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'dcmd',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
 	    DEFAULT => 'dcmd',
 	    HELP => 'Path to dcmd binary'
 	},
 	'MD5SUM'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'md5sum',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
 	    DEFAULT => 'md5sum',
 	    HELP => 'Path to md5sum binary'
 	},
 	'AVG_TIME_DB'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'avg_time_db',
+	    GROUP => 'Statistics',
 	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-times",
 	    HELP => 'Name of a database for logging package build times (optional, no database is written if empty)'
 	},
 	'AVG_SPACE_DB'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'avg_space_db',
+	    GROUP => 'Statistics',
 	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-space",
 	    HELP => 'Name of a database for logging package space requirement (optional, no database is written if empty)'
 	},
 	'STATS_DIR'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'stats_dir',
+	    GROUP => 'Statistics',
 	    DEFAULT => "$HOME/stats",
 	    HELP => 'Directory for writing build statistics to'
 	},
 	'PACKAGE_CHECKLIST'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'package_checklist',
+	    GROUP => 'Chroot options',
 	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/package-checklist",
 	    HELP => 'Where to store list currently installed packages inside chroot'
 	},
 	'BUILD_ENV_CMND'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'build_env_cmnd',
+	    GROUP => 'Build options',
 	    DEFAULT => "",
 	    HELP => 'This command is run with the dpkg-buildpackage command line passed to it (in the chroot, if doing a chrooted build).  It is used by the sparc buildd (which is sparc64) to call the wrapper script that sets the environment to sparc (32-bit).  It could be used for other build environment setup scripts.  Note that this is superceded by schroot\'s \'command-prefix\' option'
 	},
 	'PGP_OPTIONS'				=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'pgp_options',
+	    GROUP => 'Build options',
 	    DEFAULT => ['-us', '-uc'],
 	    HELP => 'Additional signing options for dpkg-buildpackage'
 	},
 	'LOG_DIR'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'log_dir',
+	    GROUP => 'Logging options',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -275,8 +342,14 @@ sub setup ($) {
 	    DEFAULT => "$HOME/logs",
 	    HELP => 'Directory for storing build logs'
 	},
-	'LOG_DIR_AVAILABLE'			=> {},
+	'LOG_DIR_AVAILABLE'			=> {
+	    TYPE => 'BOOL',
+	    GROUP => '__INTERNAL',
+	},
 	'MAILTO'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'mailto',
+	    GROUP => 'Logging options',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -290,21 +363,35 @@ sub setup ($) {
 	    HELP => 'email address to mail build logs to'
 	},
 	'MAILTO_FORCED_BY_CLI'			=> {
+	    TYPE => 'BOOL',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => 0
 	},
 	'MAILTO_HASH'				=> {
+	    TYPE => 'HASH:STRING',
+	    VARNAME => 'mailto',
+	    GROUP => 'Logging options',
 	    DEFAULT => {},
 	    HELP => 'Like MAILTO, but per-distribution.  This is a hashref mapping distribution name to MAILTO.'
 	},
 	'MAILFROM'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'mailfrom',
+	    GROUP => 'Logging options',
 	    DEFAULT => "Source Builder <sbuild>",
 	    HELP => 'email address set in the From line of build logs'
 	},
 	'COMPRESS_BUILD_LOG_MAILS'              => {
+	    TYPE => 'BOOL',
+	    VARNAME => 'compress_build_log_mails',
+	    GROUP => 'Logging options',
 	    DEFAULT => 0,
 	    HELP => 'Should build log mail be compressed?'
 	},
 	'PURGE_BUILD_DEPS'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'purge_build_deps',
+	    GROUP => 'Chroot options',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -319,6 +406,9 @@ sub setup ($) {
 	    HELP => 'When to purge the build dependencies after a build; possible values are "never", "successful", and "always"'
 	},
 	'PURGE_BUILD_DIRECTORY'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'purge_build_directory',
+	    GROUP => 'Chroot options',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -333,6 +423,9 @@ sub setup ($) {
 	    HELP => 'When to purge the build directory after a build; possible values are "never", "successful", and "always"'
 	},
 	'TOOLCHAIN_REGEX'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'toolchain_regex',
+	    GROUP => 'Build options',
 	    DEFAULT => ['binutils$',
 			'dpkg-dev$',
 			'gcc-[\d.]+$',
@@ -348,18 +441,30 @@ sub setup ($) {
 	    HELP => 'Regular expressions identifying toolchain packages.'
 	},
 	'STALLED_PKG_TIMEOUT'			=> {
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'stalled_pkg_timeout',
+	    GROUP => 'Build timeouts',
 	    DEFAULT => 150, # minutes
 	    HELP => 'Time (in minutes) of inactivity after which a build is terminated. Activity is measured by output to the log file.'
 	},
 	'MAX_LOCK_TRYS'				=> {
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'max_lock_trys',
+	    GROUP => 'Build timeouts',
 	    DEFAULT => 120,
 	    HELP => 'Number of times to try waiting for a lock.'
 	},
 	'LOCK_INTERVAL'				=> {
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'lock_interval',
+	    GROUP => 'Build timeouts',
 	    DEFAULT => 5,
 	    HELP => 'Lock wait interval (seconds).  Maximum wait time is (max_lock_trys × lock_interval).'
 	},
 	'CHROOT_MODE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'chroot_mode',
+	    GROUP => 'Chroot options',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -373,49 +478,82 @@ sub setup ($) {
 	    HELP => 'Mechanism to use for chroot virtualisation.  Possible value are "schroot" (default) and "sudo".'
 	},
 	'CHROOT_SPLIT'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'chroot_split',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 0,
 	    HELP => 'Run in split mode?  In split mode, apt-get and dpkg are run on the host system, rather than inside the chroot.'
 	},
 	'APT_POLICY'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_policy',
+	    GROUP => 'Dependency resolution',
 	    DEFAULT => 1,
 	    HELP => 'APT policy.  1 to enable additional checking of package versions available in the APT cache, or 0 to disable.  0 is the traditional sbuild behaviour; 1 is needed to build from additional repositories such as sarge-backports or experimental, and has a small performance cost.  Note that this is only used by the internal resolver.'
 	},
 	'CHECK_SPACE'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'check_space',
+	    GROUP => 'Build options',
 	    DEFAULT => 1,
 	    HELP => 'Check free disk space prior to starting a build.  sbuild requires the free space to be at least twice the size of the unpacked sources to allow a build to proceed.  Can be disabled to allow building if space is very limited, but the threshold to abort a build has been exceeded despite there being sufficient space for the build to complete.'
 	},
 	'CHECK_WATCHES'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'check_watches',
+	    GROUP => 'Watch options',
 	    DEFAULT => 1,
 	    HELP => 'Check watched packages to discover missing build dependencies.  This can be disabled to increase the speed of builds.'
 	},
 	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'ignore_watches_no_build_deps',
+	    GROUP => 'Watch options',
 	    DEFAULT => [],
 	    HELP => 'Ignore watches on the following packages if the package doesn\'t have its own build dependencies in the .dsc'
 	},
 	'WATCHES'				=> {
+	    TYPE => 'HASH:ARRAY:STRING',
+	    VARNAME => 'watches',
+	    GROUP => 'Watch options',
 	    DEFAULT => {},
-	    HELP => 'Binaries for which the access time is controlled if they are not listed as source dependencies (note: /usr/bin is added if executable name does not start with \'/\').  Most buildds run with clean chroots at the moment, so the default list is now empty.'
+	    HELP => 'Binaries for which the access time is controlled if they are not listed as source dependencies (note: /usr/bin is added if executable name does not start with \'/\').  Most buildds run with clean chroots at the moment, so the default list is now empty.  This hash is a mapping between a package name and the binaries in the package stored as an array reference.'
 	},
 	'BUILD_DIR'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'build_dir',
+	    GROUP => 'Core options',
 	    DEFAULT => cwd(),
 	    CHECK => $validate_directory,
 	    HELP => 'This option is deprecated.  Directory for chroot symlinks and sbuild logs.  Defaults to the current directory if unspecified.  It is used as the location of chroot symlinks (obsolete) and for current build log symlinks and some build logs.  There is no default; if unset, it defaults to the current working directory.  $HOME/build is another common configuration.'
 	},
 	'SBUILD_MODE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'sbuild_mode',
+	    GROUP => 'Core options',
 	    DEFAULT => 'user',
 	    HELP => 'sbuild behaviour; possible values are "user" (exit status reports build failures) and "buildd" (exit status does not report build failures) for use in a buildd setup.  "buildd" also currently implies enabling of "legacy features" such as chroot symlinks in the build directory and the creation of current symlinks in the build directory.'
 	},
 	'CHROOT_SETUP_SCRIPT'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'chroot_setup_script',
+	    GROUP => 'Chroot options',
 	    DEFAULT => undef,
 	    HELP => 'Script to run to perform custom setup tasks in the chroot.'
 	},
 	'FORCE_ORIG_SOURCE'			=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'force_orig_source',
+	    GROUP => 'Build options',
 	    DEFAULT => 0,
 	    HELP => 'By default, the -s option only includes the .orig.tar.gz when needed (i.e. when the Debian revision is 0 or 1).  By setting this option to 1, the .orig.tar.gz will always be included when -s is used.  This is equivalent to --force-orig-source.'
 	},
 	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> {
+	    TYPE => 'HASH:NUMERIC',
+	    VARNAME => 'individual_stalled_pkg_timeout',
+	    GROUP => 'Build timeouts',
 	    DEFAULT => {},
-	    HELP => 'Some packages may exceed the general timeout (e.g. redirecting output to a file) and need a different timeout.',
+	    HELP => 'Some packages may exceed the general timeout (e.g. redirecting output to a file) and need a different timeout.  This has is a mapping between source package name and timeout.',
 	    EXAMPLE =>
 '%individual_stalled_pkg_timeout = (smalleiffel => 300,
 				   jade => 300,
@@ -425,56 +563,94 @@ sub setup ($) {
 				   kwave => 600);'
 	},
 	'ENVIRONMENT_FILTER'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'environment_filter',
+	    GROUP => 'Core options',
 	    DEFAULT => ['^PATH$',
 			'^DEB(IAN|SIGN)?_[A-Z_]+$',
 	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$'],
 	    HELP => 'Only environment variables matching one of the regular expressions in this arrayref will be passed to dpkg-buildpackage and other programs run by sbuild.'
 	},
 	'LD_LIBRARY_PATH'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'ld_library_path',
+	    GROUP => 'Build environment',
 	    DEFAULT => undef,
 	    HELP => 'Library search path to use inside the chroot.'
 	},
 	'MAINTAINER_NAME'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'maintainer_name',
+	    GROUP => 'Maintainer options',
 	    DEFAULT => undef,
 	    HELP => 'Name to use as override in .changes files for the Maintainer field.  The Maintainer field will not be overridden unless set here.'
 	},
 	'UPLOADER_NAME'				=> {
+	    VARNAME => 'uploader_name',
+	    TYPE => 'STRING',
+	    GROUP => 'Maintainer options',
 	    DEFAULT => undef,
 	    HELP => 'Name to use as override in .changes file for the Changed-By: field.'
 	},
 	'KEY_ID'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'key_id',
+	    GROUP => 'Maintainer options',
 	    DEFAULT => undef,
 	    HELP => 'Key ID to use in .changes for the current upload.  It overrides both $maintainer_name and $uploader_name.'
 	},
 	'SIGNING_OPTIONS'			=> {
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => "",
-	    HELP => 'PGP-related option to pass to dpkg-buildpackage. Usually neither .dsc nor .changes files are not signed automatically.'
+	    HELP => 'PGP-related identity options to pass to dpkg-buildpackage. Usually neither .dsc nor .changes files are not signed automatically.'
 	},
 	'APT_CLEAN'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_clean',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 0,
-	  HELP => 'APT clean.  1 to enable running "apt-get clean" at the start of each build, or 0 to disable.'
+	    HELP => 'APT clean.  1 to enable running "apt-get clean" at the start of each build, or 0 to disable.'
 	},
 	'APT_UPDATE'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_update',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 1,
 	    HELP => 'APT update.  1 to enable running "apt-get update" at the start of each build, or 0 to disable.'
 	},
 	'APT_UPDATE_ARCHIVE_ONLY'		=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_update_archive_only',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 1,
 	    HELP => 'Update local temporary APT archive directly (1, the default) or set to 0 to disable and do a full apt update (not recommended in case the mirror content has changed since the build started).'
 	},
 	'APT_UPGRADE'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_upgrade',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 1,
 	    HELP => 'APT upgrade.  1 to enable running "apt-get upgrade" at the start of each build, or 0 to disable.'
 	},
 	'APT_DISTUPGRADE'			=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_distupgrade',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 0,
 	    HELP => 'APT distupgrade.  1 to enable running "apt-get dist-upgrade" at the start of each build, or 0 to disable.'
 	},
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'apt_allow_unauthenticated',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 0,
 	    HELP => 'Force APT to accept unauthenticated packages.  By default, unauthenticated packages are not allowed.  This is to keep the build environment secure, using apt-secure(8).  By setting this to 1, APT::Get::AllowUnauthenticated is set to "true" when running apt-get. This is disabled by default: only enable it if you know what you are doing.'
 	},
 	'CHECK_DEPENDS_ALGORITHM'		=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'check_depends_algorithm',
+	    GROUP => 'Dependency resolution',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -490,61 +666,96 @@ sub setup ($) {
 	    HELP => 'Algorithm for build dependency checks: possible values are "first_only" (used by Debian buildds) or "alternatives". Default: "first_only".  Note that this is only used by the internal resolver.'
 	},
 	'BATCH_MODE'				=> {
+	    TYPE => 'BOOL',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => 0,
 	    HELP => 'Enable batch mode?'
 	},
 	'CORE_DEPENDS'				=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'core_depends',
+	    GROUP => 'Core options',
 	    DEFAULT => ['build-essential', 'fakeroot'],
 	    HELP => 'Packages which must be installed in the chroot for all builds.'
 	},
 	'MANUAL_DEPENDS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => [],
 	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'MANUAL_CONFLICTS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => [],
 	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'MANUAL_DEPENDS_INDEP'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => [],
 	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'MANUAL_CONFLICTS_INDEP'		=> {
+	    TYPE => 'ARRAY:STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => [],
 	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'BUILD_SOURCE'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'build_source',
+	    GROUP => 'Build options',
 	    DEFAULT => 0,
 	    CHECK => $validate_append_version,
 	    HELP => 'By default, do not build a source package (binary only build).  Set to 1 to force creation of a source package, but note that this is inappropriate for binary NMUs, where the option will always be disabled.'
 	},
 	'ARCHIVE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'archive',
+	    GROUP => 'Core options',
 	    DEFAULT => undef,
 	    HELP => 'Archive being built.  Only set in build log.  This might be useful for derivative distributions.'
 	},
 	'BIN_NMU'				=> {
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => undef,
 	    CHECK => $validate_append_version,
-	    HELP => 'Binary NMU options.  Do not set by hand.'
+	    HELP => 'Binary NMU changelog entry.  Do not set by hand.'
 	},
 	'BIN_NMU_VERSION'			=> {
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
 	    DEFAULT => undef,
-	    HELP => 'Binary NMU options.  Do not set by hand.'
+	    HELP => 'Binary NMU version number.  Do not set by hand.'
 	},
 	'APPEND_TO_VERSION'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'append_to_version',
+	    GROUP => 'Build options',
 	    DEFAULT => undef,
 	    CHECK => $validate_append_version,
 	    HELP => 'Suffix to append to version number.  May be useful for derivative distributions.'
 	},
 	'GCC_SNAPSHOT'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'gcc_snapshot',
+	    GROUP => 'Build options',
 	    DEFAULT => 0,
 	    HELP => 'Build using current GCC snapshot?'
 	},
 	'JOB_FILE'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'job_file',
+	    GROUP => 'Core options',
 	    DEFAULT => 'build-progress',
 	    HELP => 'Job status file (only used in batch mode)'
 	},
 	'BUILD_DEP_RESOLVER'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'build_dep_resolver',
+	    GROUP => 'Dependency resolution',
 	    DEFAULT => 'apt',
 	    CHECK => sub {
 		my $conf = shift;
@@ -563,6 +774,9 @@ sub setup ($) {
 	    HELP => 'Build dependency resolver.  The \'apt\' resolver is currently the default, and recommended for most users.  This resolver uses apt-get to resolve dependencies.  Alternative resolvers are \'apt\' and \'aptitude\', which use a built-in resolver module and aptitude to resolve build dependencies, respectively.  The internal resolver is not capable of resolving complex alternative and virtual package dependencies, but is otherwise equivalent to apt.  The aptitude resolver is similar to apt, but is useful in more complex situations, such as where multiple distributions are required, for example when building from experimental, where packages are needed from both unstable and experimental, but defaulting to unstable.'
 	},
 	'LINTIAN'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'lintian',
+	    GROUP => 'Build validation',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -577,6 +791,9 @@ sub setup ($) {
 	    HELP => 'Path to lintian binary'
 	},
 	'RUN_LINTIAN'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'run_lintian',
+	    GROUP => 'Build validation',
 	    CHECK => sub {
 		my $conf = shift;
 		$conf->check('LINTIAN');
@@ -585,10 +802,16 @@ sub setup ($) {
 	    HELP => 'Run lintian?'
 	},
 	'LINTIAN_OPTIONS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'lintian_opts',
+	    GROUP => 'Build validation',
 	    DEFAULT => [],
 	    HELP => 'Options to pass to lintian.  Each option is a separate arrayref element.  For example, [\'-i\', \'-v\'] to add -i and -v.'
 	},
 	'PIUPARTS'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'piuparts',
+	    GROUP => 'Build validation',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -603,6 +826,9 @@ sub setup ($) {
 	    HELP => 'Path to piuparts binary'
 	},
 	'RUN_PIUPARTS'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'run_piuparts',
+	    GROUP => 'Build validation',
 	    CHECK => sub {
 		my $conf = shift;
 		$conf->check('PIUPARTS');
@@ -611,14 +837,23 @@ sub setup ($) {
 	    HELP => 'Run piuparts'
 	},
 	'PIUPARTS_OPTIONS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'piuparts_opts',
+	    GROUP => 'Build validation',
 	    DEFAULT => [],
 	    HELP => 'Options to pass to piuparts.  Each option is a separate arrayref element.  For example, [\'-b\', \'<chroot_tarball>\'] to add -b and <chroot_tarball>.'
 	},
 	'PIUPARTS_ROOT_ARGS'			=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'piuparts_root_args',
+	    GROUP => 'Build validation',
 	    DEFAULT => [],
 	    HELP => 'Preceding arguments to launch piuparts as root. If no arguments are specified, piuparts will be launched via sudo.'
 	},
 	'EXTERNAL_COMMANDS'			=> {
+	    TYPE => 'HASH:ARRAY:ARRAY:STRING',
+	    VARNAME => 'external_commands',
+	    GROUP => 'Chroot options',
 	    DEFAULT => {
 		"pre-build-commands" => [],
 		"chroot-setup-commands" => [],
@@ -647,18 +882,30 @@ sub setup ($) {
 };'
 	},
 	'LOG_EXTERNAL_COMMAND_OUTPUT'		=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'log_external_command_output',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 1,
 	    HELP => 'Log standard output of commands run by sbuild?'
 	},
 	'LOG_EXTERNAL_COMMAND_ERROR'		=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'log_external_command_error',
+	    GROUP => 'Chroot options',
 	    DEFAULT => 1,
-	    HELP => 'Log standard output of commands run by sbuild?'
+	    HELP => 'Log standard error of commands run by sbuild?'
 	},
 	'RESOLVE_VIRTUAL'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'resolve_virtual',
+	    GROUP => 'Dependency resolution',
 	    DEFAULT => 0,
 	    HELP => 'Attempt to resolve virtual dependencies?  This option is only used by the internal resolver.'
 	},
 	'RESOLVE_ALTERNATIVES'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'resolve_alternatives',
+	    GROUP => 'Dependency resolution',
 	    DEFAULT => undef,
 	    GET => sub {
 		my $conf = shift;
@@ -677,17 +924,22 @@ sub setup ($) {
 	    HELP => 'Should the dependency resolver use alternatives in Build-Depends and Build-Depends-Indep?  By default, only the first alternative will be used; all other alternatives will be removed.  Note that this does not include architecture-specific alternatives, which are reduced to the build architecture prior to alternatives removal.  This should be left disabled when building for unstable; it may be useful when building backports.'
 	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'sbuild_build_depends_secret_key',
+	    GROUP => 'Dependency resolution',
 	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.sec',
 	    HELP => 'GPG secret key for temporary local apt archive.'
 	},
 	'SBUILD_BUILD_DEPENDS_PUBLIC_KEY'		=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'sbuild_build_depends_public_key',
+	    GROUP => 'Dependency resolution',
 	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.pub',
 	    HELP => 'GPG public key for temporary local apt archive.'
 	},
     );
 
     $conf->set_allowed_keys(\%sbuild_keys);
-    Sbuild::DB::ClientConf::setup($conf);
 }
 
 sub read ($) {

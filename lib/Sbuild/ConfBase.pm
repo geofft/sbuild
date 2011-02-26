@@ -90,9 +90,16 @@ sub init_allowed_keys {
 
     my %common_keys = (
 	'PATH'					=> {
-	    DEFAULT => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games"
+	    TYPE => 'STRING',
+	    VARNAME => 'path',
+	    GROUP => 'Build environment',
+	    DEFAULT => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games",
+	    HELP => 'PATH to set when running dpkg-buildpackage.'
 	},
 	'DISTRIBUTION'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'distribution',
+	    GROUP => 'Build options',
 	    SET => sub {
 		my $self = shift;
 		my $entry = shift;
@@ -116,42 +123,80 @@ sub init_allowed_keys {
 		    $self->set('MAILTO',
 			       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')});
 		}
-	    }
+	    },
+	    HELP => 'Default distribution.  By default, no distribution is defined, and the user must specify it with the -d option.  However, a default may be configured here if desired.  Users must take care not to upload to the wrong distribution when this option is set, for example experimental packages will be built for upload to unstable when this is not what is required.'
 	},
 	'OVERRIDE_DISTRIBUTION'			=> {
-	    DEFAULT => 0
+	    TYPE => 'BOOL',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => 0,
+	    HELP => 'Default distribution has been overridden'
 	},
 	'MAILPROG'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'mailprog',
+	    GROUP => 'Programs',
 	    CHECK => $validate_program,
-	    DEFAULT => '/usr/sbin/sendmail'
+	    DEFAULT => '/usr/sbin/sendmail',
+	    HELP => 'Program to use to send mail'
 	},
 	# TODO: Check if defaulted in code assuming undef
 	'ARCH'					=> {
-	    DEFAULT => $host_arch
+	    TYPE => 'STRING',
+	    VARNAME => 'arch',
+	    GROUP => 'Build options',
+	    DEFAULT => $host_arch,
+	    HELP => 'Build architecture.'
 	},
 	'HOST_ARCH'				=> {
-	    DEFAULT => $host_arch
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => $host_arch,
+	    HELP => 'Host architecture'
 	},
 	'HOSTNAME'				=> {
-	    DEFAULT => $hostname
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => $hostname,
+	    HELP => 'System hostname.  Should not require setting.'
 	},
 	'HOME'					=> {
-	    DEFAULT => $home
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => $home,
+	    HELP => 'User\'s home directory.  Should not require setting.'
 	},
 	'USERNAME'				=> {
-	    DEFAULT => $username
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => $username,
+	    HELP => 'User\'s username.  Should not require setting.'
 	},
 	'FULLNAME'				=> {
-	    DEFAULT => $fullname
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => $fullname,
+	    HELP => 'User\'s full name.  Should not require setting.'
 	},
 	'CWD'					=> {
-	    DEFAULT => cwd()
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => cwd(),
+	    HELP => 'Current working directory at time of configuration reading.'
 	},
 	'VERBOSE'				=> {
-	    DEFAULT => 0
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'verbose',
+	    GROUP => 'Logging options',
+	    DEFAULT => 0,
+	    HELP => 'Verbose logging level'
 	},
 	'DEBUG'					=> {
-	    DEFAULT => 0
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'debug',
+	    GROUP => 'Logging options',
+	    DEFAULT => 0,
+	    HELP => 'Debug logging level'
 	},
     );
 
@@ -168,6 +213,12 @@ sub new {
     $self->init_allowed_keys();
 
     return $self;
+}
+
+sub get_keys {
+    my $self = shift;
+
+    return keys(%{$self->{'KEYS'}});
 }
 
 sub is_default {
@@ -199,6 +250,41 @@ sub _get_default {
     my $key = shift;
 
     return $self->_get_property_value($key, 'DEFAULT');
+}
+
+sub _get_type {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'TYPE');
+}
+
+sub _get_varname {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'VARNAME');
+}
+
+sub _get_group {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'GROUP');
+}
+
+sub _get_help {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'HELP');
+}
+
+sub _get_example {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'EXAMPLE');
 }
 
 sub get {
