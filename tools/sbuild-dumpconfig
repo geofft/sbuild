@@ -1,0 +1,91 @@
+#!/usr/bin/perl
+#
+# sbuild: build packages, obeying source dependencies
+# Copyright © 1998-2000 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
+# Copyright © 2005      Ryan Murray <rmurray@debian.org>
+# Copyright © 2005-2009 Roger Leigh <rleigh@debian.org
+# Copyright © 2008      Timothy G Abbott <tabbott@mit.edu>
+# Copyright © 2008      Simon McVittie <smcv@debian.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+
+use strict;
+use warnings;
+
+use Sbuild::Conf qw();
+use Text::Wrap;
+use Data::Dumper;
+
+my $conf = Sbuild::Conf::new();
+exit 1 if !defined($conf);
+
+my @keys = $conf->get_keys();
+
+# print "KEYS: " . join(", ", @keys) . "\n";
+
+my %tmpgroups;
+
+foreach my $key (@keys) {
+#    print "KEY: $key, GROUP: " . $conf->_get_group($key) . "\n";
+    $tmpgroups{$conf->_get_group($key)} = 1;
+}
+
+my @groups = sort keys %tmpgroups;
+
+# print "GROUPS: " . join(",\n", @groups) . "\n";
+
+
+my $header = <<END;
+# sbuild.conf: sbuild settings.                                    -*- Perl -*-
+# Default settings are commented out.
+# Note that all possible settings are listed here.  Many may be set on
+# the command-line, and do not normally need setting here,
+# e.g. \$verbose.  Others need setting by each individual user in their
+# ~/.sbuildrc, but are listed here for completeness.
+END
+
+    print "$header";
+
+foreach my $group (@groups) {
+    # Don't print internal keys
+    next if $group =~ m/^__/;
+
+    print "\n\n##\n## $group\n##\n\n";
+
+    foreach my $key (@keys) {
+	if ($conf->_get_group($key) eq $group) {
+	    my $type = $conf->_get_type($key);
+	    my $varname = $conf->_get_varname($key);
+	    my $help = $conf->_get_help($key);
+	    my $default = $conf->_get_default($key);
+	    print "# $key\n";
+	    print "# Type: $type\n";
+	    if ($help) {
+		print wrap("# ", "# ", "$help\n");
+	    }
+	    my $example = $conf->_get_example($key);
+	    if ($example) {
+		foreach my $line (split("\n", $example)) {
+		    print "#    $line\n";
+		}
+	    }
+	    print wrap("#", "#", Data::Dumper->Dump([$default], ["$varname"]));
+
+	    print("\n");
+	}
+    }
+}
