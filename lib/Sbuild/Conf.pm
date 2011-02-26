@@ -113,13 +113,16 @@ sub setup ($) {
 
     my %sbuild_keys = (
 	'CHROOT'				=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Default chroot (defaults to distribution[-arch][-sbuild])'
 	},
 	'BUILD_ARCH_ALL'			=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Build architecture: all packages by default'
 	},
 	'NOLOG'					=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Disable use of log file'
 	},
 	'SUDO'					=> {
 	    CHECK => sub {
@@ -152,11 +155,13 @@ sub setup ($) {
 		    }
 		}
 	    },
-	    DEFAULT => 'sudo'
+	    DEFAULT => 'sudo',
+	    HELP => 'Path to sudo binary'
 	},
 	'SU'					=> {
 	    CHECK => $validate_program,
-	    DEFAULT => 'su'
+	    DEFAULT => 'su',
+	    HELP => 'Path to su binary'
 	},
 	'SCHROOT'				=> {
 	    CHECK => sub {
@@ -169,21 +174,26 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    DEFAULT => 'schroot'
+	    DEFAULT => 'schroot',
+	    HELP => 'Path to schroot binary'
 	},
 	'SCHROOT_OPTIONS'			=> {
-	    DEFAULT => ['-q']
+	    DEFAULT => ['-q'],
+	    HELP => 'Additional command-line options for schroot'
 	},
 	'FAKEROOT'				=> {
-	    DEFAULT => 'fakeroot'
+	    DEFAULT => 'fakeroot',
+	    HELP => 'Path to fakeroot binary'
 	},
 	'APT_GET'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => 'apt-get'
+	    DEFAULT => 'apt-get',
+	    HELP => 'Path to apt-get binary'
 	},
 	'APT_CACHE'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => 'apt-cache'
+	    DEFAULT => 'apt-cache',
+	    HELP => 'Path to apt-cache binary'
 	},
 	'APTITUDE'				=> {
 	    CHECK => sub {
@@ -196,43 +206,55 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    DEFAULT => 'aptitude'
+	    DEFAULT => 'aptitude',
+	    HELP => 'Path to aptitude binary'
 	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Additional command-line options for dpkg-buildpackage'
 	},
 	'DPKG_SOURCE'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => 'dpkg-source'
+	    DEFAULT => 'dpkg-source',
+	    HELP => 'Path to dpkg-source binary'
 	},
 	'DPKG_SOURCE_OPTIONS'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Additional command-line options for dpkg-source'
 	},
 	'DCMD'					=> {
 	    CHECK => $validate_program,
-	    DEFAULT => 'dcmd'
+	    DEFAULT => 'dcmd',
+	    HELP => 'Path to dcmd binary'
 	},
 	'MD5SUM'				=> {
 	    CHECK => $validate_program,
-	    DEFAULT => 'md5sum'
+	    DEFAULT => 'md5sum',
+	    HELP => 'Path to md5sum binary'
 	},
 	'AVG_TIME_DB'				=> {
-	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-times"
+	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-times",
+	    HELP => 'Name of a database for logging package build times (optional, no database is written if empty)'
 	},
 	'AVG_SPACE_DB'				=> {
-	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-space"
+	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-space",
+	    HELP => 'Name of a database for logging package space requirement (optional, no database is written if empty)'
 	},
 	'STATS_DIR'				=> {
-	    DEFAULT => "$HOME/stats"
+	    DEFAULT => "$HOME/stats",
+	    HELP => 'Directory for writing build statistics to'
 	},
 	'PACKAGE_CHECKLIST'			=> {
-	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/package-checklist"
+	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/package-checklist",
+	    HELP => 'Where to store list currently installed packages inside chroot'
 	},
 	'BUILD_ENV_CMND'			=> {
-	    DEFAULT => ""
+	    DEFAULT => "",
+	    HELP => 'This command is run with the dpkg-buildpackage command line passed to it (in the chroot, if doing a chrooted build).  It is used by the sparc buildd (which is sparc64) to call the wrapper script that sets the environment to sparc (32-bit).  It could be used for other build environment setup scripts.  Note that this is superceded by schroot\'s \'command-prefix\' option'
 	},
 	'PGP_OPTIONS'				=> {
-	    DEFAULT => ['-us', '-uc']
+	    DEFAULT => ['-us', '-uc'],
+	    HELP => 'Additional signing options for dpkg-buildpackage'
 	},
 	'LOG_DIR'				=> {
 	    CHECK => sub {
@@ -250,7 +272,8 @@ sub setup ($) {
 
 		$conf->set('LOG_DIR_AVAILABLE', $log_dir_available);
 	    },
-	    DEFAULT => "$HOME/logs"
+	    DEFAULT => "$HOME/logs",
+	    HELP => 'Directory for storing build logs'
 	},
 	'LOG_DIR_AVAILABLE'			=> {},
 	'MAILTO'				=> {
@@ -263,19 +286,23 @@ sub setup ($) {
 		    if !$conf->get('MAILTO') &&
 		    $conf->get('SBUILD_MODE') eq "buildd";
 	    },
-	    DEFAULT => ""
+	    DEFAULT => "",
+	    HELP => 'email address to mail build logs to'
 	},
 	'MAILTO_FORCED_BY_CLI'			=> {
 	    DEFAULT => 0
 	},
 	'MAILTO_HASH'				=> {
-	    DEFAULT => {}
+	    DEFAULT => {},
+	    HELP => 'Like MAILTO, but per-distribution.  This is a hashref mapping distribution name to MAILTO.'
 	},
 	'MAILFROM'				=> {
-	    DEFAULT => "Source Builder <sbuild>"
+	    DEFAULT => "Source Builder <sbuild>",
+	    HELP => 'email address set in the From line of build logs'
 	},
 	'COMPRESS_BUILD_LOG_MAILS'              => {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Should build log mail be compressed?'
 	},
 	'PURGE_BUILD_DEPS'			=> {
 	    CHECK => sub {
@@ -288,7 +315,8 @@ sub setup ($) {
 		    if !isin($conf->get('PURGE_BUILD_DEPS'),
 			     qw(always successful never));
 	    },
-	    DEFAULT => 'always'
+	    DEFAULT => 'always',
+	    HELP => 'When to purge the build dependencies after a build; possible values are "never", "successful", and "always"'
 	},
 	'PURGE_BUILD_DIRECTORY'			=> {
 	    CHECK => sub {
@@ -301,7 +329,8 @@ sub setup ($) {
 		    if !isin($conf->get('PURGE_BUILD_DIRECTORY'),
 			     qw(always successful never));
 	    },
-	    DEFAULT => 'always'
+	    DEFAULT => 'always',
+	    HELP => 'When to purge the build directory after a build; possible values are "never", "successful", and "always"'
 	},
 	'TOOLCHAIN_REGEX'			=> {
 	    DEFAULT => ['binutils$',
@@ -315,16 +344,20 @@ sub setup ($) {
 			'gnumach-dev$',
 			'hurd-dev$',
 			'kfreebsd-kernel-headers$'
-		]
+		],
+	    HELP => 'Regular expressions identifying toolchain packages.'
 	},
 	'STALLED_PKG_TIMEOUT'			=> {
-	    DEFAULT => 150 # minutes
+	    DEFAULT => 150, # minutes
+	    HELP => 'Time (in minutes) of inactivity after which a build is terminated. Activity is measured by output to the log file.'
 	},
 	'MAX_LOCK_TRYS'				=> {
-	    DEFAULT => 120
+	    DEFAULT => 120,
+	    HELP => 'Number of times to try waiting for a lock.'
 	},
 	'LOCK_INTERVAL'				=> {
-	    DEFAULT => 5
+	    DEFAULT => 5,
+	    HELP => 'Lock wait interval (seconds).  Maximum wait time is (max_lock_trys × lock_interval).'
 	},
 	'CHROOT_MODE'				=> {
 	    CHECK => sub {
@@ -336,79 +369,110 @@ sub setup ($) {
 		    if !isin($conf->get('CHROOT_MODE'),
 			     qw(schroot sudo));
 	    },
-	    DEFAULT => 'schroot'
+	    DEFAULT => 'schroot',
+	    HELP => 'Mechanism to use for chroot virtualisation.  Possible value are "schroot" (default) and "sudo".'
 	},
 	'CHROOT_SPLIT'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Run in split mode?  In split mode, apt-get and dpkg are run on the host system, rather than inside the chroot.'
 	},
 	'APT_POLICY'				=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'APT policy.  1 to enable additional checking of package versions available in the APT cache, or 0 to disable.  0 is the traditional sbuild behaviour; 1 is needed to build from additional repositories such as sarge-backports or experimental, and has a small performance cost.  Note that this is only used by the internal resolver.'
 	},
 	'CHECK_SPACE'				=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'Check free disk space prior to starting a build.  sbuild requires the free space to be at least twice the size of the unpacked sources to allow a build to proceed.  Can be disabled to allow building if space is very limited, but the threshold to abort a build has been exceeded despite there being sufficient space for the build to complete.'
 	},
 	'CHECK_WATCHES'				=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'Check watched packages to discover missing build dependencies.  This can be disabled to increase the speed of builds.'
 	},
 	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Ignore watches on the following packages if the package doesn\'t have its own build dependencies in the .dsc'
 	},
 	'WATCHES'				=> {
-	    DEFAULT => {}
+	    DEFAULT => {},
+	    HELP => 'Binaries for which the access time is controlled if they are not listed as source dependencies (note: /usr/bin is added if executable name does not start with \'/\').  Most buildds run with clean chroots at the moment, so the default list is now empty.'
 	},
 	'BUILD_DIR'				=> {
 	    DEFAULT => cwd(),
-	    CHECK => $validate_directory
+	    CHECK => $validate_directory,
+	    HELP => 'This option is deprecated.  Directory for chroot symlinks and sbuild logs.  Defaults to the current directory if unspecified.  It is used as the location of chroot symlinks (obsolete) and for current build log symlinks and some build logs.  There is no default; if unset, it defaults to the current working directory.  $HOME/build is another common configuration.'
 	},
 	'SBUILD_MODE'				=> {
-	    DEFAULT => 'user'
+	    DEFAULT => 'user',
+	    HELP => 'sbuild behaviour; possible values are "user" (exit status reports build failures) and "buildd" (exit status does not report build failures) for use in a buildd setup.  "buildd" also currently implies enabling of "legacy features" such as chroot symlinks in the build directory and the creation of current symlinks in the build directory.'
 	},
 	'CHROOT_SETUP_SCRIPT'				=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Script to run to perform custom setup tasks in the chroot.'
 	},
 	'FORCE_ORIG_SOURCE'			=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'By default, the -s option only includes the .orig.tar.gz when needed (i.e. when the Debian revision is 0 or 1).  By setting this option to 1, the .orig.tar.gz will always be included when -s is used.  This is equivalent to --force-orig-source.'
 	},
 	'INDIVIDUAL_STALLED_PKG_TIMEOUT'	=> {
-	    DEFAULT => {}
+	    DEFAULT => {},
+	    HELP => 'Some packages may exceed the general timeout (e.g. redirecting output to a file) and need a different timeout.',
+	    EXAMPLE =>
+'%individual_stalled_pkg_timeout = (smalleiffel => 300,
+				   jade => 300,
+				   atlas => 300,
+				   glibc => 1000,
+				   \'gcc-3.3\' => 300,
+				   kwave => 600);'
 	},
 	'ENVIRONMENT_FILTER'			=> {
 	    DEFAULT => ['^PATH$',
 			'^DEB(IAN|SIGN)?_[A-Z_]+$',
-	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$']
+	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$'],
+	    HELP => 'Only environment variables matching one of the regular expressions in this arrayref will be passed to dpkg-buildpackage and other programs run by sbuild.'
 	},
 	'LD_LIBRARY_PATH'			=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Library search path to use inside the chroot.'
 	},
 	'MAINTAINER_NAME'			=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Name to use as override in .changes files for the Maintainer field.  The Maintainer field will not be overridden unless set here.'
 	},
 	'UPLOADER_NAME'				=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Name to use as override in .changes file for the Changed-By: field.'
 	},
 	'KEY_ID'				=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Key ID to use in .changes for the current upload.  It overrides both $maintainer_name and $uploader_name.'
 	},
 	'SIGNING_OPTIONS'			=> {
-	    DEFAULT => ""
+	    DEFAULT => "",
+	    HELP => 'PGP-related option to pass to dpkg-buildpackage. Usually neither .dsc nor .changes files are not signed automatically.'
 	},
 	'APT_CLEAN'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	  HELP => 'APT clean.  1 to enable running "apt-get clean" at the start of each build, or 0 to disable.'
 	},
 	'APT_UPDATE'				=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'APT update.  1 to enable running "apt-get update" at the start of each build, or 0 to disable.'
 	},
 	'APT_UPDATE_ARCHIVE_ONLY'		=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'Update local temporary APT archive directly (1, the default) or set to 0 to disable and do a full apt update (not recommended in case the mirror content has changed since the build started).'
 	},
 	'APT_UPGRADE'				=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'APT upgrade.  1 to enable running "apt-get upgrade" at the start of each build, or 0 to disable.'
 	},
 	'APT_DISTUPGRADE'			=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'APT distupgrade.  1 to enable running "apt-get dist-upgrade" at the start of each build, or 0 to disable.'
 	},
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Force APT to accept unauthenticated packages.  By default, unauthenticated packages are not allowed.  This is to keep the build environment secure, using apt-secure(8).  By setting this to 1, APT::Get::AllowUnauthenticated is set to "true" when running apt-get. This is disabled by default: only enable it if you know what you are doing.'
 	},
 	'CHECK_DEPENDS_ALGORITHM'		=> {
 	    CHECK => sub {
@@ -422,52 +486,63 @@ sub setup ($) {
 		    if !isin($conf->get($key),
 			     qw(first-only alternatives));
 	    },
-	    DEFAULT => 'first-only'
-	},
-	'AUTO_GIVEBACK'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 'first-only',
+	    HELP => 'Algorithm for build dependency checks: possible values are "first_only" (used by Debian buildds) or "alternatives". Default: "first_only".  Note that this is only used by the internal resolver.'
 	},
 	'BATCH_MODE'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Enable batch mode?'
 	},
 	'CORE_DEPENDS'				=> {
-	    DEFAULT => ['build-essential', 'fakeroot']
+	    DEFAULT => ['build-essential', 'fakeroot'],
+	    HELP => 'Packages which must be installed in the chroot for all builds.'
 	},
 	'MANUAL_DEPENDS'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'MANUAL_CONFLICTS'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'MANUAL_DEPENDS_INDEP'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'MANUAL_CONFLICTS_INDEP'		=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
 	'BUILD_SOURCE'				=> {
 	    DEFAULT => 0,
 	    CHECK => $validate_append_version,
+	    HELP => 'By default, do not build a source package (binary only build).  Set to 1 to force creation of a source package, but note that this is inappropriate for binary NMUs, where the option will always be disabled.'
 	},
 	'ARCHIVE'				=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Archive being built.  Only set in build log.  This might be useful for derivative distributions.'
 	},
 	'BIN_NMU'				=> {
 	    DEFAULT => undef,
-	    CHECK => $validate_append_version
+	    CHECK => $validate_append_version,
+	    HELP => 'Binary NMU options.  Do not set by hand.'
 	},
 	'BIN_NMU_VERSION'			=> {
-	    DEFAULT => undef
+	    DEFAULT => undef,
+	    HELP => 'Binary NMU options.  Do not set by hand.'
 	},
 	'APPEND_TO_VERSION'			=> {
 	    DEFAULT => undef,
 	    CHECK => $validate_append_version,
+	    HELP => 'Suffix to append to version number.  May be useful for derivative distributions.'
 	},
 	'GCC_SNAPSHOT'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Build using current GCC snapshot?'
 	},
 	'JOB_FILE'				=> {
-	    DEFAULT => 'build-progress'
+	    DEFAULT => 'build-progress',
+	    HELP => 'Job status file (only used in batch mode)'
 	},
 	'BUILD_DEP_RESOLVER'			=> {
 	    DEFAULT => 'apt',
@@ -485,6 +560,7 @@ sub setup ($) {
 		    if !isin($conf->get($key),
 			     qw(internal apt aptitude));
 	    },
+	    HELP => 'Build dependency resolver.  The \'apt\' resolver is currently the default, and recommended for most users.  This resolver uses apt-get to resolve dependencies.  Alternative resolvers are \'apt\' and \'aptitude\', which use a built-in resolver module and aptitude to resolve build dependencies, respectively.  The internal resolver is not capable of resolving complex alternative and virtual package dependencies, but is otherwise equivalent to apt.  The aptitude resolver is similar to apt, but is useful in more complex situations, such as where multiple distributions are required, for example when building from experimental, where packages are needed from both unstable and experimental, but defaulting to unstable.'
 	},
 	'LINTIAN'				=> {
 	    CHECK => sub {
@@ -497,17 +573,20 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    DEFAULT => 'lintian'
+	    DEFAULT => 'lintian',
+	    HELP => 'Path to lintian binary'
 	},
 	'RUN_LINTIAN'				=> {
 	    CHECK => sub {
 		my $conf = shift;
 		$conf->check('LINTIAN');
 	    },
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Run lintian?'
 	},
 	'LINTIAN_OPTIONS'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Options to pass to lintian.  Each option is a separate arrayref element.  For example, [\'-i\', \'-v\'] to add -i and -v.'
 	},
 	'PIUPARTS'				=> {
 	    CHECK => sub {
@@ -520,20 +599,24 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    DEFAULT => 'piuparts'
+	    DEFAULT => 'piuparts',
+	    HELP => 'Path to piuparts binary'
 	},
 	'RUN_PIUPARTS'				=> {
 	    CHECK => sub {
 		my $conf = shift;
 		$conf->check('PIUPARTS');
 	    },
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Run piuparts'
 	},
 	'PIUPARTS_OPTIONS'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Options to pass to piuparts.  Each option is a separate arrayref element.  For example, [\'-b\', \'<chroot_tarball>\'] to add -b and <chroot_tarball>.'
 	},
 	'PIUPARTS_ROOT_ARGS'			=> {
-	    DEFAULT => []
+	    DEFAULT => [],
+	    HELP => 'Preceding arguments to launch piuparts as root. If no arguments are specified, piuparts will be launched via sudo.'
 	},
 	'EXTERNAL_COMMANDS'			=> {
 	    DEFAULT => {
@@ -542,15 +625,38 @@ sub setup ($) {
 		"chroot-cleanup-commands" => [],
 		"post-build-commands" => [],
 	    },
+	    HELP => 'External commands to run at various stages of a build. Commands are held in a hash of arrays of arrays data structure.',
+	    EXAMPLE =>
+'$external_commands = {
+    "pre-build-commands" => [
+        [\'foo\', \'arg1\', \'arg2\'],
+        [\'bar\', \'arg1\', \'arg2\', \'arg3\'],
+    ],
+    "chroot-setup-commands" => [
+        [\'foo\', \'arg1\', \'arg2\'],
+        [\'bar\', \'arg1\', \'arg2\', \'arg3\'],
+    ],
+    "chroot-cleanup-commands" => [
+        [\'foo\', \'arg1\', \'arg2\'],
+        [\'bar\', \'arg1\', \'arg2\', \'arg3\'],
+    ],
+    "post-build-commands" => [
+        [\'foo\', \'arg1\', \'arg2\'],
+        [\'bar\', \'arg1\', \'arg2\', \'arg3\'],
+    ],
+};'
 	},
 	'LOG_EXTERNAL_COMMAND_OUTPUT'		=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'Log standard output of commands run by sbuild?'
 	},
 	'LOG_EXTERNAL_COMMAND_ERROR'		=> {
-	    DEFAULT => 1
+	    DEFAULT => 1,
+	    HELP => 'Log standard output of commands run by sbuild?'
 	},
 	'RESOLVE_VIRTUAL'				=> {
-	    DEFAULT => 0
+	    DEFAULT => 0,
+	    HELP => 'Attempt to resolve virtual dependencies?  This option is only used by the internal resolver.'
 	},
 	'RESOLVE_ALTERNATIVES'				=> {
 	    DEFAULT => undef,
@@ -567,13 +673,16 @@ sub setup ($) {
 		}
 
 		return $retval;
-	    }
+	    },
+	    HELP => 'Should the dependency resolver use alternatives in Build-Depends and Build-Depends-Indep?  By default, only the first alternative will be used; all other alternatives will be removed.  Note that this does not include architecture-specific alternatives, which are reduced to the build architecture prior to alternatives removal.  This should be left disabled when building for unstable; it may be useful when building backports.'
 	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
-	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.sec'
+	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.sec',
+	    HELP => 'GPG secret key for temporary local apt archive.'
 	},
 	'SBUILD_BUILD_DEPENDS_PUBLIC_KEY'		=> {
-	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.pub'
+	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.pub',
+	    HELP => 'GPG public key for temporary local apt archive.'
 	},
     );
 
