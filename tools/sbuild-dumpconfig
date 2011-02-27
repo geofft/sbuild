@@ -27,13 +27,31 @@ use strict;
 use warnings;
 
 use Sbuild::Conf qw();
+use Buildd::Conf qw();
 use Text::Wrap;
 use Data::Dumper;
 
-my $conf = Sbuild::Conf::new();
+die "Usage: $0 sbuild|buildd config|man" if @ARGV != 2;
+
+my $conf;
+if ($ARGV[0] eq "sbuild") {
+    $conf = Sbuild::Conf::new();
+} elsif ($ARGV[0] eq "buildd") {
+    $conf = Buildd::Conf::new();
+} else {
+    die "Unsupported configuration type $ARGV[0]";
+}
 exit 1 if !defined($conf);
 
-my @keys = $conf->get_keys();
+
+my $output = $ARGV[1];
+
+die "Unsupported output type $output"
+    if ($output ne "config" && $output ne "man");
+
+
+
+my @keys = sort $conf->get_keys();
 
 # print "KEYS: " . join(", ", @keys) . "\n";
 
@@ -58,13 +76,18 @@ my $header = <<END;
 # ~/.sbuildrc, but are listed here for completeness.
 END
 
+if ($output eq "config") {
     print "$header";
-
+}
 foreach my $group (@groups) {
     # Don't print internal keys
     next if $group =~ m/^__/;
 
-    print "\n\n##\n## $group\n##\n\n";
+    if ($output eq "config") {
+	print "\n\n##\n## $group\n##\n\n";
+    } elsif ($output eq "man") {
+	print ".SS $group\n";
+    }
 
     foreach my $key (@keys) {
 	if ($conf->_get_group($key) eq $group) {
@@ -72,20 +95,48 @@ foreach my $group (@groups) {
 	    my $varname = $conf->_get_varname($key);
 	    my $help = $conf->_get_help($key);
 	    my $default = $conf->_get_default($key);
-	    print "# $key\n";
-	    print "# Type: $type\n";
-	    if ($help) {
-		print wrap("# ", "# ", "$help\n");
-	    }
-	    my $example = $conf->_get_example($key);
-	    if ($example) {
-		foreach my $line (split("\n", $example)) {
-		    print "#    $line\n";
+	    if ($output eq "config") {
+		print "# $key\n";
+		print "# Type: $type\n";
+		if ($help) {
+		    print wrap("# ", "# ", "$help\n");
 		}
+		my $example = $conf->_get_example($key);
+		if ($example) {
+		    foreach my $line (split("\n", $example)) {
+			print "#    $line\n";
+		    }
+		}
+		print wrap("#", "#", Data::Dumper->Dump([$default], ["$varname"]));
+		print("\n");
+	    } elsif ($output eq "man") {
+		print ".TP\n";
+		print ".BR $key\n";
+		print "$type type.\n";
+		if ($help) {
+		    print wrap("", "", "$help\n");
+		}
+		my $example = $conf->_get_example($key);
+		if ($example) {
+		    print "Example:\n";
+		    print ".PP\n";
+		    print ".RS\n";
+		    foreach my $line (split("\n", $example)) {
+			print "\\f[CR]$line\\fP\n";
+			print ".br\n"
+		    }
+		    print ".RE\n";
+		}
+		print ".IP\n";
+		print "Default:\n";
+		print ".PP\n";
+		print ".RS\n";
+		foreach my $line (split("\n", Data::Dumper->Dump([$default], ["$varname"]))) {
+		    print "\\f[CR]$line\\fP\n";
+		    print ".br\n"
+		}
+		print ".RE\n";
 	    }
-	    print wrap("#", "#", Data::Dumper->Dump([$default], ["$varname"]));
-
-	    print("\n");
 	}
     }
 }
