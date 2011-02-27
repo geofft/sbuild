@@ -330,14 +330,8 @@ sub setup ($) {
 		my $key = $entry->{'NAME'};
 		my $directory = $conf->get($key);
 
-		my $log_dir_available = 1;
-		if ($directory && ! -d $directory &&
-		    !mkdir $directory) {
-		    warn "Could not create '$directory': $!\n";
-		    $log_dir_available = 0;
-		}
-
-		$conf->set('LOG_DIR_AVAILABLE', $log_dir_available);
+		# Trigger creation
+		$conf->get('LOG_DIR_AVAILABLE');
 	    },
 	    DEFAULT => "$HOME/logs",
 	    HELP => 'Directory for storing build logs'
@@ -345,6 +339,21 @@ sub setup ($) {
 	'LOG_DIR_AVAILABLE'			=> {
 	    TYPE => 'BOOL',
 	    GROUP => '__INTERNAL',
+	    GET => sub {
+		my $conf = shift;
+		my $entry = shift;
+
+		my $directory = $conf->get('LOG_DIR');
+
+		my $log_dir_available = 1;
+		if ($directory && ! -d $directory &&
+		    !mkdir $directory) {
+		    warn "Could not create '$directory': $!\n";
+		    $log_dir_available = 0;
+		}
+
+		return $log_dir_available;
+	    }
 	},
 	'MAILTO'				=> {
 	    TYPE => 'STRING',
