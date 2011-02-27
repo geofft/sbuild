@@ -947,7 +947,7 @@ sub setup ($) {
 		my $conf = shift;
 		my $entry = shift;
 
-		my $retval = $conf->_get_value($entry->{'NAME'});
+		my $retval = $conf->_get($entry->{'NAME'});
 
 		if (!defined($retval)) {
 		    $retval = 0;

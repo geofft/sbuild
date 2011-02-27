@@ -192,7 +192,7 @@ sub init_allowed_keys {
 		my $conf = shift;
 		my $entry = shift;
 
-		my $retval = $conf->_get_value($entry->{'NAME'});
+		my $retval = $conf->_get($entry->{'NAME'});
 
 		# Note that during a build, STDOUT is redirected, so
 		# this test will fail.  So set explicitly at start to
