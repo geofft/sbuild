@@ -13,7 +13,8 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see
 .\" <http://www.gnu.org/licenses/>.
-.TH SBUILD\-CHECKPACKAGES 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.so defs.man
+.TH SBUILD\-CHECKPACKAGES 1 "\*[RELEASE_DATE]" "Version \*[VERSION]" "Debian sbuild"
 .SH NAME
 sbuild\-checkpackages \- check the package list in a sbuild chroot against a reference list
 .SH SYNOPSIS

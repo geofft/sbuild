@@ -44,6 +44,22 @@ man_MANS =				\
 	wanna-build-merge-packages.1	\
 	wanna-build-statistics.1
 
+%.1: %.1.in defs.man
+	soelim $< > $@
+
+%.5: %.5.in defs.man
+	soelim $< > $@
+
+%.7: %.7.in defs.man
+	soelim $< > $@
+
+%.8: %.8.in defs.man
+	soelim $< > $@
+
+EXTRA_DIST =				\
+	defs.man.in			\
+	$(addsuffix .in, $(man_MANS))
+
 install-data-hook:
 	ln -sf sbuild-hold.1 $(DESTDIR)$(man1dir)/sbuild-unhold.1
 	ln -sf sbuild-update.1 $(DESTDIR)$(man1dir)/sbuild-upgrade.1

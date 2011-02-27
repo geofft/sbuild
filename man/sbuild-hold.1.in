@@ -13,7 +13,8 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see
 .\" <http://www.gnu.org/licenses/>.
-.TH SBUILD\-HOLD 1 "28 Dec 2007" "Version 0.57.0" "Debian sbuild"
+.so defs.man
+.TH SBUILD\-HOLD 1 "\*[RELEASE_DATE]" "Version \*[VERSION]" "Debian sbuild"
 .SH NAME
 sbuild\-hold \- hold packages in an sbuild chroot
 .SH SYNOPSIS

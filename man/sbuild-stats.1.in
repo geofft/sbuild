@@ -14,7 +14,8 @@
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see
 .\" <http://www.gnu.org/licenses/>.
-.TH SBUILD\-STATS 1 "@RELEASE_DATE@" "Version @VERSION@" "Debian sbuild"
+.so defs.man
+.TH SBUILD\-STATS 1 "\*[RELEASE_DATE]" "Version \*[VERSION]" "Debian sbuild"
 .SH NAME
 sbuild\-stats \- display or alter database of package build times/space
 .SH SYNOPSIS
