@@ -368,6 +368,26 @@ sub setup ($) {
 		    if !$conf->get('MAILTO') &&
 		    $conf->get('SBUILD_MODE') eq "buildd";
 	    },
+	    GET => sub {
+		my $conf = shift;
+		my $entry = shift;
+
+		my $retval = $conf->_get($entry->{'NAME'});
+
+		# Now, we might need to adjust the MAILTO based on the
+		# config data. We shouldn't do this if it was already
+		# explicitly set by the command line option:
+		if (defined($conf->get('MAILTO_FORCED_BY_CLI')) &&
+		    !$conf->get('MAILTO_FORCED_BY_CLI')
+		    && defined($conf->get('DISTRIBUTION'))
+		    && $conf->get('DISTRIBUTION')
+		    && defined($conf->get('MAILTO_HASH'))
+		    && $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')}) {
+		    $retval = $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')};
+		}
+
+		return $retval;
+	    },
 	    DEFAULT => "",
 	    HELP => 'email address to mail build logs to'
 	},
