@@ -302,6 +302,18 @@ sub _get_example {
     return $self->_get_property_value($key, 'EXAMPLE');
 }
 
+sub _get {
+    my $self = shift;
+    my $key = shift;
+
+    my $value = undef;
+    $value = $self->_get_value($key);
+    $value = $self->_get_default($key)
+	if (!defined($value));
+
+    return $value;
+}
+
 sub get {
     my $self = shift;
     my $key = shift;
@@ -313,9 +325,7 @@ sub get {
 	if (defined($entry->{'GET'})) {
 	    $value = $entry->{'GET'}->($self, $entry);
 	} else {
-	    $value = $self->_get_value($key);
-	    $value = $self->_get_default($key)
-		if (!defined($value));
+	    $value = $self->_get($key);
 	}
     }
 
