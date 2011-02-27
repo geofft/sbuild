@@ -982,12 +982,10 @@ sub read ($) {
     my $conf = shift;
 
     # Set here to allow user to override.
-    if (!defined($conf->get('VERBOSE'))) {
-	if (-t STDIN && -t STDOUT) {
-	    $conf->set('VERBOSE', 1);
-	} else {
-	    $conf->set('VERBOSE', 0);
-	}
+    if (-t STDIN && -t STDOUT) {
+	$conf->_set_default('VERBOSE', 1);
+    } else {
+	$conf->_set_default('VERBOSE', 0);
     }
 
     my $HOME = $conf->get('HOME');
