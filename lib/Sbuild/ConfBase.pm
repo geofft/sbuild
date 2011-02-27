@@ -99,36 +99,25 @@ sub init_allowed_keys {
 	    TYPE => 'STRING',
 	    VARNAME => 'distribution',
 	    GROUP => 'Build options',
-	    SET => sub {
-		my $self = shift;
-		my $entry = shift;
-		my $value = shift;
-		my $key = $entry->{'NAME'};
-
-		$self->_set_value($key, $value);
-
-		my $override = ($self->get($key)) ? 1 : 0;
-		$self->set('OVERRIDE_DISTRIBUTION', $override);
-
-		#Now, we might need to adjust the MAILTO based on the
-		#config data. We shouldn't do this if it was already
-		#explicitly set by the command line option:
-		if (defined($self->get('MAILTO_FORCED_BY_CLI')) &&
-		    !$self->get('MAILTO_FORCED_BY_CLI')
-		    && defined($self->get('DISTRIBUTION'))
-		    && $self->get('DISTRIBUTION')
-		    && defined($self->get('MAILTO_HASH'))
-		    && $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')}) {
-		    $self->set('MAILTO',
-			       $self->get('MAILTO_HASH')->{$self->get('DISTRIBUTION')});
-		}
-	    },
+	    DEFAULT => undef,
 	    HELP => 'Default distribution.  By default, no distribution is defined, and the user must specify it with the -d option.  However, a default may be configured here if desired.  Users must take care not to upload to the wrong distribution when this option is set, for example experimental packages will be built for upload to unstable when this is not what is required.'
 	},
 	'OVERRIDE_DISTRIBUTION'			=> {
 	    TYPE => 'BOOL',
 	    GROUP => '__INTERNAL',
 	    DEFAULT => 0,
+	    GET => sub {
+		my $conf = shift;
+		my $entry = shift;
+
+		my $dist = $conf->get('DISTRIBUTION');
+
+		my $overridden = 0;
+		$overridden = 1
+		    if (defined($dist));
+
+		return $overridden;
+	    },
 	    HELP => 'Default distribution has been overridden'
 	},
 	'MAILPROG'				=> {
