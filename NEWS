@@ -52,6 +52,12 @@ configuration.
      amount of manual administration required to keep chroots up to
      date, and is not much more risky than upgrade in this context.
 
+  8) A new option, --keep-session, has been added.  This prevents the
+     automatic removal of session-managed snapshot chroots.
+     Previously, snapshots would not be deleted if purging of the
+     build directory or build dependencies was disabled, but this was
+     not always desirable, hence it is now configurable separately.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
