@@ -26,7 +26,6 @@ use warnings;
 
 use Cwd qw(cwd);
 use Sbuild qw(isin);
-use Sbuild::Log;
 
 BEGIN {
     use Exporter ();
@@ -188,7 +187,23 @@ sub init_allowed_keys {
 	    TYPE => 'NUMERIC',
 	    VARNAME => 'verbose',
 	    GROUP => 'Logging options',
-	    DEFAULT => 0,
+	    DEFAULT => undef,
+	    GET => sub {
+		my $conf = shift;
+		my $entry = shift;
+
+		my $retval = $conf->_get_value($entry->{'NAME'});
+
+		# Note that during a build, STDOUT is redirected, so
+		# this test will fail.  So set explicitly at start to
+		# ensure correctness.
+		if (!defined($retval)) {
+		    $retval = 0;
+		    $retval = 1	if (-t STDIN && -t STDOUT);
+		}
+
+		return $retval;
+	    },
 	    HELP => 'Verbose logging level'
 	},
 	'DEBUG'					=> {
