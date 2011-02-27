@@ -26,8 +26,19 @@ sbuild (0.61.1-1) unstable; urgency=low
       alternatives, but this is not the default behaviour
       (Closes: #403246).  Please see #614807 for a proposed description
       of autobuilder-imposed build dependency restrictions in Policy.
+  * sbuild.conf:
+    - sbuild.conf is now automatically generated from the help text and
+      defaults in the source code.  This means that the examples will
+      always be syntactically correct, the help text will always be
+      current, and the defaults will always match the defaults in the
+      source code.
+  * sbuild.conf.5:
+    - All of the allowed values in sbuild.conf are now documented in a
+      new sbuild.conf(5) manual page.  Like sbuild.conf, this is
+      entirely generated from the source code, so will always match the
+      defaults for the same sbuild version.
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 24 Feb 2011 22:41:18 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 11:31:36 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
