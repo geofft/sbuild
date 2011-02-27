@@ -34,6 +34,12 @@ sbuild (0.61.1-1) unstable; urgency=low
       build by default, rather than an upgrade.  This is to reduce the
       amount of manual administration required to keep chroots up to
       date, and is not much more risky than upgrade in this context.
+    - A new option, --keep-session, has been added (Closes: #609658).
+      This prevents the automatic removal of session-managed snapshot
+      chroots.  Previously, snapshots would not be deleted if purging
+      of the build directory or build dependencies was disabled, but
+      this was not always desirable, hence it is now configurable
+      separately.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
@@ -52,8 +58,9 @@ sbuild (0.61.1-1) unstable; urgency=low
       new sbuild.conf(5) manual page.  Like sbuild.conf, this is
       entirely generated from the source code, so will always match the
       defaults for the same sbuild version.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 15:32:23 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 15:47:26 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
