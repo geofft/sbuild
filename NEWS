@@ -47,6 +47,11 @@ configuration.
      style array and hash values will remain supported for now, but
      will be removed in a future release.
 
+  7) sbuild now performs and apt dist-upgrade at the start of each
+     build by default, rather than an upgrade.  This is to reduce the
+     amount of manual administration required to keep chroots up to
+     date, and is not much more risky than upgrade in this context.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
