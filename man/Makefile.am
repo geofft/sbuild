@@ -28,6 +28,7 @@ man_MANS =				\
 	buildd-vlog.1			\
 	buildd-watcher.1		\
 	sbuild.1			\
+	sbuild.conf.5			\
 	sbuild-abort.1			\
 	sbuild-adduser.8		\
 	sbuild-apt.1			\
@@ -44,6 +45,12 @@ man_MANS =				\
 	wanna-build-merge-packages.1	\
 	wanna-build-statistics.1
 
+sbuild.conf.man: ../tools/sbuild-dumpconfig
+	PERL5LIB=../lib $< sbuild man > $@
+
+sbuild.conf.5: sbuild.conf.5.in defs.man sbuild.conf.man
+	soelim $< > $@
+
 %.1: %.1.in defs.man
 	soelim $< > $@
 
@@ -55,6 +62,9 @@ man_MANS =				\
 
 %.8: %.8.in defs.man
 	soelim $< > $@
+
+CLEANFILES = 				\
+	sbuild.conf.man
 
 EXTRA_DIST =				\
 	defs.man.in			\

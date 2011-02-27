@@ -1,0 +1,74 @@
+.\" Copyright © 2011       Roger Leigh <rleigh@debian.org>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 2 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful, but
+.\" WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+.\" General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see
+.\" <http://www.gnu.org/licenses/>.
+.so defs.man
+.TH SBUILD.CONF 5 "\*[RELEASE_DATE]" "Version \*[VERSION]" "Debian sbuild"
+.SH NAME
+sbuild.conf \- configuration file for sbuild
+.SH DESCRIPTION
+\fBsbuild.conf\fR is a Perl script which is sourced by sbuild to permit
+configuration.  It is run in a sandbox and restricted to setting a small number
+of variables, detailed below, which may be set to configure the behaviour of
+sbuild.  Each variable has an internal name, shown in all caps, and a perl
+variable showing the default setting.  Note that the internal name is not
+accessible within sbuild.conf; only the variable may be assigned.  Also note
+that some of the defaults are set to be unique for each build, and so some of
+the defaults shown here are unique to the user and system used to build sbuild,
+and will be different for your system.
+.PP
+While sbuild permits many aspects of its behaviour to be configured, this
+should not normally be required.  The defaults should be adequate for most
+uses, and should only be changed if you are doing something more advanced, or
+have specialist requirements.
+.SH CONFIGURATION
+.so sbuild.conf.man
+.SH FILES
+.TP
+.I /etc/sbuild/sbuild.conf
+Configuration, maintained by the system administrator.  This may be used to
+override the defaults.
+.TP
+.I ~/.sbuildrc
+User-specific configuration.
+.SH AUTHORS
+Roman Hodek <Roman.Hodek@informatik.uni\-erlangen.de>.
+.PP
+\fBsbuild\fR is based on debbuild, written by James Troup
+<james@nocrew.org> and has been modified by
+.nf
+Ben Collins <bcollins@debian.org>,
+Ryan Murray <rmurray@debian.org>,
+Francesco Paolo Lovergine <frankie@debian.org>,
+Michael Banck <mbanck@debian.org>, and
+Roger Leigh <rleigh@debian.org>
+.fi
+.SH COPYRIGHT
+.nf
+Copyright \[co] 1998-2000 Roman Hodek <roman\@hodek.net>
+Copyright \[co] 1998-1999 James Troup <troup\@debian.org>
+Copyright \[co] 2003-2006 Ryan Murray <rmurray\@debian.org>
+Copyright \[co] 2001-2003 Rick Younie <younie\@debian.org>
+Copyright \[co] 2003-2004 Francesco Paolo Lovergine <frankie\@debian.org>
+Copyright \[co] 2005      Michael Banck <mbanck\@debian.org>
+Copyright \[co] 2005-2009 Roger Leigh <rleigh\@debian.org>
+.fi
+.SH "SEE ALSO"
+.BR sbuild (1).
+.\"#
+.\"# The following sets edit modes for GNU EMACS
+.\"# Local Variables:
+.\"# mode:nroff
+.\"# fill-column:79
+.\"# End:
