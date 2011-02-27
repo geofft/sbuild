@@ -630,14 +630,14 @@ sub setup ($) {
 	    TYPE => 'BOOL',
 	    VARNAME => 'apt_upgrade',
 	    GROUP => 'Chroot options',
-	    DEFAULT => 1,
+	    DEFAULT => 0,
 	    HELP => 'APT upgrade.  1 to enable running "apt-get upgrade" at the start of each build, or 0 to disable.'
 	},
 	'APT_DISTUPGRADE'			=> {
 	    TYPE => 'BOOL',
 	    VARNAME => 'apt_distupgrade',
 	    GROUP => 'Chroot options',
-	    DEFAULT => 0,
+	    DEFAULT => 1,
 	    HELP => 'APT distupgrade.  1 to enable running "apt-get dist-upgrade" at the start of each build, or 0 to disable.'
 	},
 	'APT_ALLOW_UNAUTHENTICATED'		=> {
