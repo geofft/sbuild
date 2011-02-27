@@ -484,6 +484,7 @@ Copyright \[co] 2005      Michael Banck <mbanck\@debian.org>
 Copyright \[co] 2005-2009 Roger Leigh <rleigh\@debian.org>
 .fi
 .SH "SEE ALSO"
+.BR sbuild.conf (5),
 .BR sbuild\-abort (1),
 .BR sbuild\-adduser (8),
 .BR sbuild\-apt (1),
