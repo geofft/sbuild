@@ -39,6 +39,14 @@ configuration.
      entirely generated from the source code, so will always match the
      defaults for the same sbuild version.
 
+  6) Non-scalar (or reference) types are deprecated in sbuild.conf.
+     This is because it is not possible to tell the difference between
+     an empty and an undefined value.  Values using array or hash
+     types should use the equivalent array reference or hash
+     reference, which have been supported for some time.  The old
+     style array and hash values will remain supported for now, but
+     will be removed in a future release.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
