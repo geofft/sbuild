@@ -26,12 +26,16 @@ sbuild (0.61.1-1) unstable; urgency=low
       alternatives, but this is not the default behaviour
       (Closes: #403246).  Please see #614807 for a proposed description
       of autobuilder-imposed build dependency restrictions in Policy.
+    - All build dependency resolvers run dpkg with --force-confold.
+      This means packages with modified conffiles in the chroot to not
+      cause build failure.  This includes /etc/services and
+      /etc/protocols from netbase (Closes: #576508).
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
       always be syntactically correct, the help text will always be
       current, and the defaults will always match the defaults in the
-      source code.
+      source code (Closes: #609932).
     - Non-scalar (or reference) types are deprecated in sbuild.conf.
       This is because it is not possible to tell the difference between
       an empty and an undefined value.  Values using array or hash
@@ -45,7 +49,7 @@ sbuild (0.61.1-1) unstable; urgency=low
       entirely generated from the source code, so will always match the
       defaults for the same sbuild version.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 12:57:09 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 13:59:19 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
