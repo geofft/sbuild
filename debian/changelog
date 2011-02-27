@@ -30,6 +30,10 @@ sbuild (0.61.1-1) unstable; urgency=low
       This means packages with modified conffiles in the chroot to not
       cause build failure.  This includes /etc/services and
       /etc/protocols from netbase (Closes: #576508).
+    - sbuild now performs and apt dist-upgrade at the start of each
+      build by default, rather than an upgrade.  This is to reduce the
+      amount of manual administration required to keep chroots up to
+      date, and is not much more risky than upgrade in this context.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
@@ -48,9 +52,8 @@ sbuild (0.61.1-1) unstable; urgency=low
       new sbuild.conf(5) manual page.  Like sbuild.conf, this is
       entirely generated from the source code, so will always match the
       defaults for the same sbuild version.
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 14:05:14 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 15:32:23 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
