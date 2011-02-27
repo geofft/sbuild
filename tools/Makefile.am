@@ -25,4 +25,4 @@ noinst_SCRIPTS = 				\
 	sbuild-dumpconfig
 
 EXTRA_DIST =			\
-	$(noinst_bin_SCRIPTS)
+	$(noinst_SCRIPTS)
