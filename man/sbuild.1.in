@@ -46,6 +46,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-dpkg-source-opts=\fIoptions\fP ]
 .RB [ \-p \[or] \-\-purge=\fPpurge-mode\fP ]
 .RB [ \-\-purge\-deps=\fPpurge-mode\fP ]
+.RB [ \-\-keep\-session ]
 .RB [ \-b \[or] \-\-batch]
 .RB [ \-n \[or] \-\-nolog ]
 .RB [ \-\-run\-lintian ]
@@ -226,6 +227,11 @@ build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
 .BR "\-\-purge\-deps=\fIpurge-mode\fP"
 \fIpurge-mode\fR determines if the build dependencies will be removed after a
 build. Possible values are \fBalways\fR, \fBnever\fR, and \fBsuccessful\fR.
+.TP
+.BR "\-\-keep\-session"
+Don't end the schroot session following a build.  This is useful in conjunction
+with \fI\-\-purge\fP and \fI\-\-purge\-deps\fP options when using snapshot
+chroots, since without it, the snapshot will be deleted.
 .TP
 .BR \-s ", " "\-\-source"
 Also build source package, i.e. use dpkg\-buildpackage without \-B.

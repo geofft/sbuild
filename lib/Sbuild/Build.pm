@@ -343,7 +343,6 @@ sub run {
 	}
     }
 
-    my $end_session = 1;
     my $session = $chroot_info->create('chroot',
 				       $self->get_conf('DISTRIBUTION'),
 				       $self->get_conf('CHROOT'),
@@ -579,8 +578,6 @@ sub run {
     # Purge non-cloned session
     if ($is_cloned_session) {
 	$self->log("Not cleaning session: cloned chroot in use\n");
-	$end_session = 0
-	    if ($purge_build_directory == 0 || $purge_build_deps == 0);
     } else {
 	if ($purge_build_deps) {
 	    # Removing dependencies
@@ -597,7 +594,7 @@ sub run {
 
   cleanup_unlocked_session:
     # End chroot session
-    if ($end_session == 1) {
+    if ($self->get_conf('END_SESSION')) {
 	$session->end_session();
     } else {
 	$self->log("Keeping session: " . $session->get('Session ID') . "\n");

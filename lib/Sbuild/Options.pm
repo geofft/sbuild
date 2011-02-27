@@ -147,6 +147,9 @@ sub set_options {
 		       "purge-deps=s" => sub {
 			   $self->set_conf('PURGE_BUILD_DEPS', $_[1]);
 		       },
+		       "keep-session" => sub {
+			   $self->set_conf('END_SESSION', 0);
+		       },
 		       "s|source" => sub {
 			   $self->set_conf('BUILD_SOURCE', 1);
 		       },
