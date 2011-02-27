@@ -369,10 +369,10 @@ sub setup ($) {
 	},
 	'MAILTO_HASH'				=> {
 	    TYPE => 'HASH:STRING',
-	    VARNAME => 'mailto',
+	    VARNAME => 'mailto_hash',
 	    GROUP => 'Logging options',
 	    DEFAULT => {},
-	    HELP => 'Like MAILTO, but per-distribution.  This is a hashref mapping distribution name to MAILTO.'
+	    HELP => 'Like MAILTO, but per-distribution.  This is a hashref mapping distribution name to MAILTO.  Note that for backward compatibility, this is also settable using the hash %mailto (deprecated), rather than a hash reference.'
 	},
 	'MAILFROM'				=> {
 	    TYPE => 'STRING',
@@ -438,7 +438,7 @@ sub setup ($) {
 			'hurd-dev$',
 			'kfreebsd-kernel-headers$'
 		],
-	    HELP => 'Regular expressions identifying toolchain packages.'
+	    HELP => 'Regular expressions identifying toolchain packages.  Note that for backward compatible, this is also settable using the array @toolchain_regex (deprecated), rather than an array reference.'
 	},
 	'STALLED_PKG_TIMEOUT'			=> {
 	    TYPE => 'NUMERIC',
@@ -510,14 +510,14 @@ sub setup ($) {
 	    VARNAME => 'ignore_watches_no_build_deps',
 	    GROUP => 'Watch options',
 	    DEFAULT => [],
-	    HELP => 'Ignore watches on the following packages if the package doesn\'t have its own build dependencies in the .dsc'
+	    HELP => 'Ignore watches on the following packages if the package doesn\'t have its own build dependencies in the .dsc.  Note that for backward compatibility, this is also settable using the array @ignore_watches_no_build_deps (deprecated), rather than an array reference.'
 	},
 	'WATCHES'				=> {
 	    TYPE => 'HASH:ARRAY:STRING',
 	    VARNAME => 'watches',
 	    GROUP => 'Watch options',
 	    DEFAULT => {},
-	    HELP => 'Binaries for which the access time is controlled if they are not listed as source dependencies (note: /usr/bin is added if executable name does not start with \'/\').  Most buildds run with clean chroots at the moment, so the default list is now empty.  This hash is a mapping between a package name and the binaries in the package stored as an array reference.'
+	    HELP => 'Binaries for which the access time is controlled if they are not listed as source dependencies (note: /usr/bin is added if executable name does not start with \'/\').  Most buildds run with clean chroots at the moment, so the default list is now empty.  This hash is a mapping between a package name and the binaries in the package stored as an array reference.  Note that for backward compatibility, this is also settable using the hash %watches (deprecated), rather than using a hash reference.'
 	},
 	'BUILD_DIR'				=> {
 	    TYPE => 'STRING',
@@ -553,7 +553,7 @@ sub setup ($) {
 	    VARNAME => 'individual_stalled_pkg_timeout',
 	    GROUP => 'Build timeouts',
 	    DEFAULT => {},
-	    HELP => 'Some packages may exceed the general timeout (e.g. redirecting output to a file) and need a different timeout.  This has is a mapping between source package name and timeout.',
+	    HELP => 'Some packages may exceed the general timeout (e.g. redirecting output to a file) and need a different timeout.  This has is a mapping between source package name and timeout.  Note that for backward compatibility, this is also settable using the hash %individual_stalled_pkg_timeout (deprecated) , rather than a hash reference.',
 	    EXAMPLE =>
 '%individual_stalled_pkg_timeout = (smalleiffel => 300,
 				   jade => 300,
@@ -946,218 +946,118 @@ sub read ($) {
     my $conf = shift;
 
     # Set here to allow user to override.
-    if (-t STDIN && -t STDOUT && $conf->get('VERBOSE') == 0) {
-	$conf->set('VERBOSE', 1);
+    if (!defined($conf->get('VERBOSE'))) {
+	if (-t STDIN && -t STDOUT) {
+	    $conf->set('VERBOSE', 1);
+	} else {
+	    $conf->set('VERBOSE', 0);
+	}
     }
 
     my $HOME = $conf->get('HOME');
 
     # Variables are undefined, so config will default to DEFAULT if unset.
-    my $mailprog = undef;
-    my $dpkg = undef;
-    my $sudo = undef;
-    my $su = undef;
-    my $schroot = undef;
-    my $schroot_options = undef;
-    my $fakeroot = undef;
-    my $apt_get = undef;
-    my $apt_cache = undef;
-    my $aptitude = undef;
-    my $dpkg_source = undef;
-    my $dpkg_source_opts = undef;
-    my $dcmd = undef;
-    my $md5sum = undef;
-    my $avg_time_db = undef;
-    my $avg_space_db = undef;
-    my $stats_dir = undef;
-    my $package_checklist = undef;
-    my $build_env_cmnd = undef;
-    my $pgp_options = undef;
-    my $log_dir = undef;
-    my $mailto = undef;
-    my %mailto;
-    undef %mailto;
-    my $mailfrom = undef;
-    my $compress_build_log_mails = undef;
-    my $purge_build_deps = undef;
-    my $purge_build_directory = undef;
-    my @toolchain_regex;
-    undef @toolchain_regex;
-    my $stalled_pkg_timeout = undef;
-    my $max_lock_trys = undef;
-    my $lock_interval = undef;
-    my $apt_policy = undef;
-    my $check_space = undef;
-    my $check_watches = undef;
-    my @ignore_watches_no_build_deps;
-    undef @ignore_watches_no_build_deps;
-    my %watches;
-    undef %watches;
-    my $chroot_mode = undef;
-    my $chroot_split = undef;
-    my $sbuild_mode = undef;
-    my $debug = undef;
-    my $build_source = undef;
-    my $force_orig_source = undef;
-    my $chroot_setup_script = undef;
-    my %individual_stalled_pkg_timeout;
-    undef %individual_stalled_pkg_timeout;
-    my $path = undef;
-    my $environment_filter = undef;
-    my $ld_library_path = undef;
-    my $maintainer_name = undef;
-    my $uploader_name = undef;
-    my $key_id = undef;
-    my $apt_clean = undef;
-    my $apt_update = undef;
-    my $apt_update_archive_only = undef;
-    my $apt_upgrade = undef;
-    my $apt_distupgrade = undef;
-    my $apt_allow_unauthenticated = undef;
-    my $check_depends_algorithm = undef;
-    my $distribution = undef;
-    my $archive = undef;
-    my $chroot = undef;
-    my $build_arch_all = undef;
-    my $arch = undef;
-    my $job_file = undef;
-    my $build_dir = undef;
-    my $build_dep_resolver = undef;
-    my $lintian = undef;
-    my $run_lintian = undef;
-    my $lintian_opts = undef;
-    my $piuparts = undef;
-    my $run_piuparts = undef;
-    my $piuparts_opts = undef;
-    my $piuparts_root_args = undef;
-    my $external_commands = undef;
-    my $log_external_command_output = undef;
-    my $log_external_command_error = undef;
-    my $resolve_virtual = undef;
-    my $resolve_alternatives = undef;
-    my $core_depends = undef;
 
-    foreach ($Sbuild::Sysconfig::paths{'SBUILD_CONF'}, "$HOME/.sbuildrc") {
-	if (-r $_) {
-	    my $e = eval `cat "$_"`;
-	    if (!defined($e)) {
-		print STDERR "E: $_: Errors found in configuration file:\n$@";
-		exit(1);
-	    }
+    # Create script to source configuration.
+    my $script = "use strict;\nuse warnings;\n";
+    my @keys = $conf->get_keys();
+    foreach my $key (@keys) {
+	next if $conf->_get_group($key) =~ m/^__/;
+
+	my $varname = $conf->_get_varname($key);
+	$script .= "my \$$varname = undef;\n";
+    }
+    # For compatibility only.  Non-scalars are deprecated.
+
+    $script .= <<END;
+my \%mailto;
+undef \%mailto;
+my \@toolchain_regex;
+undef \@toolchain_regex;
+my \@ignore_watches_no_build_deps;
+undef \@ignore_watches_no_build_deps;
+my \%watches;
+undef \%watches;
+my \%individual_stalled_pkg_timeout;
+undef \%individual_stalled_pkg_timeout;
+
+foreach ("$Sbuild::Sysconfig::paths{'SBUILD_CONF'}", "$HOME/.sbuildrc") {
+	if (-r \$_) {
+	my \$e = eval `cat "\$_"`;
+	if (!defined(\$e)) {
+	    print STDERR "E: \$_: Errors found in configuration file:\n\$\@";
+	    exit(1);
 	}
     }
+}
 
-    # Needed before any program validation.
-    $conf->set('PATH', $path);
-    # Set before APT_GET or APTITUDE to allow correct validation.
-    $conf->set('BUILD_DEP_RESOLVER', $build_dep_resolver);
-    $conf->set('RESOLVE_VIRTUAL', $resolve_virtual);
-    $conf->set('RESOLVE_ALTERNATIVES', $resolve_alternatives);
-    $conf->set('CORE_DEPENDS', $core_depends);
-    $conf->set('ARCH', $arch);
-    $conf->set('DISTRIBUTION', $distribution);
-    $conf->set('DEBUG', $debug);
-    $conf->set('MAILPROG', $mailprog);
-    $conf->set('ARCHIVE', $archive);
-    $conf->set('CHROOT', $chroot);
-    $conf->set('BUILD_ARCH_ALL', $build_arch_all);
-    $conf->set('SUDO',  $sudo);
-    $conf->set('SU', $su);
-    $conf->set('SCHROOT', $schroot);
-    $conf->set('SCHROOT_OPTIONS', $schroot_options);
-    $conf->set('FAKEROOT', $fakeroot);
-    $conf->set('APT_GET', $apt_get);
-    $conf->set('APT_CACHE', $apt_cache);
-    $conf->set('APTITUDE', $aptitude);
-    $conf->set('DPKG_SOURCE', $dpkg_source);
-    $conf->set('DPKG_SOURCE_OPTIONS', $dpkg_source_opts);
-    $conf->set('DCMD', $dcmd);
-    $conf->set('MD5SUM', $md5sum);
-    $conf->set('AVG_TIME_DB', $avg_time_db);
-    $conf->set('AVG_SPACE_DB', $avg_space_db);
-    $conf->set('STATS_DIR', $stats_dir);
-    $conf->set('PACKAGE_CHECKLIST', $package_checklist);
-    $conf->set('BUILD_ENV_CMND', $build_env_cmnd);
-    $conf->set('PGP_OPTIONS', $pgp_options);
-    $conf->set('LOG_DIR', $log_dir);
-    $conf->set('MAILTO', $mailto);
-    $conf->set('MAILTO_HASH', \%mailto)
-	if (%mailto);
-    $conf->set('MAILFROM', $mailfrom);
-    $conf->set('COMPRESS_BUILD_LOG_MAILS', $compress_build_log_mails);
-    $conf->set('PURGE_BUILD_DEPS', $purge_build_deps);
-    $conf->set('PURGE_BUILD_DIRECTORY', $purge_build_directory);
-    $conf->set('TOOLCHAIN_REGEX', \@toolchain_regex)
-	if (@toolchain_regex);
-    $conf->set('STALLED_PKG_TIMEOUT', $stalled_pkg_timeout);
-    $conf->set('MAX_LOCK_TRYS', $max_lock_trys);
-    $conf->set('LOCK_INTERVAL', $lock_interval);
-    $conf->set('APT_POLICY', $apt_policy);
-    $conf->set('CHECK_WATCHES', $check_watches);
-    $conf->set('CHECK_SPACE', $check_space);
-    $conf->set('IGNORE_WATCHES_NO_BUILD_DEPS',
-	       \@ignore_watches_no_build_deps)
-	if (@ignore_watches_no_build_deps);
-    $conf->set('WATCHES', \%watches)
-	if (%watches);
-    $conf->set('CHROOT_MODE', $chroot_mode);
-    $conf->set('CHROOT_SPLIT', $chroot_split);
-    $conf->set('SBUILD_MODE', $sbuild_mode);
-    $conf->set('FORCE_ORIG_SOURCE', $force_orig_source);
-    $conf->set('BUILD_SOURCE', $build_source);
-    $conf->set('CHROOT_SETUP_SCRIPT', $chroot_setup_script);
-    $conf->set('INDIVIDUAL_STALLED_PKG_TIMEOUT',
-	       \%individual_stalled_pkg_timeout)
-	if (%individual_stalled_pkg_timeout);
-    $conf->set('ENVIRONMENT_FILTER', $environment_filter);
-    $conf->set('LD_LIBRARY_PATH', $ld_library_path);
-    $conf->set('MAINTAINER_NAME', $maintainer_name);
-    $conf->set('UPLOADER_NAME', $uploader_name);
-    $conf->set('KEY_ID', $key_id);
-    $conf->set('APT_CLEAN', $apt_clean);
-    $conf->set('APT_UPDATE', $apt_update);
-    $conf->set('APT_UPDATE_ARCHIVE_ONLY', $apt_update_archive_only);
-    $conf->set('APT_UPGRADE', $apt_upgrade);
-    $conf->set('APT_DISTUPGRADE', $apt_distupgrade);
-    $conf->set('APT_ALLOW_UNAUTHENTICATED', $apt_allow_unauthenticated);
-    $conf->set('CHECK_DEPENDS_ALGORITHM', $check_depends_algorithm);
-    $conf->set('JOB_FILE', $job_file);
+# Needed before any program validation.
+\$conf->set('PATH', \$path);
 
-    $conf->set('MAILTO',
-	       $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')})
-	if defined($conf->get('DISTRIBUTION')) &&
-	   $conf->get('DISTRIBUTION') &&
-	   $conf->get('MAILTO_HASH')->{$conf->get('DISTRIBUTION')};
+# Non-scalar values, for backward compatibility.
+if (\%mailto) {
+    warn 'W: \%mailto is deprecated; please use the hash reference \$mailto{}\n';
+    \$conf->set('MAILTO_HASH', \\\%mailto);
+}
+if (\@toolchain_regex) {
+    warn 'W: \@toolchain_regex is deprecated; please use the array reference \$toolchain_regexp[]\n';
+    \$conf->set('TOOLCHAIN_REGEX', \\\@toolchain_regex);
+}
+if (\@ignore_watches_no_build_deps) {
+    warn 'W: \@ignore_watches_no_build_deps is deprecated; please use the array reference \$ignore_watches_no_build_deps[]\n';
+    \$conf->set('IGNORE_WATCHES_NO_BUILD_DEPS',
+		\\\@ignore_watches_no_build_deps);
+}
+if (\%watches) {
+    warn 'W: \%watches is deprecated; please use the hash reference \$watches{}\n';
+    \$conf->set('WATCHES', \\\%watches);
+}
+if (\%individual_stalled_pkg_timeout) {
+    warn 'W: \%individual_stalled_pkg_timeout is deprecated; please use the hash reference \$individual_stalled_pkg_timeout{}\n';
+    \$conf->set('INDIVIDUAL_STALLED_PKG_TIMEOUT',
+		\\\%individual_stalled_pkg_timeout);
+}
+END
 
-    $conf->set('SIGNING_OPTIONS',
-	       "-m".$conf->get('MAINTAINER_NAME')."")
-	if defined $conf->get('MAINTAINER_NAME');
-    $conf->set('SIGNING_OPTIONS',
-	       "-e".$conf->get('UPLOADER_NAME')."")
-	if defined $conf->get('UPLOADER_NAME');
-    $conf->set('SIGNING_OPTIONS',
-	       "-k".$conf->get('KEY_ID')."")
-	if defined $conf->get('KEY_ID');
-    $conf->set('MAINTAINER_NAME', $conf->get('UPLOADER_NAME')) if defined $conf->get('UPLOADER_NAME');
-    $conf->set('MAINTAINER_NAME', $conf->get('KEY_ID')) if defined $conf->get('KEY_ID');
-    $conf->set('BUILD_DIR', $build_dir);
+    foreach my $key (@keys) {
+	next if $conf->_get_group($key) =~ m/^__/;
 
-    if (!defined($conf->get('MAINTAINER_NAME')) &&
-	$conf->get('BIN_NMU')) {
-	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
+	my $varname = $conf->_get_varname($key);
+	$script .= "\$conf->set('$key', \$$varname);\n";
     }
-    $conf->set('RUN_LINTIAN', $run_lintian);
-    $conf->set('LINTIAN', $lintian);
-    $conf->set('LINTIAN_OPTIONS', $lintian_opts);
-    $conf->set('RUN_PIUPARTS', $run_piuparts);
-    $conf->set('PIUPARTS', $piuparts);
-    $conf->set('PIUPARTS_OPTIONS', $piuparts_opts);
-    $conf->set('PIUPARTS_ROOT_ARGS', $piuparts_root_args);
-    $conf->set('EXTERNAL_COMMANDS', $external_commands);
-    push(@{${$conf->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
-        $chroot_setup_script) if ($chroot_setup_script);
-    $conf->set('LOG_EXTERNAL_COMMAND_OUTPUT', $log_external_command_output);
-    $conf->set('LOG_EXTERNAL_COMMAND_ERROR', $log_external_command_error);
+
+    $script .= <<END;
+\$conf->set('MAILTO',
+	    \$conf->get('MAILTO_HASH')->{\$conf->get('DISTRIBUTION')})
+    if (defined(\$conf->get('DISTRIBUTION')) &&
+	\$conf->get('DISTRIBUTION') &&
+	\$conf->get('MAILTO_HASH')->{\$conf->get('DISTRIBUTION')});
+\$conf->set('SIGNING_OPTIONS',
+	    "-m".\$conf->get('MAINTAINER_NAME')."")
+    if defined \$conf->get('MAINTAINER_NAME');
+\$conf->set('SIGNING_OPTIONS',
+	    "-e".\$conf->get('UPLOADER_NAME')."")
+    if defined \$conf->get('UPLOADER_NAME');
+\$conf->set('SIGNING_OPTIONS',
+	    "-k".\$conf->get('KEY_ID')."")
+    if defined \$conf->get('KEY_ID');
+\$conf->set('MAINTAINER_NAME', \$conf->get('UPLOADER_NAME'))
+    if defined \$conf->get('UPLOADER_NAME');
+\$conf->set('MAINTAINER_NAME', \$conf->get('KEY_ID'))
+    if defined \$conf->get('KEY_ID');
+
+if (!defined(\$conf->get('MAINTAINER_NAME')) &&
+	\$conf->get('BIN_NMU')) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
+}
+
+push(\@{\${\$conf->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
+\$chroot_setup_script) if (\$chroot_setup_script);
+
+return 1;
+END
+
+    eval $script or die "Error reading configuration: $@";
 }
 
 1;
