@@ -33,6 +33,12 @@ exampleconf_DATA = example.sbuildrc
 COMPAT_SETUP = 25nssdatabases 99builddsourceslist
 SETUP =
 
+sbuild.conf: ../tools/sbuild-dumpconfig
+	PERL5LIB=../lib $< sbuild config > $@
+
+buildd.conf: ../tools/sbuild-dumpconfig
+	PERL5LIB=../lib $< buildd config > $@
+
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
 if SBUILD_COMPAT
 schrootsetup_SCRIPTS = $(COMPAT_SETUP) $(SETUP)
@@ -61,13 +67,16 @@ install-data-hook:
 	  done;									\
 	done
 
+CLEANFILES =		\
+	sbuild.conf	\
+	buildd.conf
+
 clean-local:
 	$(RM) -rf profiles
 	$(RM) -f profiles-stamp
 
 EXTRA_DIST =			\
-	$(sbuildsysconf_DATA)	\
-	$(builddsysconf_DATA)	\
+	wanna-build.conf	\
 	$(exampleconf_DATA)	\
 	$(COMPAT_SETUP)		\
 	$(SETUP)		\

@@ -33,18 +33,19 @@ use Data::Dumper;
 
 die "Usage: $0 sbuild|buildd config|man" if @ARGV != 2;
 
+my $program = $ARGV[0];
+my $output = $ARGV[1];
+
 my $conf;
-if ($ARGV[0] eq "sbuild") {
+if ($program eq "sbuild") {
     $conf = Sbuild::Conf::new();
-} elsif ($ARGV[0] eq "buildd") {
+} elsif ($program eq "buildd") {
     $conf = Buildd::Conf::new();
 } else {
-    die "Unsupported configuration type $ARGV[0]";
+    die "Unsupported configuration type $program";
 }
 exit 1 if !defined($conf);
 
-
-my $output = $ARGV[1];
 
 die "Unsupported output type $output"
     if ($output ne "config" && $output ne "man");
@@ -67,13 +68,14 @@ my @groups = sort keys %tmpgroups;
 # print "GROUPS: " . join(",\n", @groups) . "\n";
 
 
-my $header = <<END;
-# sbuild.conf: sbuild settings.                                    -*- Perl -*-
+my $header = "# ${program}.conf: ${program} settings.                                    -*- Perl -*-\n";
+
+$header .= <<END;
 # Default settings are commented out.
 # Note that all possible settings are listed here.  Many may be set on
 # the command-line, and do not normally need setting here,
 # e.g. \$verbose.  Others need setting by each individual user in their
-# ~/.sbuildrc, but are listed here for completeness.
+# ~/.${program}rc, but are listed here for completeness.
 END
 
 if ($output eq "config") {
