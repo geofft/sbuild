@@ -1133,6 +1133,14 @@ sub check_state ($$@) {
     }
     close($pipe);
 
+    if ($?) {
+	my $t = "wanna-build --info failed with status ".exitstatus($?)."\n";
+	$self->log($t);
+	$self->set('Mail Error',
+		   $self->get('Mail Error') . $t);
+	return 0;
+    }
+
     my $msg = "$pkgv($dist_name) check_state(@wanted_states): ";
     $av = binNMU_version($av,$an,undef) if (defined $an);
     if ($av ne $vers) {
