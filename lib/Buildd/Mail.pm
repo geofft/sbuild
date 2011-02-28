@@ -24,7 +24,7 @@ package Buildd::Mail;
 use strict;
 use warnings;
 
-use Buildd qw(ll_send_mail lock_file unlock_file send_mail);
+use Buildd qw(ll_send_mail lock_file unlock_file send_mail exitstatus);
 use Buildd::Conf qw();
 use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
@@ -1105,7 +1105,30 @@ sub get_fail_msg ($$) {
     }
 }
 
-sub check_state ($$@) {
+sub check_state ($@) {
+    my $self = shift;
+    my $mail_error = $self->get('Mail Error');
+    my $retval = $self->check_state_internal(@_);
+    # check if we should retry the call
+    if ($retval == -1) {
+	# reset error to old value
+	$self->set('Mail Error', $mail_error);
+	# 0..120s of sleep ought to be enough for retrying;
+	# for mail bursts, this should get us out of the
+	# crticial mass
+	sleep int(rand(120));
+	$retval = $self->check_state_internal(@_);
+	# remap the -1 retry code to failure
+	if ($retval == -1) {
+	    return 0;
+	} else {
+	    return $retval;
+	}
+    }
+    return $retval;
+}
+
+sub check_state_internal ($$@) {
     my $self = shift;
     my $pkgv = shift;
     my $dist_config = shift;
@@ -1121,7 +1144,8 @@ sub check_state ($$@) {
 	$self->set('Mail Error',
 		   $self->get('Mail Error') .
 		   "Couldn't start wanna-build --info: $!\n");
-	return 0;
+	# let check_state() retry if needed
+	return -1;
     }
 
     my ($av, $as, $ab, $an);
@@ -1132,6 +1156,14 @@ sub check_state ($$@) {
 	$an = $1 if /^\s*Binary-NMU-Version\s*:\s*(\d+)/;
     }
     close($pipe);
+
+    if ($?) {
+	my $t = "wanna-build --info failed with status ".exitstatus($?)."\n";
+	$self->log($t);
+	$self->set('Mail Error',
+		   $self->get('Mail Error') . $t);
+	return 0;
+    }
 
     my $msg = "$pkgv($dist_name) check_state(@wanted_states): ";
     $av = binNMU_version($av,$an,undef) if (defined $an);

@@ -30,7 +30,7 @@ sbuild (0.61.1-1) unstable; urgency=low
       This means packages with modified conffiles in the chroot to not
       cause build failure.  This includes /etc/services and
       /etc/protocols from netbase (Closes: #576508).
-    - sbuild now performs and apt dist-upgrade at the start of each
+    - sbuild now performs an apt dist-upgrade at the start of each
       build by default, rather than an upgrade.  This is to reduce the
       amount of manual administration required to keep chroots up to
       date, and is not much more risky than upgrade in this context.
