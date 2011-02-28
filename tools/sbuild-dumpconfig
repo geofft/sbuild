@@ -130,15 +130,19 @@ foreach my $group (@groups) {
 		    }
 		    print ".RE\n";
 		}
-		print ".IP\n";
-		print "Default:\n";
-		print ".PP\n";
-		print ".RS\n";
-		foreach my $line (split("\n", Data::Dumper->Dump([$default], ["$varname"]))) {
-		    print "\\f[CR]$line\\fP\n";
-		    print ".br\n"
+		if (!$ignore_default) {
+		    print ".IP\n";
+		    print "Default:\n";
+		    print ".PP\n";
+		    print ".RS\n";
+		    foreach my $line (split("\n",
+					    Data::Dumper->Dump([$default],
+							       ["$varname"]))) {
+			print "\\f[CR]$line\\fP\n";
+			print ".br\n"
+		    }
+		    print ".RE\n";
 		}
-		print ".RE\n";
 	    }
 	}
     }
