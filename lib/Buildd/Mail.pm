@@ -24,7 +24,7 @@ package Buildd::Mail;
 use strict;
 use warnings;
 
-use Buildd qw(ll_send_mail lock_file unlock_file send_mail);
+use Buildd qw(ll_send_mail lock_file unlock_file send_mail exitstatus);
 use Buildd::Conf;
 use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
