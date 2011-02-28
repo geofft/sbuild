@@ -95,37 +95,72 @@ sub setup ($) {
 
     my %db_keys = (
 	'SSH'					=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'ssh',
+	    GROUP => 'Programs',
 	    DEFAULT => 'ssh',
 	    CHECK => $validate_ssh,
+	    HELP => 'Path to ssh binary'
 	},
 	'WANNA_BUILD_SSH_CMD'			=> {
-	    DEFAULT => ''
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => '',
+	    HELP => 'Command to run wanna-build (set automatically from the other wanna-build options)'
 	},
 	'WANNA_BUILD_SSH_USER'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'wanna_build_ssh_user',
+	    GROUP => 'wanna-build client',
 	    DEFAULT => '',
 	    CHECK => $validate_ssh,
+	    HELP => 'Username for SSH connection'
 	},
 	'WANNA_BUILD_SSH_HOST'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'wanna_build_ssh_host',
+	    GROUP => 'wanna-build client',
 	    DEFAULT => '',
 	    CHECK => $validate_ssh,
+	    HELP => 'Host for SSH connection'
 	},
 	'WANNA_BUILD_SSH_SOCKET'		=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'wanna_build_ssh_socket',
+	    GROUP => 'wanna-build client',
 	    DEFAULT => '',
 	    CHECK => $validate_ssh,
+	    HELP => 'Socket for SSH connection'
 	},
 	'WANNA_BUILD_SSH_OPTIONS'		=> {
+	    TYPE => 'ARRAY:STRING',
+	    VARNAME => 'wanna_build_ssh_options',
+	    GROUP => 'wanna-build client',
 	    DEFAULT => [],
 	    CHECK => $validate_ssh,
+	    HELP => 'SSH options.  Note this is an array reference.'
 	},
 	'WANNA_BUILD_DB_NAME'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'wanna_build_db_name',
+	    GROUP => 'wanna-build client',
 	    DEFAULT => undef,
+	    HELP => 'Database name'
 	},
 	'WANNA_BUILD_DB_USER'			=> {
-	    DEFAULT => $conf->get('USERNAME')
+	    TYPE => 'STRING',
+	    VARNAME => 'wanna_build_db_user',
+	    GROUP => 'wanna-build client',
+	    DEFAULT => $conf->get('USERNAME'),
+	    HELP => 'Database user'
 	},
 	'BUILT_ARCHITECTURE'			=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'wanna_build_built_architecture',
+	    GROUP => 'wanna-build client',
 	    DEFAULT => $arch,
-	},);
+	    HELP => 'Architecture for database'
+	});
 
     $conf->set_allowed_keys(\%db_keys);
 }
