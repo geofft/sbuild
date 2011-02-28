@@ -260,7 +260,6 @@ sub setup ($) {
 	    VARNAME => 'config_time',
 	    GROUP => '__INTERNAL',
 	    DEFAULT => {},
-	    IGNORE_DEFAULT => 1, # Don't dump class to config
 	    HELP => 'Time configuration was last read'
 	},
 	'DISTRIBUTIONS'                         => {
@@ -268,6 +267,7 @@ sub setup ($) {
 	    VARNAME => 'distributions',
 	    GROUP => 'Build options',
 	    DEFAULT => [],
+	    IGNORE_DEFAULT => 1, # Don't dump class to config
 	    HELP => 'List of distributions that buildd should take packages from',
 	    EXAMPLE =>
 '$distributions = [
