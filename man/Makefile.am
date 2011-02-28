@@ -23,6 +23,7 @@ include $(top_srcdir)/scripts/global.mk
 
 man_MANS =				\
 	buildd.1			\
+	buildd.conf.5			\
 	buildd-mail.1			\
 	buildd-uploader.1		\
 	buildd-vlog.1			\
@@ -48,7 +49,13 @@ man_MANS =				\
 sbuild.conf.man: ../tools/sbuild-dumpconfig
 	PERL5LIB=../lib $< sbuild man > $@
 
+buildd.conf.man: ../tools/sbuild-dumpconfig
+	PERL5LIB=../lib $< buildd man > $@
+
 sbuild.conf.5: sbuild.conf.5.in defs.man sbuild.conf.man
+	soelim $< > $@
+
+buildd.conf.5: buildd.conf.5.in defs.man buildd.conf.man
 	soelim $< > $@
 
 %.1: %.1.in defs.man
@@ -64,7 +71,8 @@ sbuild.conf.5: sbuild.conf.5.in defs.man sbuild.conf.man
 	soelim $< > $@
 
 CLEANFILES = 				\
-	sbuild.conf.man
+	sbuild.conf.man			\
+	buildd.conf.man
 
 EXTRA_DIST =				\
 	defs.man.in			\
