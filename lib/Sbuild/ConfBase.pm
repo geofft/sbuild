@@ -291,6 +291,13 @@ sub _get_example {
     return $self->_get_property_value($key, 'EXAMPLE');
 }
 
+sub _get_ignore_default {
+    my $self = shift;
+    my $key = shift;
+
+    return $self->_get_property_value($key, 'IGNORE_DEFAULT');
+}
+
 sub _get {
     my $self = shift;
     my $key = shift;

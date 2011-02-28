@@ -95,6 +95,7 @@ foreach my $group (@groups) {
 	    my $varname = $conf->_get_varname($key);
 	    my $help = $conf->_get_help($key);
 	    my $default = $conf->_get_default($key);
+	    my $ignore_default = $conf->_get_ignore_default($key);
 	    if ($output eq "config") {
 		print "# $key\n";
 		print "# Type: $type\n";
@@ -107,7 +108,9 @@ foreach my $group (@groups) {
 			print "#    $line\n";
 		    }
 		}
-		print wrap("#", "#", Data::Dumper->Dump([$default], ["$varname"]));
+		print wrap("#", "#", Data::Dumper->Dump([$default],
+							["$varname"]))
+		    if (!$ignore_default);
 		print("\n");
 	    } elsif ($output eq "man") {
 		print ".TP\n";
