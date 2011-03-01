@@ -1111,12 +1111,14 @@ sub check_state ($@) {
     my $retval = $self->check_state_internal(@_);
     # check if we should retry the call
     if ($retval == -1) {
+	my $interval = int(rand(120));
+	$self->log("Retrying --info in $interval seconds...\n");
 	# reset error to old value
 	$self->set('Mail Error', $mail_error);
 	# 0..120s of sleep ought to be enough for retrying;
 	# for mail bursts, this should get us out of the
 	# crticial mass
-	sleep int(rand(120));
+	sleep $interval;
 	$retval = $self->check_state_internal(@_);
 	# remap the -1 retry code to failure
 	if ($retval == -1) {
@@ -1144,6 +1146,7 @@ sub check_state_internal ($$@) {
 	$self->set('Mail Error',
 		   $self->get('Mail Error') .
 		   "Couldn't start wanna-build --info: $!\n");
+	$self->log("Couldn't start wanna-build --info: $!\n");
 	# let check_state() retry if needed
 	return -1;
     }
