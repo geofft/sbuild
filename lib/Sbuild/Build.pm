@@ -34,8 +34,9 @@ use FileHandle;
 use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
+use MIME::Lite;
 
-use Sbuild qw($devnull binNMU_version version_compare split_version copy isin send_build_log debug df);
+use Sbuild qw($devnull binNMU_version version_compare split_version copy isin debug df send_mail);
 use Sbuild::Base;
 use Sbuild::ChrootSetup qw(clean update upgrade distupgrade);
 use Sbuild::ChrootInfoSchroot;
@@ -2094,7 +2095,8 @@ sub close_build_log {
     else {
 	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
     }
-    send_build_log($self->get('Config'), $self->get_conf('MAILTO'), $subject, $filename)
+
+    $self->send_build_log($self->get_conf('MAILTO'), $subject, $filename)
 	if (defined($filename) && -f $filename &&
 	    $self->get_conf('MAILTO'));
 
@@ -2103,6 +2105,160 @@ sub close_build_log {
 	$self->get('Log Stream')->close(); # Close child logger process
 	$self->set('Log Stream', undef);
     }
+}
+
+sub send_build_log {
+    my $self = shift;
+    my $to = shift;
+    my $subject = shift;
+    my $filename = shift;
+
+    my $conf = $self->get('Config');
+
+    if ($conf->get('MIME_BUILD_LOG_MAILS')) {
+	return $self->send_mime_build_log($to, $subject, $filename);
+    } elsif ($conf->get('COMPRESS_BUILD_LOG_MAILS')) {
+	return $self->send_compressed_build_log($to, $subject, $filename);
+    } else {
+        return send_mail($conf, $to, $subject, $filename);
+    }
+}
+
+sub send_compressed_build_log {
+    my $self = shift;
+    my $to = shift;
+    my $subject = shift;
+    my $filename = shift;
+
+    my $conf = $self->get('Config');
+
+    # This writes the compressed build log to yet another temporary file,
+    # generates base64 from it and pipes it into the mailer with
+    # Content-Type: application/x-gzip and Content-Transfer-Encoding:
+    # base64.
+    local( *F, *GZFILE );
+
+    if (!open( F, "<$filename" )) {
+	warn "Cannot open $filename for mailing: $!\n";
+	return 0;
+    }
+
+    my $tmp = File::Temp->new();
+    tie *GZFILE, 'IO::Zlib', $tmp->filename, 'wb';
+
+    while( <F> ) {
+        print GZFILE $_;
+    }
+    untie *GZFILE;
+
+    $filename = $tmp->filename;
+    if (!open( F, "<$filename" )) {
+        warn "Cannot open $filename for mailing: $!\n";
+        return 0;
+    }
+
+    local $SIG{'PIPE'} = 'IGNORE';
+
+    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
+	close( F );
+	return 0;
+    }
+
+    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
+    print MAIL "To: $to\n";
+    print MAIL "Subject: $subject\n";
+    print MAIL "Content-Type: application/x-gzip\n";
+    print MAIL "Content-Transfer-Encoding: base64\n";
+    print MAIL "\n";
+
+    my $buf;
+    while (read(F, $buf, 60*57)) {
+	print MAIL encode_base64($buf);
+    }
+
+    close( F );
+    if (!close( MAIL )) {
+	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
+	return 0;
+    }
+    return 1;
+}
+
+sub send_mime_build_log {
+    my $self = shift;
+    my $to = shift;
+    my $subject = shift;
+    my $filename = shift;
+
+    my $conf = $self->get('Config');
+    my $tmp; # Needed for gzip, here for proper scoping.
+
+    my $msg = MIME::Lite->new(
+	    From    => $conf->get('MAILFROM'),
+	    To      => $to,
+	    Subject => $subject,
+	    Type    => 'multipart/mixed'
+	    );
+
+    if (!$conf->get('COMPRESS_BUILD_LOG_MAILS')) {
+	my $log_part = MIME::Lite->new(
+		Type     => 'text/plain',
+		Path     => $filename,
+		Filename => basename($filename)
+		);
+	$log_part->attr('content-type.charset' => 'UTF-8');
+	$msg->attach($log_part);
+    } else {
+	local( *F, *GZFILE );
+
+	if (!open( F, "<$filename" )) {
+	    warn "Cannot open $filename for mailing: $!\n";
+	    return 0;
+	}
+
+	$tmp = File::Temp->new();
+	tie *GZFILE, 'IO::Zlib', $tmp->filename, 'wb';
+
+	while( <F> ) {
+	    print GZFILE $_;
+	}
+	untie *GZFILE;
+
+	close F;
+	close GZFILE;
+
+	$msg->attach(
+		Type     => 'application/x-gzip',
+		Path     => $tmp->filename,
+		Filename => basename($filename) . '.gz'
+		);
+    }
+
+    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Arch') . '.changes';
+    if ($self->get_status() eq 'successful' && -r $changes) {
+	$msg->attach(
+		Type     => 'text/plain',
+		Path     => $changes,
+		Filename => basename($changes)
+		);
+    }
+
+    local $SIG{'PIPE'} = 'IGNORE';
+
+    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
+	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
+	close( F );
+	return 0;
+    }
+
+    $msg->print(\*MAIL);
+
+    if (!close( MAIL )) {
+	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
+	return 0;
+    }
+    return 1;
 }
 
 sub log_symlink {
