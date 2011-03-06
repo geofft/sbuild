@@ -117,7 +117,6 @@ sub run {
   MAINLOOP:
     while( 1 ) {
 	$self->check_restart();
-	$self->read_config();
 
         my ( $dist_config, $pkg_ver) = get_next_REDO($self);
         $self->do_build( $dist_config, $pkg_ver) if $pkg_ver;
