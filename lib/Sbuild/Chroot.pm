@@ -277,18 +277,20 @@ sub exec_command {
     }
 
     # Sanitise environment
-    foreach my $var (keys %ENV) {
-	my $match = 0;
-	foreach my $regex (@{$self->get_conf('ENVIRONMENT_FILTER')}) {
-	    $match = 1 if
-		$var =~ m/($regex)/;
-	}
-	delete $ENV{$var} if
-	    $match == 0;
-	if (!$match) {
-	    debug2("Environment filter: Deleted $var\n");
-	} else {
-	    debug2("Environment filter: Kept $var\n");
+    if (defined $self->get_conf('ENVIRONMENT_FILTER')) {
+	foreach my $var (keys %ENV) {
+	    my $match = 0;
+	    foreach my $regex (@{$self->get_conf('ENVIRONMENT_FILTER')}) {
+		$match = 1 if
+		    $var =~ m/($regex)/;
+	    }
+	    delete $ENV{$var} if
+		$match == 0;
+	    if (!$match) {
+		debug2("Environment filter: Deleted $var\n");
+	    } else {
+		debug2("Environment filter: Kept $var\n");
+	    }
 	}
     }
 
