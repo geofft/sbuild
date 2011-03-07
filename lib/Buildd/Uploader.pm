@@ -27,8 +27,6 @@ use warnings;
 use Buildd qw(lock_file unlock_file unset_env exitstatus send_mail);
 use Buildd::Base;
 use Buildd::Conf qw();
-use Sbuild::ChrootRoot;
-use Sbuild::DB::Client;
 
 BEGIN {
     use Exporter ();
