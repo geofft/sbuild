@@ -417,4 +417,70 @@ sub warn_deprecated {
     warn "I: The replacement is $newtype option '$newopt'"
 }
 
+sub read ($$$$) {
+    my $conf = shift;
+    my $paths = shift;
+    my $deprecated_init = shift;
+    my $deprecated_setup = shift;
+    my $custom_setup = shift;
+
+    foreach my $path (@{$paths}) {
+	$path = "'$path'";
+    }
+    my $pathstring = join(", ", @{$paths});
+
+    my $HOME = $conf->get('HOME');
+
+    # Variables are undefined, so config will default to DEFAULT if unset.
+
+    # Create script to source configuration.
+    my $script = "use strict;\nuse warnings;\n";
+    my @keys = $conf->get_keys();
+    foreach my $key (@keys) {
+	next if $conf->_get_group($key) =~ m/^__/;
+
+	my $varname = $conf->_get_varname($key);
+	$script .= "my \$$varname = undef;\n";
+    }
+
+    # For compatibility only.  Non-scalars are deprecated.
+    $script .= $deprecated_init
+	if ($deprecated_init);
+
+    $script .= <<END;
+
+foreach ($pathstring) {
+	if (-r \$_) {
+	my \$e = eval `cat "\$_"`;
+	if (!defined(\$e)) {
+	    print STDERR "E: \$_: Errors found in configuration file:\n\$\@";
+	    exit(1);
+	}
+    }
+}
+
+# Needed before any program validation.
+\$conf->set('PATH', \$path);
+END
+
+# Non-scalar values, for backward compatibility.
+    $script .= $deprecated_setup
+        if ($deprecated_setup);
+
+    foreach my $key (@keys) {
+	next if $conf->_get_group($key) =~ m/^__/;
+
+	my $varname = $conf->_get_varname($key);
+	$script .= "\$conf->set('$key', \$$varname);\n";
+    }
+
+    $script .= $custom_setup
+        if ($custom_setup);
+
+
+    $script .= "return 1;\n";
+
+    eval $script or die "Error reading configuration: $@";
+}
+
 1;
