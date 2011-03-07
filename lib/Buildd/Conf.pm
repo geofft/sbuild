@@ -368,59 +368,6 @@ sub read ($) {
 
     my $HOME = $conf->get('HOME');
 
-    # Variables are undefined, so config will default to DEFAULT if unset.
-    my $admin_mail = undef;
-    my $apt_get = undef;
-    my $arch = undef;
-    my $build_log_keep = undef;
-    my $daemon_log_file = undef;
-    my $daemon_log_keep = undef;
-    my $daemon_log_rotate = undef;
-    my $daemon_log_send = undef;
-    my $delay_after_give_back = undef;
-    my $error_mail_window = undef;
-    my $idle_sleep_time = undef;
-    my $log_queued_messages = undef;
-    my $max_build = undef;
-    my $min_free_space = undef;
-    my $nice_level = undef;
-    my $no_detach = undef;
-    my $no_warn_pattern = undef;
-    my $pidfile = undef;
-    my $pkg_log_keep = undef;
-    my $should_build_msgs = undef;
-    my $ssh = undef;
-    my $statistics_mail = undef;
-    my $statistics_period = undef;
-    my $sudo = undef;
-    my $wanna_build_db_name = undef;
-    my $wanna_build_db_user = undef;
-    my $wanna_build_ssh_user = undef;
-    my $wanna_build_ssh_host = undef;
-    my $wanna_build_ssh_socket = undef;
-    my $wanna_build_ssh_options = undef;
-    my $warning_age = undef;
-    my @distributions;
-    my $defaults;
-    my @upload_queues;
-
-    #legacy fields:
-    my @weak_no_auto_build;
-    my $mail_to = undef;
-    my %mail_to = ();
-    my $mail_from = undef;
-    my $build_regex = undef; # Should this be user settable?
-    my @no_auto_build;
-    my $no_build_regex = undef;
-    my $dupload_to = undef;
-    my $dupload_to_non_us = undef;
-    my $dupload_to_security = undef;
-    my @take_from_dists;
-    my $sshcmd;
-    my $sshsocket;
-    my $wanna_build_user;
-    my $wanna_build_dbbase;
-
     my $global = $Sbuild::Sysconfig::paths{'BUILDD_CONF'};
     my $user = "$HOME/.builddrc";
     my %config_time = ();
@@ -446,200 +393,201 @@ sub read ($) {
 	}
     }
 
-    # Need to reread all config files, even if one is updated.
-    if ($reread) {
-	foreach (@config_files) {
-	    if (-r $_) {
-		my $e = eval `cat "$_"`;
-		if (!defined($e)) {
-		    print STDERR "E: $_: Errors found in configuration file:\n$@";
-		    exit(1);
+    # For compatibility only.  Non-scalars are deprecated.
+    my $deprecated_init = <<END;
+# Variables are undefined, so config will default to DEFAULT if unset.
+my \$defaults;
+my \@distributions;
+undef \@distributions;
+my \@upload_queues;
+undef \@upload_queues;
+
+#legacy fields:
+my \@weak_no_auto_build;
+undef \@weak_no_auto_build;
+my \$build_regex = undef; # Should this be user settable?
+my \@no_auto_build;
+undef \@no_auto_build;
+my \$no_build_regex = undef;
+my \@take_from_dists;
+undef \@take_from_dists;
+my \$sshcmd = undef;
+my \$sshsocket = undef;
+my \$wanna_build_user = undef;
+my \$wanna_build_dbbase = undef;
+END
+
+    my $deprecated_setup = '';
+
+    my $custom_setup = <<END;
+if (\$sshcmd && \$sshcmd =~ /^\\s*(\\S+)\\s+(.+)/) {
+    my \$rest = \$2;
+    \$conf->set('SSH', \$1);
+
+    #Try to pry the user out:
+    if (\$rest =~ /(-l\\s*(\\S+))\\s+/) {
+	\$wanna_build_ssh_user = \$2;
+	#purge this from the rest:
+	\$rest =~ s/\\Q\$1//;
+    } elsif (\$rest =~ /\\s+(\\S+)\@/) {
+	\$wanna_build_ssh_user = \$1;
+	\$rest =~ s/\\Q\$1\\E\@//;
+    }
+
+    #Hope that the last argument is the host:
+    if (\$rest =~ /\\s+(\\S+)\\s*\$/) {
+	\$wanna_build_ssh_host = \$1;
+	\$rest =~ s/\\Q\$1//;
+    }
+
+    #rest should be options:
+    if (\$rest !~ /\\s*/) {
+	\$wanna_build_ssh_options = [split \$rest];
+    }
+}
+
+if (\$sshsocket) {
+    \$wanna_build_ssh_socket = \$sshsocket;
+}
+
+if (\$wanna_build_user) {
+    \$wanna_build_db_user = \$wanna_build_user;
+}
+
+if (\$wanna_build_dbbase) {
+    \$wanna_build_db_name = \$wanna_build_dbbase;
+}
+
+#Convert old config, if needed:
+my \@distributions_info;
+if (\@take_from_dists) {
+    for my \$dist (\@take_from_dists) {
+	my \%entry;
+
+	\$entry{DIST_NAME} = \$dist;
+	\$entry{SSH} = \$ssh;
+
+	if (\$dist =~ /security/) {
+	    \$entry{DUPLOAD_LOCAL_QUEUE_DIR} = 'upload-security';
+	}
+	if (\$build_regex) {
+	    \$entry{BUILD_REGEX} = \$build_regex;
+	}
+	if (\$no_build_regex) {
+	    \$entry{NO_BUILD_REGEX} = \$build_regex;
+	}
+	if (\@no_auto_build) {
+	    \$entry{NO_AUTO_BUILD} = \\\@no_auto_build;
+	}
+	if (\@weak_no_auto_build) {
+	    \$entry{WEAK_NO_AUTO_BUILD} = \\\@weak_no_auto_build;
+	}
+
+	\$entry{WANNA_BUILD_DB_NAME} = \$wanna_build_db_name;
+	\$entry{WANNA_BUILD_DB_USER} = \$wanna_build_db_user;
+	\$entry{WANNA_BUILD_SSH_HOST} = \$wanna_build_ssh_host;
+	\$entry{WANNA_BUILD_SSH_USER} = \$wanna_build_ssh_user;
+	\$entry{WANNA_BUILD_SSH_SOCKET} = \$wanna_build_ssh_socket;
+	\$entry{WANNA_BUILD_SSH_OPTIONS} = \$wanna_build_ssh_options;
+                \$entry{WANNA_BUILD_API} = 0;
+
+	my \$dist_config = Buildd::DistConf::new_hash(\\\%entry);
+
+	push \@distributions_info, \$dist_config;
+    }
+} else {
+    for my \$raw_entry (\@distributions) {
+	my \%entry;
+	my \@dist_names;
+
+	#Find out for which distributions this entry is intended:
+	for my \$key (keys \%\$raw_entry) {
+	    if (uc(\$key) eq "DIST_NAME") {
+		if (ref(\$raw_entry->{\$key}) eq "ARRAY") {
+		    push \@dist_names, \@{\$raw_entry->{\$key}};
+		} else {
+		    push \@dist_names, \$raw_entry->{\$key};
 		}
-		$conf->get('CONFIG_TIME')->{$_} = $config_time{$_};
 	    }
 	}
 
-	# Set configuration if updated.
-	$conf->set('ADMIN_MAIL', $admin_mail);
-	$conf->set('APT_GET', $apt_get);
-	$conf->set('ARCH', $arch);
-	$conf->set('BUILD_LOG_KEEP', $build_log_keep);
-	$conf->set('DAEMON_LOG_FILE', $daemon_log_file);
-	$conf->set('DAEMON_LOG_KEEP', $daemon_log_keep);
-	$conf->set('DAEMON_LOG_ROTATE', $daemon_log_rotate);
-	$conf->set('DAEMON_LOG_SEND', $daemon_log_send);
-	$conf->set('DELAY_AFTER_GIVE_BACK', $delay_after_give_back);
-	$conf->set('ERROR_MAIL_WINDOW', $error_mail_window);
-	$conf->set('IDLE_SLEEP_TIME', $idle_sleep_time);
-	$conf->set('LOG_QUEUED_MESSAGES', $log_queued_messages);
-	$conf->set('MIN_FREE_SPACE', $min_free_space);
-	$conf->set('NICE_LEVEL', $nice_level);
-	$conf->set('NO_DETACH', $no_detach);
-	$conf->set('NO_WARN_PATTERN', $no_warn_pattern);
-	$conf->set('PIDFILE', $pidfile);
-	$conf->set('PKG_LOG_KEEP', $pkg_log_keep);
-	$conf->set('SHOULD_BUILD_MSGS', $should_build_msgs);
-	$conf->set('SSH', $ssh);
-	$conf->set('STATISTICS_MAIL', $statistics_mail);
-	$conf->set('STATISTICS_PERIOD', $statistics_period);
-	$conf->set('SUDO', $sudo);
-	$conf->set('WARNING_AGE', $warning_age);
-
-	if ($sshcmd && $sshcmd =~ /^\s*(\S+)\s+(.+)/) {
-	    my $rest = $2;
-	    $conf->set('SSH', $1);
-
-	    #Try to pry the user out:
-	    if ($rest =~ /(-l\s*(\S+))\s+/) {
-		$wanna_build_ssh_user = $2;
-		#purge this from the rest:
-		$rest =~ s/\Q$1//;
-	    } elsif ($rest =~ /\s+(\S+)\@/) {
-		$wanna_build_ssh_user = $1;
-		$rest =~ s/\Q$1\E\@//;
-	    }
-
-	    #Hope that the last argument is the host:
-	    if ($rest =~ /\s+(\S+)\s*$/) {
-		$wanna_build_ssh_host = $1;
-		$rest =~ s/\Q$1//;
-	    }
-
-	    #rest should be options:
-	    if ($rest !~ /\s*/) {
-		$wanna_build_ssh_options = [split $rest];
+	for my \$key (keys \%\$raw_entry) {
+	    if (uc(\$key) ne "DIST_NAME") {
+		\$entry{uc(\$key)} = \$raw_entry->{\$key};
 	    }
 	}
 
-	if ($sshsocket) {
-	    $wanna_build_ssh_socket = $sshsocket;
-	}
-
-	if ($wanna_build_user) {
-	    $wanna_build_db_user = $wanna_build_user;
-	}
-
-	if ($wanna_build_dbbase) {
-	    $wanna_build_db_name = $wanna_build_dbbase;
-	}
-
-	#Convert old config, if needed:
-	my @distributions_info;	
-	if (@take_from_dists) {
-	    for my $dist (@take_from_dists) {
-		my %entry;
-
-		$entry{DIST_NAME} = $dist;
-		$entry{SSH} = $ssh;
-
-		if ($dist =~ /security/) {
-		    $entry{DUPLOAD_LOCAL_QUEUE_DIR} = 'upload-security';
-		}
-		if ($build_regex) {
-		    $entry{BUILD_REGEX} = $build_regex;
-		}
-		if ($no_build_regex) {
-		    $entry{NO_BUILD_REGEX} = $build_regex;
-		}
-		if (@no_auto_build) {
-		    $entry{NO_AUTO_BUILD} = \@no_auto_build;
-		}
-		if (@weak_no_auto_build) {
-		    $entry{WEAK_NO_AUTO_BUILD} = \@weak_no_auto_build;
-		}
-
-		$entry{WANNA_BUILD_DB_NAME} = $wanna_build_db_name;
-		$entry{WANNA_BUILD_DB_USER} = $wanna_build_db_user;
-		$entry{WANNA_BUILD_SSH_HOST} = $wanna_build_ssh_host;
-		$entry{WANNA_BUILD_SSH_USER} = $wanna_build_ssh_user;
-		$entry{WANNA_BUILD_SSH_SOCKET} = $wanna_build_ssh_socket;
-		$entry{WANNA_BUILD_SSH_OPTIONS} = $wanna_build_ssh_options;
-                $entry{WANNA_BUILD_API} = 0;
-
-		my $dist_config = Buildd::DistConf::new_hash(\%entry);
-
-		push @distributions_info, $dist_config;
-	    }
-	} else {
-	    for my $raw_entry (@distributions) {
-		my %entry;
-		my @dist_names;
-
-		#Find out for which distributions this entry is intended:
-		for my $key (keys %$raw_entry) {
-		    if (uc($key) eq "DIST_NAME") {
-			if (ref($raw_entry->{$key}) eq "ARRAY") {
-			    push @dist_names, @{$raw_entry->{$key}};
-			} else {
-			    push @dist_names, $raw_entry->{$key};
-			}
-		    }
-		}
-
-		for my $key (keys %$raw_entry) {
-		    if (uc($key) ne "DIST_NAME") {
-			$entry{uc($key)} = $raw_entry->{$key};
-		    }
-		}
-
-                for my $key (keys %$defaults) {
-                    if (uc($key) ne "DIST_NAME" && not defined $entry{uc($key)}) {
-                        $entry{uc($key)} = $defaults->{$key};
+                for my \$key (keys \%\$defaults) {
+                    if (uc(\$key) ne "DIST_NAME" && not defined \$entry{uc(\$key)}) {
+                        \$entry{uc(\$key)} = \$defaults->{\$key};
                     }
                 }
 
-                $entry{WANNA_BUILD_API} //= 1;
+                \$entry{WANNA_BUILD_API} //= 1;
 
 
-		#We need this to pass this to Sbuild::DB::Client:
-                $entry{SSH} = $ssh;
+	#We need this to pass this to Sbuild::DB::Client:
+                \$entry{SSH} = \$ssh;
 
-		#Make one entry per distribution, it's easier later on:
-		for my $dist (@dist_names) {
-		    $entry{'DIST_NAME'} = $dist;
-                    my $dist_config = Buildd::DistConf::new_hash(\%entry);
-                    push @distributions_info, $dist_config;
-		} 
-	    }
-	}
-
-	$conf->set('DISTRIBUTIONS', \@distributions_info);
-
-	if (@upload_queues) {
-	    my @upload_queue_configs;
-	    for my $raw_entry (@upload_queues) {
-		my %entry;
-		for my $key (keys %$raw_entry) {
-		    $entry{uc($key)} = $raw_entry->{$key};
-		}
-
-		my $queue_config = Buildd::UploadQueueConf::new_hash(\%entry);
-
-		push @upload_queue_configs, $queue_config;
-	    }
-	    $conf->set('UPLOAD_QUEUES', \@upload_queue_configs);
-	} else {
-	    push @{$conf->get('UPLOAD_QUEUES')},
-		Buildd::UploadQueueConf::new_hash(
-		    {
-			DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
-			DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
-		    }
-		),
-		Buildd::UploadQueueConf::new_hash(
-		    {
-			DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
-			DUPLOAD_ARCHIVE_NAME    => 'security'
-		    }
-		);
-	}
-
-	# Set here to allow user to override.
-	if (-t STDIN && -t STDOUT && $conf->get('NO_DETACH')) {
-	    $conf->set('VERBOSE', 1);
+	#Make one entry per distribution, it's easier later on:
+	for my \$dist (\@dist_names) {
+	    \$entry{'DIST_NAME'} = \$dist;
+                    my \$dist_config = Buildd::DistConf::new_hash(\\\%entry);
+                    push \@distributions_info, \$dist_config;
 	}
     }
+}
 
+\$conf->set('DISTRIBUTIONS', \\\@distributions_info);
+
+if (\@upload_queues) {
+    my \@upload_queue_configs;
+    for my \$raw_entry (\@upload_queues) {
+	my \%entry;
+	for my \$key (keys \%\$raw_entry) {
+	    \$entry{uc(\$key)} = \$raw_entry->{\$key};
+	}
+
+	my \$queue_config = Buildd::UploadQueueConf::new_hash(\\\%entry);
+
+	push \@upload_queue_configs, \$queue_config;
+    }
+    \$conf->set('UPLOAD_QUEUES', \\\@upload_queue_configs);
+} else {
+    push \@{\$conf->get('UPLOAD_QUEUES')},
+	Buildd::UploadQueueConf::new_hash(
+	    {
+		DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
+		DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
+	    }
+	),
+	Buildd::UploadQueueConf::new_hash(
+	    {
+		DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
+		DUPLOAD_ARCHIVE_NAME    => 'security'
+	    }
+	);
+}
+
+# Set here to allow user to override.
+if (-t STDIN && -t STDOUT && \$conf->get('NO_DETACH')) {
+    \$conf->_set_default('VERBOSE', 1);
+} else {
+    \$conf->_set_default('VERBOSE', 0);
+}
+END
+
+    $conf->read(\@config_files, $deprecated_init, $deprecated_setup,
+		$custom_setup);
+
+    # Update times
+    if ($reread) {
+	foreach (@config_files) {
+	    if (-r $_) {
+		$conf->get('CONFIG_TIME')->{$_} = $config_time{$_};
+	    }
+	}
+    }
 }
 
 1;
