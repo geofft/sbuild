@@ -33,11 +33,13 @@ exampleconf_DATA = example.sbuildrc
 COMPAT_SETUP = 25nssdatabases 99builddsourceslist
 SETUP =
 
-sbuild.conf: ../tools/sbuild-dumpconfig
-	PERL5LIB=../lib $< sbuild config > $@
+sbuild.conf: $(abs_top_srcdir)/tools/sbuild-dumpconfig
+	PERL5LIB=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib \
+	  $< sbuild config > $@
 
-buildd.conf: ../tools/sbuild-dumpconfig
-	PERL5LIB=../lib $< buildd config > $@
+buildd.conf: $(abs_top_srcdir)/tools/sbuild-dumpconfig
+	PERL5LIB=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib \
+	  $< buildd config > $@
 
 schrootsetupdir = $(SCHROOT_SYSCONF_DIR)/setup.d
 if SBUILD_COMPAT

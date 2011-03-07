@@ -46,11 +46,13 @@ man_MANS =				\
 	wanna-build-merge-packages.1	\
 	wanna-build-statistics.1
 
-sbuild.conf.man: ../tools/sbuild-dumpconfig
-	PERL5LIB=../lib $< sbuild man > $@
+sbuild.conf.man: $(abs_top_srcdir)/tools/sbuild-dumpconfig
+	PERL5LIB=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib \
+	  $< sbuild man > $@
 
-buildd.conf.man: ../tools/sbuild-dumpconfig
-	PERL5LIB=../lib $< buildd man > $@
+buildd.conf.man: $(abs_top_srcdir)/tools/sbuild-dumpconfig
+	PERL5LIB=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib \
+	  $< buildd man > $@
 
 sbuild.conf.5: sbuild.conf.5.in defs.man sbuild.conf.man
 	soelim $< > $@
