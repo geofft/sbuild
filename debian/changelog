@@ -53,14 +53,20 @@ sbuild (0.61.1-1) unstable; urgency=low
       reference, which have been supported for some time.  The old
       style array and hash values will remain supported for now, but
       will be removed in a future release.
+  * buildd.conf:
+    - Automatically generated like sbuild.conf.  As for sbuild.conf,
+      non-scalar types are deprecated.
   * sbuild.conf.5:
     - All of the allowed values in sbuild.conf are now documented in a
       new sbuild.conf(5) manual page.  Like sbuild.conf, this is
       entirely generated from the source code, so will always match the
       defaults for the same sbuild version.
-  * 
+  * buildd.conf.5:
+    - New manual page.  Like sbuild.conf(5), this documents all allowed
+      values.
+    
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Feb 2011 15:47:26 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 07 Mar 2011 21:12:47 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
