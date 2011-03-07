@@ -997,20 +997,11 @@ sub read ($) {
 
     my $HOME = $conf->get('HOME');
 
-    # Variables are undefined, so config will default to DEFAULT if unset.
+    my $files = ["$Sbuild::Sysconfig::paths{'SBUILD_CONF'}",
+		 "$HOME/.sbuildrc"];
 
-    # Create script to source configuration.
-    my $script = "use strict;\nuse warnings;\n";
-    my @keys = $conf->get_keys();
-    foreach my $key (@keys) {
-	next if $conf->_get_group($key) =~ m/^__/;
-
-	my $varname = $conf->_get_varname($key);
-	$script .= "my \$$varname = undef;\n";
-    }
     # For compatibility only.  Non-scalars are deprecated.
-
-    $script .= <<END;
+    my $deprecated_init = <<END;
 my \%mailto;
 undef \%mailto;
 my \@toolchain_regex;
@@ -1021,20 +1012,9 @@ my \%watches;
 undef \%watches;
 my \%individual_stalled_pkg_timeout;
 undef \%individual_stalled_pkg_timeout;
+END
 
-foreach ("$Sbuild::Sysconfig::paths{'SBUILD_CONF'}", "$HOME/.sbuildrc") {
-	if (-r \$_) {
-	my \$e = eval `cat "\$_"`;
-	if (!defined(\$e)) {
-	    print STDERR "E: \$_: Errors found in configuration file:\n\$\@";
-	    exit(1);
-	}
-    }
-}
-
-# Needed before any program validation.
-\$conf->set('PATH', \$path);
-
+    my $deprecated_setup = <<END;
 # Non-scalar values, for backward compatibility.
 if (\%mailto) {
     warn 'W: \%mailto is deprecated; please use the hash reference \$mailto{}\n';
@@ -1060,14 +1040,7 @@ if (\%individual_stalled_pkg_timeout) {
 }
 END
 
-    foreach my $key (@keys) {
-	next if $conf->_get_group($key) =~ m/^__/;
-
-	my $varname = $conf->_get_varname($key);
-	$script .= "\$conf->set('$key', \$$varname);\n";
-    }
-
-    $script .= <<END;
+    my $custom_setup = <<END;
 \$conf->set('MAILTO',
 	    \$conf->get('MAILTO_HASH')->{\$conf->get('DISTRIBUTION')})
     if (defined(\$conf->get('DISTRIBUTION')) &&
@@ -1094,11 +1067,11 @@ if (!defined(\$conf->get('MAINTAINER_NAME')) &&
 
 push(\@{\${\$conf->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
 \$chroot_setup_script) if (\$chroot_setup_script);
-
-return 1;
 END
 
-    eval $script or die "Error reading configuration: $@";
+
+    $conf->read($files, $deprecated_init, $deprecated_setup,
+		$custom_setup);
 }
 
 1;
