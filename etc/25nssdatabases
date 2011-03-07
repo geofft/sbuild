@@ -19,6 +19,13 @@
 
 set -e
 
+if [ -f "/etc/schroot/setup.d/20nssdatabases" ]; then
+    # We're dealing with a schroot from squeeze.  20nssdatabases will
+    # handle everything for us.  This script is only needed with
+    # schroot from lenny.  So exit now.
+    exit 0
+fi
+
 if [ -f "$CHROOT_SCRIPT_CONFIG" ]; then
     . "$CHROOT_SCRIPT_CONFIG"
 elif [ "$2" = "ok" ]; then
