@@ -305,12 +305,13 @@ sub run {
 
     my $e;
     if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
-	$self->log_error("$e\n");
-	$self->log_info($e->info."\n")
-	    if ($e->info);
-	$self->set_status("failed");
+	if ($e->status) {
+	    $self->set_status($e->status);
+	} else {
+	    $self->set_status("failed");
+	}
 	$self->set('Pkg Fail Stage', $e->failstage);
-	debug($e->trace->as_string, "\n");
+	$e->rethrow();
     }
 }
 
@@ -355,10 +356,24 @@ sub run_chroot {
 	$self->run_chroot_session();
     };
 
-    $self->close_build_log();
-
+    # Log exception info and set status and fail stage prior to
+    # closing build log.
     my $e;
     if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
+	$self->log_error("$e\n");
+	$self->log_info($e->info."\n")
+	    if ($e->info);
+	if ($e->status) {
+	    $self->set_status($e->status);
+	} else {
+	    $self->set_status("failed");
+	}
+	$self->set('Pkg Fail Stage', $e->failstage);
+    }
+
+    $self->close_build_log();
+
+    if ($e) {
 	$e->rethrow();
     }
 }
