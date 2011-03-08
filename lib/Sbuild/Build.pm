@@ -1153,7 +1153,6 @@ sub build {
 	$dscdir = "$build_dir/$dscdir";
 
 	$self->log_subsubsection("Check unpacked source");
-	$self->set('Pkg Fail Stage', "check-unpacked-version");
 	# check if the unpacked tree is really the version we need
 	$dscdir = $self->get('Session')->strip_chroot_path($dscdir);
 	my $pipe = $self->get('Session')->pipe_command(
@@ -1170,11 +1169,13 @@ sub build {
 	close($pipe);
 	if ($?) {
 	    $self->log("FAILED [dpkg-parsechangelog died]\n");
-	    return 0;
+	    Sbuild::Exception::Build->throw(error => "FAILED [dpkg-parsechangelog died]",
+					    failstage => "check-unpacked-version");
 	}
 	if ($clog !~ /^Version:\s*(.+)\s*$/mi) {
 	    $self->log("dpkg-parsechangelog didn't print Version:\n");
-	    return 0;
+	    Sbuild::Exception::Build->throw(error => "dpkg-parsechangelog didn't print Version:",
+					    failstage => "check-unpacked-version");
 	}
     }
 
