@@ -1130,11 +1130,6 @@ sub build {
 	return 0;
     }
     if (! -d "$build_dir/$dscdir") {
-	# dpkg-source refuses to remove the remanants of an aborted
-	# dpkg-source extraction, so we will if necessary.
-	if (-d $tmpunpackdir) {
-	    system ("rm -fr '$tmpunpackdir'");
-	}
 	$self->set('Sub Task', "dpkg-source");
 	$self->get('Session')->run_command(
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
@@ -1143,8 +1138,6 @@ sub build {
 		      PRIORITY => 0});
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
-
-	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 	    Sbuild::Exception::Build->throw(error => "FAILED [dpkg-source died]",
 					    failstage => "unpack");
 	}
