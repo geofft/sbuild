@@ -26,6 +26,8 @@ use Sbuild qw(help_text version_text usage_error check_group_membership);
 use Sbuild::Utility qw(setup cleanup);
 use Sbuild::Conf qw();
 use Sbuild::OptionsBase;
+use Sbuild::InternalResolver;
+use Sbuild::ChrootRoot;
 
 my $conf = Sbuild::Conf::new();
 exit 1 if !defined($conf);
@@ -49,8 +51,13 @@ if ($command eq "apt-get") {
 }
 
 my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
+my $host = Sbuild::ChrootRoot->new($conf);
+$host->begin_session() or die "Chroot setup (host) failed";
 
-$session->run_apt_command(
+my $resolver = Sbuild::InternalResolver->new($conf, $session, $host);
+$resolver->setup();
+
+$resolver->run_apt_command(
     { COMMAND => [$command, @ARGV],
       ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
       USER => 'root',
