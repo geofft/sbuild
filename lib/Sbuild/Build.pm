@@ -49,6 +49,7 @@ use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download parse_file dsc_files);
 use Sbuild::Resolver qw(get_resolver);
+use Sbuild::Exception;
 
 BEGIN {
     use Exporter ();
@@ -77,7 +78,7 @@ sub new {
     $self->set('Pkg Status Trigger', undef);
     $self->set('Pkg Start Time', 0);
     $self->set('Pkg End Time', 0);
-    $self->set('Pkg Fail Stage', 0);
+    $self->set('Pkg Fail Stage', 'init');
     $self->set('Build Start Time', 0);
     $self->set('Build End Time', 0);
     $self->set('Install Start Time', 0);
@@ -265,295 +266,375 @@ sub get_status {
 sub run {
     my $self = shift;
 
-    $self->set('Pkg Fail Stage', 'init');
+    eval {
+	$self->set('Pkg Fail Stage', 'init');
 
-    $self->set_status('building');
+	$self->set_status('building');
 
-    $self->set('Pkg Start Time', time);
-    $self->set('Pkg End Time', $self->get('Pkg Start Time'));
+	$self->set('Pkg Start Time', time);
+	$self->set('Pkg End Time', $self->get('Pkg Start Time'));
 
-    # Acquire the architecture we're building for.
-    $self->set('Arch', $self->get_conf('ARCH'));
+	# Acquire the architecture we're building for.
+	$self->set('Arch', $self->get_conf('ARCH'));
 
-    my $dist = $self->get_conf('DISTRIBUTION');
-    if (!defined($dist) || !$dist) {
-	$self->log("No distribution defined\n");
-	goto cleanup_skip;
-    }
-
-    if ($self->get('Invalid Source')) {
-	$self->log("Invalid source: " . $self->get('DSC') . "\n");
-	$self->log("Skipping " . $self->get('Package') . " \n");
-	$self->set_status('failed');
-	goto cleanup_skip;
-    }
-
-    my $chroot_info;
-    if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
-	$chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
-    } else {
-	$chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
-    }
-
-    # TODO: Get package name from build object
-    if (!$self->open_build_log()) {
-	goto cleanup_skip;
-    }
-
-    # Set a chroot to run commands in host
-    my $host = $self->get('Host');
-
-    # Host execution defaults (set streams)
-    my $host_defaults = $host->get('Defaults');
-    $host_defaults->{'STREAMIN'} = $devnull;
-    $host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
-    $host_defaults->{'STREAMERR'} = $self->get('Log Stream');
-
-    # Build the source package if given a Debianized source directory
-    if ($self->get('Debian Source Dir')) {
-	$self->set('Pkg Fail Stage', 'pack-source');
-	$self->log_subsection("Build Source Package");
-
-	$self->log_subsubsection('clean');
-	$self->get('Host')->run_command(
-	    { COMMAND => [$self->get_conf('FAKEROOT'),
-			  'debian/rules',
-			  'clean'],
-	      DIR => $self->get('Debian Source Dir'),
-	      PRIORITY => 0,
-	    });
-	if ($?) {
-	    $self->log_error("Failed to clean source directory");
-
-	    goto cleanup_log;
+	my $dist = $self->get_conf('DISTRIBUTION');
+	if (!defined($dist) || !$dist) {
+	    Sbuild::Exception::Build->throw(error => "No distribution defined",
+					    failstage => "init");
 	}
 
-	$self->log_subsubsection('dpkg-source');
-	my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
-	push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')} if
-	    ($self->get_conf('DPKG_SOURCE_OPTIONS'));
-	push @dpkg_source_command, $self->get('Debian Source Dir');
-	$self->get('Host')->run_command(
-	    { COMMAND => \@dpkg_source_command,
-	      DIR => $self->get_conf('BUILD_DIR'),
-	      PRIORITY => 0,
-	    });
-	if ($?) {
-	    $self->log_error("Failed to build source package");
-	    goto cleanup_log;
+	if ($self->get('Invalid Source')) {
+	    Sbuild::Exception::Build->throw(error => "Invalid source " . $self->get('DSC'),
+					    failstage => "init");
 	}
+
+	# TODO: Get package name from build object
+	if (!$self->open_build_log()) {
+	    Sbuild::Exception::Build->throw(error => "Failed to open build log",
+					    failstage => "init");
+	}
+
+	# Set a chroot to run commands in host
+	my $host = $self->get('Host');
+
+	# Host execution defaults (set streams)
+	my $host_defaults = $host->get('Defaults');
+	$host_defaults->{'STREAMIN'} = $devnull;
+	$host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+	$host_defaults->{'STREAMERR'} = $self->get('Log Stream');
+
+	$self->run_chroot();
+    };
+
+    my $e;
+    if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
+	$self->log_error("$e\n");
+	$self->log_info($e->info."\n")
+	    if ($e->info);
+	$self->set_status("failed");
+	$self->set('Pkg Fail Stage', $e->failstage);
+	debug($e->trace->as_string, "\n");
     }
+}
 
-    my $session = $chroot_info->create('chroot',
-				       $self->get_conf('DISTRIBUTION'),
-				       $self->get_conf('CHROOT'),
-				       $self->get_conf('ARCH'));
+sub run_chroot {
+    my $self = shift;
 
-    # Run pre build external commands
-    $self->run_external_commands("pre-build-commands",
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+    eval {
+	# Build the source package if given a Debianized source directory
+	if ($self->get('Debian Source Dir')) {
+	    $self->set('Pkg Fail Stage', 'pack-source');
+	    $self->log_subsection("Build Source Package");
 
-    $self->set('Pkg Fail Stage', 'create-session');
-    if (!$session->begin_session()) {
-	$self->log("Error creating chroot session: skipping " .
-		   $self->get('Package') . "\n");
-	$self->set_status('failed');
-	goto cleanup_unlocked_session;
-    }
+	    $self->log_subsubsection('clean');
+	    $self->get('Host')->run_command(
+		{ COMMAND => [$self->get_conf('FAKEROOT'),
+			      'debian/rules',
+			      'clean'],
+		  DIR => $self->get('Debian Source Dir'),
+		  PRIORITY => 0,
+		});
+	    if ($?) {
+		Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
+						failstage => "pack-source");
+	    }
 
-    $self->set('Session', $session);
-
-    my $chroot_arch =  $self->chroot_arch();
-    if ($self->get('Arch') ne $chroot_arch) {
-	$self->log_error("Build architecture (" . $self->get('Arch') .
-			 ") is not the same as the chroot architecture (" .
-			 $chroot_arch . ")\n");
-	$self->log_info("Please specify the correct architecture with --arch, or use a chroot of the correct architecture\n");
-	$self->set_status('failed');
-	goto cleanup_unlocked_session;
-    }
-
-    $self->set('Chroot Dir', $session->get('Location'));
-    # TODO: Don't hack the build location in; add a means to customise
-    # the chroot directly.  i.e. allow changing of /build location.
-    $self->set('Chroot Build Dir',
-	       tempdir($self->get_conf('USERNAME') . '-' .
-		       $self->get('Package_SVersion') . '-' .
-		       $self->get('Arch') . '-XXXXXX',
-		       DIR =>  $session->get('Location') . "/build"));
-
-    # Needed so chroot commands log to build log
-    $session->set('Log Stream', $self->get('Log Stream'));
-    $host->set('Log Stream', $self->get('Log Stream'));
-
-    # Chroot execution defaults
-    my $chroot_defaults = $session->get('Defaults');
-    $chroot_defaults->{'DIR'} =
-	$session->strip_chroot_path($self->get('Chroot Build Dir'));
-    $chroot_defaults->{'STREAMIN'} = $devnull;
-    $chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
-    $chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
-    $chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
-    $chroot_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
-
-    my $resolver = get_resolver($self->get('Config'), $session, $host);
-    $resolver->set('Log Stream', $self->get('Log Stream'));
-    $resolver->set('Arch', $self->get('Arch'));
-    $resolver->set('Chroot Build Dir', $self->get('Chroot Build Dir'));
-    $self->set('Dependency Resolver', $resolver);
-
-    # Lock chroot so it won't be tampered with during the build.
-    if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
-	goto cleanup_unlocked_session;
-    }
-
-    $resolver->setup();
-
-    # Clean APT cache.
-    $self->set('Pkg Fail Stage', 'apt-get-clean');
-    if ($self->get_conf('APT_CLEAN')) {
-	if ($resolver->clean()) {
-	    # Since apt-clean was requested specifically, fail on
-	    # error when not in buildd mode.
-	    $self->log("apt-get clean failed\n");
-	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		$self->set_status('failed');
-		goto cleanup_session;
+	    $self->log_subsubsection('dpkg-source');
+	    my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
+	    push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')}
+	        if ($self->get_conf('DPKG_SOURCE_OPTIONS'));
+	    push @dpkg_source_command, $self->get('Debian Source Dir');
+	    $self->get('Host')->run_command(
+		{ COMMAND => \@dpkg_source_command,
+		  DIR => $self->get_conf('BUILD_DIR'),
+		  PRIORITY => 0,
+		});
+	    if ($?) {
+		Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
+						failstage => "pack-source");
 	    }
 	}
-    }
 
-    # Update APT cache.
-    $self->set('Pkg Fail Stage', 'apt-get-update');
-    if ($self->get_conf('APT_UPDATE')) {
-	if ($resolver->update()) {
-	    # Since apt-update was requested specifically, fail on
-	    # error when not in buildd mode.
-	    $self->log("apt-get update failed\n");
-	    $self->set_status('failed');
-	    goto cleanup_session;
+	$self->run_chroot_session();
+    };
+
+    $self->close_build_log();
+
+    my $e;
+    if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
+	$e->rethrow();
+    }
+}
+
+sub run_chroot_session {
+    my $self=shift;
+
+    eval {
+	my $chroot_info;
+	if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
+	    $chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
+	} else {
+	    $chroot_info = Sbuild::ChrootInfoSudo->new($self->get('Config'));
 	}
-    }
 
-    # Upgrade using APT.
-    if ($self->get_conf('APT_DISTUPGRADE')) {
-	$self->set('Pkg Fail Stage', 'apt-get-distupgrade');
-	if ($self->get_conf('APT_DISTUPGRADE')) {
-	    if ($resolver->distupgrade()) {
-		# Since apt-distupgrade was requested specifically, fail on
-		# error when not in buildd mode.
-		$self->log("apt-get dist-upgrade failed\n");
-		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		    $self->set_status('failed');
-		    goto cleanup_session;
-		}
-	    }
-	}
-    } elsif ($self->get_conf('APT_UPGRADE')) {
-	$self->set('Pkg Fail Stage', 'apt-get-upgrade');
-	if ($self->get_conf('APT_UPGRADE')) {
-	    if ($resolver->upgrade()) {
-		# Since apt-upgrade was requested specifically, fail on
-		# error when not in buildd mode.
-		$self->log("apt-get upgrade failed\n");
-		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		    $self->set_status('failed');
-		    goto cleanup_session;
-		}
-	    }
-	}
-    }
+	my $host = $self->get('Host');
 
-    $self->set('Pkg Fail Stage', 'fetch-src');
-    if (!$self->fetch_source_files()) {
-	goto cleanup_packages;
-    }
+	my $session = $chroot_info->create('chroot',
+					   $self->get_conf('DISTRIBUTION'),
+					   $self->get_conf('CHROOT'),
+					   $self->get_conf('ARCH'));
 
-    # Display message about chroot setup script option use being deprecated
-    if ($self->get_conf('CHROOT_SETUP_SCRIPT')) {
-	my $msg = "setup-hook option is deprecated. It has been superceded by ";
-	$msg .= "the chroot-setup-commands feature. setup-hook script will be ";
-	$msg .= "run via chroot-setup-commands.\n";
-	$self->log_warning($msg);
-    }
-
-    # Run specified chroot setup commands
-    $self->run_external_commands("chroot-setup-commands",
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
-
-    $self->set('Install Start Time', time);
-    $self->set('Install End Time', $self->get('Install Start Time'));
-    $resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
-    if (!$resolver->install_deps('core', 'CORE')) {
-	$self->log("Core source dependencies not satisfied; skipping\n");
-	goto cleanup_packages;
-    }
-
-    $resolver->add_dependencies('ESSENTIAL', $self->read_build_essential(), "", "", "");
-
-    my $snapshot = "";
-    $snapshot = "gcc-snapshot" if ($self->get_conf('GCC_SNAPSHOT'));
-    $resolver->add_dependencies('GCC_SNAPSHOT', $snapshot , "", "", "");
-
-    # Add additional build dependencies specified on the command-line.
-    # TODO: Split dependencies into an array from the start to save
-    # lots of joining.
-    $resolver->add_dependencies('MANUAL',
-				join(", ", @{$self->get_conf('MANUAL_DEPENDS')}),
-				join(", ", @{$self->get_conf('MANUAL_DEPENDS_INDEP')}),
-				join(", ", @{$self->get_conf('MANUAL_CONFLICTS')}),
-				join(", ", @{$self->get_conf('MANUAL_CONFLICTS_INDEP')}));
-
-    $resolver->add_dependencies($self->get('Package'),
-				$self->get('Build Depends'),
-				$self->get('Build Depends Indep'),
-				$self->get('Build Conflicts'),
-				$self->get('Build Conflicts Indep'));
-
-    $self->set('Pkg Fail Stage', 'install-deps');
-    if (!$resolver->install_deps($self->get('Package'),
-				 'ESSENTIAL', 'GCC_SNAPSHOT', 'MANUAL',
-				 $self->get('Package'))) {
-	$self->log("Source-dependencies not satisfied; skipping " .
-		   $self->get('Package') . "\n");
-	goto cleanup_packages;
-    }
-    $self->set('Install End Time', time);
-
-    $resolver->dump_build_environment();
-
-    $self->prepare_watches(keys %{$resolver->get('Changes')->{'installed'}});
-
-    if ($self->build()) {
-	$self->set_status('successful');
-    } else {
-	$self->set_status('failed');
-    }
-
-    # Run specified chroot cleanup commands
-    $self->run_external_commands("chroot-cleanup-commands",
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
-				 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
-
-    if ($self->get('Pkg Status') eq "successful") {
-	$self->log_subsection("Post Build");
-
-	# Run lintian.
-        $self->run_lintian();
-
-        # Run piuparts.
-        $self->run_piuparts();
-
-	# Run post build external commands
-	$self->run_external_commands("post-build-commands",
+	# Run pre build external commands
+	$self->run_external_commands("pre-build-commands",
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
-    }
+	if (!$session->begin_session()) {
+	    Sbuild::Exception::Build->throw(error => "Error creating chroot session: skipping " .
+					    $self->get('Package'),
+					    failstage => "create-session");
+	}
 
-  cleanup_packages:
+	$self->set('Session', $session);
+
+	my $chroot_arch =  $self->chroot_arch();
+	if ($self->get('Arch') ne $chroot_arch) {
+	    Sbuild::Exception::Build->throw(error => "Build architecture (" . $self->get('Arch') .
+					    ") is not the same as the chroot architecture (" .
+					    $chroot_arch . ")",
+					    info => "Please specify the correct architecture with --arch, or use a chroot of the correct architecture",
+					    failstage => "create-session");
+	}
+
+	$self->set('Chroot Dir', $session->get('Location'));
+	# TODO: Don't hack the build location in; add a means to customise
+	# the chroot directly.  i.e. allow changing of /build location.
+	$self->set('Chroot Build Dir',
+		   tempdir($self->get_conf('USERNAME') . '-' .
+			   $self->get('Package_SVersion') . '-' .
+			   $self->get('Arch') . '-XXXXXX',
+			   DIR =>  $session->get('Location') . "/build"));
+
+	# Needed so chroot commands log to build log
+	$session->set('Log Stream', $self->get('Log Stream'));
+	$host->set('Log Stream', $self->get('Log Stream'));
+
+	# Chroot execution defaults
+	my $chroot_defaults = $session->get('Defaults');
+	$chroot_defaults->{'DIR'} =
+	    $session->strip_chroot_path($self->get('Chroot Build Dir'));
+	$chroot_defaults->{'STREAMIN'} = $devnull;
+	$chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
+	$chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
+	$chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
+	$chroot_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
+
+	my $resolver = get_resolver($self->get('Config'), $session, $host);
+	$resolver->set('Log Stream', $self->get('Log Stream'));
+	$resolver->set('Arch', $self->get('Arch'));
+	$resolver->set('Chroot Build Dir', $self->get('Chroot Build Dir'));
+	$self->set('Dependency Resolver', $resolver);
+
+	# Lock chroot so it won't be tampered with during the build.
+	if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
+	    Sbuild::Exception::Build->throw(error => "Error locking chroot session: skipping " .
+					    $self->get('Package'),
+					    failstage => "lock-session");
+	}
+
+	$self->run_chroot_session_locked();
+    };
+
+    # End chroot session
+    my $session = $self->get('Session');
+    if ($self->get_conf('END_SESSION')) {
+	$session->end_session();
+    } else {
+	$self->log("Keeping session: " . $session->get('Session ID') . "\n");
+    }
+    $session = undef;
+    $self->set('Session', $session);
+
+    my $e;
+    if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
+	$e->rethrow();
+    }
+}
+
+sub run_chroot_session_locked {
+    my $self = shift;
+
+    eval {
+	my $session = $self->get('Session');
+	my $resolver = $self->get('Dependency Resolver');
+
+	$resolver->setup();
+
+	# Clean APT cache.
+	if ($self->get_conf('APT_CLEAN')) {
+	    if ($resolver->clean()) {
+		# Since apt-clean was requested specifically, fail on
+		# error when not in buildd mode.
+		$self->log("apt-get clean failed\n");
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    Sbuild::Exception::Build->throw(error => "apt-get clean failed",
+						    failstage => "apt-get-clean");
+		}
+	    }
+	}
+
+	# Update APT cache.
+	if ($self->get_conf('APT_UPDATE')) {
+	    if ($resolver->update()) {
+		# Since apt-update was requested specifically, fail on
+		# error when not in buildd mode.
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    Sbuild::Exception::Build->throw(error => "apt-get update failed",
+						    failstage => "apt-get-update");
+		}
+	    }
+	}
+
+	# Upgrade using APT.
+	if ($self->get_conf('APT_DISTUPGRADE')) {
+	    $self->set('Pkg Fail Stage', 'apt-get-distupgrade');
+	    if ($self->get_conf('APT_DISTUPGRADE')) {
+		if ($resolver->distupgrade()) {
+		    # Since apt-distupgrade was requested specifically, fail on
+		    # error when not in buildd mode.
+		    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+			Sbuild::Exception::Build->throw(error => "apt-get dist-upgrade failed",
+							failstage => "apt-get-dist-upgrade");
+		    }
+		}
+	    }
+	} elsif ($self->get_conf('APT_UPGRADE')) {
+	    $self->set('Pkg Fail Stage', 'apt-get-upgrade');
+	    if ($self->get_conf('APT_UPGRADE')) {
+		if ($resolver->upgrade()) {
+		    # Since apt-upgrade was requested specifically, fail on
+		    # error when not in buildd mode.
+		    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+			Sbuild::Exception::Build->throw(error => "apt-get upgrade failed",
+							failstage => "apt-get-upgrade");
+		    }
+		}
+	    }
+	}
+
+	$self->run_fetch_install_packages();
+    };
+
+    my $session = $self->get('Session');
+    my $resolver = $self->get('Dependency Resolver');
+
+    $resolver->cleanup();
+    # Unlock chroot now it's cleaned up and ready for other users.
+    $session->unlock_chroot();
+
+    my $e;
+    if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
+	$e->rethrow();
+    }
+}
+
+sub run_fetch_install_packages {
+    my $self = shift;
+
+    eval {
+	my $session = $self->get('Session');
+	my $resolver = $self->get('Dependency Resolver');
+
+	if (!$self->fetch_source_files()) {
+	    Sbuild::Exception::Build->throw(error => "Failed to fetch source files",
+					    failstage => "fetch-src");
+	}
+
+	# Display message about chroot setup script option use being deprecated
+	if ($self->get_conf('CHROOT_SETUP_SCRIPT')) {
+	    my $msg = "setup-hook option is deprecated. It has been superceded by ";
+	    $msg .= "the chroot-setup-commands feature. setup-hook script will be ";
+	    $msg .= "run via chroot-setup-commands.\n";
+	    $self->log_warning($msg);
+	}
+
+	# Run specified chroot setup commands
+	$self->run_external_commands("chroot-setup-commands",
+				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
+	$self->set('Install Start Time', time);
+	$self->set('Install End Time', $self->get('Install Start Time'));
+	$resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
+	if (!$resolver->install_deps('core', 'CORE')) {
+	    Sbuild::Exception::Build->throw(error => "Core build dependencies not satisfied; skipping",
+					    failstage => "install-deps");
+	}
+
+	$resolver->add_dependencies('ESSENTIAL', $self->read_build_essential(), "", "", "");
+
+	my $snapshot = "";
+	$snapshot = "gcc-snapshot" if ($self->get_conf('GCC_SNAPSHOT'));
+	$resolver->add_dependencies('GCC_SNAPSHOT', $snapshot , "", "", "");
+
+	# Add additional build dependencies specified on the command-line.
+	# TODO: Split dependencies into an array from the start to save
+	# lots of joining.
+	$resolver->add_dependencies('MANUAL',
+				    join(", ", @{$self->get_conf('MANUAL_DEPENDS')}),
+				    join(", ", @{$self->get_conf('MANUAL_DEPENDS_INDEP')}),
+				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS')}),
+				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_INDEP')}));
+
+	$resolver->add_dependencies($self->get('Package'),
+				    $self->get('Build Depends'),
+				    $self->get('Build Depends Indep'),
+				    $self->get('Build Conflicts'),
+				    $self->get('Build Conflicts Indep'));
+
+	if (!$resolver->install_deps($self->get('Package'),
+				     'ESSENTIAL', 'GCC_SNAPSHOT', 'MANUAL',
+				     $self->get('Package'))) {
+	    Sbuild::Exception::Build->throw(error => "Package build dependencies not satisfied; skipping",
+					    failstage => "install-deps");
+	}
+	$self->set('Install End Time', time);
+
+	$resolver->dump_build_environment();
+
+	$self->prepare_watches(keys %{$resolver->get('Changes')->{'installed'}});
+
+	if ($self->build()) {
+	    $self->set_status('successful');
+	} else {
+	    $self->set_status('failed');
+	}
+
+	# Run specified chroot cleanup commands
+	$self->run_external_commands("chroot-cleanup-commands",
+				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
+	if ($self->get('Pkg Status') eq "successful") {
+	    $self->log_subsection("Post Build");
+
+	    # Run lintian.
+	    $self->run_lintian();
+
+	    # Run piuparts.
+	    $self->run_piuparts();
+
+	    # Run post build external commands
+	    $self->run_external_commands("post-build-commands",
+					 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
+					 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
+
+	}
+    };
+
+    my $session = $self->get('Session');
+    my $resolver = $self->get('Dependency Resolver');
+
     my $purge_build_directory =
 	($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'always' ||
 	 ($self->get_conf('PURGE_BUILD_DIRECTORY') eq 'successful' &&
@@ -588,25 +669,10 @@ sub run {
 	}
     }
 
-  cleanup_session:
-    $resolver->cleanup();
-    # Unlock chroot now it's cleaned up and ready for other users.
-    $session->unlock_chroot();
-
-  cleanup_unlocked_session:
-    # End chroot session
-    if ($self->get_conf('END_SESSION')) {
-	$session->end_session();
-    } else {
-	$self->log("Keeping session: " . $session->get('Session ID') . "\n");
+    my $e;
+    if ($e = Exception::Class->caught('Sbuild::Exception::Build')) {
+	$e->rethrow();
     }
-    $session = undef;
-    $self->set('Session', $session);
-
-  cleanup_log:
-    $self->close_build_log();
-
-  cleanup_skip:
 }
 
 sub fetch_source_files {
