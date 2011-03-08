@@ -1194,7 +1194,6 @@ sub build {
 
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
 	$self->log_subsubsection("Hack binNMU version");
-	$self->set('Pkg Fail Stage', "hack-binNMU");
 	if (open( F, "<$dscdir/debian/changelog" )) {
 	    my($firstline, $text);
 	    $firstline = "";
@@ -1207,7 +1206,8 @@ sub build {
 	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dscdir/debian/changelog" )) {
 		$self->log("Can't open debian/changelog for binNMU hack: $!\n");
-		return 0;
+		Sbuild::Exception::Build->throw(error => "Can't open debian/changelog for binNMU hack: $!",
+						failstage => "hack-binNMU");
 	    }
 	    $dists = $self->get_conf('DISTRIBUTION');
 
@@ -1230,6 +1230,8 @@ sub build {
 	}
 	else {
 	    $self->log("Can't open debian/changelog -- no binNMU hack!\n");
+	    Sbuild::Exception::Build->throw(error => "Can't open debian/changelog -- no binNMU hack: $!!",
+					    failstage => "hack-binNMU");
 	}
     }
 
