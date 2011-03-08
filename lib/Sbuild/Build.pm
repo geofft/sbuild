@@ -641,6 +641,7 @@ sub run_fetch_install_packages {
 	if ($self->build()) {
 	    $self->set_status('successful');
 	} else {
+	    $self->set('Pkg Fail Stage', "build");
 	    $self->set_status('failed');
 	}
 
@@ -1262,7 +1263,6 @@ sub build {
     $self->log_subsubsection("dpkg-buildpackage");
     $self->set('Build Start Time', time);
     $self->set('Build End Time', $self->get('Build Start Time'));
-    $self->set('Pkg Fail Stage', "build");
 
     my $binopt = $self->get_conf('BUILD_SOURCE') ?
 	$self->get_conf('FORCE_ORIG_SOURCE') ? "-sa" : "" :
