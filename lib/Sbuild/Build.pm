@@ -264,8 +264,6 @@ sub run {
     my $self = shift;
 
     eval {
-	$self->set('Pkg Fail Stage', 'init');
-
 	$self->set_status('building');
 
 	$self->set('Pkg Start Time', time);
@@ -321,7 +319,6 @@ sub run_chroot {
     eval {
 	# Build the source package if given a Debianized source directory
 	if ($self->get('Debian Source Dir')) {
-	    $self->set('Pkg Fail Stage', 'pack-source');
 	    $self->log_subsection("Build Source Package");
 
 	    $self->log_subsubsection('clean');
@@ -509,7 +506,6 @@ sub run_chroot_session_locked {
 
 	# Upgrade using APT.
 	if ($self->get_conf('APT_DISTUPGRADE')) {
-	    $self->set('Pkg Fail Stage', 'apt-get-distupgrade');
 	    if ($self->get_conf('APT_DISTUPGRADE')) {
 		if ($resolver->distupgrade()) {
 		    # Since apt-distupgrade was requested specifically, fail on
@@ -521,7 +517,6 @@ sub run_chroot_session_locked {
 		}
 	    }
 	} elsif ($self->get_conf('APT_UPGRADE')) {
-	    $self->set('Pkg Fail Stage', 'apt-get-upgrade');
 	    if ($self->get_conf('APT_UPGRADE')) {
 		if ($resolver->upgrade()) {
 		    # Since apt-upgrade was requested specifically, fail on
