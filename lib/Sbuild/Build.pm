@@ -260,6 +260,11 @@ sub get_status {
     return $self->get('Pkg Status');
 }
 
+# This function is the main entry point into the package build.  It
+# provides a top-level exception handler and does the initial setup
+# including initiating logging and creating host chroot.  The nested
+# run_ functions it calls are separate in order to permit running
+# cleanup tasks in a strict order.
 sub run {
     my $self = shift;
 
@@ -313,43 +318,13 @@ sub run {
     }
 }
 
+# Pack up source if needed and then run the main chroot session.
+# Close log during return/failure.
 sub run_chroot {
     my $self = shift;
 
     eval {
-	# Build the source package if given a Debianized source directory
-	if ($self->get('Debian Source Dir')) {
-	    $self->log_subsection("Build Source Package");
-
-	    $self->log_subsubsection('clean');
-	    $self->get('Host')->run_command(
-		{ COMMAND => [$self->get_conf('FAKEROOT'),
-			      'debian/rules',
-			      'clean'],
-		  DIR => $self->get('Debian Source Dir'),
-		  PRIORITY => 0,
-		});
-	    if ($?) {
-		Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
-						failstage => "pack-source");
-	    }
-
-	    $self->log_subsubsection('dpkg-source');
-	    my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
-	    push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')}
-	        if ($self->get_conf('DPKG_SOURCE_OPTIONS'));
-	    push @dpkg_source_command, $self->get('Debian Source Dir');
-	    $self->get('Host')->run_command(
-		{ COMMAND => \@dpkg_source_command,
-		  DIR => $self->get_conf('BUILD_DIR'),
-		  PRIORITY => 0,
-		});
-	    if ($?) {
-		Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
-						failstage => "pack-source");
-	    }
-	}
-
+	$self->run_pack_source();
 	$self->run_chroot_session();
     };
 
@@ -375,6 +350,47 @@ sub run_chroot {
     }
 }
 
+# Pack up local source tree
+sub run_pack_source {
+    my $self=shift;
+
+    # Build the source package if given a Debianized source directory
+    if ($self->get('Debian Source Dir')) {
+	$self->log_subsection("Build Source Package");
+
+	$self->log_subsubsection('clean');
+	$self->get('Host')->run_command(
+	    { COMMAND => [$self->get_conf('FAKEROOT'),
+			  'debian/rules',
+			  'clean'],
+	      DIR => $self->get('Debian Source Dir'),
+	      PRIORITY => 0,
+	    });
+	if ($?) {
+	    Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
+					    failstage => "pack-source");
+	}
+
+	$self->log_subsubsection('dpkg-source');
+	my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
+	push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')}
+	if ($self->get_conf('DPKG_SOURCE_OPTIONS'));
+	push @dpkg_source_command, $self->get('Debian Source Dir');
+	$self->get('Host')->run_command(
+	    { COMMAND => \@dpkg_source_command,
+	      DIR => $self->get_conf('BUILD_DIR'),
+	      PRIORITY => 0,
+	    });
+	if ($?) {
+	    Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
+					    failstage => "pack-source");
+	}
+    }
+}
+
+# Create main chroot session and package resolver.  Creates a lock in
+# the chroot to prevent concurrent chroot usage (only important for
+# non-snapshot chroots).  Ends chroot session on return/failure.
 sub run_chroot_session {
     my $self=shift;
 
@@ -470,6 +486,8 @@ sub run_chroot_session {
     }
 }
 
+# Run tasks in a *locked* chroot.  Update and upgrade packages.
+# Unlocks chroot on return/failure.
 sub run_chroot_session_locked {
     my $self = shift;
 
@@ -479,56 +497,7 @@ sub run_chroot_session_locked {
 
 	$resolver->setup();
 
-	# Clean APT cache.
-	if ($self->get_conf('APT_CLEAN')) {
-	    if ($resolver->clean()) {
-		# Since apt-clean was requested specifically, fail on
-		# error when not in buildd mode.
-		$self->log("apt-get clean failed\n");
-		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		    Sbuild::Exception::Build->throw(error => "apt-get clean failed",
-						    failstage => "apt-get-clean");
-		}
-	    }
-	}
-
-	# Update APT cache.
-	if ($self->get_conf('APT_UPDATE')) {
-	    if ($resolver->update()) {
-		# Since apt-update was requested specifically, fail on
-		# error when not in buildd mode.
-		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		    Sbuild::Exception::Build->throw(error => "apt-get update failed",
-						    failstage => "apt-get-update");
-		}
-	    }
-	}
-
-	# Upgrade using APT.
-	if ($self->get_conf('APT_DISTUPGRADE')) {
-	    if ($self->get_conf('APT_DISTUPGRADE')) {
-		if ($resolver->distupgrade()) {
-		    # Since apt-distupgrade was requested specifically, fail on
-		    # error when not in buildd mode.
-		    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-			Sbuild::Exception::Build->throw(error => "apt-get dist-upgrade failed",
-							failstage => "apt-get-dist-upgrade");
-		    }
-		}
-	    }
-	} elsif ($self->get_conf('APT_UPGRADE')) {
-	    if ($self->get_conf('APT_UPGRADE')) {
-		if ($resolver->upgrade()) {
-		    # Since apt-upgrade was requested specifically, fail on
-		    # error when not in buildd mode.
-		    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-			Sbuild::Exception::Build->throw(error => "apt-get upgrade failed",
-							failstage => "apt-get-upgrade");
-		    }
-		}
-	    }
-	}
-
+	$self->run_chroot_update();
 	$self->run_fetch_install_packages();
     };
 
@@ -545,6 +514,64 @@ sub run_chroot_session_locked {
     }
 }
 
+sub run_chroot_update {
+    my $self = shift;
+    my $resolver = $self->get('Dependency Resolver');
+
+    # Clean APT cache.
+    if ($self->get_conf('APT_CLEAN')) {
+	if ($resolver->clean()) {
+	    # Since apt-clean was requested specifically, fail on
+	    # error when not in buildd mode.
+	    $self->log("apt-get clean failed\n");
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		Sbuild::Exception::Build->throw(error => "apt-get clean failed",
+						failstage => "apt-get-clean");
+	    }
+	}
+    }
+
+    # Update APT cache.
+    if ($self->get_conf('APT_UPDATE')) {
+	if ($resolver->update()) {
+	    # Since apt-update was requested specifically, fail on
+	    # error when not in buildd mode.
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		Sbuild::Exception::Build->throw(error => "apt-get update failed",
+						failstage => "apt-get-update");
+	    }
+	}
+    }
+
+    # Upgrade using APT.
+    if ($self->get_conf('APT_DISTUPGRADE')) {
+	if ($self->get_conf('APT_DISTUPGRADE')) {
+	    if ($resolver->distupgrade()) {
+		# Since apt-distupgrade was requested specifically, fail on
+		# error when not in buildd mode.
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    Sbuild::Exception::Build->throw(error => "apt-get dist-upgrade failed",
+						    failstage => "apt-get-dist-upgrade");
+		}
+	    }
+	}
+    } elsif ($self->get_conf('APT_UPGRADE')) {
+	if ($self->get_conf('APT_UPGRADE')) {
+	    if ($resolver->upgrade()) {
+		# Since apt-upgrade was requested specifically, fail on
+		# error when not in buildd mode.
+		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		    Sbuild::Exception::Build->throw(error => "apt-get upgrade failed",
+						    failstage => "apt-get-upgrade");
+		}
+	    }
+	}
+    }
+}
+
+# Fetch sources, run setup, fetch and install core and package build
+# deps, then run build.  Cleans up build directory and uninstalls
+# build depends on return/failure.
 sub run_fetch_install_packages {
     my $self = shift;
 
