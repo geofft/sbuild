@@ -1130,7 +1130,6 @@ sub build {
 	return 0;
     }
     if (! -d "$build_dir/$dscdir") {
-	$self->set('Pkg Fail Stage', "unpack");
 	# dpkg-source refuses to remove the remanants of an aborted
 	# dpkg-source extraction, so we will if necessary.
 	if (-d $tmpunpackdir) {
@@ -1146,13 +1145,15 @@ sub build {
 	    $self->log("FAILED [dpkg-source died]\n");
 
 	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
-	    return 0;
+	    Sbuild::Exception::Build->throw(error => "FAILED [dpkg-source died]",
+					    failstage => "unpack");
 	}
 	$dscdir = "$build_dir/$dscdir";
 
 	if (system( "chmod -R g-s,go+rX $dscdir" ) != 0) {
 	    $self->log("chmod -R g-s,go+rX $dscdir failed.\n");
-	    return 0;
+	    Sbuild::Exception::Build->throw(error => "chmod -R g-s,go+rX $dscdir failed",
+					    failstage => "unpack");
 	}
     }
     else {
@@ -1845,7 +1846,8 @@ sub open_build_log {
 	if (!$self->get_conf('NOLOG') &&
 	    $self->get_conf('LOG_DIR_AVAILABLE')) {
 	    open( CPLOG, ">$filename" ) or
-		die "Can't open logfile $filename: $!\n";
+		Sbuild::Exception::Build->throw(error => "Failed to open build log $filename: $!",
+						failstage => "init");
 	    CPLOG->autoflush(1);
 	    $saved_stdout->autoflush(1);
 
