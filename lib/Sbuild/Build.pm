@@ -1813,7 +1813,8 @@ sub chroot_arch {
     chomp(my $chroot_arch = <$pipe>);
     close($pipe);
 
-    die "Can't determine architecture of chroot: $!\n"
+    Sbuild::Exception::Build->throw(error => "Can't determine architecture of chroot: $!",
+				    failstage => "chroot-arch")
 	if ($? || !defined($chroot_arch));
 
     return $chroot_arch;
