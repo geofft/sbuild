@@ -1,6 +1,8 @@
 sbuild (0.61.1-1) unstable; urgency=low
 
   * New release.
+  * debian/control:
+    - Build-Depend upon libexception-class-perl.
   * sbuild:
     - 'apt' is now the default build dependency resolver.  Users should
       not see any significant changes compared with the old 'internal'
@@ -64,9 +66,8 @@ sbuild (0.61.1-1) unstable; urgency=low
   * buildd.conf.5:
     - New manual page.  Like sbuild.conf(5), this documents all allowed
       values.
-    
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 07 Mar 2011 21:12:47 +0000
+ -- Roger Leigh <rleigh@debian.org>  Tue, 08 Mar 2011 19:58:44 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
