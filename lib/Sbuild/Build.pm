@@ -148,9 +148,8 @@ sub set_dsc {
 	    });
 
 	if (!defined($pipe)) {
-	    $self->log_error("Could not parse $dsc/debian/changelog: $!");
-	    $self->set('Invalid Source', 1);
-	    goto set_vars;
+	    Sbuild::Exception::Build->throw(error => "Could not parse $dsc/debian/changelog: $!",
+					    failstage => "set-dsc");
 	}
 
 	my $stanzas = parse_file($pipe);
@@ -160,9 +159,8 @@ sub set_dsc {
 	my $version = ${$stanza}{'Version'};
 
 	if (!defined($package) || !defined($version)) {
-	    $self->log_error("Missing Source or Version in $dsc/debian/changelog");
-	    $self->set('Invalid Source', 1);
-	    goto set_vars;
+	    Sbuild::Exception::Build->throw(error => "Missing Source or Version in $dsc/debian/changelog",
+					    failstage => "set-dsc");
 	}
 
 	my $dir = getcwd();
@@ -181,7 +179,6 @@ sub set_dsc {
 	$dsc = "$dir/" . $self->get('Package_OSVersion') . ".dsc";
     }
 
-set_vars:
     $self->set('DSC', $dsc);
     $self->set('Source Dir', dirname($dsc));
     $self->set('DSC Base', basename($dsc));
