@@ -875,11 +875,11 @@ sub fetch_source_files {
 	}
 	if ($dscarchs ne "any" && !($valid_arch) &&
 	    !($dscarchs eq "all" && $self->get_conf('BUILD_ARCH_ALL')) )  {
-	    my $msg = "$dsc: $arch not in arch list or does not match any arch ";
-	    $msg .= "wildcards: $dscarchs -- skipping\n";
+	    my $msg = "$dsc: $arch not in arch list or does not match any arch wildcards: $dscarchs -- skipping\n";
 	    $self->log($msg);
-	    $self->set_status('skipped');
-	    $self->set('Pkg Fail Stage', "arch-check");
+	    Sbuild::Exception::Build->throw(error => "$dsc: $arch not in arch list or does not match any arch wildcards: $dscarchs -- skipping",
+					    status => "skipped",
+					    failstage => "arch-check");
 	    return 0;
 	}
     }
@@ -1158,23 +1158,15 @@ sub build {
     }
 
     $self->log_subsubsection("Check disc space");
-    $self->set('Pkg Fail Stage', "check-space");
     my $current_usage = `du -k -s "$dscdir"`;
     $current_usage =~ /^(\d+)/;
     $current_usage = $1;
     if ($current_usage) {
 	my $free = df($dscdir);
 	if ($free < 2*$current_usage && $self->get_conf('CHECK_SPACE')) {
-	    $self->log("Disc space is propably not enough for building.\n".
-		       "(Source needs $current_usage KB, free are $free KB.)\n");
-	    # TODO: Only purge in a single place.
-	    $self->log("Purging $build_dir\n");
-	    $self->get('Session')->run_command(
-		{ COMMAND => ['rm', '-rf', $build_dir],
-		  USER => 'root',
-		  PRIORITY => 0,
-		  DIR => '/' });
-	    return 0;
+	    Sbuild::Exception::Build->throw(error => "Disc space is probably not sufficient for building.\n",
+					    info => "Source needs $current_usage KiB, while $free KiB is free.)",
+					    failstage => "check-space");
 	}
     }
 
