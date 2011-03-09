@@ -11,10 +11,11 @@ debian/build/config.status: configure
 	cd debian/build; \
 	CFLAGS="$(CFLAGS)" ../../configure \
 	  --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
-	  --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/share \
+	  --prefix=/usr --sysconfdir=/etc --libexecdir=/usr/lib \
 	  --localstatedir=/var --mandir=\$${prefix}/share/man
 
-
+build-indep: build
+build-arch: build
 build: debian/build/config.status debian/build-stamp
 debian/build-stamp:  debian/build/config.status
 	dh_testdir
