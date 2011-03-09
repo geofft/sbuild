@@ -21,8 +21,8 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-sbuildlibexecdir = $(SBUILD_LIBEXEC_DIR)
-wblibexecdir = $(WANNA_BUILD_LIBEXEC_DIR)
+sbuilddatadir = $(SBUILD_DATA_DIR)
+wbdatadir = $(WANNA_BUILD_DATA_DIR)
 
 bin_SCRIPTS = 				\
 	sbuild				\
@@ -54,7 +54,7 @@ sbin_SCRIPTS = 			\
 	sbuild-adduser		\
 	sbuild-createchroot
 
-sbuildlibexec_SCRIPTS =		\
+sbuilddata_SCRIPTS =		\
 	create-chroot		\
 	dobuildlog
 
@@ -64,13 +64,13 @@ doc_DATA = 		\
 EXTRA_DIST =			\
 	$(bin_SCRIPTS)		\
 	$(sbin_SCRIPTS) 	\
-	$(sbuildlibexec_SCRIPTS)	\
+	$(sbuilddata_SCRIPTS)	\
 	$(doc_DATA)
 
 install-exec-hook:
 # Additional directories
-	$(MKDIR_P) "$(DESTDIR)$(sbuildlibexecdir)"
-	$(MKDIR_P) "$(DESTDIR)$(wblibexecdir)"
+	$(MKDIR_P) "$(DESTDIR)$(sbuilddatadir)"
+	$(MKDIR_P) "$(DESTDIR)$(wbdatadir)"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/.ssh"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/build"
@@ -89,23 +89,23 @@ install-exec-hook:
 	ln -sf "$(bindir)/wanna-build-catdb" "$(DESTDIR)$(bindir)/wanna-build-catgdbm"
 	ln -sf "$(bindir)/wanna-build-catdb" "$(DESTDIR)$(bindir)/wanna-build-catmldbm"
 
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/wanna-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/uploaded-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/failed-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/dep-wait-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/forget-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/no-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/build-info"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-needs-build"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-building"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-uploaded"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-installed"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-failed"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-dep-wait"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-not-for-us"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/list-all"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/merge-quinn"
-	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wblibexecdir)/merge-packages"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/wanna-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/uploaded-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/failed-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/dep-wait-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/forget-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/no-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/build-info"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-needs-build"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-building"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-uploaded"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-installed"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-failed"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-dep-wait"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-not-for-us"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/list-all"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/merge-quinn"
+	ln -sf "$(bindir)/wanna-build" "$(DESTDIR)$(wbdatadir)/merge-packages"
 
 	ln -sf "$(bindir)/buildd-mail" "$(DESTDIR)$(bindir)/buildd-mail-wrapper"
 	ln -sf "$(bindir)/sbuild-abort" "$(DESTDIR)$(bindir)/buildd-abort"

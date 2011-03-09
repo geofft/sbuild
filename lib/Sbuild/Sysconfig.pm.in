@@ -73,6 +73,7 @@ our %paths = (
     'BUILDD_CONF' => "@BUILDD_CONF@",
     'BUILDD_SYSCONF_DIR' => "@BUILDD_SYSCONF_DIR@",
     'SBUILD_CONF' => "@SBUILD_CONF@",
+    'SBUILD_DATA_DIR' => "@SBUILD_DATA_DIR@",
     'SBUILD_LIBEXEC_DIR' => "@SBUILD_LIBEXEC_DIR@",
     'SBUILD_LOCALSTATE_DIR' => "$localstatedir/lib/sbuild",
     'SBUILD_SYSCONF_DIR' => "@SBUILD_SYSCONF_DIR@",
@@ -80,6 +81,7 @@ our %paths = (
     'SCHROOT_SYSCONF_DIR' => "@SCHROOT_SYSCONF_DIR@",
     'WANNA_BUILD_CONF' => "@WANNA_BUILD_CONF@",
     'WANNA_BUILD_LOCALSTATE_DIR' => "$localstatedir/lib/wanna-build",
+    'WANNA_BUILD_DATA_DIR' => "@WANNA_BUILD_DATA_DIR@",
     'WANNA_BUILD_LIBEXEC_DIR' => "@WANNA_BUILD_LIBEXEC_DIR@"
 );
 
