@@ -1,7 +1,7 @@
 # sbuild Makefile template
 #
 #
-# Copyright © 2004-2007  Roger Leigh <rleigh@debian.org>
+# Copyright © 2004-2011  Roger Leigh <rleigh@debian.org>
 #
 # sbuild is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -21,31 +21,13 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = bin wrapper tools configs etc lib man db test
+sbuildlibexecdir = $(SBUILD_LIBEXEC_DIR)
 
-dist-hook:
-# Remove junk from the generated tarball.
-	$(FIND) $(distdir) -name '.*' -print | $(XARGS) xargs $(RM) -rf
-	$(FIND) $(distdir) -name '#*' -print | $(XARGS) $(RM) -rf
-	$(FIND) $(distdir) -name '*~' -print | $(XARGS) $(RM) -rf
+DEFS=-DSBUILD_LIBEXEC_DIR=\"$(SBUILD_LIBEXEC_DIR)\"
 
-# Generate ChangeLog
-	if [ -d .git ]; then			\
-	  git log > $(distdir)/ChangeLog;	\
-	fi
+sbuildlibexec_PROGRAMS = sbuild-schroot
 
-EXTRA_DIST =				\
-	bootstrap			\
-	debian				\
-	scripts/git-tag-release		\
-	scripts/git-version		\
-	HACKING				\
-	VERSION
-
-ps:
-	$(MAKE) -C doc sbuild.ps
-
-pdf:
-	$(MAKE) -C doc sbuild.pdf
-
-.PHONY: ps pdf
+sbuild_schroot_SOURCES = 	\
+	wrapper.cc		\
+	util.h			\
+	util.cc

@@ -121,6 +121,8 @@ AC_SUBST([SBUILD_CHROOT_CHECKS], [$chroot_checks])
 AM_CONDITIONAL([SBUILD_CHROOT_CHECKS], [test "$enable_chroot_checks" = "yes"])
 
 # Checks for programs.
+AC_PROG_CXX
+AC_LANG([C++])
 
 # Check for host platform
 AC_CANONICAL_HOST
@@ -357,6 +359,7 @@ AC_CONFIG_FILES([test/sbuild-clean],
 AC_CONFIG_FILES([test/sbuild],
 		[chmod +x test/sbuild])
 AC_CONFIG_FILES([tools/Makefile])
+AC_CONFIG_FILES([wrapper/Makefile])
 
 dnl Output the generated config.status script.
 AC_OUTPUT
