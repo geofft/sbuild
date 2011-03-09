@@ -28,6 +28,7 @@ use warnings;
 
 use Sbuild::Conf qw();
 use Buildd::Conf qw();
+use Sbuild::Sysconfig;
 use Text::Wrap;
 use Data::Dumper;
 
@@ -36,11 +37,14 @@ die "Usage: $0 sbuild|buildd config|man" if @ARGV != 2;
 my $program = $ARGV[0];
 my $output = $ARGV[1];
 
+$Sbuild::Sysconfig::paths{'SBUILD_CONF'} = '/invalid';
+$Sbuild::Sysconfig::paths{'BUILDD_CONF'} = '/invalid';
+
 my $conf;
 if ($program eq "sbuild") {
-    $conf = Sbuild::Conf::new();
+    $conf = Sbuild::Conf::new(CHECK=>0);
 } elsif ($program eq "buildd") {
-    $conf = Buildd::Conf::new();
+    $conf = Buildd::Conf::new(CHECK=>0);
 } else {
     die "Unsupported configuration type $program";
 }
@@ -148,4 +152,7 @@ foreach my $group (@groups) {
 	    }
 	}
     }
+}
+if ($output eq "config") {
+    print "1;\n";
 }

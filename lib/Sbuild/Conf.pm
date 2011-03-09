@@ -41,12 +41,11 @@ BEGIN {
     @EXPORT = qw(new setup read);
 }
 
-sub new ();
 sub setup ($);
 sub read ($);
 
-sub new () {
-    my $conf = Sbuild::ConfBase->new();
+sub new {
+    my $conf = Sbuild::ConfBase->new(@_);
     Sbuild::Conf::setup($conf);
     Sbuild::Conf::read($conf);
 

@@ -209,10 +209,13 @@ sub init_allowed_keys {
 
 sub new {
     my $class = shift;
+    my %opts = @_;
 
     my $self  = {};
-    $self->{'config'} = {};
     bless($self, $class);
+
+    $self->{'CHECK'} = 1;
+    $self->{'CHECK'} = $opts{'CHECK'} if $opts{'CHECK'};
 
     $self->init_allowed_keys();
 
@@ -372,7 +375,7 @@ sub set {
 	} else {
 	    $value = $self->_set_value($key, $value);
 	}
-	if (defined($entry->{'CHECK'})) {
+	if ($self->{'CHECK'} && defined($entry->{'CHECK'})) {
 	    $entry->{'CHECK'}->($self, $entry);
 	}
 	$entry->{'NAME'} = $key;
@@ -401,7 +404,7 @@ sub check {
     my $entry = $self->{'KEYS'}->{$key};
 
     if (defined($entry)) {
-	if (defined($entry->{'CHECK'})) {
+	if ($self->{'CHECK'} && defined($entry->{'CHECK'})) {
 	    $entry->{'CHECK'}->($self, $entry);
 	}
     }

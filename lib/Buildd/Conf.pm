@@ -42,12 +42,11 @@ BEGIN {
 
 our $reread_config = 0;
 
-sub new ();
 sub setup ($);
 sub read ($);
 
-sub new () {
-    my $conf = Sbuild::ConfBase->new();
+sub new {
+    my $conf = Sbuild::ConfBase->new(@_);
     Buildd::Conf::setup($conf);
     Buildd::Conf::read($conf);
 
