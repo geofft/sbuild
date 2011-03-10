@@ -90,6 +90,13 @@ configuration.
      red, yellow and green, respectively.  Build status is coloured
      green for success and red for all failure conditions.
 
+ 14) The wanna-build database has been removed entirely.  This part of
+     the sbuild package was not used, and was not maintained for some
+     time.  Users wishing to use wanna-build should investigate the
+     version in the wanna-build.git repository used by the Debian
+     autobuilding infrastructure.  This version is actively maintained
+     and in continual use.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
