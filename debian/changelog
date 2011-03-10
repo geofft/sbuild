@@ -70,10 +70,12 @@ sbuild (0.61.1-1) unstable; urgency=low
       red, yellow and green, respectively.  Build status is coloured
       green for success and red for all failure conditions.
   * wanna-build:
-    - wanna-build has been removed.  The version in use on the Debian
-      build infrastructure is hosted in a separate wanna-build.git
-      repository.  The version provided here was long unused and
-      unmaintained.
+    - The wanna-build database has been removed entirely.  This part of
+      the sbuild package was not used, and was not maintained for some
+      time.  Users wishing to use wanna-build should investigate the
+      version in the wanna-build.git repository used by the Debian
+      autobuilding infrastructure.  This version is actively maintained
+      and in continual use.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
