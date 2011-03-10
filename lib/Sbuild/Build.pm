@@ -68,6 +68,7 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    $self->set('ABORT', undef);
     $self->set('Job', $dsc);
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
@@ -130,6 +131,24 @@ sub new {
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
     return $self;
+}
+
+sub abort {
+    my $self = shift;
+    my $reason = shift;
+
+    $self->log_error("ABORT: $reason (requesting cleanup and shutdown)\n");
+    $self->set('ABORT', $reason);
+}
+
+sub check_abort {
+    my $self = shift;
+
+    if ($self->get('ABORT')) {
+	Sbuild::Exception::Build->throw(error => "Aborting build: " .
+					$self->get('ABORT'),
+					failstage => "abort");
+    }
 }
 
 sub set_dsc {
@@ -269,6 +288,8 @@ sub run {
     my $self = shift;
 
     eval {
+	$self->check_abort();
+
 	$self->set_status('building');
 
 	$self->set('Pkg Start Time', time);
@@ -303,6 +324,7 @@ sub run {
 	$host_defaults->{'STREAMOUT'} = $self->get('Log Stream');
 	$host_defaults->{'STREAMERR'} = $self->get('Log Stream');
 
+	$self->check_abort();
 	$self->run_chroot();
     };
 
@@ -324,7 +346,9 @@ sub run_chroot {
     my $self = shift;
 
     eval {
+	$self->check_abort();
 	$self->run_pack_source();
+	$self->check_abort();
 	$self->run_chroot_session();
     };
 
@@ -354,6 +378,7 @@ sub run_chroot {
 sub run_pack_source {
     my $self=shift;
 
+    $self->check_abort();
     # Build the source package if given a Debianized source directory
     if ($self->get('Debian Source Dir')) {
 	$self->log_subsection("Build Source Package");
@@ -370,6 +395,8 @@ sub run_pack_source {
 	    Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
 					    failstage => "pack-source");
 	}
+
+	$self->check_abort();
 
 	$self->log_subsubsection('dpkg-source');
 	my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
@@ -395,6 +422,7 @@ sub run_chroot_session {
     my $self=shift;
 
     eval {
+	$self->check_abort();
 	my $chroot_info;
 	if ($self->get_conf('CHROOT_MODE') eq 'schroot') {
 	    $chroot_info = Sbuild::ChrootInfoSchroot->new($self->get('Config'));
@@ -410,10 +438,12 @@ sub run_chroot_session {
 					   $self->get_conf('ARCH'));
 
 	# Run pre build external commands
+	$self->check_abort();
 	$self->run_external_commands("pre-build-commands",
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
+	$self->check_abort();
 	if (!$session->begin_session()) {
 	    Sbuild::Exception::Build->throw(error => "Error creating chroot session: skipping " .
 					    $self->get('Package'),
@@ -422,6 +452,7 @@ sub run_chroot_session {
 
 	$self->set('Session', $session);
 
+	$self->check_abort();
 	my $chroot_arch =  $self->chroot_arch();
 	if ($self->get('Arch') ne $chroot_arch) {
 	    Sbuild::Exception::Build->throw(error => "Build architecture (" . $self->get('Arch') .
@@ -441,6 +472,7 @@ sub run_chroot_session {
 			   DIR =>  $session->get('Location') . "/build"));
 
 	# Need tempdir to be writable and readable by sbuild group.
+	$self->check_abort();
 	$session->run_command(
 	    { COMMAND => ['chown', 'sbuild:sbuild',
 			  $session->strip_chroot_path($self->get('Chroot Build Dir'))],
@@ -450,6 +482,7 @@ sub run_chroot_session {
 	    Sbuild::Exception::Build->throw(error => "Failed to set sbuild group ownership on chroot build dir",
 					    failstage => "create-build-dir");
 	}
+	$self->check_abort();
 	$session->run_command(
 	    { COMMAND => ['chmod', '0770',
 			  $session->strip_chroot_path($self->get('Chroot Build Dir'))],
@@ -460,6 +493,7 @@ sub run_chroot_session {
 					    failstage => "create-build-dir");
 	}
 
+	$self->check_abort();
 	# Needed so chroot commands log to build log
 	$session->set('Log Stream', $self->get('Log Stream'));
 	$host->set('Log Stream', $self->get('Log Stream'));
@@ -481,12 +515,14 @@ sub run_chroot_session {
 	$self->set('Dependency Resolver', $resolver);
 
 	# Lock chroot so it won't be tampered with during the build.
+	$self->check_abort();
 	if (!$session->lock_chroot($self->get('Package_SVersion'), $$, $self->get_conf('USERNAME'))) {
 	    Sbuild::Exception::Build->throw(error => "Error locking chroot session: skipping " .
 					    $self->get('Package'),
 					    failstage => "lock-session");
 	}
 
+	$self->check_abort();
 	$self->run_chroot_session_locked();
     };
 
@@ -515,9 +551,13 @@ sub run_chroot_session_locked {
 	my $session = $self->get('Session');
 	my $resolver = $self->get('Dependency Resolver');
 
+	$self->check_abort();
 	$resolver->setup();
 
+	$self->check_abort();
 	$self->run_chroot_update();
+
+	$self->check_abort();
 	$self->run_fetch_install_packages();
     };
 
@@ -539,6 +579,7 @@ sub run_chroot_update {
     my $resolver = $self->get('Dependency Resolver');
 
     # Clean APT cache.
+    $self->check_abort();
     if ($self->get_conf('APT_CLEAN')) {
 	if ($resolver->clean()) {
 	    # Since apt-clean was requested specifically, fail on
@@ -552,6 +593,7 @@ sub run_chroot_update {
     }
 
     # Update APT cache.
+    $self->check_abort();
     if ($self->get_conf('APT_UPDATE')) {
 	if ($resolver->update()) {
 	    # Since apt-update was requested specifically, fail on
@@ -564,6 +606,7 @@ sub run_chroot_update {
     }
 
     # Upgrade using APT.
+    $self->check_abort();
     if ($self->get_conf('APT_DISTUPGRADE')) {
 	if ($self->get_conf('APT_DISTUPGRADE')) {
 	    if ($resolver->distupgrade()) {
@@ -595,10 +638,12 @@ sub run_chroot_update {
 sub run_fetch_install_packages {
     my $self = shift;
 
+    $self->check_abort();
     eval {
 	my $session = $self->get('Session');
 	my $resolver = $self->get('Dependency Resolver');
 
+	$self->check_abort();
 	if (!$self->fetch_source_files()) {
 	    Sbuild::Exception::Build->throw(error => "Failed to fetch source files",
 					    failstage => "fetch-src");
@@ -613,10 +658,12 @@ sub run_fetch_install_packages {
 	}
 
 	# Run specified chroot setup commands
+	$self->check_abort();
 	$self->run_external_commands("chroot-setup-commands",
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
 
+	$self->check_abort();
 	$self->set('Install Start Time', time);
 	$self->set('Install End Time', $self->get('Install Start Time'));
 	$resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
@@ -646,6 +693,7 @@ sub run_fetch_install_packages {
 				    $self->get('Build Conflicts'),
 				    $self->get('Build Conflicts Indep'));
 
+	$self->check_abort();
 	if (!$resolver->install_deps($self->get('Package'),
 				     'ESSENTIAL', 'GCC_SNAPSHOT', 'MANUAL',
 				     $self->get('Package'))) {
@@ -654,10 +702,13 @@ sub run_fetch_install_packages {
 	}
 	$self->set('Install End Time', time);
 
+	$self->check_abort();
 	$resolver->dump_build_environment();
 
+	$self->check_abort();
 	$self->prepare_watches(keys %{$resolver->get('Changes')->{'installed'}});
 
+	$self->check_abort();
 	if ($self->build()) {
 	    $self->set_status('successful');
 	} else {
@@ -666,6 +717,7 @@ sub run_fetch_install_packages {
 	}
 
 	# Run specified chroot cleanup commands
+	$self->check_abort();
 	$self->run_external_commands("chroot-cleanup-commands",
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 				     $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
@@ -674,12 +726,15 @@ sub run_fetch_install_packages {
 	    $self->log_subsection("Post Build");
 
 	    # Run lintian.
+	    $self->check_abort();
 	    $self->run_lintian();
 
 	    # Run piuparts.
+	    $self->check_abort();
 	    $self->run_piuparts();
 
 	    # Run post build external commands
+	    $self->check_abort();
 	    $self->run_external_commands("post-build-commands",
 					 $self->get_conf('LOG_EXTERNAL_COMMAND_OUTPUT'),
 					 $self->get_conf('LOG_EXTERNAL_COMMAND_ERROR'));
@@ -735,6 +790,7 @@ sub copy_to_chroot {
     my $source = shift;
     my $dest = shift;
 
+    $self->check_abort();
     if (! File::Copy::copy($source, $dest)) {
 	$self->log_error("E: Failed to copy '$source' to '$dest': $!\n");
 	exit (1);
@@ -791,6 +847,7 @@ sub fetch_source_files {
 	return 0;
     }
 
+    $self->check_abort();
     if ($self->get('DSC Base') =~ m/\.dsc$/) {
 	# Work with a .dsc file.
 	# $file is the name of the downloaded dsc file written in a tempfile.
@@ -1430,6 +1487,16 @@ sub build {
     while(<$pipe>) {
 	alarm($timeout);
 	$last_time = time;
+	if ($self->get('ABORT')) {
+	    my $pid = $command->{'PID'};
+	    $self->get('Session')->run_command(
+		{ COMMAND => ['perl',
+			      '-e',
+			      "kill( \"TERM\", -$pid )"],
+		  USER => 'root',
+		  PRIORITY => 0,
+		  DIR => '/' });
+	}
 	$self->log($_);
     }
     close($pipe);
