@@ -25,6 +25,7 @@ package Sbuild::Build;
 use strict;
 use warnings;
 
+use English;
 use POSIX;
 use Errno qw(:POSIX);
 use Fcntl;
@@ -471,6 +472,8 @@ sub run_chroot_session {
 			   $self->get('Arch') . '-XXXXXX',
 			   DIR =>  $session->get('Location') . "/build"));
 
+	$self->build_log_filter($session->strip_chroot_path($self->get('Chroot Build Dir')), 'BUILDDIR');
+	$self->build_log_filter($session->get('Location'), 'CHROOT');
 	# Need tempdir to be writable and readable by sbuild group.
 	$self->check_abort();
 	$session->run_command(
@@ -1972,10 +1975,21 @@ sub chroot_arch {
     return $chroot_arch;
 }
 
+sub build_log_filter {
+    my $self = shift;
+    my $text = shift;
+    my $replacement = shift;
+
+    $self->log($self->get('FILTER_PREFIX') . $text . ':' . $replacement . "\n");
+}
+
 sub open_build_log {
     my $self = shift;
 
     my $date = strftime("%Y%m%d-%H%M", localtime($self->get('Pkg Start Time')));
+
+    my $filter_prefix = '__SBUILD_FILTER_' . $$ . ':';
+    $self->set('FILTER_PREFIX', $filter_prefix);
 
     my $filename = $self->get_conf('LOG_DIR') . '/' .
 	$self->get('Package_SVersion') . '-' .
@@ -1993,6 +2007,8 @@ sub open_build_log {
 	$SIG{'TERM'} = 'IGNORE';
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
+
+	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get('Arch');
 
 	if (!$self->get_conf('NOLOG') &&
 	    $self->get_conf('LOG_DIR_AVAILABLE')) {
@@ -2019,8 +2035,25 @@ sub open_build_log {
 	my $nolog = $self->get_conf('NOLOG');
 	my $log = $self->get_conf('LOG_DIR_AVAILABLE');
 	my $verbose = $self->get_conf('VERBOSE');
+	my @filter = ();
+	my ($text, $replacement);
+	my $filter_regex = "^$filter_prefix(.*):(.*)\$";
 
 	while (<STDIN>) {
+	    # Add a replacement pattern to filter (sent from main
+	    # process in log stream).
+	    if (m/$filter_regex/) {
+		($text,$replacement)=($1,$2);
+		push (@filter, [$text, $replacement]);
+		$_ = "I: NOTICE: Log filtering will replace '$text' with '$replacement'\n";
+	    } else {
+		# Filter out any matching patterns
+		foreach my $pattern (@filter) {
+		    ($text,$replacement) = @{$pattern};
+		    s/$text/$replacement/g;
+		}
+	    }
+
 	    if ($nolog) {
 		print $saved_stdout $_;
 		# Manual flushing due to Perl 5.10 bug.  Should autoflush.

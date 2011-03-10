@@ -71,7 +71,7 @@ sub open_log ($$$) {
 	$SIG{'INT'} = 'IGNORE';
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'TERM'} = 'IGNORE';
-	$PROGRAM_NAME = 'Sbuild::LogBase for ' . $PROGRAM_NAME;
+	$PROGRAM_NAME = 'main log for ' . $PROGRAM_NAME;
 	while (<STDIN>) {
 	    $logfunc->($log_file, $_)
 	        if (!$conf->get('NOLOG') && defined($log_file));
