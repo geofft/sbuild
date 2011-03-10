@@ -133,7 +133,7 @@ sub new {
     return $self;
 }
 
-sub abort {
+sub request_abort {
     my $self = shift;
     my $reason = shift;
 

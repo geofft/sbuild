@@ -207,7 +207,7 @@ sub shutdown ($) {
 				   defined($jobs{$current_job}));
 
     if (defined($job)) {
-	$job->abort("Received $signame signal");
+	$job->request_abort("Received $signame signal");
     } else {
 	exit(1);
     }
