@@ -55,6 +55,10 @@ sbuild (0.61.1-1) unstable; urgency=low
       order than seen previously.  Fatal errors will now be seen at the
       end of the build log, which should make it easier to spot
       problems.
+    - sbuild now always cleans up fully when receiving a termination
+      signal such as SIGINT or SIGTERM.  Note that you may need to wait
+      while the cleanup actions are performed, or the current task is
+      completed prior to initiating cleanup.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
