@@ -382,6 +382,25 @@ sub run {
 		       $self->get('Package_SVersion') . '-' .
 		       $self->get('Arch') . '-XXXXXX',
 		       DIR =>  $session->get('Location') . "/build"));
+    # Need tempdir to be writable and readable by sbuild group.
+    $session->run_command(
+	{ COMMAND => ['chown', 'sbuild:sbuild',
+		      $session->strip_chroot_path($self->get('Chroot Build Dir'))],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set sbuild group ownership on chroot build dir\n");
+	goto cleanup_unlocked_session;
+    }
+    $session->run_command(
+	{ COMMAND => ['chmod', '0770',
+		      $session->strip_chroot_path($self->get('Chroot Build Dir'))],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set 02770 permissions on chroot build dir\n");
+	goto cleanup_unlocked_session;
+    }
 
     # Needed so chroot commands log to build log
     $session->set('Log Stream', $self->get('Log Stream'));
@@ -609,6 +628,40 @@ sub run {
   cleanup_skip:
 }
 
+sub copy_to_chroot {
+    my $self = shift;
+    my $source = shift;
+    my $dest = shift;
+
+    if (! File::Copy::copy($source, $dest)) {
+	$self->log_error("E: Failed to copy '$source' to '$dest': $!\n");
+	exit (1);
+	return 0;
+    }
+
+    $self->get('Session')->run_command(
+	{ COMMAND => ['chown', 'sbuild:sbuild',
+		      $self->get('Session')->strip_chroot_path($dest) . '/' .
+		      basename($source)],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set sbuild group ownership on $dest\n");
+	return 0;
+    }
+    $self->get('Session')->run_command(
+	{ COMMAND => ['chmod', '0664',
+		      $self->get('Session')->strip_chroot_path($dest) . '/' .
+		      basename($source)],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set 0644 permissions on $dest\n");
+	return 0;
+    }
+
+    return 1;
+}
 sub fetch_source_files {
     my $self = shift;
 
@@ -649,14 +702,12 @@ sub fetch_source_files {
 	    # Copy the local source files into the build directory.
 	    $self->log_subsubsection("Local sources");
 	    $self->log("$dsc exists in $dir; copying to chroot\n");
-	    if (! File::Copy::copy("$dir/$dsc", "$build_dir")) {
-		$self->log_error("Could not copy $dir/$dsc to $build_dir\n");
+	    if (! $self->copy_to_chroot("$dir/$dsc", "$build_dir")) {
 		return 0;
 	    }
 	    push(@fetched, "$build_dir/$dsc");
 	    foreach (@cwd_files) {
-		if (! File::Copy::copy("$dir/$_", "$build_dir")) {
-		    $self->log_error("Could not copy $dir/$_ to $build_dir\n");
+		if (! $self->copy_to_chroot("$dir/$_", "$build_dir")) {
 		    return 0;
 		}
 		push(@fetched, "$build_dir/$_");
@@ -688,7 +739,7 @@ sub fetch_source_files {
 	my $pipe = $self->get('Dependency Resolver')->pipe_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'),
 			  '-q', 'showsrc', "$pkg"],
-	      USER => $self->get_conf('USERNAME'),
+	      USER => $self->get_conf('BUILD_USER'),
 	      PRIORITY => 0,
 	      DIR => '/'});
 	if (!$pipe) {
@@ -753,7 +804,7 @@ sub fetch_source_files {
 
 	my $pipe2 = $self->get('Dependency Resolver')->pipe_apt_command(
 	    { COMMAND => [$self->get_conf('APT_GET'), '--only-source', '-q', '-d', 'source', "$pkg=$ver"],
-	      USER => $self->get_conf('USERNAME'),
+	      USER => $self->get_conf('BUILD_USER'),
 	      PRIORITY => 0}) || return 0;
 
 	while(<$pipe2>) {
@@ -852,7 +903,7 @@ sub run_command {
 	    $err = $defaults->{'STREAMERR'} if ($log_error);
 	    $self->get('Session')->run_command(
 		{ COMMAND => \@{$command},
-		    USER => $self->get_conf('USERNAME'),
+		    USER => $self->get_conf('BUILD_USER'),
 		    PRIORITY => 0,
 		    STREAMOUT => $out,
 		    STREAMERR => $err,
@@ -1040,7 +1091,7 @@ sub build {
 	$self->get('Session')->run_command(
 		    { COMMAND => [$self->get_conf('DPKG_SOURCE'),
 				  '-x', $dscfile, $dscdir],
-		      USER => $self->get_conf('USERNAME'),
+		      USER => $self->get_conf('BUILD_USER'),
 		      PRIORITY => 0});
 	if ($?) {
 	    $self->log("FAILED [dpkg-source died]\n");
@@ -1048,12 +1099,17 @@ sub build {
 	    system ("rm -fr '$tmpunpackdir'") if -d $tmpunpackdir;
 	    return 0;
 	}
-	$dscdir = "$build_dir/$dscdir";
 
-	if (system( "chmod -R g-s,go+rX $dscdir" ) != 0) {
+	$self->get('Session')->run_command(
+	    { COMMAND => ['chmod', '-R', 'g-s,go+rX', $dscdir],
+	      USER => $self->get_conf('BUILD_USER'),
+	      PRIORITY => 0});
+	if ($?) {
 	    $self->log("chmod -R g-s,go+rX $dscdir failed.\n");
 	    return 0;
 	}
+
+	$dscdir = "$build_dir/$dscdir"
     }
     else {
 	$dscdir = "$build_dir/$dscdir";
@@ -1064,7 +1120,7 @@ sub build {
 	$dscdir = $self->get('Session')->strip_chroot_path($dscdir);
 	my $pipe = $self->get('Session')->pipe_command(
 	    { COMMAND => ['dpkg-parsechangelog'],
-	      USER => $self->get_conf('USERNAME'),
+	      USER => $self->get_conf('BUILD_USER'),
 	      PRIORITY => 0,
 	      DIR => $dscdir});
 	$self->set('Sub Task', "dpkg-parsechangelog");
@@ -1170,6 +1226,18 @@ sub build {
 	unlink "$dscdir/debian/files";
     }
 
+    # Build tree not writable during build (except for the sbuild
+    # user performing the build).
+    $self->get('Session')->run_command(
+	{ COMMAND => ['chmod', '-R', 'go-w',
+		      $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'))],
+	  USER => 'root',
+	  PRIORITY => 0});
+    if ($?) {
+	$self->log("chmod og-w " . $self->get('Chroot Build Dir') . " failed.\n");
+	return 0;
+    }
+
     $self->log_subsubsection("dpkg-buildpackage");
     $self->set('Build Start Time', time);
     $self->set('Build End Time', $self->get('Build Start Time'));
@@ -1231,7 +1299,7 @@ sub build {
     my $command = {
 	COMMAND => $buildcmd,
 	ENV => $buildenv,
-	USER => $self->get_conf('USERNAME'),
+	USER => $self->get_conf('BUILD_USER'),
 	SETSID => 1,
 	PRIORITY => 0,
 	DIR => $bdir
@@ -1312,6 +1380,17 @@ sub build {
 		    next;
 		}
 	    }
+	}
+
+	# Restore write access to build tree now build is complete.
+	$self->get('Session')->run_command(
+	    { COMMAND => ['chmod', '-R', 'g+w',
+			  $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'))],
+	      USER => 'root',
+	      PRIORITY => 0});
+	if ($?) {
+	    $self->log("chmod g+w " . $self->get('Chroot Build Dir') . " failed.\n");
+	    return 0;
 	}
 
 	$changes = $self->get('Package_SVersion') . "_$arch.changes";
@@ -1714,7 +1793,7 @@ sub chroot_arch {
 
     my $pipe = $self->get('Session')->pipe_command(
 	{ COMMAND => ['dpkg', '--print-architecture'],
-	  USER => $self->get_conf('USERNAME'),
+	  USER => $self->get_conf('BUILD_USER'),
 	  PRIORITY => 0,
 	  DIR => '/' }) || return undef;
 

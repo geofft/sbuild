@@ -62,10 +62,19 @@ case "$1" in
 	    adduser $user sbuild
 	done
 
-        chmod 2775 /var/lib/sbuild
-        chmod 2775 /var/lib/sbuild/apt-keys
-        # avg-* files from previous purge might have wrong GID
-        chown -R :sbuild /var/lib/sbuild
+	# Create dedicated sbuild user
+        if ! getent passwd sbuild > /dev/null; then
+            adduser --system --quiet --home /var/lib/sbuild --no-create-home \
+		--shell /bin/bash --ingroup sbuild --gecos "Debian source builder" sbuild
+        fi
+
+        chown -R sbuild:sbuild /var/lib/sbuild
+        chmod 02770 /var/lib/sbuild
+        chmod 02770 /var/lib/sbuild/apt-keys
+	[ -f /var/lib/sbuild/avg-build-space ] && \
+	    chmod 0664 /var/lib/sbuild/avg-build-space
+	[ -f /var/lib/sbuild/avg-build-times ] && \
+	    chmod 0664 /var/lib/sbuild/avg-build-times
 
         ;;
 

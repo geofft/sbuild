@@ -178,8 +178,7 @@ sub setup ($) {
 	},
 	'SCHROOT'				=> {
 	    TYPE => 'STRING',
-	    VARNAME => 'schroot',
-	    GROUP => 'Programs',
+	    GROUP => '__INTERNAL',
 	    CHECK => sub {
 		my $conf = shift;
 		my $entry = shift;
@@ -190,7 +189,7 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    DEFAULT => 'schroot',
+	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LIBEXEC_DIR'}/sbuild-schroot",
 	    HELP => 'Path to schroot binary'
 	},
 	'SCHROOT_OPTIONS'			=> {

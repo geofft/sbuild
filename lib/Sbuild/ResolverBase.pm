@@ -514,6 +514,22 @@ sub setup_apt_archive {
 		   tempdir('resolver' . '-XXXXXX',
 			   DIR => $self->get('Chroot Build Dir')));
     }
+    $session->run_command(
+	{ COMMAND => ['chown', 'sbuild:sbuild', $session->strip_chroot_path($self->get('Dummy package path'))],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set sbuild:sbuild ownership on dummy package dir\n");
+	return 0;
+    }
+    $session->run_command(
+	{ COMMAND => ['chmod', '0770', $session->strip_chroot_path($self->get('Dummy package path'))],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set 0770 permissions on dummy package dir\n");
+	return 0;
+    }
     my $dummy_dir = $self->get('Dummy package path');
     my $dummy_gpghome = $dummy_dir . '/gpg';
     my $dummy_archive_dir = $dummy_dir . '/apt_archive';
@@ -535,7 +551,16 @@ sub setup_apt_archive {
         $self->cleanup_apt_archive();
         return 0;
     }
-    if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir, 0755)) {
+    $session->run_command(
+	{ COMMAND => ['chown', 'sbuild:sbuild',
+		      $session->strip_chroot_path($dummy_gpghome)],
+	  USER => 'root',
+	  DIR => '/' });
+    if ($?) {
+	$self->log_error("E: Failed to set sbuild:sbuild ownership on $dummy_gpghome\n");
+	return 0;
+    }
+    if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir, 0775)) {
         $self->log_warning('Could not create build-depends dummy archive dir ' . $dummy_archive_dir . ': ' . $!);
         $self->cleanup_apt_archive();
         return 0;
@@ -634,10 +659,25 @@ Description: Dummy package to satisfy dependencies with apt - created by sbuild
 EOF
     close (DUMMY_CONTROL);
 
+    foreach my $path ($dummy_pkg_dir . '/DEBIAN/control',
+		      $dummy_pkg_dir . '/DEBIAN',
+		      $dummy_pkg_dir,
+		      $dummy_archive_dir) {
+	$session->run_command(
+	    { COMMAND => ['chown', 'sbuild:sbuild',
+			  $session->strip_chroot_path($path)],
+	      USER => 'root',
+	      DIR => '/' });
+	if ($?) {
+	    $self->log_error("E: Failed to set sbuild:sbuild ownership on $path\n");
+	    return 0;
+	}
+    }
+
     #Now build the package:
     $session->run_command(
 	{ COMMAND => ['dpkg-deb', '--build', $session->strip_chroot_path($dummy_pkg_dir), $session->strip_chroot_path($dummy_deb)],
-	  USER => $self->get_conf('USER'),
+	  USER => $self->get_conf('BUILD_USER'),
 	  PRIORITY => 0});
     if ($?) {
 	$self->log("Dummy package creation failed\n");
@@ -705,7 +745,7 @@ EOF
                        $session->strip_chroot_path($dummy_release_file));
     $session->run_command(
 	{ COMMAND => \@gpg_command,
-	  USER => $self->get_conf('USER'),
+	  USER => $self->get_conf('BUILD_USER'),
 	  PRIORITY => 0});
     if ($?) {
 	$self->log("Failed to sign dummy archive Release file.\n");
@@ -825,7 +865,7 @@ EOF
     # Run apt-ftparchive to generate Packages and Sources files.
     $host->run_command(
         { COMMAND => ['apt-ftparchive', '-q=2', 'generate', $tmpfilename],
-          USER => $self->get_conf('USER'),
+          USER => $self->get_conf('USERNAME'),
           PRIORITY => 0,
           DIR => '/'});
     if ($?) {
@@ -837,7 +877,7 @@ EOF
     # Get output for Release file
     my $pipe = $host->pipe_command(
         { COMMAND => ['apt-ftparchive', '-q=2', '-c', $tmpfilename, 'release', $dummy_archive_dir],
-          USER => $self->get_conf('USER'),
+          USER => $self->get_conf('USERNAME'),
           PRIORITY => 0,
           DIR => '/'});
     if (!defined($pipe)) {

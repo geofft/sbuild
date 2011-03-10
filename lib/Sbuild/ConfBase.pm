@@ -166,6 +166,12 @@ sub init_allowed_keys {
 	    DEFAULT => $fullname,
 	    HELP => 'User\'s full name.  Should not require setting.'
 	},
+	'BUILD_USER'				=> {
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => 'sbuild',
+	    HELP => 'Username used for building.  Should not require setting.'
+	},
 	'CWD'					=> {
 	    TYPE => 'STRING',
 	    GROUP => '__INTERNAL',
