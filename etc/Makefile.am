@@ -69,6 +69,13 @@ install-data-hook:
 	  done;									\
 	done
 
+uninstall-hook:
+	for profile in $(PROFILES); do 						\
+	  for file in "profiles/$$profile"/*; do						\
+	    $(RM) "$(DESTDIR)$(SCHROOT_SYSCONF_DIR)/$$profile/$$(basename $$file)";	\
+	  done;									\
+	done
+
 CLEANFILES =		\
 	sbuild.conf	\
 	buildd.conf
