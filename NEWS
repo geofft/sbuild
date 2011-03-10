@@ -84,6 +84,12 @@ configuration.
      with small, constant, abbreviations.  This makes the build logs
      comparable between builds with tools such as diff(1).
 
+ 13) Logging messages have been improved, and important messages are
+     now coloured when running interactively (does not affect log
+     files).  Errors, warnings and informational messages are coloured
+     red, yellow and green, respectively.  Build status is coloured
+     green for success and red for all failure conditions.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
