@@ -468,9 +468,7 @@ sub run_chroot_session {
 	# TODO: Don't hack the build location in; add a means to customise
 	# the chroot directly.  i.e. allow changing of /build location.
 	$self->set('Chroot Build Dir',
-		   tempdir($self->get_conf('USERNAME') . '-' .
-			   $self->get('Package_SVersion') . '-' .
-			   $self->get('Arch') . '-XXXXXX',
+		   tempdir($self->get('Package') . '-XXXXXX',
 			   DIR =>  $session->get('Location') . "/build"));
 
 	$self->build_log_filter($session->strip_chroot_path($self->get('Chroot Build Dir')), 'BUILDDIR');
