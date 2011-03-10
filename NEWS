@@ -79,6 +79,11 @@ configuration.
      while the cleanup actions are performed, or the current task is
      completed prior to initiating cleanup.
 
+ 12) Long paths such as the chroot location and the build directory
+     inside the chroot are now filtered in the build log and replaced
+     with small, constant, abbreviations.  This makes the build logs
+     comparable between builds with tools such as diff(1).
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
