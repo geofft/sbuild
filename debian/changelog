@@ -69,7 +69,11 @@ sbuild (0.61.1-1) unstable; urgency=low
       files).  Errors, warnings and informational messages are coloured
       red, yellow and green, respectively.  Build status is coloured
       green for success and red for all failure conditions.
-  * wanna-build:
+    - The sbuild package build directory created inside the chroot now
+      has a reduced name length.  It's now /build/packagename-XXXXXX
+      where XXXXXX are random characters.  This helps reduce the chance
+      of hitting path length restrictions on some architectures,
+      particularly when using sockets.  * wanna-build:
     - The wanna-build database has been removed entirely.  This part of
       the sbuild package was not used, and was not maintained for some
       time.  Users wishing to use wanna-build should investigate the
