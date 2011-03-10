@@ -578,6 +578,11 @@ sub run_chroot_update {
     my $self = shift;
     my $resolver = $self->get('Dependency Resolver');
 
+    if ($self->get_conf('APT_CLEAN') || $self->get_conf('APT_UPDATE') ||
+	$self->get_conf('APT_DISTUPGRADE') || $self->get_conf('APT_UPGRADE')) {
+	$self->log_subsection('Update chroot');
+    }
+
     # Clean APT cache.
     $self->check_abort();
     if ($self->get_conf('APT_CLEAN')) {
@@ -1304,6 +1309,8 @@ sub build {
 	    Sbuild::Exception::Build->throw(error => "Disc space is probably not sufficient for building.\n",
 					    info => "Source needs $current_usage KiB, while $free KiB is free.)",
 					    failstage => "check-space");
+	} else {
+	    $self->log("Sufficient free space for build\n");
 	}
     }
 
@@ -1550,11 +1557,12 @@ sub build {
 	    return 0;
 	}
 
+	$self->log_subsection("Changes");
 	$changes = $self->get('Package_SVersion') . "_$arch.changes";
 	my @cfiles;
 	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
-	    $self->log("\n$changes:\n");
+	    $self->log_subsubsection("$changes:");
 	    open( F, "<$build_dir/$changes" );
 	    my $sys_build_dir = $self->get_conf('BUILD_DIR');
 	    if (open( F2, ">$sys_build_dir/$changes.new" )) {
@@ -2051,7 +2059,9 @@ sub open_build_log {
     $self->log("Package: " . $self->get('Package') . "\n");
     $self->log("Version: " . $self->get('Version') . "\n");
     $self->log("Source Version: " . $self->get('OVersion') . "\n");
+    $self->log("Distribution: " . $self->get_conf('DISTRIBUTION') . "\n");
     $self->log("Architecture: " . $self->get('Arch') . "\n");
+    $self->log("\n");
 }
 
 sub close_build_log {
