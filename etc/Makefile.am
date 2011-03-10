@@ -25,7 +25,7 @@ sbuildsysconfdir = $(SBUILD_SYSCONF_DIR)
 sbuildsysconf_DATA = sbuild.conf
 
 builddsysconfdir = $(BUILDD_SYSCONF_DIR)
-builddsysconf_DATA = buildd.conf wanna-build.conf
+builddsysconf_DATA = buildd.conf
 
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
@@ -85,7 +85,6 @@ clean-local:
 	$(RM) -f profiles-stamp
 
 EXTRA_DIST =			\
-	wanna-build.conf	\
 	$(exampleconf_DATA)	\
 	$(COMPAT_SETUP)		\
 	$(SETUP)		\
