@@ -49,6 +49,12 @@ sbuild (0.61.1-1) unstable; urgency=low
       of accidental or deliberate tampering of the build environment.
       While the latter is not addressed by these changes, this will be
       taken care of during future architectural changes.
+    - In order to handle errors more robustly, the build code now has
+      initial support for exception handling.  Normal operation will
+      not be affected, but fatal errors may be logged in a different
+      order than seen previously.  Fatal errors will now be seen at the
+      end of the build log, which should make it easier to spot
+      problems.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
