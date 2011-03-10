@@ -30,7 +30,6 @@ use Sbuild qw(isin);
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
 use Sbuild::Log;
-use Sbuild::DB::ClientConf qw();
 
 BEGIN {
     use Exporter ();

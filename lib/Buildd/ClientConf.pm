@@ -20,7 +20,7 @@
 #
 #######################################################################
 
-package Sbuild::DB::ClientConf;
+package Buildd::ClientConf;
 
 use strict;
 use warnings;

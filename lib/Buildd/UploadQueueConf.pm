@@ -81,7 +81,7 @@ sub setup ($) {
 
     $conf->set_allowed_keys(\%dupload_queue_keys);
 
-    Sbuild::DB::ClientConf::setup($conf);
+    Buildd::ClientConf::setup($conf);
 }
 
 sub read_hash ($$) {

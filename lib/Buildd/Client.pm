@@ -19,7 +19,7 @@
 #
 #######################################################################
 
-package Sbuild::DB::Client;
+package Buildd::Client;
 
 use strict;
 use warnings;

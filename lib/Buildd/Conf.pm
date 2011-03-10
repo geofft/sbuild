@@ -29,7 +29,7 @@ use Buildd::DistConf qw();
 use Buildd::UploadQueueConf qw();
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
-use Sbuild::DB::ClientConf qw();
+use Buildd::ClientConf qw();
 
 BEGIN {
     use Exporter ();
@@ -359,7 +359,7 @@ sub setup ($) {
 	});
 
     $conf->set_allowed_keys(\%buildd_keys);
-    Sbuild::DB::ClientConf::setup($conf);
+    Buildd::ClientConf::setup($conf);
 }
 
 sub read ($) {
@@ -525,7 +525,7 @@ if (\@take_from_dists) {
                 \$entry{WANNA_BUILD_API} //= 1;
 
 
-	#We need this to pass this to Sbuild::DB::Client:
+	#We need this to pass this to Buildd::Client:
                 \$entry{SSH} = \$ssh;
 
 	#Make one entry per distribution, it's easier later on:

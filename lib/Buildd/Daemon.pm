@@ -31,7 +31,7 @@ use Buildd::Base;
 use Sbuild qw($devnull df);
 use Sbuild::Sysconfig;
 use Sbuild::ChrootRoot;
-use Sbuild::DB::Client;
+use Buildd::Client;
 use Cwd;
 
 BEGIN {

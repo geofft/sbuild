@@ -117,7 +117,7 @@ sub get_db_handle ($$) {
     my $self = shift;
     my $dist_config = shift;
 
-    my $db = Sbuild::DB::Client->new($dist_config);
+    my $db = Buildd::Client->new($dist_config);
     $db->set('Log Stream', $self->get('Log Stream'));
     return $db;
 }

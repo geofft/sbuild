@@ -27,7 +27,7 @@ use warnings;
 
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
-use Sbuild::DB::ClientConf qw();
+use Buildd::ClientConf qw();
 
 BEGIN {
     use Exporter ();
@@ -128,7 +128,7 @@ sub setup ($) {
 
     $conf->set_allowed_keys(\%buildd_dist_keys);
 
-    Sbuild::DB::ClientConf::setup($conf);
+    Buildd::ClientConf::setup($conf);
 }
 
 sub read_hash($$) {

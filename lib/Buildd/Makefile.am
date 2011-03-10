@@ -23,14 +23,16 @@ include $(top_srcdir)/scripts/global.mk
 
 perlmodbuildddir = $(perlmoddir)/Buildd
 
-MODULES =		\
-	Base.pm		\
-	Conf.pm		\
-	DistConf.pm \
-	UploadQueueConf.pm \
-	Daemon.pm	\
-	Mail.pm		\
-	Uploader.pm	\
+MODULES =			\
+	Base.pm			\
+	Client.pm		\
+	ClientConf.pm		\
+	Conf.pm			\
+	DistConf.pm 		\
+	UploadQueueConf.pm 	\
+	Daemon.pm		\
+	Mail.pm			\
+	Uploader.pm		\
 	Watcher.pm
 
 perlmodbuildd_DATA =	\

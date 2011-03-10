@@ -21,8 +21,6 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = DB
-
 perlmodsbuilddir = $(perlmoddir)/Sbuild
 
 MODULES =			\

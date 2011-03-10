@@ -29,7 +29,7 @@ use Buildd::Conf qw();
 use Buildd::Base;
 use Sbuild qw(binNMU_version $devnull);
 use Sbuild::ChrootRoot;
-use Sbuild::DB::Client;
+use Buildd::Client;
 use POSIX;
 use File::Basename;
 use MIME::QuotedPrint;
