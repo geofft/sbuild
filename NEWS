@@ -97,6 +97,12 @@ configuration.
      autobuilding infrastructure.  This version is actively maintained
      and in continual use.
 
+ 15) The sbuild package build directory created inside the chroot now
+     has a reduced name length.  It's now /build/packagename-XXXXXX
+     where XXXXXX are random characters.  This helps reduce the chance
+     of hitting path length restrictions on some architectures,
+     particularly when using sockets.
+
 * Major changes in 0.61.0:
 
   1) The apt and aptitude build dependency resolvers now use only the
