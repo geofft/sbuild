@@ -2156,15 +2156,15 @@ sub close_build_log {
 	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
     }
 
-    $self->send_build_log($self->get_conf('MAILTO'), $subject, $filename)
-	if (defined($filename) && -f $filename &&
-	    $self->get_conf('MAILTO'));
-
     $self->set('Log File', undef);
     if (defined($self->get('Log Stream'))) {
 	$self->get('Log Stream')->close(); # Close child logger process
 	$self->set('Log Stream', undef);
     }
+
+    $self->send_build_log($self->get_conf('MAILTO'), $subject, $filename)
+	if (defined($filename) && -f $filename &&
+	    $self->get_conf('MAILTO'));
 }
 
 sub send_build_log {
