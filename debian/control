@@ -24,8 +24,8 @@ Description: Tool for building Debian binary packages from Debian sources
  programs.
 
 Package: sbuild
-Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, perl-modules, libsbuild-perl (= ${source:Version}), adduser
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, perl-modules, libsbuild-perl (= ${source:Version}), adduser
 Recommends: fakeroot, debootstrap
 Suggests: wget, deborphan
 Description: Tool for building Debian binary packages from Debian sources

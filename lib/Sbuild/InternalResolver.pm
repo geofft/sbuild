@@ -505,7 +505,7 @@ sub get_virtual {
     my $pipe = $self->pipe_apt_command(
 	{ COMMAND => [$self->get_conf('APT_CACHE'),
 		      '-q', '--names-only', 'search', "^$pkg\$"],
-	  USER => $self->get_conf('USERNAME'),
+	  USER => $self->get_conf('BUILD_USER'),
 	  PRIORITY => 0,
 	  DIR => '/'});
     if (!$pipe) {
@@ -541,7 +541,7 @@ sub get_apt_policy {
 	$self->pipe_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'), 'policy', @interest],
 	      ENV => {'LC_ALL' => 'C'},
-	      USER => $self->get_conf('USERNAME'),
+	      USER => $self->get_conf('BUILD_USER'),
 	      PRIORITY => 0,
 	      DIR => '/' }) || die 'Can\'t start ' . $self->get_conf('APT_CACHE') . ": $!\n";
 

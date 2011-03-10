@@ -166,6 +166,12 @@ sub init_allowed_keys {
 	    DEFAULT => $fullname,
 	    HELP => 'User\'s full name.  Should not require setting.'
 	},
+	'BUILD_USER'				=> {
+	    TYPE => 'STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => 'sbuild',
+	    HELP => 'Username used for building.  Should not require setting.'
+	},
 	'CWD'					=> {
 	    TYPE => 'STRING',
 	    GROUP => '__INTERNAL',
@@ -209,10 +215,13 @@ sub init_allowed_keys {
 
 sub new {
     my $class = shift;
+    my %opts = @_;
 
     my $self  = {};
-    $self->{'config'} = {};
     bless($self, $class);
+
+    $self->{'CHECK'} = 1;
+    $self->{'CHECK'} = $opts{'CHECK'} if $opts{'CHECK'};
 
     $self->init_allowed_keys();
 
@@ -372,7 +381,7 @@ sub set {
 	} else {
 	    $value = $self->_set_value($key, $value);
 	}
-	if (defined($entry->{'CHECK'})) {
+	if ($self->{'CHECK'} && defined($entry->{'CHECK'})) {
 	    $entry->{'CHECK'}->($self, $entry);
 	}
 	$entry->{'NAME'} = $key;
@@ -401,7 +410,7 @@ sub check {
     my $entry = $self->{'KEYS'}->{$key};
 
     if (defined($entry)) {
-	if (defined($entry->{'CHECK'})) {
+	if ($self->{'CHECK'} && defined($entry->{'CHECK'})) {
 	    $entry->{'CHECK'}->($self, $entry);
 	}
     }

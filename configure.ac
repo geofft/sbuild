@@ -121,6 +121,8 @@ AC_SUBST([SBUILD_CHROOT_CHECKS], [$chroot_checks])
 AM_CONDITIONAL([SBUILD_CHROOT_CHECKS], [test "$enable_chroot_checks" = "yes"])
 
 # Checks for programs.
+AC_PROG_CXX
+AC_LANG([C++])
 
 # Check for host platform
 AC_CANONICAL_HOST
@@ -315,13 +317,31 @@ AC_SUBST([WANNA_BUILD_CONF])
 AH_TEMPLATE(WANNA_BUILD_CONF, [wanna-build config file path])
 AC_DEFINE_UNQUOTED(WANNA_BUILD_CONF, ["$WANNA_BUILD_CONF"])
 
-AH_TEMPLATE(SBUILD_DATADIR, [Package data directory])
-SBUILD_DATADIR="${PACKAGE_DATA_DIR}/${PACKAGE_VERSION}"
-AC_DEFINE_UNQUOTED(SBUILD_DATADIR, ["$SBUILD_DATADIR"])
+AH_TEMPLATE(SBUILD_DATA_DIR, [Package data directory])
+if test "x${datadir}" = 'x${prefix}/share' || test "x${datadir}" = 'x${datarootdir}'; then
+  if test "x${prefix}" = "xNONE"; then
+    SBUILD_DATA_DIR="${ac_default_prefix}/share/sbuild"
+  else
+    SBUILD_DATA_DIR="${prefix}/share/sbuild"
+  fi
+else
+  SBUILD_DATA_DIR="${datadir}/sbuild"
+fi
+AC_SUBST(SBUILD_DATA_DIR)
+AC_DEFINE_UNQUOTED(SBUILD_DATA_DIR, ["$SBUILD_DATA_DIR"])
 
-AH_TEMPLATE(SBUILD_MODULEDIR, [Package module directory])
-SBUILD_MODULEDIR="${PACKAGE_LIB_DIR}/${PACKAGE_VERSION}/modules"
-AC_DEFINE_UNQUOTED(SBUILD_MODULEDIR, ["$SBUILD_MODULEDIR"])
+AH_TEMPLATE(WANNA_BUILD_DATA_DIR, [Package data directory])
+if test "x${datadir}" = 'x${prefix}/share' || test "x${datadir}" = 'x${datarootdir}'; then
+  if test "x${prefix}" = "xNONE"; then
+    WANNA_BUILD_DATA_DIR="${ac_default_prefix}/share/wanna_build"
+  else
+    WANNA_BUILD_DATA_DIR="${prefix}/share/wanna_build"
+  fi
+else
+  WANNA_BUILD_DATA_DIR="${datadir}/wanna_build"
+fi
+AC_SUBST(WANNA_BUILD_DATA_DIR)
+AC_DEFINE_UNQUOTED(WANNA_BUILD_DATA_DIR, ["$WANNA_BUILD_DATA_DIR"])
 
 dnl Configure which files to generate.
 AC_CONFIG_FILES([Makefile])
@@ -357,6 +377,7 @@ AC_CONFIG_FILES([test/sbuild-clean],
 AC_CONFIG_FILES([test/sbuild],
 		[chmod +x test/sbuild])
 AC_CONFIG_FILES([tools/Makefile])
+AC_CONFIG_FILES([wrapper/Makefile])
 
 dnl Output the generated config.status script.
 AC_OUTPUT

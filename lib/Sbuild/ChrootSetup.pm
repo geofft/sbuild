@@ -77,17 +77,17 @@ sub basesetup ($$) {
     }
 
     $session->run_command(
-	{ COMMAND => ['chown', 'root:sbuild', '/build'],
+	{ COMMAND => ['chown', 'sbuild:sbuild', '/build'],
 	  USER => 'root',
 	  DIR => '/' });
     return $? if $?;
     if ($?) {
-	print STDERR "E: Failed to set root:sbuild ownership on /build\n";
+	print STDERR "E: Failed to set sbuild:sbuild ownership on /build\n";
 	return $?
     }
 
     $session->run_command(
-	{ COMMAND => ['chmod', '0770', '/build'],
+	{ COMMAND => ['chmod', '02770', '/build'],
 	  USER => 'root',
 	  DIR => '/' });
     return $? if $?;
@@ -117,11 +117,11 @@ sub basesetup ($$) {
     }
 
     $session->run_command(
-	{ COMMAND => ['chown', '-R', 'root:sbuild', '/var/lib/sbuild'],
+	{ COMMAND => ['chown', '-R', 'sbuild:sbuild', '/var/lib/sbuild'],
 	  USER => 'root',
 	  DIR => '/' });
     if ($?) {
-	print STDERR "E: Failed to set root:sbuild ownership on /var/lib/sbuild/\n";
+	print STDERR "E: Failed to set sbuild:sbuild ownership on /var/lib/sbuild/\n";
 	return $?
     }
 
@@ -165,7 +165,7 @@ sub shell ($$) {
     $session->run_command(
 	{ COMMAND => ['/bin/sh'],
 	  PRIORITY => 1,
-	  USER => $conf->get('USERNAME'),
+	  USER => $conf->get('BUILD_USER'),
 	  STREAMIN => \*STDIN,
 	  STREAMOUT => \*STDOUT,
 	  STREAMERR => \*STDERR });
@@ -250,7 +250,7 @@ EOF
                    $tmpfilename);
     $host->run_command(
         { COMMAND => \@command,
-	  USER => $conf->get('USERNAME'),
+	  USER => $conf->get('BUILD_USER'),
           PRIORITY => 0,
           DIR => '/'});
     if ($?) {
@@ -262,7 +262,7 @@ EOF
                 $conf->get('SBUILD_BUILD_DEPENDS_SECRET_KEY'));
     $host->run_command(
         { COMMAND => \@command,
-	  USER => $conf->get('USERNAME'),
+	  USER => $conf->get('BUILD_USER'),
           PRIORITY => 0,
           DIR => '/'});
 

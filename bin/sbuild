@@ -51,7 +51,7 @@ my $options = Sbuild::Options->new($conf, "sbuild", "1");
 exit 1 if !defined($options);
 check_group_membership();
 
-umask(022);
+umask(002);
 
 # Job state
 my %jobs = ();
