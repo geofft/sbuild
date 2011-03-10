@@ -40,6 +40,13 @@ sbuild (0.61.1-1) unstable; urgency=low
       of the build directory or build dependencies was disabled, but
       this was not always desirable, hence it is now configurable
       separately.
+    - Internally, building and other actions in the chroot are
+      performed by the 'sbuild' system user, where previously the user
+      invoking sbuild would be used instead.  The aim of this change is
+      to separate privileges to increase security and reduce the chance
+      of accidental or deliberate tampering of the build environment.
+      While the latter is not addressed by these changes, this will be
+      taken care of during future architectural changes.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
