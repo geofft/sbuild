@@ -215,11 +215,6 @@ AC_SUBST(SBUILD_LIBEXEC_DIR)
 AH_TEMPLATE(SBUILD_LIBEXEC_DIR, [Package libexec directory])
 AC_DEFINE_UNQUOTED(SBUILD_LIBEXEC_DIR, ["$SBUILD_LIBEXEC_DIR"])
 
-WANNA_BUILD_LIBEXEC_DIR="${PACKAGE_LIBEXEC_DIR}/wanna-build"
-AC_SUBST(WANNA_BUILD_LIBEXEC_DIR)
-AH_TEMPLATE(WANNA_BUILD_LIBEXEC_DIR, [Package libexec directory])
-AC_DEFINE_UNQUOTED(WANNA_BUILD_LIBEXEC_DIR, ["$WANNA_BUILD_LIBEXEC_DIR"])
-
 dnl Set PACKAGE_LOCALSTATE_DIR in config.h.
 AH_TEMPLATE(PACKAGE_LOCALSTATE_DIR, [Package localstate directory])
 if test "x${localstatedir}" = 'x${prefix}/var'; then
@@ -290,32 +285,11 @@ SCHROOT_SYSCONF_DIR="${SCHROOT_SYSCONF_DIR}/schroot"
 AC_DEFINE_UNQUOTED([SCHROOT_SYSCONF_DIR], ["$SCHROOT_SYSCONF_DIR"])
 AC_SUBST([SCHROOT_SYSCONF_DIR])
 
-dnl Set WANNA_BUILD_SYSCONF_DIR in config.h.
-AH_TEMPLATE(WANNA_BUILD_SYSCONF_DIR, [wanna-build system configuration directory])
-if test "x${sysconfdir}" = 'x${prefix}/etc'; then
-  if test "x${prefix}" = "xNONE"; then
-    WANNA_BUILD_SYSCONF_DIR="${ac_default_prefix}/etc"
-  else
-    WANNA_BUILD_SYSCONF_DIR="${prefix}/etc"
-  fi
-else
-  WANNA_BUILD_SYSCONF_DIR="${sysconfdir}"
-fi
-WANNA_BUILD_SYSCONF_DIR="${WANNA_BUILD_SYSCONF_DIR}/buildd"
-AC_DEFINE_UNQUOTED([WANNA_BUILD_SYSCONF_DIR], ["$WANNA_BUILD_SYSCONF_DIR"])
-AC_SUBST([WANNA_BUILD_SYSCONF_DIR])
-
 SCHROOT_CONF="${SCHROOT_SYSCONF_DIR}/schroot.conf"
 AC_SUBST([SCHROOT_CONF])
 
 AH_TEMPLATE(BUILDD_CONF, [buildd config file path])
 AC_DEFINE_UNQUOTED(BUILDD_CONF, ["$BUILDD_CONF"])
-
-WANNA_BUILD_CONF="${WANNA_BUILD_SYSCONF_DIR}/wanna-build.conf"
-AC_SUBST([WANNA_BUILD_CONF])
-
-AH_TEMPLATE(WANNA_BUILD_CONF, [wanna-build config file path])
-AC_DEFINE_UNQUOTED(WANNA_BUILD_CONF, ["$WANNA_BUILD_CONF"])
 
 AH_TEMPLATE(SBUILD_DATA_DIR, [Package data directory])
 if test "x${datadir}" = 'x${prefix}/share' || test "x${datadir}" = 'x${datarootdir}'; then
@@ -330,19 +304,6 @@ fi
 AC_SUBST(SBUILD_DATA_DIR)
 AC_DEFINE_UNQUOTED(SBUILD_DATA_DIR, ["$SBUILD_DATA_DIR"])
 
-AH_TEMPLATE(WANNA_BUILD_DATA_DIR, [Package data directory])
-if test "x${datadir}" = 'x${prefix}/share' || test "x${datadir}" = 'x${datarootdir}'; then
-  if test "x${prefix}" = "xNONE"; then
-    WANNA_BUILD_DATA_DIR="${ac_default_prefix}/share/wanna_build"
-  else
-    WANNA_BUILD_DATA_DIR="${prefix}/share/wanna_build"
-  fi
-else
-  WANNA_BUILD_DATA_DIR="${datadir}/wanna_build"
-fi
-AC_SUBST(WANNA_BUILD_DATA_DIR)
-AC_DEFINE_UNQUOTED(WANNA_BUILD_DATA_DIR, ["$WANNA_BUILD_DATA_DIR"])
-
 dnl Configure which files to generate.
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([bin/Makefile])
@@ -353,7 +314,6 @@ AC_CONFIG_FILES([lib/Makefile])
 AC_CONFIG_FILES([lib/Buildd/Makefile])
 AC_CONFIG_FILES([lib/Sbuild/Makefile])
 AC_CONFIG_FILES([lib/Sbuild/DB/Makefile])
-AC_CONFIG_FILES([lib/WannaBuild/Makefile])
 AC_CONFIG_FILES([lib/Sbuild/Sysconfig.pm])
 AC_CONFIG_FILES([man/Makefile])
 AC_CONFIG_FILES([man/defs.man])

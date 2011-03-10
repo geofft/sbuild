@@ -39,12 +39,7 @@ man_MANS =				\
 	sbuild-setup.7			\
 	sbuild-shell.1			\
 	sbuild-stats.1			\
-	sbuild-update.1			\
-	wanna-build.1			\
-	wanna-build-catdb.1		\
-	wanna-build-mail.1		\
-	wanna-build-merge-packages.1	\
-	wanna-build-statistics.1
+	sbuild-update.1
 
 sbuild.conf.man: $(abs_top_srcdir)/tools/sbuild-dumpconfig
 	PERL5LIB=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib \
@@ -85,9 +80,6 @@ install-data-hook:
 	ln -sf sbuild-update.1 $(DESTDIR)$(man1dir)/sbuild-upgrade.1
 	ln -sf sbuild-update.1 $(DESTDIR)$(man1dir)/sbuild-distupgrade.1
 	ln -sf sbuild-update.1 $(DESTDIR)$(man1dir)/sbuild-clean.1
-	ln -sf wanna-build-catdb.1 $(DESTDIR)$(man1dir)/wanna-build-catgdbm.1
-	ln -sf wanna-build-catdb.1 $(DESTDIR)$(man1dir)/wanna-build-catmldbm.1
-	ln -sf wanna-build-merge-packages.1 $(DESTDIR)$(man1dir)/wanna-build-merge-quinn.1
 	ln -sf buildd-mail.1 $(DESTDIR)$(man1dir)/buildd-mail-wrapper.1
 	ln -sf sbuild-abort.1 $(DESTDIR)$(man1dir)/buildd-abort.1
 	ln -sf sbuild-update.1 $(DESTDIR)$(man1dir)/buildd-update-chroots.1
@@ -98,9 +90,6 @@ uninstall-hook:
 	$(RM) $(DESTDIR)$(man1dir)/sbuild-upgrade.1
 	$(RM) $(DESTDIR)$(man1dir)/sbuild-distupgrade.1
 	$(RM) $(DESTDIR)$(man1dir)/sbuild-clean.1
-	$(RM) $(DESTDIR)$(man1dir)/wanna-build-catgdbm.1
-	$(RM) $(DESTDIR)$(man1dir)/wanna-build-catmldbm.1
-	$(RM) $(DESTDIR)$(man1dir)/wanna-build-merge-quinn.1
 	$(RM) $(DESTDIR)$(man1dir)/buildd-mail-wrapper.1
 	$(RM) $(DESTDIR)$(man1dir)/buildd-abort.1
 	$(RM) $(DESTDIR)$(man1dir)/buildd-update-chroots.1
