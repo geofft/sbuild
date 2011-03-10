@@ -29,30 +29,20 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, perl-modules, libs
 Recommends: fakeroot, debootstrap
 Suggests: wget, deborphan
 Description: Tool for building Debian binary packages from Debian sources
- The sbuild suite of programs (wanna-build, buildd and sbuild) are
- used to build binary packages from source packages.  The wanna-build
- database tracks packages which require building; buildd schedules
- work from information it gets from the wanna-build database; sbuild
- does the actual package building.
+ The sbuild suite of programs (buildd and sbuild) are used to build
+ binary packages from source packages.  sbuild does the actual package
+ building.
  .
- sbuild can do its work in chroots so both stable and unstable
- environments can be used on the same machine.  Useful for, say,
- building the latest unstable packages against stable library
- versions.  And by keeping only essential and build-essential
- in the chroots, you can find the correct build dependencies for
- a package.
-
-Package: wanna-build
-Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, perl-modules, libmldbm-perl, libsbuild-perl
-Recommends: exim4 | mail-transport-agent, cron, wget, postgresql-8.4-debversion
-Suggests: gnupg
-Description: Database to track building of Debian binary packages from Debian sources
- The sbuild suite of programs (wanna-build, buildd and sbuild) are
- used to build binary packages from source packages.  The wanna-build
- database tracks packages which require building; buildd schedules
- work from information it gets from the wanna-build database; sbuild
- does the actual package building.
+ sbuild uses chroots to build packages, which act as virtual, minimal
+ operating system installations dedicated to package building.  This
+ means that a number of environments may be used for building
+ simultaneously on the same machines, for example stable, testing,
+ unstable and experimental.  When coupled with schroot to create
+ snapshots of chroots, sbuild may be used to build many packages in
+ parallel.  A chroot envionment allows packages to be built in a
+ controlled, clean environment.  sbuild installs only essential and
+ build-essential packages, plus those in the package build
+ dependencies.
 
 Package: buildd
 Architecture: all
@@ -61,12 +51,13 @@ Suggests: wanna-build
 Replaces: sbuild, ubuntu-dev-tools (<= 0.83)
 Breaks: ubuntu-dev-tools (<= 0.83)
 Description: Daemon for automatically building Debian binary packages from Debian sources
- The sbuild suite of programs (wanna-build, buildd and sbuild) are
+ The sbuild suite of programs (buildd and sbuild) are
  used to build binary packages from source packages.  The wanna-build
  database tracks packages which require building; buildd schedules
  work from information it gets from the wanna-build database; sbuild
  does the actual package building.
  .
  buildd is a daemon which will build Debian packages automatically
- using the wanna-build database to identify which packages need to
- be built.
+ using the wanna-build database to identify which packages need to be
+ built.  Note that the wanna-build database is not packaged, and
+ requires installing separately.

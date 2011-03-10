@@ -69,6 +69,11 @@ sbuild (0.61.1-1) unstable; urgency=low
       files).  Errors, warnings and informational messages are coloured
       red, yellow and green, respectively.  Build status is coloured
       green for success and red for all failure conditions.
+  * wanna-build:
+    - wanna-build has been removed.  The version in use on the Debian
+      build infrastructure is hosted in a separate wanna-build.git
+      repository.  The version provided here was long unused and
+      unmaintained.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
@@ -94,7 +99,7 @@ sbuild (0.61.1-1) unstable; urgency=low
     - New manual page.  Like sbuild.conf(5), this documents all allowed
       values.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 08 Mar 2011 19:58:44 +0000
+ -- Roger Leigh <rleigh@debian.org>  Thu, 10 Mar 2011 17:42:38 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
