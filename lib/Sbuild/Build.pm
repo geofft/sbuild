@@ -39,6 +39,7 @@ use Cwd qw(:DEFAULT abs_path);
 use Dpkg::Arch;
 use Dpkg::Control;
 use MIME::Lite;
+use Term::ANSIColor;
 
 use Sbuild qw($devnull binNMU_version version_compare split_version copy isin debug df send_mail);
 use Sbuild::Base;
@@ -750,6 +751,7 @@ sub run_fetch_install_packages {
 	}
     };
 
+    $self->log_subsection("Cleanup");
     my $session = $self->get('Session');
     my $resolver = $self->get('Dependency Resolver');
 
@@ -1530,9 +1532,13 @@ sub build {
     $self->log("Build finished at $date\n");
 
     my @space_files = ("$dscdir");
+
+    $self->log_subsubsection("Finished");
     if ($rv) {
-	$self->log("FAILED [dpkg-buildpackage died]\n");
+	$self->log_error("Build failure (dpkg-buildpackage died)\n");
     } else {
+	$self->log_info("Built successfully\n");
+
 	if (-r "$dscdir/debian/files" && $self->get('Chroot Build Dir')) {
 	    my @files = $self->debian_files_list("$dscdir/debian/files");
 
@@ -1548,6 +1554,7 @@ sub build {
 		}
 	    }
 	}
+
 
 	# Restore write access to build tree now build is complete.
 	$self->get('Session')->run_command(
@@ -1641,14 +1648,11 @@ sub build {
 	    system "mv", "-f", "$build_dir/$_", $self->get_conf('BUILD_DIR')
 		and $self->log_error("Could not move $_ to .\n");
 	}
-	$self->log_subsection("Finished");
-	$self->log("Built successfully\n");
     }
 
     $self->check_watches();
     $self->check_space(@space_files);
 
-    $self->log_sep();
     return $rv == 0 ? 1 : 0;
 }
 
@@ -2054,19 +2058,27 @@ sub open_build_log {
 		}
 	    }
 
-	    if ($nolog) {
+	    if ($nolog || $verbose) {
+		if (-t $saved_stdout) {
+		    my $colour = 'reset';
+		    $colour = 'red' if (m/^E: /);
+		    $colour = 'yellow' if (m/^W: /);
+		    $colour = 'green' if (m/^I: /);
+		    $colour = 'red' if (m/^Status:/);
+		    $colour = 'green' if (m/^Status: successful$/);
+		    print $saved_stdout color $colour;
+		}
+
 		print $saved_stdout $_;
+		if (-t $saved_stdout) {
+		    print $saved_stdout color 'reset';
+		}
+
 		# Manual flushing due to Perl 5.10 bug.  Should autoflush.
 		$saved_stdout->flush();
-	    } else {
-		if ($log) {
+	    }
+	    if (!$nolog && $log) {
 		    print CPLOG $_;
-		}
-		if ($verbose) {
-		    print $saved_stdout $_;
-		    # Manual flushing due to Perl 5.10 bug.  Should autoflush.
-		    $saved_stdout->flush();
-		}
 	    }
 	}
 
@@ -2326,7 +2338,7 @@ sub add_time_entry {
     return if !$self->get_conf('AVG_TIME_DB');
     my %db;
     if (!tie %db, 'GDBM_File', $self->get_conf('AVG_TIME_DB'), GDBM_WRCREAT, 0664) {
-	$self->log("Can't open average time db " . $self->get_conf('AVG_TIME_DB') . "\n");
+	$self->log_warning("Can't open average time db " . $self->get_conf('AVG_TIME_DB') . "\n");
 	return;
     }
     $pkg =~ s/_.*//;
@@ -2355,7 +2367,7 @@ sub add_space_entry {
     return if !$self->get_conf('AVG_SPACE_DB') || $space == 0;
     my %db;
     if (!tie %db, 'GDBM_File', $self->get_conf('AVG_SPACE_DB'), &GDBM_WRCREAT, 0664) {
-	$self->log("Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . "\n");
+	$self->log_warning("Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . "\n");
 	return;
     }
     $pkg =~ s/_.*//;
