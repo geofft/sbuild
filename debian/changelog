@@ -64,6 +64,11 @@ sbuild (0.61.1-1) unstable; urgency=low
       with small, constant, abbreviations (Closes: #605763).  This makes
       the build logs comparable between builds with tools such as
       diff(1).
+    - Logging messages have been improved, and important messages are
+      now coloured when running interactively (does not affect log
+      files).  Errors, warnings and informational messages are coloured
+      red, yellow and green, respectively.  Build status is coloured
+      green for success and red for all failure conditions.
   * sbuild.conf:
     - sbuild.conf is now automatically generated from the help text and
       defaults in the source code.  This means that the examples will
