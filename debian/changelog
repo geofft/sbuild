@@ -4,76 +4,86 @@ sbuild (0.61.1-1) unstable; urgency=low
   * debian/control:
     - Build-Depend upon libexception-class-perl.
   * sbuild:
-    - 'apt' is now the default build dependency resolver.  Users should
-      not see any significant changes compared with the old 'internal'
-      resolver.  Please note that you may need to generate a GPG key
-      for the local archive created for dependency package
-      installation, if one does not already exist; see sbuild-update
-      (--keygen) for further details.
-    - The 'internal' build dependency resolver is deprecated.  It is
-      not recommended for future use, and will be removed once it is no
-      longer used by the buildd infrastructure.  Please use the 'apt'
-      resolver as a drop-in replacement.
-    - The 'aptitude' build dependency resolver will, unlike 'apt' and
-      'internal', consider alternative dependencies by default, rather
-      than only using the first alternative.  This is intended to both
-      preserve backward compatibility, and make the 'aptitude'
-      resolver the preferred choice for more complex situations, such
-      as building for experimental.
-    - The aptitude resolver can resolve complex dependencies, e.g.
-      A | B, where A is uninstallable now correctly falls back to B.
-      This is not the case for the internal or apt resolvers, which by
-      intent do not make use of alternatives (they use the first
-      alternative only.  sbuild now has full support for resolving
-      alternatives, but this is not the default behaviour
-      (Closes: #403246).  Please see #614807 for a proposed description
-      of autobuilder-imposed build dependency restrictions in Policy.
-    - All build dependency resolvers run dpkg with --force-confold.
-      This means packages with modified conffiles in the chroot to not
-      cause build failure.  This includes /etc/services and
-      /etc/protocols from netbase (Closes: #576508).
-    - sbuild now performs an apt dist-upgrade at the start of each
-      build by default, rather than an upgrade.  This is to reduce the
-      amount of manual administration required to keep chroots up to
-      date, and is not much more risky than upgrade in this context.
-    - A new option, --keep-session, has been added (Closes: #609658).
-      This prevents the automatic removal of session-managed snapshot
-      chroots.  Previously, snapshots would not be deleted if purging
-      of the build directory or build dependencies was disabled, but
-      this was not always desirable, hence it is now configurable
-      separately.
-    - Internally, building and other actions in the chroot are
-      performed by the 'sbuild' system user, where previously the user
-      invoking sbuild would be used instead.  The aim of this change is
-      to separate privileges to increase security and reduce the chance
-      of accidental or deliberate tampering of the build environment.
-      While the latter is not addressed by these changes, this will be
-      taken care of during future architectural changes.
-    - In order to handle errors more robustly, the build code now has
-      initial support for exception handling.  Normal operation will
-      not be affected, but fatal errors may be logged in a different
-      order than seen previously.  Fatal errors will now be seen at the
-      end of the build log, which should make it easier to spot
-      problems.
-    - sbuild now always cleans up fully when receiving a termination
-      signal such as SIGINT or SIGTERM.  Note that you may need to wait
-      while the cleanup actions are performed, or the current task is
-      completed prior to initiating cleanup.
-    - Long paths such as the chroot location and the build directory
-      inside the chroot are now filtered in the build log and replaced
-      with small, constant, abbreviations (Closes: #605763).  This makes
-      the build logs comparable between builds with tools such as
-      diff(1).
-    - Logging messages have been improved, and important messages are
-      now coloured when running interactively (does not affect log
-      files).  Errors, warnings and informational messages are coloured
-      red, yellow and green, respectively.  Build status is coloured
-      green for success and red for all failure conditions.
-    - The sbuild package build directory created inside the chroot now
-      has a reduced name length.  It's now /build/packagename-XXXXXX
-      where XXXXXX are random characters.  This helps reduce the chance
-      of hitting path length restrictions on some architectures,
-      particularly when using sockets.  * wanna-build:
+    - Resolvers:
+      + 'apt' is now the default build dependency resolver.  Users should
+        not see any significant changes compared with the old 'internal'
+        resolver.  Please note that you may need to generate a GPG key
+        for the local archive created for dependency package
+        installation, if one does not already exist; see sbuild-update
+        (--keygen) for further details.
+      + The 'internal' build dependency resolver is deprecated.  It is
+        not recommended for future use, and will be removed once it is no
+        longer used by the buildd infrastructure.  Please use the 'apt'
+        resolver as a drop-in replacement.
+      + The 'aptitude' build dependency resolver will, unlike 'apt' and
+        'internal', consider alternative dependencies by default, rather
+        than only using the first alternative.  This is intended to both
+        preserve backward compatibility, and make the 'aptitude'
+        resolver the preferred choice for more complex situations, such
+        as building for experimental.
+      + The aptitude resolver can resolve complex dependencies, e.g.
+        A | B, where A is uninstallable now correctly falls back to B.
+        This is not the case for the internal or apt resolvers, which by
+        intent do not make use of alternatives (they use the first
+        alternative only.  sbuild now has full support for resolving
+        alternatives, but this is not the default behaviour
+        (Closes: #403246).  Please see #614807 for a proposed description
+        of autobuilder-imposed build dependency restrictions in Policy.
+      + All build dependency resolvers run dpkg with --force-confold.
+        This means packages with modified conffiles in the chroot to not
+        cause build failure.  This includes /etc/services and
+        /etc/protocols from netbase (Closes: #576508).
+    - Logging:
+      + Long paths such as the chroot location and the build directory
+        inside the chroot are now filtered in the build log and replaced
+        with small, constant, abbreviations (Closes: #605763).  This makes
+        the build logs comparable between builds with tools such as
+        diff(1).
+      + Logging messages have been improved, and important messages are
+        now coloured when running interactively (does not affect log
+        files).  Errors, warnings and informational messages are coloured
+        red, yellow and green, respectively.  Build status is coloured
+        green for success and red for all failure conditions.
+    - Error handling:
+      + In order to handle errors more robustly, the build code now has
+        initial support for exception handling.  Normal operation will
+        not be affected, but fatal errors may be logged in a different
+        order than seen previously.  Fatal errors will now be seen at the
+        end of the build log, which should make it easier to spot
+        problems.
+      + sbuild now always cleans up fully when receiving a termination
+        signal such as SIGINT or SIGTERM.  Note that you may need to wait
+        while the cleanup actions are performed, or the current task is
+        completed prior to initiating cleanup.  When running
+        interactively, hitting Ctrl-C will sent SIGINT to the entire
+        process group; doing this while apt-get or aptitude are running
+        will potentially leave dpkg in an inconsistent state, so aborting
+        at this point is not recommended.  Sending a SIGTERM to the
+        sbuild process will always work cleanly.
+    - General:
+      + sbuild now performs an apt dist-upgrade at the start of each
+        build by default, rather than an upgrade.  This is to reduce the
+        amount of manual administration required to keep chroots up to
+        date, and is not much more risky than upgrade in this context.
+      + A new option, --keep-session, has been added (Closes: #609658).
+        This prevents the automatic removal of session-managed snapshot
+        chroots.  Previously, snapshots would not be deleted if purging
+        of the build directory or build dependencies was disabled, but
+        this was not always desirable, hence it is now configurable
+        separately.
+      + Internally, building and other actions in the chroot are
+        performed by the 'sbuild' system user, where previously the user
+        invoking sbuild would be used instead.  The aim of this change is
+        to separate privileges to increase security and reduce the chance
+        of accidental or deliberate tampering of the build environment.
+        While the latter is not addressed by these changes, this will be
+        taken care of during future architectural changes.
+      + The sbuild package build directory created inside the chroot now
+        has a reduced name length.  It's now /build/packagename-XXXXXX
+        where XXXXXX are random characters.  This helps reduce the chance
+        of hitting path length restrictions on some architectures,
+        particularly when using sockets.
+  * wanna-build:
     - The wanna-build database has been removed entirely.  This part of
       the sbuild package was not used, and was not maintained for some
       time.  Users wishing to use wanna-build should investigate the
