@@ -46,7 +46,7 @@ Description: Tool for building Debian binary packages from Debian sources
 
 Package: buildd
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libsbuild-perl, adduser, sbuild (= ${source:Version}), dupload, cron, exim4 | mail-transport-agent, libyaml-tiny-perl
+Depends: ${misc:Depends}, ${perl:Depends}, libsbuild-perl, adduser, sbuild (>= ${source:Version}), sbuild (<< ${source:Version}.1~), dupload, cron, exim4 | mail-transport-agent, libyaml-tiny-perl
 Suggests: wanna-build
 Replaces: sbuild, ubuntu-dev-tools (<= 0.83)
 Breaks: ubuntu-dev-tools (<= 0.83)
