@@ -45,7 +45,11 @@ install: build
 	$(MAKE) -C debian/build install DESTDIR=$(CURDIR)/debian/install
 
 	dh_install
+
 	cp debian/buildd.forward debian/buildd/var/lib/buildd/.forward
+
+	mkdir -p $(CURDIR)/debian/sbuild/usr/share/lintian/overrides
+	cp $(CURDIR)/debian/sbuild.lintian-overrides $(CURDIR)/debian/sbuild/usr/share/lintian/overrides/sbuild
 
 # Build architecture-independent files here.
 binary-indep: build install-indep
