@@ -77,7 +77,12 @@ configuration.
  11) sbuild now always cleans up fully when receiving a termination
      signal such as SIGINT or SIGTERM.  Note that you may need to wait
      while the cleanup actions are performed, or the current task is
-     completed prior to initiating cleanup.
+     completed prior to initiating cleanup.  When running
+     interactively, hitting Ctrl-C will sent SIGINT to the entire
+     process group; doing this while apt-get or aptitude are running
+     will potentially leave dpkg in an inconsistent state, so aborting
+     at this point is not recommended.  Sending a SIGTERM to the
+     sbuild process will always work cleanly.
 
  12) Long paths such as the chroot location and the build directory
      inside the chroot are now filtered in the build log and replaced
@@ -90,18 +95,19 @@ configuration.
      red, yellow and green, respectively.  Build status is coloured
      green for success and red for all failure conditions.
 
- 14) The wanna-build database has been removed entirely.  This part of
+ 14) The sbuild package build directory created inside the chroot now
+     has a reduced name length.  It's now /build/packagename-XXXXXX
+     where XXXXXX are random characters.  This helps reduce the chance
+     of hitting path length restrictions on some architectures,
+     particularly when using sockets.
+
+ 15) The wanna-build database has been removed entirely.  This part of
      the sbuild package was not used, and was not maintained for some
      time.  Users wishing to use wanna-build should investigate the
      version in the wanna-build.git repository used by the Debian
      autobuilding infrastructure.  This version is actively maintained
      and in continual use.
 
- 15) The sbuild package build directory created inside the chroot now
-     has a reduced name length.  It's now /build/packagename-XXXXXX
-     where XXXXXX are random characters.  This helps reduce the chance
-     of hitting path length restrictions on some architectures,
-     particularly when using sockets.
 
 * Major changes in 0.61.0:
 
