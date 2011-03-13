@@ -368,7 +368,7 @@ sub do_wanna_build {
 #                  $self->handle_prevfailed( $dist_config, grep( /^\Q$pkg\E_/, @_ ) );
 #              } else {
 #                  push( @output, grep( /^\Q$pkg\E_/, @_ ) );
-            my $fields = { 'changelog' => 'extra-changelog', 'binNMU' => 'binNMU', 'extra-depends' => 'extra-depends', 'extra-conflicts' => 'extra-conflicts' };
+            my $fields = { 'changelog' => 'extra-changelog', 'binNMU' => 'binNMU', 'extra-depends' => 'extra-depends', 'extra-conflicts' => 'extra-conflicts', 'build_dep_resolver' => 'build_dep_resolver' };
             for my $f (keys %$fields) {
                 $ret->{$f} = $pkgd->{$fields->{$f}} if $pkgd->{$fields->{$f}};
             }
@@ -517,8 +517,8 @@ sub do_build {
     }
     #Some distributions (bpo, experimental) require a more complex dep resolver.
     #Ask sbuild to use another build-dep resolver if the config says so:
-    if ($dist_config->get('BUILD_DEP_RESOLVER')) {
-	push @sbuild_args, '--build-dep-resolver=' . $dist_config->get('BUILD_DEP_RESOLVER');
+    if ($dist_config->get('BUILD_DEP_RESOLVER') || $todo->{'build_dep_resolver'}) {
+	push @sbuild_args, '--build-dep-resolver=' . ($dist_config->get('BUILD_DEP_RESOLVER') || $todo->{'build_dep_resolver'});
     }
     push ( @sbuild_args, "--arch=" . $dist_config->get('BUILT_ARCHITECTURE') )
 	if $dist_config->get('BUILT_ARCHITECTURE');
