@@ -3,7 +3,7 @@ Section: devel
 Priority: extra
 Maintainer: Debian buildd-tools Developers <buildd-tools-devel@lists.alioth.debian.org>
 Uploaders: Michael Banck <mbanck@debian.org>, Roger Leigh <rleigh@debian.org>, Francesco Paolo Lovergine <frankie@debian.org>
-Build-Depends: debhelper (>> 7.0.0), groff-base
+Build-Depends: debhelper (>> 7.0.0), groff-base, perl-modules, libexception-class-perl, libfilesys-df-perl, libio-zlib-perl, libmime-lite-perl, libdpkg-perl (>= 1.15.5)
 Standards-Version: 3.9.1
 Vcs-Browser: http://git.debian.org/?p=buildd-tools/sbuild.git
 Vcs-Git: git://git.debian.org/git/buildd-tools/sbuild
