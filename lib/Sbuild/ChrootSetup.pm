@@ -80,7 +80,6 @@ sub basesetup ($$) {
 	{ COMMAND => ['chown', 'sbuild:sbuild', '/build'],
 	  USER => 'root',
 	  DIR => '/' });
-    return $? if $?;
     if ($?) {
 	print STDERR "E: Failed to set sbuild:sbuild ownership on /build\n";
 	return $?
@@ -90,7 +89,6 @@ sub basesetup ($$) {
 	{ COMMAND => ['chmod', '02770', '/build'],
 	  USER => 'root',
 	  DIR => '/' });
-    return $? if $?;
     if ($?) {
 	print STDERR "E: Failed to set 0750 permissions on /build\n";
 	return $?
@@ -245,6 +243,23 @@ EOF
     print $tmpfh '%pubring ' . $conf->get('SBUILD_BUILD_DEPENDS_PUBLIC_KEY') . "\n";
     print $tmpfh '%commit' . "\n";
     close($tmpfh);
+
+    $host->run_command(
+	{ COMMAND => ['chown', ':sbuild', $tmpfilename],
+	  USER => $conf->get('USERNAME'),
+	  DIR => '/' });
+    if ($?) {
+	print STDERR "E: Failed to set :sbuild ownership on $tmpfilename\n";
+	return $?
+    }
+    $host->run_command(
+	{ COMMAND => ['chmod', '0660', $tmpfilename],
+	  USER => $conf->get('USERNAME'),
+	  DIR => '/' });
+    if ($?) {
+	print STDERR "E: Failed to set 0660 permissions on $tmpfilename\n";
+	return $?
+    }
 
     my @command = ('gpg', '--no-default-keyring', '--batch', '--gen-key',
                    $tmpfilename);
