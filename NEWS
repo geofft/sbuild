@@ -101,7 +101,15 @@ configuration.
      of hitting path length restrictions on some architectures,
      particularly when using sockets.
 
- 15) The wanna-build database has been removed entirely.  This part of
+ 15) Build log mails are now compressed and mailed in MIME format by
+     default, together with a copy of the .changes file.  The old
+     behaviour (plain mailing of uncompressed logs) may be restored by
+     setting $mime_build_log_mails=0 in the configuration, and
+     compression may also be disabled in the MIME mails by setting
+     $compress_build_log_mails=0.  Note that it is no longer possible
+     to send compressed log mails unless MIME mailing is enabled.
+
+ 16) The wanna-build database has been removed entirely.  This part of
      the sbuild package was not used, and was not maintained for some
      time.  Users wishing to use wanna-build should investigate the
      version in the wanna-build.git repository used by the Debian
