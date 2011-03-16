@@ -411,14 +411,14 @@ sub setup ($) {
 	    TYPE => 'BOOL',
 	    VARNAME => 'compress_build_log_mails',
 	    GROUP => 'Logging options',
-	    DEFAULT => 0,
+	    DEFAULT => 1,
 	    HELP => 'Should build log mails be compressed?'
 	},
 	'MIME_BUILD_LOG_MAILS'                  => {
 	    TYPE => 'BOOL',
 	    VARNAME => 'mime_build_log_mails',
 	    GROUP => 'Logging options',
-	    DEFAULT => 0,
+	    DEFAULT => 1,
 	    HELP => 'Should build log mails be MIME encoded?'
 	},
 	'PURGE_BUILD_DEPS'			=> {
