@@ -490,7 +490,8 @@ if (\@take_from_dists) {
 	\$entry{WANNA_BUILD_SSH_OPTIONS} = \$wanna_build_ssh_options;
                 \$entry{WANNA_BUILD_API} = 0;
 
-	my \$dist_config = Buildd::DistConf::new_hash(\\\%entry);
+	my \$dist_config = Buildd::DistConf::new_hash(CHECK=>$conf->{'CHECK'},
+						      HASH=>\\\%entry);
 
 	push \@distributions_info, \$dist_config;
     }
@@ -547,20 +548,23 @@ if (\@upload_queues) {
 	    \$entry{uc(\$key)} = \$raw_entry->{\$key};
 	}
 
-	my \$queue_config = Buildd::UploadQueueConf::new_hash(\\\%entry);
+	my \$queue_config = Buildd::UploadQueueConf::new_hash(CHECK=>$conf->{'CHECK'},
+							      HASH=>\\\%entry);
 
 	push \@upload_queue_configs, \$queue_config;
     }
     \$conf->set('UPLOAD_QUEUES', \\\@upload_queue_configs);
 } else {
     push \@{\$conf->get('UPLOAD_QUEUES')},
-	Buildd::UploadQueueConf::new_hash(
+	Buildd::UploadQueueConf::new_hash(CHECK=>$conf->{'CHECK'},
+					  HASH=>
 	    {
 		DUPLOAD_LOCAL_QUEUE_DIR => 'upload',
 		DUPLOAD_ARCHIVE_NAME    => 'anonymous-ftp-master'
 	    }
 	),
-	Buildd::UploadQueueConf::new_hash(
+	Buildd::UploadQueueConf::new_hash(CHECK=>$conf->{'CHECK'},
+					  HASH=>
 	    {
 		DUPLOAD_LOCAL_QUEUE_DIR => 'upload-security',
 		DUPLOAD_ARCHIVE_NAME    => 'security'

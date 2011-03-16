@@ -221,7 +221,7 @@ sub new {
     bless($self, $class);
 
     $self->{'CHECK'} = 1;
-    $self->{'CHECK'} = $opts{'CHECK'} if $opts{'CHECK'};
+    $self->{'CHECK'} = $opts{'CHECK'} if exists $opts{'CHECK'};
 
     $self->init_allowed_keys();
 

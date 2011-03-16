@@ -38,17 +38,17 @@ BEGIN {
     @EXPORT = qw(new_hash setup read_hash);
 }
 
-sub new_hash ($);
+sub new_hash (@);
 sub setup ($);
 sub read_hash ($$);
 
-sub new_hash ($) {
-    my $data = shift;
+sub new_hash (@) {
+    my %opts = @_;
 
-    my $queue_config = Sbuild::ConfBase->new();
+    my $queue_config = Sbuild::ConfBase->new(%opts);
 
     Buildd::DistConf::setup($queue_config);
-    Buildd::DistConf::read_hash($queue_config, $data);
+    Buildd::DistConf::read_hash($queue_config, $opts{'HASH'});
 
     return $queue_config;
 }
