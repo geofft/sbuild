@@ -138,17 +138,19 @@ if ((@ARGV < 1 && !$conf->get('KEYGEN')) ||
 
 my $status = 0;
 
+my $host = Sbuild::ChrootRoot->new($conf);
+
 if ($conf->get('KEYGEN')) {
     print "Generating archive key.\n";
 
-    my $session = Sbuild::ChrootRoot->new($conf);
-    if (!$session->begin_session()) {
+    my $host = Sbuild::ChrootRoot->new($conf);
+    if (!$host->begin_session()) {
 	die "Chroot setup failed";
     }
 
-    $status = generate_keys($session, $conf);
+    $status = generate_keys($host, $conf);
 
-    $session->end_session();
+    $host->end_session();
 
     $status >>= 8;
     if ($status) {
@@ -162,7 +164,6 @@ foreach (@ARGV) {
     my $chroot = Sbuild::Utility::get_dist($_);
 
     my $session = setup('source', $chroot, $conf) or die "Chroot setup failed";
-    my $host = Sbuild::ChrootRoot->new($conf);
     if (!$host->begin_session()) {
 	die "Chroot setup failed";
     }
