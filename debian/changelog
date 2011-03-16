@@ -44,6 +44,14 @@ sbuild (0.62.0-1) unstable; urgency=low
         files).  Errors, warnings and informational messages are coloured
         red, yellow and green, respectively.  Build status is coloured
         green for success and red for all failure conditions.
+      + Build log mails are now compressed and mailed in MIME format by
+        default, together with a copy of the .changes file.  The old
+        behaviour (plain mailing of uncompressed logs) may be restored by
+        setting $mime_build_log_mails=0 in the configuration, and
+        compression may also be disabled in the MIME mails by setting
+        $compress_build_log_mails=0.  Note that it is no longer possible
+        to send compressed log mails unless MIME mailing is enabled.
+        Thanks to Philipp Kern for implementing this.
     - Error handling:
       + In order to handle errors more robustly, the build code now has
         initial support for exception handling.  Normal operation will
@@ -115,7 +123,7 @@ sbuild (0.62.0-1) unstable; urgency=low
     - New manual page.  Like sbuild.conf(5), this documents all allowed
       values.
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 11 Mar 2011 09:41:19 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 16 Mar 2011 16:10:31 +0000
 
 sbuild (0.61.0-1) unstable; urgency=low
 
