@@ -117,7 +117,7 @@ sub get_command_internal {
     }
 
     @cmdline = ($self->get_conf('SUDO'), '/usr/sbin/chroot', $self->get('Location'),
-		$self->get_conf('SU'), '-p', "$user", '-s',
+		$self->get_conf('SU'), "$user", '-s',
 		'/bin/sh', '-c',
 		"cd '$dir' && $shellcommand");
 

@@ -127,7 +127,7 @@ sub get_command_internal {
 	if (($need_chroot || $need_su) && $user ne 'root');
     push(@cmdline, '/usr/sbin/chroot', $self->get('Location'))
 	if ($need_chroot);
-    push(@cmdline, $self->get_conf('SU'), '-p', "$user", '-s')
+    push(@cmdline, $self->get_conf('SU'), "$user", '-s')
 	if ($need_su);
     push(@cmdline, '/bin/sh', '-c', "cd '$dir' && $shellcommand");
 
