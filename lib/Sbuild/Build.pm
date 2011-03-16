@@ -2175,72 +2175,9 @@ sub send_build_log {
 
     if ($conf->get('MIME_BUILD_LOG_MAILS')) {
 	return $self->send_mime_build_log($to, $subject, $filename);
-    } elsif ($conf->get('COMPRESS_BUILD_LOG_MAILS')) {
-	return $self->send_compressed_build_log($to, $subject, $filename);
     } else {
         return send_mail($conf, $to, $subject, $filename);
     }
-}
-
-sub send_compressed_build_log {
-    my $self = shift;
-    my $to = shift;
-    my $subject = shift;
-    my $filename = shift;
-
-    my $conf = $self->get('Config');
-
-    # This writes the compressed build log to yet another temporary file,
-    # generates base64 from it and pipes it into the mailer with
-    # Content-Type: application/x-gzip and Content-Transfer-Encoding:
-    # base64.
-    local( *F, *GZFILE );
-
-    if (!open( F, "<$filename" )) {
-	warn "Cannot open $filename for mailing: $!\n";
-	return 0;
-    }
-
-    my $tmp = File::Temp->new();
-    tie *GZFILE, 'IO::Zlib', $tmp->filename, 'wb';
-
-    while( <F> ) {
-        print GZFILE $_;
-    }
-    untie *GZFILE;
-
-    $filename = $tmp->filename;
-    if (!open( F, "<$filename" )) {
-        warn "Cannot open $filename for mailing: $!\n";
-        return 0;
-    }
-
-    local $SIG{'PIPE'} = 'IGNORE';
-
-    if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
-	warn "Could not open pipe to " . $conf->get('MAILPROG') . ": $!\n";
-	close( F );
-	return 0;
-    }
-
-    print MAIL "From: " . $conf->get('MAILFROM') . "\n";
-    print MAIL "To: $to\n";
-    print MAIL "Subject: $subject\n";
-    print MAIL "Content-Type: application/x-gzip\n";
-    print MAIL "Content-Transfer-Encoding: base64\n";
-    print MAIL "\n";
-
-    my $buf;
-    while (read(F, $buf, 60*57)) {
-	print MAIL encode_base64($buf);
-    }
-
-    close( F );
-    if (!close( MAIL )) {
-	warn $conf->get('MAILPROG') . " failed (exit status $?)\n";
-	return 0;
-    }
-    return 1;
 }
 
 sub send_mime_build_log {
