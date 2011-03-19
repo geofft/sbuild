@@ -3,6 +3,9 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+VERSION=$(shell dpkg-parsechangelog | grep '^Version:' | cut -d' ' -f 2)
+BUILDD_BUILD=$(shell echo ${VERSION} | grep -q 'buildd' && echo yes || echo no)
+
 debian/build/config.status: configure
 	dh_testdir
 
@@ -60,7 +63,9 @@ binary-indep: build install-indep
 	dh_installexamples -i
 	dh_installman -i
 	dh_installcron -i
-	dh_installinit -i --no-start --no-restart-on-upgrade
+	if [ "${BUILDD_BUILD}" = "no" ]; then \
+	  dh_installinit -i --no-start --no-restart-on-upgrade; \
+	fi
 	dh_perl -i
 	dh_link -i
 	dh_compress -i
