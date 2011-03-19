@@ -22,24 +22,8 @@ set -e
 #     installation fails and the `postinst' is called with `abort-upgrade',
 #     `abort-remove' or `abort-deconfigure'.
 
-# Move a conffile without triggering a dpkg question
-mv_conffile() {
-    OLDCONFFILE="$1"
-    NEWCONFFILE="$2"
-
-    if [ -e "$OLDCONFFILE" ]; then
-        echo "Preserving user changes to $NEWCONFFILE ..."
-        mv -f "$NEWCONFFILE" "$NEWCONFFILE".dpkg-new
-        mv -f "$OLDCONFFILE" "$NEWCONFFILE"
-    fi
-}
-
 case "$1" in
     configure)
-
-	if dpkg --compare-versions "$2" le "0.58.3-1"; then
-	    mv_conffile "/etc/buildd.conf" "/etc/buildd/buildd.conf"
-	fi
 
         if ! getent passwd buildd > /dev/null; then
             adduser --system --quiet --home /var/lib/buildd --no-create-home \
