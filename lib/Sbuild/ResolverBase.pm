@@ -26,7 +26,6 @@ use warnings;
 use POSIX;
 use Fcntl;
 use File::Temp qw(tempdir tempfile);
-use File::Path qw(remove_tree);
 use File::Copy;
 
 use Dpkg::Deps;
@@ -790,10 +789,16 @@ EOF
 # Remove the apt archive.
 sub cleanup_apt_archive {
     my $self = shift;
+
     my $session = $self->get('Session');
+
     if (defined $self->get('Dummy package path')) {
-	remove_tree($self->get('Dummy package path'));
+	$session->run_command(
+	    { COMMAND => ['rm', '-fr', $session->strip_chroot_path($self->get('Dummy package path'))],
+	      USER => $self->get_conf('BUILD_USER'),
+	      DIR => '/' });
     }
+
     $session->run_command(
 	{ COMMAND => ['rm', '-f', $session->strip_chroot_path($self->get('Dummy archive list file'))],
 	  USER => 'root',
