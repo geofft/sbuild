@@ -1,3 +1,12 @@
+sbuild (0.62.1-1) unstable; urgency=high
+
+  * New release.
+  * Fixed security issue in the sbuild-schroot wrapper program which
+    did not enforce sbuild group membership in order to allow users
+    to access the chroots as user sbuild.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 20 Mar 2011 23:06:52 +0000
+
 sbuild (0.62.0-1) unstable; urgency=low
 
   * New release.
