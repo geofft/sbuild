@@ -150,6 +150,11 @@ main (int argc, char *argv[])
   if (is_group_member(grp))
     in_group = true;
 
+  if (!in_group) {
+      std::cerr << "Permission denied: not a member of group sbuild"  << std::endl;
+      exit(1);
+  }
+
   // Set primary group
   if (setgid (new_user.pw_gid))
     {
