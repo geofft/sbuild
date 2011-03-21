@@ -1,13 +1,19 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.62.1.  Please read these release notes carefully.
+Welcome to sbuild 0.62.2.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
 
-* Major changes in 0.62.0:
+* Major changes in 0.62.2:
+
+  1) New options --no-apt-clean, --no-apt-update, --no-apt-upgrade and
+     --no-apt-distupgrade have been added to allow these actions to be
+     disabled even when set as the default in the configuration.
+
+* Major changes in 0.62.1:
 
   1) Fixed security issue in the sbuild-schroot wrapper program which
      did not enforce sbuild group membership in order to allow users
