@@ -502,6 +502,8 @@ sub do_build {
 
     push @sbuild_args, 'sbuild',
 			'--apt-update',
+			'--no-apt-upgrade',
+			'--no-apt-distupgrade',
 			'--batch',
 			"--stats-dir=" . $self->get_conf('HOME') . "/stats",
 			"--dist=" . $dist_config->get('DIST_NAME');
