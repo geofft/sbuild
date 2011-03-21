@@ -1,3 +1,13 @@
+sbuild (0.62.2-1) unstable; urgency=low
+
+  * New release.
+  * sbuild:
+    - New options --no-apt-clean, --no-apt-update, --no-apt-upgrade and
+      --no-apt-distupgrade have been added to allow these actions to be
+      disabled even when set as the default in the configuration.
+
+ -- Roger Leigh <rleigh@debian.org>  Mon, 21 Mar 2011 14:51:36 +0000
+
 sbuild (0.62.1-1) unstable; urgency=high
 
   * New release.
