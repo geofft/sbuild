@@ -150,7 +150,9 @@ main (int argc, char *argv[])
   if (is_group_member(grp))
     in_group = true;
 
-  if (!in_group) {
+  // Root is allowed to skip the permissions checks, i.e. not be
+  // required to be in the sbuild group.
+  if (current_user.pw_uid != 0 && !in_group) {
       std::cerr << "Permission denied: not a member of group sbuild"  << std::endl;
       exit(1);
   }
