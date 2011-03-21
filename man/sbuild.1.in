@@ -171,16 +171,28 @@ Communicate with specified archive.
 Enable debug output.
 .TP
 .BR "\-\-apt\-clean"
-Run apt-get clean in the chroot before executing the build.
+.TQ
+.BR "\-\-no\-apt\-clean"
+Run (or do not run) apt-get clean in the chroot before executing the build,
+overriding the default setting.
 .TP
 .BR "\-\-apt\-update"
-Run apt-get update in the chroot before executing the build.
+.TQ
+.BR "\-\-no\-apt\-update"
+Run (or do not run) apt-get update in the chroot before executing the build,
+overriding the default setting.
 .TP
 .BR "\-\-apt\-upgrade"
-Run apt-get upgrade in the chroot before executing the build.
+.TQ
+.BR "\-\-no\-apt\-upgrade"
+Run (or do not run) apt-get upgrade in the chroot before executing the build,
+overriding the default setting.
 .TP
 .BR "\-\-apt\-distupgrade"
-Run apt-get distupgrade in the chroot before executing the build.
+.TQ
+.BR "\-\-no\-apt\-distupgrade"
+Run (or do not run) apt-get distupgrade in the chroot before executing the build,
+overriding the default setting.
 .TP
 .BR \-m ", " "\-\-maintainer=\fImaintainer\fP"
 Specify the identity to use for GPG signing packages, and also used as the

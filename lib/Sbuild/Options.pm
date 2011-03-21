@@ -81,16 +81,28 @@ sub set_options {
 			   $self->set_conf('CHROOT', $_[1]);
 		       },
 		       "apt-clean" => sub {
-			   $self->set_conf('APT_CLEAN', $_[1]);
+			   $self->set_conf('APT_CLEAN', 1);
 		       },
 		       "apt-update" => sub {
-			   $self->set_conf('APT_UPDATE', $_[1]);
+			   $self->set_conf('APT_UPDATE', 1);
 		       },
 		       "apt-upgrade" => sub {
-			   $self->set_conf('APT_UPGRADE', $_[1]);
+			   $self->set_conf('APT_UPGRADE', 1);
 		       },
 		       "apt-distupgrade" => sub {
-			   $self->set_conf('APT_DISTUPGRADE', $_[1]);
+			   $self->set_conf('APT_DISTUPGRADE', 1);
+		       },
+		       "no-apt-clean" => sub {
+			   $self->set_conf('APT_CLEAN', 0);
+		       },
+		       "no-apt-update" => sub {
+			   $self->set_conf('APT_UPDATE', 0);
+		       },
+		       "no-apt-upgrade" => sub {
+			   $self->set_conf('APT_UPGRADE', 0);
+		       },
+		       "no-apt-distupgrade" => sub {
+			   $self->set_conf('APT_DISTUPGRADE', 0);
 		       },
 		       "d|dist=s" => sub {
 			   $self->set_conf('DISTRIBUTION', $_[1]);
