@@ -564,6 +564,8 @@ sub setup ($) {
 	    VARNAME => 'build_dir',
 	    GROUP => 'Core options',
 	    DEFAULT => cwd(),
+	    IGNORE_DEFAULT => 1, # Don't dump class to config
+	    EXAMPLE => '$build_dir = \'/home/pete/build\';',
 	    CHECK => $validate_directory,
 	    HELP => 'This option is deprecated.  Directory for chroot symlinks and sbuild logs.  Defaults to the current directory if unspecified.  It is used as the location of chroot symlinks (obsolete) and for current build log symlinks and some build logs.  There is no default; if unset, it defaults to the current working directory.  $HOME/build is another common configuration.'
 	},
