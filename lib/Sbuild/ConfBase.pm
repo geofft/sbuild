@@ -74,10 +74,11 @@ sub init_allowed_keys {
 	    if !-d $directory;
     };
 
-    my $home = $ENV{'HOME'}
-        or die "HOME not defined in environment!\n";
     my @pwinfo = getpwuid($<);
-    my $username = $pwinfo[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
+    die "Can't get passwd entry for uid $<: $!" if (!@pwinfo);
+    my $home = $ENV{'HOME'};
+    $home = $pwinfo[7] if (!$home);
+    my $username = $pwinfo[0];
     my $fullname = $pwinfo[6];
     $fullname =~ s/,.*$//;
 
