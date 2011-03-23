@@ -7,8 +7,9 @@ sbuild (0.62.2-1) unstable; urgency=low
       disabled even when set as the default in the configuration.
     - root is not required to be a member of the sbuild group in order
       to run schroot via the sbuild-schroot wrapper (Closes: #619128).
+    - Don't require HOME to be set in the environment (Closes: #619288).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 21 Mar 2011 14:52:40 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 23 Mar 2011 10:38:03 +0000
 
 sbuild (0.62.1-1) unstable; urgency=high
 
