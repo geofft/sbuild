@@ -77,7 +77,10 @@ sub init_allowed_keys {
     my @pwinfo = getpwuid($<);
     die "Can't get passwd entry for uid $<: $!" if (!@pwinfo);
     my $home = $ENV{'HOME'};
-    $home = $pwinfo[7] if (!$home);
+    if (!$home) {
+	print STDERR "W: HOME not set in environment; falling back to $pwinfo[7]\n";
+	$home = $pwinfo[7];
+    }
     my $username = $pwinfo[0];
     my $fullname = $pwinfo[6];
     $fullname =~ s/,.*$//;
