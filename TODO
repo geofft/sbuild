@@ -5,9 +5,6 @@ valid.
 sbuild-createchroot should import most of buildd-make-chroot.
 (note: only needed for buildd use--accounts and passwords needed for access)
 
-Split utility programs into library functions. Functions should operate on
-chroot objects, or plain files where appropriate.
-
 Chroot.pm: Move chroot naming out of begin_session.
 
 Are 'Build Start Time' and 'Pkg Start Time' different?
@@ -55,41 +52,17 @@ Use 'dcmd cp' to copy build files
 
 Copyright details of new files.
 
-ConfBase get/set code doesn't distinguish between undefined and empty
-   hashes (and also arrays?)  Due to Perl automatically creating an
-   instance if the reference is undefined (autovivification).
-
 Validate programs and paths only if required
 - programs which only work inside the chroot
 - programs which only work outside the chroot (if required by config)
 - programs which may or may not be required inside and/or outside
 
-gzip log files
-
-send gzipped log mail, with correct headers
-Content-Transfer-Encoding and Content-Type need setting.
-message['Content-Transfer-Encoding'] = 'base64'
-message['Content-Type'] = 'application/x-gzip'
-https://buildd.debian.org/docs/log-compressor.py
-
 Where did the 0.57.7 debian/changelog go to?
 
 buildd-mail: Why do we use lockfiles rather than real fcntl locks?
 
-sbuild: Add alternative build-dep resolver support:
- - traditional (current)
- - apt_get (apt-get build-dep)
- - apt_package (dependency package)
- - aptitude (aptitude build-dep)
- - aptitude_package (dependency package)
-
 Move locking functions out of Sbuild::Build.  Use proper locking in
 place of lockfiles.
-
-Wannabuild::Database::send_reupload_mail unused.
-
-Wannabuild::Database: Move priority, section and category values into
-configuration file to allow customisation.
 
 Sbuild::Base: Add append method to simplify set(get() . ) idiom.
 
@@ -111,13 +84,6 @@ buildd: shutdown_* should check if we are a daemon before removing
 the pidfile, as for END.
 
 END blocks should be inside object destructors.
-
-run|pipe_apt_command should be generic functions, not class
-methods.
-
-Use ChrootRoot to run commands on host system.  Remove CHROOT
-parameter?  Only needed for run_apt_command, which can work
-accordingly without CHROOT.
 
 buildd-vlog: Rather than tailing the output of sbuild logs, once
 buildd uses Sbuild::Build directly, the daemon will be able to
@@ -147,16 +113,9 @@ Kill all globals
 
 lib/Buildd: Move logger vfunc into Sbuild::Log as the default logger?
 
-Add sbuild configuration option to disable package removal on cleanup.
-(#528312)
-
-sbuild-* should use ChrootSetup.
-
-sbuild-checkpackage: Make functions to get and set the package list
-in Sbuild::ChrootSetup.
-
-sbuild-hold|unhold: Make functions to get and set the package list
-in Sbuild::ChrootSetup.
-
 Generalise chroot setup logic in Build.pm and Chroot.pm
 Put all APT and debconf configuration into sbuild.conf.
+
+Documentation improvements:
+
+- setup of cloned chroots (source-*)
