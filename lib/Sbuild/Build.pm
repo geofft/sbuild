@@ -2040,6 +2040,7 @@ sub open_build_log {
 	my @filter = ();
 	my ($text, $replacement);
 	my $filter_regex = "^$filter_prefix(.*):(.*)\$";
+	my @ignore = ();
 
 	while (<STDIN>) {
 	    # Add a replacement pattern to filter (sent from main
@@ -2054,6 +2055,14 @@ sub open_build_log {
 		    ($text,$replacement) = @{$pattern};
 		    s/$text/$replacement/g;
 		}
+	    }
+	    if (m/Deprecated key/ || m/please update your configuration/) {
+		my $skip = 0;
+		foreach my $ignore (@ignore) {
+		    $skip = 1 if ($ignore eq $_);
+		}
+		next if $skip;
+		push(@ignore, $_);
 	    }
 
 	    if ($nolog || $verbose) {
