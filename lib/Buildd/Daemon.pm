@@ -897,12 +897,6 @@ sub check_ssh_master {
     return 1;
 }
 
-sub read_config {
-    my $self = shift;
-
-    $self->get('Config')->read_config();
-}
-
 sub shutdown {
     my $self = shift;
     my $signame = shift;
