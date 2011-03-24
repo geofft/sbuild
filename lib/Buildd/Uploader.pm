@@ -261,8 +261,8 @@ sub do_dupload ($@) {
     }
 
     foreach (@failed) {
-	my $u;
-	($u = $_) =~ s/\.changes$/\.upload/;
+	my $u = $_;
+	$u =~ s/\.changes$/\.upload/;
 	unlink( $u );
 	push( @log, "Removed $u due to upload errors.\n" );
 	$errs .= "Removed $u to reupload later.\n";
