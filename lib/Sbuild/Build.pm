@@ -2205,6 +2205,12 @@ sub send_mime_build_log {
 	    Type    => 'multipart/mixed'
 	    );
 
+    # Add the GPG key ID to the mail if present so that it's clear if the log
+    # still needs signing or not.
+    if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
+	$msg->add('Key-ID', $self->get_conf('KEY_ID'));
+    }
+
     if (!$conf->get('COMPRESS_BUILD_LOG_MAILS')) {
 	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',
