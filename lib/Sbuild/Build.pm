@@ -2254,6 +2254,16 @@ sub send_mime_build_log {
 		);
     }
 
+    my $stats = '';
+    foreach my $stat (sort keys %{$self->get('Summary Stats')}) {
+	$stats .= sprintf("%s: %s\n", $stat, $self->get('Summary Stats')->{$stat});
+    }
+    $msg->attach(
+	Type => 'text/plain',
+	Filename => basename($filename) . '.summary',
+	Data => $stats
+	);
+
     local $SIG{'PIPE'} = 'IGNORE';
 
     if (!open( MAIL, "|" . $conf->get('MAILPROG') . " -oem $to" )) {
