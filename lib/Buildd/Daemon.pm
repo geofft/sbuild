@@ -509,6 +509,10 @@ sub do_build {
 			"--stats-dir=" . $self->get_conf('HOME') . "/stats",
 			"--dist=" . $dist_config->get('DIST_NAME');
 
+    if ($dist_config->get('SIGN_WITH')) {
+	push @sbuild_args, '--keyid=' . $dist_config->get('SIGN_WITH');
+    }
+
     #multi-archive-buildd keeps the mailto configuration in the builddrc, so
     #this needs to be passed over to sbuild. If the buildd config doesn't have
     #it, we hope that the address is configured in .sbuildrc and the right one:
