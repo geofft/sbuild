@@ -124,6 +124,9 @@ sub setup ($) {
 	},
 	'BUILD_DEP_RESOLVER'			=> {
 	    DEFAULT => undef
+	},
+	'SIGN_WITH'				=> {
+	    DEFAULT => undef
 	},);
 
     $conf->set_allowed_keys(\%buildd_dist_keys);
