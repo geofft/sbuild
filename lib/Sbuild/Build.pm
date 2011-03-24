@@ -1433,7 +1433,7 @@ sub build {
 
     if (defined($self->get_conf('SIGNING_OPTIONS')) &&
 	$self->get_conf('SIGNING_OPTIONS')) {
-	if (ref($self->get_conf('SIGNING_OPTIONS') eq 'ARRAY')) {
+	if (ref($self->get_conf('SIGNING_OPTIONS')) eq 'ARRAY') {
 	    push (@{$buildcmd}, @{$self->get_conf('SIGNING_OPTIONS')});
         } else {
 	    push (@{$buildcmd}, $self->get_conf('SIGNING_OPTIONS'));
