@@ -216,8 +216,9 @@ sub get_next_WANNABUILD {
 sub get_next_REDO {
     my $self = shift;
     my ( $dist_config, $pkg_ver);
-    foreach $dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
-	$pkg_ver = $self->get_from_REDO( $dist_config );
+    foreach my $current_dist_config (@{$self->get_conf('DISTRIBUTIONS')}) {
+	$pkg_ver = $self->get_from_REDO( $current_dist_config );
+        $dist_config = $current_dist_config;
         last if defined($pkg_ver);
     }
     return ( $dist_config, $pkg_ver);
