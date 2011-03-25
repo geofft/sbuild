@@ -368,7 +368,13 @@ sub do_wanna_build {
 #                  $self->handle_prevfailed( $dist_config, grep( /^\Q$pkg\E_/, @_ ) );
 #              } else {
 #                  push( @output, grep( /^\Q$pkg\E_/, @_ ) );
-            my $fields = { 'changelog' => 'extra-changelog', 'binNMU' => 'binNMU', 'extra-depends' => 'extra-depends', 'extra-conflicts' => 'extra-conflicts', 'build_dep_resolver' => 'build_dep_resolver' };
+            my $fields = { 'changelog' => 'extra-changelog',
+			   'binNMU' => 'binNMU',
+			   'extra-depends' => 'extra-depends',
+			   'extra-conflicts' => 'extra-conflicts',
+			   'build_dep_resolver' => 'build_dep_resolver',
+			   'arch_all' => 'arch_all',
+			 };
             for my $f (keys %$fields) {
                 $ret->{$f} = $pkgd->{$fields->{$f}} if $pkgd->{$fields->{$f}};
             }
@@ -523,6 +529,10 @@ sub do_build {
     #Ask sbuild to use another build-dep resolver if the config says so:
     if ($dist_config->get('BUILD_DEP_RESOLVER') || $todo->{'build_dep_resolver'}) {
 	push @sbuild_args, '--build-dep-resolver=' . ($dist_config->get('BUILD_DEP_RESOLVER') || $todo->{'build_dep_resolver'});
+    }
+    # Check if we need to build the arch:all.
+    if (defined($todo->{'arch_all'}) && $todo->{'arch_all'}) {
+	push @sbuild_args, '--arch-all';
     }
     push ( @sbuild_args, "--arch=" . $dist_config->get('BUILT_ARCHITECTURE') )
 	if $dist_config->get('BUILT_ARCHITECTURE');
