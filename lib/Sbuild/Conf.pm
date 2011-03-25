@@ -436,6 +436,13 @@ sub setup ($) {
 	    DEFAULT => 1,
 	    HELP => 'Should build log mails be MIME encoded?'
 	},
+	'SUPPRESS_SUCCESSFUL_LOGS'              => {
+	    TYPE => 'BOOL',
+	    VARNAME => 'suppress_successful_logs',
+	    GROUP => 'Logging options',
+	    DEFAULT => 0,
+	    HELP => 'Should build log mails be sent for successful builds?'
+	},
 	'PURGE_BUILD_DEPS'			=> {
 	    TYPE => 'STRING',
 	    VARNAME => 'purge_build_deps',

@@ -150,6 +150,9 @@ sub set_options {
 			   $self->set_conf('MAILTO', $_[1]);
 			   $self->set_conf('MAILTO_FORCED_BY_CLI', "yes");
 		       },
+		       "suppress-successful-logs" => sub {
+			   $self->set_conf('SUPPRESS_SUCCESSFUL_LOGS', 1);
+		       },
 		       "n|nolog" => sub {
 			   $self->set_conf('NOLOG', 1);
 		       },
