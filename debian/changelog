@@ -6,7 +6,8 @@ sbuild (0.62.2-1) unstable; urgency=low
       --no-apt-distupgrade have been added to allow these actions to be
       disabled even when set as the default in the configuration.
     - root is not required to be a member of the sbuild group in order
-      to run schroot via the sbuild-schroot wrapper (Closes: #619128).
+      to run schroot via the sbuild-schroot wrapper
+      (Closes: #619128, #619002).
     - Don't require HOME to be set in the environment (Closes: #619288).
   * sbuild.conf:
     - Don't set a default value for $build_dir (Closes: #619416).
@@ -14,7 +15,7 @@ sbuild (0.62.2-1) unstable; urgency=low
       generating the configuration file.  Exclude from the generated
       output to prevent unnecessary differences between builds.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 23 Mar 2011 23:24:02 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Mar 2011 20:18:04 +0000
 
 sbuild (0.62.1-1) unstable; urgency=high
 
