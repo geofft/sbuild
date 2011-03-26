@@ -531,8 +531,8 @@ sub run_chroot_session {
     # End chroot session
     my $session = $self->get('Session');
     my $end_session =
-	($self->get_conf('END_SESSION') eq 'always' ||
-	 ($self->get_conf('END_SESSION') eq 'successful' &&
+	($self->get_conf('PURGE_SESSION') eq 'always' ||
+	 ($self->get_conf('PURGE_SESSION') eq 'successful' &&
 	  $self->get_status() eq 'successful')) ? 1 : 0;
     if ($end_session) {
 	$session->end_session();

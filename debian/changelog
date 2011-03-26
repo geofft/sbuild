@@ -20,7 +20,7 @@ sbuild (0.62.2-1) unstable; urgency=low
       This value is set each run, and so varies between builds when
       generating the configuration file.  Exclude from the generated
       output to prevent unnecessary differences between builds.
-    - $end_session uses the same purge modes as $purge_build_deps and
+    - $purge_session uses the same purge modes as $purge_build_deps and
       $purge_build_directory, rather than a boolean value.
 
  -- Roger Leigh <rleigh@debian.org>  Sat, 26 Mar 2011 20:51:11 +0000
