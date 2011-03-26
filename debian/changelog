@@ -9,13 +9,15 @@ sbuild (0.62.2-1) unstable; urgency=low
       to run schroot via the sbuild-schroot wrapper
       (Closes: #619128, #619002).
     - Don't require HOME to be set in the environment (Closes: #619288).
+    - Work around broken build-essential on Ubuntu Lucid
+      (Closes: #619526).  Thanks to Marc Deslauriers.
   * sbuild.conf:
     - Don't set a default value for $build_dir (Closes: #619416).
       This value is set each run, and so varies between builds when
       generating the configuration file.  Exclude from the generated
       output to prevent unnecessary differences between builds.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Mar 2011 20:18:04 +0000
+ -- Roger Leigh <rleigh@debian.org>  Sat, 26 Mar 2011 20:21:55 +0000
 
 sbuild (0.62.1-1) unstable; urgency=high
 
