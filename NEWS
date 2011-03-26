@@ -13,6 +13,14 @@ configuration.
      --no-apt-distupgrade have been added to allow these actions to be
      disabled even when set as the default in the configuration.
 
+  2) --keep-session is replaced by
+     --purge-session=(always|successful|never).  This will allow the
+     session to be purged for all, successful and no builds,
+     respectively.
+
+  3) $end_session uses the same purge modes as $purge_build_deps and
+     $purge_build_directory, rather than a boolean value.
+
 * Major changes in 0.62.1:
 
   1) Fixed security issue in the sbuild-schroot wrapper program which
