@@ -1714,11 +1714,15 @@ sub read_build_essential {
     }
 
     # Workaround http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=602571
+    # Also works around Ubuntu Lucid shipping with "diff" instead of
+    # "diffutils": https://bugs.launchpad.net/ubuntu/+source/sbuild/+bug/741897
     if (open( F, "$self->{'Chroot Dir'}/etc/lsb-release" )) {
         while( <F> ) {
             if ($_ eq "DISTRIB_ID=Ubuntu\n") {
                 @essential = grep(!/^sysvinit$/, @essential);
-                last;
+            }
+            if ($_ eq "DISTRIB_CODENAME=lucid\n") {
+                s/^diff$/diffutils/ for (@essential);
             }
         }
         close( F );
