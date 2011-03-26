@@ -481,8 +481,18 @@ sub setup ($) {
 	    TYPE => 'BOOL',
 	    VARNAME => 'end_session',
 	    GROUP => 'Chroot options',
-	    DEFAULT => 1,
-	    HELP => 'By default, the chroot session is ended following a build.  When using schroot and cloned chroots such as LVM or Btrfs snapshots, the snapshot is deleted.  If you want to keep the build directory, or inspect the chroot after a build, then by disabling session ending the snapshot will be kept rather than deleted.  This is useful in conjunction with PURGE_BUILD_DEPS and PURGE_BUILD_DIRECTORY.'
+	    CHECK => sub {
+		my $conf = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		die "Bad purge mode \'" .
+		    $conf->get('PURGE_BUILD_DEPS') . "\'"
+		    if !isin($conf->get('PURGE_BUILD_DEPS'),
+			     qw(always successful never));
+	    },
+	    DEFAULT => 'always',
+	    HELP => 'When to purge the build directory after a build; possible values are "never", "successful", and "always".  By default, the chroot session is always ended following a build.  When using schroot and cloned chroots such as LVM or Btrfs snapshots, the snapshot is deleted.  If you want to keep the build directory, or inspect the chroot after a build, then by disabling session ending the snapshot will be kept rather than deleted.  This is useful in conjunction with PURGE_BUILD_DEPS and PURGE_BUILD_DIRECTORY.'
 	},
 	'TOOLCHAIN_REGEX'			=> {
 	    TYPE => 'ARRAY:STRING',
