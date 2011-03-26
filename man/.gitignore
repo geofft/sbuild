@@ -3,3 +3,5 @@
 *.7
 *.8
 sbuild.conf.man
+buildd.conf.man
+defs.man
