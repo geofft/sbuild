@@ -2159,13 +2159,6 @@ sub close_build_log {
     $self->log(sprintf("Build needed %02d:%02d:%02d, %dk disc space\n",
 	       $hours, $minutes, $seconds, $space));
 
-    if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
-	my $key_id = $self->get_conf('KEY_ID');
-	$self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
-	my $changes = $self->get('Package_SVersion') . '_' . $self->get('Arch') . '.changes';
-	system (sprintf('debsign -k%s %s', $key_id, $changes));
-    }
-
     my $subject = "Log for " . $self->get_status() .
 	" build of " . $self->get('Package_Version');
     if ($self->get('Arch')) {
@@ -2196,10 +2189,6 @@ sub send_build_log {
     my $filename = shift;
 
     my $conf = $self->get('Config');
-
-    if ($conf->get('SUPPRESS_SUCCESSFUL_LOGS')) {
-	return;
-    }
 
     if ($conf->get('MIME_BUILD_LOG_MAILS')) {
 	return $self->send_mime_build_log($to, $subject, $filename);
