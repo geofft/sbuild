@@ -642,7 +642,11 @@ sub setup ($) {
 	    GROUP => 'Core options',
 	    DEFAULT => ['^PATH$',
 			'^DEB(IAN|SIGN)?_[A-Z_]+$',
-	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$'],
+	    		'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$',
+			'^USER(NAME)?$',
+			'^LOGNAME$',
+			'^TERM$',
+			'^SHELL$'],
 	    HELP => 'Only environment variables matching one of the regular expressions in this arrayref will be passed to dpkg-buildpackage and other programs run by sbuild.'
 	},
 	'LD_LIBRARY_PATH'			=> {
