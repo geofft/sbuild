@@ -339,10 +339,6 @@ Write output from external commands to the build log.
 .BR \-\-log\-external\-command\-error
 Write error output from external commands to the build log.
 .TP
-.BR "\-\-suppress\-successful\-logs\fP"
-Do not send log mail mail for successful builds.  Useful in combination with
-automated log signing.
-.TP
 .BR "\-\-setup\-hook=\fIhook-script\fP" " " \fBDEPRECATED\fP
 This option is deprecated. Use of this option will add \fIhook-script\fP to the
 external commands to run via \fIchroot-setup-commands\fP.
