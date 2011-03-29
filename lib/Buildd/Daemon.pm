@@ -601,7 +601,7 @@ sub do_build {
 
 	    if ($dist_config->get('SIGN_WITH') && $dist_config->get('BUILT_ARCHITECTURE')) {
 		# XXX: Check if signature is present.
-		$self->move_to_upload($dist_config, $todo->{'pv'});
+		$self->move_to_upload($dist_config, $todo->{'pv'}, $todo->{'binNMU'});
 	    }
 	} elsif ($status ==  2) {
 	    $giveback = 0;
@@ -668,12 +668,17 @@ sub move_to_upload {
     my $self = shift;
     my $dist_config = shift;
     my $pv = shift;
+    my $binNMUver = shift;
 
     my $arch = $dist_config->get('BUILT_ARCHITECTURE');
     my $upload_dir = $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
 
     my $pkg_noepoch = $pv;
     $pkg_noepoch =~ s/_\d*:/_/;
+    if ($binNMUver) {
+        $pv .= '+b' . $binNMUver;
+    }
+
     my $changes_name = $pkg_noepoch . '_' . $arch . '.changes';
 
     $self->log("$pv is autosigned, moving to '$upload_dir'\n");
