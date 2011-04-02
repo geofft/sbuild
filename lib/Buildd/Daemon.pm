@@ -673,11 +673,12 @@ sub move_to_upload {
     my $arch = $dist_config->get('BUILT_ARCHITECTURE');
     my $upload_dir = $dist_config->get('DUPLOAD_LOCAL_QUEUE_DIR');
 
-    my $pkg_noepoch = $pv;
-    $pkg_noepoch =~ s/_\d*:/_/;
     if ($binNMUver) {
         $pv .= '+b' . $binNMUver;
     }
+
+    my $pkg_noepoch = $pv;
+    $pkg_noepoch =~ s/_\d*:/_/;
 
     my $changes_name = $pkg_noepoch . '_' . $arch . '.changes';
 
