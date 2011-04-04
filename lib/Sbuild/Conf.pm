@@ -1085,12 +1085,6 @@ if (\%individual_stalled_pkg_timeout) {
 END
 
     my $custom_setup = <<END;
-\$conf->set('MAILTO',
-	    \$conf->get('MAILTO_HASH')->{\$conf->get('DISTRIBUTION')})
-    if (defined(\$conf->get('DISTRIBUTION')) &&
-	\$conf->get('DISTRIBUTION') &&
-	\$conf->get('MAILTO_HASH')->{\$conf->get('DISTRIBUTION')});
-
 push(\@{\${\$conf->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
 \$chroot_setup_script) if (\$chroot_setup_script);
 END

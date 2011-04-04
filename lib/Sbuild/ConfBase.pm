@@ -74,6 +74,20 @@ sub init_allowed_keys {
 	    if !-d $directory;
     };
 
+    my $set_distribution = sub {
+	my $conf = shift;
+	my $entry = shift;
+	my $value = shift;
+	my $key = $entry->{'NAME'};
+	$conf->_set_value($key, $value);
+
+	$conf->set('MAILTO',
+		   $conf->get('MAILTO_HASH')->{$value})
+	    if ($value &&
+		$conf->get('DISTRIBUTION') &&
+		$conf->get('MAILTO_HASH')->{$value});
+    };
+
     my @pwinfo = getpwuid($<);
     die "Can't get passwd entry for uid $<: $!" if (!@pwinfo);
     my $home = $ENV{'HOME'};
@@ -104,6 +118,7 @@ sub init_allowed_keys {
 	    VARNAME => 'distribution',
 	    GROUP => 'Build options',
 	    DEFAULT => undef,
+	    SET => $set_distribution,
 	    HELP => 'Default distribution.  By default, no distribution is defined, and the user must specify it with the -d option.  However, a default may be configured here if desired.  Users must take care not to upload to the wrong distribution when this option is set, for example experimental packages will be built for upload to unstable when this is not what is required.'
 	},
 	'OVERRIDE_DISTRIBUTION'			=> {
