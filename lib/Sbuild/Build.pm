@@ -1329,15 +1329,28 @@ sub build {
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
 	$self->log_subsubsection("Hack binNMU version");
 	if (open( F, "<$dscdir/debian/changelog" )) {
-	    my($firstline, $text);
-	    $firstline = "";
-	    $firstline = <F> while $firstline =~ /^$/;
-	    { local($/); undef $/; $text = <F>; }
+	    my $text = do { local $/; <F> };
 	    close( F );
-	    $firstline =~ /^(\S+)\s+\((\S+)\)\s+([^;]+)\s*;\s*urgency=(\S+)\s*$/;
-	    my ($name, $version, $dists, $urgent) = ($1, $2, $3, $4);
+
+	    my $pipe = $self->get('Session')->pipe_command(
+		{ COMMAND => ['dpkg-parsechangelog'],
+		  USER => $self->get_conf('BUILD_USER'),
+		  PRIORITY => 0,
+		  DIR => $self->get('Session')->strip_chroot_path($dscdir) });
+	    my $clog = do { local $/; <$pipe> };
+	    close($pipe);
+	    if ($?) {
+		$self->log("FAILED [dpkg-parsechangelog died]\n");
+		return 0;
+	    }
+
+	    my ($name) = $clog =~ /^Source:\s*(.*)$/m;
+	    my ($version) = $clog =~ /^Version:\s*(.*)$/m;
+	    my ($dists) = $clog =~ /^Distribution:\s*(.*)$/m;
+	    my ($urgency) = $clog =~ /^Urgency:\s*(.*)$/m;
+	    my ($date) = $clog =~ /^Date:\s*(.*)$/m;
+
 	    my $NMUversion = $self->get('Version');
-	    chomp( my $date = `date -R` );
 	    if (!open( F, ">$dscdir/debian/changelog" )) {
 		$self->log("Can't open debian/changelog for binNMU hack: $!\n");
 		Sbuild::Exception::Build->throw(error => "Can't open debian/changelog for binNMU hack: $!",
@@ -1358,9 +1371,9 @@ sub build {
 	    print F "\n";
 
 	    print F " -- " . $self->get_conf('MAINTAINER_NAME') . "  $date\n\n";
-	    print F $firstline, $text;
+	    print F $text;
 	    close( F );
-	    $self->log("*** Created changelog entry for bin-NMU version $NMUversion\n");
+	    $self->log("Created changelog entry for binNMU version $NMUversion\n");
 	}
 	else {
 	    $self->log("Can't open debian/changelog -- no binNMU hack!\n");
