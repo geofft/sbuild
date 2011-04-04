@@ -1318,7 +1318,7 @@ sub build {
     if ($current_usage) {
 	my $free = df($dscdir);
 	if ($free < 2*$current_usage && $self->get_conf('CHECK_SPACE')) {
-	    Sbuild::Exception::Build->throw(error => "Disc space is probably not sufficient for building.\n",
+	    Sbuild::Exception::Build->throw(error => "Disc space is probably not sufficient for building.",
 					    info => "Source needs $current_usage KiB, while $free KiB is free.)",
 					    failstage => "check-space");
 	} else {
@@ -1327,6 +1327,12 @@ sub build {
     }
 
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
+	if (!$self->get_conf('MAINTAINER_NAME')) {
+	    Sbuild::Exception::Build->throw(error => "No maintainer specified.",
+					    info => 'When making changelog additions for a binNMU or appending a version suffix, a maintainer must be specified for the changelog entry e.g. using $maintainer_name, $uploader_name or $key_id, (or the equivalent command-line options)',
+					    failstage => "check-space");
+	}
+
 	$self->log_subsubsection("Hack binNMU version");
 	if (open( F, "<$dscdir/debian/changelog" )) {
 	    my $text = do { local $/; <F> };
