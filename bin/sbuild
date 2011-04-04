@@ -51,6 +51,11 @@ my $options = Sbuild::Options->new($conf, "sbuild", "1");
 exit 1 if !defined($options);
 check_group_membership();
 
+if (!$conf->get('MAINTAINER_NAME') &&
+    ($conf->get('BIN_NMU') || $conf->get('APPEND_TO_VERSION'))) {
+	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU or appending a version suffix\n";
+}
+
 umask(002);
 
 # Job state

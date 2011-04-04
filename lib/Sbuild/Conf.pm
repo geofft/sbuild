@@ -1089,11 +1089,6 @@ END
 \$conf->set('MAINTAINER_NAME', \$conf->get('KEY_ID'))
     if defined \$conf->get('KEY_ID');
 
-if (!defined(\$conf->get('MAINTAINER_NAME')) &&
-	\$conf->get('BIN_NMU')) {
-	die "A maintainer name, uploader name or key ID must be specified in .sbuildrc,\nor use -m, -e or -k, when performing a binNMU\n";
-}
-
 push(\@{\${\$conf->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
 \$chroot_setup_script) if (\$chroot_setup_script);
 END
