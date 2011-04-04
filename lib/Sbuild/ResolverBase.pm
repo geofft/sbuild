@@ -761,6 +761,15 @@ EOF
         close($tmpfh);
         # List file needs to be moved with root.
         $session->run_command(
+            { COMMAND => ['chmod', '0644', $session->strip_chroot_path($tmpfilename)],
+              USER => 'root',
+              PRIORITY => 0});
+        if ($?) {
+            $self->log("Failed to create apt list file for dummy archive.\n");
+            $self->cleanup_apt_archive();
+            return 0;
+        }
+        $session->run_command(
             { COMMAND => ['mv', $session->strip_chroot_path($tmpfilename),
                           $session->strip_chroot_path($dummy_archive_list_file)],
               USER => 'root',
