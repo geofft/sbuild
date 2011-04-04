@@ -24,6 +24,12 @@ sbuild (0.62.2-1) unstable; urgency=low
       also surrounded with "«" and "»" so that strings such as CHROOT
       and BUILDDIR can't be confused with any actual appearance of the
       same string in the build log.
+    - Improve binNMU handling to permit binNMUs for multiarch packages
+      (Closes: #620112).  Currently, binary NMUs use the current date
+      in the new changelog entry, but co-installable packages require
+      an identical changelog.  To avoid this, take the date from the
+      previous changelog entry to ensure the same date for all binNMUs.
+      Thanks to Anders Kaseorg for this patch.
   * sbuild.conf:
     - Don't set a default value for $build_dir (Closes: #619416).
       This value is set each run, and so varies between builds when
@@ -32,7 +38,7 @@ sbuild (0.62.2-1) unstable; urgency=low
     - $purge_session uses the same purge modes as $purge_build_deps and
       $purge_build_directory, rather than a boolean value.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 04 Apr 2011 18:10:33 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 04 Apr 2011 22:02:26 +0100
 
 sbuild (0.62.1-1) unstable; urgency=high
 
