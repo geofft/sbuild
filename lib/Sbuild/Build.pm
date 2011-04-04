@@ -471,8 +471,13 @@ sub run_chroot_session {
 		   tempdir($self->get('Package') . '-XXXXXX',
 			   DIR =>  $session->get('Location') . "/build"));
 
-	$self->build_log_filter($session->strip_chroot_path($self->get('Chroot Build Dir')), 'BUILDDIR');
-	$self->build_log_filter($session->get('Location'), 'CHROOT');
+	my $filter;
+	$filter = $session->strip_chroot_path($self->get('Chroot Build Dir'));
+	$filter =~ s;^/;;;
+	$self->build_log_filter($filter, 'BUILDDIR');
+	$filter = $session->get('Location');
+	$filter =~ s;^/;;;
+	$self->build_log_filter($filter , 'CHROOT');
 	# Need tempdir to be writable and readable by sbuild group.
 	$self->check_abort();
 	$session->run_command(
@@ -2055,6 +2060,7 @@ sub open_build_log {
 	    # process in log stream).
 	    if (m/$filter_regex/) {
 		($text,$replacement)=($1,$2);
+		$replacement = "«$replacement»";
 		push (@filter, [$text, $replacement]);
 		$_ = "I: NOTICE: Log filtering will replace '$text' with '$replacement'\n";
 	    } else {
