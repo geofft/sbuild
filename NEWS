@@ -21,6 +21,12 @@ configuration.
   3) $purge_session uses the same purge modes as $purge_build_deps and
      $purge_build_directory, rather than a boolean value.
 
+  4) Log filtering may be disabled using $log_filter = 0 in the
+     configuration.  The replacement text is now also surrounded with
+     "«" and "»" so that strings such as CHROOT and BUILDDIR can't be
+     confused with any actual appearance of the same string in the
+     build log.
+
 * Major changes in 0.62.1:
 
   1) Fixed security issue in the sbuild-schroot wrapper program which
