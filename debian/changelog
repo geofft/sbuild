@@ -15,6 +15,10 @@ sbuild (0.62.2-1) unstable; urgency=low
       --purge-session=(always|successful|never).  This will allow the
       session to be purged for all, successful and no builds,
       respectively (Closes: #619332).
+    - sources.list fragments stored in /etc/apt/sources.list.d have
+      0644 permissions, so that normal users can run apt-cache in the
+      chroot during a build (Closes: #620797).  Thanks to Julian Andres
+      Klode for identifying this problem.
   * sbuild.conf:
     - Don't set a default value for $build_dir (Closes: #619416).
       This value is set each run, and so varies between builds when
@@ -23,7 +27,7 @@ sbuild (0.62.2-1) unstable; urgency=low
     - $purge_session uses the same purge modes as $purge_build_deps and
       $purge_build_directory, rather than a boolean value.
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 26 Mar 2011 20:51:11 +0000
+ -- Roger Leigh <rleigh@debian.org>  Mon, 04 Apr 2011 17:43:15 +0100
 
 sbuild (0.62.1-1) unstable; urgency=high
 
