@@ -19,6 +19,11 @@ sbuild (0.62.2-1) unstable; urgency=low
       0644 permissions, so that normal users can run apt-cache in the
       chroot during a build (Closes: #620797).  Thanks to Julian Andres
       Klode for identifying this problem.
+    - Log filtering may be disabled using $log_filter = 0 in the
+      configuration (Closes: #620589).  The replacement text is now
+      also surrounded with "«" and "»" so that strings such as CHROOT
+      and BUILDDIR can't be confused with any actual appearance of the
+      same string in the build log.
   * sbuild.conf:
     - Don't set a default value for $build_dir (Closes: #619416).
       This value is set each run, and so varies between builds when
@@ -27,7 +32,7 @@ sbuild (0.62.2-1) unstable; urgency=low
     - $purge_session uses the same purge modes as $purge_build_deps and
       $purge_build_directory, rather than a boolean value.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 04 Apr 2011 17:43:15 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 04 Apr 2011 18:10:33 +0100
 
 sbuild (0.62.1-1) unstable; urgency=high
 
