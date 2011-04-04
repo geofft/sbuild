@@ -1080,15 +1080,6 @@ END
 	\$conf->get('DISTRIBUTION') &&
 	\$conf->get('MAILTO_HASH')->{\$conf->get('DISTRIBUTION')});
 
-my \@signing_options = ();
-push \@signing_options, "-m".\$conf->get('MAINTAINER_NAME')
-    if defined \$conf->get('MAINTAINER_NAME');
-push \@signing_options, "-e".\$conf->get('UPLOADER_NAME')
-    if defined \$conf->get('UPLOADER_NAME');
-push \@signing_options, "-k".\$conf->get('KEY_ID')
-    if defined \$conf->get('KEY_ID');
-\$conf->set('SIGNING_OPTIONS', \\\@signing_options);
-
 \$conf->set('MAINTAINER_NAME', \$conf->get('UPLOADER_NAME'))
     if defined \$conf->get('UPLOADER_NAME');
 \$conf->set('MAINTAINER_NAME', \$conf->get('KEY_ID'))
