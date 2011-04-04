@@ -30,6 +30,8 @@ sbuild (0.62.2-1) unstable; urgency=low
       an identical changelog.  To avoid this, take the date from the
       previous changelog entry to ensure the same date for all binNMUs.
       Thanks to Anders Kaseorg for this patch.
+    - Abort early if maintainer is not defined when performing a binNMU
+      or appending a version suffix (Closes: #620758).
   * sbuild.conf:
     - Don't set a default value for $build_dir (Closes: #619416).
       This value is set each run, and so varies between builds when
@@ -40,7 +42,7 @@ sbuild (0.62.2-1) unstable; urgency=low
   * buildd:
     - Merge latest changes from buildd-0.61.0.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 05 Apr 2011 00:04:54 +0100
+ -- Roger Leigh <rleigh@debian.org>  Tue, 05 Apr 2011 00:25:52 +0100
 
 sbuild (0.62.1-1) unstable; urgency=high
 
