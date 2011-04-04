@@ -348,6 +348,13 @@ sub setup ($) {
 	    DEFAULT => "$HOME/logs",
 	    HELP => 'Directory for storing build logs'
 	},
+	'LOG_FILTER'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'log_filter',
+	    GROUP => 'Logging options',
+	    DEFAULT => 1,
+	    HELP => 'Filter variable strings from log messages such as the chroot name and build directory'
+	},
 	'LOG_DIR_AVAILABLE'			=> {
 	    TYPE => 'BOOL',
 	    GROUP => '__INTERNAL',

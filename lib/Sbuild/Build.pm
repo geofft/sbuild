@@ -1995,7 +1995,9 @@ sub build_log_filter {
     my $text = shift;
     my $replacement = shift;
 
-    $self->log($self->get('FILTER_PREFIX') . $text . ':' . $replacement . "\n");
+    if ($self->get_conf('LOG_FILTER')) {
+	$self->log($self->get('FILTER_PREFIX') . $text . ':' . $replacement . "\n");
+    }
 }
 
 sub open_build_log {
