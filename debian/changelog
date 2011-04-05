@@ -24,6 +24,8 @@ sbuild (0.62.2-1) unstable; urgency=low
       also surrounded with "«" and "»" so that strings such as CHROOT
       and BUILDDIR can't be confused with any actual appearance of the
       same string in the build log.
+    - Log colouring may be disabled using $log_colour = 0 in the
+      configuration.
     - Improve binNMU handling to permit binNMUs for multiarch packages
       (Closes: #620112).  Currently, binary NMUs use the current date
       in the new changelog entry, but co-installable packages require
@@ -42,7 +44,7 @@ sbuild (0.62.2-1) unstable; urgency=low
   * buildd:
     - Merge latest changes from buildd-0.61.0.
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 05 Apr 2011 00:25:52 +0100
+ -- Roger Leigh <rleigh@debian.org>  Tue, 05 Apr 2011 10:46:49 +0100
 
 sbuild (0.62.1-1) unstable; urgency=high
 
