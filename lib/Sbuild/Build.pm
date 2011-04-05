@@ -2071,6 +2071,7 @@ sub open_build_log {
 	my $nolog = $self->get_conf('NOLOG');
 	my $log = $self->get_conf('LOG_DIR_AVAILABLE');
 	my $verbose = $self->get_conf('VERBOSE');
+	my $log_colour = $self->get_conf('LOG_COLOUR');
 	my @filter = ();
 	my ($text, $replacement);
 	my $filter_regex = "^$filter_prefix(.*):(.*)\$";
@@ -2101,7 +2102,7 @@ sub open_build_log {
 	    }
 
 	    if ($nolog || $verbose) {
-		if (-t $saved_stdout) {
+		if (-t $saved_stdout && $log_colour) {
 		    my $colour = 'reset';
 		    $colour = 'red' if (m/^E: /);
 		    $colour = 'yellow' if (m/^W: /);
@@ -2112,7 +2113,7 @@ sub open_build_log {
 		}
 
 		print $saved_stdout $_;
-		if (-t $saved_stdout) {
+		if (-t $saved_stdout && $log_colour) {
 		    print $saved_stdout color 'reset';
 		}
 

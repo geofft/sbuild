@@ -355,6 +355,13 @@ sub setup ($) {
 	    DEFAULT => "$HOME/logs",
 	    HELP => 'Directory for storing build logs'
 	},
+	'LOG_COLOUR'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'log_colour',
+	    GROUP => 'Logging options',
+	    DEFAULT => 1,
+	    HELP => 'Add colour highlighting to interactive log messages (informational, warning and error messages).  Log files will not be coloured.'
+	},
 	'LOG_FILTER'				=> {
 	    TYPE => 'BOOL',
 	    VARNAME => 'log_filter',
