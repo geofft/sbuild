@@ -27,6 +27,9 @@ configuration.
      confused with any actual appearance of the same string in the
      build log.
 
+  5) Log colouring may be disabled using $log_colour = 0 in the
+     configuration.
+
 * Major changes in 0.62.1:
 
   1) Fixed security issue in the sbuild-schroot wrapper program which
