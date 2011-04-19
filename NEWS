@@ -1,11 +1,26 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.62.2.  Please read these release notes carefully.
+Welcome to sbuild 0.62.3.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.62.3:
+
+  1) The apt and internal resolvers will resolve some alternatives
+     even when resolving alternative dependencies is disabled.  For
+     relations involving the same package, the alternative will be
+     permitted when the package names are the same for each
+     alternative.  For example,
+        foo (<< x) | foo (>= y) | bar
+     will be reduced to
+        foo (<< x) | foo (>= y)
+     while
+        foo | bar
+     will be reduced to
+        foo
 
 * Major changes in 0.62.2:
 
