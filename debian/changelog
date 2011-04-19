@@ -1,3 +1,22 @@
+sbuild (0.62.3-1) unstable; urgency=low
+
+  * New release.
+  * sbuild:
+    - The apt and internal resolvers will resolve some alternatives
+      even when resolving alternative dependencies is disabled
+      (Closes: #622832).  For relations involving the same package,
+      the alternative will be permitted when the package names are
+      the same for each alternative.  For example,
+        foo (<< x) | foo (>= y) | bar
+     will be reduced to
+        foo (<< x) | foo (>= y)
+     while
+        foo | bar
+     will be reduced to
+        foo
+
+ -- Roger Leigh <rleigh@debian.org>  Tue, 19 Apr 2011 11:58:45 +0100
+
 sbuild (0.62.2-1) unstable; urgency=low
 
   * New release.
