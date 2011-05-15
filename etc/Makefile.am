@@ -48,48 +48,12 @@ else
 schrootsetup_SCRIPTS = $(SETUP)
 endif
 
-PROFILES =		\
-	buildd
-
-profiles: profiles-stamp
-profiles-stamp: genprofile
-	$(MKDIR_P) profiles
-	for profile in $(PROFILES); do 					\
-	  $(srcdir)/genprofile "$$profile" "$(PLATFORM)" "$(srcdir)/profile-templates" "profiles/$$profile";	\
-	done
-	touch $@
-
-all-local: profiles
-
-install-data-hook:
-	for profile in $(PROFILES); do 						\
-	  $(MKDIR_P) "$(DESTDIR)$(SCHROOT_SYSCONF_DIR)/$$profile";			\
-	  for file in "profiles/$$profile"/*; do						\
-	    $(INSTALL_DATA) "$$file" "$(DESTDIR)$(SCHROOT_SYSCONF_DIR)/$$profile";	\
-	  done;									\
-	done
-
-uninstall-hook:
-	for profile in $(PROFILES); do 						\
-	  for file in "profiles/$$profile"/*; do						\
-	    $(RM) "$(DESTDIR)$(SCHROOT_SYSCONF_DIR)/$$profile/$$(basename $$file)";	\
-	  done;									\
-	done
-
 CLEANFILES =		\
 	sbuild.conf	\
 	buildd.conf
-
-clean-local:
-	$(RM) -rf profiles
-	$(RM) -f profiles-stamp
 
 EXTRA_DIST =			\
 	$(exampleconf_DATA)	\
 	$(COMPAT_SETUP)		\
 	$(SETUP)		\
-	apt-keys		\
-	genprofile		\
-	profile-templates
-
-.PHONY: profiles
+	apt-keys
