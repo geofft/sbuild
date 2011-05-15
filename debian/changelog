@@ -16,8 +16,11 @@ sbuild (0.62.3-1) unstable; urgency=low
         foo
     - Remove schroot buildd profile.  This will now be provided by
       the schroot package itself directly.
+  * buildd:
+    - init script starts buildd in runlevels 2-5 rather than S, and
+      stops in 0, 1 and 6.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 15 May 2011 16:04:27 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 15 May 2011 17:45:31 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
