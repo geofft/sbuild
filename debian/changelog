@@ -19,8 +19,15 @@ sbuild (0.62.3-1) unstable; urgency=low
   * buildd:
     - init script starts buildd in runlevels 2-5 rather than S, and
       stops in 0, 1 and 6.
+  * buildd-mail:
+    - Remove empty newline from .changes (Closes: #627854).
+      ftp-master started refusing .changes files which have a trailing
+      empty line (after the GPG end of signature).  It happens that
+      mutt introduces one when signing GPG in traditional mode.  Other
+      tools probably do too.  buildd-mail-wrapper should probably drop
+      it automatically.  Thanks to Samuel Thibault.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 15 May 2011 17:45:31 +0100
+ -- Roger Leigh <rleigh@debian.org>  Thu, 26 May 2011 17:25:54 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
