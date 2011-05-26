@@ -478,6 +478,8 @@ sub prepare_for_upload ($$) {
     my $pkg = shift;
     my $changes = shift;
 
+    $changes =~ s/\n+$/\n/;
+
     my( @files, @md5, @missing, @md5fail, $i );
 
     my @to_dists = $self->get_dists_from_changes( $changes );
