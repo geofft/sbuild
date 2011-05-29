@@ -1180,16 +1180,18 @@ sub run_lintian {
           PRIORITY => 0,
         });
     my $status = $? >> 8;
-    $self->set('Lintian Reason', 'successful');
+    $self->set('Lintian Reason', 'pass');
 
     $self->log("\n");
     if ($?) {
         my $why = "unknown reason";
+	$self->set('Lintian Reason', 'error');
+	$self->set('Lintian Reason', 'fail') if ($status == 1);
         $why = "runtime error" if ($status == 2);
         $why = "policy violation" if ($status == 1);
         $why = "received signal " . $? & 127 if ($? & 127);
         $self->log_error("Lintian run failed ($why)\n");
-	$self->set('Lintian Reason', $why);
+
         return 0;
     }
 
@@ -1220,12 +1222,12 @@ sub run_piuparts {
           PRIORITY => 0,
         });
     my $status = $? >> 8;
-    $self->set('Piuparts Reason', 'successful');
+    $self->set('Piuparts Reason', 'pass');
 
     $self->log("\n");
     if ($?) {
         $self->log_error("Piuparts run failed.\n");
-	$self->set('Piuparts Reason', 'failed');
+	$self->set('Piuparts Reason', 'fail');
         return 0;
     }
 
