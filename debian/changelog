@@ -18,7 +18,8 @@ sbuild (0.62.3-1) unstable; urgency=low
       the schroot package itself directly.
     - Remove directory correctly in postrm (Closes: #627641).  Thanks
       to Daniel Baumann.
-    - Lock sbuild account on purge, and unlock on install.
+    - Lock sbuild account on purge, and unlock on install
+      (Closes: #619892).
   * sbuild-createchroot:
     - Don't call ChrootSetup::basesetup after initial bootstrap; wait
       until actually running sbuild.  The users and groups used for
@@ -36,7 +37,7 @@ sbuild (0.62.3-1) unstable; urgency=low
       tools probably do too.  buildd-mail-wrapper should probably drop
       it automatically.  Thanks to Samuel Thibault.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 13:04:41 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 13:06:28 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
