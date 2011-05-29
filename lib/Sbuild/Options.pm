@@ -138,6 +138,10 @@ sub set_options {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				$_[1]);
 		       },
+		       "j=i" => sub {
+			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
+				'-j'.$_[1])
+		       },
 		       "dpkg-source-opts=s" => sub {
 			   push(@{$self->get_conf('DPKG_SOURCE_OPTIONS')},
 				split(/\s+/, $_[1]));

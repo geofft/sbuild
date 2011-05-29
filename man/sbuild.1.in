@@ -40,6 +40,7 @@ sbuild \- build debian packages from source
 .RB [ \-m \[or] \-\-maintainer=\fImaintainer\fP ]
 .RB [ \-e \[or] \-\-uploader=\fIuploader\fP ]
 .RB [ \-k \[or] \-\-keyid=\fIkey-id\fP ]
+.RB [ \-j \[or] \-\-jobs=\fIn\fP ]
 .RB [ \-\-debbuildopt=\fIoption\fP ]
 .RB [ \-\-debbuildopts=\fIoptions\fP ]
 .RB [ \-\-dpkg-source-opt=\fIoptions\fP ]
@@ -206,6 +207,9 @@ the .changes file(s).
 .BR \-k ", " "\-\-keyid=\fIkey-id\fP"
 Passed to dpkg\-genchanges and is used to set the key to sign the .changes
 file(s).  Default is not using any key.
+.TP
+.BR \-j ", " "\-\-jobs=\fIn\fP"
+Number of jobs to run simultaneously.  Passed through to dpkg\-buildpackage.
 .TP
 .BR \-\-debbuildopt=\fIoption\fP
 Pass the specified option directly to dpkg\-buildpackage.
