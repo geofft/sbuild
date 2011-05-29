@@ -29,6 +29,7 @@ sbuild (0.62.3-1) unstable; urgency=low
       to Daniel Baumann.
     - Lock sbuild account on purge, and unlock on install
       (Closes: #619892).
+    - Add -j option to run parallel builds (Closes: #626357).
   * sbuild-createchroot:
     - Don't call ChrootSetup::basesetup after initial bootstrap; wait
       until actually running sbuild.  The users and groups used for
@@ -45,8 +46,9 @@ sbuild (0.62.3-1) unstable; urgency=low
       mutt introduces one when signing GPG in traditional mode.  Other
       tools probably do too.  buildd-mail-wrapper should probably drop
       it automatically.  Thanks to Samuel Thibault.
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 14:28:59 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 17:01:31 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
