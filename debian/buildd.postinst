@@ -29,6 +29,8 @@ case "$1" in
             adduser --system --quiet --home /var/lib/buildd --no-create-home \
 		--shell /bin/bash --group --gecos "Debian build daemon" buildd
         fi
+	# Unlock account in case it was locked from previous purge.
+	usermod -U -e '' buildd
 
         # check validity of buildd user and group
 	if [ "$(id -u buildd)" -eq 0 ]; then

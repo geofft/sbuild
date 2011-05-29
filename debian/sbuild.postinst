@@ -67,6 +67,8 @@ case "$1" in
             adduser --system --quiet --home /var/lib/sbuild --no-create-home \
 		--shell /bin/bash --ingroup sbuild --gecos "Debian source builder" sbuild
         fi
+	# Unlock account in case it was locked from previous purge.
+	usermod -U -e '' sbuild
 
         chown -R sbuild:sbuild /var/lib/sbuild
         chmod 02770 /var/lib/sbuild

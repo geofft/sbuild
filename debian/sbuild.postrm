@@ -58,9 +58,8 @@ case "$1" in
 
     purge|disappear)
 
-        if getent group sbuild > /dev/null; then
-            delgroup --system --quiet sbuild
-        fi
+	# Lock sbuild account.
+	usermod -L -e 1 sbuild
 
 	rm_conffile "/etc/sbuild.conf"
 	rm_conffile "/etc/sbuild.conf.local"

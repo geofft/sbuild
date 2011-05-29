@@ -24,9 +24,8 @@ case "$1" in
 
     purge|disappear)
 
-        if getent group buildd > /dev/null; then
-            deluser --system buildd || true
-        fi
+	# Lock buildd account.
+	usermod -L -e 1 buildd
 
         ;;
 
