@@ -315,7 +315,7 @@ sub lock_chroot {
     my $new_pid = shift;
     my $new_user = shift;
 
-    my $lockfile = $self->get('Location') . '/var/lock/sbuild';
+    my $lockfile = $self->get('Location') . '/var/lib/sbuild/chroot-lock';
     my $try = 0;
 
   repeat:
@@ -371,7 +371,7 @@ sub lock_chroot {
 sub unlock_chroot {
     my $self = shift;
 
-    my $lockfile = $self->get('Location') . '/var/lock/sbuild';
+    my $lockfile = $self->get('Location') . '/var/lib/sbuild/chroot-lock';
 
     debug("Removing chroot lock file $lockfile\n");
     if (!unlink($lockfile)) {
