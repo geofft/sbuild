@@ -21,7 +21,7 @@
 
 include $(top_srcdir)/scripts/global.mk
 
-SUBDIRS = bin wrapper tools configs etc lib man db test
+SUBDIRS = bin tools configs etc lib man db test
 
 dist-hook:
 # Remove junk from the generated tarball.

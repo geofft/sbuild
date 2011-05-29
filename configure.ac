@@ -336,7 +336,6 @@ AC_CONFIG_FILES([test/sbuild-clean],
 AC_CONFIG_FILES([test/sbuild],
 		[chmod +x test/sbuild])
 AC_CONFIG_FILES([tools/Makefile])
-AC_CONFIG_FILES([wrapper/Makefile])
 
 dnl Output the generated config.status script.
 AC_OUTPUT
