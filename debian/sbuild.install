@@ -2,7 +2,6 @@ debian/install/etc/sbuild                          etc
 debian/install/etc/schroot/setup.d		   etc/schroot
 debian/install/usr/bin/sbuild*                     usr/bin
 debian/install/usr/sbin/sbuild*                    usr/sbin
-debian/install/usr/lib/sbuild			   usr/lib
 debian/install/usr/share/sbuild                    usr/share
 debian/install/usr/share/doc/sbuild                usr/share/doc
 debian/install/usr/share/man/man1/sbuild*          usr/share/man/man1
