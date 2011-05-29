@@ -353,6 +353,10 @@ if ((defined $chrootlink) && (! $conf->get('MAKE_SBUILD_TARBALL'))) {
 	unless defined $conf->get('MAKE_SBUILD_TARBALL');
 }
 
+# Add sbuild user and group to chroot
+system("getent passwd sbuild >> '$target/etc/passwd'");
+system("getent group sbuild >> '$target/etc/group'");
+
 if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
     my $session = Sbuild::ChrootPlain->new($conf, $target);
     my $host = Sbuild::ChrootRoot->new($conf);
