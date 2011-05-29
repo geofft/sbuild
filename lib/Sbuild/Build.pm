@@ -481,7 +481,7 @@ sub run_chroot_session {
 	# Need tempdir to be writable and readable by sbuild group.
 	$self->check_abort();
 	$session->run_command(
-	    { COMMAND => ['chown', 'sbuild:sbuild',
+	    { COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
 			  $session->strip_chroot_path($self->get('Chroot Build Dir'))],
 	      USER => 'root',
 	      DIR => '/' });
@@ -815,7 +815,7 @@ sub copy_to_chroot {
     }
 
     $self->get('Session')->run_command(
-	{ COMMAND => ['chown', 'sbuild:sbuild',
+	{ COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
 		      $self->get('Session')->strip_chroot_path($dest) . '/' .
 		      basename($source)],
 	  USER => 'root',

@@ -515,11 +515,13 @@ sub setup_apt_archive {
 			   DIR => $self->get('Chroot Build Dir')));
     }
     $session->run_command(
-	{ COMMAND => ['chown', 'sbuild:sbuild', $session->strip_chroot_path($self->get('Dummy package path'))],
+	{ COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
+		      $session->strip_chroot_path($self->get('Dummy package path'))],
 	  USER => 'root',
 	  DIR => '/' });
     if ($?) {
-	$self->log_error("E: Failed to set sbuild:sbuild ownership on dummy package dir\n");
+	$self->log_error("E: Failed to set " . $self->get_conf('BUILD_USER') .
+			 ":sbuild ownership on dummy package dir\n");
 	return 0;
     }
     $session->run_command(
@@ -552,12 +554,13 @@ sub setup_apt_archive {
         return 0;
     }
     $session->run_command(
-	{ COMMAND => ['chown', 'sbuild:sbuild',
+	{ COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
 		      $session->strip_chroot_path($dummy_gpghome)],
 	  USER => 'root',
 	  DIR => '/' });
     if ($?) {
-	$self->log_error("E: Failed to set sbuild:sbuild ownership on $dummy_gpghome\n");
+	$self->log_error("E: Failed to set " . $self->get_conf('BUILD_USER') .
+			 ":sbuild ownership on $dummy_gpghome\n");
 	return 0;
     }
     if (!(-d $dummy_archive_dir || mkdir $dummy_archive_dir, 0775)) {
@@ -679,12 +682,13 @@ EOF
 		      $dummy_pkg_dir,
 		      $dummy_archive_dir) {
 	$session->run_command(
-	    { COMMAND => ['chown', 'sbuild:sbuild',
+	    { COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
 			  $session->strip_chroot_path($path)],
 	      USER => 'root',
 	      DIR => '/' });
 	if ($?) {
-	    $self->log_error("E: Failed to set sbuild:sbuild ownership on $path\n");
+	    $self->log_error("E: Failed to set " . $self->get_conf('BUILD_USER')
+			   . ":sbuild ownership on $path\n");
 	    return 0;
 	}
     }
