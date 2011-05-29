@@ -14,6 +14,8 @@ sbuild (0.62.3-1) unstable; urgency=low
         foo | bar
       will be reduced to
         foo
+    - The sbuild-schroot wrapper program has been removed; sbuild is
+      now an arch-all package again.
     - Move lock directory to /var/lib/sbuild/chroot-lock, rather than
       using /var/lock/sbuild which could be a symlink to /run/lock on
       the host (Closes: #626826).  This means parallel builds won't
@@ -43,7 +45,7 @@ sbuild (0.62.3-1) unstable; urgency=low
       tools probably do too.  buildd-mail-wrapper should probably drop
       it automatically.  Thanks to Samuel Thibault.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 13:43:31 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 14:21:05 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
