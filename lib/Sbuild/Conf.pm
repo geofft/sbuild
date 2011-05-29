@@ -210,7 +210,7 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LIBEXEC_DIR'}/sbuild-schroot",
+	    DEFAULT => 'schroot',
 	    HELP => 'Path to schroot binary'
 	},
 	'SCHROOT_OPTIONS'			=> {
