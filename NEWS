@@ -25,6 +25,12 @@ configuration.
   2) The sbuild-schroot wrapper has been removed.  This will be moved
      into the schroot package in its next release.
 
+  3) The schroot "buildd" configuration profile has been moved to the
+     schroot package itself.  This is due to being generated and being
+     architecture-dependent, and sbuild being an arch-all package (the
+     configuration would only be valid for the architecture sbuild was
+     built on).
+
 * Major changes in 0.62.2:
 
   1) New options --no-apt-clean, --no-apt-update, --no-apt-upgrade and
