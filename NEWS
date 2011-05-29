@@ -31,6 +31,8 @@ configuration.
      configuration would only be valid for the architecture sbuild was
      built on).
 
+  4) A new option, "-j", has been added to allow parallel builds.
+
 * Major changes in 0.62.2:
 
   1) New options --no-apt-clean, --no-apt-update, --no-apt-upgrade and
