@@ -298,6 +298,7 @@ if (-d "/etc/schroot/chroot.d") {
 
     my ($personality, $personality_message);
     # Detect whether personality might be needed.
+
     if ($conf->get('ARCH') ne $conf->get('HOST_ARCH')) {
 	# Take care of the known case(s).
 	if ($conf->get('ARCH') eq 'i386' &&
@@ -305,8 +306,7 @@ if (-d "/etc/schroot/chroot.d") {
 	    $personality='linux32';
 	    $personality_message =
 		"I: Added personality=$personality automatically (i386 on amd64).\n";
-	}
-	else {
+	} else {
 	    $personality_message =
 		"W: The selected architecture and the current architecture do not match\n" .
 		"W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n" .
@@ -322,12 +322,12 @@ if (-d "/etc/schroot/chroot.d") {
     # Needed to display file below.
     $SCHROOT_CONF->flush();
 
-# Display schroot configuration.
-print "I: schroot chroot configuration written to $SCHROOT_CONF.\n";
-chmod 0644, "$SCHROOT_CONF";
-dump_file("$SCHROOT_CONF");
-print "I: Please rename and modify this file as required.\n";
-print $personality_message if $personality_message;
+    # Display schroot configuration.
+    print "I: schroot chroot configuration written to $SCHROOT_CONF.\n";
+    chmod 0644, "$SCHROOT_CONF";
+    dump_file("$SCHROOT_CONF");
+    print "I: Please rename and modify this file as required.\n";
+    print $personality_message if $personality_message;
 }
 
 if (! -d "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot") {
@@ -335,22 +335,17 @@ if (! -d "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot") {
 }
 
 my $chrootlink = "$Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname";
-if (-l $chrootlink) {
-    unlink($chrootlink) or die "Can't unlink $chrootlink: $!";
-} elsif (-e $chrootlink) {
-    print STDERR "E: Can't remove $chrootlink: not a symbolic link\n";
-    $chrootlink = undef;
-}
-
 if ((defined $chrootlink) && (! $conf->get('MAKE_SBUILD_TARBALL'))) {
-    if (symlink($target, $chrootlink)) {
-	print "I: sudo chroot configuration linked as $Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname.\n";
+    if (! -e $chrootlink) {
+	if (symlink($target, $chrootlink)) {
+	    print "I: sudo chroot configuration linked as $Sbuild::Sysconfig::paths{'SBUILD_SYSCONF_DIR'}/chroot/$chrootname.\n";
+	} else {
+	    print STDERR "E: Failed to symlink $target to $chrootlink: $!\n";
+	}
     } else {
-	print STDERR "E: Failed to symlink $target to $chrootlink: $!\n";
+	print "W: Not creating symlink $target to $chrootlink: file already exists\n";
+
     }
-} else {
-    print "W: Failed to symlink $target to $chrootlink: file already exists\n"
-	unless defined $conf->get('MAKE_SBUILD_TARBALL');
 }
 
 # Add sbuild user and group to chroot
