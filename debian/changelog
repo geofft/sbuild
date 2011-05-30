@@ -35,6 +35,8 @@ sbuild (0.62.3-1) unstable; urgency=low
       until actually running sbuild.  The users and groups used for
       chown don't exist at this point, leading to (harmless) failure.
       Closes: #622735.
+    - Don't overwrite existing symlinks under /etc/sbuild/chroot
+      (Closes: #608416).
   * buildd:
     - init script starts buildd in runlevels 2-5 rather than S, and
       stops in 0, 1 and 6.
@@ -46,9 +48,8 @@ sbuild (0.62.3-1) unstable; urgency=low
       mutt introduces one when signing GPG in traditional mode.  Other
       tools probably do too.  buildd-mail-wrapper should probably drop
       it automatically.  Thanks to Samuel Thibault.
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 29 May 2011 17:01:31 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 30 May 2011 11:01:19 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
