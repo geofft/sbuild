@@ -30,6 +30,9 @@ sbuild (0.62.3-1) unstable; urgency=low
     - Lock sbuild account on purge, and unlock on install
       (Closes: #619892).
     - Add -j option to run parallel builds (Closes: #626357).
+    - Log build environment prior to starting a build.  This will be
+      useful in diagnosing problems with a misconfigured chroot, such
+      as missing HOME which can lead to misbuilds.
   * sbuild-createchroot:
     - Don't call ChrootSetup::basesetup after initial bootstrap; wait
       until actually running sbuild.  The users and groups used for
@@ -49,7 +52,7 @@ sbuild (0.62.3-1) unstable; urgency=low
       tools probably do too.  buildd-mail-wrapper should probably drop
       it automatically.  Thanks to Samuel Thibault.
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 30 May 2011 11:01:19 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 30 May 2011 16:17:13 +0100
 
 sbuild (0.62.2-1) unstable; urgency=low
 
