@@ -356,6 +356,9 @@ setup_sbuild() {
     sudo mkdir -p "$TARGET/var/lib/sbuild/srcdep-lock"
     sudo chown -R root:sbuild "$TARGET/var/lib/sbuild"
     sudo chmod -R 02775 "$TARGET/var/lib/sbuild"
+    sudo mkdir -p "$TARGET/var/lock/sbuild"
+    sudo chown -R root:sbuild "$TARGET/var/lock/sbuild"
+    sudo chmod -R 02775 "$TARGET/var/lock/sbuild"
     ensure_target_unmounted
 }
 
