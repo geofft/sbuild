@@ -75,6 +75,7 @@ sub new {
     $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
+    $self->set('Build Dir', '');
     $self->set('Max Lock Trys', 120);
     $self->set('Lock Interval', 5);
     $self->set('Pkg Status', 'pending');
@@ -471,11 +472,12 @@ sub run_chroot_session {
 		   tempdir($self->get('Package') . '-XXXXXX',
 			   DIR =>  $session->get('Location') . "/build"));
 
+	$self->set('Build Dir', $session->strip_chroot_path($self->get('Chroot Build Dir')));
 	my $filter;
-	$filter = $session->strip_chroot_path($self->get('Chroot Build Dir') . '/' . $self->get('DSC Dir'));
+	$filter = $self->get('Build Dir') . '/' . $self->get('DSC Dir');
 	$filter =~ s;^/;;;
 	$self->build_log_filter($filter, 'PKGBUILDDIR');
-	$filter = $session->strip_chroot_path($self->get('Chroot Build Dir'));
+	$filter = $self->get('Build Dir');
 	$filter =~ s;^/;;;
 	$self->build_log_filter($filter, 'BUILDDIR');
 	$filter = $session->get('Location');
@@ -485,7 +487,7 @@ sub run_chroot_session {
 	$self->check_abort();
 	$session->run_command(
 	    { COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
-			  $session->strip_chroot_path($self->get('Chroot Build Dir'))],
+			  $self->get('Build Dir')],
 	      USER => 'root',
 	      DIR => '/' });
 	if ($?) {
@@ -494,8 +496,7 @@ sub run_chroot_session {
 	}
 	$self->check_abort();
 	$session->run_command(
-	    { COMMAND => ['chmod', '0770',
-			  $session->strip_chroot_path($self->get('Chroot Build Dir'))],
+	    { COMMAND => ['chmod', '0770', $self->get('Build Dir')],
 	      USER => 'root',
 	      DIR => '/' });
 	if ($?) {
@@ -510,8 +511,7 @@ sub run_chroot_session {
 
 	# Chroot execution defaults
 	my $chroot_defaults = $session->get('Defaults');
-	$chroot_defaults->{'DIR'} =
-	    $session->strip_chroot_path($self->get('Chroot Build Dir'));
+	$chroot_defaults->{'DIR'} = $self->get('Build Dir');
 	$chroot_defaults->{'STREAMIN'} = $devnull;
 	$chroot_defaults->{'STREAMOUT'} = $self->get('Log Stream');
 	$chroot_defaults->{'STREAMERR'} = $self->get('Log Stream');
@@ -778,10 +778,9 @@ sub run_fetch_install_packages {
 
     if ($purge_build_directory) {
 	# Purge package build directory
-	$self->log("Purging " . $self->get('Chroot Build Dir') . "\n");
-	my $bdir = $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'));
+	$self->log("Purging " . $self->get('Build Dir') . "\n");
 	$self->get('Session')->run_command(
-	    { COMMAND => ['rm', '-rf', $bdir],
+	    { COMMAND => ['rm', '-rf', $self->get('Build Dir')],
 	      USER => 'root',
 	      PRIORITY => 0,
 	      DIR => '/' });
@@ -1424,12 +1423,11 @@ sub build {
     # Build tree not writable during build (except for the sbuild
     # user performing the build).
     $self->get('Session')->run_command(
-	{ COMMAND => ['chmod', '-R', 'go-w',
-		      $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'))],
+	{ COMMAND => ['chmod', '-R', 'go-w', $self->get('Build Dir')],
 	  USER => 'root',
 	  PRIORITY => 0});
     if ($?) {
-	$self->log("chmod og-w " . $self->get('Chroot Build Dir') . " failed.\n");
+	$self->log("chmod og-w " . $self->get('Build Dir') . " failed.\n");
 	return 0;
     }
 
@@ -1617,12 +1615,11 @@ sub build {
 
 	# Restore write access to build tree now build is complete.
 	$self->get('Session')->run_command(
-	    { COMMAND => ['chmod', '-R', 'g+w',
-			  $self->get('Session')->strip_chroot_path($self->get('Chroot Build Dir'))],
+	    { COMMAND => ['chmod', '-R', 'g+w', $self->get('Build Dir')],
 	      USER => 'root',
 	      PRIORITY => 0});
 	if ($?) {
-	    $self->log("chmod g+w " . $self->get('Chroot Build Dir') . " failed.\n");
+	    $self->log("chmod g+w " . $self->get('Build Dir') . " failed.\n");
 	    return 0;
 	}
 
