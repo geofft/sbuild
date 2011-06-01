@@ -426,6 +426,7 @@ setup_logical_volume() {
     sudo lvcreate --name "buildd-${IDENTIFIER}-${ARCH}" --size "${LVSIZE}" "${VGNAME}"
     echo "I: Setting up file system on ${LVPATH}..."
     sudo mkfs.ext3 "${LVPATH}"
+    sudo tune2fs -i 0 -c 0 "${LVPATH}"
     TMPMOUNTDIR=$(mktemp -d)
 }
 
