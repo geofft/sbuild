@@ -315,70 +315,114 @@ sub lock_chroot {
     my $new_pid = shift;
     my $new_user = shift;
 
-    my $lockfile = $self->get('Location') . '/var/lib/sbuild/chroot-lock';
-    my $try = 0;
+    my $lockfile = '/var/lock/sbuild';
+    my $max_trys = $self->get_conf('MAX_LOCK_TRYS');
+    my $lock_interval = $self->get_conf('LOCK_INTERVAL');
+
+    # The following command in run /inside/ the chroot to create the lockfile.
+    my $command = <<"EOF";
+
+    use strict;
+    use warnings;
+    use POSIX;
+    use FileHandle;
+
+    my \$lockfile="$lockfile";
+    my \$try = 0;
 
   repeat:
-    if (!sysopen( F, $lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
-	if ($! == EEXIST) {
+    if (!sysopen( F, \$lockfile, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644 )){
+	if (\$! == EEXIST) {
 	    # lock file exists, wait
-	    goto repeat if !open( F, "<$lockfile" );
-	    my $line = <F>;
-	    my ($job, $pid, $user);
+	    goto repeat if !open( F, "<\$lockfile" );
+	    my \$line = <F>;
+	    my (\$job, \$pid, \$user);
 	    close( F );
-	    if ($line !~ /^(\S+)\s+(\S+)\s+(\S+)/) {
-		$self->log_warning("Bad lock file contents ($lockfile) -- still trying\n");
+	    if (\$line !~ /^(\\S+)\\s+(\\S+)\\s+(\\S+)/) {
+		print STDERR "Bad lock file contents (\$lockfile) -- still trying\\n";
 	    } else {
-		($job, $pid, $user) = ($1, $2, $3);
-		if (kill( 0, $pid ) == 0 && $! == ESRCH) {
+		(\$job, \$pid, \$user) = (\$1, \$2, \$3);
+		if (kill( 0, \$pid ) == 0 && \$! == ESRCH) {
 		    # process doesn't exist anymore, remove stale lock
-		    $self->log_warning("Removing stale lock file $lockfile ".
-				       "(job $job, pid $pid, user $user)\n");
-		    if (!unlink($lockfile)) {
-			if ($! != ENOENT) {
-			    $self->log_error("cannot remove chroot lock file $lockfile: $!\n");
-			    return 0;
+		    print STDERR "Removing stale lock file \$lockfile ".
+			"(job \$job, pid \$pid, user \$user)\\n";
+		    if (!unlink(\$lockfile)) {
+			if (\$! != ENOENT) {
+			    print STDERR "Cannot remove chroot lock file \$lockfile: \$!\\n";
+			    exit 1;
 			}
 		    }
 		}
 	    }
-	    ++$try;
-	    if ($try > $self->get_conf('MAX_LOCK_TRYS')) {
-		$self->log_warning("Lockfile $lockfile still present after " .
-				   $self->get_conf('MAX_LOCK_TRYS') *
-				   $self->get_conf('LOCK_INTERVAL') .
-				   " seconds -- giving up\n");
-		return 0;
+	    ++\$try;
+	    if (\$try > $max_trys) {
+		print STDERR "Lockfile \$lockfile still present after " .
+		    $max_trys * $lock_interval . " seconds -- giving up\\n";
+		exit 1;
 	    }
-	    $self->log("Another sbuild process (job $job, pid $pid by user $user) is currently using the build chroot; waiting...\n")
-		if $try == 1;
-	    sleep $self->get_conf('LOCK_INTERVAL');
+	    print STDERR "Another sbuild process (job \$job, pid \$pid by user \$user) is currently using the build chroot; waiting...\\n"
+		if \$try == 1;
+	    sleep $lock_interval;
 	    goto repeat;
 	} else {
-	    $self->log_error("Can't create lock file $lockfile: $!\n");
-	    return 0;
+	    print STDERR "Can't create lock file \$lockfile: \$!\\n";
+	    exit 1;
 	}
     }
 
-    my $username = $self->get_conf('USERNAME');
-
-    F->print("$new_job $new_pid $new_user\n");
+    F->print("$new_job $new_pid $new_user\\n");
     F->close();
 
+    exit 0;
+EOF
+
+    $self->run_command(
+	    { COMMAND => ['perl',
+			  '-e',
+			  $command],
+	      USER => 'root',
+	      PRIORITY => 0,
+	      DIR => '/' });
+
+    if ($?) {
+	return 0;
+    }
     return 1;
 }
 
 sub unlock_chroot {
     my $self = shift;
 
-    my $lockfile = $self->get('Location') . '/var/lib/sbuild/chroot-lock';
+    my $lockfile = '/var/lock/sbuild';
+
+    # The following command in run /inside/ the chroot to remove the lockfile.
+    my $command = <<"EOF";
+
+    use strict;
+    use warnings;
+    use POSIX;
+
+    my \$lockfile="$lockfile";
+    if (!unlink(\$lockfile)) {
+	print STDERR "Cannot remove chroot lock file \$lockfile: \$!\\n"
+	    if \$! != ENOENT;
+	exit 1;
+    }
+    exit 0;
+EOF
 
     debug("Removing chroot lock file $lockfile\n");
-    if (!unlink($lockfile)) {
-	$self->log_error("cannot remove chroot lock file $lockfile: $!\n")
-	    if $! != ENOENT;
-    }
+    $self->run_command(
+	    { COMMAND => ['perl',
+			  '-e',
+			  $command],
+	      USER => 'root',
+	      PRIORITY => 0,
+	      DIR => '/' });
 
+    if ($?) {
+	return 0;
+    }
     return 1;
 }
 
