@@ -472,6 +472,9 @@ sub run_chroot_session {
 			   DIR =>  $session->get('Location') . "/build"));
 
 	my $filter;
+	$filter = $session->strip_chroot_path($self->get('Chroot Build Dir') . '/' . $self->get('DSC Dir'));
+	$filter =~ s;^/;;;
+	$self->build_log_filter($filter, 'PKGBUILDDIR');
 	$filter = $session->strip_chroot_path($self->get('Chroot Build Dir'));
 	$filter =~ s;^/;;;
 	$self->build_log_filter($filter, 'BUILDDIR');
