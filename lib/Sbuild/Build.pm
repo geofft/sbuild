@@ -1785,9 +1785,6 @@ sub read_build_essential {
         }
         close( F );
     }
-    else {
-        warn "Cannot open $self->{'Chroot Dir'}/etc/lsb-release: $!\n";
-    }
 
     return join( ", ", @essential );
 }
