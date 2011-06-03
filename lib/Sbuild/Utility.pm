@@ -128,7 +128,9 @@ sub cleanup ($) {
     if (defined(&main::local_cleanup)) {
 	main::local_cleanup($Sbuild::Utility::current_session);
     }
-    $Sbuild::Utility::current_session->end_session();
+    if (defined $Sbuild::Utility::current_session) {
+	$Sbuild::Utility::current_session->end_session();
+    }
 }
 
 sub shutdown ($) {
