@@ -114,13 +114,6 @@ sub setup ($) {
 	my $key = $entry->{'NAME'};
 	$conf->_set_value($key, $value);
 
-	$conf->set('MAINTAINER_NAME', $conf->get('UPLOADER_NAME'))
-	    if (!$conf->get('MAINTAINER_NAME') &&
-		$conf->get('UPLOADER_NAME'));
-	$conf->set('MAINTAINER_NAME', $conf->get('KEY_ID'))
-	    if (!$conf->get('MAINTAINER_NAME') &&
-		$conf->get('KEY_ID'));
-
 	my @signing_options = ();
 	push @signing_options, "-m".$conf->get('MAINTAINER_NAME')
 	    if defined $conf->get('MAINTAINER_NAME');
