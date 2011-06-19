@@ -2141,6 +2141,8 @@ sub open_build_log {
 		    $colour = 'green' if (m/^I: /);
 		    $colour = 'red' if (m/^Status:/);
 		    $colour = 'green' if (m/^Status: successful$/);
+		    $colour = 'red' if (m/^Lintian:/);
+		    $colour = 'green' if (m/^Lintian: pass$/);
 		    print $saved_stdout color $colour;
 		}
 
