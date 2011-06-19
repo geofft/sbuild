@@ -473,6 +473,17 @@ sub run_chroot_session {
 			   DIR =>  $session->get('Location') . "/build"));
 
 	$self->set('Build Dir', $session->strip_chroot_path($self->get('Chroot Build Dir')));
+
+	# Log colouring
+	$self->build_log_colour('red', '^E: ');
+	$self->build_log_colour('yellow', '^W: ');
+	$self->build_log_colour('green', '^I: ');
+	$self->build_log_colour('red', '^Status:');
+	$self->build_log_colour('green', '^Status: successful$');
+	$self->build_log_colour('red', '^Lintian:');
+	$self->build_log_colour('green', '^Lintian: pass$');
+
+	# Log filtering
 	my $filter;
 	$filter = $self->get('Build Dir') . '/' . $self->get('DSC Dir');
 	$filter =~ s;^/;;;
@@ -483,6 +494,7 @@ sub run_chroot_session {
 	$filter = $session->get('Location');
 	$filter =~ s;^/;;;
 	$self->build_log_filter($filter , 'CHROOT');
+
 	# Need tempdir to be writable and readable by sbuild group.
 	$self->check_abort();
 	$session->run_command(
@@ -2051,6 +2063,16 @@ sub build_log_filter {
     }
 }
 
+sub build_log_colour {
+    my $self = shift;
+    my $regex = shift;
+    my $colour = shift;
+
+    if ($self->get_conf('LOG_COLOUR')) {
+	$self->log($self->get('COLOUR_PREFIX') . $colour . ':' . $regex . "\n");
+    }
+}
+
 sub open_build_log {
     my $self = shift;
 
@@ -2058,6 +2080,8 @@ sub open_build_log {
 
     my $filter_prefix = '__SBUILD_FILTER_' . $$ . ':';
     $self->set('FILTER_PREFIX', $filter_prefix);
+    my $colour_prefix = '__SBUILD_COLOUR_' . $$ . ':';
+    $self->set('COLOUR_PREFIX', $colour_prefix);
 
     my $filename = $self->get_conf('LOG_DIR') . '/' .
 	$self->get('Package_SVersion') . '-' .
@@ -2105,8 +2129,10 @@ sub open_build_log {
 	my $verbose = $self->get_conf('VERBOSE');
 	my $log_colour = $self->get_conf('LOG_COLOUR');
 	my @filter = ();
+	my @colour = ();
 	my ($text, $replacement);
 	my $filter_regex = "^$filter_prefix(.*):(.*)\$";
+	my $colour_regex = "^$colour_prefix(.*):(.*)\$";
 	my @ignore = ();
 
 	while (<STDIN>) {
@@ -2117,6 +2143,11 @@ sub open_build_log {
 		$replacement = "«$replacement»";
 		push (@filter, [$text, $replacement]);
 		$_ = "I: NOTICE: Log filtering will replace '$text' with '$replacement'\n";
+	    } elsif (m/$colour_regex/) {
+		my ($colour, $regex);
+		($colour,$regex)=($1,$2);
+		push (@colour, [$colour, $regex]);
+		$_ = "I: NOTICE: Log colouring will colour '$regex' in $colour\n";
 	    } else {
 		# Filter out any matching patterns
 		foreach my $pattern (@filter) {
@@ -2136,13 +2167,11 @@ sub open_build_log {
 	    if ($nolog || $verbose) {
 		if (-t $saved_stdout && $log_colour) {
 		    my $colour = 'reset';
-		    $colour = 'red' if (m/^E: /);
-		    $colour = 'yellow' if (m/^W: /);
-		    $colour = 'green' if (m/^I: /);
-		    $colour = 'red' if (m/^Status:/);
-		    $colour = 'green' if (m/^Status: successful$/);
-		    $colour = 'red' if (m/^Lintian:/);
-		    $colour = 'green' if (m/^Lintian: pass$/);
+		    foreach my $pattern (@colour) {
+			if (m/$$pattern[0]/) {
+			    $colour = $$pattern[1];
+			}
+		    }
 		    print $saved_stdout color $colour;
 		}
 

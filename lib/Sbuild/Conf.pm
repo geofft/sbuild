@@ -362,6 +362,13 @@ sub setup ($) {
 	    DEFAULT => 1,
 	    HELP => 'Filter variable strings from log messages such as the chroot name and build directory'
 	},
+	'LOG_COLOUR'				=> {
+	    TYPE => 'BOOL',
+	    VARNAME => 'log_colour',
+	    GROUP => 'Logging options',
+	    DEFAULT => 1,
+	    HELP => 'Colour log messages such as critical failures, warnings and sucess'
+	},
 	'LOG_DIR_AVAILABLE'			=> {
 	    TYPE => 'BOOL',
 	    GROUP => '__INTERNAL',
