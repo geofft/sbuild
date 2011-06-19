@@ -1,3 +1,9 @@
+sbuild (0.62.4-1) unstable; urgency=low
+
+  * New release.
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 19 Jun 2011 20:40:53 +0100
+
 sbuild (0.62.3-1) unstable; urgency=low
 
   * New release.
