@@ -1,8 +1,10 @@
 sbuild (0.62.4-1) unstable; urgency=low
 
   * New release.
+  * Failing lintian checks are highlighted in red, and passes in
+    green (Closes: #631060).
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 19 Jun 2011 20:40:53 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 19 Jun 2011 20:41:35 +0100
 
 sbuild (0.62.3-1) unstable; urgency=low
 
