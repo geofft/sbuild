@@ -1347,6 +1347,28 @@ sub build {
 	}
     }
 
+    my $pipe = $self->get('Session')->pipe_command(
+	{ COMMAND => ['dpkg-parsechangelog'],
+	  USER => $self->get_conf('BUILD_USER'),
+	  PRIORITY => 0,
+	  DIR => $self->get('Session')->strip_chroot_path($dscdir) });
+    my $clog = do { local $/; <$pipe> };
+    close($pipe);
+    if ($?) {
+	$self->log("FAILED [dpkg-parsechangelog died]\n");
+	return 0;
+    }
+
+    my ($name) = $clog =~ /^Source:\s*(.*)$/m;
+    my ($version) = $clog =~ /^Version:\s*(.*)$/m;
+    my ($dists) = $clog =~ /^Distribution:\s*(.*)$/m;
+    my ($urgency) = $clog =~ /^Urgency:\s*(.*)$/m;
+    my ($date) = $clog =~ /^Date:\s*(.*)$/m;
+    if ($dists ne $self->get_conf('DISTRIBUTION')) {
+	$self->build_log_colour('yellow',
+				"^Distribution: " . $self->get_conf('DISTRIBUTION') . "\$");
+    }
+
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
 	if (!$self->get_conf('MAINTAINER_NAME')) {
 	    Sbuild::Exception::Build->throw(error => "No maintainer specified.",
@@ -1359,23 +1381,6 @@ sub build {
 	    my $text = do { local $/; <F> };
 	    close( F );
 
-	    my $pipe = $self->get('Session')->pipe_command(
-		{ COMMAND => ['dpkg-parsechangelog'],
-		  USER => $self->get_conf('BUILD_USER'),
-		  PRIORITY => 0,
-		  DIR => $self->get('Session')->strip_chroot_path($dscdir) });
-	    my $clog = do { local $/; <$pipe> };
-	    close($pipe);
-	    if ($?) {
-		$self->log("FAILED [dpkg-parsechangelog died]\n");
-		return 0;
-	    }
-
-	    my ($name) = $clog =~ /^Source:\s*(.*)$/m;
-	    my ($version) = $clog =~ /^Version:\s*(.*)$/m;
-	    my ($dists) = $clog =~ /^Distribution:\s*(.*)$/m;
-	    my ($urgency) = $clog =~ /^Urgency:\s*(.*)$/m;
-	    my ($date) = $clog =~ /^Date:\s*(.*)$/m;
 
 	    my $NMUversion = $self->get('Version');
 	    if (!open( F, ">$dscdir/debian/changelog" )) {
@@ -1597,9 +1602,9 @@ sub build {
 		       $self->get('Build End Time')-$self->get('Build Start Time'));
     $self->write_stats('install-download-time',
 		       $self->get('Install End Time')-$self->get('Install Start Time'));
-    my $date = strftime("%Y%m%d-%H%M",localtime($self->get('Build End Time')));
+    my $finish_date = strftime("%Y%m%d-%H%M",localtime($self->get('Build End Time')));
     $self->log_sep();
-    $self->log("Build finished at $date\n");
+    $self->log("Build finished at $finish_date\n");
 
     my @space_files = ("$dscdir");
 
