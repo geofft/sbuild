@@ -1,18 +1,24 @@
 sbuild (0.62.4-1) unstable; urgency=low
 
   * New release.
-  * Failing lintian checks are highlighted in red, and passes in
-    green (Closes: #631060).
-  * The distribution in the build summary is coloured yellow if it
-    does not match the distribution in the changelog.  This is to
-    indicate that there may be a potential problem, such as 
-    potentially uploading a package intended for experimental to
-    unstable by building for unstable by accident.
+  * sbuild:
+    - Failing lintian checks are highlighted in red, and passes in
+      green (Closes: #631060).
+    - The distribution in the build summary is coloured yellow if it
+      does not match the distribution in the changelog.  This is to
+      indicate that there may be a potential problem, such as
+      potentially uploading a package intended for experimental to
+      unstable by building for unstable by accident.
+    - sbuild only permits building one source package at once.
+      Previously sbuild would allow building of more than one package
+      in a single invocation.  Making this change means that the exit
+      status will always be the status of the build rather than the
+      last build, and it also means the logging is simplified and may
+      be started earlier.
   * sbuild-adduser: Use current sbuild-update options in example
     (Closes: #630791).
-  * 
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 20 Jun 2011 19:41:01 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 20 Jun 2011 20:30:11 +0100
 
 sbuild (0.62.3-1) unstable; urgency=low
 
