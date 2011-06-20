@@ -72,8 +72,7 @@ EOF
 Now try a build:
 
   cd /path/to/source
-  sbuild-update <distribution>
-  sbuild-upgrade <distribution> apt-get upgrade
+  sbuild-update -ud <distribution>
   (or "sbuild-apt <distribution> apt-get -f install"
        first if the chroot is broken)
   sbuild -d <distribution> <package>_<version>
