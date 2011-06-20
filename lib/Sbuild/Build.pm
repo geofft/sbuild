@@ -47,7 +47,6 @@ use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig qw($version $release_date);
-use Sbuild::LogBase qw($saved_stdout);
 use Sbuild::Sysconfig;
 use Sbuild::Utility qw(check_url download parse_file dsc_files);
 use Sbuild::Resolver qw(get_resolver);
@@ -61,6 +60,9 @@ BEGIN {
 
     @EXPORT = qw();
 }
+
+our $saved_stdout = undef;
+our $saved_stderr = undef;
 
 sub new {
     my $class = shift;
@@ -2093,6 +2095,9 @@ sub open_build_log {
 	$self->get('Arch') .
 	"-$date";
 
+    open($saved_stdout, ">&STDOUT") or warn "Can't redirect stdout\n";
+    open($saved_stderr, ">&STDERR") or warn "Can't redirect stderr\n";
+
     my $PLOG;
 
     my $pid;
@@ -2199,6 +2204,8 @@ sub open_build_log {
     }
 
     $PLOG->autoflush(1);
+    open(STDOUT, '>&', $PLOG) or warn "Can't redirect stdout\n";
+    open(STDERR, '>&', $PLOG) or warn "Can't redirect stderr\n";
     $self->set('Log File', $filename);
     $self->set('Log Stream', $PLOG);
 
@@ -2277,6 +2284,14 @@ sub close_build_log {
 	    $subject .= " (dist=" . $self->get_conf('DISTRIBUTION') . ")";
     }
 
+    open(STDERR, '>&', $saved_stderr) or warn "Can't redirect stderr\n"
+	if defined($saved_stderr);
+    open(STDOUT, '>&', $saved_stdout) or warn "Can't redirect stdout\n"
+	if defined($saved_stdout);
+    $saved_stderr->close();
+    undef $saved_stderr;
+    $saved_stdout->close();
+    undef $saved_stdout;
     $self->set('Log File', undef);
     if (defined($self->get('Log Stream'))) {
 	$self->get('Log Stream')->close(); # Close child logger process

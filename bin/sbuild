@@ -32,7 +32,6 @@ use POSIX;
 use Data::Dumper;
 use Sbuild qw(isin check_group_membership $debug_level);
 use Sbuild::Conf qw();
-use Sbuild::Log qw(open_log close_log);
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
 use Sbuild::Build;
@@ -77,8 +76,6 @@ sub main () {
     print "Selected architecture " . $conf->get('ARCH') . "\n"
 	if $conf->get('DEBUG' && defined($conf->get('ARCH')));
 
-    open_log($conf);
-
     $SIG{'INT'} = \&main::shutdown;
     $SIG{'TERM'} = \&main::shutdown;
     $SIG{'ALRM'} = \&main::shutdown;
@@ -113,7 +110,6 @@ sub main () {
 	}
     }
 
-    close_log($conf);
     unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
     unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
