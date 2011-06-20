@@ -88,6 +88,9 @@ sub main () {
     # If no arguments are supplied, assume we want to process the current dir.
     push @ARGV, '.' unless (@ARGV);
 
+    die "Only one build is permitted\n"
+	if (@ARGV != 1);
+
     # Create jobs
     eval {
 	foreach my $job (@ARGV) {
