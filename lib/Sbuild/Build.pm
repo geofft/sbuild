@@ -1347,13 +1347,13 @@ sub build {
 	}
     }
 
-    my $pipe = $self->get('Session')->pipe_command(
+    my $cpipe = $self->get('Session')->pipe_command(
 	{ COMMAND => ['dpkg-parsechangelog'],
 	  USER => $self->get_conf('BUILD_USER'),
 	  PRIORITY => 0,
 	  DIR => $self->get('Session')->strip_chroot_path($dscdir) });
-    my $clog = do { local $/; <$pipe> };
-    close($pipe);
+    my $clog = do { local $/; <$cpipe> };
+    close($cpipe);
     if ($?) {
 	$self->log("FAILED [dpkg-parsechangelog died]\n");
 	return 0;
@@ -2152,7 +2152,8 @@ sub open_build_log {
 		my ($colour, $regex);
 		($colour,$regex)=($1,$2);
 		push (@colour, [$colour, $regex]);
-		$_ = "I: NOTICE: Log colouring will colour '$regex' in $colour\n";
+#		$_ = "I: NOTICE: Log colouring will colour '$regex' in $colour\n";
+		next;
 	    } else {
 		# Filter out any matching patterns
 		foreach my $pattern (@filter) {
