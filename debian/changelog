@@ -8,8 +8,11 @@ sbuild (0.62.4-1) unstable; urgency=low
     indicate that there may be a potential problem, such as 
     potentially uploading a package intended for experimental to
     unstable by building for unstable by accident.
+  * sbuild-adduser: Use current sbuild-update options in example
+    (Closes: #630791).
+  * 
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 19 Jun 2011 22:34:01 +0100
+ -- Roger Leigh <rleigh@debian.org>  Mon, 20 Jun 2011 19:41:01 +0100
 
 sbuild (0.62.3-1) unstable; urgency=low
 
