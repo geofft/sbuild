@@ -59,8 +59,7 @@ if (!$conf->get('MAINTAINER_NAME') &&
 umask(002);
 
 # Job state
-my %jobs = ();
-my $current_job = undef;
+my $job = undef;
 
 main();
 
@@ -91,26 +90,16 @@ sub main () {
     die "Only one build is permitted\n"
 	if (@ARGV != 1);
 
-    # Create jobs
+    # Create and run job
     eval {
-	foreach my $job (@ARGV) {
-	    $jobs{$job} = Sbuild::Build->new($job, $conf);
-	    $jobs{$job}->set('Pkg Status Trigger', \&status_trigger)
-	}
+	$job = Sbuild::Build->new($ARGV[0], $conf);
+	$job->set('Pkg Status Trigger', \&status_trigger);
 	write_jobs_file(); # Will now update on trigger.
 
-	# Run each job.  Potential for parallelising this step.
-	foreach (keys %jobs) {
-	    my $jobname = $_;
+	# Run job.
+	$job->run();
 
-	    my $job = $jobs{$jobname};
-	    $current_job = $jobname;
-
-	    # Do the build
-	    $job->run();
-
-	    dump_main_state() if $conf->get('DEBUG');
-	}
+	dump_main_state() if $conf->get('DEBUG');
     };
 
     my $e;
@@ -131,14 +120,14 @@ sub main () {
 
     # Until buildd parses status info from sbuild output, skipped must
     # be treated as a failure.
-    if (defined($current_job) && defined($jobs{$current_job})) {
-	if ($jobs{$current_job}->get_status() eq "successful" ||
+    if (defined($job)) {
+	if ($job->get_status() eq "successful" ||
 	    ($conf->get('SBUILD_MODE') ne "buildd" &&
-	     $jobs{$current_job}->get_status() eq "skipped")) {
+	     $job->get_status() eq "skipped")) {
 	    exit 0;
-	} elsif ($jobs{$current_job}->get_status() eq "attempted") {
+	} elsif ($job->get_status() eq "attempted") {
 	    exit 2;
-	} elsif ($jobs{$current_job}->get_status() eq "given-back") {
+	} elsif ($job->get_status() eq "given-back") {
 	    #Probably needs a give back:
 	    exit 3;
 	}
@@ -156,9 +145,7 @@ sub write_jobs_file () {
 	local( *F );
 
 	return if !open( F, ">$file" );
-	foreach (keys %jobs) {
-	    my $job = $jobs{$_};
-
+	if (defined($job)) {
 	    print F $job->get('Package_OVersion') . ": " .
 		$job->get_status() . "\n";
 	}
@@ -202,7 +189,6 @@ sub status_trigger ($$) {
 }
 
 sub shutdown ($) {
-    my $job = undef;
     my $signame = shift;
 
     $SIG{'INT'} = 'IGNORE';
@@ -210,9 +196,6 @@ sub shutdown ($) {
     $SIG{'TERM'} = 'IGNORE';
     $SIG{'ALRM'} = 'IGNORE';
     $SIG{'PIPE'} = 'IGNORE';
-
-    $job = $jobs{$current_job} if (defined($current_job) &&
-				   defined($jobs{$current_job}));
 
     if (defined($job)) {
 	$job->request_abort("Received $signame signal");
@@ -227,8 +210,6 @@ sub shutdown ($) {
 }
 
 sub dump_main_state () {
-    print STDERR Data::Dumper->Dump([$current_job,
-				     \%jobs],
-				    [qw($current_job
-					%jobs)] );
+    print STDERR Data::Dumper->Dump([$job],
+				    [qw($job)] );
 }
