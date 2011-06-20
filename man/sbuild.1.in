@@ -66,7 +66,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-log\-external\-command\-error ]
 .RB [ \-\-setup\-hook=\fIhook-script\fP ]
 .RB [ \-\-build\-dep\-resolver=\fIresolver\fP ]
-.BR [PACKAGE1[.dsc] " [" PACKAGE2[.dsc] " [ " ... " " ]]]
+.RB [ PACKAGE [ .dsc ]]
 .SH DESCRIPTION
 \fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
 source, installing any missing source dependencies.  The build takes place in a
@@ -75,9 +75,9 @@ dedicated clean build environment (chroot), rather than on the host system.
 \fBsbuild\fR can fetch the Debian source over a network, or it can use
 locally available sources.
 .PP
-sbuild is given a list of packages to process as the arguments
-\fBPACKAGE\f[BI]i\fP[.dsc]\fR. These arguments are in the form of either
-debianized package source directories, a source package name along with a
+sbuild is given a packages to process as the argument
+\fBPACKAGE[.dsc]\fR.  This argument is in the form of either a
+debianized package source directory, a source package name along with a
 version in the form \fIpackage_version\fP, or a .dsc file. If no arguments are
 given, the current working directory is passed as an argument.
 .PP
