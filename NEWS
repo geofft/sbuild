@@ -15,6 +15,13 @@ configuration.
      potentially uploading a package intended for experimental to
      unstable by building for unstable by accident.
 
+  2) sbuild only permits building one source package at once.
+     Previously sbuild would allow building of more than one package
+     in a single invocation.  Making this change means that the exit
+     status will always be the status of the build rather than the
+     last build, and it also means the logging is simplified and may
+     be started earlier.
+
 * Major changes in 0.62.3:
 
   1) The apt and internal resolvers will resolve some alternatives
