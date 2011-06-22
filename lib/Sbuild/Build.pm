@@ -35,20 +35,19 @@ use FileHandle;
 use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
-use Cwd qw(:DEFAULT abs_path);
 use Dpkg::Arch;
 use Dpkg::Control;
 use MIME::Lite;
 use Term::ANSIColor;
 
-use Sbuild qw($devnull binNMU_version version_compare split_version copy isin debug df send_mail);
+use Sbuild qw($devnull binNMU_version version_compare split_version copy isin debug df send_mail dsc_files);
 use Sbuild::Base;
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Sysconfig;
-use Sbuild::Utility qw(check_url download parse_file dsc_files);
+use Sbuild::Utility qw(check_url download);
 use Sbuild::Resolver qw(get_resolver);
 use Sbuild::Exception;
 
@@ -129,8 +128,7 @@ sub new {
 	if ((!$self->get('Download') ||
       (!($self->get('DSC Base') =~ m/\.dsc$/) &&
         $self->get('DSC') ne $self->get('Package_OVersion')) ||
-      !defined $self->get('Version')) &&
-      !defined $self->get('Debian Source Dir'));
+      !defined $self->get('Version')));
 
     debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
@@ -161,47 +159,6 @@ sub set_dsc {
     my $dsc = shift;
 
     debug("Setting DSC: $dsc\n");
-
-    # Check if the DSC given is a directory on the local system. This
-    # means we'll build the source package with dpkg-source first.
-    if (-d $dsc) {
-	my $host = $self->get('Host');
-	my $pipe = $host->pipe_command(
-	    { COMMAND => ['dpkg-parsechangelog', '-l' . abs_path($dsc) . '/debian/changelog'],
-	      PRIORITY => 0,
-	    });
-
-	if (!defined($pipe)) {
-	    Sbuild::Exception::Build->throw(error => "Could not parse $dsc/debian/changelog: $!",
-					    failstage => "set-dsc");
-	}
-
-	my $stanzas = parse_file($pipe);
-
-	my $stanza = @{$stanzas}[0];
-	my $package = ${$stanza}{'Source'};
-	my $version = ${$stanza}{'Version'};
-
-	if (!defined($package) || !defined($version)) {
-	    Sbuild::Exception::Build->throw(error => "Missing Source or Version in $dsc/debian/changelog",
-					    failstage => "set-dsc");
-	}
-
-	my $dir = getcwd();
-	# Note: need to support cases when invoked from a subdirectory
-	# of the build directory, i.e. $dsc/foo -> $dsc/.. in addition
-	# to $dsc -> $dsc/.. as below.
-	if ($dir eq abs_path($dsc)) {
-	    # We won't attempt to build the source package from the source
-	    # directory so the source package files will go to the parent dir.
-	    $dir = abs_path("$dir/..");
-	    $self->set_conf('BUILD_DIR', $dir);
-	}
-	$self->set('Debian Source Dir', abs_path($dsc));
-
-	$self->set_version("${package}_${version}");
-	$dsc = "$dir/" . $self->get('Package_OSVersion') . ".dsc";
-    }
 
     $self->set('DSC', $dsc);
     $self->set('Source Dir', dirname($dsc));
@@ -352,8 +309,6 @@ sub run_chroot {
 
     eval {
 	$self->check_abort();
-	$self->run_pack_source();
-	$self->check_abort();
 	$self->run_chroot_session();
     };
 
@@ -376,47 +331,6 @@ sub run_chroot {
 
     if ($e) {
 	$e->rethrow();
-    }
-}
-
-# Pack up local source tree
-sub run_pack_source {
-    my $self=shift;
-
-    $self->check_abort();
-    # Build the source package if given a Debianized source directory
-    if ($self->get('Debian Source Dir')) {
-	$self->log_subsection("Build Source Package");
-
-	$self->log_subsubsection('clean');
-	$self->get('Host')->run_command(
-	    { COMMAND => [$self->get_conf('FAKEROOT'),
-			  'debian/rules',
-			  'clean'],
-	      DIR => $self->get('Debian Source Dir'),
-	      PRIORITY => 0,
-	    });
-	if ($?) {
-	    Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
-					    failstage => "pack-source");
-	}
-
-	$self->check_abort();
-
-	$self->log_subsubsection('dpkg-source');
-	my @dpkg_source_command = ($self->get_conf('DPKG_SOURCE'), '-b');
-	push @dpkg_source_command, @{$self->get_conf('DPKG_SOURCE_OPTIONS')}
-	if ($self->get_conf('DPKG_SOURCE_OPTIONS'));
-	push @dpkg_source_command, $self->get('Debian Source Dir');
-	$self->get('Host')->run_command(
-	    { COMMAND => \@dpkg_source_command,
-	      DIR => $self->get_conf('BUILD_DIR'),
-	      PRIORITY => 0,
-	    });
-	if ($?) {
-	    Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
-					    failstage => "pack-source");
-	}
     }
 }
 
