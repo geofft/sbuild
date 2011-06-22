@@ -15,10 +15,14 @@ sbuild (0.62.4-1) unstable; urgency=low
       status will always be the status of the build rather than the
       last build, and it also means the logging is simplified and may
       be started earlier.
+    - Now that the main log has been removed, and packing of a source
+      tree takes place before starting the build for real, we no longer
+      create a log file in the build tree, confusing "dpkg-source -b"
+      (Closes: #612324).
   * sbuild-adduser: Use current sbuild-update options in example
     (Closes: #630791).
 
- -- Roger Leigh <rleigh@debian.org>  Mon, 20 Jun 2011 20:30:11 +0100
+ -- Roger Leigh <rleigh@debian.org>  Wed, 22 Jun 2011 15:15:26 +0100
 
 sbuild (0.62.3-1) unstable; urgency=low
 
