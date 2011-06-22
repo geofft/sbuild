@@ -31,7 +31,8 @@ use warnings;
 use Cwd qw(:DEFAULT abs_path);
 use POSIX;
 use Data::Dumper;
-use Sbuild qw(isin check_group_membership $debug_level split_version parse_file);
+use Dpkg::Control;
+use Sbuild qw(isin check_group_membership $debug_level split_version);
 use Sbuild::Conf qw();
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
@@ -77,7 +78,7 @@ sub main () {
 	if (@ARGV != 1);
 
     # Create and run job
-    eval {
+    my $status = eval {
 	my $jobname = $ARGV[0];
 	my $source_dir = 0;
 
@@ -119,6 +120,8 @@ sub main () {
 	    dump_main_state();
 	    print STDERR $e->trace->as_string, "\n";
 	}
+    } elsif (!defined($e)) {
+	print STDERR "E: $@\n" if $@;
     }
 
     unlink($conf->get('JOB_FILE'))
@@ -149,24 +152,36 @@ sub create_source_package ($) {
     my $dsc = shift;
     $dsc = abs_path($dsc);
 
-    open(my $pipe, '-|', 'dpkg-parsechangelog', '-l' . $dsc . '/debian/changelog') or Sbuild::Exception::Build->throw(error => "Could not parse $dsc/debian/changelog: $!",
-														      failstage => "pack-source");
+    open(my $pipe, '-|', 'dpkg-parsechangelog',
+	 '-l' . $dsc . '/debian/changelog')
+	or Sbuild::Exception::Build->throw(
+	    error => "Could not parse $dsc/debian/changelog: $!",
+	    failstage => "pack-source");
 
+    my $pclog = Dpkg::Control->new(type => CTRL_CHANGELOG);
+    if (!$pclog->parse($pipe, 'dpkg-parsechangelog')) {
+	Sbuild::Exception::Build->throw(
+	    error => "Could not parse $dsc/debian/changelog: $!",
+	    failstage => "pack-source");
+    }
 
-    my $stanzas = parse_file($pipe);
+    $pipe->close or Sbuild::Exception::Build->throw(
+	error => "dpkg-parsechangelog failed (exit status $?)",
+	failstage => "pack-source");
 
-    my $stanza = @{$stanzas}[0];
-    my $package = ${$stanza}{'Source'};
-    my $version = ${$stanza}{'Version'};
-    my $dist = ${$stanza}{'Distribution'};
+    my $package = $pclog->{'Source'};
+    my $version = $pclog->{'Version'};
+    my $dist = $pclog->{'Distribution'};
     my ($epoch, $uversion, $dversion) = split_version($version);
 
     if (!defined($package) || !defined($version)) {
-	Sbuild::Exception::Build->throw(error => "Missing Source or Version in $dsc/debian/changelog",
-					failstage => "pack-source");
+	Sbuild::Exception::Build->throw(
+	    error => "Missing Source or Version in $dsc/debian/changelog",
+	    failstage => "pack-source");
     }
 
-    if (!defined($conf->get('DISTRIBUTION')) || !$conf->get('DISTRIBUTION')) {
+    if (!defined($conf->get('DISTRIBUTION')) ||
+	!$conf->get('DISTRIBUTION')) {
 	$conf->set('DISTRIBUTION', $dist);
     }
 
@@ -187,22 +202,26 @@ sub create_source_package ($) {
 
     system($conf->get('FAKEROOT'), 'debian/rules', 'clean');
     if ($?) {
-	Sbuild::Exception::Build->throw(error => "Failed to clean source directory",
-					failstage => "pack-source");
+	Sbuild::Exception::Build->throw(
+	    error => "Failed to clean source directory",
+	    failstage => "pack-source");
     }
-    chdir($dir) or Sbuild::Exception::Build->throw(error => "Failed to change directory",
-						       failstage => "pack-source");
+    chdir($dir) or Sbuild::Exception::Build->throw(
+	error => "Failed to change directory",
+	failstage => "pack-source");
     my @dpkg_source_command = ($conf->get('DPKG_SOURCE'), '-b');
     push @dpkg_source_command, @{$conf->get('DPKG_SOURCE_OPTIONS')}
     if ($conf->get('DPKG_SOURCE_OPTIONS'));
     push @dpkg_source_command, "${package}-${uversion}";
     system(@dpkg_source_command);
     if ($?) {
-	Sbuild::Exception::Build->throw(error => "Failed to package source directory",
-					failstage => "pack-source");
+	Sbuild::Exception::Build->throw(
+	    error => "Failed to package source directory",
+	    failstage => "pack-source");
     }
-    chdir($origdir) or Sbuild::Exception::Build->throw(error => "Failed to change directory",
-						       failstage => "pack-source");
+    chdir($origdir) or Sbuild::Exception::Build->throw(
+	error => "Failed to change directory",
+	failstage => "pack-source");
 
     return $dsc;
 }
