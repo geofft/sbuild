@@ -42,7 +42,6 @@ use Sbuild::Exception;
 sub main ();
 sub create_source_package ($);
 sub write_jobs_file ();
-sub append_to_FINISHED ($);
 sub status_trigger ($$);
 sub shutdown ($);
 sub dump_main_state ();
@@ -126,7 +125,6 @@ sub main () {
 
     unlink($conf->get('JOB_FILE'))
 	if $conf->get('BATCH_MODE');
-    unlink("SBUILD-FINISHED") if $conf->get('BATCH_MODE');
 
     # Until buildd parses status info from sbuild output, skipped must
     # be treated as a failure.
@@ -239,18 +237,6 @@ sub write_jobs_file () {
 		$job->get_status() . "\n";
 	}
 	close( F );
-    }
-}
-
-sub append_to_FINISHED ($) {
-    my $job = shift;
-
-    local( *F );
-
-    if ($conf->get('BATCH_MODE')) {
-	open(F, ">>SBUILD-FINISHED");
-	print F $job->get('Package_OVersion');
-	close(F);
     }
 }
 
