@@ -31,6 +31,8 @@ use Filesys::Df qw();
 use Time::Local;
 use IO::Zlib;
 use MIME::Base64;
+use Dpkg::Control;
+use Dpkg::Checksums;
 
 BEGIN {
     use Exporter ();
@@ -43,7 +45,7 @@ BEGIN {
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
 		 send_mail debug debug2 df check_group_membership
-                 parse_file dsc_files);
+		 dsc_files);
 
 }
 
@@ -78,7 +80,6 @@ sub usage_error ($$);
 sub debug (@);
 sub debug2 (@);
 sub check_group_membership();
-sub parse_file ($);
 sub dsc_files ($);
 
 sub version_less ($$) {
@@ -532,100 +533,20 @@ sub check_group_membership () {
     return;
 }
 
-# Method to parse a rfc822 type file, like Debian changes or control files.
-# It can also be used on files like Packages or Sources files in a Debian
-# archive.
-# This subroutine returns an array of hashes. Each hash is a stanza.
-sub parse_file ($) {
-    # Takes one parameter, the file to parse.
-    my ($file) = @_;
-
-    # Variable we'll be returning from this subroutine.
-    my @array_of_fields;
-
-    # All our regex used in this method
-    # Regex to split each field and it's contents
-    my $split_pattern = qr{
-        ^\b   # Match the beginning of a line followed by the word boundary
-              # before a new field
-        }msx;
-    # Regex for detecting the beginning PGP block
-    my $beginning_pgp_block = qr{
-        ^\Q-----BEGIN PGP SIGNED MESSAGE-----\E
-        .*?   # Any block starting with the text above followed by some other
-              # text
-        }msx;
-    # Regex for detecting the ending PGP block
-    my $ending_pgp_block = qr{
-        ^\Q-----BEGIN PGP SIGNATURE-----\E
-        .*   # Any block starting with the text above followed by some other
-             # text
-        }msx;
-
-    # Enclose this in it's own block, since we change $/
-    {
-        # Attempt to open and read the file
-        my $fh;
-        if (ref($file) eq "GLOB") {
-          $fh = $file;
-        } else {
-          open $fh, '<', $file or die "Could not read $file: $!";
-        }
-
-        # Read paragraph by paragraph
-        local $/ = "";
-        while (<$fh>) {
-            # Skip the beginning PGP block, stop at the ending PGP block
-            next if ($_ =~ $beginning_pgp_block);
-            last if ($_ =~ $ending_pgp_block);
-
-            # Chomp the paragraph and split by each field
-            chomp;
-            my @matches = split /$split_pattern/, "$_\n";
-
-            # Loop through the fields, placing them into a hash
-            my %fields;
-            foreach my $match (@matches) {
-                my ($field, $field_contents);
-                $field = $1 if ($match =~ /([^:]+?):/msx);
-                $field_contents = $1 if ($match =~ /[^:]+?:(.*)/msx);
-
-                # Trim leading and trailing space from entries
-                $field_contents =~ s/^[\s]+?\b//msx;
-                $field_contents =~ s/[\s]+?$//msx;
-                $fields{$field} = $field_contents;
-            }
-
-            # Push each hash of fields as a ref onto our array
-            push @array_of_fields, \%fields;
-        }
-        close $fh or die "Problem encountered closing file $file: $!";
-    }
-
-    # Return a reference to the array
-    return \@array_of_fields;
-}
-
 sub dsc_files ($) {
     my $dsc = shift;
 
-    my @files;
-
-    # The parse_file() subroutine returns a ref to an array of hashrefs.
-    my $stanzas = parse_file($dsc);
-
-    # A dsc file would only ever contain one stanza, so we only deal with
-    # the first entry which is a ref to a hash of fields for the stanza.
-    my $stanza = @{$stanzas}[0];
-
-    # We're only interested in the name of the files in the Files field.
-    my $entry = ${$stanza}{'Files'};
-
-    foreach my $line (split("\n", $entry)) {
-	push @files, $1 if $line =~ /(\S+)\s*$/;
+    debug("Parsing $dsc\n");
+    my $pdsc = Dpkg::Control->new(type => CTRL_PKG_SRC);
+    $pdsc->set_options(allow_pgp => 1);
+    if (!$pdsc->load($dsc)) {
+	print STDERR "Could not parse $dsc\n";
+	return undef;
     }
 
-    return @files;
+    my $csums = Dpkg::Checksums->new();
+    $csums->add_from_control($pdsc, use_files_for_md5 => 1);
+    return $csums->get_files();
 }
 
 1;

@@ -801,10 +801,10 @@ sub fetch_source_files {
 	# $file is the name of the downloaded dsc file written in a tempfile.
 	my $file;
 	$file = download($self->get('DSC')) or
-	    $self->log_error("Could not download " . $self->get('DSC')) and
+	    $self->log_error("Could not download " . $self->get('DSC') . "\n") and
 	    return 0;
-	debug("Parsing $dsc\n");
 	my @cwd_files = dsc_files($file);
+
 	if (-f "$dir/$dsc") {
 	    # Copy the local source files into the build directory.
 	    $self->log_subsubsection("Local sources");
