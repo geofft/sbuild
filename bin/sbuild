@@ -32,7 +32,7 @@ use Cwd qw(:DEFAULT abs_path);
 use POSIX;
 use Data::Dumper;
 use Dpkg::Control;
-use Sbuild qw(isin check_group_membership $debug_level split_version);
+use Sbuild qw(isin check_group_membership $debug_level);
 use Sbuild::Conf qw();
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
@@ -169,14 +169,25 @@ sub create_source_package ($) {
 
     my $package = $pclog->{'Source'};
     my $version = $pclog->{'Version'};
-    my $dist = $pclog->{'Distribution'};
-    my ($epoch, $uversion, $dversion) = split_version($version);
 
     if (!defined($package) || !defined($version)) {
 	Sbuild::Exception::Build->throw(
 	    error => "Missing Source or Version in $dsc/debian/changelog",
 	    failstage => "pack-source");
     }
+
+    my $dist = $pclog->{'Distribution'};
+    my $pver = Dpkg::Version->new($version, check => 1);
+    if (!$pver) {
+	Sbuild::Exception::Build->throw(
+	    error => "Bad version $version in $dsc/debian/changelog",
+	    failstage => "pack-source");
+    }
+
+    my ($epoch, $uversion, $dversion);
+    $epoch = $pver->epoch();
+    $uversion = $pver->version();
+    $dversion = $pver->revision();
 
     if (!defined($conf->get('DISTRIBUTION')) ||
 	!$conf->get('DISTRIBUTION')) {
