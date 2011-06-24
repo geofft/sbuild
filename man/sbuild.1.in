@@ -485,7 +485,7 @@ chroot access; schroot access uses the schroot chroot configuration.
 User-specific configuration.
 .TP
 .I /var/lib/sbuild
-Build statistics, source dependencies and lock files.
+Build trees, archive signing keys, build statistics and lock files.
 .SH AUTHORS
 Roman Hodek <Roman.Hodek@informatik.uni\-erlangen.de>.
 .PP
