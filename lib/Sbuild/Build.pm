@@ -37,10 +37,11 @@ use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
 use Dpkg::Arch;
 use Dpkg::Control;
+use Dpkg::Version;
 use MIME::Lite;
 use Term::ANSIColor;
 
-use Sbuild qw($devnull binNMU_version split_version copy isin debug df send_mail dsc_files);
+use Sbuild qw($devnull binNMU_version copy isin debug df send_mail dsc_files);
 use Sbuild::Base;
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
@@ -176,12 +177,18 @@ sub set_version {
     debug("Setting package version: $pkgv\n");
 
     my ($pkg, $version) = split /_/, $pkgv;
-    return if (!defined($pkg) || !defined($version));
+    my $pver = Dpkg::Version->new($version, check => 1);
+    return if (!defined($pkg) || !defined($version) || !defined($pver));
+    my ($o_epoch, $o_version, $o_revision);
+    $o_epoch = $pver->epoch();
+    $o_version = $pver->version();
+    $o_revision = $pver->revision();
 
     # Original version (no binNMU or other addition)
     my $oversion = $version;
     # Original version with stripped epoch
-    (my $osversion = $version) =~ s/^\d+://;
+    my $osversion = $o_version;
+    $osversion .= '-' . $o_revision if $o_revision;
 
     # Add binNMU to version if needed.
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
@@ -189,10 +196,16 @@ sub set_version {
 	    $self->get_conf('APPEND_TO_VERSION'));
     }
 
-    # Version with binNMU or other additions and stripped epoch
-    (my $sversion = $version) =~ s/^\d+://;
+    my $bver = Dpkg::Version->new($version, check => 1);
+    return if (!defined($bver));
+    my ($b_epoch, $b_version, $b_revision);
+    $b_epoch = $bver->epoch();
+    $b_version = $bver->version();
+    $b_revision = $bver->revision();
 
-    my ($epoch, $uversion, $dversion) = split_version($version);
+    # Version with binNMU or other additions and stripped epoch
+    my $sversion = $b_version;
+    $sversion .= '-' . $b_revision if $b_revision;
 
     $self->set('Package', $pkg);
     $self->set('Version', $version);
@@ -203,11 +216,11 @@ sub set_version {
     $self->set('OVersion', $oversion);
     $self->set('OSVersion', $osversion);
     $self->set('SVersion', $sversion);
-    $self->set('VersionEpoch', $epoch);
-    $self->set('VersionUpstream', $uversion);
-    $self->set('VersionDebian', $dversion);
+    $self->set('VersionEpoch', $b_epoch);
+    $self->set('VersionUpstream', $b_version);
+    $self->set('VersionDebian', $b_revision);
     $self->set('DSC File', "${pkg}_${osversion}.dsc");
-    $self->set('DSC Dir', "${pkg}-${uversion}");
+    $self->set('DSC Dir', "${pkg}-${b_version}");
 
     debug("Package = " . $self->get('Package') . "\n");
     debug("Version = " . $self->get('Version') . "\n");
