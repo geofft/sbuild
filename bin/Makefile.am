@@ -74,6 +74,7 @@ install-exec-hook:
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/upload"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/buildd/upload-security"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/sbuild"
+	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/sbuild/build"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/sbuild/apt-keys"
 
 # Links for compatibility.
