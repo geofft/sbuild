@@ -22,6 +22,14 @@ configuration.
      last build, and it also means the logging is simplified and may
      be started earlier.
 
+  3) Added new directory /var/lib/sbuild/build to hold build trees for
+     sbuild when building.  This will be bind mounted on /build inside
+     the chroot following an update to the schroot sbuild and buildd
+     fstab configuration for schroot.  This saves significant amounts
+     of space when using LVM snapshot chroots, and it also makes it
+     easier to preserve build trees for failing builds when using
+     snapshots.
+
 * Major changes in 0.62.3:
 
   1) The apt and internal resolvers will resolve some alternatives
