@@ -27,7 +27,8 @@ use Errno qw(:POSIX);
 use POSIX ();
 
 use Dpkg::Deps;
-use Sbuild qw(isin debug version_compare);
+use Dpkg::Version qw(version_compare_relation);
+use Sbuild qw(debug);
 use Sbuild::Base;
 use Sbuild::ResolverBase;
 
@@ -279,7 +280,7 @@ sub filter_dependencies {
 	    if ($stat->{'Installed'}) {
 		my ($rel, $vers) = ($dep->{'Rel'}, $dep->{'Version'});
 		my $ivers = $stat->{'Version'};
-		if (!$rel || version_compare( $ivers, $rel, $vers )){
+		if (!$rel || version_compare_relation( $ivers, $rel, $vers )){
 		    debug("$name: neg dep, installed, not versioned or ",
 				 "version relation satisfied --> remove\n");
 		    $self->log("$name: installed (negative dependency)");
@@ -332,10 +333,10 @@ sub filter_dependencies {
 		if ($self->get_conf('APT_POLICY') &&
 		    defined($policy->{$name}) &&
 		    $rel) {
-		    if (!version_compare($policy->{$name}->{defversion}, $rel, $vers)) {
+		    if (!version_compare_relation($policy->{$name}->{defversion}, $rel, $vers)) {
 			$self->log("Default version of $name not sufficient, ");
 			foreach my $cvers (@{$policy->{$name}->{versions}}) {
-			    if (version_compare($cvers, $rel, $vers)) {
+			    if (version_compare_relation($cvers, $rel, $vers)) {
 				$self->log("using version $cvers\n");
 				$installable = $name . "=" . $cvers if !$installable;
 				last;
@@ -353,7 +354,7 @@ sub filter_dependencies {
 		next;
 	    }
 	    my $ivers = $stat->{'Version'};
-	    if (!$rel || version_compare( $ivers, $rel, $vers )) {
+	    if (!$rel || version_compare_relation( $ivers, $rel, $vers )) {
 		debug("$name: pos dep, installed, no versioned dep or ",
 			     "version ok\n");
 		$self->log("$name: already installed ($ivers");
@@ -367,15 +368,15 @@ sub filter_dependencies {
 	    $self->log("$name: non-matching version installed ".
 		       "($ivers ! $rel $vers)\n");
 	    if ($rel =~ /^</ ||
-		($rel eq '=' && version_compare($ivers, '>>', $vers))) {
+		($rel eq '=' && version_compare_relation($ivers, '>>', $vers))) {
 		debug("$name: would be a downgrade!\n");
 		$self->log("$name: would have to downgrade!\n");
 	    } elsif ($self->get_conf('APT_POLICY') &&
 		     defined($policy->{$name})) {
-		if (!version_compare($policy->{$name}->{defversion}, $rel, $vers)) {
+		if (!version_compare_relation($policy->{$name}->{defversion}, $rel, $vers)) {
 		    $self->log("Default version of $name not sufficient, ");
 		    foreach my $cvers (@{$policy->{$name}->{versions}}) {
-			if(version_compare($cvers, $rel, $vers)) {
+			if(version_compare_relation($cvers, $rel, $vers)) {
 			    $self->log("using version $cvers\n");
 			    $upgradeable = $name if ! $upgradeable;
 			    last;
@@ -458,8 +459,9 @@ sub check_dependencies {
 		    # It's a versioned build-conflict, but we installed
 		    # a package that provides the conflicted package. It's ok.
 		}
-		elsif (version_compare($stat->{'Version'}, $dep->{'Rel'},
-				       $dep->{'Version'})) {
+		elsif (version_compare_relation($stat->{'Version'},
+						$dep->{'Rel'},
+						$dep->{'Version'})) {
 		    $fail .= "$name(inst $stat->{'Version'} $dep->{'Rel'} ".
 			"conflicted $dep->{'Version'})\n";
 		}
@@ -476,8 +478,9 @@ sub check_dependencies {
 		    $f .= "$name(missing) ";
 		}
 		elsif ($d->{'Rel'} &&
-		       !version_compare( $stat->{'Version'}, $d->{'Rel'},
-					 $d->{'Version'} )) {
+		       !version_compare_relation( $stat->{'Version'},
+						  $d->{'Rel'},
+						  $d->{'Version'} )) {
 		    $f =~ s/ $/\|/ if $f;
 		    $f .= "$name(inst $stat->{'Version'} ! $d->{'Rel'} ".
 			"wanted $d->{'Version'}) ";

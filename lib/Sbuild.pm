@@ -40,8 +40,7 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($debug_level $devnull version_less version_lesseq
-		 version_eq version_compare split_version
+    @EXPORT = qw($debug_level $devnull split_version
 		 binNMU_version parse_date isin copy dump_file
 		 check_packages help_text version_text usage_error
 		 send_mail debug debug2 df check_group_membership
@@ -60,13 +59,6 @@ BEGIN {
     }
 }
 
-sub version_less ($$);
-sub version_lesseq ($$);
-sub version_eq ($$);
-sub version_compare ($$$);
-sub do_version_cmp ($$);
-sub order ($);
-sub version_cmp_single ($$);
 sub split_version ($);
 sub binNMU_version ($$$);
 sub parse_date ($);
@@ -81,128 +73,6 @@ sub debug (@);
 sub debug2 (@);
 sub check_group_membership();
 sub dsc_files ($);
-
-sub version_less ($$) {
-	my $v1 = shift;
-	my $v2 = shift;
-
-	return version_compare( $v1, "<<", $v2 );
-}
-
-sub version_lesseq ($$) {
-	my $v1 = shift;
-	my $v2 = shift;
-
-	return version_compare( $v1, "<=", $v2 );
-}
-
-sub version_eq ($$) {
-	my $v1 = shift;
-	my $v2 = shift;
-
-	return version_compare( $v1, "=", $v2 );
-}
-
-sub version_compare ($$$) {
-	my $v1 = shift;
-	my $rel = shift;
-	my $v2 = shift;
-
-	# If we're trying to compare versions against a provided package,
-	# always return "not satisfied", forcing an install attempt.
-	if ($v1 eq "=*=PROVIDED=*=") {
-		return 0;
-	}
-
-	if ($Sbuild::opt_correct_version_cmp) {
-		system "dpkg", "--compare-versions", $v1, $rel, $v2;
-		return $? == 0;
-	}
-	else {
-		if ($rel eq "=" || $rel eq "==") {
-			return $v1 eq $v2;
-		}
-		elsif ($rel eq "<<") {
-			return do_version_cmp( $v1, $v2 );
-		}
-		elsif ($rel eq "<=" || $rel eq "<") {
-			return $v1 eq $v2 || do_version_cmp( $v1, $v2 );
-		}
-		elsif ($rel eq ">=" || $rel eq ">") {
-			return !do_version_cmp( $v1, $v2 );
-		}
-		elsif ($rel eq ">>") {
-			return $v1 ne $v2 && !do_version_cmp( $v1, $v2 );
-		}
-		else {
-			warn "version_compare called with bad relation '$rel'\n";
-			return $v1 eq $2;
-		}
-	}
-}
-
-sub do_version_cmp ($$) {
-	my($versa, $versb) = @_;
-	my($epocha,$upstra,$reva);
-	my($epochb,$upstrb,$revb);
-	my($r);
-
-	($epocha,$upstra,$reva) = split_version($versa);
-	($epochb,$upstrb,$revb) = split_version($versb);
-
-	# compare epochs
-	return 1 if $epocha < $epochb;
-	return 0 if $epocha > $epochb;
-
-	# compare upstream versions
-	$r = version_cmp_single( $upstra, $upstrb );
-	return $r < 0 if $r != 0;
-
-	# compare Debian revisions
-	$r = version_cmp_single( $reva, $revb );
-	return $r < 0;
-}
-
-sub order ($) {
-	for ($_[0])
-	{
-	/\~/     and return -1;
-	/\d/     and return  0;
-	/[a-z]/i and return ord;
-		     return (ord) + 256;
-	}
-}
-
-sub version_cmp_single ($$) {
-	my($versa, $versb) = @_;
-	my($a,$b,$lena,$lenb,$va,$vb,$i);
-
-	for(;;) {
-		# compare non-numeric parts
-		$versa =~ /^([^\d]*)(.*)/; $a = $1; $versa = $2;
-		$versb =~ /^([^\d]*)(.*)/; $b = $1; $versb = $2;
-		$lena = length($a);
-		$lenb = length($b);
-		for( $i = 0; $i < $lena || $i < $lenb; ++$i ) {
-			$va = $i < $lena ? order(substr( $a, $i, 1 )) : 0;
-			$vb = $i < $lenb ? order(substr( $b, $i, 1 )) : 0;
-			return $va - $vb if $va != $vb;
-		}
-		# compare numeric parts
-		$versa =~ /^(\d*)(.*)/; $a = $1; $a ||= 0; $versa = $2;
-		$versb =~ /^(\d*)(.*)/; $b = $1; $b ||= 0; $versb = $2;
-		return $a - $b if $a != $b;
-		return 0 if !$versa && !$versb;
-		if (!$versa) {
-			return +1 if order(substr( $versb, 0, 1 ) ) < 0;
-			return -1;
-		}
-		if (!$versb) {
-			return -1 if order(substr( $versa, 0, 1 ) ) < 0;
-			return +1;
-		}
-	}
-}
 
 sub split_version ($) {
 	my($vers) = @_;

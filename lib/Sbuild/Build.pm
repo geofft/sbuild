@@ -40,7 +40,7 @@ use Dpkg::Control;
 use MIME::Lite;
 use Term::ANSIColor;
 
-use Sbuild qw($devnull binNMU_version version_compare split_version copy isin debug df send_mail dsc_files);
+use Sbuild qw($devnull binNMU_version split_version copy isin debug df send_mail dsc_files);
 use Sbuild::Base;
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;

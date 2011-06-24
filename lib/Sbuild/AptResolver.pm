@@ -24,7 +24,7 @@ package Sbuild::AptResolver;
 use strict;
 use warnings;
 
-use Sbuild qw(debug copy version_compare);
+use Sbuild qw(debug copy);
 use Sbuild::Base;
 use Sbuild::ResolverBase;
 
