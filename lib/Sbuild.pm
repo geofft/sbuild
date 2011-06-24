@@ -33,6 +33,7 @@ use IO::Zlib;
 use MIME::Base64;
 use Dpkg::Control;
 use Dpkg::Checksums;
+use Dpkg::Version;
 
 BEGIN {
     use Exporter ();
@@ -40,12 +41,10 @@ BEGIN {
 
     @ISA = qw(Exporter);
 
-    @EXPORT = qw($debug_level $devnull split_version
-		 binNMU_version parse_date isin copy dump_file
-		 check_packages help_text version_text usage_error
-		 send_mail debug debug2 df check_group_membership
-		 dsc_files);
-
+    @EXPORT = qw($debug_level $devnull binNMU_version parse_date isin
+		 copy dump_file check_packages help_text version_text
+		 usage_error send_mail debug debug2 df
+		 check_group_membership dsc_files);
 }
 
 our $devnull;
@@ -59,7 +58,6 @@ BEGIN {
     }
 }
 
-sub split_version ($);
 sub binNMU_version ($$$);
 sub parse_date ($);
 sub isin ($@);
@@ -73,23 +71,6 @@ sub debug (@);
 sub debug2 (@);
 sub check_group_membership();
 sub dsc_files ($);
-
-sub split_version ($) {
-	my($vers) = @_;
-	my($epoch,$revision) = (0,"");
-
-	if ($vers =~ /^(\d+):(.*)/) {
-		$epoch = $1;
-		$vers = $2;
-	}
-
-	if ($vers =~ /(.*)-([^-]+)$/) {
-		$revision = $2;
-		$vers = $1;
-	}
-
-	return( $epoch, $vers, $revision );
-}
 
 sub binNMU_version ($$$) {
 	my $v = shift;
