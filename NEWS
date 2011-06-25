@@ -13,7 +13,9 @@ configuration.
      does not match the distribution in the changelog.  This is to
      indicate that there may be a potential problem, such as
      potentially uploading a package intended for experimental to
-     unstable by building for unstable by accident.
+     unstable by building for unstable by accident.  Additionally,
+     lintian test results are also coloured to highlight success and
+     failure.  Log colouring may now be disabled using $log_colour.
 
   2) sbuild only permits building one source package at once.
      Previously sbuild would allow building of more than one package
