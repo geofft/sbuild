@@ -30,6 +30,12 @@ configuration.
      easier to preserve build trees for failing builds when using
      snapshots.
 
+  4) Extra environment variables to be set when running
+     dpkg-buildpackage may now be set using $build_environment; these
+     will supplement the existing environment (e.g. PATH,
+     LD_LIBRARY_PATH).  These variables will not be subject to
+     filtering with $environment_filter.
+
 * Major changes in 0.62.3:
 
   1) The apt and internal resolvers will resolve some alternatives
