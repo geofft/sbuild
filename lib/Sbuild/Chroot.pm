@@ -50,6 +50,10 @@ sub new {
     my $self = $class->SUPER::new($conf);
     bless($self, $class);
 
+    my @filter;
+    @filter = @{$self->get_conf('ENVIRONMENT_FILTER')}
+	if (defined($self->get_conf('ENVIRONMENT_FILTER')));
+
     $self->set('Session ID', "");
     $self->set('Chroot ID', $chroot_id);
     $self->set('Defaults', {
@@ -57,6 +61,7 @@ sub new {
 	'INTCOMMAND' => [], # Private
 	'EXPCOMMAND' => [], # Private
 	'ENV' => {},
+	'ENV_FILTER' => \@filter,
 	'USER' => 'root',
 	'CHROOT' => 1,
 	'PRIORITY' => 0,
@@ -276,21 +281,26 @@ sub exec_command {
 	$ENV{$_} = $commandenv->{$_};
     }
 
+    my @filter;
+    my $chrootfilter = $self->get('Defaults')->{'ENV_FILTER'};
+    push(@filter, @{$chrootfilter});
+
+    my $commandfilter = $options->{'ENV_FILTER'};
+    push(@filter, @{$commandfilter}) if defined($commandfilter);
+
     # Sanitise environment
-    if (defined $self->get_conf('ENVIRONMENT_FILTER')) {
-	foreach my $var (keys %ENV) {
-	    my $match = 0;
-	    foreach my $regex (@{$self->get_conf('ENVIRONMENT_FILTER')}) {
-		$match = 1 if
-		    $var =~ m/($regex)/;
-	    }
-	    delete $ENV{$var} if
-		$match == 0;
-	    if (!$match) {
-		debug2("Environment filter: Deleted $var\n");
-	    } else {
-		debug2("Environment filter: Kept $var\n");
-	    }
+    foreach my $var (keys %ENV) {
+	my $match = 0;
+	foreach my $regex (@filter) {
+	    $match = 1 if
+		$var =~ m/($regex)/;
+	}
+	delete $ENV{$var} if
+	    $match == 0;
+	if (!$match) {
+	    debug2("Environment filter: Deleted $var\n");
+	} else {
+	    debug2("Environment filter: Kept $var\n");
 	}
     }
 

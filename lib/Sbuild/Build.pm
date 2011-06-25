@@ -101,6 +101,7 @@ sub new {
     $host_defaults->{'STREAMIN'} = $devnull;
     $host_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
     $host_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
+    $host_defaults->{'ENV_FILTER'} = $self->get_conf('ENVIRONMENT_FILTER');
     # Note, this should never fail.  But, we should handle failure anyway.
     $self->get('Host')->begin_session();
 
@@ -459,6 +460,7 @@ sub run_chroot_session {
 	$chroot_defaults->{'ENV'}->{'LC_ALL'} = 'POSIX';
 	$chroot_defaults->{'ENV'}->{'SHELL'} = '/bin/sh';
 	$chroot_defaults->{'ENV'}->{'HOME'} = '/sbuild-nonexistent';
+	$chroot_defaults->{'ENV_FILTER'} = $self->get_conf('ENVIRONMENT_FILTER');
 
 	my $resolver = get_resolver($self->get('Config'), $session, $host);
 	$resolver->set('Log Stream', $self->get('Log Stream'));
