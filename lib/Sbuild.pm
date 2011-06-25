@@ -33,7 +33,6 @@ use IO::Zlib;
 use MIME::Base64;
 use Dpkg::Control;
 use Dpkg::Checksums;
-use Dpkg::Version;
 
 BEGIN {
     use Exporter ();
@@ -48,7 +47,6 @@ BEGIN {
 }
 
 our $devnull;
-my $opt_correct_version_cmp = 1;
 our $debug_level = 0;
 
 BEGIN {
