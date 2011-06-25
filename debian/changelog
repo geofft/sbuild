@@ -34,10 +34,15 @@ sbuild (0.62.4-1) unstable; urgency=low
       (Closes: #631595).  These variables will supplement the existing
       environment (e.g. PATH, LD_LIBRARY_PATH), and will not be subject
       to filtering with $environment_filter.
+    - Existing hard-coded .dsc/.changes/dpkg-parsechangelog parsing has
+      been replaced with use of Dpkg::Control.  Existing reimplmentation
+      of the dpkg version comparison and regexes to split versions into
+      epoch/version/revision have been replaced with use of
+      Dpkg::Version.
   * sbuild-adduser: Use current sbuild-update options in example
     (Closes: #630791).
 
- -- Roger Leigh <rleigh@debian.org>  Sat, 25 Jun 2011 11:39:15 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 25 Jun 2011 11:39:44 +0100
 
 sbuild (0.62.3-1) unstable; urgency=low
 
