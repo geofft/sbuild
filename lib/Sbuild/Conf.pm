@@ -664,6 +664,17 @@ sub setup ($) {
 			'^SHELL$'],
 	    HELP => 'Only environment variables matching one of the regular expressions in this arrayref will be passed to dpkg-buildpackage and other programs run by sbuild.'
 	},
+	'BUILD_ENVIRONMENT'			=> {
+	    TYPE => 'HASH:STRING',
+	    VARNAME => 'build_environment',
+	    GROUP => 'Core options',
+	    DEFAULT => {},
+	    HELP => 'Environment to set during the build.  Defaults to setting PATH and LD_LIBRARY_PATH only.  Example:',
+	    EXAMPLE =>
+'$build_environment = {
+        \'CCACHE_DIR\' => \'/build/cache\'
+};'
+	},
 	'LD_LIBRARY_PATH'			=> {
 	    TYPE => 'STRING',
 	    VARNAME => 'ld_library_path',

@@ -1432,17 +1432,26 @@ sub build {
 	push (@{$buildcmd}, @{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')});
     }
 
-    my $buildenv = {};
-    $buildenv->{'PATH'} = $self->get_conf('PATH');
-    $buildenv->{'LD_LIBRARY_PATH'} = $self->get_conf('LD_LIBRARY_PATH')
+    # Set up additional build environment variables.
+    my %buildenv = %{$self->get_conf('BUILD_ENVIRONMENT')};
+    $buildenv{'PATH'} = $self->get_conf('PATH');
+    $buildenv{'LD_LIBRARY_PATH'} = $self->get_conf('LD_LIBRARY_PATH')
 	if defined($self->get_conf('LD_LIBRARY_PATH'));
+
+    # Explicitly add any needed environment to the environment filter
+    # temporarily for dpkg-buildpackage.
+    my @env_filter;
+    foreach my $envvar (keys %buildenv) {
+	push(@env_filter, "^$envvar\$");
+    }
 
     # Dump build environment
     $self->log_subsubsection("User Environment");
     {
 	my $pipe = $self->get('Session')->pipe_command(
 	    { COMMAND => ['env'],
-	      ENV => $buildenv,
+	      ENV => \%buildenv,
+	      ENV_FILTER => \@env_filter,
 	      USER => $self->get_conf('BUILD_USER'),
 	      SETSID => 1,
 	      PRIORITY => 0,
@@ -1463,7 +1472,8 @@ sub build {
 
     my $command = {
 	COMMAND => $buildcmd,
-	ENV => $buildenv,
+	ENV => \%buildenv,
+	ENV_FILTER => \@env_filter,
 	USER => $self->get_conf('BUILD_USER'),
 	SETSID => 1,
 	PRIORITY => 0,
