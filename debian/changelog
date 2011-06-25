@@ -26,10 +26,15 @@ sbuild (0.62.4-1) unstable; urgency=low
       of space when using LVM snapshot chroots, and it also makes it
       easier to preserve build trees for failing builds when using
       snapshots.
+    - Extra environment variables to be set when running
+      dpkg-buildpackage may now be set using $build_environment
+      (Closes: #631595).  These variables will supplement the existing
+      environment (e.g. PATH, LD_LIBRARY_PATH), and will not be subject
+      to filtering with $environment_filter.
   * sbuild-adduser: Use current sbuild-update options in example
     (Closes: #630791).
 
- -- Roger Leigh <rleigh@debian.org>  Fri, 24 Jun 2011 22:49:20 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 25 Jun 2011 11:27:04 +0100
 
 sbuild (0.62.3-1) unstable; urgency=low
 
