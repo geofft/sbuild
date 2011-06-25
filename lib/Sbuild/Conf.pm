@@ -669,7 +669,7 @@ sub setup ($) {
 	    VARNAME => 'build_environment',
 	    GROUP => 'Core options',
 	    DEFAULT => {},
-	    HELP => 'Environment to set during the build.  Defaults to setting PATH and LD_LIBRARY_PATH only.  Example:',
+	    HELP => 'Environment to set during the build.  Defaults to setting PATH and LD_LIBRARY_PATH only.  Note that these environment variables are not subject to filtering with ENVIRONMENT_FILTER.  Example:',
 	    EXAMPLE =>
 '$build_environment = {
         \'CCACHE_DIR\' => \'/build/cache\'
