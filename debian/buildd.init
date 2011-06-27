@@ -48,9 +48,9 @@ fi
 set -e
 
 start () {
-    log_begin_msg "Starting $DESC: $NAME"
+    log_begin_msg "Starting $DESC: $NAME "
 
-    if [ -e /home/buildd/NO-DAEMON-PLEASE ]; then
+    if [ -e /var/lib/buildd/NO-DAEMON-PLEASE ]; then
         log_failure_msg "NO-DAEMON-PLEASE exists, not starting"
     else
         start-stop-daemon --start --quiet --oknodo --pidfile "$PIDFILE" --chuid buildd:buildd --exec $DAEMON
@@ -82,9 +82,9 @@ reload () {
 }
 
 restart () {
-    log_begin_msg "Restarting $DESC: $NAME"
+    log_begin_msg "Restarting $DESC: $NAME "
     if start-stop-daemon --stop --quiet --retry 5 --oknodo --pidfile $PIDFILE --name $NAME; then
-       if [ -e /home/buildd/NO-DAEMON-PLEASE ]; then
+       if [ -e /var/lib/buildd/NO-DAEMON-PLEASE ]; then
            log_failure_msg "NO-DAEMON-PLEASE exists, not starting"
        else
            start-stop-daemon --start --quiet --pidfile "$PIDFILE"  --chuid buildd:buildd --exec $DAEMON
