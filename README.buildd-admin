@@ -106,7 +106,7 @@ waiting period of $delay_after_give_back minutes.
 buildd-mail is the mail processor of the buildd system. It should be
 listed in the user buildd's ~/.forward file, e.g.:
 
-  "|/home/buildd/bin/buildd-mail-wrapper"
+  "|/usr/bin/buildd-mail"
 
 The wrapper is necessary to allow setuid-ness, and also queues up
 incoming mails in ~/mqueue, so that the MTA process can exit and
