@@ -24,6 +24,6 @@ set -e
 for dist in unstable; do
     for pkg in bash dadadodo time pong2; do
 	ver="$(schroot -c "$dist" -- apt-cache showsrc "$pkg" | grep ^Version: |  head -n 1 | sed -e 's/^Version:[[:space:]]*\(.*\)$/\1/')"
-	PATH="/home/rleigh/sbuild/bin:$PATH" PERL5LIB="/home/rleigh/sbuild/lib" "/home/rleigh/sbuild/bin/sbuild" -s -A -d"$dist" "${pkg}_${ver}"
+	PATH="@abs_top_srcdir@/bin:$PATH" PERL5LIB="@abs_top_srcdir@/lib" "@abs_top_srcdir@/bin/sbuild" -s -A -d"$dist" "${pkg}_${ver}"
     done
 done
