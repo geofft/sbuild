@@ -184,10 +184,10 @@ sub create_source_package ($) {
 	    failstage => "pack-source");
     }
 
-    my ($epoch, $uversion, $dversion);
-    $epoch = $pver->epoch();
+    my ($uversion, $dversion);
     $uversion = $pver->version();
-    $dversion = $pver->revision();
+    $dversion = "-" . $pver->revision();
+    $dversion = "" if $pver->{'no_revision'};
 
     if (!defined($conf->get('DISTRIBUTION')) ||
 	!$conf->get('DISTRIBUTION')) {
@@ -207,7 +207,7 @@ sub create_source_package ($) {
 	$conf->set('BUILD_DIR', $dir);
     }
 
-    $dsc = "${dir}/${package}_${uversion}-${dversion}.dsc";
+    $dsc = "${dir}/${package}_${uversion}${dversion}.dsc";
 
     system($conf->get('FAKEROOT'), 'debian/rules', 'clean');
     if ($?) {

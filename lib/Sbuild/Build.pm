@@ -180,10 +180,10 @@ sub set_version {
     my ($pkg, $version) = split /_/, $pkgv;
     my $pver = Dpkg::Version->new($version, check => 1);
     return if (!defined($pkg) || !defined($version) || !defined($pver));
-    my ($o_epoch, $o_version, $o_revision);
-    $o_epoch = $pver->epoch();
+    my ($o_version, $o_revision);
     $o_version = $pver->version();
     $o_revision = $pver->revision();
+    $o_revision = "" if $pver->{'no_revision'};
 
     # Original version (no binNMU or other addition)
     my $oversion = $version;
@@ -201,8 +201,10 @@ sub set_version {
     return if (!defined($bver));
     my ($b_epoch, $b_version, $b_revision);
     $b_epoch = $bver->epoch();
+    $b_epoch = "" if $bver->{'no_epoch'};
     $b_version = $bver->version();
     $b_revision = $bver->revision();
+    $b_revision = "" if $bver->{'no_revision'};
 
     # Version with binNMU or other additions and stripped epoch
     my $sversion = $b_version;
