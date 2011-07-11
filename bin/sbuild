@@ -221,7 +221,7 @@ sub create_source_package ($) {
     my @dpkg_source_command = ($conf->get('DPKG_SOURCE'), '-b');
     push @dpkg_source_command, @{$conf->get('DPKG_SOURCE_OPTIONS')}
     if ($conf->get('DPKG_SOURCE_OPTIONS'));
-    push @dpkg_source_command, "${package}-${uversion}";
+    push @dpkg_source_command, $origdir;
     system(@dpkg_source_command);
     if ($?) {
 	Sbuild::Exception::Build->throw(
