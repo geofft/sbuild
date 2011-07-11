@@ -26,4 +26,9 @@ for dist in unstable; do
 	ver="$(schroot -c "$dist" -- apt-cache showsrc "$pkg" | grep ^Version: |  head -n 1 | sed -e 's/^Version:[[:space:]]*\(.*\)$/\1/')"
 	PATH="@abs_top_srcdir@/bin:$PATH" PERL5LIB="@abs_top_srcdir@/lib" "@abs_top_srcdir@/bin/sbuild" -s -A -d"$dist" "${pkg}_${ver}"
     done
+
+    for pkg in bash dadadodo; do
+	ver="$(schroot -c "$dist" -- apt-cache showsrc "$pkg" | grep ^Version: |  head -n 1 | sed -e 's/^Version:[[:space:]]*\(.*\)$/\1/')"
+	PATH="@abs_top_srcdir@/bin:$PATH" PERL5LIB="@abs_top_srcdir@/lib" "@abs_top_srcdir@/bin/sbuild" --batch -s -A -d"$dist" "${pkg}_${ver}"
+    done
 done
