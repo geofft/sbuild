@@ -27,6 +27,7 @@ sbuild \- build debian packages from source
 .RB [ \-A \[or] \-\-arch\-all ]
 .RB [ \-\-archive=\fIarchive\fP ]
 .RB [ \-d \[or] \-\-dist=\fIdistribution\fP ]
+.RB [ \-c \[or] \-\-chroot=\fIchroot\fP ]
 .RB [ \-\-arch=\fIarchitecture\fP ]
 .RB [ \-s \[or] \-\-source ]
 .RB [ \-\-force\-orig\-source ]
@@ -150,7 +151,7 @@ instead of \-b. This option is the opposite of \-\-arch\-all.
 Operate in batchmode, i.e. write a build-progress file during execution
 and files on shutdown to facilitate a clean restart.
 .TP
-.BR \-c ", " "\-\-chroot"
+.BR \-c ", " "\-\-chroot=\fIchroot\fP"
 Use the specified chroot. If not specified, the default is the first of
 \fI$distribution\-$arch\-sbuild\fP, \fI$distribution\-sbuild\fP,
 \fI$distribution\-$arch\fP or \fI$distribution\fP that exists.
