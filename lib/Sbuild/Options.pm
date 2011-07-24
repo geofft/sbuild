@@ -138,7 +138,7 @@ sub set_options {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				$_[1]);
 		       },
-		       "j=i" => sub {
+		       "j|jobs=i" => sub {
 			   push(@{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')},
 				'-j'.$_[1])
 		       },
