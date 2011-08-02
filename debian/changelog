@@ -5,8 +5,13 @@ sbuild (0.62.6-1) unstable; urgency=low
   * sbuild:
     - --jobs is an alias for -j, to match documented behaviour
       (Closes: #635250).
+    - The use of alternatives in Build-Depends and Build-Depends-Indep
+      may be turned on or off by the configuration variable
+      $resolve_alternatives.  It may also be enabled or disabled at
+      build time using the --resolve-alternatives and
+      --no-resolve-alternatives options, respectively.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 24 Jul 2011 12:45:43 +0100
+ -- Roger Leigh <rleigh@debian.org>  Tue, 02 Aug 2011 21:06:02 +0100
 
 sbuild (0.62.5-1) unstable; urgency=low
 
