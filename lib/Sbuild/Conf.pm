@@ -1027,7 +1027,8 @@ sub setup ($) {
 
 		return $retval;
 	    },
-	    HELP => 'Should the dependency resolver use alternatives in Build-Depends and Build-Depends-Indep?  By default, only the first alternative will be used; all other alternatives will be removed.  Note that this does not include architecture-specific alternatives, which are reduced to the build architecture prior to alternatives removal.  This should be left disabled when building for unstable; it may be useful when building backports.'
+	    EXAMPLE => '$resolve_alternatives = 0;',
+	    HELP => 'Should the dependency resolver use alternatives in Build-Depends and Build-Depends-Indep?  By default, using the \'internal\' or \'apt\' resolvers, only the first alternative will be used; all other alternatives will be removed.  When using the \'aptitude\' resolver, it will default to using all alternatives.  Note that this does not include architecture-specific alternatives, which are reduced to the build architecture prior to alternatives removal.  This should be left disabled when building for unstable; it may be useful when building for experimental or backports.  Set to undef to use the default, 1 to enable, or 0 to disable.'
 	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
 	    TYPE => 'STRING',

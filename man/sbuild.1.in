@@ -67,6 +67,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-log\-external\-command\-error ]
 .RB [ \-\-setup\-hook=\fIhook-script\fP ]
 .RB [ \-\-build\-dep\-resolver=\fIresolver\fP ]
+.RB [ \-\-resolve\-alternatives \[or] \-\-no\-resolve\-alternatives ]
 .RB [ PACKAGE [ .dsc ]]
 .SH DESCRIPTION
 \fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
@@ -365,6 +366,15 @@ significant deficiencies such as not being able to handle complex alternative
 and virtual dependencies, and is deprecated.  Like apt, it only uses the first
 alternative build dependency when multiple alternatives exist.  It is not
 recommended for future use, and will be removed in the future.
+.TP
+.BR \-\-resolve\-alternatives
+Allow the use of alternatives in Build-Depends and Build-Depends-Indep.  This
+is the default for the aptitude dependency resolver.
+.TP
+.BR \-\-no\-resolve\-alternatives
+Do not allow the use of alternatives in Build-Depends and Build-Depends-Indep.
+Note that alternatives for the same package (e.g. different versions) are still
+allowed.  This is the default for the internal and apt dependency resolvers.
 .SH EXTERNAL COMMANDS
 Support to run external commands during an sbuild run is provided. A set of
 external commands can be run at various stages of a build. Providing commands to

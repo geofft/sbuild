@@ -200,6 +200,12 @@ sub set_options {
 		       "build-dep-resolver=s" => sub {
 			   $self->set_conf('BUILD_DEP_RESOLVER', $_[1]);
 		       },
+		       "resolve-alternatives" => sub {
+			   $self->set_conf('RESOLVE_ALTERNATIVES', 1);
+		       },
+		       "no-resolve-alternatives" => sub {
+			   $self->set_conf('RESOLVE_ALTERNATIVES', 0);
+		       },
 			"run-lintian" => sub {
 			    $self->set_conf('RUN_LINTIAN', 1);
 		       },
