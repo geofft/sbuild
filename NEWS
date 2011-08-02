@@ -7,9 +7,13 @@ Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
 
-* Major changes in 0.62.5:
+* Major changes in 0.62.6:
 
-  None.
+  1) The use of alternatives in Build-Depends and Build-Depends-Indep
+     may be turned on or off by the configuration variable
+     $resolve_alternatives.  It may also be enabled or disabled at
+     build time using the --resolve-alternatives and
+     --no-resolve-alternatives options, respectively.
 
 * Major changes in 0.62.5:
 
