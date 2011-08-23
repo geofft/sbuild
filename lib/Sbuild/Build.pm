@@ -2317,11 +2317,13 @@ sub send_mime_build_log {
 
     my $changes = $self->get('Package_SVersion') . '_' . $self->get('Arch') . '.changes';
     if ($self->get_status() eq 'successful' && -r $changes) {
-	$msg->attach(
+	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',
 		Path     => $changes,
 		Filename => basename($changes)
 		);
+	$log_part->attr('content-type.charset' => 'UTF-8');
+	$msg->attach($log_part);
     }
 
     my $stats = '';
