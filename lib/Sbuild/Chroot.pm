@@ -353,7 +353,7 @@ sub lock_chroot {
 	    } else {
 		(\$job, \$pid, \$user) = (\$1, \$2, \$3);
 		if (kill( 0, \$pid ) == 0 && \$! == ESRCH) {
-		    # process doesn't exist anymore, remove stale lock
+		    # process no longer exists, remove stale lock
 		    print STDERR "Removing stale lock file \$lockfile ".
 			"(job \$job, pid \$pid, user \$user)\\n";
 		    if (!unlink(\$lockfile)) {
@@ -375,7 +375,7 @@ sub lock_chroot {
 	    sleep $lock_interval;
 	    goto repeat;
 	} else {
-	    print STDERR "Can't create lock file \$lockfile: \$!\\n";
+	    print STDERR "Failed to create lock file \$lockfile: \$!\\n";
 	    exit 1;
 	}
     }
