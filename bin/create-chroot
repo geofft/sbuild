@@ -172,7 +172,7 @@ aliases=${SUITEEXTRA}-${ARCH}-sbuild
 EOT
     if [ -z "$VGNAME" ]; then
         echo "type=directory" >> "${TEMPFILE}"
-        echo "location=${TARGET}" >> "${TEMPFILE}"
+        echo "directory=${TARGET}" >> "${TEMPFILE}"
         SCHROOT="schroot -c ${IDENTIFIER}-${ARCH}-sbuild -u root -d /root --"
     else
         cat >>"${TEMPFILE}" <<EOT
