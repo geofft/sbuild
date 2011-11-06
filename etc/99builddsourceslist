@@ -40,8 +40,8 @@ fi
 
 function domirror() {
     for SUITE in ${SUITES:-SUITE}; do
-        echo deb $1     | sed -e "s,COMPONENT,${COMPONTENT},"     -e "s,SUITE,${SUITE}," >> $2
-        echo deb-src $1 | sed -e "s,COMPONENT,${COMPONTENT_SRC}," -e "s,SUITE,${SUITE}," >> $2
+        echo deb $1     | sed -e "s,COMPONENT,${COMPONENT},"     -e "s,SUITE,${SUITE}," >> $2
+        echo deb-src $1 | sed -e "s,COMPONENT,${COMPONENT_SRC}," -e "s,SUITE,${SUITE}," >> $2
     done
 }
 
@@ -58,8 +58,8 @@ if [ "$1" = "setup-start" ] || [ "$1" = "setup-recover" ]; then
             fi
         fi
 
-        COMPONTENT="main contrib"
-        COMPONTENT_SRC="main contrib non-free"
+        COMPONENT="main contrib"
+        COMPONENT_SRC="main contrib non-free"
 
         if [ "${SUITE_VARIANT}" = 'proposed-updates' ]; then
             SUITES="${SUITE_BASE} ${SUITE_BASE}-proposed-updates"
