@@ -136,8 +136,10 @@ sub get_info {
 
     my $chroot_type = "";
 
-    open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot
-	or die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
+    # If namespaces aren't supported, try to fall back to old style session.
+    open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', "session:$chroot" or
+	open CHROOT_DATA, '-|', $self->get_conf('SCHROOT'), '--info', '--chroot', $chroot or
+	die 'Can\'t run ' . $self->get_conf('SCHROOT') . ' to get chroot data';
 
     my $tmp = $self->get_info_from_stream(\*CHROOT_DATA);
 
