@@ -10,8 +10,10 @@ sbuild (0.62.6-1) unstable; urgency=low
       $resolve_alternatives.  It may also be enabled or disabled at
       build time using the --resolve-alternatives and
       --no-resolve-alternatives options, respectively.
+    - Correctly support chroot namespaces, to work with schroot 1.5.x
+      (Closes: #612630). 
 
- -- Roger Leigh <rleigh@debian.org>  Tue, 02 Aug 2011 21:06:02 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2011 21:46:28 +0000
 
 sbuild (0.62.5-1) unstable; urgency=low
 
