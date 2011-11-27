@@ -15,6 +15,9 @@ configuration.
      build time using the --resolve-alternatives and
      --no-resolve-alternatives options, respectively.
 
+  2) schroot namespaces are now fully supported, meaning that
+     current 1.5.x schroot versions now work with sbuild.
+
 * Major changes in 0.62.5:
 
   None.
