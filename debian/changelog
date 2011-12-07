@@ -11,9 +11,12 @@ sbuild (0.62.6-1) unstable; urgency=low
       build time using the --resolve-alternatives and
       --no-resolve-alternatives options, respectively.
     - Correctly support chroot namespaces, to work with schroot 1.5.x
-      (Closes: #612630). 
+      (Closes: #612630).
+    - Support Build-Depends-Arch and Build-Conflicts-Arch fields in
+      debian/control.  These may be manually set with
+      --add-depends-arch and --add-conflicts-arch, respectively.
 
- -- Roger Leigh <rleigh@debian.org>  Sun, 27 Nov 2011 21:46:28 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 07 Dec 2011 13:58:44 +0000
 
 sbuild (0.62.5-1) unstable; urgency=low
 
