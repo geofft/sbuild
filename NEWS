@@ -15,7 +15,12 @@ configuration.
      build time using the --resolve-alternatives and
      --no-resolve-alternatives options, respectively.
 
-  2) schroot namespaces are now fully supported, meaning that
+  2) The new Build-Depends-Arch and Build-Conflicts-Arch fields in
+     debian/control are now supported.  These may be manually set
+     with --add-depends-arch and --add-conflicts-arch,
+     respectively.
+
+  3) schroot namespaces are now fully supported, meaning that
      current 1.5.x schroot versions now work with sbuild.
 
 * Major changes in 0.62.5:
