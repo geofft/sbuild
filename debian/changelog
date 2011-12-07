@@ -1,6 +1,7 @@
 sbuild (0.62.6-1) unstable; urgency=low
 
   * New release.
+  * All changes backported from buildd-0.61.0 branch.
   * sbuild.1: Add --chroot to synopsis (Closes: #635203).
   * sbuild:
     - --jobs is an alias for -j, to match documented behaviour
@@ -16,7 +17,7 @@ sbuild (0.62.6-1) unstable; urgency=low
       debian/control.  These may be manually set with
       --add-depends-arch and --add-conflicts-arch, respectively.
 
- -- Roger Leigh <rleigh@debian.org>  Wed, 07 Dec 2011 13:58:44 +0000
+ -- Roger Leigh <rleigh@debian.org>  Wed, 07 Dec 2011 20:41:43 +0000
 
 sbuild (0.62.5-1) unstable; urgency=low
 
