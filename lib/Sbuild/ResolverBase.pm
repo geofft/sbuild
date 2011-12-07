@@ -261,19 +261,25 @@ sub add_dependencies {
     my $self = shift;
     my $pkg = shift;
     my $build_depends = shift;
+    my $build_depends_arch = shift;
     my $build_depends_indep = shift;
     my $build_conflicts = shift;
+    my $build_conflicts_arch = shift;
     my $build_conflicts_indep = shift;
 
     debug("Build-Depends: $build_depends\n") if $build_depends;
+    debug("Build-Depends-Arch: $build_depends_arch\n") if $build_depends_arch;
     debug("Build-Depends-Indep: $build_depends_indep\n") if $build_depends_indep;
     debug("Build-Conflicts: $build_conflicts\n") if $build_conflicts;
+    debug("Build-Conflicts-Arch: $build_conflicts_arch\n") if $build_conflicts_arch;
     debug("Build-Conflicts-Indep: $build_conflicts_indep\n") if $build_conflicts_indep;
 
     my $deps = {
 	'Build Depends' => $build_depends,
+	'Build Depends Arch' => $build_depends_arch,
 	'Build Depends Indep' => $build_depends_indep,
 	'Build Conflicts' => $build_conflicts,
+	'Build Conflicts Arch' => $build_conflicts_arch,
 	'Build Conflicts Indep' => $build_conflicts_indep
     };
 
@@ -594,6 +600,8 @@ EOF
 
     my @positive;
     my @negative;
+    my @positive_arch;
+    my @negative_arch;
     my @positive_indep;
     my @negative_indep;
 
@@ -606,30 +614,32 @@ EOF
 	push(@negative, $deps->{'Build Conflicts'})
 	    if (defined($deps->{'Build Conflicts'}) &&
 		$deps->{'Build Conflicts'} ne "");
-	push(@positive_indep, $deps->{'Build Depends Indep'})
-	    if (defined($deps->{'Build Depends Indep'}) &&
-		$deps->{'Build Depends Indep'} ne "");
-	push(@negative_indep, $deps->{'Build Conflicts Indep'})
-	    if (defined($deps->{'Build Conflicts Indep'}) &&
-		$deps->{'Build Conflicts Indep'} ne "");
+	if ($self->get_conf('BUILD_ARCH_ALL')) {
+	    push(@positive_arch, $deps->{'Build Depends Arch'})
+		if (defined($deps->{'Build Depends Arch'}) &&
+		    $deps->{'Build Depends Arch'} ne "");
+	    push(@negative_arch, $deps->{'Build Conflicts Arch'})
+		if (defined($deps->{'Build Conflicts Arch'}) &&
+		    $deps->{'Build Conflicts Arch'} ne "");
+	}
+	if ($self->get_conf('BUILD_ARCH_ALL')) {
+	    push(@positive_indep, $deps->{'Build Depends Indep'})
+		if (defined($deps->{'Build Depends Indep'}) &&
+		    $deps->{'Build Depends Indep'} ne "");
+	    push(@negative_indep, $deps->{'Build Conflicts Indep'})
+		if (defined($deps->{'Build Conflicts Indep'}) &&
+		    $deps->{'Build Conflicts Indep'} ne "");
+	}
     }
 
-    my ($positive, $negative);
-    if ($self->get_conf('BUILD_ARCH_ALL')) {
-	$positive = deps_parse(join(", ", @positive, @positive_indep),
-			       reduce_arch => 1,
-			       host_arch => $self->get('Arch'));
-	$negative = deps_parse(join(", ", @negative, @negative_indep),
-			       reduce_arch => 1,
-			       host_arch => $self->get('Arch'));
-    } else {
-	$positive = deps_parse(join(", ", @positive),
+    my $positive = deps_parse(join(", ", @positive,
+				   @positive_arch, @positive_indep),
 			      reduce_arch => 1,
 			      host_arch => $self->get('Arch'));
-	$negative = deps_parse(join(", ", @negative),
+    my $negative = deps_parse(join(", ", @negative,
+				   @negative_arch, @negative_indep),
 			      reduce_arch => 1,
 			      host_arch => $self->get('Arch'));
-    }
 
     $self->log("Merged Build-Depends: $positive\n") if $positive;
     $self->log("Merged Build-Conflicts: $negative\n") if $negative;
@@ -725,6 +735,12 @@ EOF
     }
     if (scalar(@negative)) {
        print $dummy_dsc_fh 'Build-Conflicts: ' . join(", ", @negative) . "\n";
+    }
+    if (scalar(@positive_arch)) {
+       print $dummy_dsc_fh 'Build-Depends-Arch: ' . join(", ", @positive_arch) . "\n";
+    }
+    if (scalar(@negative_arch)) {
+       print $dummy_dsc_fh 'Build-Conflicts-Arch: ' . join(", ", @negative_arch) . "\n";
     }
     if (scalar(@positive_indep)) {
        print $dummy_dsc_fh 'Build-Depends-Indep: ' . join(", ", @positive_indep) . "\n";

@@ -631,31 +631,35 @@ sub run_fetch_install_packages {
 	$self->check_abort();
 	$self->set('Install Start Time', time);
 	$self->set('Install End Time', $self->get('Install Start Time'));
-	$resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "");
+	$resolver->add_dependencies('CORE', join(", ", @{$self->get_conf('CORE_DEPENDS')}) , "", "", "", "", "");
 	if (!$resolver->install_deps('core', 'CORE')) {
 	    Sbuild::Exception::Build->throw(error => "Core build dependencies not satisfied; skipping",
 					    failstage => "install-deps");
 	}
 
-	$resolver->add_dependencies('ESSENTIAL', $self->read_build_essential(), "", "", "");
+	$resolver->add_dependencies('ESSENTIAL', $self->read_build_essential(), "", "", "", "", "");
 
 	my $snapshot = "";
 	$snapshot = "gcc-snapshot" if ($self->get_conf('GCC_SNAPSHOT'));
-	$resolver->add_dependencies('GCC_SNAPSHOT', $snapshot , "", "", "");
+	$resolver->add_dependencies('GCC_SNAPSHOT', $snapshot , "", "", "", "", "");
 
 	# Add additional build dependencies specified on the command-line.
 	# TODO: Split dependencies into an array from the start to save
 	# lots of joining.
 	$resolver->add_dependencies('MANUAL',
 				    join(", ", @{$self->get_conf('MANUAL_DEPENDS')}),
+				    join(", ", @{$self->get_conf('MANUAL_DEPENDS_ARCH')}),
 				    join(", ", @{$self->get_conf('MANUAL_DEPENDS_INDEP')}),
 				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS')}),
+				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_ARCH')}),
 				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_INDEP')}));
 
 	$resolver->add_dependencies($self->get('Package'),
 				    $self->get('Build Depends'),
+				    $self->get('Build Depends Arch'),
 				    $self->get('Build Depends Indep'),
 				    $self->get('Build Conflicts'),
+				    $self->get('Build Conflicts Arch'),
 				    $self->get('Build Conflicts Indep'));
 
 	$self->check_abort();
@@ -798,8 +802,10 @@ sub fetch_source_files {
     my ($dscarchs, $dscpkg, $dscver, @fetched);
 
     my $build_depends = "";
+    my $build_depends_arch = "";
     my $build_depends_indep = "";
     my $build_conflicts = "";
+    my $build_conflicts_arch = "";
     my $build_conflicts_indep = "";
     local( *F );
 
@@ -950,8 +956,10 @@ sub fetch_source_files {
     }
 
     $build_depends = $pdsc->{'Build-Depends'};
+    $build_depends_arch = $pdsc->{'Build-Depends-Arch'};
     $build_depends_indep = $pdsc->{'Build-Depends-Indep'};
     $build_conflicts = $pdsc->{'Build-Conflicts'};
+    $build_conflicts_arch = $pdsc->{'Build-Conflicts-Arch'};
     $build_conflicts_indep = $pdsc->{'Build-Conflicts-Indep'};
     $dscarchs = $pdsc->{'Architecture'};
     $dscpkg = $pdsc->{'Source'};
@@ -960,8 +968,10 @@ sub fetch_source_files {
     $self->set_version("${dscpkg}_${dscver}");
 
     $build_depends =~ s/\n\s+/ /g if defined $build_depends;
+    $build_depends_arch =~ s/\n\s+/ /g if defined $build_depends_arch;
     $build_depends_indep =~ s/\n\s+/ /g if defined $build_depends_indep;
     $build_conflicts =~ s/\n\s+/ /g if defined $build_conflicts;
+    $build_conflicts_arch =~ s/\n\s+/ /g if defined $build_conflicts_arch;
     $build_conflicts_indep =~ s/\n\s+/ /g if defined $build_conflicts_indep;
 
     $self->log_subsubsection("Check arch");
@@ -989,8 +999,10 @@ sub fetch_source_files {
     debug("Arch check ok ($arch included in $dscarchs)\n");
 
     $self->set('Build Depends', $build_depends);
+    $self->set('Build Depends Arch', $build_depends_arch);
     $self->set('Build Depends Indep', $build_depends_indep);
     $self->set('Build Conflicts', $build_conflicts);
+    $self->set('Build Conflicts Arch', $build_conflicts_arch);
     $self->set('Build Conflicts Indep', $build_conflicts_indep);
 
     return 1;

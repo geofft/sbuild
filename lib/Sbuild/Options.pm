@@ -54,6 +54,12 @@ sub set_options {
 		       "add-conflicts=s" => sub {
 			   push(@{$self->get_conf('MANUAL_CONFLICTS')}, $_[1]);
 		       },
+		       "add-depends-arch=s" => sub {
+			   push(@{$self->get_conf('MANUAL_DEPENDS_ARCH')}, $_[1]);
+		       },
+		       "add-conflicts-arch=s" => sub {
+			   push(@{$self->get_conf('MANUAL_CONFLICTS_ARCH')}, $_[1]);
+		       },
 		       "add-depends-indep=s" => sub {
 			   push(@{$self->get_conf('MANUAL_DEPENDS_INDEP')}, $_[1]);
 		       },

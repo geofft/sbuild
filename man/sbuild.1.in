@@ -36,6 +36,8 @@ sbuild \- build debian packages from source
 .RB [ \-\-append\-to\-version=\fIstring\fP ]
 .RB [ \-\-add-depends=\fIdependency\fP ]
 .RB [ \-\-add-conflicts=\fIdependency\fP ]
+.RB [ \-\-add-depends\-arch=\fIdependency\fP ]
+.RB [ \-\-add-conflicts\-arch=\fIdependency\fP ]
 .RB [ \-\-add-depends\-indep=\fIdependency\fP ]
 .RB [ \-\-add-conflicts\-indep=\fIdependency\fP ]
 .RB [ \-m \[or] \-\-maintainer=\fImaintainer\fP ]
@@ -123,15 +125,20 @@ Print version information.
 .TP
 .BR "\-\-add\-conflicts=\fIdependency\fP"
 .TP
+.BR "\-\-add\-depends\-arch=\fIdependency\fP"
+.TP
+.BR "\-\-add\-conflicts\-arch=\fIdependency\fP"
+.TP
 .BR "\-\-add\-depends\-indep=\fIdependency\fP"
 .TP
 .BR "\-\-add\-conflicts\-indep=\fIdependency\fP"
 These options add a build dependencies to the source package being built, in
 addition to the build dependency information specified in debian/control.
 These dependencies will be concatenated directly to the Build-Depends,
-Build-Conflicts, Build-Depends-Indep and Build-Conflicts-Indep dependencies,
-respectively.  The options may be used any number of times to add multiple
-dependencies.  The format is identical to the format used in debian/control.
+Build-Conflicts, Build-Depends-Arch, Build-Conflicts-Arch, Build-Depends-Indep
+and Build-Conflicts-Indep dependencies, respectively.  The options may be used
+any number of times to add multiple dependencies.  The format is identical to
+the format used in debian/control.
 .TP
 .BR "\-\-arch=\fIarchitecture\fP"
 Build using the architecture specified.  A chroot named
@@ -368,13 +375,14 @@ alternative build dependency when multiple alternatives exist.  It is not
 recommended for future use, and will be removed in the future.
 .TP
 .BR \-\-resolve\-alternatives
-Allow the use of alternatives in Build-Depends and Build-Depends-Indep.  This
-is the default for the aptitude dependency resolver.
+Allow the use of alternatives in Build-Depends, Build-Depends-Arch and
+Build-Depends-Indep.  This is the default for the aptitude dependency resolver.
 .TP
 .BR \-\-no\-resolve\-alternatives
-Do not allow the use of alternatives in Build-Depends and Build-Depends-Indep.
-Note that alternatives for the same package (e.g. different versions) are still
-allowed.  This is the default for the internal and apt dependency resolvers.
+Do not allow the use of alternatives in Build-Depends, Build-Depends-Arch and
+Build-Depends-Indep.  Note that alternatives for the same package
+(e.g. different versions) are still allowed.  This is the default for the
+internal and apt dependency resolvers.
 .SH EXTERNAL COMMANDS
 Support to run external commands during an sbuild run is provided. A set of
 external commands can be run at various stages of a build. Providing commands to
@@ -454,8 +462,9 @@ used to store the dummy dependency packages created for a single build.
 The dependency resolvers do the following:
 .IP \[bu]
 Create a dummy dependency package.  This contains the Build-Depends (and
-optionally Build-Depends-Indep) as Depends, and Build-Conflicts (and optionally
-Build-Conflicts-Indep) as Conflicts.
+optionally Build-Depends-Arch and Build-Depends-Indep) as Depends, and
+Build-Conflicts (and optionally Build-Conflicts-Arch and Build-Conflicts-Indep)
+as Conflicts.
 .IP \[bu]
 Install the dummy dependency package into the local archive,
 .IP \[bu]

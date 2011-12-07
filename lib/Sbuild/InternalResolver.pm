@@ -72,6 +72,14 @@ sub install_deps {
 	push(@apt_negative, $deps->{'Build Conflicts'})
 	    if (defined($deps->{'Build Conflicts'}) &&
 		$deps->{'Build Conflicts'} ne "");
+	if ($self->get_conf('BUILD_ARCH_ANY')) {
+	    push(@apt_positive, $deps->{'Build Depends Arch'})
+		if (defined($deps->{'Build Depends Arch'}) &&
+		    $deps->{'Build Depends Arch'} ne "");
+	    push(@apt_negative, $deps->{'Build Conflicts Arch'})
+		if (defined($deps->{'Build Conflicts Arch'}) &&
+		    $deps->{'Build Conflicts Arch'} ne "");
+	}
 	if ($self->get_conf('BUILD_ARCH_ALL')) {
 	    push(@apt_positive, $deps->{'Build Depends Indep'})
 		if (defined($deps->{'Build Depends Indep'}) &&
