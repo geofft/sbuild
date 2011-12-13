@@ -124,11 +124,11 @@ sub find {
             $chroot = "${namespace}:${distribution}";
 	}
 
-	if ($arch_set && !$arch_found && $arch ne "") {
-	    # TODO: Return error, rather than die.
-	    die "Chroot $distribution for architecture $arch not found\n";
-	    return undef;
-	}
+#	if ($arch_set && !$arch_found && $host_arch ne "") {
+#	    # TODO: Return error, rather than die.
+#	    die "Chroot $distribution for architecture $host_arch not found\n";
+#	    return undef;
+#	}
     }
 
     if (!$chroot) {

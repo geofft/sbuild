@@ -97,8 +97,10 @@ sub main () {
 	    if $conf->get('DEBUG');
 	print "Selected chroot " . $conf->get('CHROOT') . "\n"
 	    if $conf->get('DEBUG') and defined $conf->get('CHROOT');
-	print "Selected architecture " . $conf->get('ARCH') . "\n"
-	    if $conf->get('DEBUG' && defined($conf->get('ARCH')));
+	print "Selected host architecture " . $conf->get('HOST_ARCH') . "\n"
+	    if $conf->get('DEBUG' && defined($conf->get('HOST_ARCH')));
+	print "Selected build architecture " . $conf->get('BUILD_ARCH') . "\n"
+	    if $conf->get('DEBUG' && defined($conf->get('BUILD_ARCH')));
 
 	$job = Sbuild::Build->new($jobname, $conf);
 	$job->set('Pkg Status Trigger', \&status_trigger);

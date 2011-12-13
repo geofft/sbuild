@@ -102,7 +102,7 @@ sub init_allowed_keys {
     chomp(my $hostname = `hostname -f`);
 
     # Not user-settable.
-    chomp(my $host_arch =
+    chomp(my $native_arch =
 	  readpipe("dpkg --print-architecture"));
 
     my %common_keys = (
@@ -148,18 +148,26 @@ sub init_allowed_keys {
 	    HELP => 'Program to use to send mail'
 	},
 	# TODO: Check if defaulted in code assuming undef
+	# ARCH is the native (build-system) architecture.  Not used for host/build.
 	'ARCH'					=> {
 	    TYPE => 'STRING',
-	    VARNAME => 'arch',
-	    GROUP => 'Build options',
-	    DEFAULT => $host_arch,
-	    HELP => 'Build architecture.'
+	    GROUP => '__INTERNAL',
+	    DEFAULT => $native_arch,
+	    HELP => 'Build architecture (Arch we are building on).'
 	},
 	'HOST_ARCH'				=> {
 	    TYPE => 'STRING',
-	    GROUP => '__INTERNAL',
-	    DEFAULT => $host_arch,
-	    HELP => 'Host architecture'
+	    VARNAME => 'host_arch',
+	    GROUP => 'Build options',
+	    DEFAULT => $native_arch,
+	    HELP => 'Host architecture (Arch we are building for)'
+	},
+	'BUILD_ARCH'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'build_arch',
+	    GROUP => 'Build options',
+	    DEFAULT => $native_arch,
+	    HELP => 'Build architecture (Arch we are building on).'
 	},
 	'HOSTNAME'				=> {
 	    TYPE => 'STRING',

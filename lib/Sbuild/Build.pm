@@ -74,7 +74,6 @@ sub new {
 
     $self->set('ABORT', undef);
     $self->set('Job', $dsc);
-    $self->set('Arch', undef);
     $self->set('Chroot Dir', '');
     $self->set('Chroot Build Dir', '');
     $self->set('Build Dir', '');
@@ -370,7 +369,7 @@ sub run_chroot_session {
 	my $session = $chroot_info->create('chroot',
 					   $self->get_conf('DISTRIBUTION'),
 					   $self->get_conf('CHROOT'),
-					   $self->get_conf('ARCH'));
+					   $self->get_conf('BUILD_ARCH'));
 
 	# Run pre build external commands
 	$self->check_abort();
@@ -389,12 +388,14 @@ sub run_chroot_session {
 
 	$self->check_abort();
 	my $chroot_arch =  $self->chroot_arch();
-	if ($self->get('Arch') ne $chroot_arch) {
-	    Sbuild::Exception::Build->throw(error => "Build architecture (" . $self->get('Arch') .
-					    ") is not the same as the chroot architecture (" .
-					    $chroot_arch . ")",
-					    info => "Please specify the correct architecture with --arch, or use a chroot of the correct architecture",
-					    failstage => "create-session");
+	if ($self->get_conf('BUILD_ARCH') ne $chroot_arch) {
+	    Sbuild::Exception::Build->throw(
+		error => "Requested build architecture (" .
+		$self->get_conf('BUILD_ARCH') .
+		") and chroot architecture (" . $chroot_arch .
+		") do not match.  Skipping build.",
+		info => "Please specify the correct architecture with --build-arch, or use a chroot of the correct architecture",
+		failstage => "create-session");
 	}
 
 	$self->set('Chroot Dir', $session->get('Location'));
@@ -466,7 +467,9 @@ sub run_chroot_session {
 
 	my $resolver = get_resolver($self->get('Config'), $session, $host);
 	$resolver->set('Log Stream', $self->get('Log Stream'));
-	$resolver->set('Arch', $self->get('Arch'));
+	$resolver->set('Arch', $self->get_conf('ARCH'));
+	$resolver->set('Host Arch', $self->get_conf('HOST_ARCH'));
+	$resolver->set('Build Arch', $self->get_conf('BUILD_ARCH'));
 	$resolver->set('Chroot Build Dir', $self->get('Chroot Build Dir'));
 	$self->set('Dependency Resolver', $resolver);
 
@@ -797,7 +800,8 @@ sub fetch_source_files {
     my $build_dir = $self->get('Chroot Build Dir');
     my $pkg = $self->get('Package');
     my $ver = $self->get('OVersion');
-    my $arch = $self->get('Arch');
+    my $host_arch = $self->get_conf('HOST_ARCH');
+    my $build_arch = $self->get_conf('BUILD_ARCH');
 
     my ($dscarchs, $dscpkg, $dscver, @fetched);
 
@@ -980,23 +984,23 @@ sub fetch_source_files {
     } else {
 	my $valid_arch;
 	for my $a (split(/\s+/, $dscarchs)) {
-	    if (Dpkg::Arch::debarch_is($arch, $a)) {
+	    if (Dpkg::Arch::debarch_is($host_arch, $a)) {
 		$valid_arch = 1;
 		last;
 	    }
 	}
 	if ($dscarchs ne "any" && !($valid_arch) &&
 	    !($dscarchs eq "all" && $self->get_conf('BUILD_ARCH_ALL')) )  {
-	    my $msg = "$dsc: $arch not in arch list or does not match any arch wildcards: $dscarchs -- skipping\n";
+	    my $msg = "$dsc: $host_arch not in arch list or does not match any arch wildcards: $dscarchs -- skipping\n";
 	    $self->log($msg);
-	    Sbuild::Exception::Build->throw(error => "$dsc: $arch not in arch list or does not match any arch wildcards: $dscarchs -- skipping",
+	    Sbuild::Exception::Build->throw(error => "$dsc: $host_arch not in arch list or does not match any arch wildcards: $dscarchs -- skipping",
 					    status => "skipped",
 					    failstage => "arch-check");
 	    return 0;
 	}
     }
 
-    debug("Arch check ok ($arch included in $dscarchs)\n");
+    debug("Arch check ok ($host_arch included in $dscarchs)\n");
 
     $self->set('Build Depends', $build_depends);
     $self->set('Build Depends Arch', $build_depends_arch);
@@ -1202,7 +1206,8 @@ sub build {
     my $dscdir = $self->get('DSC Dir');
     my $pkg = $self->get('Package');
     my $build_dir = $self->get('Chroot Build Dir');
-    my $arch = $self->get('Arch');
+    my $host_arch = $self->get_conf('HOST_ARCH');
+    my $build_arch = $self->get_conf('BUILD_ARCH');
 
     my( $rv, $changes );
     local( *PIPE, *F, *F2 );
@@ -1341,7 +1346,7 @@ sub build {
 		    " to version number; no source changes\n";
 	    }
 	    if ($self->get_conf('BIN_NMU')) {
-		print F "  * Binary-only non-maintainer upload for $arch; ",
+		print F "  * Binary-only non-maintainer upload for $host_arch; ",
 		    "no source changes.\n";
 		print F "  * ", join( "    ", split( "\n", $self->get_conf('BIN_NMU') )), "\n";
 	    }
@@ -1419,6 +1424,10 @@ sub build {
 	if (defined($self->get_conf('BUILD_ENV_CMND')) &&
 	    $self->get_conf('BUILD_ENV_CMND'));
     push (@{$buildcmd}, 'dpkg-buildpackage');
+
+    if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
+	push (@{$buildcmd}, '-a' . $self->get_conf('HOST_ARCH'));
+    }
 
     if (defined($self->get_conf('PGP_OPTIONS')) &&
 	$self->get_conf('PGP_OPTIONS')) {
@@ -1585,7 +1594,6 @@ sub build {
 	    }
 	}
 
-
 	# Restore write access to build tree now build is complete.
 	$self->get('Session')->run_command(
 	    { COMMAND => ['chmod', '-R', 'g+w', $self->get('Build Dir')],
@@ -1597,7 +1605,7 @@ sub build {
 	}
 
 	$self->log_subsection("Changes");
-	$changes = $self->get('Package_SVersion') . "_$arch.changes";
+	$changes = $self->get('Package_SVersion') . "_$host_arch.changes";
 	my @cfiles;
 	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
@@ -1651,7 +1659,7 @@ sub build {
 	my @debcfiles = @cfiles;
 	foreach (@debcfiles) {
 	    my $deb = "$build_dir/$_";
-	    next if $deb !~ /(\Q$arch\E|all)\.[\w\d.-]*$/;
+	    next if $deb !~ /(\Q$host_arch\E|all)\.[\w\d.-]*$/;
 
 	    $self->log_subsubsection("$_");
 	    if (!open( PIPE, "dpkg --info $deb 2>&1 |" )) {
@@ -1914,7 +1922,9 @@ sub generate_stats {
     $self->add_stat('Package', $self->get('Package'));
     $self->add_stat('Version', $self->get('Version'));
     $self->add_stat('Source-Version', $self->get('OVersion'));
-    $self->add_stat('Architecture', $self->get('Arch'));
+    $self->add_stat('System Architecture', $self->get_conf('HOST_ARCH'));
+    $self->add_stat('Host Architecture', $self->get_conf('HOST_ARCH'));
+    $self->add_stat('Build Architecture', $self->get_conf('BUILD_ARCH'));
     $self->add_stat('Distribution', $self->get_conf('DISTRIBUTION'));
     $self->add_stat('Space', $self->get('This Space'));
     $self->add_stat('Build-Time',
@@ -2045,7 +2055,7 @@ sub open_build_log {
 
     my $filename = $self->get_conf('LOG_DIR') . '/' .
 	$self->get('Package_SVersion') . '-' .
-	$self->get('Arch') .
+	$self->get_conf('HOST_ARCH') .
 	"-$date";
 
     open($saved_stdout, ">&STDOUT") or warn "Can't redirect stdout\n";
@@ -2082,7 +2092,7 @@ sub open_build_log {
 		$self->log_symlink($filename,
 				   $self->get_conf('BUILD_DIR') . '/' .
 				   $self->get('Package_SVersion') . '_' .
-				   $self->get('Arch') . '.build');
+				   $self->get_conf('HOST_ARCH') . '.build');
 	    }
 	}
 
@@ -2165,8 +2175,12 @@ sub open_build_log {
     my $hostname = $self->get_conf('HOSTNAME');
     $self->log("sbuild (Debian sbuild) $version ($release_date) on $hostname\n");
 
+    my $arch_string = $self->get_conf('BUILD_ARCH');
+    $arch_string = 'CROSS host=' . $self->get_conf('HOST_ARCH') .
+	'/build=' . $self->get_conf('BUILD_ARCH')
+	if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH'));
     my $head1 = $self->get('Package') . ' ' . $self->get('Version') .
-	' (' . $self->get('Arch') . ') ';
+	' (' . $arch_string . ') ';
     my $head2 = strftime("%d %b %Y %H:%M",
 			 localtime($self->get('Pkg Start Time')));
     my $head = $head1 . ' ' x (80 - 4 - length($head1) - length($head2)) .
@@ -2177,7 +2191,9 @@ sub open_build_log {
     $self->log("Version: " . $self->get('Version') . "\n");
     $self->log("Source Version: " . $self->get('OVersion') . "\n");
     $self->log("Distribution: " . $self->get_conf('DISTRIBUTION') . "\n");
-    $self->log("Architecture: " . $self->get('Arch') . "\n");
+    $self->log("System Architecture: " . $self->get_conf('ARCH') . "\n");
+    $self->log("Host Architecture: " . $self->get_conf('HOST_ARCH') . "\n");
+    $self->log("Build Architecture: " . $self->get_conf('BUILD_ARCH') . "\n");
     $self->log("\n");
 }
 
@@ -2227,8 +2243,8 @@ sub close_build_log {
 
     my $subject = "Log for " . $self->get_status() .
 	" build of " . $self->get('Package_Version');
-    if ($self->get('Arch')) {
-	$subject .= " on " . $self->get('Arch');
+    if ($self->get_conf('HOST_ARCH')) {
+	$subject .= " on " . $self->get_conf('HOST_ARCH');
     }
     if ($self->get_conf('ARCHIVE')) {
 	$subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";

@@ -591,7 +591,7 @@ sub setup_apt_archive {
 	return 0;
     }
 
-    my $arch = $self->get('Arch');
+    my $arch = $self->get('Host Arch');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
 Version: 0.invalid.0
@@ -635,11 +635,11 @@ EOF
     my $positive = deps_parse(join(", ", @positive,
 				   @positive_arch, @positive_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Arch'));
+			      host_arch => $self->get('Host Arch'));
     my $negative = deps_parse(join(", ", @negative,
 				   @negative_arch, @negative_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Arch'));
+			      host_arch => $self->get('Host Arch'));
 
     $self->log("Merged Build-Depends: $positive\n") if $positive;
     $self->log("Merged Build-Conflicts: $negative\n") if $negative;

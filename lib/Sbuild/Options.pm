@@ -40,7 +40,14 @@ sub set_options {
     my $self = shift;
 
     $self->add_options("arch=s" => sub {
-			   $self->set_conf('ARCH', $_[1]);
+			   $self->set_conf('HOST_ARCH', $_[1]);
+			   $self->set_conf('BUILD_ARCH', $_[1]);
+		       },
+		       "build=s" => sub {
+			   $self->set_conf('BUILD_ARCH', $_[1]);
+		       },
+		       "host=s" => sub {
+			   $self->set_conf('HOST_ARCH', $_[1]);
 		       },
 		       "A|arch-all" => sub {
 			   $self->set_conf('BUILD_ARCH_ALL', 1);

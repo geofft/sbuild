@@ -80,6 +80,8 @@ sub set_options {
     $self->add_options(
 	"arch=s" => sub {
 	    $self->set_conf('ARCH', $_[1]);
+	    $self->set_conf('HOST_ARCH', $_[1]);
+	    $self->set_conf('BUILD_ARCH', $_[1]);
 	},
 	"update|u" => sub {
 	    $self->set_conf('UPDATE', 1);

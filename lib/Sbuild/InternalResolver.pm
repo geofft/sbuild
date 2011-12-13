@@ -92,10 +92,10 @@ sub install_deps {
 
     my $positive = deps_parse(join(", ", @apt_positive),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Arch'));
+			      host_arch => $self->get('Host Arch'));
     my $negative = deps_parse(join(", ", @apt_negative),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Arch'));
+			      host_arch => $self->get('Host Arch'));
 
     my $build_depends = $positive;
     my $build_conflicts = $negative;
@@ -215,10 +215,10 @@ sub parse_one_srcdep {
 		my ($use_it, $ignore_it, $include) = (0, 0, 0);
 		foreach (@archs) {
 		    if (/^!/) {
-			$ignore_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), substr($_, 1));
+			$ignore_it = 1 if Dpkg::Arch::debarch_is($self->get('Host Arch'), substr($_, 1));
 		    }
 		    else {
-			$use_it = 1 if Dpkg::Arch::debarch_is($self->get('Arch'), $_);
+			$use_it = 1 if Dpkg::Arch::debarch_is($self->get('Host Arch'), $_);
 			$include = 1;
 		    }
 		}

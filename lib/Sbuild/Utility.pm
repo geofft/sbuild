@@ -97,7 +97,7 @@ sub setup ($$$) {
     $session = $chroot_info->create($namespace,
 				    $chroot,
 				    undef, # TODO: Add --chroot option
-				    $conf->get('ARCH'));
+				    $conf->get('BUILD_ARCH'));
 
     $session->set('Log Stream', \*STDOUT);
 

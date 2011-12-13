@@ -90,7 +90,7 @@ sub set_options {
 
     $self->add_options(
 	"arch=s" => sub {
-	    $self->set_conf('ARCH', $_[1]);
+	    $self->set_conf('BUILD_ARCH', $_[1]);
 	},
 	"foreign" => sub {
 	    $self->set_conf('FOREIGN', 0);
@@ -177,7 +177,7 @@ if ($conf->get('VERBOSE')) {
     print "I: SCRIPT: $script\n" if (defined($script));
 }
 
-my @args = ("--arch=" . $conf->get('ARCH'),
+my @args = ("--arch=" . $conf->get('BUILD_ARCH'),
 	    "--variant=buildd");
 push @args, "--verbose" if $conf->get('VERBOSE');
 push @args, "--foreign" if $conf->get('FOREIGN');
@@ -250,11 +250,11 @@ dump_file("${target}/etc/apt/sources.list");
 print "I: Please add any additional APT sources to ${target}/etc/apt/sources.list\n";
 
 # Write out schroot chroot configuration.
-my $chrootname = "${suite}-" . $conf->get('ARCH') . "-sbuild";
+my $chrootname = "${suite}-" . $conf->get('BUILD_ARCH') . "-sbuild";
 
 # Determine the schroot chroot configuration to use.
 my $config_entry;
-my $arch = $conf->get('ARCH');
+my $arch = $conf->get('BUILD_ARCH');
 if ($conf->get('MAKE_SBUILD_TARBALL')) {
     my $tarball = $conf->get('MAKE_SBUILD_TARBALL');
 
@@ -298,18 +298,17 @@ if (-d "/etc/schroot/chroot.d") {
 
     my ($personality, $personality_message);
     # Detect whether personality might be needed.
-
-    if ($conf->get('ARCH') ne $conf->get('HOST_ARCH')) {
+    if ($conf->get('ARCH') ne $conf->get('BUILD_ARCH')) {
 	# Take care of the known case(s).
-	if ($conf->get('ARCH') eq 'i386' &&
-	    $conf->get('HOST_ARCH') eq 'amd64') {
+	if ($conf->get('BUILD_ARCH') eq 'i386' &&
+	    $conf->get('ARCH') eq 'amd64') {
 	    $personality='linux32';
 	    $personality_message =
 		"I: Added personality=$personality automatically (i386 on amd64).\n";
 	} else {
 	    $personality_message =
 		"W: The selected architecture and the current architecture do not match\n" .
-		"W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n" .
+		"W: (" . $conf->get('BUILD_ARCH') . " versus " . $conf->get('ARCH') . ").\n" .
 		"I: You probably need to add a personality option (see schroot(1)).\n" .
 		"I: You may want to report your use case to the sbuild developers so that\n" .
 		"I: the appropriate option gets automatically added in the future.\n\n";
@@ -383,7 +382,7 @@ if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
     }
 } else {
     print "W: The selected architecture and the current architecture do not match\n";
-    print "W: (" . $conf->get('ARCH') . " versus " . $conf->get('HOST_ARCH') . ").\n";
+    print "W: (" . $conf->get('BUILD_ARCH') . " versus " . $conf->get('ARCH') . ").\n";
     print "W: Not automatically updating APT package lists.\n";
     print "I: Run \"apt-get update\" and \"apt-get dist-upgrade\" prior to use.\n";
     print "I: Run \"sbuild-checkpackages --set\" to set reference package list.\n";
