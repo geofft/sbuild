@@ -1,3 +1,10 @@
+sbuild (0.63.0-1) unstable; urgency=low
+
+  [ Wookey ]
+  * Merge cross-build support (thanks to Hector Oron)
+
+ -- Roger Leigh <rleigh@debian.org>  Thu, 15 Dec 2011 13:03:01 +0000
+
 sbuild (0.62.6-1) unstable; urgency=low
 
   * New release.
