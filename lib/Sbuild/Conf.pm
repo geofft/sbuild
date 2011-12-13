@@ -841,7 +841,15 @@ sub setup ($) {
 	    DEFAULT => [],
 	    HELP => 'Additional per-build dependencies.  Do not set by hand.'
 	},
-	'BUILD_SOURCE'				=> {
+	'CROSSBUILD_CORE_DEPENDS'				=> {
+	    TYPE => 'HASH:ARRAY:STRING',
+	    VARNAME => 'crossbuild_core_depends',
+	    GROUP => 'Multiarch support (transitional)',
+	    DEFAULT => { armel => ['g++-arm-linux-gnueabi', 'libc6-dev-armel-cross'],
+			 armhf => ['g++-arm-linux-gnueabihf', 'libc6-dev-armhf-cross']
+	    	       },
+	    HELP => 'Per-architecture dependencies required for cross-building.'
+	},	'BUILD_SOURCE'				=> {
 	    TYPE => 'BOOL',
 	    VARNAME => 'build_source',
 	    GROUP => 'Build options',
