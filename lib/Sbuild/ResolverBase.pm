@@ -439,6 +439,57 @@ sub run_apt {
     return $mode eq "-s" || $status == 0;
 }
 
+sub run_xapt {
+    my $self = shift;
+    my $mode = shift;
+    my $inst_ret = shift;
+    my $rem_ret = shift;
+    my $action = shift;
+    my @packages = @_;
+    my( $msgs, $status, $pkgs, $rpkgs );
+
+    $msgs = "";
+    # redirection of stdin from /dev/null so that conffile question
+    # are treated as if RETURN was pressed.
+    # dpkg since 1.4.1.18 issues an error on the conffile question if
+    # it reads EOF -- hardwire the new --force-confold option to avoid
+    # the questions.
+    my @xapt_command = ($self->get_conf('XAPT'));
+    my $pipe =
+	$self->pipe_xapt_command(
+	    { COMMAND => \@xapt_command,
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      PRIORITY => 0,
+	      DIR => '/' });
+    if (!$pipe) {
+	$self->log("Can't open pipe to xapt: $!\n");
+	return 0;
+    }
+
+    while(<$pipe>) {
+	$msgs .= $_;
+	$self->log($_) if $mode ne "-s" || debug($_);
+    }
+    close($pipe);
+    $status = $?;
+
+    $pkgs = $rpkgs = "";
+    if ($msgs =~ /NEW packages will be installed:\n((^[ 	].*\n)*)/mi) {
+	($pkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
+	$pkgs =~ s/\*//g;
+    }
+    if ($msgs =~ /packages will be REMOVED:\n((^[ 	].*\n)*)/mi) {
+	($rpkgs = $1) =~ s/^[ 	]*((.|\n)*)\s*$/$1/m;
+	$rpkgs =~ s/\*//g;
+    }
+    @$inst_ret = split( /\s+/, $pkgs );
+    @$rem_ret = split( /\s+/, $rpkgs );
+
+    $self->log("xapt failed.\n") if $status && $mode ne "-s";
+    return $mode eq "-s" || $status == 0;
+}
+
 sub format_deps {
     my $self = shift;
 
@@ -1002,6 +1053,23 @@ sub run_apt_command {
 }
 
 sub pipe_apt_command {
+    my $self = shift;
+    my $options = shift;
+
+    my $session = $self->get('Session');
+    my $host = $self->get('Host');
+
+    # Set modfied command
+    $self->get_apt_command_internal($options);
+
+    if ($self->get('Split')) {
+	return $host->pipe_command_internal($options);
+    } else {
+	return $session->pipe_command_internal($options);
+    }
+}
+
+sub pipe_xapt_command {
     my $self = shift;
     my $options = shift;
 

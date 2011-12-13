@@ -260,6 +260,20 @@ sub setup ($) {
 	    DEFAULT => 'aptitude',
 	    HELP => 'Path to aptitude binary'
 	},
+	'XAPT'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'xapt',
+	    GROUP => 'Programs',
+	    CHECK => $validate_program,
+	    DEFAULT => 'xapt'
+	},
+	'EMBUILDDEPS'				=> {
+	    TYPE => 'STRING',
+	    VARNAME => 'embuilddeps',
+	    GROUP => 'Programs',
+	    CHECK => $validate_program,
+	    DEFAULT => 'embuilddeps'
+	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
 	    TYPE => 'ARRAY:STRING',
 	    GROUP => '__INTERNAL',
@@ -892,9 +906,9 @@ sub setup ($) {
 
 		die '$key: Invalid build-dependency resolver \'' .
 		    $conf->get($key) .
-		    "'\nValid algorthms are 'internal', 'apt' and 'aptitude'\n"
+		    "'\nValid algorithms are 'internal', 'xapt', 'apt' and 'aptitude'\n"
 		    if !isin($conf->get($key),
-			     qw(internal apt aptitude));
+			     qw(internal xapt apt aptitude));
 	    },
 	    HELP => 'Build dependency resolver.  The \'apt\' resolver is currently the default, and recommended for most users.  This resolver uses apt-get to resolve dependencies.  Alternative resolvers are \'apt\' and \'aptitude\', which use a built-in resolver module and aptitude to resolve build dependencies, respectively.  The internal resolver is not capable of resolving complex alternative and virtual package dependencies, but is otherwise equivalent to apt.  The aptitude resolver is similar to apt, but is useful in more complex situations, such as where multiple distributions are required, for example when building from experimental, where packages are needed from both unstable and experimental, but defaulting to unstable.'
 	},
