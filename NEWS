@@ -1,11 +1,24 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.62.6.  Please read these release notes carefully.
+Welcome to sbuild 0.63.0.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.63.0:
+
+  1) Support for cross-compiling has been added.  This includes the
+     addition of $host and $build configuration variables, with
+     corresponding --host and --build command-line options.  This
+     includes the addition of a new 'xapt' dependency resolver.
+
+  2) The deprecated 'internal' dependency resolver has been removed,
+     along with the configuration variables $apt_policy,
+     $check_depends_algorithm and $resolve_virtual, and the
+     command-line option --check-depends-algorithm.  The 'apt'
+     resolver is the default replacement for 'internal'.
 
 * Major changes in 0.62.6:
 
