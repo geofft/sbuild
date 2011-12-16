@@ -20,7 +20,6 @@
 
 package Sbuild::Resolver;
 
-use Sbuild::InternalResolver;
 use Sbuild::AptResolver;
 use Sbuild::XaptResolver;
 use Sbuild::AptitudeResolver;
@@ -52,7 +51,7 @@ sub get_resolver ($$$) {
     } elsif ($conf->get('BUILD_DEP_RESOLVER') eq "aptitude") {
 	$resolver = Sbuild::AptitudeResolver->new($conf, $session, $host);
     } else {
-	$resolver = Sbuild::InternalResolver->new($conf, $session, $host);
+	$resolver = Sbuild::AptResolver->new($conf, $session, $host);
     }
 
     return $resolver;

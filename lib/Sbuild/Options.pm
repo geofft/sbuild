@@ -73,9 +73,6 @@ sub set_options {
 		       "add-conflicts-indep=s" => sub {
 			   push(@{$self->get_conf('MANUAL_CONFLICTS_INDEP')}, $_[1]);
 		       },
-		       "C|check-depends-algorithm=s" => sub {
-			   $self->set_conf('CHECK_DEPENDS_ALGORITHM', $_[1]);
-		       },
 		       "b|batch" => sub {
 			   $self->set_conf('BATCH_MODE', 1);
 		       },

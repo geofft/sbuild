@@ -24,7 +24,7 @@
 use strict;
 use warnings;
 
-use Sbuild::InternalResolver;
+use Sbuild::AptResolver;
 
 package Conf;
 
@@ -360,7 +360,7 @@ if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
 	if (!$session->begin_session() || !$host->begin_session()) {
 	    print STDERR "E: Error creating chroot session: skipping apt update\n";
 	} else {
-	    my $resolver = Sbuild::InternalResolver->new($conf, $session, $host);
+	    my $resolver = Sbuild::AptResolver->new($conf, $session, $host);
 	    $resolver->setup();
 
 	    print "I: Setting reference package list.\n";

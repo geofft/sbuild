@@ -591,13 +591,6 @@ sub setup ($) {
 	    DEFAULT => 0,
 	    HELP => 'Run in split mode?  In split mode, apt-get and dpkg are run on the host system, rather than inside the chroot.'
 	},
-	'APT_POLICY'				=> {
-	    TYPE => 'BOOL',
-	    VARNAME => 'apt_policy',
-	    GROUP => 'Dependency resolution',
-	    DEFAULT => 1,
-	    HELP => 'APT policy.  1 to enable additional checking of package versions available in the APT cache, or 0 to disable.  0 is the traditional sbuild behaviour; 1 is needed to build from additional repositories such as sarge-backports or experimental, and has a small performance cost.  Note that this is only used by the internal resolver.'
-	},
 	'CHECK_SPACE'				=> {
 	    TYPE => 'BOOL',
 	    VARNAME => 'check_space',
@@ -774,24 +767,6 @@ sub setup ($) {
 	    DEFAULT => 0,
 	    HELP => 'Force APT to accept unauthenticated packages.  By default, unauthenticated packages are not allowed.  This is to keep the build environment secure, using apt-secure(8).  By setting this to 1, APT::Get::AllowUnauthenticated is set to "true" when running apt-get. This is disabled by default: only enable it if you know what you are doing.'
 	},
-	'CHECK_DEPENDS_ALGORITHM'		=> {
-	    TYPE => 'STRING',
-	    VARNAME => 'check_depends_algorithm',
-	    GROUP => 'Dependency resolution',
-	    CHECK => sub {
-		my $conf = shift;
-		my $entry = shift;
-		my $key = $entry->{'NAME'};
-
-		die '$key: Invalid build-dependency checking algorithm \'' .
-		    $conf->get($key) .
-		    "'\nValid algorthms are 'first-only' and 'alternatives'\n"
-		    if !isin($conf->get($key),
-			     qw(first-only alternatives));
-	    },
-	    DEFAULT => 'first-only',
-	    HELP => 'Algorithm for build dependency checks: possible values are "first_only" (used by Debian buildds) or "alternatives". Default: "first_only".  Note that this is only used by the internal resolver.'
-	},
 	'BATCH_MODE'				=> {
 	    TYPE => 'BOOL',
 	    GROUP => '__INTERNAL',
@@ -909,16 +884,18 @@ sub setup ($) {
 		my $entry = shift;
 		my $key = $entry->{'NAME'};
 
-		warn "W: Build dependency resolver 'internal' is deprecated; please switch to 'apt'\n"
-		    if $conf->get($key) eq 'internal';
+		if ($conf->get($key) eq 'internal') {
+		    warn "W: Build dependency resolver 'internal' has been removed; defaulting to 'apt'.  Please update your configuration.\n";
+		    $conf->set('BUILD_DEP_RESOLVER', 'apt');
+		}
 
 		die '$key: Invalid build-dependency resolver \'' .
 		    $conf->get($key) .
-		    "'\nValid algorithms are 'internal', 'xapt', 'apt' and 'aptitude'\n"
+		    "'\nValid algorithms are 'apt', 'aptitude' and 'xapt'\n"
 		    if !isin($conf->get($key),
-			     qw(internal xapt apt aptitude));
+			     qw(apt aptitude xapt));
 	    },
-	    HELP => 'Build dependency resolver.  The \'apt\' resolver is currently the default, and recommended for most users.  This resolver uses apt-get to resolve dependencies.  Alternative resolvers are \'apt\' and \'aptitude\', which use a built-in resolver module and aptitude to resolve build dependencies, respectively.  The internal resolver is not capable of resolving complex alternative and virtual package dependencies, but is otherwise equivalent to apt.  The aptitude resolver is similar to apt, but is useful in more complex situations, such as where multiple distributions are required, for example when building from experimental, where packages are needed from both unstable and experimental, but defaulting to unstable.'
+	    HELP => 'Build dependency resolver.  The \'apt\' resolver is currently the default, and recommended for most users.  This resolver uses apt-get to resolve dependencies.  Alternative resolvers are \'apt\' and \'aptitude\', which use a built-in resolver module and aptitude to resolve build dependencies, respectively.  The aptitude resolver is similar to apt, but is useful in more complex situations, such as where multiple distributions are required, for example when building from experimental, where packages are needed from both unstable and experimental, but defaulting to unstable.'
 	},
 	'LINTIAN'				=> {
 	    TYPE => 'STRING',
@@ -1042,13 +1019,6 @@ sub setup ($) {
 	    DEFAULT => 1,
 	    HELP => 'Log standard error of commands run by sbuild?'
 	},
-	'RESOLVE_VIRTUAL'				=> {
-	    TYPE => 'BOOL',
-	    VARNAME => 'resolve_virtual',
-	    GROUP => 'Dependency resolution',
-	    DEFAULT => 0,
-	    HELP => 'Attempt to resolve virtual dependencies?  This option is only used by the internal resolver.'
-	},
 	'RESOLVE_ALTERNATIVES'				=> {
 	    TYPE => 'BOOL',
 	    VARNAME => 'resolve_alternatives',
@@ -1069,7 +1039,7 @@ sub setup ($) {
 		return $retval;
 	    },
 	    EXAMPLE => '$resolve_alternatives = 0;',
-	    HELP => 'Should the dependency resolver use alternatives in Build-Depends, Build-Depends-Arch and Build-Depends-Indep?  By default, using the \'internal\' or \'apt\' resolvers, only the first alternative will be used; all other alternatives will be removed.  When using the \'aptitude\' resolver, it will default to using all alternatives.  Note that this does not include architecture-specific alternatives, which are reduced to the build architecture prior to alternatives removal.  This should be left disabled when building for unstable; it may be useful when building for experimental or backports.  Set to undef to use the default, 1 to enable, or 0 to disable.'
+	    HELP => 'Should the dependency resolver use alternatives in Build-Depends, Build-Depends-Arch and Build-Depends-Indep?  By default, using \'apt\' resolver, only the first alternative will be used; all other alternatives will be removed.  When using the \'aptitude\' resolver, it will default to using all alternatives.  Note that this does not include architecture-specific alternatives, which are reduced to the build architecture prior to alternatives removal.  This should be left disabled when building for unstable; it may be useful when building for experimental or backports.  Set to undef to use the default, 1 to enable, or 0 to disable.'
 	},
 	'SBUILD_BUILD_DEPENDS_SECRET_KEY'		=> {
 	    TYPE => 'STRING',

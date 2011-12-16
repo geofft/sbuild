@@ -40,7 +40,6 @@ MODULES =			\
 	AptitudeResolver.pm	\
 	AptResolver.pm		\
 	XaptResolver.pm		\
-	InternalResolver.pm	\
 	Resolver.pm		\
 	Conf.pm			\
 	ConfBase.pm		\
