@@ -598,27 +598,6 @@ sub setup ($) {
 	    DEFAULT => 1,
 	    HELP => 'Check free disk space prior to starting a build.  sbuild requires the free space to be at least twice the size of the unpacked sources to allow a build to proceed.  Can be disabled to allow building if space is very limited, but the threshold to abort a build has been exceeded despite there being sufficient space for the build to complete.'
 	},
-	'CHECK_WATCHES'				=> {
-	    TYPE => 'BOOL',
-	    VARNAME => 'check_watches',
-	    GROUP => 'Watch options',
-	    DEFAULT => 1,
-	    HELP => 'Check watched packages to discover missing build dependencies.  This can be disabled to increase the speed of builds.'
-	},
-	'IGNORE_WATCHES_NO_BUILD_DEPS'		=> {
-	    TYPE => 'ARRAY:STRING',
-	    VARNAME => 'ignore_watches_no_build_deps',
-	    GROUP => 'Watch options',
-	    DEFAULT => [],
-	    HELP => 'Ignore watches on the following packages if the package doesn\'t have its own build dependencies in the .dsc.  Note that for backward compatibility, this is also settable using the array @ignore_watches_no_build_deps (deprecated), rather than an array reference.'
-	},
-	'WATCHES'				=> {
-	    TYPE => 'HASH:ARRAY:STRING',
-	    VARNAME => 'watches',
-	    GROUP => 'Watch options',
-	    DEFAULT => {},
-	    HELP => 'Binaries for which the access time is controlled if they are not listed as source dependencies (note: /usr/bin is added if executable name does not start with \'/\').  Most buildds run with clean chroots at the moment, so the default list is now empty.  This hash is a mapping between a package name and the binaries in the package stored as an array reference.  Note that for backward compatibility, this is also settable using the hash %watches (deprecated), rather than using a hash reference.'
-	},
 	'BUILD_DIR'				=> {
 	    TYPE => 'STRING',
 	    VARNAME => 'build_dir',
@@ -1081,10 +1060,6 @@ my \%mailto;
 undef \%mailto;
 my \@toolchain_regex;
 undef \@toolchain_regex;
-my \@ignore_watches_no_build_deps;
-undef \@ignore_watches_no_build_deps;
-my \%watches;
-undef \%watches;
 my \%individual_stalled_pkg_timeout;
 undef \%individual_stalled_pkg_timeout;
 END
@@ -1098,15 +1073,6 @@ if (\%mailto) {
 if (\@toolchain_regex) {
     warn 'W: \@toolchain_regex is deprecated; please use the array reference \$toolchain_regexp[]\n';
     \$conf->set('TOOLCHAIN_REGEX', \\\@toolchain_regex);
-}
-if (\@ignore_watches_no_build_deps) {
-    warn 'W: \@ignore_watches_no_build_deps is deprecated; please use the array reference \$ignore_watches_no_build_deps[]\n';
-    \$conf->set('IGNORE_WATCHES_NO_BUILD_DEPS',
-		\\\@ignore_watches_no_build_deps);
-}
-if (\%watches) {
-    warn 'W: \%watches is deprecated; please use the hash reference \$watches{}\n';
-    \$conf->set('WATCHES', \\\%watches);
 }
 if (\%individual_stalled_pkg_timeout) {
     warn 'W: \%individual_stalled_pkg_timeout is deprecated; please use the hash reference \$individual_stalled_pkg_timeout{}\n';

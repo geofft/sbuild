@@ -90,7 +90,6 @@ sub new {
     $self->set('Install End Time', 0);
     $self->set('This Time', 0);
     $self->set('This Space', 0);
-    $self->set('This Watches', {});
     $self->set('Sub Task', 'initialisation');
     $self->set('Host', Sbuild::ChrootRoot->new($self->get('Config')));
     # Host execution defaults
@@ -676,9 +675,6 @@ sub run_fetch_install_packages {
 
 	$self->check_abort();
 	$resolver->dump_build_environment();
-
-	$self->check_abort();
-	$self->prepare_watches(keys %{$resolver->get('Changes')->{'installed'}});
 
 	$self->check_abort();
 	if ($self->build()) {
@@ -1687,7 +1683,6 @@ sub build {
 	}
     }
 
-    $self->check_watches();
     $self->check_space(@space_files);
 
     return $rv == 0 ? 1 : 0;
@@ -1796,58 +1791,6 @@ sub check_space {
     $self->set('This Time', $self->get('Pkg End Time') - $self->get('Pkg Start Time'));
     $self->get('This Time') = 0 if $self->get('This Time') < 0;
     $self->set('This Space', $sum);
-}
-
-sub prepare_watches {
-    my $self = shift;
-    my @instd = @_;
-    my($pkg, $prg);
-
-    # init %this_watches to names of packages which have not been
-    # installed as source dependencies
-    $self->set('This Watches', {});
-    foreach $pkg (keys %{$self->get_conf('WATCHES')}) {
-	if (isin( $pkg, @instd )) {
-	    debug("Excluding from watch: $pkg\n");
-	    next;
-	}
-	foreach $prg (@{$self->get_conf('WATCHES')->{$pkg}}) {
-	    # Add /usr/bin to programs without a path
-	    $prg = "/usr/bin/$prg" if $prg !~ m,^/,;
-	    $self->get('This Watches')->{"$self->{'Chroot Dir'}$prg"} = $pkg;
-	    debug("Will watch for $prg ($pkg)\n");
-	}
-    }
-}
-
-sub check_watches {
-    my $self = shift;
-    my($prg, @st, %used);
-
-    return if (!$self->get_conf('CHECK_WATCHES'));
-
-    foreach $prg (keys %{$self->get('This Watches')}) {
-	if (!(@st = stat( $prg ))) {
-	    debug("Watch: $prg: stat failed\n");
-	    next;
-	}
-	if ($st[8] > $self->get('Build Start Time')) {
-	    my $pkg = $self->get('This Watches')->{$prg};
-	    my $prg2 = $self->get('Session')->strip_chroot_path($prg);
-	    push( @{$used{$pkg}}, $prg2 );
-	}
-	else {
-	    debug("Watch: $prg: untouched\n");
-	}
-    }
-    return if !%used;
-
-    $self->log_warning("NOTE: Binaries from the following packages (access time changed) used\nwithout a source dependency:");
-
-    foreach (keys %used) {
-	$self->log("  $_: @{$used{$_}}\n");
-    }
-    $self->log("\n");
 }
 
 sub lock_file {
