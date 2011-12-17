@@ -33,7 +33,6 @@ bin_SCRIPTS = 				\
 	sbuild-distupgrade		\
 	sbuild-clean			\
 	sbuild-shell			\
-	sbuild-stats			\
 	sbuild-hold			\
 	sbuild-unhold			\
 	buildd				\

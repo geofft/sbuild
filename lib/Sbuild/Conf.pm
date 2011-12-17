@@ -311,20 +311,6 @@ sub setup ($) {
 	    DEFAULT => 'md5sum',
 	    HELP => 'Path to md5sum binary'
 	},
-	'AVG_TIME_DB'				=> {
-	    TYPE => 'STRING',
-	    VARNAME => 'avg_time_db',
-	    GROUP => 'Statistics',
-	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-times",
-	    HELP => 'Name of a database for logging package build times (optional, no database is written if empty)'
-	},
-	'AVG_SPACE_DB'				=> {
-	    TYPE => 'STRING',
-	    VARNAME => 'avg_space_db',
-	    GROUP => 'Statistics',
-	    DEFAULT => "$Sbuild::Sysconfig::paths{'SBUILD_LOCALSTATE_DIR'}/avg-build-space",
-	    HELP => 'Name of a database for logging package space requirement (optional, no database is written if empty)'
-	},
 	'STATS_DIR'				=> {
 	    TYPE => 'STRING',
 	    VARNAME => 'stats_dir',

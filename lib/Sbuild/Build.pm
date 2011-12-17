@@ -32,7 +32,6 @@ use Fcntl;
 use File::Basename qw(basename dirname);
 use File::Temp qw(tempdir);
 use FileHandle;
-use GDBM_File;
 use File::Copy qw(); # copy is already exported from Sbuild, so don't export
 		     # anything.
 use Dpkg::Arch;
@@ -2149,11 +2148,6 @@ sub close_build_log {
     }
     my $date = strftime("%Y%m%d-%H%M", localtime($time));
 
-    if ($self->get_status() eq "successful") {
-	$self->add_time_entry($self->get('Package_Version'), $self->get('This Time'));
-	$self->add_space_entry($self->get('Package_Version'), $self->get('This Space'));
-    }
-
     my $hours = int($self->get('This Time')/3600);
     my $minutes = int(($self->get('This Time')%3600)/60),
     my $seconds = int($self->get('This Time')%60),
@@ -2331,67 +2325,6 @@ sub log_symlink {
 
     unlink $dest; # Don't return on failure, since the symlink will fail.
     symlink $log, $dest;
-}
-
-sub add_time_entry {
-    my $self = shift;
-    my $pkg = shift;
-    my $t = shift;
-
-    return if !$self->get_conf('AVG_TIME_DB');
-    my %db;
-    if (!tie %db, 'GDBM_File', $self->get_conf('AVG_TIME_DB'), GDBM_WRCREAT, 0664) {
-	$self->log_warning("Can't open average time db " . $self->get_conf('AVG_TIME_DB') . "\n");
-	return;
-    }
-    $pkg =~ s/_.*//;
-
-    if (exists $db{$pkg}) {
-	my @times = split( /\s+/, $db{$pkg} );
-	push( @times, $t );
-	my $sum = 0;
-	foreach (@times[1..$#times]) { $sum += $_; }
-	$times[0] = $sum / (@times-1);
-	$db{$pkg} = join( ' ', @times );
-    }
-    else {
-	$db{$pkg} = "$t $t";
-    }
-    untie %db;
-}
-
-sub add_space_entry {
-    my $self = shift;
-    my $pkg = shift;
-    my $space = shift;
-
-    my $keepvals = 4;
-
-    return if !$self->get_conf('AVG_SPACE_DB') || $space == 0;
-    my %db;
-    if (!tie %db, 'GDBM_File', $self->get_conf('AVG_SPACE_DB'), &GDBM_WRCREAT, 0664) {
-	$self->log_warning("Can't open average space db " . $self->get_conf('AVG_SPACE_DB') . "\n");
-	return;
-    }
-    $pkg =~ s/_.*//;
-
-    if (exists $db{$pkg}) {
-	my @values = split( /\s+/, $db{$pkg} );
-	shift @values;
-	unshift( @values, $space );
-	pop @values if @values > $keepvals;
-	my ($sum, $n, $weight, $i) = (0, 0, scalar(@values));
-	for( $i = 0; $i < @values; ++$i) {
-	    $sum += $values[$i] * $weight;
-	    $n += $weight;
-	}
-	unshift( @values, $sum/$n );
-	$db{$pkg} = join( ' ', @values );
-    }
-    else {
-	$db{$pkg} = "$space $space";
-    }
-    untie %db;
 }
 
 1;

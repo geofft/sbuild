@@ -543,7 +543,6 @@ Copyright \[co] 2005-2009 Roger Leigh <rleigh\@debian.org>
 .BR sbuild\-hold (1),
 .BR sbuild\-setup (7).
 .BR sbuild\-shell (1),
-.BR sbuild\-stats (1),
 .BR sbuild\-unhold (1),
 .BR sbuild\-update (1),
 .BR sbuild\-upgrade (1),

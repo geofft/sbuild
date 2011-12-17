@@ -38,7 +38,6 @@ man_MANS =				\
 	sbuild-hold.1			\
 	sbuild-setup.7			\
 	sbuild-shell.1			\
-	sbuild-stats.1			\
 	sbuild-update.1
 
 sbuild.conf.man: $(abs_top_srcdir)/tools/sbuild-dumpconfig

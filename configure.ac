@@ -323,8 +323,6 @@ AC_CONFIG_FILES([test/sbuild-checkpackages],
 		[chmod +x test/sbuild-checkpackages])
 AC_CONFIG_FILES([test/sbuild-hold],
 		[chmod +x test/sbuild-hold])
-AC_CONFIG_FILES([test/sbuild-stats],
-		[chmod +x test/sbuild-stats])
 AC_CONFIG_FILES([test/sbuild-update],
 		[chmod +x test/sbuild-update])
 AC_CONFIG_FILES([test/sbuild-upgrade],
