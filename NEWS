@@ -25,6 +25,14 @@ configuration.
      $watches (and obsolete variables @ignore_watches_no_build_deps
      and %watches) have also been removed.
 
+  3) sbuild-stats and support for build time and space statistics
+     recording has been removed.  These statistics are recorded in
+     both the build log and are available as build metadata
+     internally.  The statistics recorded in the database were not
+     particularly informative; storing the statistics in a proper
+     relational database is recommended.  The configuration variables
+     $avg_time_db and $avg_space_db have been removed.
+
 * Major changes in 0.62.6:
 
   1) The use of alternatives in Build-Depends and Build-Depends-Indep
