@@ -20,6 +20,11 @@ configuration.
      command-line option --check-depends-algorithm.  The 'apt'
      resolver is the default replacement for 'internal'.
 
+  3) Support for watches has been removed.  The configuration
+     variables $check_watches, $ignore_watches_no_build_deps and
+     $watches (and obsolete variables @ignore_watches_no_build_deps
+     and %watches) have also been removed.
+
 * Major changes in 0.62.6:
 
   1) The use of alternatives in Build-Depends and Build-Depends-Indep
