@@ -673,7 +673,7 @@ sub setup_apt_archive {
 	return 0;
     }
 
-    my $arch = $self->get('Host Arch');
+    my $arch = $self->get('Build Arch');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
 Version: 0.invalid.0
