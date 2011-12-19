@@ -70,6 +70,9 @@ sub setup {
     my $session = $self->get('Session');
     my $chroot_dir = $session->get('Location');
 
+    #Set up dpkg config
+    $self->setup_dpkg();
+
     my $aptconf = "/var/lib/sbuild/apt.conf";
     $self->set('APT Conf', $aptconf);
 
@@ -85,6 +88,10 @@ sub setup {
 	}
 	print $F "APT::Install-Recommends false;\n";
 
+	if ($self->get('HOST_ARCH') ne $self->get('BUILD_ARCH')) {
+	    print $F "APT::Architecture=".$self->get_conf('HOST_ARCH');
+	    print STDOUT "Adding APT::Architecture".$self->get_conf('HOST_ARCH')."to the apt config";
+	}
 	if ($self->get('Split')) {
 	    print $F "Dir \"$chroot_dir\";\n";
 	}
@@ -124,9 +131,33 @@ sub setup {
     $self->cleanup_apt_archive();
 }
 
+sub setup_dpkg {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    # If cross-building, set the correct foreign-arch
+    if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
+	$session->run_command(
+	    { COMMAND => ['echo', 'foreign-architecture ' . $self->get_conf('HOST_ARCH'), '>', '/etc/dpkg/dpk.cfg.d/sbuild'],
+	      USER => 'root' });
+        # We should get this much nicer interface with new dpkg upload.
+        # { COMMAND => ['dpkg', '--add-foreign-architecture ', $self->get_conf('HOST_ARCH')],
+        #   USER => 'root' });
+	if ($?) {
+	    $self->log_error("E: Failed to set dpkg foreign-architecture config\n");
+	    return 0;
+	}
+	$self->log("Setting dpkg foreign-architecture\n");
+    }
+}
+
 sub cleanup {
     my $self = shift;
 
+    #cleanup dpkg cross-config
+    # rm /etc/dpkg/dpkg.cfg.d/sbuild
+    # later: dpkg --delete-foreign-architecture $host_arch
     $self->cleanup_apt_archive();
 }
 
