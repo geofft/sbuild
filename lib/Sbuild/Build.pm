@@ -1461,6 +1461,16 @@ sub build {
     $buildenv{'LD_LIBRARY_PATH'} = $self->get_conf('LD_LIBRARY_PATH')
 	if defined($self->get_conf('LD_LIBRARY_PATH'));
 
+	# Add cross environment config
+	if ($host_arch ne $build_arch) {
+		$buildenv{'CONFIG_SITE'} = "/etc/dpkg-cross/cross-config." . $host_arch;
+		if (defined($buildenv{'DEB_BUILD_OPTIONS'})) {
+			$buildenv{'DEB_BUILD_OPTIONS'} .= " nocheck";
+		} else {
+			$buildenv{'DEB_BUILD_OPTIONS'} = "nocheck";
+		}
+	}
+
     # Explicitly add any needed environment to the environment filter
     # temporarily for dpkg-buildpackage.
     my @env_filter;
