@@ -271,7 +271,7 @@ sub run {
 	$self->set('Pkg End Time', $self->get('Pkg Start Time'));
 
 	# Acquire the architecture we're building for.
-	$self->set('Arch', $self->get_conf('ARCH'));
+	$self->set('Host Arch', $self->get_conf('HOST_ARCH'));
 
 	my $dist = $self->get_conf('DISTRIBUTION');
 	if (!defined($dist) || !$dist) {
@@ -1864,7 +1864,7 @@ sub generate_stats {
     $self->add_stat('Package', $self->get('Package'));
     $self->add_stat('Version', $self->get('Version'));
     $self->add_stat('Source-Version', $self->get('OVersion'));
-    $self->add_stat('System Architecture', $self->get_conf('HOST_ARCH'));
+    $self->add_stat('Machine Architecture', $self->get_conf('HOST_ARCH'));
     $self->add_stat('Host Architecture', $self->get_conf('HOST_ARCH'));
     $self->add_stat('Build Architecture', $self->get_conf('BUILD_ARCH'));
     $self->add_stat('Distribution', $self->get_conf('DISTRIBUTION'));
@@ -2015,7 +2015,7 @@ sub open_build_log {
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
 
-	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get('Arch');
+	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get('Host Arch');
 
 	if (!$self->get_conf('NOLOG') &&
 	    $self->get_conf('LOG_DIR_AVAILABLE')) {
@@ -2034,7 +2034,7 @@ sub open_build_log {
 		$self->log_symlink($filename,
 				   $self->get_conf('BUILD_DIR') . '/' .
 				   $self->get('Package_SVersion') . '_' .
-				   $self->get_conf('HOST_ARCH') . '.build');
+				   $self->get_conf('Host Arch') . '.build');
 	    }
 	}
 
@@ -2133,7 +2133,7 @@ sub open_build_log {
     $self->log("Version: " . $self->get('Version') . "\n");
     $self->log("Source Version: " . $self->get('OVersion') . "\n");
     $self->log("Distribution: " . $self->get_conf('DISTRIBUTION') . "\n");
-    $self->log("System Architecture: " . $self->get_conf('ARCH') . "\n");
+    $self->log("Machine Architecture: " . $self->get_conf('ARCH') . "\n");
     $self->log("Host Architecture: " . $self->get_conf('HOST_ARCH') . "\n");
     $self->log("Build Architecture: " . $self->get_conf('BUILD_ARCH') . "\n");
     $self->log("\n");
@@ -2173,7 +2173,7 @@ sub close_build_log {
 	if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
 	    my $key_id = $self->get_conf('KEY_ID');
 	    $self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
-	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Arch') . '.changes';
+	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
 	    system (sprintf('debsign -k%s %s', $key_id, $changes));
 	}
     }
@@ -2280,7 +2280,7 @@ sub send_mime_build_log {
 		);
     }
 
-    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Arch') . '.changes';
+    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
     if ($self->get_status() eq 'successful' && -r $changes) {
 	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',
