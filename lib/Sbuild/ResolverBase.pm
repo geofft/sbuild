@@ -218,11 +218,11 @@ sub update_archive {
 			      '/var/lib/apt/lists/' . $uri . $file],
 		  USER => 'root',
 		  PRIORITY => 0 });
-	    if ($?) {
-		$self->log("Failed to copy file from dummy archive to apt lists.\n");
-		return 1;
-	    }
-        }
+		if ($?) {
+			$self->log("Failed to copy file from dummy archive to apt lists.\n");
+			return 1;
+		}
+	}
 
 	$self->run_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'), 'gencaches'],
