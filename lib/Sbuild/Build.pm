@@ -270,9 +270,6 @@ sub run {
 	$self->set('Pkg Start Time', time);
 	$self->set('Pkg End Time', $self->get('Pkg Start Time'));
 
-	# Acquire the architecture we're building for.
-	$self->set('Host Arch', $self->get_conf('HOST_ARCH'));
-
 	my $dist = $self->get_conf('DISTRIBUTION');
 	if (!defined($dist) || !$dist) {
 	    Sbuild::Exception::Build->throw(error => "No distribution defined",
@@ -465,9 +462,6 @@ sub run_chroot_session {
 
 	my $resolver = get_resolver($self->get('Config'), $session, $host);
 	$resolver->set('Log Stream', $self->get('Log Stream'));
-	$resolver->set('Arch', $self->get_conf('ARCH'));
-	$resolver->set('Host Arch', $self->get_conf('HOST_ARCH'));
-	$resolver->set('Build Arch', $self->get_conf('BUILD_ARCH'));
 	$resolver->set('Chroot Build Dir', $self->get('Chroot Build Dir'));
 	$self->set('Dependency Resolver', $resolver);
 
@@ -679,9 +673,9 @@ sub run_fetch_install_packages {
 						}
 	} else { # cross-building
 		# install cross-deps. Hacked for now - need to generate dummy package
-		$self->log('Cross-deps: Running apt-get -a ' . $self->get('Host Arch') . ' build-dep ' . $self->get('Package') . "\n");
+		$self->log('Cross-deps: Running apt-get -a ' . $self->get_conf('HOST_ARCH') . ' build-dep ' . $self->get('Package') . "\n");
 		$resolver->run_apt_command(
-			{ COMMAND => [$self->get_conf('APT_GET'),  '-a' . $self->get('Host Arch'), 'build-dep', '-yf', $self->get('Package')],
+			{ COMMAND => [$self->get_conf('APT_GET'),  '-a' . $self->get_conf('HOST_ARCH'), 'build-dep', '-yf', $self->get('Package')],
 			ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 			USER => 'root',
 			DIR => '/' });
@@ -2045,7 +2039,7 @@ sub open_build_log {
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
 
-	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get('Host Arch');
+	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get_conf('HOST_ARCH');
 
 	if (!$self->get_conf('NOLOG') &&
 	    $self->get_conf('LOG_DIR_AVAILABLE')) {
@@ -2064,7 +2058,7 @@ sub open_build_log {
 		$self->log_symlink($filename,
 				   $self->get_conf('BUILD_DIR') . '/' .
 				   $self->get('Package_SVersion') . '_' .
-				   $self->get_conf('Host Arch') . '.build');
+				   $self->get_conf('HOST_ARCH') . '.build');
 	    }
 	}
 
@@ -2203,7 +2197,7 @@ sub close_build_log {
 	if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
 	    my $key_id = $self->get_conf('KEY_ID');
 	    $self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
-	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
+	    my $changes = $self->get('Package_SVersion') . '_' . $self->get_conf('HOST_ARCH') . '.changes';
 	    system (sprintf('debsign -k%s %s', $key_id, $changes));
 	}
     }
@@ -2310,7 +2304,7 @@ sub send_mime_build_log {
 		);
     }
 
-    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
+    my $changes = $self->get('Package_SVersion') . '_' . $self->get_conf('HOST_ARCH') . '.changes';
     if ($self->get_status() eq 'successful' && -r $changes) {
 	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',

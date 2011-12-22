@@ -88,7 +88,7 @@ sub setup {
 	}
 	print $F "APT::Install-Recommends false;\n";
 
-	if ($self->get('HOST_ARCH') ne $self->get('BUILD_ARCH')) {
+	if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
 	    print $F "APT::Architecture=".$self->get_conf('HOST_ARCH');
 	    print STDOUT "Adding APT::Architecture".$self->get_conf('HOST_ARCH')."to the apt config";
 	}
@@ -387,7 +387,7 @@ sub dump_build_environment {
 
     my $status = $self->get_dpkg_status();
 
-    my $arch = $self->get('Arch');
+    my $arch = $self->get_conf('ARCH');
     my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
     $self->log_subsection("Build environment");
     $self->log("Kernel: $sysname $release $arch ($machine)\n");
@@ -673,7 +673,7 @@ sub setup_apt_archive {
 	return 0;
     }
 
-    my $arch = $self->get('Build Arch');
+    my $arch = $self->get_conf('BUILD_ARCH');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
 Version: 0.invalid.0
@@ -717,11 +717,11 @@ EOF
     my $positive = deps_parse(join(", ", @positive,
 				   @positive_arch, @positive_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Host Arch'));
+			      host_arch => $self->get_conf('HOST_ARCH'));
     my $negative = deps_parse(join(", ", @negative,
 				   @negative_arch, @negative_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Host Arch'));
+			      host_arch => $self->get_conf('HOST_ARCH'));
 
     $self->log("Merged Build-Depends: $positive\n") if $positive;
     $self->log("Merged Build-Conflicts: $negative\n") if $negative;
