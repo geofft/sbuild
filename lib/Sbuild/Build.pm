@@ -676,7 +676,7 @@ sub run_fetch_install_packages {
 						}
 	} else { # cross-building
 		# install cross-deps. Hacked for now - need to generate dummy package
-		$self->log('Cross-deps: Running apt-get -a ' . $self->get_conf('HOST_ARCH') . ' build-dep ' . $self->get('Package') . "\n");
+		$self->log('Cross-deps: Running apt-get -a' . $self->get_conf('HOST_ARCH') . ' build-dep ' . $self->get('Package') . "\n");
 		$resolver->run_apt_command(
 			{ COMMAND => [$self->get_conf('APT_GET'),  '-a' . $self->get_conf('HOST_ARCH'), 'build-dep', '-yf', $self->get('Package')],
 			ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},

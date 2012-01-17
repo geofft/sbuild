@@ -90,7 +90,7 @@ sub setup {
 
 	if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
 	    print $F "APT::Architecture=".$self->get_conf('HOST_ARCH');
-	    print STDOUT "Adding APT::Architecture".$self->get_conf('HOST_ARCH')."to the apt config";
+	    $self->log("Adding APT::Architecture ".$self->get_conf('HOST_ARCH')." to the apt config");
 	}
 	if ($self->get('Split')) {
 	    print $F "Dir \"$chroot_dir\";\n";
