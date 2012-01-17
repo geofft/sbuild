@@ -271,8 +271,8 @@ sub run {
 	$self->set('Pkg End Time', $self->get('Pkg Start Time'));
 
 	# Acquire the architectures we're building for and on.
-	$self->set('Host_Arch', $self->get_conf('HOST_ARCH'));
-	$self->set('Build_Arch', $self->get_conf('BUILD_ARCH'));
+	$self->set('Host Arch', $self->get_conf('HOST_ARCH'));
+	$self->set('Build Arch', $self->get_conf('BUILD_ARCH'));
 
 	my $dist = $self->get_conf('DISTRIBUTION');
 	if (!defined($dist) || !$dist) {
@@ -466,6 +466,9 @@ sub run_chroot_session {
 
 	my $resolver = get_resolver($self->get('Config'), $session, $host);
 	$resolver->set('Log Stream', $self->get('Log Stream'));
+	$resolver->set('Arch', $self->get_conf('ARCH'));
+	$resolver->set('Host Arch', $self->get_conf('HOST_ARCH'));
+	$resolver->set('Build Arch', $self->get_conf('BUILD_ARCH'));
 	$resolver->set('Chroot Build Dir', $self->get('Chroot Build Dir'));
 	$self->set('Dependency Resolver', $resolver);
 
@@ -631,10 +634,10 @@ sub run_fetch_install_packages {
 	$self->set('Install Start Time', time);
 	$self->set('Install End Time', $self->get('Install Start Time'));
 	my @coredeps = @{$self->get_conf('CORE_DEPENDS')};
-	if ($self->get('Host_Arch') ne $self->get('Build_Arch')) {
+	if ($self->get('Host Arch') ne $self->get('Build Arch')) {
 	    my $crosscoredeps;
 	    $crosscoredeps = $self->get_conf('CROSSBUILD_CORE_DEPENDS');
-	    $resolver->add_dependencies('CORE', join(", ", @coredeps, @{$crosscoredeps->{$self->get('Host_Arch')}}) , "", "", "", "", "");
+	    $resolver->add_dependencies('CORE', join(", ", @coredeps, @{$crosscoredeps->{$self->get('Host Arch')}}) , "", "", "", "", "");
 	} else {
 	    $resolver->add_dependencies('CORE', join(", ", @coredeps) , "", "", "", "", "");
 	}
@@ -661,7 +664,7 @@ sub run_fetch_install_packages {
 				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_ARCH')}),
 				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_INDEP')}));
 
-	if ($self->get('Host_Arch') eq $self->get('Build_Arch')) {
+	if ($self->get('Host Arch') eq $self->get('Build Arch')) {
 	# for native building make and install dummy-deps package
 		$resolver->add_dependencies($self->get('Package'),
 						$self->get('Build Depends'),
@@ -681,9 +684,9 @@ sub run_fetch_install_packages {
 	} else { # cross-building
 		# install cross-deps. Hacked for now - need to generate dummy package
 		$self->log_subsection('Install cross build-dependencies (apt-get -a)');
-		$self->log('Cross-deps: Running apt-get -a' . $self->get('Host_Arch') . ' build-dep ' . $self->get('Package') . "\n");
+		$self->log('Cross-deps: Running apt-get -a' . $self->get('Host Arch') . ' build-dep ' . $self->get('Package') . "\n");
 		$resolver->run_apt_command(
-			{ COMMAND => [$self->get_conf('APT_GET'),  '-a' . $self->get('Host_Arch'), 'build-dep', '-yf', $self->get('Package')],
+			{ COMMAND => [$self->get_conf('APT_GET'),  '-a' . $self->get('Host Arch'), 'build-dep', '-yf', $self->get('Package')],
 			ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
 			USER => 'root',
 			DIR => '/' });
@@ -817,7 +820,7 @@ sub fetch_source_files {
     my $build_dir = $self->get('Chroot Build Dir');
     my $pkg = $self->get('Package');
     my $ver = $self->get('OVersion');
-    my $host_arch = $self->get('Host_Arch');
+    my $host_arch = $self->get('Host Arch');
 
     my ($dscarchs, $dscpkg, $dscver, @fetched);
 
@@ -1222,8 +1225,8 @@ sub build {
     my $dscdir = $self->get('DSC Dir');
     my $pkg = $self->get('Package');
     my $build_dir = $self->get('Chroot Build Dir');
-    my $host_arch = $self->get('Host_Arch');
-    my $build_arch = $self->get('Build_Arch');
+    my $host_arch = $self->get('Host Arch');
+    my $build_arch = $self->get('Build Arch');
 
     my( $rv, $changes );
     local( *PIPE, *F, *F2 );
@@ -1896,8 +1899,8 @@ sub generate_stats {
     $self->add_stat('Version', $self->get('Version'));
     $self->add_stat('Source-Version', $self->get('OVersion'));
     $self->add_stat('Machine Architecture', $self->get_conf('ARCH'));
-    $self->add_stat('Host Architecture', $self->get('Host_Arch'));
-    $self->add_stat('Build Architecture', $self->get('Build_Arch'));
+    $self->add_stat('Host Architecture', $self->get('Host Arch'));
+    $self->add_stat('Build Architecture', $self->get('Build Arch'));
     $self->add_stat('Distribution', $self->get_conf('DISTRIBUTION'));
     $self->add_stat('Space', $self->get('This Space'));
     $self->add_stat('Build-Time',
@@ -2028,7 +2031,7 @@ sub open_build_log {
 
     my $filename = $self->get_conf('LOG_DIR') . '/' .
 	$self->get('Package_SVersion') . '-' .
-	$self->get('Host_Arch') .
+	$self->get('Host Arch') .
 	"-$date";
 
     open($saved_stdout, ">&STDOUT") or warn "Can't redirect stdout\n";
@@ -2046,7 +2049,7 @@ sub open_build_log {
 	$SIG{'QUIT'} = 'IGNORE';
 	$SIG{'PIPE'} = 'IGNORE';
 
-	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get('Host_Arch');
+	$PROGRAM_NAME = 'package log for ' . $self->get('Package_SVersion') . '_' . $self->get('Host Arch');
 
 	if (!$self->get_conf('NOLOG') &&
 	    $self->get_conf('LOG_DIR_AVAILABLE')) {
@@ -2065,7 +2068,7 @@ sub open_build_log {
 		$self->log_symlink($filename,
 				   $self->get_conf('BUILD_DIR') . '/' .
 				   $self->get('Package_SVersion') . '_' .
-				   $self->get('Host_Arch') . '.build');
+				   $self->get('Host Arch') . '.build');
 	    }
 	}
 
@@ -2148,10 +2151,10 @@ sub open_build_log {
     my $hostname = $self->get_conf('HOSTNAME');
     $self->log("sbuild (Debian sbuild) $version ($release_date) on $hostname\n");
 
-    my $arch_string = $self->get('Build_Arch');
-    $arch_string = 'CROSS host=' . $self->get('Host_Arch') .
-	'/build=' . $self->get('Build_Arch')
-	if ($self->get('Host_Arch') ne $self->get('Build_Arch'));
+    my $arch_string = $self->get('Build Arch');
+    $arch_string = 'CROSS host=' . $self->get('Host Arch') .
+	'/build=' . $self->get('Build Arch')
+	if ($self->get('Host Arch') ne $self->get('Build Arch'));
     my $head1 = $self->get('Package') . ' ' . $self->get('Version') .
 	' (' . $arch_string . ') ';
     my $head2 = strftime("%d %b %Y %H:%M",
@@ -2165,8 +2168,8 @@ sub open_build_log {
     $self->log("Source Version: " . $self->get('OVersion') . "\n");
     $self->log("Distribution: " . $self->get_conf('DISTRIBUTION') . "\n");
     $self->log("Machine Architecture: " . $self->get_conf('ARCH') . "\n");
-    $self->log("Host Architecture: " . $self->get('Host_Arch') . "\n");
-    $self->log("Build Architecture: " . $self->get('Build_Arch') . "\n");
+    $self->log("Host Architecture: " . $self->get('Host Arch') . "\n");
+    $self->log("Build Architecture: " . $self->get('Build Arch') . "\n");
     $self->log("\n");
 }
 
@@ -2204,15 +2207,15 @@ sub close_build_log {
 	if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
 	    my $key_id = $self->get_conf('KEY_ID');
 	    $self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
-	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host_Arch') . '.changes';
+	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
 	    system (sprintf('debsign -k%s %s', $key_id, $changes));
 	}
     }
 
     my $subject = "Log for " . $self->get_status() .
 	" build of " . $self->get('Package_Version');
-    if ($self->get('Host_Arch')) {
-	$subject .= " on " . $self->get('Host_Arch');
+    if ($self->get('Host Arch')) {
+	$subject .= " on " . $self->get('Host Arch');
     }
     if ($self->get_conf('ARCHIVE')) {
 	$subject .= " (" . $self->get_conf('ARCHIVE') . "/" . $self->get_conf('DISTRIBUTION') . ")";
@@ -2311,7 +2314,7 @@ sub send_mime_build_log {
 		);
     }
 
-    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host_Arch') . '.changes';
+    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
     if ($self->get_status() eq 'successful' && -r $changes) {
 	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',

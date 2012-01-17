@@ -88,9 +88,9 @@ sub setup {
 	}
 	print $F "APT::Install-Recommends false;\n";
 
-	if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
-	    print $F "APT::Architecture=".$self->get_conf('HOST_ARCH');
-	    $self->log("Adding APT::Architecture ".$self->get_conf('HOST_ARCH')." to the apt config");
+	if ($self->get('Host Arch') ne $self->get('Build Arch')) {
+	    print $F "APT::Architecture=".$self->get('Host Arch');
+	    $self->log("Adding APT::Architecture ".$self->get('Host Arch')." to the apt config");
 	}
 	if ($self->get('Split')) {
 	    print $F "Dir \"$chroot_dir\";\n";
@@ -137,18 +137,18 @@ sub setup_dpkg {
     my $session = $self->get('Session');
 
     # If cross-building, set the correct foreign-arch
-    if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
+    if ($self->get('Host Arch') ne $self->get('Build Arch')) {
 	$session->run_command(
-	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get_conf('HOST_ARCH') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
+	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get('Host Arch') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
 	      USER => 'root' });
         # We should get this much nicer interface with new dpkg upload.
-        # { COMMAND => ['dpkg', '--add-foreign-architecture ', $self->get_conf('HOST_ARCH')],
+        # { COMMAND => ['dpkg', '--add-foreign-architecture ', $self->get('Host Arch')],
         #   USER => 'root' });
 	if ($?) {
 	    $self->log_error("E: Failed to set dpkg foreign-architecture config\n");
 	    return 0;
 	}
-	$self->log("Setting dpkg foreign-architecture\n");
+	$self->log("Setting dpkg foreign-architecture to ".$self->get('Host Arch')."\n");
     }
 }
 
@@ -157,7 +157,7 @@ sub cleanup {
 
     #cleanup dpkg cross-config
     # rm /etc/dpkg/dpkg.cfg.d/sbuild
-    # later: dpkg --delete-foreign-architecture $host_arch
+    # later: dpkg --delete-foreign-architecture $self->get('Host Arch')
     $self->cleanup_apt_archive();
 }
 
@@ -387,7 +387,7 @@ sub dump_build_environment {
 
     my $status = $self->get_dpkg_status();
 
-    my $arch = $self->get_conf('ARCH');
+    my $arch = $self->get('Arch');
     my ($sysname, $nodename, $release, $version, $machine) = POSIX::uname();
     $self->log_subsection("Build environment");
     $self->log("Kernel: $sysname $release $arch ($machine)\n");
@@ -673,7 +673,7 @@ sub setup_apt_archive {
 	return 0;
     }
 
-    my $arch = $self->get_conf('BUILD_ARCH');
+    my $arch = $self->get('Build Arch');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
 Version: 0.invalid.0
@@ -717,11 +717,11 @@ EOF
     my $positive = deps_parse(join(", ", @positive,
 				   @positive_arch, @positive_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get_conf('HOST_ARCH'));
+			      host_arch => $self->get('Host Arch'));
     my $negative = deps_parse(join(", ", @negative,
 				   @negative_arch, @negative_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get_conf('HOST_ARCH'));
+			      host_arch => $self->get('Host Arch'));
 
     $self->log("Merged Build-Depends: $positive\n") if $positive;
     $self->log("Merged Build-Conflicts: $negative\n") if $negative;
