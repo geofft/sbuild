@@ -139,7 +139,7 @@ sub setup_dpkg {
     # If cross-building, set the correct foreign-arch
     if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
 	$session->run_command(
-	    { COMMAND => ['echo', 'foreign-architecture ' . $self->get_conf('HOST_ARCH'), '>', '/etc/dpkg/dpk.cfg.d/sbuild'],
+	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get_conf('HOST_ARCH') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
 	      USER => 'root' });
         # We should get this much nicer interface with new dpkg upload.
         # { COMMAND => ['dpkg', '--add-foreign-architecture ', $self->get_conf('HOST_ARCH')],
