@@ -626,12 +626,15 @@ sub run_fetch_install_packages {
 	$self->check_abort();
 	$self->set('Install Start Time', time);
 	$self->set('Install End Time', $self->get('Install Start Time'));
-    my @coredeps = @{$self->get_conf('CORE_DEPENDS')};
-    my $crosscoredeps;
-    if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
-         $crosscoredeps = $self->get_conf('CROSSBUILD_CORE_DEPENDS');
-    }
-	$resolver->add_dependencies('CORE', join(", ", @coredeps, @{$crosscoredeps->{$self->get_conf('HOST_ARCH')}}) , "", "", "", "", "");
+	my @coredeps = @{$self->get_conf('CORE_DEPENDS')};
+	if ($self->get_conf('HOST_ARCH') ne $self->get_conf('BUILD_ARCH')) {
+	    my $crosscoredeps;
+	    $crosscoredeps = $self->get_conf('CROSSBUILD_CORE_DEPENDS');
+	    $resolver->add_dependencies('CORE', join(", ", @coredeps, @{$crosscoredeps->{$self->get_conf('HOST_ARCH')}}) , "", "", "", "", "");
+	} else {
+	    $resolver->add_dependencies('CORE', join(", ", @coredeps) , "", "", "", "", "");
+	}
+
 	if (!$resolver->install_deps('core', 'CORE')) {
 	    Sbuild::Exception::Build->throw(error => "Core build dependencies not satisfied; skipping",
 					    failstage => "install-deps");
