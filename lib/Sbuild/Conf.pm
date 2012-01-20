@@ -785,8 +785,8 @@ sub setup ($) {
 	    TYPE => 'HASH:ARRAY:STRING',
 	    VARNAME => 'crossbuild_core_depends',
 	    GROUP => 'Multiarch support (transitional)',
-	    DEFAULT => { armel => ['dpkg-cross, g++-arm-linux-gnueabi', 'libc6-dev-armel-cross', 'pkg-config-arm-linux-gnueabi'],
-			 armhf => ['dpkg-cross, g++-arm-linux-gnueabihf', 'libc6-dev-armhf-cross', 'pkg-config-arm-linux-gnueabihf']
+	    DEFAULT => { armel => ['dpkg-cross', 'g++-arm-linux-gnueabi', 'libc6-dev-armel-cross', 'pkg-config-arm-linux-gnueabi'],
+			 armhf => ['dpkg-cross', 'g++-arm-linux-gnueabihf', 'libc6-dev-armhf-cross', 'pkg-config-arm-linux-gnueabihf']
 	    	       },
 	    HELP => 'Per-architecture dependencies required for cross-building.'
 	},	'BUILD_SOURCE'				=> {
