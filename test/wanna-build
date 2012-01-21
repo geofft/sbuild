@@ -1,0 +1,118 @@
+#!/usr/bin/perl
+#
+# This is a fake wanna-build.  Its sole purpose is to provide a means
+# to test buildd in isolation, without a full wanna-build database and
+# associated intrastructure.  This currently only permits testing of
+# buildd, and not buildd-mail or buildd-uploader.
+#
+
+use strict;
+use warnings;
+
+use Getopt::Long qw(:config no_ignore_case auto_abbrev gnu_getopt);
+
+our $api = 1;
+our $arch = "amd64";
+our $list = undef;
+our $dist = "unstable";
+our $verbose = 0;
+our $command = "take";
+
+my @options = (
+    'api=i' => \$api,
+    'arch|A=s' => \$arch,
+    'list|l=s' => sub { $command="list"; $list=$_[1]; },
+    'dist|d=s' => \$dist,
+    'verbose|v' => \$verbose,
+    'building|take' => sub { $command="take" },
+    'built' => sub { $command="built" },
+    'attempted' => sub { $command="attempted" },
+    'needs-build|give-back' => sub { $command="needs-build" },
+    'info|i' => sub { $command="info" }
+    );
+GetOptions(@options);
+
+my $output = "unknown output for action\n";
+if ($command eq "take") {
+    if ($verbose) {
+	$output = <<"EOF";
+wanna-build c9531211e54a03cff965eebc3fe617ea8539f7ba for sid on amd64
+update transactions: bash sid 4.1-3 --take Installed Building rleigh rleigh
+\$VAR1 = {
+          'state_days' => '52',
+          'priority' => 'source',
+          'rel' => undef,
+          'state_change' => '2012 Jan 21 16:19:15',
+          'successtime' => 694,
+          'permbuildpri' => undef,
+          'extra_depends' => undef,
+          'section' => 'shells',
+          'failed' => undef,
+          'buildpri' => undef,
+          'state' => 'Building',
+          'binary_nmu_changelog' => undef,
+          'anytime' => 694,
+          'bd_problem' => undef,
+          'state_time' => '4510370',
+          'build_arch_all' => 0,
+          'version' => '4.1-3',
+          'package' => 'bash',
+          'distribution' => 'sid',
+          'extra_conflicts' => undef,
+          'installed_version' => '4.2-1',
+          'notes' => 'out-of-date',
+          'do_state_change' => 1,
+          'builder' => 'rleigh',
+          'old_failed' => undef,
+          'binary_nmu_version' => undef,
+          'previous_state' => 'Installed',
+          'depends' => undef
+        };
+EOF
+    } else {
+	$output = <<"EOF";
+update transactions: bash sid 4.2-1 --take Needs-Build Building rleigh rleigh
+EOF
+    }
+} elsif ($command eq "built") {
+    $output = <<"EOF";
+update transactions: bash sid 4.2-1 --built Building Built rleigh rleigh
+EOF
+} elsif ($command eq "attempted") {
+    $output = <<"EOF";
+update transactions: bash sid 4.2-1 --attempted Building Build-Attempted rleigh rleigh
+EOF
+} elsif ($command eq "needs-build") {
+    $output = <<"EOF";
+update transactions: bash sid 4.2-1 --give-back Building BD-Uninstallable rleigh rleigh
+EOF
+} elsif ($command eq "info") {
+    $output = <<"EOF";
+bash:
+  Package             : bash
+  Version             : 4.2-1
+  Builder             : buildd_amd64-barber
+  State               : Needs-Build
+  Section             : shells
+  Priority            : source
+  Installed-Version   : 4.1-3
+  Previous-State      : Installed
+  State-Change        : 2011-11-30 11:26:24.40323
+  Build-time          : 694
+  Build-Arch-All      : 0
+  CalculatedPri       : 52
+  component           : main
+  Distribution        : sid
+  Notes               : out-of-date
+  State-Days          : 52
+  State-Time          : 4510444
+  Success-build-time  : 694
+EOF
+} elsif ($command eq "list" && $list eq "needs-build") {
+    $output = <<"EOF";
+libs/bash_4.2-1 [optional:out-of-date:calprio{49}:days{0}]
+Total 1 package(s)
+EOF
+}
+
+print "$output";
