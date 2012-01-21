@@ -55,6 +55,9 @@ sub new {
     $self->set('Changes', {});
     $self->set('AptDependencies', {});
     $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
+    # Typically set by Sbuild::Build, but not outside a build context.
+    $self->set('Host Arch', $self->get_conf('HOST_ARCH'));
+    $self->set('Build Arch', $self->get_conf('BUILD_ARCH'));
 
     my $dummy_archive_list_file = $session->get('Location') .
         '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
