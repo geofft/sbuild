@@ -17,6 +17,7 @@ our $list = undef;
 our $dist = "unstable";
 our $verbose = 0;
 our $command = "take";
+our $user = "buildd";
 
 my @options = (
     'api=i' => \$api,
@@ -28,7 +29,8 @@ my @options = (
     'built' => sub { $command="built" },
     'attempted' => sub { $command="attempted" },
     'needs-build|give-back' => sub { $command="needs-build" },
-    'info|i' => sub { $command="info" }
+    'info|i' => sub { $command="info" },
+    'user=s' => \$user
     );
 GetOptions(@options);
 
