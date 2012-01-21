@@ -547,7 +547,7 @@ sub setup ($) {
 			'hurd-dev$',
 			'kfreebsd-kernel-headers$'
 		],
-	    HELP => 'Regular expressions identifying toolchain packages.  Note that for backward compatible, this is also settable using the array @toolchain_regex (deprecated), rather than an array reference.'
+	    HELP => 'Regular expressions identifying toolchain packages.  Note that for backward compatibility, this is also settable using the array @toolchain_regex (deprecated), rather than an array reference.'
 	},
 	'STALLED_PKG_TIMEOUT'			=> {
 	    TYPE => 'NUMERIC',
