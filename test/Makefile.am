@@ -28,7 +28,6 @@ TESTS =				\
 if SBUILD_CHROOT_CHECKS
 chroot_checks = 		\
 	sbuild-hold		\
-	sbuild-stats		\
 	sbuild-update		\
 	sbuild-upgrade		\
 	sbuild-distupgrade	\
@@ -44,6 +43,5 @@ EXTRA_DIST =			\
 	sbuild-distupgrade.in	\
 	sbuild-clean.in	\
 	sbuild-hold.in		\
-	sbuild-stats.in		\
 	sbuild-checkpackages.in	\
 	sbuild.in
