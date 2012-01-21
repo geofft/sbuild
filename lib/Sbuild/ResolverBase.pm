@@ -55,6 +55,9 @@ sub new {
     $self->set('Changes', {});
     $self->set('AptDependencies', {});
     $self->set('Split', $self->get_conf('CHROOT_SPLIT'));
+    # Typically set by Sbuild::Build, but not outside a build context.
+    $self->set('Host Arch', $self->get_conf('HOST_ARCH'));
+    $self->set('Build Arch', $self->get_conf('BUILD_ARCH'));
 
     my $dummy_archive_list_file = $session->get('Location') .
         '/etc/apt/sources.list.d/sbuild-build-depends-archive.list';
@@ -69,6 +72,9 @@ sub setup {
 
     my $session = $self->get('Session');
     my $chroot_dir = $session->get('Location');
+
+    #Set up dpkg config
+    $self->setup_dpkg();
 
     my $aptconf = "/var/lib/sbuild/apt.conf";
     $self->set('APT Conf', $aptconf);
@@ -85,6 +91,10 @@ sub setup {
 	}
 	print $F "APT::Install-Recommends false;\n";
 
+	if ($self->get('Host Arch') ne $self->get('Build Arch')) {
+	    print $F "APT::Architecture=".$self->get('Host Arch');
+	    $self->log("Adding APT::Architecture ".$self->get('Host Arch')." to the apt config");
+	}
 	if ($self->get('Split')) {
 	    print $F "Dir \"$chroot_dir\";\n";
 	}
@@ -124,9 +134,33 @@ sub setup {
     $self->cleanup_apt_archive();
 }
 
+sub setup_dpkg {
+    my $self = shift;
+
+    my $session = $self->get('Session');
+
+    # If cross-building, set the correct foreign-arch
+    if ($self->get('Host Arch') ne $self->get('Build Arch')) {
+	$session->run_command(
+	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get('Host Arch') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
+	      USER => 'root' });
+        # We should get this much nicer interface with new dpkg upload.
+        # { COMMAND => ['dpkg', '--add-foreign-architecture ', $self->get('Host Arch')],
+        #   USER => 'root' });
+	if ($?) {
+	    $self->log_error("E: Failed to set dpkg foreign-architecture config\n");
+	    return 0;
+	}
+	$self->log("Setting dpkg foreign-architecture to ".$self->get('Host Arch')."\n");
+    }
+}
+
 sub cleanup {
     my $self = shift;
 
+    #cleanup dpkg cross-config
+    # rm /etc/dpkg/dpkg.cfg.d/sbuild
+    # later: dpkg --delete-foreign-architecture $self->get('Host Arch')
     $self->cleanup_apt_archive();
 }
 
@@ -187,11 +221,11 @@ sub update_archive {
 			      '/var/lib/apt/lists/' . $uri . $file],
 		  USER => 'root',
 		  PRIORITY => 0 });
-	    if ($?) {
-		$self->log("Failed to copy file from dummy archive to apt lists.\n");
-		return 1;
-	    }
-        }
+		if ($?) {
+			$self->log("Failed to copy file from dummy archive to apt lists.\n");
+			return 1;
+		}
+	}
 
 	$self->run_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'), 'gencaches'],
@@ -642,7 +676,7 @@ sub setup_apt_archive {
 	return 0;
     }
 
-    my $arch = $self->get('Host Arch');
+    my $arch = $self->get('Build Arch');
     print DUMMY_CONTROL <<"EOF";
 Package: $dummy_pkg_name
 Version: 0.invalid.0
