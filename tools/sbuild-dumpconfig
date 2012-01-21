@@ -123,7 +123,8 @@ foreach my $group (@groups) {
 		print ".BR $key\n";
 		print "$type type.\n";
 		if ($help) {
-		    print wrap("", "", "$help\n");
+		    print "$help\n";
+#		    print wrap("", "", "$help\n");
 		}
 		my $example = $conf->_get_example($key);
 		if ($example) {
