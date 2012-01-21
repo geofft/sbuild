@@ -352,8 +352,24 @@ sub setup ($) {
 		# Trigger creation
 		$conf->get('LOG_DIR_AVAILABLE');
 	    },
-	    DEFAULT => "$HOME/logs",
-	    HELP => 'Directory for storing build logs'
+	    GET => sub {
+		my $conf = shift;
+		my $entry = shift;
+
+		my $retval = $conf->_get($entry->{'NAME'});
+
+		# user mode defaults to the CWD, while buildd mode
+		# defaults to $HOME/logs.
+		if (!defined($retval)) {
+		    $retval = ".";
+		    if ($conf->get('SBUILD_MODE') eq 'buildd') {
+			$retval = "$HOME/logs";
+		    }
+		}
+
+		return $retval;
+	    },
+	    HELP => 'Directory for storing build logs.  This defaults to \'.\' when SBUILD_MODE is set to \'user\' (the default), and to \'$HOME/logs\' when SBUILD_MODE is set to \'buildd\'.'
 	},
 	'LOG_COLOUR'				=> {
 	    TYPE => 'BOOL',

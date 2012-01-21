@@ -1995,16 +1995,10 @@ sub open_build_log {
     my $colour_prefix = '__SBUILD_COLOUR_' . $$ . ':';
     $self->set('COLOUR_PREFIX', $colour_prefix);
 
-    # The log is stored in the log directory in buildd mode, or the
-    # build directory otherwise.
-    my $filename = $self->get_conf('BUILD_DIR') . '/' .
+    my $filename = $self->get_conf('LOG_DIR') . '/' .
 	$self->get('Package_SVersion') . '_' .
-	$self->get_conf('HOST_ARCH') . '.build';
-    if ($self->get_conf('SBUILD_MODE') eq 'buildd') {
-	$filename = $self->get_conf('LOG_DIR') . '/' .
-	    $self->get('Package_SVersion') . '-' .
-	    $self->get_conf('HOST_ARCH') . "-$date";
-    }
+	$self->get_conf('HOST_ARCH') . "-$date";
+    $filename .= ".build" if $self->get_conf('SBUILD_MODE') ne 'buildd';
 
     open($saved_stdout, ">&STDOUT") or warn "Can't redirect stdout\n";
     open($saved_stderr, ">&STDERR") or warn "Can't redirect stderr\n";
@@ -2037,6 +2031,10 @@ sub open_build_log {
 		$self->log_symlink($filename,
 				   $self->get_conf('BUILD_DIR') . '/current-' .
 				   $self->get_conf('DISTRIBUTION'));
+	    } else {
+		$self->log_symlink($filename,
+				   $self->get('Package_SVersion') . '_' .
+				   $self->get_conf('HOST_ARCH') . ".build");
 	    }
 	}
 
