@@ -1,10 +1,34 @@
 sbuild (0.63.0-1) unstable; urgency=low
 
   [ Wookey ]
-  * Merge cross-build support (thanks to Hector Oron)
-  * Add multiarch cross-build support
+  * Support for cross-compiling has been added.  This includes the
+    addition of $host and $build configuration variables, with
+    corresponding --host and --build command-line options.  This
+    includes the addition of a new 'xapt' dependency resolver.
+    - Merge cross-build support (thanks to Hector Oron,
+      Closes: #610689).
+    - Add multiarch cross-build support.
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 15 Dec 2011 13:03:01 +0000
+  [ Roger Leigh ]
+  * The deprecated 'internal' dependency resolver has been removed,
+    along with the configuration variables $apt_policy,
+    $check_depends_algorithm and $resolve_virtual, and the
+    command-line option --check-depends-algorithm.  The 'apt'
+    resolver is the default replacement for 'internal'.
+    (Closes: #622788)
+  * Support for watches has been removed.  The configuration
+    variables $check_watches, $ignore_watches_no_build_deps and
+    $watches (and obsolete variables @ignore_watches_no_build_deps
+    and %watches) have also been removed.
+  * sbuild-stats and support for build time and space statistics
+    recording has been removed.  These statistics are recorded in
+    both the build log and are available as build metadata
+    internally.  The statistics recorded in the database were not
+    particularly informative; storing the statistics in a proper
+    relational database is recommended.  The configuration variables
+    $avg_time_db and $avg_space_db have been removed. 
+
+ -- Roger Leigh <rleigh@debian.org>  Sun, 22 Jan 2012 18:20:21 +0000
 
 sbuild (0.62.6-1) unstable; urgency=low
 
