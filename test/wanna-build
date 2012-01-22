@@ -18,6 +18,7 @@ our $dist = "unstable";
 our $verbose = 0;
 our $command = "take";
 our $user = "buildd";
+our $database = "db";
 
 my @options = (
     'api=i' => \$api,
@@ -30,7 +31,8 @@ my @options = (
     'attempted' => sub { $command="attempted" },
     'needs-build|give-back' => sub { $command="needs-build" },
     'info|i' => sub { $command="info" },
-    'user=s' => \$user
+    'user=s' => \$user,
+    'database=s' => \$database
     );
 GetOptions(@options);
 
@@ -39,7 +41,11 @@ if ($command eq "take") {
     if ($verbose) {
 	$output = <<"EOF";
 wanna-build c9531211e54a03cff965eebc3fe617ea8539f7ba for sid on amd64
-update transactions: bash sid 4.1-3 --take Installed Building rleigh rleigh
+- bash:
+    - status: ok
+    - pkg-ver: bash_4.2-1
+    - archive: ftp-master
+uupdate transactions: bash sid 4.1-3 --take Installed Building rleigh rleigh
 \$VAR1 = {
           'state_days' => '52',
           'priority' => 'source',
@@ -73,6 +79,10 @@ update transactions: bash sid 4.1-3 --take Installed Building rleigh rleigh
 EOF
     } else {
 	$output = <<"EOF";
+- bash:
+    - status: ok
+    - pkg-ver: bash_4.2-1
+    - archive: ftp-master
 update transactions: bash sid 4.2-1 --take Needs-Build Building rleigh rleigh
 EOF
     }
