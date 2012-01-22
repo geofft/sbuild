@@ -532,7 +532,7 @@ if (\@take_from_dists) {
 	#Make one entry per distribution, it's easier later on:
 	for my \$dist (\@dist_names) {
 	    \$entry{'DIST_NAME'} = \$dist;
-                    my \$dist_config = Buildd::DistConf::new_hash(\\\%entry);
+                    my \$dist_config = Buildd::DistConf::new_hash(HASH=>\\\%entry);
                     push \@distributions_info, \$dist_config;
 	}
     }
