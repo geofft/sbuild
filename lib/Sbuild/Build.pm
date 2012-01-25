@@ -575,25 +575,21 @@ sub run_chroot_update {
     # Upgrade using APT.
     $self->check_abort();
     if ($self->get_conf('APT_DISTUPGRADE')) {
-	if ($self->get_conf('APT_DISTUPGRADE')) {
-	    if ($resolver->distupgrade()) {
-		# Since apt-distupgrade was requested specifically, fail on
-		# error when not in buildd mode.
-		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		    Sbuild::Exception::Build->throw(error => "apt-get dist-upgrade failed",
-						    failstage => "apt-get-dist-upgrade");
-		}
+	if ($resolver->distupgrade()) {
+	    # Since apt-distupgrade was requested specifically, fail on
+	    # error when not in buildd mode.
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		Sbuild::Exception::Build->throw(error => "apt-get dist-upgrade failed",
+						failstage => "apt-get-dist-upgrade");
 	    }
 	}
     } elsif ($self->get_conf('APT_UPGRADE')) {
-	if ($self->get_conf('APT_UPGRADE')) {
-	    if ($resolver->upgrade()) {
-		# Since apt-upgrade was requested specifically, fail on
-		# error when not in buildd mode.
-		if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
-		    Sbuild::Exception::Build->throw(error => "apt-get upgrade failed",
-						    failstage => "apt-get-upgrade");
-		}
+	if ($resolver->upgrade()) {
+	    # Since apt-upgrade was requested specifically, fail on
+	    # error when not in buildd mode.
+	    if ($self->get_conf('SBUILD_MODE') ne 'buildd') {
+		Sbuild::Exception::Build->throw(error => "apt-get upgrade failed",
+						failstage => "apt-get-upgrade");
 	    }
 	}
     }
