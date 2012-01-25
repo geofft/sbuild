@@ -29,7 +29,6 @@ use POSIX qw(getgroups getgid);
 use Sbuild qw(isin);
 use Sbuild::ConfBase;
 use Sbuild::Sysconfig;
-use Sbuild::Log;
 
 BEGIN {
     use Exporter ();
