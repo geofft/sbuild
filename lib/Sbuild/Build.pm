@@ -1387,9 +1387,11 @@ sub build {
 
 	$self->log_warning("After unpacking, there exists a file debian/files with the contents:\n");
 
+	$self->log_sep();
 	foreach (@lines) {
 	    $self->log($_);
 	}
+	$self->log_sep();
 	$self->log("\n");
 
 	$self->log_info("This should be reported as a bug.\n");
