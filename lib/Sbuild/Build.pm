@@ -1384,17 +1384,13 @@ sub build {
 	open( FILES, "<$dscdir/debian/files" );
 	chomp( @lines = <FILES> );
 	close( FILES );
-	@lines = map { my $ind = 76-length($_);
-		       $ind = 0 if $ind < 0;
-		       "│ $_".(" " x $ind). " │\n"; } @lines;
 
 	$self->log_warning("After unpacking, there exists a file debian/files with the contents:\n");
 
-	$self->log('┌', '─'x78, '┐', "\n");
 	foreach (@lines) {
 	    $self->log($_);
 	}
-	$self->log('└', '─'x78, '┘', "\n");
+	$self->log("\n");
 
 	$self->log_info("This should be reported as a bug.\n");
 	$self->log_info("The file has been removed to avoid dpkg-genchanges errors.\n");
