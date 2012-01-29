@@ -43,7 +43,6 @@ MODULES =			\
 	Resolver.pm		\
 	Conf.pm			\
 	ConfBase.pm		\
-	Log.pm			\
 	LogBase.pm		\
 	Options.pm		\
 	OptionsBase.pm		\
