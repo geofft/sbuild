@@ -145,7 +145,7 @@ sub setup_dpkg {
 	    # this is the ubuntu dpkg 1.16.2 interface - we need to check (or configure) which to use with check_dpkg_version
 #	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get('Host Arch') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
 #	      USER => 'root' });
-        # This is the Debian dpkg >= 1.16.3 interface
+	    # This is the Debian dpkg >= 1.16.3 interface
 	    { COMMAND => ['dpkg', '--add-architecture', $self->get('Host Arch')],
 	      USER => 'root' });
 	if ($?) {
