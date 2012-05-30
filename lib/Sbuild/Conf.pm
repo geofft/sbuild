@@ -264,15 +264,18 @@ sub setup ($) {
 	    TYPE => 'STRING',
 	    VARNAME => 'xapt',
 	    GROUP => 'Programs',
+	    CHECK => sub {
+		my $conf = shift;
+		my $entry = shift;
+		my $key = $entry->{'NAME'};
+
+		# Only validate if needed.
+		if ($conf->get('BUILD_DEP_RESOLVER') eq 'xapt') {
+		    $validate_program->($conf, $entry);
+		}
+	    },
 	    CHECK => $validate_program,
 	    DEFAULT => 'xapt'
-	},
-	'EMBUILDDEPS'				=> {
-	    TYPE => 'STRING',
-	    VARNAME => 'embuilddeps',
-	    GROUP => 'Programs',
-	    CHECK => $validate_program,
-	    DEFAULT => 'embuilddeps'
 	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
 	    TYPE => 'ARRAY:STRING',
