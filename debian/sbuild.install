@@ -1,5 +1,4 @@
 debian/install/etc/sbuild                          etc
-debian/install/etc/schroot/setup.d		   etc/schroot
 debian/install/usr/bin/sbuild*                     usr/bin
 debian/install/usr/sbin/sbuild*                    usr/sbin
 debian/install/usr/share/sbuild                    usr/share
