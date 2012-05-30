@@ -142,16 +142,17 @@ sub setup_dpkg {
     # If cross-building, set the correct foreign-arch
     if ($self->get('Host Arch') ne $self->get('Build Arch')) {
 	$session->run_command(
-	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get('Host Arch') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
+	    # this is the ubuntu dpkg 1.16.2 interface - we need to check (or configure) which to use with check_dpkg_version
+#	    { COMMAND => ['sh', '-c', 'echo "foreign-architecture ' . $self->get('Host Arch') . '" > /etc/dpkg/dpkg.cfg.d/sbuild'],
+#	      USER => 'root' });
+        # This is the Debian dpkg >= 1.16.3 interface
+	    { COMMAND => ['dpkg', '--add-architecture', $self->get('Host Arch')],
 	      USER => 'root' });
-        # We should get this much nicer interface with new dpkg upload.
-        # { COMMAND => ['dpkg', '--add-foreign-architecture ', $self->get('Host Arch')],
-        #   USER => 'root' });
 	if ($?) {
 	    $self->log_error("E: Failed to set dpkg foreign-architecture config\n");
 	    return 0;
 	}
-	$self->log("Setting dpkg foreign-architecture to ".$self->get('Host Arch')."\n");
+	$self->log("Adding dpkg foreign-architecture ".$self->get('Host Arch')."\n");
     }
 }
 

@@ -26,7 +26,7 @@ sbuild (0.63.0-1) unstable; urgency=low
     internally.  The statistics recorded in the database were not
     particularly informative; storing the statistics in a proper
     relational database is recommended.  The configuration variables
-    $avg_time_db and $avg_space_db have been removed. 
+    $avg_time_db and $avg_space_db have been removed.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 22 Jan 2012 18:20:21 +0000
 
