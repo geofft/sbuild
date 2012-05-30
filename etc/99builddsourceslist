@@ -38,6 +38,25 @@ if [ -f /etc/schroot/conf.buildd ]; then
     . /etc/schroot/conf.buildd
 fi
 
+if [ "$CHROOT_SESSION_PURGE" = "true" ]; then
+    case $CHROOT_NAME in
+        *-*-*-*-sbuild*)
+        SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
+        SUITE_VARIANT=$(echo $CHROOT_NAME | cut -f2,3 -d-)
+        ;;
+        *-*-*-sbuild*)
+        SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
+        SUITE_VARIANT=$(echo $CHROOT_NAME | cut -f2 -d-)
+        ;;
+        *-*-sbuild*)
+        SUITE_BASE=$(echo $CHROOT_NAME | cut -f1 -d-)
+        if [ ${SUITE_BASE} != "sid" ]; then
+            SUITE_VARIANT="proposed-updates"
+        fi
+        ;;
+    esac
+fi
+
 function domirror() {
     for SUITE in ${SUITES:-SUITE}; do
         echo deb $1     | sed -e "s,COMPONENT,${COMPONENT},"     -e "s,SUITE,${SUITE}," >> $2

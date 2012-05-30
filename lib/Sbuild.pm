@@ -375,7 +375,7 @@ sub check_group_membership () {
 
     if (!$in_group) {
 	print STDERR "User $user is not currently a member of group sbuild, but is in the system group database\n";
-	print STDERR "You need to log in again to gain sbuild group priveleges\n";
+	print STDERR "You need to log in again to gain sbuild group privileges\n";
 	exit(1);
     }
 

@@ -267,7 +267,7 @@ directory, and the default $log_dir is ~/logs):
 This step not required if schroot is used (which is the default, set in
 \fIsbuild.conf\fP).  If using sbuild with sudo (chroot_mode \[lq]split\[rq]),
 sudo needs configuring to give the user permission to install and remove
-packages in the chroot, which requires root priveleges.  Add the following
+packages in the chroot, which requires root privileges.  Add the following
 lines to \fI/etc/sudoers\fP:
 .PP
 \f[CR]\f[CI]username\fP  ALL=NOPASSWD: ALL\fP
