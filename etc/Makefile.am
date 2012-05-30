@@ -30,7 +30,7 @@ builddsysconf_DATA = buildd.conf
 exampleconfdir = $(docdir)/examples
 exampleconf_DATA = example.sbuildrc
 
-COMPAT_SETUP = 25nssdatabases 99builddsourceslist
+COMPAT_SETUP = 99builddsourceslist
 SETUP =
 
 sbuild.conf: $(abs_top_srcdir)/tools/sbuild-dumpconfig
