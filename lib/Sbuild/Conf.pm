@@ -801,8 +801,14 @@ sub setup ($) {
 	    TYPE => 'HASH:ARRAY:STRING',
 	    VARNAME => 'crossbuild_core_depends',
 	    GROUP => 'Multiarch support (transitional)',
-	    DEFAULT => { armel => ['dpkg-cross', 'g++-arm-linux-gnueabi', 'libc6-dev-armel-cross', 'pkg-config-arm-linux-gnueabi'],
-			 armhf => ['dpkg-cross', 'g++-arm-linux-gnueabihf', 'libc6-dev-armhf-cross', 'pkg-config-arm-linux-gnueabihf']
+	    DEFAULT => { arm64 => ['crossbuild-essential-arm64'],
+			 armel => ['crossbuild-essential-armel'],
+			 armhf => ['crossbuild-essential-armhf'],
+			 ia64 => ['crossbuild-essential-ia64'],
+			 mips => ['crossbuild-essential-mips'],
+			 mipsel => ['crossbuild-essential-mipsel'],
+			 powerpc => ['crossbuild-essential-powerpc'],
+			 sparc => ['crossbuild-essential-sparc']
 	    	       },
 	    HELP => 'Per-architecture dependencies required for cross-building.'
 	},	'BUILD_SOURCE'				=> {
