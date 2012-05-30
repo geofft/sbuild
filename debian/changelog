@@ -27,6 +27,9 @@ sbuild (0.63.0-1) unstable; urgency=low
     particularly informative; storing the statistics in a proper
     relational database is recommended.  The configuration variables
     $avg_time_db and $avg_space_db have been removed.
+  * Drop 25nssdatabases schroot setup script used on compatibility
+    mode (on buildds).  This has been replaced by the schroot
+    20nssdatabases for many years.
 
  -- Roger Leigh <rleigh@debian.org>  Wed, 30 May 2012 22:49:18 +0100
 
