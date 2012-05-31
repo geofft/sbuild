@@ -1,3 +1,12 @@
+sbuild (0.63.1-1) UNRELEASED; urgency=low
+
+  [ Roger Leigh ]
+  * New release
+  * Don't require xapt.  Remove duplicate and incorrect check.  Thanks
+    to Andres Mejia and Jakub Wilk (Closes: #675332, #675354).
+
+ -- Roger Leigh <rleigh@debian.org>  Thu, 31 May 2012 21:59:16 +0100
+
 sbuild (0.63.0-1) unstable; urgency=low
 
   [ Wookey ]
