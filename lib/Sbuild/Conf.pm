@@ -273,7 +273,6 @@ sub setup ($) {
 		    $validate_program->($conf, $entry);
 		}
 	    },
-	    CHECK => $validate_program,
 	    DEFAULT => 'xapt'
 	},
 	'DPKG_BUILDPACKAGE_USER_OPTIONS'	=> {
