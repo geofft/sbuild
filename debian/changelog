@@ -4,6 +4,9 @@ sbuild (0.63.1-1) UNRELEASED; urgency=low
   * New release
   * Don't require xapt.  Remove duplicate and incorrect check.  Thanks
     to Andres Mejia and Jakub Wilk (Closes: #675332, #675354).
+  * Remove /etc/schroot/setup.d/99builddsourceslist which was
+    provided with earlier versions of sbuild, but no longer works with
+    current schroot versions (Closes: #675349).
 
  -- Roger Leigh <rleigh@debian.org>  Thu, 31 May 2012 21:59:16 +0100
 
