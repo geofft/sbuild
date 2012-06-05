@@ -282,7 +282,7 @@ description=Debian $suite/$arch autobuilder
 directory=$target
 groups=root,sbuild
 root-groups=root,sbuild
-script-config=sbuild/config
+profile=sbuild
 EOF
 }
 
