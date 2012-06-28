@@ -55,7 +55,7 @@ sub setup {
 	    DEFAULT => 0
 	},
 	'KEYRING'				=> {
-	    DEFAULT => $keyring
+	    DEFAULT => undef
 	},
 	'SETUP_ONLY'				=> {
 	    DEFAULT => 0
