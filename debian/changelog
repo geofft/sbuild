@@ -16,8 +16,11 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
       this patch.
   * Sbuild::Build: Don't pass $key_id to the shell unescaped
     (Closes: #676475).
-  * sbuild-createchroot: Use profile=sbuild in place of script-config=
-    in generated schroot.conf configuration (Closes: #665215).
+  * sbuild-createchroot:
+    - Use profile=sbuild in place of script-config= in generated
+      schroot.conf configuration (Closes: #665215).
+    - Don't pass --keyring to dpkg-buildpackage unless explicitly set
+      by the user (Closes: #673676).
 
  -- Roger Leigh <rleigh@debian.org>  Thu, 28 Jun 2012 21:35:27 +0100
 
