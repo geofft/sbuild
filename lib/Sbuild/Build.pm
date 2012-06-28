@@ -412,6 +412,7 @@ sub run_chroot_session {
 	$self->build_log_colour('green', '^I: ');
 	$self->build_log_colour('red', '^Status:');
 	$self->build_log_colour('green', '^Status: successful$');
+	$self->build_log_colour('yellow', '^Keeping session: ');
 	$self->build_log_colour('red', '^Lintian:');
 	$self->build_log_colour('green', '^Lintian: pass$');
 

@@ -51,6 +51,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-dpkg-source-opt=\fIoptions\fP ]
 .RB [ \-\-dpkg-source-opts=\fIoptions\fP ]
 .RB [ \-p \[or] \-\-purge=\fPpurge-mode\fP ]
+.RB [ \-\-purge\-build=\fPpurge-mode\fP ]
 .RB [ \-\-purge\-deps=\fPpurge-mode\fP ]
 .RB [ \-\-purge\-session=\fPpurge-mode\fP ]
 .RB [ \-b \[or] \-\-batch]
@@ -254,6 +255,10 @@ Do not create a package log file in the \fI$log_dir\fP directory and no build
 log file, but print everything to stdout. Also do not send any log mails.
 .TP
 .BR \-p ", " "\-\-purge=\fIpurge-mode\fP"
+Convenience option to set \fIpurge-mode\fR for build directory, build
+dependencies and session.
+.TP
+.BR "\-\-purge\-build=\fIpurge-mode\fP"
 \fIpurge-mode\fR determines if the build directory will be deleted after a
 build. Possible values are \fBalways\fR (default), \fBnever\fR, and
 \fBsuccessful\fR.
@@ -265,9 +270,9 @@ build. Possible values are \fBalways\fR (default), \fBnever\fR, and
 .TP
 .BR "\-\-purge\-session=\fIpurge-mode\fP"
 Purge the schroot session following a build.  This is useful in conjunction
-with the \fI\-\-purge\fP and \fI\-\-purge\-deps\fP options when using snapshot
-chroots, since by default the snapshot will be deleted.  Possible values are
-\fBalways\fR (default), \fBnever\fR, and \fBsuccessful\fR.
+with the \fI\-\-purge\-build\fP and \fI\-\-purge\-deps\fP options when using
+snapshot chroots, since by default the snapshot will be deleted.  Possible
+values are \fBalways\fR (default), \fBnever\fR, and \fBsuccessful\fR.
 .TP
 .BR \-s ", " "\-\-source"
 Also build source package, i.e. use dpkg\-buildpackage without \-B.

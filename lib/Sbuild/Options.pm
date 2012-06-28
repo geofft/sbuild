@@ -168,6 +168,11 @@ sub set_options {
 			   $self->set_conf('NOLOG', 1);
 		       },
 		       "p|purge=s" => sub {
+			   $self->set_conf('PURGE_BUILD_DEPS', $_[1]);
+			   $self->set_conf('PURGE_BUILD_DIRECTORY', $_[1]);
+			   $self->set_conf('PURGE_SESSION', $_[1]);
+		       },
+		       "purge-build=s" => sub {
 			   $self->set_conf('PURGE_BUILD_DIRECTORY', $_[1]);
 		       },
 		       "purge-deps=s" => sub {
