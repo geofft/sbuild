@@ -60,6 +60,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-lintian\-opt=\fIoptions\fP ]
 .RB [ \-\-lintian\-opts=\fIoptions\fP ]
 .RB [ \-\-run\-piuparts ]
+.RB [ \-\-no-run\-piuparts ]
 .RB [ \-\-piuparts\-opt=\fIoptions\fP ]
 .RB [ \-\-piuparts\-opts=\fIoptions\fP ]
 .RB [ \-\-piuparts\-root\-arg=\fIoptions\fP ]
@@ -326,6 +327,10 @@ Append extra options to existing options passed to lintian.
 .TP
 .BR \-\-run\-piuparts
 Run piuparts after a successful build.
+.TP
+.BR \-\-run\-piuparts
+Don't run piuparts after a successful build.  If sbuild is configured to run
+piuparts by default, this option will prevent piuparts being run.
 .TP
 .BR \-\-piuparts\-opt=\fIoptions\fP
 Run piuparts with the specified options.

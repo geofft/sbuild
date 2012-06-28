@@ -219,6 +219,9 @@ sub set_options {
 			"run-lintian" => sub {
 			    $self->set_conf('RUN_LINTIAN', 1);
 		       },
+		       "no-run-lintian" => sub {
+			    $self->set_conf('RUN_LINTIAN', 0);
+		       },
 		       "lintian-opts=s" => sub {
 			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
 				split(/\s+/, $_[1]));
@@ -227,11 +230,11 @@ sub set_options {
 			   push(@{$self->get_conf('LINTIAN_OPTIONS')},
 				$_[1]);
 		       },
-		       "no-run-lintian" => sub {
-			    $self->set_conf('RUN_LINTIAN', 0);
-		       },
 		       "run-piuparts" => sub {
 			    $self->set_conf('RUN_PIUPARTS', 1);
+		       },
+		       "no-run-piuparts" => sub {
+			    $self->set_conf('RUN_PIUPARTS', 0);
 		       },
 		       "piuparts-opts=s" => sub {
 			   push(@{$self->get_conf('PIUPARTS_OPTIONS')},
