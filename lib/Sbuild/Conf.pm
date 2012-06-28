@@ -391,7 +391,7 @@ sub setup ($) {
 	    VARNAME => 'log_colour',
 	    GROUP => 'Logging options',
 	    DEFAULT => 1,
-	    HELP => 'Colour log messages such as critical failures, warnings and sucess'
+	    HELP => 'Colour log messages such as critical failures, warnings and success'
 	},
 	'LOG_DIR_AVAILABLE'			=> {
 	    TYPE => 'BOOL',
