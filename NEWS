@@ -9,7 +9,10 @@ configuration.
 
 * Major changes in 0.63.2:
 
-  None.
+  1) New options --no-run-lintian and --no-run-piuparts.  If lintian
+     or piuparts are configured to run automatically following a
+     successful build, there options disable this behaviour for the
+     build.
 
 * Major changes in 0.63.1:
 
