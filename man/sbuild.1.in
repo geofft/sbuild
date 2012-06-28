@@ -56,6 +56,7 @@ sbuild \- build debian packages from source
 .RB [ \-b \[or] \-\-batch]
 .RB [ \-n \[or] \-\-nolog ]
 .RB [ \-\-run\-lintian ]
+.RB [ \-\-no\-run\-lintian ]
 .RB [ \-\-lintian\-opt=\fIoptions\fP ]
 .RB [ \-\-lintian\-opts=\fIoptions\fP ]
 .RB [ \-\-run\-piuparts ]
@@ -312,6 +313,10 @@ before the '+' in the Debian revision if --make-binNMU is also provided).
 .TP
 .BR \-\-run\-lintian
 Run lintian after a successful build.
+.TP
+.BR \-\-no\-run\-lintian
+Don't run lintian after a successful build.  If sbuild is configured to run
+lintian by default, this option will prevent lintian being run.
 .TP
 .BR \-\-lintian\-opt=\fIoptions\fP
 Run lintian with the specified options.
