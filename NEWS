@@ -14,6 +14,11 @@ configuration.
      successful build, there options disable this behaviour for the
      build.
 
+  2) New option --purge-build.  This behaves identically to the old
+     --purge option.  --purge now purges everything (build directory,
+     build dependencies and schroot session) and is equivalent to
+     using --purge-build, --purge-deps and --purge-session together.
+
 * Major changes in 0.63.1:
 
   None.
