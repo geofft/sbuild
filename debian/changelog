@@ -3,10 +3,17 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
   [ Roger Leigh ]
   * New release.
   * Sbuild::Conf: Fix typo sucess (Closes: #663089).
-  * Sbuild::Options: Add --no-run-lintian and --no-run-piuparts options
-    (Closes: #665372).  If lintian or piuparts are configured to run
-    automatically following a successful build, there options disable
-    this behaviour for the build.
+  * Sbuild::Options:
+    - Add --no-run-lintian and --no-run-piuparts options
+      (Closes: #665372).  If lintian or piuparts are configured to run
+      automatically following a successful build, there options disable
+      this behaviour for the build.
+    - Add --purge-build option (Closes: #629109).  This behaves
+      identically to the old --purge option.  --purge now purges
+      everything (build directory, build dependencies and schroot
+      session) and is equivalent to using --purge-build, --purge-deps
+      and --purge-session together.  Thanks to Jan-Marek Glogowski for
+      this patch.
 
  -- Roger Leigh <rleigh@debian.org>  Thu, 28 Jun 2012 21:35:27 +0100
 
