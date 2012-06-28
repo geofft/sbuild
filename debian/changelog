@@ -2,6 +2,7 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
 
   [ Roger Leigh ]
   * New release.
+  * Sbuild::Conf: Fix typo sucess (Closes: #663089).
 
  -- Roger Leigh <rleigh@debian.org>  Thu, 28 Jun 2012 21:35:27 +0100
 
