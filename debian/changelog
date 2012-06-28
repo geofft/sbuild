@@ -4,7 +4,9 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
   * New release.
   * Sbuild::Conf: Fix typo sucess (Closes: #663089).
   * Sbuild::Options: Add --no-run-lintian and --no-run-piuparts options
-    (Closes: #665372).
+    (Closes: #665372).  If lintian or piuparts are configured to run
+    automatically following a successful build, there options disable
+    this behaviour for the build.
 
  -- Roger Leigh <rleigh@debian.org>  Thu, 28 Jun 2012 21:35:27 +0100
 
