@@ -2202,7 +2202,7 @@ sub close_build_log {
 	    my $key_id = $self->get_conf('KEY_ID');
 	    $self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
 	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
-	    system (sprintf('debsign -k%s %s', $key_id, $changes));
+	    system "debsign", "-k$key_id", $changes;
 	}
     }
 
