@@ -1,7 +1,14 @@
+sbuild (0.63.2-1) UNRELEASED; urgency=low
+
+  [ Roger Leigh ]
+  * New release.
+
+ -- Roger Leigh <rleigh@debian.org>  Thu, 28 Jun 2012 21:35:27 +0100
+
 sbuild (0.63.1-1) unstable; urgency=low
 
   [ Roger Leigh ]
-  * New release
+  * New release.
   * Don't require xapt.  Remove duplicate and incorrect check.  Thanks
     to Andres Mejia and Jakub Wilk (Closes: #675332, #675354).
   * Remove /etc/schroot/setup.d/99builddsourceslist which was
