@@ -20,6 +20,10 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
       dpkg-buildpackage (Closes: #674669).  Thanks to Daniel Dehennin
       for this patch.
   * Sbuild::Utility: Fix logging in download function (Closes: #637931).
+  * sbuild:
+    - If running sbuild from inside a build tree (like
+      dpkg-buildpackage), place the build logs outside the tree
+      (Closes: #676834).
   * sbuild-createchroot:
     - Use profile=sbuild in place of script-config= in generated
       schroot.conf configuration (Closes: #665215, #675861).
