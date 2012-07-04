@@ -24,6 +24,9 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
     - If running sbuild from inside a build tree (like
       dpkg-buildpackage), place the build logs outside the tree
       (Closes: #676834).
+    - When packing source trees with "dpkg-source -b", always pass
+      "." as the directory to pack, so the orig.tar can be found
+      (Closes: #662785).
   * sbuild-createchroot:
     - Use profile=sbuild in place of script-config= in generated
       schroot.conf configuration (Closes: #665215, #675861).
