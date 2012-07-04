@@ -174,9 +174,6 @@ sub download {
     # The parameters will be any URL and a location to save the file to.
     my($url, $file) = @_;
 
-    # Print output from this subroutine to saved stdout stream of sbuild.
-    my $stdout = $Sbuild::LogBase::saved_stdout;
-
     # If $url is a readable plain file on the local system, just return the
     # $url.
     return $url if (-f $url && -r $url);
@@ -203,7 +200,7 @@ sub download {
     }
 
     # Download the file.
-    print $stdout "Downloading $url to $file.\n";
+    print "Downloading $url to $file.\n";
     my $expected_length; # Total size we expect of content
     my $bytes_received = 0; # Size of content as it is received
     my $percent; # The percentage downloaded
@@ -247,25 +244,25 @@ sub download {
                 if (($tick == 250) or ($percent == 100)) {
 		    if ($tick == 1) {
 			# In case we reach 100% from tick 1.
-			printf $stdout "%8s", sprintf("%d",
+			printf "%8s", sprintf("%d",
 			    $bytes_received / 1024) . "KB";
-			print $stdout " [.";
+			print " [.";
 		    }
 		    while ($tick != 250) {
 			# In case we reach 100% before reaching 250 ticks
-			print $stdout "." if ($tick % 5 == 0);
+			print "." if ($tick % 5 == 0);
 			$tick++;
 		    }
-                    print $stdout ".]";
-                    printf $stdout "%5s", "$percent%";
-                    printf $stdout "%12s", "$speed\n";
+                    print ".]";
+                    printf "%5s", "$percent%";
+                    printf "%12s", "$speed\n";
                     $tick = 0;
                 } elsif ($tick == 1) {
-                    printf $stdout "%8s", sprintf("%d",
+                    printf "%8s", sprintf("%d",
                         $bytes_received / 1024) . "KB";
-                    print $stdout " [.";
+                    print " [.";
                 } elsif ($tick % 5 == 0) {
-                    print $stdout ".";
+                    print ".";
                 }
             }
             # Write the contents of the download to our specified file
@@ -273,10 +270,9 @@ sub download {
                 print $fh $chunk; # Print content to file
             } else {
                 # Print message upon failure during download
-                print $stdout "\n" . $response->status_line . "\n";
+                print "\n" . $response->status_line . "\n";
                 return 0;
             }
-	    $stdout->flush();
         }
     ); # End of our content callback subroutine
     close $fh; # Close the destination file
@@ -289,15 +285,15 @@ sub download {
 
     # Print out amount of content received before returning the path of the
     # file.
-    print $stdout "Download of $url sucessful.\n";
-    print $stdout "Size of content downloaded: ";
+    print "Download of $url sucessful.\n";
+    print "Size of content downloaded: ";
     if ($bytes_received >= 1024 * 1024) {
-	print $stdout sprintf("%.4g MB",
+	print sprintf("%.4g MB",
 	    $bytes_received / (1024.0 * 1024)) . "\n";
     } elsif ($bytes_received >= 1024) {
-	print $stdout sprintf("%.4g KB", $bytes_received / 1024.0) . "\n";
+	print sprintf("%.4g KB", $bytes_received / 1024.0) . "\n";
     } else {
-	print $stdout sprintf("%.4g B", $bytes_received) . "\n";
+	print sprintf("%.4g B", $bytes_received) . "\n";
     }
 
     return $file;
