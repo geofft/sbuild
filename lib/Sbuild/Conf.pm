@@ -349,9 +349,6 @@ sub setup ($) {
 		my $entry = shift;
 		my $key = $entry->{'NAME'};
 		my $directory = $conf->get($key);
-
-		# Trigger creation
-		$conf->get('LOG_DIR_AVAILABLE');
 	    },
 	    GET => sub {
 		my $conf = shift;
@@ -400,11 +397,14 @@ sub setup ($) {
 		my $conf = shift;
 		my $entry = shift;
 
+		my $nolog = $conf->get('NOLOG');
 		my $directory = $conf->get('LOG_DIR');
 
 		my $log_dir_available = 1;
-		if ($directory && ! -d $directory &&
-		    !mkdir $directory) {
+		if ($nolog) {
+		    $log_dir_available = 0;
+		} elsif ($directory && ! -d $directory &&
+			 !mkdir $directory) {
 		    warn "Could not create '$directory': $!\n";
 		    $log_dir_available = 0;
 		}
@@ -1093,6 +1093,10 @@ END
     my $custom_setup = <<END;
 push(\@{\${\$conf->get('EXTERNAL_COMMANDS')}{"chroot-setup-commands"}},
 \$chroot_setup_script) if (\$chroot_setup_script);
+
+    # Trigger log directory creation if needed
+    \$conf->get('LOG_DIR_AVAILABLE');
+
 END
 
 
