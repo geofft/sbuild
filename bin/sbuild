@@ -198,36 +198,39 @@ sub create_source_package ($) {
 
     my $dir = getcwd();
     my $origdir=$dir;
+    my $origdsc=$dsc;
+    my $dscdir=$dir;
     # Note: need to support cases when invoked from a subdirectory
     # of the build directory, i.e. $dsc/foo -> $dsc/.. in addition
     # to $dsc -> $dsc/.. as below.
-    if ($dir eq abs_path($dsc) &&
-	$dir eq $conf->get('BUILD_DIR')) {
-	# We won't attempt to build the source package from the source
-	# directory so the source package files will go to the parent dir.
-	$dir = abs_path("$dir/..");
-	$conf->set('BUILD_DIR', $dir);
+    # We won't attempt to build the source package from the source
+    # directory so the source package files will go to the parent dir.
+    $dscdir = abs_path("$dsc/..");
+    if (index($dir, $dsc, 0) == 0) {
+	$conf->set('BUILD_DIR', $dscdir);
     }
 
-    $dsc = "${dir}/${package}_${uversion}${dversion}.dsc";
+    $dsc = "${dscdir}/${package}_${uversion}${dversion}.dsc";
 
-    system($conf->get('FAKEROOT'), 'debian/rules', 'clean');
-    if ($?) {
-	Sbuild::Exception::Build->throw(
-	    error => "Failed to clean source directory",
-	    failstage => "pack-source");
-    }
+    $dir = $origdsc;
+
     chdir($dir) or Sbuild::Exception::Build->throw(
 	error => "Failed to change directory",
 	failstage => "pack-source");
+    system($conf->get('FAKEROOT'), 'debian/rules', 'clean');
+    if ($?) {
+	Sbuild::Exception::Build->throw(
+	    error => "Failed to clean source directory $dir ($dsc)",
+	    failstage => "pack-source");
+    }
     my @dpkg_source_command = ($conf->get('DPKG_SOURCE'), '-b');
     push @dpkg_source_command, @{$conf->get('DPKG_SOURCE_OPTIONS')}
     if ($conf->get('DPKG_SOURCE_OPTIONS'));
-    push @dpkg_source_command, $origdir;
+    push @dpkg_source_command, '.';
     system(@dpkg_source_command);
     if ($?) {
 	Sbuild::Exception::Build->throw(
-	    error => "Failed to package source directory",
+	    error => "Failed to package source directory " . getcwd(),
 	    failstage => "pack-source");
     }
     chdir($origdir) or Sbuild::Exception::Build->throw(
