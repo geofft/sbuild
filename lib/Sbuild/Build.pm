@@ -1628,7 +1628,13 @@ sub build {
 	}
 
 	$self->log_subsection("Changes");
-	$changes = $self->get('Package_SVersion') . "_$host_arch.changes";
+	if ( (grep {$_ eq "-A"} @{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')})
+	     and -r "$build_dir/" . $self->get('Package_SVersion') . "_all.changes") {
+	    $changes = $self->get('Package_SVersion') . "_all.changes";
+	}
+	else {
+	    $changes = $self->get('Package_SVersion') . "_$host_arch.changes";
+	}
 	my @cfiles;
 	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
@@ -2200,8 +2206,15 @@ sub close_build_log {
     if ($self->get_status() eq "successful") {
 	if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
 	    my $key_id = $self->get_conf('KEY_ID');
+	    my $changes;
 	    $self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
-	    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
+	    if ( grep {$_ eq "-A"} @{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')}
+		 and -r $self->get('Package_SVersion') . "_all.changes") {
+		$changes = $self->get('Package_SVersion') . "_all.changes";
+	    }
+	    else {
+		$changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
+	    }
 	    system "debsign", "-k$key_id", $changes;
 	}
     }
@@ -2307,8 +2320,14 @@ sub send_mime_build_log {
 		Filename => basename($filename) . '.gz'
 		);
     }
-
-    my $changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
+    my $changes;
+    if ( grep {$_ eq "-A"} @{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')} 
+	 and -r $self->get('Package_SVersion') . "_all.changes") {
+	$changes = $self->get('Package_SVersion') . "_all.changes";
+    }
+    else {
+	$changes = $self->get('Package_SVersion') . '_' . $self->get('Host Arch') . '.changes';
+    }
     if ($self->get_status() eq 'successful' && -r $changes) {
 	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',
