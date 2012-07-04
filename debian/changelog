@@ -14,6 +14,9 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
       session) and is equivalent to using --purge-build, --purge-deps
       and --purge-session together.  Thanks to Jan-Marek Glogowski for
       this patch.
+  * Sbuild::Conf:
+    - Don't create the log directory unless logging is enabled and
+      using buildd mode (Closes: #673009).
   * Sbuild::Build:
     - Don't pass $key_id to the shell unescaped (Closes: #676475).
     - Use _all.changes rather than _arch.changes if -A is passed to
