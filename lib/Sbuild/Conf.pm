@@ -401,7 +401,7 @@ sub setup ($) {
 		my $directory = $conf->get('LOG_DIR');
 
 		my $log_dir_available = 1;
-		if ($nolog || $conf->get('SBUILD_MODE') ne "buildd")) {
+		if ($nolog || $conf->get('SBUILD_MODE') ne "buildd") {
 		    $log_dir_available = 0;
 		} elsif ($directory && ! -d $directory &&
 			 !mkdir $directory) {
