@@ -14,8 +14,11 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
       session) and is equivalent to using --purge-build, --purge-deps
       and --purge-session together.  Thanks to Jan-Marek Glogowski for
       this patch.
-  * Sbuild::Build: Don't pass $key_id to the shell unescaped
-    (Closes: #676475).
+  * Sbuild::Build:
+    - Don't pass $key_id to the shell unescaped (Closes: #676475).
+    - Use _all.changes rather than _arch.changes if -A is passed to
+      dpkg-buildpackage (Closes: #674669).  Thanks to Daniel Dehennin
+      for this patch.
   * sbuild-createchroot:
     - Use profile=sbuild in place of script-config= in generated
       schroot.conf configuration (Closes: #665215, #675861).
