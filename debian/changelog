@@ -18,7 +18,7 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
     (Closes: #676475).
   * sbuild-createchroot:
     - Use profile=sbuild in place of script-config= in generated
-      schroot.conf configuration (Closes: #665215).
+      schroot.conf configuration (Closes: #665215, #675861).
     - Don't pass --keyring to dpkg-buildpackage unless explicitly set
       by the user (Closes: #673676).
 
