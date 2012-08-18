@@ -22,6 +22,9 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
     - Use _all.changes rather than _arch.changes if -A is passed to
       dpkg-buildpackage (Closes: #674669).  Thanks to Daniel Dehennin
       for this patch.
+    - If building from unpacked sources in the current working
+      directory, logs will be created in '..' rather than '.'
+      (Closes: #676834).
   * Sbuild::Utility: Fix logging in download function (Closes: #637931).
   * sbuild:
     - If running sbuild from inside a build tree (like
