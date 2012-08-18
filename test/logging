@@ -1,0 +1,10 @@
+Logging test combinations:
+
+user mode with no log dir set
+user mode with log dir set
+buildd mode (log dir always set)
+
+direct download
+dsc
+source in cwd
+source in other directory
