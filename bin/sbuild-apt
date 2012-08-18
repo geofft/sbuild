@@ -31,7 +31,6 @@ use Sbuild::ChrootRoot;
 
 my $conf = Sbuild::Conf::new();
 exit 1 if !defined($conf);
-$conf->set('CWD', '/');
 my $options = Sbuild::OptionsBase->new($conf, "sbuild-apt", "1");
 exit 1 if !defined($options);
 check_group_membership();

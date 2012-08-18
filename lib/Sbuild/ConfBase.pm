@@ -24,7 +24,6 @@ package Sbuild::ConfBase;
 use strict;
 use warnings;
 
-use Cwd qw(cwd);
 use Sbuild qw(isin);
 
 BEGIN {
@@ -198,12 +197,6 @@ sub init_allowed_keys {
 	    GROUP => '__INTERNAL',
 	    DEFAULT => $username,
 	    HELP => 'Username used for building.  Should not require setting.'
-	},
-	'CWD'					=> {
-	    TYPE => 'STRING',
-	    GROUP => '__INTERNAL',
-	    DEFAULT => cwd(),
-	    HELP => 'Current working directory at time of configuration reading.'
 	},
 	'VERBOSE'				=> {
 	    TYPE => 'NUMERIC',
