@@ -19,6 +19,9 @@ configuration.
      build dependencies and schroot session) and is equivalent to
      using --purge-build, --purge-deps and --purge-session together.
 
+  3) If building from unpacked sources in the current working
+     directory, logs will be created in '..' rather than '.'.
+
 * Major changes in 0.63.1:
 
   None.
