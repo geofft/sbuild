@@ -1,4 +1,4 @@
-sbuild (0.63.2-1) UNRELEASED; urgency=low
+sbuild (0.63.2-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release.
@@ -15,21 +15,18 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
       and --purge-session together.  Thanks to Jan-Marek Glogowski for
       this patch.
   * Sbuild::Conf:
-    - Don't create the log directory unless logging is enabled and
+    - Don't create the log directory unless logging is enabled or
       using buildd mode (Closes: #673009).
   * Sbuild::Build:
     - Don't pass $key_id to the shell unescaped (Closes: #676475).
     - Use _all.changes rather than _arch.changes if -A is passed to
       dpkg-buildpackage (Closes: #674669).  Thanks to Daniel Dehennin
       for this patch.
-    - If building from unpacked sources in the current working
-      directory, logs will be created in '..' rather than '.'
-      (Closes: #676834).
   * Sbuild::Utility: Fix logging in download function (Closes: #637931).
   * sbuild:
     - If running sbuild from inside a build tree (like
       dpkg-buildpackage), place the build logs outside the tree
-      (Closes: #676834).
+      (Closes: #676834).  Logs will be created in '..' rather than '.'.
     - When packing source trees with "dpkg-source -b", always pass
       "." as the directory to pack, so the orig.tar can be found
       (Closes: #662785).
@@ -39,7 +36,7 @@ sbuild (0.63.2-1) UNRELEASED; urgency=low
     - Don't pass --keyring to dpkg-buildpackage unless explicitly set
       by the user (Closes: #673676).
 
- -- Roger Leigh <rleigh@debian.org>  Thu, 28 Jun 2012 21:35:27 +0100
+ -- Roger Leigh <rleigh@debian.org>  Sat, 18 Aug 2012 13:46:45 +0100
 
 sbuild (0.63.1-1) unstable; urgency=low
 
