@@ -356,10 +356,10 @@ sub setup ($) {
 
 		my $retval = $conf->_get($entry->{'NAME'});
 
-		# user mode defaults to the CWD, while buildd mode
+		# user mode defaults to the build directory, while buildd mode
 		# defaults to $HOME/logs.
 		if (!defined($retval)) {
-		    $retval = ".";
+		    $retval = $conf->get('BUILD_DIR');
 		    if ($conf->get('SBUILD_MODE') eq 'buildd') {
 			$retval = "$HOME/logs";
 		    }
@@ -399,12 +399,17 @@ sub setup ($) {
 
 		my $nolog = $conf->get('NOLOG');
 		my $directory = $conf->get('LOG_DIR');
-
 		my $log_dir_available = 1;
-		if ($nolog || $conf->get('SBUILD_MODE') ne "buildd") {
-		    $log_dir_available = 0;
+
+		if ($nolog) {
+			$log_dir_available = 0;
+		} elsif ($conf->get('SBUILD_MODE') ne "buildd") {
+		    if ($directory && ! -d $directory) {
+			$log_dir_available = 0;
+		    }
 		} elsif ($directory && ! -d $directory &&
 			 !mkdir $directory) {
+		    # Only create the log dir in buildd mode
 		    warn "Could not create '$directory': $!\n";
 		    $log_dir_available = 0;
 		}

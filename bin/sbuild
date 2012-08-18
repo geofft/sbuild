@@ -83,6 +83,12 @@ sub main () {
 
 	if (-d $jobname) {
 	    $jobname = create_source_package($jobname);
+	    if ($jobname eq '.') {
+		chdir('..') or Sbuild::Exception::Build->throw(
+		    error => "Failed to change directory",
+		    failstage => "change-build-dir");
+		$conf->_set_default('BUILD_DIR', cwd());
+	    }
 	    $source_dir = 1;
 	}
 

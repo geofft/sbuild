@@ -2075,6 +2075,7 @@ sub open_build_log {
 				   $self->get_conf('DISTRIBUTION'));
 	    } else {
 		$self->log_symlink($filename,
+				   $self->get_conf('BUILD_DIR') . '/' .
 				   $self->get('Package_SVersion') . '_' .
 				   $self->get('Host Arch') . ".build");
 	    }
