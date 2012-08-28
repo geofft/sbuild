@@ -29,18 +29,21 @@ use strict;
 use warnings;
 
 use Cwd qw(:DEFAULT abs_path);
+use File::Basename qw(basename dirname);
 use POSIX;
 use Data::Dumper;
 use Dpkg::Control;
-use Sbuild qw(isin check_group_membership $debug_level);
+use Sbuild qw(isin check_group_membership $debug_level dsc_files);
 use Sbuild::Conf qw();
 use Sbuild::Sysconfig qw(%programs);
 use Sbuild::Options;
 use Sbuild::Build;
 use Sbuild::Exception;
+use Sbuild::Utility qw(check_url download);
 
 sub main ();
 sub create_source_package ($);
+sub download_source_package ($);
 sub write_jobs_file ();
 sub status_trigger ($$);
 sub shutdown ($);
@@ -90,7 +93,12 @@ sub main () {
 		$conf->_set_default('BUILD_DIR', cwd());
 	    }
 	    $source_dir = 1;
+	} elsif (($jobname =~ m/\.dsc$/) && # Use apt to download
+		 check_url($jobname)) {
+	    # Valid URL
+	    $jobname = download_source_package($jobname);
 	}
+
 
 	# Check after source package build (which might set dist)
 	my $dist = $conf->get('DISTRIBUTION');
@@ -124,8 +132,8 @@ sub main () {
 	print STDERR "I: " . $e->info . "\n"
 	    if ($e->info);
 	if ($debug_level) {
-	    dump_main_state();
-	    print STDERR $e->trace->as_string, "\n";
+	    #dump_main_state();
+	    #print STDERR $e->trace->as_string, "\n";
 	}
     } elsif (!defined($e)) {
 	print STDERR "E: $@\n" if $@;
@@ -244,6 +252,42 @@ sub create_source_package ($) {
 	failstage => "pack-source");
 
     return $dsc;
+}
+
+sub download_source_package ($) {
+    my $dsc = shift;
+
+    my $srcdir = dirname($dsc);
+    my $dscbase = basename($dsc);
+
+    my @fetched;
+
+    # Work with a .dsc file.
+    # $file is the name of the downloaded dsc file written in a tempfile.
+    my $file;
+    $file = download($dsc, $dscbase) or
+	Sbuild::Exception::Build->throw(
+	    error => "Could not download $dsc",
+	    failstage => "download-source");
+    push(@fetched, $dscbase);
+
+    my @cwd_files = dsc_files($file);
+
+    foreach (@cwd_files) {
+	my $subfile = download("$srcdir/$_", $_);
+	if (!$subfile) {
+	    # Remove downloaded sources
+	    foreach my $rm (@fetched) {
+		unlink($rm);
+	    }
+	    Sbuild::Exception::Build->throw(
+		error => "Could not download $srcdir/$_",
+		failstage => "download-source");
+	}
+	push(@fetched, $_);
+    }
+
+    return $file;
 }
 
 # only called from main loop, but depends on job state.

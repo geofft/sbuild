@@ -43,7 +43,7 @@ BEGIN {
     @EXPORT = qw($debug_level $devnull binNMU_version parse_date isin
 		 copy dump_file check_packages help_text version_text
 		 usage_error send_mail debug debug2 df
-		 check_group_membership dsc_files);
+		 check_group_membership dsc_files dsc_pkgver);
 }
 
 our $devnull;
@@ -396,6 +396,20 @@ sub dsc_files ($) {
     my $csums = Dpkg::Checksums->new();
     $csums->add_from_control($pdsc, use_files_for_md5 => 1);
     return $csums->get_files();
+}
+
+sub dsc_pkgver ($) {
+    my $dsc = shift;
+
+    debug("Parsing $dsc\n");
+    my $pdsc = Dpkg::Control->new(type => CTRL_PKG_SRC);
+    $pdsc->set_options(allow_pgp => 1);
+    if (!$pdsc->load($dsc)) {
+	print STDERR "Could not parse $dsc\n";
+	return undef;
+    }
+
+    return ($pdsc->{'Source'}, $pdsc->{'Version'});
 }
 
 1;

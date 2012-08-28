@@ -40,14 +40,14 @@ use Dpkg::Version;
 use MIME::Lite;
 use Term::ANSIColor;
 
-use Sbuild qw($devnull binNMU_version copy isin debug df send_mail dsc_files);
+use Sbuild qw($devnull binNMU_version copy isin debug df send_mail
+              dsc_files dsc_pkgver);
 use Sbuild::Base;
 use Sbuild::ChrootInfoSchroot;
 use Sbuild::ChrootInfoSudo;
 use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig qw($version $release_date);
 use Sbuild::Sysconfig;
-use Sbuild::Utility qw(check_url download);
 use Sbuild::Resolver qw(get_resolver);
 use Sbuild::Exception;
 
@@ -110,26 +110,14 @@ sub new {
 
     # DSC, package and version information:
     $self->set_dsc($dsc);
-    my $ver = $self->get('DSC Base');
-    $ver =~ s/\.dsc$//;
     # Note, will be overwritten by Version: in DSC.
-    $self->set_version($ver);
-
-    # Do we need to download?
-    $self->set('Download', 0);
-    $self->set('Download', 1)
-	if (!($self->get('DSC Base') =~ m/\.dsc$/) || # Use apt to download
-	    check_url($self->get('DSC'))); # Valid URL
+    $self->set_version($dsc);
 
     # Can sources be obtained?
     $self->set('Invalid Source', 0);
     $self->set('Invalid Source', 1)
-	if ((!$self->get('Download') ||
-      (!($self->get('DSC Base') =~ m/\.dsc$/) &&
-        $self->get('DSC') ne $self->get('Package_OVersion')) ||
-      !defined $self->get('Version')));
+	if (!defined $self->get('Version'));
 
-    debug("Download = " . $self->get('Download') . "\n");
     debug("Invalid Source = " . $self->get('Invalid Source') . "\n");
 
     return $self;
@@ -174,7 +162,12 @@ sub set_version {
 
     debug("Setting package version: $pkgv\n");
 
-    my ($pkg, $version) = split /_/, $pkgv;
+    my ($pkg, $version);
+    if (-f $pkgv && -r $pkgv) {
+	($pkg, $version) = dsc_pkgver($pkgv);
+    } else {
+	($pkg, $version) = split /_/, $pkgv;
+    }
     my $pver = Dpkg::Version->new($version, check => 1);
     return if (!defined($pkg) || !defined($version) || !defined($pver));
     my ($o_version, $o_revision);
@@ -787,8 +780,7 @@ sub copy_to_chroot {
 
     $self->get('Session')->run_command(
 	{ COMMAND => ['chown', $self->get_conf('BUILD_USER') . ':sbuild',
-		      $self->get('Session')->strip_chroot_path($dest) . '/' .
-		      basename($source)],
+		      $self->get('Session')->strip_chroot_path($dest)],
 	  USER => 'root',
 	  DIR => '/' });
     if ($?) {
@@ -797,8 +789,7 @@ sub copy_to_chroot {
     }
     $self->get('Session')->run_command(
 	{ COMMAND => ['chmod', '0664',
-		      $self->get('Session')->strip_chroot_path($dest) . '/' .
-		      basename($source)],
+		      $self->get('Session')->strip_chroot_path($dest)],
 	  USER => 'root',
 	  DIR => '/' });
     if ($?) {
@@ -840,42 +831,25 @@ sub fetch_source_files {
     $self->check_abort();
     if ($self->get('DSC Base') =~ m/\.dsc$/) {
 	# Work with a .dsc file.
-	# $file is the name of the downloaded dsc file written in a tempfile.
-	my $file;
-	$file = download($self->get('DSC')) or
-	    $self->log_error("Could not download " . $self->get('DSC') . "\n") and
+	my $file = $self->get('DSC');
+	if (! -f $file || ! -r $file) {
+	    $self->log_error("Could not find $file\n");
 	    return 0;
+	}
 	my @cwd_files = dsc_files($file);
 
-	if (-f "$dir/$dsc") {
-	    # Copy the local source files into the build directory.
-	    $self->log_subsubsection("Local sources");
-	    $self->log("$dsc exists in $dir; copying to chroot\n");
-	    if (! $self->copy_to_chroot("$dir/$dsc", "$build_dir")) {
+	# Copy the local source files into the build directory.
+	$self->log_subsubsection("Local sources");
+	$self->log("$file exists in $dir; copying to chroot\n");
+	if (! $self->copy_to_chroot("$file", "$build_dir/$dsc")) {
+	    return 0;
+	}
+	push(@fetched, "$build_dir/$dsc");
+	foreach (@cwd_files) {
+	    if (! $self->copy_to_chroot("$dir/$_", "$build_dir/$_")) {
 		return 0;
 	    }
-	    push(@fetched, "$build_dir/$dsc");
-	    foreach (@cwd_files) {
-		if (! $self->copy_to_chroot("$dir/$_", "$build_dir")) {
-		    return 0;
-		}
-		push(@fetched, "$build_dir/$_");
-	    }
-	} else {
-	    # Copy the remote source files into the build directory.
-	    $self->log_subsubsection("Remote sources");
-	    $self->log("Downloading source files from $dir.\n");
-	    if (! File::Copy::copy("$file", "$build_dir/" . $self->get('DSC File'))) {
-		$self->log_error("Could not copy downloaded file $file to $build_dir\n");
-		return 0;
-	    }
-	    push(@fetched, "$build_dir/" . $self->get('DSC File'));
-	    foreach (@cwd_files) {
-		download("$dir/$_", "$build_dir/$_") or
-		    $self->log_error("Could not download $dir/$_") and
-		    return 0;
-		push(@fetched, "$build_dir/$_");
-	    }
+	    push(@fetched, "$build_dir/$_");
 	}
     } else {
 	# Use apt to download the source files
