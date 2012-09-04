@@ -333,7 +333,7 @@ Append extra options to existing options passed to lintian.
 .BR \-\-run\-piuparts
 Run piuparts after a successful build.
 .TP
-.BR \-\-run\-piuparts
+.BR \-\-no\-run\-piuparts
 Don't run piuparts after a successful build.  If sbuild is configured to run
 piuparts by default, this option will prevent piuparts being run.
 .TP
