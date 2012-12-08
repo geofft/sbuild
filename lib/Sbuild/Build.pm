@@ -170,16 +170,14 @@ sub set_version {
     }
     my $pver = Dpkg::Version->new($version, check => 1);
     return if (!defined($pkg) || !defined($version) || !defined($pver));
-    my ($o_version, $o_revision);
+    my ($o_version);
     $o_version = $pver->version();
-    $o_revision = $pver->revision();
-    $o_revision = "" if $pver->{'no_revision'};
 
     # Original version (no binNMU or other addition)
     my $oversion = $version;
     # Original version with stripped epoch
     my $osversion = $o_version;
-    $osversion .= '-' . $o_revision if $o_revision;
+    $osversion .= '-' . $pver->revision() unless $pver->{'no_revision'};
 
     # Add binNMU to version if needed.
     if ($self->get_conf('BIN_NMU') || $self->get_conf('APPEND_TO_VERSION')) {
