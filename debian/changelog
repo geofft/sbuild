@@ -4,6 +4,9 @@ sbuild (0.63.3) UNRELEASED; urgency=low
   * New release.
   * buildd:
     - Remove duplicate stop action from init script (Closes: #695513).
+  * sbuild:
+    - Cross build-dependency installation failure throws an
+      exception (Closes: #693788).
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 09 Dec 2012 23:49:47 +0000
 
