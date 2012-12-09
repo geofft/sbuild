@@ -678,8 +678,8 @@ sub run_fetch_install_packages {
 			USER => 'root',
 			DIR => '/' });
 		if ($?) {
-			$self->log("Failed to get cross build-deps\n");
-			return 1;
+			Sbuild::Exception::Build->throw(error => "Package cross build dependencies not satisfied; skipping",
+							failstage => "install-deps");
 		}
 	}
 	$self->set('Install End Time', time);
