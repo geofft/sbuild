@@ -174,6 +174,13 @@ sub setup ($) {
 	    DEFAULT => 0,
 	    HELP => 'Log success messages from upload queue daemon?'
 	},
+	'MAX_SBUILD_FAILS'				=> {
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'max_sbuild_fails',
+	    GROUP => 'Daemon',
+	    DEFAULT => 2,
+	    HELP => 'Maximim number of times sbuild can fail before sleeping'
+	},
 	'MIN_FREE_SPACE'			=> {
 	    TYPE => 'NUMERIC',
 	    VARNAME => 'min_free_space',
