@@ -1,5 +1,8 @@
 sbuild (0.63.3) UNRELEASED; urgency=low
 
+  [ Thorsten Glaser ]
+  * Apply patch from Arnaud Patard to fix the uploader (Closes: #636477).
+
   [ Roger Leigh ]
   * New release.
   * buildd:
