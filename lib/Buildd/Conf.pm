@@ -276,13 +276,13 @@ sub setup ($) {
 	    IGNORE_DEFAULT => 1, # Don't dump class to config
 	    HELP => 'List of distributions that buildd should take packages from',
 	    EXAMPLE =>
-'$distributions = [
+'@distributions = (
 	{
 		# name of the suite to build (also used to query wanna-build)
 		dist_name => ["unstable", "testing"],
 
 		# architecture to be built (will be passed to sbuild and can be
-		# used to compute wanna_build_db_name
+		# used to compute wanna_build_db_name)
 		built_architecture => undef,
 
 		# host on which wanna-build is run
@@ -332,7 +332,7 @@ sub setup ($) {
 		sbuild_chroot => undef,
 
 	}
-];'
+);'
 	},
 	'UPLOAD_QUEUES'                         => {
 	    TYPE => 'ARRAY:HASH:SCALAR',
@@ -342,7 +342,7 @@ sub setup ($) {
 	    IGNORE_DEFAULT => 1, # Don't dump class to config
 	    HELP => 'Package upload queues',
 	    EXAMPLE =>
-'$upload_queues = [
+'@upload_queues = (
 	{
 		# Local queue directory where binaries are stored before uploaded
 		# by dupload.
@@ -362,7 +362,7 @@ sub setup ($) {
 		# /etc/dupload.conf for possible values.
 		dupload_archive_name => "security",
 	}
-];'
+);'
 	});
 
     $conf->set_allowed_keys(\%buildd_keys);
