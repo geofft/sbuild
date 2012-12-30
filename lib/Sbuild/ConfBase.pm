@@ -84,6 +84,7 @@ sub init_allowed_keys {
 		   $conf->get('MAILTO_HASH')->{$value})
 	    if ($value &&
 		$conf->get('DISTRIBUTION') &&
+		$conf->get('MAILTO_HASH') &&
 		$conf->get('MAILTO_HASH')->{$value});
     };
 
