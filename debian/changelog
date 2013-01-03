@@ -14,6 +14,9 @@ sbuild (0.63.3) UNRELEASED; urgency=low
   * sbuild:
     - Cross build-dependency installation failure throws an
       exception (Closes: #693788).
+    - In Sbuild::ResolverBase, pass the correct options to deps_parse
+      for cross-building and foo:native build dependencies
+      (Closes: #697298).  Thanks to Colin Watson for this patch.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 09 Dec 2012 23:49:47 +0000
 
