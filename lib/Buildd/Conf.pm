@@ -503,7 +503,15 @@ if (\@take_from_dists) {
 	push \@distributions_info, \$dist_config;
     }
 } else {
-    for my \$raw_entry (\@distributions) {
+    my \@dists = ();
+    push \@dists, \@{\$distributions} if defined \$distributions;
+
+    if (\@distributions) {
+	warn 'W: \@distributions is deprecated; please use the array reference \$distributions[]\n';
+	push \@dists, \@distributions;
+    }
+
+    for my \$raw_entry (\@dists) {
 	my \%entry;
 	my \@dist_names;
 
@@ -547,9 +555,17 @@ if (\@take_from_dists) {
 
 \$conf->set('DISTRIBUTIONS', \\\@distributions_info);
 
+my \@queues = ();
+push \@queues, \@{\$upload_queues} if defined \$upload_queues;
+
 if (\@upload_queues) {
+    warn 'W: \@upload_queues is deprecated; please use the array reference \$upload_queues[]\n';
+    push \@queues, \@upload_queues;
+}
+
+if (\@queues) {
     my \@upload_queue_configs;
-    for my \$raw_entry (\@upload_queues) {
+    for my \$raw_entry (\@queues) {
 	my \%entry;
 	for my \$key (keys \%\$raw_entry) {
 	    \$entry{uc(\$key)} = \$raw_entry->{\$key};
