@@ -629,7 +629,7 @@ sub run_fetch_install_packages {
 	}
 	$resolver->add_dependencies('CORE', join(", ", @coredeps) , "", "", "", "", "");
 
-	if (!$resolver->install_deps('core', 'CORE')) {
+	if (!$resolver->install_core_deps('core', 'CORE')) {
 	    Sbuild::Exception::Build->throw(error => "Core build dependencies not satisfied; skipping",
 					    failstage => "install-deps");
 	}
@@ -651,36 +651,33 @@ sub run_fetch_install_packages {
 				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_ARCH')}),
 				    join(", ", @{$self->get_conf('MANUAL_CONFLICTS_INDEP')}));
 
-	if ($self->get('Host Arch') eq $self->get('Build Arch')) {
-	# for native building make and install dummy-deps package
-		$resolver->add_dependencies($self->get('Package'),
-						$self->get('Build Depends'),
-						$self->get('Build Depends Arch'),
-						$self->get('Build Depends Indep'),
-						$self->get('Build Conflicts'),
-						$self->get('Build Conflicts Arch'),
-						$self->get('Build Conflicts Indep'));
+	$resolver->add_dependencies($self->get('Package'),
+				    $self->get('Build Depends'),
+				    $self->get('Build Depends Arch'),
+				    $self->get('Build Depends Indep'),
+				    $self->get('Build Conflicts'),
+				    $self->get('Build Conflicts Arch'),
+				    $self->get('Build Conflicts Indep'));
 
-		$self->check_abort();
-		if (!$resolver->install_deps($self->get('Package'),
-						'ESSENTIAL', 'GCC_SNAPSHOT', 'MANUAL',
-						$self->get('Package'))) {
-			Sbuild::Exception::Build->throw(error => "Package build dependencies not satisfied; skipping",
-							failstage => "install-deps");
-						}
-	} else { # cross-building
-		# install cross-deps. Hacked for now - need to generate dummy package
-		$self->log_subsection('Install cross build-dependencies (apt-get -a)');
-		$self->log('Cross-deps: Running apt-get -a' . $self->get('Host Arch') . ' build-dep ' . $self->get('Package') . "\n");
-		$resolver->run_apt_command(
-			{ COMMAND => [$self->get_conf('APT_GET'),  '-a' . $self->get('Host Arch'), 'build-dep', '-yf', $self->get('Package')],
-			ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
-			USER => 'root',
-			DIR => '/' });
-		if ($?) {
-			Sbuild::Exception::Build->throw(error => "Package cross build dependencies not satisfied; skipping",
-							failstage => "install-deps");
-		}
+	my @build_deps;
+	if ($self->get('Host Arch') eq $self->get('Build Arch')) {
+	    @build_deps = ('ESSENTIAL', 'GCC_SNAPSHOT', 'MANUAL',
+			   $self->get('Package'));
+	} else {
+	    $self->check_abort();
+	    if (!$resolver->install_core_deps('essential',
+					      'ESSENTIAL', 'GCC_SNAPSHOT')) {
+		Sbuild::Exception::Build->throw(error => "Essential dependencies not satisfied; skipping",
+						failstage => "install-essential");
+	    }
+	    @build_deps = ('MANUAL', $self->get('Package'));
+	}
+
+	$self->check_abort();
+	if (!$resolver->install_main_deps($self->get('Package'),
+					  @build_deps)) {
+	    Sbuild::Exception::Build->throw(error => "Package build dependencies not satisfied; skipping",
+					    failstage => "install-deps");
 	}
 	$self->set('Install End Time', time);
 
