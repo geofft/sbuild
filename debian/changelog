@@ -23,6 +23,12 @@ sbuild (0.63.3) UNRELEASED; urgency=low
     - Resolve cross-build-dependencies from package being built rather than
       from current apt sources (Closes: #695203).
 
+  [ Adam Conrad ]
+  * sbuild:
+    - Improve cross chroot detection to look for $dist-$build-$host as a
+      valid chroot for cross-build to avoid namespace clashes with native
+      chroots, and document this better in the manpage (Closes: #695273)
+
  -- Roger Leigh <rleigh@debian.org>  Sun, 09 Dec 2012 23:49:47 +0000
 
 sbuild (0.63.2-1.1) unstable; urgency=low
