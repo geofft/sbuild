@@ -154,14 +154,16 @@ appropriately to build as that architecture, e.g. using
 this option is equivalent to "\-\-host=architecture \-\-build=architecture".
 .TP
 .BR "\-\-host=\fIarchitecture\fP"
-Build using the host architecture specified.  A chroot named
-\fI$distribution\-$arch-sbuild\fP or \fI$distribution\-arch\fP is searched for,
-in that order of preference.  This option is only useful for cross-building
-when used together with \-\-build.
+Build using the host architecture specified.  If $host and $build don't match, a
+chroot named \fI$distribution\-$build\-$host\-sbuild\fP or \fI$distribution\-$build\-$host\fP
+is searched for, falling back to \fI$distribution\-$host\-sbuild\fP or
+\fI$distribution\-$host\fP, in that order of preference.  This option is only
+useful for cross-building when used together with \-\-build.
 .TP
 .BR "\-\-build=\fIarchitecture\fP"
 Build using the build architecture specified.  This option is only useful for
-cross-building when used together with \-\-host.
+cross-building when used together with \-\-host.  If \-\-build is not specified,
+the default system architecture is assumed.
 .TP
 .BR \-A ", " "\-\-arch\-all"
 Also build Architecture: all packages, i.e. use dpkg\-buildpackage \-b

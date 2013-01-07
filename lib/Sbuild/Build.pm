@@ -359,7 +359,7 @@ sub run_chroot_session {
 	my $session = $chroot_info->create('chroot',
 					   $self->get_conf('DISTRIBUTION'),
 					   $self->get_conf('CHROOT'),
-					   $self->get_conf('BUILD_ARCH'));
+					   $self->get_conf('HOST_ARCH'));
 
 	# Run pre build external commands
 	$self->check_abort();
