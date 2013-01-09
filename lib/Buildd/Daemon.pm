@@ -654,6 +654,7 @@ my $idle_end_time = time;
 $SIG{'USR2'} = $oldsig;
 $self->write_stats("idle-time", $idle_end_time - $idle_start_time);
 EOF
+	    $main::sbuild_fails = 0;
 	}
     }
     else {
