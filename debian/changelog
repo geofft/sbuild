@@ -22,6 +22,8 @@ sbuild (0.63.3) UNRELEASED; urgency=low
   * sbuild:
     - Resolve cross-build-dependencies from package being built rather than
       from current apt sources (Closes: #695203).
+  * buildd:
+    - Reset sbuild failure count after sleeping.
 
   [ Adam Conrad ]
   * sbuild:
