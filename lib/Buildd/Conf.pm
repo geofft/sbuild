@@ -179,7 +179,7 @@ sub setup ($) {
 	    VARNAME => 'max_sbuild_fails',
 	    GROUP => 'Daemon',
 	    DEFAULT => 2,
-	    HELP => 'Maximim number of times sbuild can fail before sleeping'
+	    HELP => 'Maximum number of times sbuild can fail before sleeping'
 	},
 	'MIN_FREE_SPACE'			=> {
 	    TYPE => 'NUMERIC',
