@@ -44,6 +44,13 @@ sbuild (0.63.3) UNRELEASED; urgency=low
       valid chroot for cross-build to avoid namespace clashes with native
       chroots, and document this better in the manpage (Closes: #695273)
 
+  [ Geoffrey Thomas ]
+  * sbuild:
+    - When creating a changelog entry for binNMUs or
+      --append-to-version, tag it with "binary-only=yes" so that
+      dpkg-gencontrol uses the previous changelog entry for the source
+      version (Closes: #672711, #681292).
+
  -- Roger Leigh <rleigh@debian.org>  Sun, 09 Dec 2012 23:49:47 +0000
 
 sbuild (0.63.2-1.1) unstable; urgency=low
