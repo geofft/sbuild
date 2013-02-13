@@ -981,6 +981,10 @@ sub run_apt_ftparchive {
     my ($tmpfh, $tmpfilename) = tempfile();
     my $dummy_archive_dir = $self->get('Dummy archive directory');
 
+    for my $deb (@{$self->get_conf('EXTRA_PACKAGES')}) {
+        copy($deb, $dummy_archive_dir);
+    }
+
     # Write the conf file.
     print $tmpfh <<"EOF";
 Dir {

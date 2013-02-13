@@ -1049,6 +1049,12 @@ sub setup ($) {
 	    DEFAULT => '/var/lib/sbuild/apt-keys/sbuild-key.pub',
 	    HELP => 'GPG public key for temporary local apt archive.'
 	},
+	'EXTRA_PACKAGES'				=> {
+	    TYPE => 'ARRAY:STRING',
+	    GROUP => '__INTERNAL',
+	    DEFAULT => [],
+	    HELP => 'Additional per-build packages available as build dependencies.  Do not set by hand.'
+	},
     );
 
     $conf->set_allowed_keys(\%sbuild_keys);
