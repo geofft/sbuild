@@ -282,7 +282,10 @@ sub set_options {
 		       },
 			"log-external-command-error" => sub {
 			    $self->set_conf('LOG_EXTERNAL_COMMAND_ERROR', 1);
-		       }
+		       },
+			"extra-package=s" => sub {
+			   push(@{$self->get_conf('EXTRA_PACKAGES')}, $_[1]);
+		       },
 	);
 }
 

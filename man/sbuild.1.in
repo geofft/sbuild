@@ -75,6 +75,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-setup\-hook=\fIhook-script\fP ]
 .RB [ \-\-build\-dep\-resolver=\fIresolver\fP ]
 .RB [ \-\-resolve\-alternatives \[or] \-\-no\-resolve\-alternatives ]
+.RB [ \-\-extra\-package=\fIpackage.deb\fP ]
 .RB [ PACKAGE [ .dsc ]]
 .SH DESCRIPTION
 \fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
@@ -404,6 +405,15 @@ Do not allow the use of alternatives in Build-Depends, Build-Depends-Arch and
 Build-Depends-Indep.  Note that alternatives for the same package
 (e.g. different versions) are still allowed.  This is the default for the
 apt and xapt dependency resolvers.
+.TP
+.BR \-\-extra\-package=\fIpackage.deb\fP
+Make \fIpackage.deb\fP available for build-dependency resolution, by
+adding it to a temporary archive created by sbuild.  This makes it
+easier to build packages against locally-built build depenencies,
+without waiting for those packages to enter the main archive, or going
+through the hassle of maintaining a local archive and making it
+accessible inside the chroot.  \fIpackage.deb\fP is copied into the
+chroot, so it can refer to any path on the host system.
 .SH EXTERNAL COMMANDS
 Support to run external commands during an sbuild run is provided. A set of
 external commands can be run at various stages of a build. Providing commands to
