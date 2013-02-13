@@ -1324,7 +1324,7 @@ sub build {
 	    }
 	    $dists = $self->get_conf('DISTRIBUTION');
 
-	    print F "$name ($NMUversion) $dists; urgency=low\n\n";
+	    print F "$name ($NMUversion) $dists; urgency=low, binary-only=yes\n\n";
 	    if ($self->get_conf('APPEND_TO_VERSION')) {
 		print F "  * Append ", $self->get_conf('APPEND_TO_VERSION'),
 		    " to version number; no source changes\n";
