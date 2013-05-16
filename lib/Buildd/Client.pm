@@ -103,6 +103,7 @@ sub pipe_query {
 	  USER => $self->get_conf('USERNAME'),
 	  PRIORITY => 0,
           DIR => getcwd(),
+          STREAMERR => \*STDOUT,
 	});
 
     return $pipe;

@@ -162,6 +162,7 @@ sub get_next_WANNABUILD {
 		     /^Control socket connect\($socket\): Connection refused[\r]?$/)) {
 		    unlink($socket);
 		    $self->check_ssh_master($dist_config);
+                    next;
 		}
 		elsif (/^Total (\d+) package/) {
 		    $total = $1;
