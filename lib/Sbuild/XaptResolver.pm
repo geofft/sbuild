@@ -52,6 +52,7 @@ sub new {
 sub install_deps {
     my $self = shift;
     my $name = shift;
+    my $cross = shift;
     my @pkgs = @_;
 
     my $status = 0;

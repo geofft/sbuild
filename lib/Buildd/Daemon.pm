@@ -632,7 +632,7 @@ sub do_build {
 
 	$main::sbuild_fails++;
 
-	if ($main::sbuild_fails > 2) {
+	if ($main::sbuild_fails > $self->get_conf('MAX_SBUILD_FAILS')) {
 	    $self->log("sbuild now failed $main::sbuild_fails times in ".
 		       "a row; going to sleep\n");
 	    send_mail( $self->get_conf('ADMIN_MAIL'),
@@ -654,6 +654,7 @@ my $idle_end_time = time;
 $SIG{'USR2'} = $oldsig;
 $self->write_stats("idle-time", $idle_end_time - $idle_start_time);
 EOF
+	    $main::sbuild_fails = 0;
 	}
     }
     else {

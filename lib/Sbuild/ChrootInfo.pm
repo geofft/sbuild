@@ -93,6 +93,7 @@ sub find {
 	$arch = $self->get_conf('HOST_ARCH');
     }
     my $arch_set = ($arch eq $self->get_conf('HOST_ARCH')) ? 0 : 1;
+    my $build_arch = $self->get_conf('BUILD_ARCH');
 
     my $arch_found = 0;
 
@@ -108,7 +109,17 @@ sub find {
 	    }
 	}
 
-        if ($arch ne "" &&
+        if ($arch ne $build_arch &&
+            defined($ns->{"${distribution}-${build_arch}-${arch}-sbuild"})) {
+            $chroot = "${namespace}:${distribution}-${build_arch}-${arch}-sbuild";
+            $arch_found = 1;
+        }
+        elsif ($arch ne $build_arch &&
+            defined($ns->{"${distribution}-${build_arch}-${arch}"})) {
+            $chroot = "${namespace}:${distribution}-${build_arch}-${arch}";
+            $arch_found = 1;
+        }
+        elsif ($arch ne "" &&
             defined($ns->{"${distribution}-${arch}-sbuild"})) {
             $chroot = "${namespace}:${distribution}-${arch}-sbuild";
             $arch_found = 1;

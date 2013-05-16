@@ -174,6 +174,13 @@ sub setup ($) {
 	    DEFAULT => 0,
 	    HELP => 'Log success messages from upload queue daemon?'
 	},
+	'MAX_SBUILD_FAILS'				=> {
+	    TYPE => 'NUMERIC',
+	    VARNAME => 'max_sbuild_fails',
+	    GROUP => 'Daemon',
+	    DEFAULT => 2,
+	    HELP => 'Maximum number of times sbuild can fail before sleeping'
+	},
 	'MIN_FREE_SPACE'			=> {
 	    TYPE => 'NUMERIC',
 	    VARNAME => 'min_free_space',
@@ -275,7 +282,7 @@ sub setup ($) {
 		dist_name => ["unstable", "testing"],
 
 		# architecture to be built (will be passed to sbuild and can be
-		# used to compute wanna_build_db_name
+		# used to compute wanna_build_db_name)
 		built_architecture => undef,
 
 		# host on which wanna-build is run
@@ -496,7 +503,15 @@ if (\@take_from_dists) {
 	push \@distributions_info, \$dist_config;
     }
 } else {
-    for my \$raw_entry (\@distributions) {
+    my \@dists = ();
+    push \@dists, \@{\$distributions} if defined \$distributions;
+
+    if (\@distributions) {
+	warn 'W: \@distributions is deprecated; please use the array reference \$distributions[]\n';
+	push \@dists, \@distributions;
+    }
+
+    for my \$raw_entry (\@dists) {
 	my \%entry;
 	my \@dist_names;
 
@@ -540,9 +555,17 @@ if (\@take_from_dists) {
 
 \$conf->set('DISTRIBUTIONS', \\\@distributions_info);
 
+my \@queues = ();
+push \@queues, \@{\$upload_queues} if defined \$upload_queues;
+
 if (\@upload_queues) {
+    warn 'W: \@upload_queues is deprecated; please use the array reference \$upload_queues[]\n';
+    push \@queues, \@upload_queues;
+}
+
+if (\@queues) {
     my \@upload_queue_configs;
-    for my \$raw_entry (\@upload_queues) {
+    for my \$raw_entry (\@queues) {
 	my \%entry;
 	for my \$key (keys \%\$raw_entry) {
 	    \$entry{uc(\$key)} = \$raw_entry->{\$key};

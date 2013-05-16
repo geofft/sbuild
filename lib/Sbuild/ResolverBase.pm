@@ -321,6 +321,21 @@ sub add_dependencies {
     $self->get('AptDependencies')->{$pkg} = $deps;
 }
 
+sub install_core_deps {
+    my $self = shift;
+    my $name = shift;
+
+    return $self->install_deps($name, 0, @_);
+}
+
+sub install_main_deps {
+    my $self = shift;
+    my $name = shift;
+
+    my $cross = $self->get('Host Arch') ne $self->get('Build Arch');
+    return $self->install_deps($name, $cross, @_);
+}
+
 sub uninstall_deps {
     my $self = shift;
 
@@ -721,11 +736,16 @@ EOF
     my $positive = deps_parse(join(", ", @positive,
 				   @positive_arch, @positive_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Host Arch'));
+			      host_arch => $self->get('Host Arch'),
+			      build_arch => $self->get('Build Arch'),
+			      build_dep => 1);
     my $negative = deps_parse(join(", ", @negative,
 				   @negative_arch, @negative_indep),
 			      reduce_arch => 1,
-			      host_arch => $self->get('Host Arch'));
+			      host_arch => $self->get('Host Arch'),
+			      build_arch => $self->get('Build Arch'),
+			      build_dep => 1,
+			      union => 1);
 
     $self->log("Merged Build-Depends: $positive\n") if $positive;
     $self->log("Merged Build-Conflicts: $negative\n") if $negative;

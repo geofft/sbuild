@@ -25,6 +25,7 @@ use warnings;
 
 use IO::File;
 use Buildd qw(lock_file unlock_file);
+use Buildd::Client qw();
 
 use Sbuild::Base;
 use Sbuild qw($devnull);
