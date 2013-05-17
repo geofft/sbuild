@@ -1117,12 +1117,16 @@ sub run_lintian {
 
     $self->log_subsubsection("lintian");
 
+    my $resolver = $self->get('Dependency Resolver');
     my $lintian = $self->get_conf('LINTIAN');
     my @lintian_command = ($lintian);
     push @lintian_command, @{$self->get_conf('LINTIAN_OPTIONS')} if
         ($self->get_conf('LINTIAN_OPTIONS'));
     push @lintian_command, $self->get('Changes File');
-    $self->get('Host')->run_command(
+    $resolver->add_dependencies('LINTIAN', 'lintian', "", "", "", "", "");
+    return 1 unless $resolver->install_core_deps('lintian', 'LINTIAN');
+
+    $self->get('Session')->run_command(
         { COMMAND => \@lintian_command,
           PRIORITY => 0,
         });
