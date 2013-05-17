@@ -1596,7 +1596,7 @@ sub build {
 	}
 
 	$self->log_subsection("Changes");
-	$changes = $self->get_changes();
+	$changes = $self->get_changes($build_dir);
 	my @cfiles;
 	if (-r "$build_dir/$changes") {
 	    my(@do_dists, @saved_dists);
@@ -1709,10 +1709,11 @@ sub get_env ($$) {
 
 sub get_changes {
     my $self=shift;
+    my $path=shift;
     my $changes;
 
     if ( (grep {$_ eq "-A"} @{$self->get_conf('DPKG_BUILDPACKAGE_USER_OPTIONS')})
-	 && -r $self->get('Chroot Build Dir') . '/' . $self->get('Package_SVersion') . $self->get('Package_SVersion') . "_all.changes") {
+	 && -r $path . '/' . $self->get('Package_SVersion') . "_all.changes") {
 	$changes = $self->get('Package_SVersion') . "_all.changes";
     }
     else {
@@ -2183,10 +2184,11 @@ sub close_build_log {
     if ($self->get_status() eq "successful") {
 	if (defined($self->get_conf('KEY_ID')) && $self->get_conf('KEY_ID')) {
 	    my $key_id = $self->get_conf('KEY_ID');
+	    my $build_dir = $self->get_conf('BUILD_DIR');
 	    my $changes;
 	    $self->log(sprintf("Signature with key '%s' requested:\n", $key_id));
-	    $changes = $self->get_changes();
-	    system "debsign", "-k$key_id", $changes;
+	    $changes = $self->get_changes($build_dir);
+	    system "debsign", "-k$key_id", "$build_dir/$changes";
 	}
     }
 
@@ -2291,11 +2293,12 @@ sub send_mime_build_log {
 		Filename => basename($filename) . '.gz'
 		);
     }
-    my $changes = $self->get_changes();
-    if ($self->get_status() eq 'successful' && -r $changes) {
+    my $build_dir = $self->get_conf('BUILD_DIR');
+    my $changes = $self->get_changes($build_dir);
+    if ($self->get_status() eq 'successful' && -r "$build_dir/$changes") {
 	my $log_part = MIME::Lite->new(
 		Type     => 'text/plain',
-		Path     => $changes,
+		Path     => "$build_dir/$changes",
 		Filename => basename($changes)
 		);
 	$log_part->attr('content-type.charset' => 'UTF-8');
