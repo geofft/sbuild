@@ -22,6 +22,9 @@ sbuild (0.63.3) UNRELEASED; urgency=low
     - In Sbuild::ResolverBase, pass the correct options to deps_parse
       for cross-building and foo:native build dependencies
       (Closes: #697298).  Thanks to Colin Watson for this patch.
+    - In Sbuild::Build::copy_to_chroot, remove stray exit() which could
+      cause sbuild to hang with a "Failed to copy" error
+      (Closes: #699903).  Thanks to Stephan Sürken for this patch.
 
   [ Colin Watson ]
   * sbuild:
@@ -35,6 +38,9 @@ sbuild (0.63.3) UNRELEASED; urgency=low
     - Improve cross chroot detection to look for $dist-$build-$host as a
       valid chroot for cross-build to avoid namespace clashes with native
       chroots, and document this better in the manpage (Closes: #695273)
+
+  [ Roger Leigh ]
+  * 
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 09 Dec 2012 23:49:47 +0000
 
