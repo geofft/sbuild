@@ -12,6 +12,7 @@ sbuild (0.64.0-1) unstable; urgency=low
 
   [ Roger Leigh ]
   * New release.
+  * Upgrade to Standards-Version 3.9.4 (no changes).
   * buildd:
     - Remove duplicate stop action from init script (Closes: #695513).
     - Failure count before sleeping is configurable with
