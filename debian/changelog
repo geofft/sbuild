@@ -17,6 +17,8 @@ sbuild (0.64.0-1) unstable; urgency=low
     - Remove duplicate stop action from init script (Closes: #695513).
     - Failure count before sleeping is configurable with
       MAX_SBUILD_FAILS (Closes: #693790).
+    - buildd.init specifies correct Required-Stop dependencies.
+    - Remove empty preinst script.
   * sbuild:
     - Cross build-dependency installation failure throws an
       exception (Closes: #693788).

@@ -3,7 +3,7 @@
 ### BEGIN INIT INFO
 # Provides:          buildd
 # Required-Start:    $local_fs $network $remote_fs
-# Required-Stop:
+# Required-Stop:     $local_fs $network $remote_fs
 # Should-Start:      schroot
 # Should-Stop:
 # Default-Start:     2 3 4 5
