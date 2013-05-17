@@ -5,6 +5,11 @@ sbuild (0.63.3) UNRELEASED; urgency=low
   * Make sample configuration entries actually work (Closes: #696840).
   * Avoid using undef as HASH reference (Closes: #696841).
 
+  [ Philipp Kern ]
+  * Forward port patches from the buildd-0.61.0 branch:
+    - Buildd::Client: Don't change the cwd.
+    - Buildd: Fix SSH control master restart.
+
   [ Roger Leigh ]
   * New release.
   * buildd:
