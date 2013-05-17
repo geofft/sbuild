@@ -25,6 +25,9 @@ sbuild (0.63.3) UNRELEASED; urgency=low
     - In Sbuild::Build::copy_to_chroot, remove stray exit() which could
       cause sbuild to hang with a "Failed to copy" error
       (Closes: #699903).  Thanks to Stephan Sürken for this patch.
+    - Compute changes path correctly, to allow “--debbuildopt=-A” to
+      work correctly with _all.changes (Closes: #686509).  Thanks to
+      Daniel Dehennin for the original version of this patch.
 
   [ Colin Watson ]
   * sbuild:
@@ -38,9 +41,6 @@ sbuild (0.63.3) UNRELEASED; urgency=low
     - Improve cross chroot detection to look for $dist-$build-$host as a
       valid chroot for cross-build to avoid namespace clashes with native
       chroots, and document this better in the manpage (Closes: #695273)
-
-  [ Roger Leigh ]
-  * 
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 09 Dec 2012 23:49:47 +0000
 
