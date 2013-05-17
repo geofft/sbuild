@@ -769,7 +769,6 @@ sub copy_to_chroot {
     $self->check_abort();
     if (! File::Copy::copy($source, $dest)) {
 	$self->log_error("E: Failed to copy '$source' to '$dest': $!\n");
-	exit (1);
 	return 0;
     }
 
