@@ -1,11 +1,22 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.63.2.  Please read these release notes carefully.
+Welcome to sbuild 0.64.0.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.64.0:
+
+  1) The number of times buildd will try to build before sleeping is
+     now configurable with MAX_SBUILD_FAILS.
+
+  2) Lintian is now run inside the chroot rather than the host system.
+
+  3) binNMUs now set binary-only=yes in the changelog.
+
+  4) Cross-building improvements.
 
 * Major changes in 0.63.2:
 
