@@ -28,6 +28,8 @@ sbuild (0.63.3) UNRELEASED; urgency=low
     - Compute changes path correctly, to allow “--debbuildopt=-A” to
       work correctly with _all.changes (Closes: #686509).  Thanks to
       Daniel Dehennin for the original version of this patch.
+    - Run lintian from inside the chroot (Closes: #626361).  Thanks to
+      Reinhard Tartler for this patch.
 
   [ Colin Watson ]
   * sbuild:
