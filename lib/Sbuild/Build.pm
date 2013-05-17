@@ -701,10 +701,6 @@ sub run_fetch_install_packages {
 	if ($self->get('Pkg Status') eq "successful") {
 	    $self->log_subsection("Post Build");
 
-	    # Run lintian.
-	    $self->check_abort();
-	    $self->run_lintian();
-
 	    # Run piuparts.
 	    $self->check_abort();
 	    $self->run_piuparts();
@@ -1117,18 +1113,21 @@ sub run_lintian {
 
     $self->log_subsubsection("lintian");
 
+    my $build_dir = $self->get('Chroot Build Dir');
     my $resolver = $self->get('Dependency Resolver');
     my $lintian = $self->get_conf('LINTIAN');
     my @lintian_command = ($lintian);
     push @lintian_command, @{$self->get_conf('LINTIAN_OPTIONS')} if
         ($self->get_conf('LINTIAN_OPTIONS'));
-    push @lintian_command, $self->get('Changes File');
+    push @lintian_command, $self->get_changes($build_dir);
+
     $resolver->add_dependencies('LINTIAN', 'lintian', "", "", "", "", "");
     return 1 unless $resolver->install_core_deps('lintian', 'LINTIAN');
 
     $self->get('Session')->run_command(
         { COMMAND => \@lintian_command,
           PRIORITY => 0,
+          DIR => $self->get('Build Dir')
         });
     my $status = $? >> 8;
     $self->set('Lintian Reason', 'pass');
@@ -1597,6 +1596,14 @@ sub build {
 	if ($?) {
 	    $self->log("chmod g+w " . $self->get('Build Dir') . " failed.\n");
 	    return 0;
+	}
+
+	if (!$rv) {
+	    $self->log_subsection("Post Build Chroot");
+
+	    # Run lintian.
+	    $self->check_abort();
+	    $self->run_lintian();
 	}
 
 	$self->log_subsection("Changes");
