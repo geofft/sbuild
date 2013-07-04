@@ -188,45 +188,37 @@ sub update_archive {
 	      DIR => '/' });
 	return $?;
     } else {
-	# Example archive list names:
-	#_tmp_resolver-XXXXXX_apt%5farchive_._Packages
-	#_tmp_resolver-XXXXXX_apt%5farchive_._Release
-	#_tmp_resolver-XXXXXX_apt%5farchive_._Release.gpg
-	#_tmp_resolver-XXXXXX_apt%5farchive_._Sources
-
-	# Update lists directly; only updates local archive
-
-	# Filename quoting for safety taken from apt URItoFileName and
-	# QuoteString.
 	my $session = $self->get('Session');
-	my $dummy_dir = $self->get('Dummy package path');
-	my $dummy_archive_dir = $session->strip_chroot_path($dummy_dir.'/apt_archive/./');
-	my @chars = split('', $dummy_archive_dir);
-
-	foreach(@chars) {
-	    if (index('\\|{}[]<>"^~_=!@#$%^&*', $_) != -1 || # "Bad" characters
-		!m/[[:print:]]/ || # Not printable
-		ord($_) == 0x25 || # Percent '%' char
-		ord($_) <= 0x20 || # Control chars
-		ord($_) >= 0x7f) { # Control chars
-		$_ = sprintf("%%%02x", ord($_));
-	    }
+	my $dummy_archive_list_file = $self->get('Dummy archive list file');
+	# Create an empty sources.list.d directory that we can set as
+	# Dir::Etc::sourceparts to suppress the real one. /dev/null
+	# works in recent versions of apt, but not older ones (we want
+	# 448eaf8 in apt 0.8.0 and af13d14 in apt 0.9.3). Since this
+	# runs against the target chroot's apt, be conservative.
+	my $dummy_sources_list_d = $self->get('Dummy package path') . '/sources.list.d';
+	if (!(-d $dummy_sources_list_d || mkdir $dummy_sources_list_d, 0700)) {
+	    $self->log_warning('Could not create build-depends dummy sources.list directory ' . $dummy_sources_list_d . ': ' . $!);
+	    $self->cleanup_apt_archive();
+	    return 0;
 	}
 
-	my $uri = join('', @chars);
-	$uri =~ s;/;_;g; # Escape slashes
-
-	foreach my $file ("Packages", "Release", "Release.gpg", "Sources") {
-	    $session->run_command(
-		{ COMMAND => ['cp', $dummy_archive_dir . '/' . $file,
-			      '/var/lib/apt/lists/' . $uri . $file],
-		  USER => 'root',
-		  PRIORITY => 0 });
-		if ($?) {
-			$self->log("Failed to copy file from dummy archive to apt lists.\n");
-			return 1;
-		}
-	}
+	# Run apt-get update pointed at our dummy archive list file, and
+	# the empty sources.list.d directory, so that we only update
+	# this one source. Since apt doesn't have all the sources
+	# available to it in this run, any caches it generates are
+	# invalid, so we then need to run gencaches with all sources
+	# available to it. (Note that the tempting optimization to run
+	# apt-get update -o pkgCacheFile::Generate=0 is broken before
+	# 872ed75 in apt 0.9.1.)
+	$self->run_apt_command(
+	    { COMMAND => [$self->get_conf('APT_GET'), 'update',
+	                  '-o', 'Dir::Etc::sourcelist=' . $session->strip_chroot_path($dummy_archive_list_file),
+			  '-o', 'Dir::Etc::sourceparts=' . $session->strip_chroot_path($dummy_sources_list_d),
+			  '--no-list-cleanup'],
+	      ENV => {'DEBIAN_FRONTEND' => 'noninteractive'},
+	      USER => 'root',
+	      DIR => '/' });
+	return $? if $?;
 
 	$self->run_apt_command(
 	    { COMMAND => [$self->get_conf('APT_CACHE'), 'gencaches'],
