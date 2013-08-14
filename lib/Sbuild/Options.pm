@@ -286,6 +286,9 @@ sub set_options {
 			"extra-package=s" => sub {
 			   push(@{$self->get_conf('EXTRA_PACKAGES')}, $_[1]);
 		       },
+			"extra-repository=s" => sub {
+			   push(@{$self->get_conf('EXTRA_REPOSITORIES')}, $_[1]);
+		       },
 	);
 }
 

@@ -891,6 +891,11 @@ EOF
         my ($tmpfh, $tmpfilename) = tempfile(DIR => $session->get('Location') . "/tmp");
         print $tmpfh 'deb file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
         print $tmpfh 'deb-src file://' . $session->strip_chroot_path($dummy_archive_dir) . " ./\n";
+
+        for my $repospec (@{$self->get_conf('EXTRA_REPOSITORIES')}) {
+            print $tmpfh "$repospec\n";
+        }
+
         close($tmpfh);
         # List file needs to be moved with root.
         $session->run_command(

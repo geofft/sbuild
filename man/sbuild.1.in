@@ -76,6 +76,7 @@ sbuild \- build debian packages from source
 .RB [ \-\-build\-dep\-resolver=\fIresolver\fP ]
 .RB [ \-\-resolve\-alternatives \[or] \-\-no\-resolve\-alternatives ]
 .RB [ \-\-extra\-package=\fIpackage.deb\fP ]
+.RB [ \-\-extra\-repository=\fIspec\fP ]
 .RB [ PACKAGE [ .dsc ]]
 .SH DESCRIPTION
 \fBsbuild\fR rebuilds Debian binary packages from the corresponding Debian
@@ -414,6 +415,19 @@ without waiting for those packages to enter the main archive, or going
 through the hassle of maintaining a local archive and making it
 accessible inside the chroot.  \fIpackage.deb\fP is copied into the
 chroot, so it can refer to any path on the host system.
+.TP
+.BR \-\-extra\-repository=\fIspec\fP
+Add a repository to the list of apt sources during the package build.
+The repository specification is a line suitable for an apt
+.BR sources.list (5)
+file. For instance, you might use
+.nh
+.B \-\-extra\-repository="deb http://ftp.debian.org/debian experimental main"
+.hy
+to allow packages in the experimental distribution to fulfill
+build-dependencies. Note that the build chroot must already trust the
+key of this repository (see
+.BR apt-secure (8)).
 .SH EXTERNAL COMMANDS
 Support to run external commands during an sbuild run is provided. A set of
 external commands can be run at various stages of a build. Providing commands to
