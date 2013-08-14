@@ -6,6 +6,13 @@ sbuild (0.64.2-1) UNRELEASED; urgency=low
       same order as the output of locale(1), to make it easier to compare
       visually.
 
+  [ Geoffrey Thomas ]
+  * sbuild:
+    - Refactor temporary build-dep repository code to use apt-get update,
+      instead of hacking /var/lib/apt/lists.
+    - Add --extra-package (Closes: #700522) and --extra-repository (Closes:
+      #714883).
+
  -- Colin Watson <cjwatson@debian.org>  Fri, 18 Oct 2013 12:46:29 +0100
 
 sbuild (0.64.1-1) unstable; urgency=low
