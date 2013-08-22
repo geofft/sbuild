@@ -261,7 +261,7 @@ EOF
 	return $?
     }
 
-    my @command = ('gpg', '--no-default-keyring', '--batch', '--gen-key',
+    my @command = ('gpg', '--no-options', '--no-default-keyring', '--batch', '--gen-key',
                    $tmpfilename);
     $host->run_command(
         { COMMAND => \@command,
