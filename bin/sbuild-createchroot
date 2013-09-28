@@ -137,7 +137,7 @@ use Sbuild::ChrootRoot;
 use Sbuild::Sysconfig;
 use Sbuild::Conf qw();
 use File::Path qw(mkpath rmtree);
-use File::Temp ();
+use File::Temp qw(tempfile);
 use File::Copy;
 use Cwd qw(abs_path);
 
@@ -392,7 +392,7 @@ if ($conf->get('ARCH') eq $conf->get('HOST_ARCH')) {
 # the sbuild chroot directory created, unless it's been requested to keep the
 # directory.
 if ($conf->get('MAKE_SBUILD_TARBALL')) {
-    my ($tmpfh, $tmpfile) = File::Temp->tempfile("XXXXXX");
+    my ($tmpfh, $tmpfile) = File::Temp::tempfile("XXXXXX");
     my @program_list;
 
     # Change program arguments accordingly
