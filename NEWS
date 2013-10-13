@@ -1,11 +1,15 @@
 NEWS                                                            -*- outline -*-
 ----
 
-Welcome to sbuild 0.64.0.  Please read these release notes carefully.
+Welcome to sbuild 0.64.1.  Please read these release notes carefully.
 
 Full installation instructions are provided in the INSTALL file.  The
 README file also contains more specific notes regarding building and
 configuration.
+
+* Major changes in 0.64.1:
+
+  1) sbuild-createchroot now works with perl 5.18.
 
 * Major changes in 0.64.0:
 
