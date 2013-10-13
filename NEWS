@@ -9,7 +9,10 @@ configuration.
 
 * Major changes in 0.64.1:
 
-  1) sbuild-createchroot now works with perl 5.18.
+  1) Bugfixes to work with Perl 5.18; use File::Temp and File::Spec
+     explicitly.
+
+  2) Drop autoflush workaround added for Perl 5.10.
 
 * Major changes in 0.64.0:
 
