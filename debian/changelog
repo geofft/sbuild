@@ -9,6 +9,8 @@ sbuild (0.64.1-1) UNRELEASED; urgency=low
       Ovsík who also provided an equivalent patches.
     - Sbuild::Conf: Add missing File::Spec (Closes: #722012).  Thanks to
       Václav Ovsík for this patch.
+    - Sbuild::Build: Remove perl 5.10 autoflush workaround; flushing works
+      correctly wih perl 5.18.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 13 Oct 2013 19:35:57 +0100
 
