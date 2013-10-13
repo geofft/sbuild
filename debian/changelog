@@ -5,10 +5,10 @@ sbuild (0.64.1-1) UNRELEASED; urgency=low
   * sbuild:
     - sbuild-createchroot now works with perl 5.18 (Closes: #724858).
       Thanks to Alexander Chernyakhovsky for this patch, which corrects
-      the use of File::Temp.  Thanks also to Paul Elliott who also
-      provided an equivalent patch.
+      the use of File::Temp.  Thanks also to Paul Elliott and Václav
+      Ovsík who also provided an equivalent patches.
     - Sbuild::Conf: Add missing File::Spec (Closes: #722012).  Thanks to
-      Vaclav Ovsik for this patch.
+      Václav Ovsík for this patch.
 
  -- Roger Leigh <rleigh@debian.org>  Sun, 13 Oct 2013 19:35:57 +0100
 
