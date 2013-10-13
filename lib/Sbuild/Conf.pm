@@ -25,6 +25,7 @@ use strict;
 use warnings;
 
 use Cwd qw(cwd);
+use File::Spec;
 use POSIX qw(getgroups getgid);
 use Sbuild qw(isin);
 use Sbuild::ConfBase;
