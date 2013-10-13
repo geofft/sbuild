@@ -2118,9 +2118,6 @@ sub open_build_log {
 		if (-t $saved_stdout && $log_colour) {
 		    print $saved_stdout color 'reset';
 		}
-
-		# Manual flushing due to Perl 5.10 bug.  Should autoflush.
-		$saved_stdout->flush();
 	    }
 	    if (!$nolog && $log) {
 		    print CPLOG $_;
