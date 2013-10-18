@@ -1,3 +1,13 @@
+sbuild (0.64.2-1) UNRELEASED; urgency=low
+
+  [ Colin Watson ]
+  * buildd:
+    - Unset some more locale environment variables, and sort these in the
+      same order as the output of locale(1), to make it easier to compare
+      visually.
+
+ -- Colin Watson <cjwatson@debian.org>  Fri, 18 Oct 2013 12:46:29 +0100
+
 sbuild (0.64.1-1) unstable; urgency=low
 
   [ Roger Leigh ]
