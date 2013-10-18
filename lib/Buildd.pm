@@ -58,16 +58,22 @@ sub isin ($@) {
 }
 
 sub unset_env () {
-    # unset any locale variables
+    # unset any locale variables (sorted to match output from locale(1))
     delete $ENV{'LANG'};
-    delete $ENV{'LC_ALL'};
-    delete $ENV{'LC_COLLATE'};
+    delete $ENV{'LANGUAGE'};
     delete $ENV{'LC_CTYPE'};
-    delete $ENV{'LC_MONETARY'};
-    delete $ENV{'LC_MESSAGES'};
     delete $ENV{'LC_NUMERIC'};
     delete $ENV{'LC_TIME'};
-    delete $ENV{'LANGUAGE'};
+    delete $ENV{'LC_COLLATE'};
+    delete $ENV{'LC_MONETARY'};
+    delete $ENV{'LC_MESSAGES'};
+    delete $ENV{'LC_PAPER'};
+    delete $ENV{'LC_NAME'};
+    delete $ENV{'LC_ADDRESS'};
+    delete $ENV{'LC_TELEPHONE'};
+    delete $ENV{'LC_MEASUREMENT'};
+    delete $ENV{'LC_IDENTIFICATION'};
+    delete $ENV{'LC_ALL'};
     # other unneeded variables that might be set
     delete $ENV{'DISPLAY'};
     delete $ENV{'TERM'};
