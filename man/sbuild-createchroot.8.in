@@ -22,6 +22,7 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ \-h \[or] \-\-help " \[or] " \-V \[or] \-\-version ]
 .RB [ \-\-verbose ]
 .RB [ \-\-arch=\fIarch\fP ]
+.RB [ \-\-chroot-suffix=\fIsuffix\fP ]
 .RB [ \-\-foreign ]
 .RB [ \-\-resolve-deps " \[or] " \-\-no-resolve-deps ]
 .RB [ \-\-keep-debootstrap-dir ]
@@ -87,6 +88,9 @@ directly to debootstrap.
 .BR \-\-arch=\fIarch\fP
 Set the target architecture.  This may be used if dpkg is not already
 installed.  See also \fI\-\-foreign\fP, below.
+.TP
+.BR \-\-chroot-suffix=\fIsuffix\fP
+Add a custom suffix to the chroot name. Defaults to '-schroot'.
 .TP
 .BR \-\-foreign
 Only perform the initial unpack phase of bootstrapping.  This is required if

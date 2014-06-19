@@ -6,7 +6,11 @@ sbuild (0.64.2-1) UNRELEASED; urgency=low
       same order as the output of locale(1), to make it easier to compare
       visually.
 
- -- Colin Watson <cjwatson@debian.org>  Fri, 18 Oct 2013 12:46:29 +0100
+  [ Luca Falavigna ]
+  * sbuild-createchroot:
+    - Allow to define custom suffixes in chroot names (Closes: #741727).
+
+ -- Luca Falavigna <dktrkranz@debian.org>  Thu, 19 Jun 2014 08:28:13 +0200
 
 sbuild (0.64.1-1) unstable; urgency=low
 
