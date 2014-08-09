@@ -26,6 +26,7 @@ sbuild\-createchroot \- create sbuild chroot
 .RB [ \-\-foreign ]
 .RB [ \-\-resolve-deps " \[or] " \-\-no-resolve-deps ]
 .RB [ \-\-keep-debootstrap-dir ]
+.RB [ \-\-debootstrap=\fIdebootstrap\fP ]
 .RB [ "\-\-include=\fIpackage1[,package2,[packagen]]\fP" ]
 .RB [ "\-\-exclude=\fIpackage1[,package2,[packagen]]\fP" ]
 .RB [ "\-\-components=\fIcomponent1[,component2,[componentn]]\fP" ]
@@ -108,6 +109,9 @@ Do not automatically resolve missing dependencies.
 .BR \-\-keep-debootstrap-dir
 Don't delete the \fI/debootstrap\fP directory in \fITARGET-DIRECTORY\fP after
 completing the installation.
+.TP
+.BR \-\-debootstrap=\fIdebootstrap\fP
+Define a custom debootstrap variant. Defaults to 'debootstrap'.
 .TP
 .BR "\-\-include=\fIpackage1[,package2,[packagen]]\fP"
 Comma separated list of packages which will be added to the list of packages to

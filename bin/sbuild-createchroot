@@ -57,6 +57,9 @@ sub setup {
 	'KEEP_DEBOOTSTRAP_DIR'			=> {
 	    DEFAULT => 0
 	},
+	'DEBOOTSTRAP'				=> {
+	    DEFAULT => 'debootstrap'
+	},
 	'KEYRING'				=> {
 	    DEFAULT => undef
 	},
@@ -109,6 +112,9 @@ sub set_options {
 	},
 	"keep-debootstrap-dir" => sub {
 	    $self->set_conf('KEEP_DEBOOTSTRAP_DIR', 1)
+	},
+	"debootstrap=s" => sub {
+	    $self->set_conf('DEBOOTSTRAP', $_[1])
 	},
 	"exclude=s" => sub {
 	    $self->set_conf('EXCLUDE', $_[1]);
@@ -198,13 +204,20 @@ push @args, $conf->get('RESOLVE_DEPS') ?
 push @args, "$suite", "$target", "$mirror";
 push @args, "$script" if $script;
 
+# Set the path to debootstrap
+my $debootstrap = $conf->get('DEBOOTSTRAP');
+
+# Get the name of the debootstrap binary
+my $debootstrap_bin = $debootstrap;
+$debootstrap_bin =~ s/^.*\///s;
+
 if ($conf->get('VERBOSE')) {
-    print "I: Running debootstrap " . join(' ',@args) . "\n";
+    print "I: Running $debootstrap_bin " . join(' ',@args) . "\n";
 }
 
 # Run debootstrap with specified options.
 if (!$conf->get('SETUP_ONLY')) {
-    !system("/usr/sbin/debootstrap", @args) or die "E: Error running debootstrap";
+    !system($debootstrap, @args) or die "E: Error running $debootstrap_bin";
 }
 
 # Set up minimal /etc/hosts.
