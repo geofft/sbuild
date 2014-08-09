@@ -1672,7 +1672,7 @@ sub build {
 		close( PIPE );
 	    }
 	    $self->log("\n");
-	    if (!open( PIPE, "dpkg --contents $deb 2>&1 |" )) {
+	    if (!open( PIPE, "dpkg --contents $deb 2>&1 | sort -k6 |" )) {
 		$self->log("Can't spawn dpkg: $! -- can't dump info\n");
 	    }
 	    else {

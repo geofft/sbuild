@@ -1,4 +1,4 @@
-sbuild (0.64.2-4) UNRELEASED; urgency=low
+sbuild (0.64.2-5) UNRELEASED; urgency=low
 
   [ Colin Watson ]
   * buildd:
@@ -11,7 +11,11 @@ sbuild (0.64.2-4) UNRELEASED; urgency=low
     - Allow to define custom suffixes in chroot names (Closes: #741727).
     - Allow to Define custom debootstrap variant (Closes: #715020).
 
- -- Luca Falavigna <dktrkranz@debian.org>  Sat, 09 Aug 2014 10:43:33 +0200
+  [ Christoph Biedl ]
+  * lib/Sbuild/Build.pm:
+    - Sort output of package content listing (Closes: #743773).
+
+ -- Luca Falavigna <dktrkranz@debian.org>  Sat, 09 Aug 2014 10:44:53 +0200
 
 sbuild (0.64.1-1) unstable; urgency=low
 
